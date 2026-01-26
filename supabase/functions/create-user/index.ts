@@ -79,7 +79,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if email already exists
+    // LOGIC MỚI: Kiểm tra email trong phạm vi TENANT thay vì toàn hệ thống
+    // Bước 1: Tìm user có email này trong auth.users
     const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers()
     if (listError) {
       console.error('List users error:', listError)
@@ -89,15 +90,68 @@ Deno.serve(async (req) => {
       )
     }
 
-    const emailExists = existingUsers.users.some(u => u.email?.toLowerCase() === email.toLowerCase())
-    if (emailExists) {
+    const existingUser = existingUsers.users.find(u => u.email?.toLowerCase() === email.toLowerCase())
+
+    if (existingUser) {
+      // Email đã tồn tại trong hệ thống - kiểm tra xem đã có trong tenant này chưa
+      const { data: existingRoleInTenant } = await supabaseAdmin
+        .from('user_roles')
+        .select('id, user_role')
+        .eq('user_id', existingUser.id)
+        .eq('tenant_id', callerTenantId)
+        .maybeSingle()
+
+      if (existingRoleInTenant) {
+        // Đã có role trong tenant này → CHẶN
+        return new Response(
+          JSON.stringify({ 
+            error: `Email này đã được sử dụng trong cửa hàng của bạn (vai trò: ${existingRoleInTenant.user_role})` 
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Chưa có role trong tenant này → Thêm vai trò mới cho user hiện có
+      // Insert new role for existing user in this tenant
+      const { error: insertRoleError } = await supabaseAdmin
+        .from('user_roles')
+        .insert({
+          user_id: existingUser.id,
+          user_role: role,
+          branch_id: role === 'super_admin' ? null : branchId,
+          tenant_id: callerTenantId,
+        })
+
+      if (insertRoleError) {
+        console.error('Insert role error:', insertRoleError)
+        return new Response(
+          JSON.stringify({ error: 'Không thể thêm vai trò cho người dùng' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Cập nhật profile nếu cần (phone)
+      if (phone) {
+        await supabaseAdmin
+          .from('profiles')
+          .update({ phone })
+          .eq('user_id', existingUser.id)
+      }
+
       return new Response(
-        JSON.stringify({ error: 'Email này đã được sử dụng cho tài khoản khác' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: true, 
+          message: 'Đã thêm vai trò mới cho tài khoản hiện có',
+          user: { 
+            id: existingUser.id, 
+            email: existingUser.email 
+          } 
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Create the user using admin API
+    // Email chưa tồn tại → Tạo user mới
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
