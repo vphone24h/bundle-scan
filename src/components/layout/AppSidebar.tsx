@@ -20,6 +20,7 @@ import {
   Shield,
   History,
   Receipt,
+  UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -80,6 +81,7 @@ const allNavItems: NavItem[] = [
   },
   { title: 'Trả hàng', href: '/returns', icon: RotateCcw, permission: 'canImportProducts' },
   { title: 'Nhà cung cấp', href: '/suppliers', icon: Users, permission: 'canManageSuppliers' },
+  { title: 'Khách hàng', href: '/customers', icon: UserCheck, permission: 'canViewProducts' },
   { title: 'Công nợ', href: '/debt', icon: Receipt, permission: 'canViewCashBook' },
   { title: 'Báo cáo', href: '/reports', icon: BarChart3, permission: 'canViewReports' },
   { title: 'Sổ quỹ', href: '/cash-book', icon: Wallet, permission: 'canViewCashBook' },
