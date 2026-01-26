@@ -21,12 +21,15 @@ import {
   History,
   Receipt,
   UserCheck,
+  Crown,
+  CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { useProfile, useUserRole } from '@/hooks/useProfile';
+import { useProfile } from '@/hooks/useProfile';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
+import { usePlatformUser } from '@/hooks/useTenant';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -88,6 +91,7 @@ const allNavItems: NavItem[] = [
   { title: 'Quản lý chi nhánh', href: '/branches', icon: Building2, permission: 'canManageBranches' },
   { title: 'Quản lý người dùng', href: '/users', icon: Shield, permission: 'canManageBranchStaff' },
   { title: 'Lịch sử thao tác', href: '/audit-logs', icon: History, permission: 'canViewAuditLogs' },
+  { title: 'Gói dịch vụ', href: '/subscription', icon: CreditCard },
 ];
 
 export function AppSidebar() {
@@ -96,8 +100,11 @@ export function AppSidebar() {
   const { signOut, user } = useAuth();
   const { data: profile } = useProfile();
   const { data: permissions, isLoading: permissionsLoading } = usePermissions();
+  const { data: platformUser } = usePlatformUser();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Nhập hàng', 'Xuất hàng']);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
 
   // Lọc menu theo quyền
   const navItems = useMemo(() => {

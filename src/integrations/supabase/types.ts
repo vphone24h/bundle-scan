@@ -26,6 +26,7 @@ export type Database = {
           old_data: Json | null
           record_id: string | null
           table_name: string | null
+          tenant_id: string | null
           user_id: string | null
         }
         Insert: {
@@ -39,6 +40,7 @@ export type Database = {
           old_data?: Json | null
           record_id?: string | null
           table_name?: string | null
+          tenant_id?: string | null
           user_id?: string | null
         }
         Update: {
@@ -52,6 +54,7 @@ export type Database = {
           old_data?: Json | null
           record_id?: string | null
           table_name?: string | null
+          tenant_id?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -60,6 +63,13 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -73,6 +83,7 @@ export type Database = {
           name: string
           note: string | null
           phone: string | null
+          tenant_id: string | null
           updated_at: string
         }
         Insert: {
@@ -83,6 +94,7 @@ export type Database = {
           name: string
           note?: string | null
           phone?: string | null
+          tenant_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -93,9 +105,18 @@ export type Database = {
           name?: string
           note?: string | null
           phone?: string | null
+          tenant_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "branches_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cash_book: {
         Row: {
@@ -111,6 +132,7 @@ export type Database = {
           payment_source: string
           reference_id: string | null
           reference_type: string | null
+          tenant_id: string | null
           transaction_date: string
           type: Database["public"]["Enums"]["cash_book_type"]
           updated_at: string
@@ -128,6 +150,7 @@ export type Database = {
           payment_source: string
           reference_id?: string | null
           reference_type?: string | null
+          tenant_id?: string | null
           transaction_date?: string
           type: Database["public"]["Enums"]["cash_book_type"]
           updated_at?: string
@@ -145,6 +168,7 @@ export type Database = {
           payment_source?: string
           reference_id?: string | null
           reference_type?: string | null
+          tenant_id?: string | null
           transaction_date?: string
           type?: Database["public"]["Enums"]["cash_book_type"]
           updated_at?: string
@@ -155,6 +179,13 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_book_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -189,6 +220,7 @@ export type Database = {
           id: string
           name: string
           parent_id: string | null
+          tenant_id: string | null
           updated_at: string
         }
         Insert: {
@@ -196,6 +228,7 @@ export type Database = {
           id?: string
           name: string
           parent_id?: string | null
+          tenant_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -203,6 +236,7 @@ export type Database = {
           id?: string
           name?: string
           parent_id?: string | null
+          tenant_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -211,6 +245,13 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -231,6 +272,7 @@ export type Database = {
           phone: string
           preferred_branch_id: string | null
           status: Database["public"]["Enums"]["customer_status"]
+          tenant_id: string | null
           total_points_earned: number
           total_points_used: number
           total_spent: number
@@ -251,6 +293,7 @@ export type Database = {
           phone: string
           preferred_branch_id?: string | null
           status?: Database["public"]["Enums"]["customer_status"]
+          tenant_id?: string | null
           total_points_earned?: number
           total_points_used?: number
           total_spent?: number
@@ -271,6 +314,7 @@ export type Database = {
           phone?: string
           preferred_branch_id?: string | null
           status?: Database["public"]["Enums"]["customer_status"]
+          tenant_id?: string | null
           total_points_earned?: number
           total_points_used?: number
           total_spent?: number
@@ -282,6 +326,13 @@ export type Database = {
             columns: ["preferred_branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -298,6 +349,7 @@ export type Database = {
           id: string
           payment_source: string | null
           payment_type: string
+          tenant_id: string | null
         }
         Insert: {
           amount: number
@@ -310,6 +362,7 @@ export type Database = {
           id?: string
           payment_source?: string | null
           payment_type: string
+          tenant_id?: string | null
         }
         Update: {
           amount?: number
@@ -322,6 +375,7 @@ export type Database = {
           id?: string
           payment_source?: string | null
           payment_type?: string
+          tenant_id?: string | null
         }
         Relationships: [
           {
@@ -329,6 +383,13 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debt_payments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -445,6 +506,7 @@ export type Database = {
           points_earned: number | null
           points_redeemed: number | null
           status: string
+          tenant_id: string | null
           total_amount: number
           updated_at: string
         }
@@ -463,6 +525,7 @@ export type Database = {
           points_earned?: number | null
           points_redeemed?: number | null
           status?: string
+          tenant_id?: string | null
           total_amount?: number
           updated_at?: string
         }
@@ -481,6 +544,7 @@ export type Database = {
           points_earned?: number | null
           points_redeemed?: number | null
           status?: string
+          tenant_id?: string | null
           total_amount?: number
           updated_at?: string
         }
@@ -497,6 +561,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_receipts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -527,6 +598,7 @@ export type Database = {
           sale_price: number
           sku: string
           store_keep_amount: number
+          tenant_id: string | null
           updated_at: string
         }
         Insert: {
@@ -554,6 +626,7 @@ export type Database = {
           sale_price: number
           sku: string
           store_keep_amount?: number
+          tenant_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -581,6 +654,7 @@ export type Database = {
           sale_price?: number
           sku?: string
           store_keep_amount?: number
+          tenant_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -624,6 +698,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_returns_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -698,6 +779,7 @@ export type Database = {
           paid_amount: number
           status: Database["public"]["Enums"]["receipt_status"]
           supplier_id: string | null
+          tenant_id: string | null
           total_amount: number
           updated_at: string
         }
@@ -713,6 +795,7 @@ export type Database = {
           paid_amount?: number
           status?: Database["public"]["Enums"]["receipt_status"]
           supplier_id?: string | null
+          tenant_id?: string | null
           total_amount?: number
           updated_at?: string
         }
@@ -728,6 +811,7 @@ export type Database = {
           paid_amount?: number
           status?: Database["public"]["Enums"]["receipt_status"]
           supplier_id?: string | null
+          tenant_id?: string | null
           total_amount?: number
           updated_at?: string
         }
@@ -744,6 +828,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_receipts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -765,6 +856,7 @@ export type Database = {
           return_date: string
           sku: string
           supplier_id: string | null
+          tenant_id: string | null
           total_refund_amount: number
           updated_at: string
         }
@@ -784,6 +876,7 @@ export type Database = {
           return_date?: string
           sku: string
           supplier_id?: string | null
+          tenant_id?: string | null
           total_refund_amount?: number
           updated_at?: string
         }
@@ -803,6 +896,7 @@ export type Database = {
           return_date?: string
           sku?: string
           supplier_id?: string | null
+          tenant_id?: string | null
           total_refund_amount?: number
           updated_at?: string
         }
@@ -835,6 +929,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "import_returns_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       invoice_templates: {
@@ -865,6 +966,7 @@ export type Database = {
           store_address: string | null
           store_name: string | null
           store_phone: string | null
+          tenant_id: string | null
           text_align: string | null
           thank_you_text: string | null
           updated_at: string
@@ -896,6 +998,7 @@ export type Database = {
           store_address?: string | null
           store_name?: string | null
           store_phone?: string | null
+          tenant_id?: string | null
           text_align?: string | null
           thank_you_text?: string | null
           updated_at?: string
@@ -927,11 +1030,20 @@ export type Database = {
           store_address?: string | null
           store_name?: string | null
           store_phone?: string | null
+          tenant_id?: string | null
           text_align?: string | null
           thank_you_text?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "invoice_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       membership_tier_settings: {
         Row: {
@@ -941,6 +1053,7 @@ export type Database = {
           id: string
           min_spent: number
           points_multiplier: number
+          tenant_id: string | null
           tier: Database["public"]["Enums"]["membership_tier"]
           updated_at: string
         }
@@ -951,6 +1064,7 @@ export type Database = {
           id?: string
           min_spent?: number
           points_multiplier?: number
+          tenant_id?: string | null
           tier: Database["public"]["Enums"]["membership_tier"]
           updated_at?: string
         }
@@ -961,10 +1075,135 @@ export type Database = {
           id?: string
           min_spent?: number
           points_multiplier?: number
+          tenant_id?: string | null
           tier?: Database["public"]["Enums"]["membership_tier"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "membership_tier_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_requests: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          payment_code: string
+          payment_method: string
+          payment_proof_url: string | null
+          plan_id: string
+          rejected_reason: string | null
+          requested_at: string
+          status: Database["public"]["Enums"]["payment_status"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          payment_code: string
+          payment_method?: string
+          payment_proof_url?: string | null
+          plan_id: string
+          rejected_reason?: string | null
+          requested_at?: string
+          status?: Database["public"]["Enums"]["payment_status"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          payment_code?: string
+          payment_method?: string
+          payment_proof_url?: string | null
+          plan_id?: string
+          rejected_reason?: string | null
+          requested_at?: string
+          status?: Database["public"]["Enums"]["payment_status"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_requests_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_users: {
+        Row: {
+          created_at: string
+          display_name: string
+          email: string | null
+          id: string
+          is_active: boolean
+          phone: string | null
+          platform_role: Database["public"]["Enums"]["platform_role"]
+          tenant_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          phone?: string | null
+          platform_role?: Database["public"]["Enums"]["platform_role"]
+          tenant_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          phone?: string | null
+          platform_role?: Database["public"]["Enums"]["platform_role"]
+          tenant_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_users_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       point_settings: {
         Row: {
@@ -979,6 +1218,7 @@ export type Database = {
           redeem_value: number
           require_full_payment: boolean
           spend_amount: number
+          tenant_id: string | null
           updated_at: string
           updated_by: string | null
           use_max_amount_limit: boolean | null
@@ -996,6 +1236,7 @@ export type Database = {
           redeem_value?: number
           require_full_payment?: boolean
           spend_amount?: number
+          tenant_id?: string | null
           updated_at?: string
           updated_by?: string | null
           use_max_amount_limit?: boolean | null
@@ -1013,12 +1254,21 @@ export type Database = {
           redeem_value?: number
           require_full_payment?: boolean
           spend_amount?: number
+          tenant_id?: string | null
           updated_at?: string
           updated_by?: string | null
           use_max_amount_limit?: boolean | null
           use_percentage_limit?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "point_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       point_transactions: {
         Row: {
@@ -1160,6 +1410,7 @@ export type Database = {
           sku: string
           status: Database["public"]["Enums"]["product_status"]
           supplier_id: string | null
+          tenant_id: string | null
           total_import_cost: number
           updated_at: string
         }
@@ -1178,6 +1429,7 @@ export type Database = {
           sku: string
           status?: Database["public"]["Enums"]["product_status"]
           supplier_id?: string | null
+          tenant_id?: string | null
           total_import_cost?: number
           updated_at?: string
         }
@@ -1196,6 +1448,7 @@ export type Database = {
           sku?: string
           status?: Database["public"]["Enums"]["product_status"]
           supplier_id?: string | null
+          tenant_id?: string | null
           total_import_cost?: number
           updated_at?: string
         }
@@ -1228,6 +1481,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
@@ -1237,6 +1497,7 @@ export type Database = {
           display_name: string
           id: string
           phone: string | null
+          tenant_id: string | null
           updated_at: string
           user_id: string
         }
@@ -1246,6 +1507,7 @@ export type Database = {
           display_name: string
           id?: string
           phone?: string | null
+          tenant_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1255,10 +1517,19 @@ export type Database = {
           display_name?: string
           id?: string
           phone?: string | null
+          tenant_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       receipt_payments: {
         Row: {
@@ -1407,6 +1678,7 @@ export type Database = {
           scope: Database["public"]["Enums"]["stock_count_scope"]
           scope_category_id: string | null
           status: Database["public"]["Enums"]["stock_count_status"]
+          tenant_id: string | null
           total_actual_quantity: number
           total_system_quantity: number
           total_variance: number
@@ -1427,6 +1699,7 @@ export type Database = {
           scope?: Database["public"]["Enums"]["stock_count_scope"]
           scope_category_id?: string | null
           status?: Database["public"]["Enums"]["stock_count_status"]
+          tenant_id?: string | null
           total_actual_quantity?: number
           total_system_quantity?: number
           total_variance?: number
@@ -1447,6 +1720,7 @@ export type Database = {
           scope?: Database["public"]["Enums"]["stock_count_scope"]
           scope_category_id?: string | null
           status?: Database["public"]["Enums"]["stock_count_status"]
+          tenant_id?: string | null
           total_actual_quantity?: number
           total_system_quantity?: number
           total_variance?: number
@@ -1481,7 +1755,126 @@ export type Database = {
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "stock_counts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      subscription_history: {
+        Row: {
+          action: string
+          created_at: string
+          days_added: number | null
+          id: string
+          new_end_date: string | null
+          new_status: Database["public"]["Enums"]["tenant_status"] | null
+          note: string | null
+          old_end_date: string | null
+          old_status: Database["public"]["Enums"]["tenant_status"] | null
+          payment_request_id: string | null
+          performed_by: string | null
+          plan_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          days_added?: number | null
+          id?: string
+          new_end_date?: string | null
+          new_status?: Database["public"]["Enums"]["tenant_status"] | null
+          note?: string | null
+          old_end_date?: string | null
+          old_status?: Database["public"]["Enums"]["tenant_status"] | null
+          payment_request_id?: string | null
+          performed_by?: string | null
+          plan_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          days_added?: number | null
+          id?: string
+          new_end_date?: string | null
+          new_status?: Database["public"]["Enums"]["tenant_status"] | null
+          note?: string | null
+          old_end_date?: string | null
+          old_status?: Database["public"]["Enums"]["tenant_status"] | null
+          payment_request_id?: string | null
+          performed_by?: string | null
+          plan_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_history_payment_request_id_fkey"
+            columns: ["payment_request_id"]
+            isOneToOne: false
+            referencedRelation: "payment_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_history_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_days: number | null
+          id: string
+          is_active: boolean
+          max_branches: number | null
+          max_users: number | null
+          name: string
+          plan_type: Database["public"]["Enums"]["subscription_plan"]
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_days?: number | null
+          id?: string
+          is_active?: boolean
+          max_branches?: number | null
+          max_users?: number | null
+          name: string
+          plan_type: Database["public"]["Enums"]["subscription_plan"]
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_days?: number | null
+          id?: string
+          is_active?: boolean
+          max_branches?: number | null
+          max_users?: number | null
+          name?: string
+          plan_type?: Database["public"]["Enums"]["subscription_plan"]
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       suppliers: {
         Row: {
@@ -1491,6 +1884,7 @@ export type Database = {
           name: string
           note: string | null
           phone: string | null
+          tenant_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1500,6 +1894,7 @@ export type Database = {
           name: string
           note?: string | null
           phone?: string | null
+          tenant_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1509,6 +1904,90 @@ export type Database = {
           name?: string
           note?: string | null
           phone?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          locked_at: string | null
+          locked_reason: string | null
+          max_branches: number | null
+          max_users: number | null
+          name: string
+          note: string | null
+          owner_id: string
+          phone: string | null
+          status: Database["public"]["Enums"]["tenant_status"]
+          subdomain: string
+          subscription_end_date: string | null
+          subscription_plan:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
+          subscription_start_date: string | null
+          trial_end_date: string
+          trial_start_date: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          locked_at?: string | null
+          locked_reason?: string | null
+          max_branches?: number | null
+          max_users?: number | null
+          name: string
+          note?: string | null
+          owner_id: string
+          phone?: string | null
+          status?: Database["public"]["Enums"]["tenant_status"]
+          subdomain: string
+          subscription_end_date?: string | null
+          subscription_plan?:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
+          subscription_start_date?: string | null
+          trial_end_date?: string
+          trial_start_date?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          locked_at?: string | null
+          locked_reason?: string | null
+          max_branches?: number | null
+          max_users?: number | null
+          name?: string
+          note?: string | null
+          owner_id?: string
+          phone?: string | null
+          status?: Database["public"]["Enums"]["tenant_status"]
+          subdomain?: string
+          subscription_end_date?: string | null
+          subscription_plan?:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
+          subscription_start_date?: string | null
+          trial_end_date?: string
+          trial_start_date?: string
           updated_at?: string
         }
         Relationships: []
@@ -1519,6 +1998,7 @@ export type Database = {
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          tenant_id: string | null
           user_id: string
           user_role: Database["public"]["Enums"]["user_role"] | null
         }
@@ -1527,6 +2007,7 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          tenant_id?: string | null
           user_id: string
           user_role?: Database["public"]["Enums"]["user_role"] | null
         }
@@ -1535,6 +2016,7 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          tenant_id?: string | null
           user_id?: string
           user_role?: Database["public"]["Enums"]["user_role"] | null
         }
@@ -1546,6 +2028,13 @@ export type Database = {
             referencedRelation: "branches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_roles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -1553,15 +2042,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      belongs_to_tenant: {
+        Args: { _tenant_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_access_branch: {
         Args: { _branch_id: string; _user_id: string }
         Returns: boolean
       }
+      get_current_tenant: { Args: never; Returns: string }
       get_user_branch: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1570,13 +2065,17 @@ export type Database = {
         Returns: boolean
       }
       is_authenticated: { Args: never; Returns: boolean }
+      is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_tenant_accessible: { Args: { _tenant_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "staff"
       cash_book_type: "expense" | "income"
       customer_status: "active" | "inactive"
       membership_tier: "regular" | "silver" | "gold" | "vip"
+      payment_status: "pending" | "approved" | "rejected" | "cancelled"
       payment_type: "cash" | "bank_card" | "e_wallet" | "debt"
+      platform_role: "platform_admin" | "tenant_admin"
       point_status: "active" | "pending" | "expired"
       point_transaction_type: "earn" | "redeem" | "refund" | "adjust" | "expire"
       product_status: "in_stock" | "sold" | "returned"
@@ -1586,6 +2085,8 @@ export type Database = {
       stock_count_item_status: "ok" | "missing" | "surplus" | "pending"
       stock_count_scope: "all" | "category" | "product"
       stock_count_status: "draft" | "confirmed"
+      subscription_plan: "monthly" | "yearly" | "lifetime"
+      tenant_status: "trial" | "active" | "expired" | "locked"
       user_role: "super_admin" | "branch_admin" | "staff" | "cashier"
     }
     CompositeTypes: {
@@ -1718,7 +2219,9 @@ export const Constants = {
       cash_book_type: ["expense", "income"],
       customer_status: ["active", "inactive"],
       membership_tier: ["regular", "silver", "gold", "vip"],
+      payment_status: ["pending", "approved", "rejected", "cancelled"],
       payment_type: ["cash", "bank_card", "e_wallet", "debt"],
+      platform_role: ["platform_admin", "tenant_admin"],
       point_status: ["active", "pending", "expired"],
       point_transaction_type: ["earn", "redeem", "refund", "adjust", "expire"],
       product_status: ["in_stock", "sold", "returned"],
@@ -1728,6 +2231,8 @@ export const Constants = {
       stock_count_item_status: ["ok", "missing", "surplus", "pending"],
       stock_count_scope: ["all", "category", "product"],
       stock_count_status: ["draft", "confirmed"],
+      subscription_plan: ["monthly", "yearly", "lifetime"],
+      tenant_status: ["trial", "active", "expired", "locked"],
       user_role: ["super_admin", "branch_admin", "staff", "cashier"],
     },
   },
