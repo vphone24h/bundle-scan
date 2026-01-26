@@ -236,9 +236,6 @@ export default function AuthPage() {
             </Link>
           </Button>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Dùng thử miễn phí 30 ngày, đầy đủ tính năng
-          </p>
         </CardContent>
       </Card>
     </div>
