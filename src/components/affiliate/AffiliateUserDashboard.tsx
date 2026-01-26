@@ -280,8 +280,28 @@ export function AffiliateUserDashboard() {
   const affiliateLink = `${window.location.origin}/register?ref=${affiliate.affiliate_code}`;
   const canWithdraw = affiliate.available_balance >= (settings?.min_withdrawal_amount || 500000);
 
+  // Lấy mô tả chương trình từ settings
+  const programDescription = (settings as any)?.commission_description;
+
   return (
     <div className="space-y-6">
+      {/* Banner mô tả chương trình Affiliate */}
+      {programDescription && (
+        <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Về chương trình Affiliate
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+              {programDescription}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Thông tin nhanh */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
