@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { DetailedProfitTable } from '@/components/reports/DetailedProfitTable';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -444,11 +445,17 @@ export default function ReportsPage() {
         </div>
 
         {/* Details Tables */}
-        <Tabs defaultValue="category" className="space-y-4">
+        <Tabs defaultValue="detailed" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="category">Lợi nhuận theo danh mục</TabsTrigger>
+            <TabsTrigger value="detailed">Chi tiết lợi nhuận</TabsTrigger>
+            <TabsTrigger value="category">Theo danh mục</TabsTrigger>
             <TabsTrigger value="expenses">Chi tiết chi phí</TabsTrigger>
           </TabsList>
+
+          {/* Detailed Profit Report */}
+          <TabsContent value="detailed">
+            <DetailedProfitTable />
+          </TabsContent>
 
           {/* Profit by Category */}
           <TabsContent value="category">
