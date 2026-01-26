@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { Warehouse, Loader2, Store } from 'lucide-react';
+import { Warehouse, Loader2 } from 'lucide-react';
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -24,38 +24,7 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      // First verify the store ID exists
-      const { data: tenant, error: tenantError } = await supabase
-        .from('tenants')
-        .select('id, subdomain, status')
-        .eq('subdomain', storeId.toLowerCase().trim())
-        .maybeSingle();
-
-      if (tenantError) {
-        throw new Error('Không thể kiểm tra ID cửa hàng');
-      }
-
-      if (!tenant) {
-        toast({
-          title: 'Không tìm thấy cửa hàng',
-          description: 'ID cửa hàng không tồn tại. Vui lòng kiểm tra lại.',
-          variant: 'destructive',
-        });
-        setLoading(false);
-        return;
-      }
-
-      if (tenant.status === 'locked') {
-        toast({
-          title: 'Cửa hàng bị khóa',
-          description: 'Cửa hàng này đã bị khóa. Vui lòng liên hệ hỗ trợ.',
-          variant: 'destructive',
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Now sign in
+      // Sign in first (tenants table is protected by RLS when not authenticated)
       const { error } = await signIn(loginEmail, loginPassword);
       
       if (error) {
@@ -70,7 +39,7 @@ export default function AuthPage() {
         return;
       }
 
-      // Verify user belongs to this tenant
+      // Verify user belongs to the entered store (by checking user's tenant_id then comparing subdomain)
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
@@ -98,11 +67,62 @@ export default function AuthPage() {
           return;
         }
 
-        if (userTenantId !== tenant.id) {
+        if (!userTenantId) {
           await supabase.auth.signOut();
           toast({
             title: 'Không có quyền truy cập',
-            description: 'Tài khoản của bạn không thuộc cửa hàng này.',
+            description: 'Tài khoản của bạn chưa được gán cửa hàng.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+
+        const { data: tenant, error: tenantError } = await supabase
+          .from('tenants')
+          .select('id, subdomain, status')
+          .eq('id', userTenantId)
+          .maybeSingle();
+
+        if (tenantError) {
+          await supabase.auth.signOut();
+          toast({
+            title: 'Lỗi',
+            description: 'Không thể kiểm tra cửa hàng của bạn. Vui lòng thử lại.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+
+        if (!tenant) {
+          await supabase.auth.signOut();
+          toast({
+            title: 'Không có quyền truy cập',
+            description: 'Không tìm thấy thông tin cửa hàng của tài khoản này.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+
+        if (tenant.status === 'locked') {
+          await supabase.auth.signOut();
+          toast({
+            title: 'Cửa hàng bị khóa',
+            description: 'Cửa hàng này đã bị khóa. Vui lòng liên hệ hỗ trợ.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
+
+        const inputStoreId = storeId.toLowerCase().trim();
+        if (tenant.subdomain !== inputStoreId) {
+          await supabase.auth.signOut();
+          toast({
+            title: 'Sai ID cửa hàng',
+            description: `Tài khoản này thuộc cửa hàng "${tenant.subdomain}". Vui lòng nhập đúng ID cửa hàng.`,
             variant: 'destructive',
           });
           setLoading(false);
