@@ -215,6 +215,26 @@ export function useDeleteCashBookEntry() {
         .eq('user_id', user?.id)
         .single();
 
+      // Tính số dư nguồn tiền TRƯỚC khi xóa
+      let balanceQuery = supabase
+        .from('cash_book')
+        .select('type, amount')
+        .eq('payment_source', entry.payment_source);
+      
+      if (entry.branch_id) {
+        balanceQuery = balanceQuery.eq('branch_id', entry.branch_id);
+      }
+
+      const { data: allEntries } = await balanceQuery;
+      
+      const balanceBefore = (allEntries || []).reduce((sum, e) => {
+        return sum + (e.type === 'income' ? Number(e.amount) : -Number(e.amount));
+      }, 0);
+
+      // Tính số dư SAU khi xóa
+      const entryImpact = entry.type === 'income' ? Number(entry.amount) : -Number(entry.amount);
+      const balanceAfter = balanceBefore - entryImpact;
+
       // Delete cash book entry
       const { error } = await supabase
         .from('cash_book')
@@ -223,7 +243,7 @@ export function useDeleteCashBookEntry() {
 
       if (error) throw error;
 
-      // Ghi audit log với dữ liệu trước khi xóa
+      // Ghi audit log với dữ liệu trước khi xóa và số dư nguồn tiền
       await supabase.from('audit_logs').insert([{
         user_id: user?.id,
         action_type: 'delete',
@@ -239,9 +259,12 @@ export function useDeleteCashBookEntry() {
           is_business_accounting: entry.is_business_accounting,
           note: entry.note,
           transaction_date: entry.transaction_date,
+          // Số dư nguồn tiền trước và sau khi xóa
+          balance_before: balanceBefore,
+          balance_after: balanceAfter,
         },
         new_data: null,
-        description: `Xóa sổ quỹ: ${entry.description} (${entry.type === 'income' ? 'Thu' : 'Chi'}: ${entry.amount}). Lý do: ${reason}`,
+        description: `Xóa sổ quỹ: ${entry.description} (${entry.type === 'income' ? 'Thu' : 'Chi'}: ${entry.amount.toLocaleString('vi-VN')}đ). Nguồn: ${entry.payment_source}. Lý do: ${reason}`,
       }]);
 
       return true;
