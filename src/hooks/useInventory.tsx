@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface InventoryItem {
+  productId: string; // ID của sản phẩm chính (hoặc sản phẩm đầu tiên trong nhóm)
   productName: string;
   sku: string;
   branchId: string | null;
@@ -12,7 +13,9 @@ export interface InventoryItem {
   totalImported: number;
   totalSold: number;
   stock: number;
-  products: ProductDetail[];
+  avgImportPrice: number; // Giá nhập trung bình
+  totalImportCost: number; // Tổng chi phí nhập
+  products: ProductDetail[]; // Cho sản phẩm có IMEI
 }
 
 export interface ProductDetail {
@@ -27,6 +30,8 @@ export interface ProductDetail {
   branchId: string | null;
   branchName: string | null;
   status: 'in_stock' | 'sold' | 'returned';
+  quantity: number;
+  totalImportCost: number;
 }
 
 export function useInventory() {
@@ -65,33 +70,68 @@ export function useInventory() {
           branchId: product.branch_id,
           branchName: product.branches?.name || null,
           status: product.status,
+          quantity: product.quantity || 1,
+          totalImportCost: product.total_import_cost || product.import_price,
         };
 
         if (existing) {
-          existing.totalImported += 1;
-          if (product.status === 'sold') {
-            existing.totalSold += 1;
-          }
-          existing.stock = existing.totalImported - existing.totalSold;
-          existing.products.push(productDetail);
-          // Check if any product has IMEI
+          // Sản phẩm có IMEI: cộng dồn từng cái
           if (product.imei) {
+            existing.totalImported += 1;
+            if (product.status === 'sold') {
+              existing.totalSold += 1;
+            }
+            existing.stock = existing.totalImported - existing.totalSold;
+            existing.products.push(productDetail);
             existing.hasImei = true;
+            // Cập nhật giá TB cho IMEI products
+            existing.totalImportCost += Number(product.import_price);
+            existing.avgImportPrice = existing.totalImportCost / existing.totalImported;
           }
+          // Sản phẩm không IMEI: đã được gộp trong DB, không cần xử lý thêm
         } else {
-          inventoryMap.set(key, {
-            productName: product.name,
-            sku: product.sku,
-            branchId: product.branch_id,
-            branchName: product.branches?.name || null,
-            categoryId: product.category_id,
-            categoryName: product.categories?.name || null,
-            hasImei: !!product.imei,
-            totalImported: 1,
-            totalSold: product.status === 'sold' ? 1 : 0,
-            stock: product.status === 'sold' ? 0 : 1,
-            products: [productDetail],
-          });
+          if (product.imei) {
+            // Sản phẩm có IMEI
+            inventoryMap.set(key, {
+              productId: product.id,
+              productName: product.name,
+              sku: product.sku,
+              branchId: product.branch_id,
+              branchName: product.branches?.name || null,
+              categoryId: product.category_id,
+              categoryName: product.categories?.name || null,
+              hasImei: true,
+              totalImported: 1,
+              totalSold: product.status === 'sold' ? 1 : 0,
+              stock: product.status === 'sold' ? 0 : 1,
+              avgImportPrice: Number(product.import_price),
+              totalImportCost: Number(product.import_price),
+              products: [productDetail],
+            });
+          } else {
+            // Sản phẩm không IMEI - đã có quantity và total_import_cost trong DB
+            const quantity = product.quantity || 1;
+            const totalCost = product.total_import_cost || product.import_price;
+            const soldQty = product.status === 'sold' ? quantity : 0;
+            const stockQty = product.status === 'in_stock' ? quantity : 0;
+            
+            inventoryMap.set(key, {
+              productId: product.id,
+              productName: product.name,
+              sku: product.sku,
+              branchId: product.branch_id,
+              branchName: product.branches?.name || null,
+              categoryId: product.category_id,
+              categoryName: product.categories?.name || null,
+              hasImei: false,
+              totalImported: quantity,
+              totalSold: soldQty,
+              stock: stockQty,
+              avgImportPrice: Number(product.import_price), // Đã là giá TB
+              totalImportCost: Number(totalCost),
+              products: [productDetail],
+            });
+          }
         }
       });
 
@@ -118,4 +158,28 @@ export function useInventoryStats() {
   }
 
   return { stats, isLoading, error };
+}
+
+// Hook để lấy lịch sử nhập hàng của một sản phẩm
+export function useProductImportHistory(productId: string | null) {
+  return useQuery({
+    queryKey: ['product-import-history', productId],
+    queryFn: async () => {
+      if (!productId) return [];
+
+      const { data, error } = await supabase
+        .from('product_imports')
+        .select(`
+          *,
+          import_receipts(code, import_date),
+          suppliers(name)
+        `)
+        .eq('product_id', productId)
+        .order('import_date', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!productId,
+  });
 }
