@@ -1,19 +1,22 @@
 import { useState, useMemo } from 'react';
-import { Download } from 'lucide-react';
+import { Download, Package, ClipboardList } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useInventory, useInventoryStats, InventoryItem } from '@/hooks/useInventory';
 import { InventoryFiltersComponent, InventoryFilters } from '@/components/inventory/InventoryFilters';
 import { InventoryTable } from '@/components/inventory/InventoryTable';
 import { InventoryStats } from '@/components/inventory/InventoryStats';
+import { StockCountTab } from '@/components/stockCount/StockCountTab';
 import { useToast } from '@/hooks/use-toast';
 
 export default function InventoryPage() {
   const { toast } = useToast();
   const { data: inventory, isLoading } = useInventory();
   const { stats } = useInventoryStats();
+  const [activeTab, setActiveTab] = useState('inventory');
 
   const [filters, setFilters] = useState<InventoryFilters>({
     search: '',
@@ -136,22 +139,43 @@ export default function InventoryPage() {
         title="Tồn kho"
         description="Quản lý và theo dõi tồn kho theo thời gian thực"
         actions={
-          <Button onClick={handleExportExcel} className="gap-2">
-            <Download className="h-4 w-4" />
-            Xuất Excel
-          </Button>
+          activeTab === 'inventory' && (
+            <Button onClick={handleExportExcel} className="gap-2">
+              <Download className="h-4 w-4" />
+              Xuất Excel
+            </Button>
+          )
         }
       />
 
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-        {/* Stats */}
-        <InventoryStats {...filteredStats} />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="inventory" className="gap-2">
+              <Package className="h-4 w-4" />
+              Tồn kho
+            </TabsTrigger>
+            <TabsTrigger value="stock-count" className="gap-2">
+              <ClipboardList className="h-4 w-4" />
+              Kiểm kho
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Filters */}
-        <InventoryFiltersComponent filters={filters} onFiltersChange={setFilters} />
+          <TabsContent value="inventory" className="space-y-4 sm:space-y-6">
+            {/* Stats */}
+            <InventoryStats {...filteredStats} />
 
-        {/* Table */}
-        <InventoryTable data={filteredInventory} isLoading={isLoading} />
+            {/* Filters */}
+            <InventoryFiltersComponent filters={filters} onFiltersChange={setFilters} />
+
+            {/* Table */}
+            <InventoryTable data={filteredInventory} isLoading={isLoading} />
+          </TabsContent>
+
+          <TabsContent value="stock-count">
+            <StockCountTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </MainLayout>
   );

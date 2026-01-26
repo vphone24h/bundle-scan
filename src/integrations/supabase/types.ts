@@ -1252,6 +1252,170 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_count_items: {
+        Row: {
+          actual_quantity: number
+          created_at: string
+          has_imei: boolean
+          id: string
+          imei: string | null
+          import_price: number
+          is_checked: boolean
+          note: string | null
+          product_id: string | null
+          product_name: string
+          sku: string
+          status: Database["public"]["Enums"]["stock_count_item_status"]
+          stock_count_id: string
+          system_quantity: number
+          updated_at: string
+          variance: number
+        }
+        Insert: {
+          actual_quantity?: number
+          created_at?: string
+          has_imei?: boolean
+          id?: string
+          imei?: string | null
+          import_price?: number
+          is_checked?: boolean
+          note?: string | null
+          product_id?: string | null
+          product_name: string
+          sku: string
+          status?: Database["public"]["Enums"]["stock_count_item_status"]
+          stock_count_id: string
+          system_quantity?: number
+          updated_at?: string
+          variance?: number
+        }
+        Update: {
+          actual_quantity?: number
+          created_at?: string
+          has_imei?: boolean
+          id?: string
+          imei?: string | null
+          import_price?: number
+          is_checked?: boolean
+          note?: string | null
+          product_id?: string | null
+          product_name?: string
+          sku?: string
+          status?: Database["public"]["Enums"]["stock_count_item_status"]
+          stock_count_id?: string
+          system_quantity?: number
+          updated_at?: string
+          variance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_count_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_count_items_stock_count_id_fkey"
+            columns: ["stock_count_id"]
+            isOneToOne: false
+            referencedRelation: "stock_counts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_counts: {
+        Row: {
+          adjustment_export_receipt_id: string | null
+          adjustment_import_receipt_id: string | null
+          branch_id: string | null
+          code: string
+          confirmed_at: string | null
+          confirmed_by: string | null
+          count_date: string
+          created_at: string
+          created_by: string
+          id: string
+          note: string | null
+          scope: Database["public"]["Enums"]["stock_count_scope"]
+          scope_category_id: string | null
+          status: Database["public"]["Enums"]["stock_count_status"]
+          total_actual_quantity: number
+          total_system_quantity: number
+          total_variance: number
+          updated_at: string
+        }
+        Insert: {
+          adjustment_export_receipt_id?: string | null
+          adjustment_import_receipt_id?: string | null
+          branch_id?: string | null
+          code: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          count_date?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          note?: string | null
+          scope?: Database["public"]["Enums"]["stock_count_scope"]
+          scope_category_id?: string | null
+          status?: Database["public"]["Enums"]["stock_count_status"]
+          total_actual_quantity?: number
+          total_system_quantity?: number
+          total_variance?: number
+          updated_at?: string
+        }
+        Update: {
+          adjustment_export_receipt_id?: string | null
+          adjustment_import_receipt_id?: string | null
+          branch_id?: string | null
+          code?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          count_date?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          note?: string | null
+          scope?: Database["public"]["Enums"]["stock_count_scope"]
+          scope_category_id?: string | null
+          status?: Database["public"]["Enums"]["stock_count_status"]
+          total_actual_quantity?: number
+          total_system_quantity?: number
+          total_variance?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_counts_adjustment_export_receipt_id_fkey"
+            columns: ["adjustment_export_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "export_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_counts_adjustment_import_receipt_id_fkey"
+            columns: ["adjustment_import_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "import_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_counts_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_counts_scope_category_id_fkey"
+            columns: ["scope_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -1352,6 +1516,9 @@ export type Database = {
       receipt_status: "completed" | "cancelled"
       return_fee_type: "none" | "percentage" | "fixed_amount"
       return_type: "import_return" | "export_return"
+      stock_count_item_status: "ok" | "missing" | "surplus" | "pending"
+      stock_count_scope: "all" | "category" | "product"
+      stock_count_status: "draft" | "confirmed"
       user_role: "super_admin" | "branch_admin" | "staff" | "cashier"
     }
     CompositeTypes: {
@@ -1491,6 +1658,9 @@ export const Constants = {
       receipt_status: ["completed", "cancelled"],
       return_fee_type: ["none", "percentage", "fixed_amount"],
       return_type: ["import_return", "export_return"],
+      stock_count_item_status: ["ok", "missing", "surplus", "pending"],
+      stock_count_scope: ["all", "category", "product"],
+      stock_count_status: ["draft", "confirmed"],
       user_role: ["super_admin", "branch_admin", "staff", "cashier"],
     },
   },
