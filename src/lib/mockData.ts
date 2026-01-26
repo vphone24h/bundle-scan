@@ -44,8 +44,8 @@ export const mockImportReceipts: ImportReceipt[] = [
     code: 'PN20240115001',
     importDate: new Date('2024-01-15'),
     items: [
-      { id: '1', productName: 'iPhone 15 Pro Max 256GB', sku: 'IP15PM256', imei: '353456789012345', categoryId: '2', categoryName: 'iPhone', importPrice: 28000000, supplierId: '1', supplierName: 'Apple Việt Nam' },
-      { id: '2', productName: 'iPhone 15 Pro Max 256GB', sku: 'IP15PM256', imei: '353456789012346', categoryId: '2', categoryName: 'iPhone', importPrice: 28000000, supplierId: '1', supplierName: 'Apple Việt Nam' },
+      { id: '1', productName: 'iPhone 15 Pro Max 256GB', sku: 'IP15PM256', imei: '353456789012345', categoryId: '2', categoryName: 'iPhone', importPrice: 28000000, quantity: 1, supplierId: '1', supplierName: 'Apple Việt Nam' },
+      { id: '2', productName: 'iPhone 15 Pro Max 256GB', sku: 'IP15PM256', imei: '353456789012346', categoryId: '2', categoryName: 'iPhone', importPrice: 28000000, quantity: 1, supplierId: '1', supplierName: 'Apple Việt Nam' },
     ],
     totalAmount: 56000000,
     paidAmount: 50000000,
@@ -61,7 +61,7 @@ export const mockImportReceipts: ImportReceipt[] = [
     code: 'PN20240116001',
     importDate: new Date('2024-01-16'),
     items: [
-      { id: '3', productName: 'iPhone 14 Pro 128GB', sku: 'IP14P128', imei: '353456789012347', categoryId: '2', categoryName: 'iPhone', importPrice: 22000000, supplierId: '1', supplierName: 'Apple Việt Nam' },
+      { id: '3', productName: 'iPhone 14 Pro 128GB', sku: 'IP14P128', imei: '353456789012347', categoryId: '2', categoryName: 'iPhone', importPrice: 22000000, quantity: 1, supplierId: '1', supplierName: 'Apple Việt Nam' },
     ],
     totalAmount: 22000000,
     paidAmount: 22000000,
@@ -77,8 +77,8 @@ export const mockImportReceipts: ImportReceipt[] = [
     code: 'PN20240119001',
     importDate: new Date('2024-01-19'),
     items: [
-      { id: '6', productName: 'Ốp lưng iPhone 15 Pro Max', sku: 'OL15PM001', categoryId: '6', categoryName: 'Ốp lưng', importPrice: 150000, supplierId: '4', supplierName: 'Phụ kiện Thành Đạt' },
-      { id: '7', productName: 'Sạc nhanh 65W USB-C', sku: 'SC65W001', categoryId: '7', categoryName: 'Sạc & Cáp', importPrice: 350000, supplierId: '4', supplierName: 'Phụ kiện Thành Đạt' },
+      { id: '6', productName: 'Ốp lưng iPhone 15 Pro Max', sku: 'OL15PM001', categoryId: '6', categoryName: 'Ốp lưng', importPrice: 150000, quantity: 10, supplierId: '4', supplierName: 'Phụ kiện Thành Đạt' },
+      { id: '7', productName: 'Sạc nhanh 65W USB-C', sku: 'SC65W001', categoryId: '7', categoryName: 'Sạc & Cáp', importPrice: 350000, quantity: 5, supplierId: '4', supplierName: 'Phụ kiện Thành Đạt' },
     ],
     totalAmount: 500000,
     paidAmount: 500000,

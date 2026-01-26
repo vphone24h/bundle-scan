@@ -68,6 +68,7 @@ export default function ImportNewPage() {
     imei: '',
     categoryId: '',
     importPrice: '',
+    quantity: '1',
     note: '',
   });
 
@@ -79,7 +80,7 @@ export default function ImportNewPage() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
 
   const totalAmount = useMemo(
-    () => cart.reduce((sum, item) => sum + item.importPrice, 0),
+    () => cart.reduce((sum, item) => sum + item.importPrice * item.quantity, 0),
     [cart]
   );
 
@@ -140,6 +141,9 @@ export default function ImportNewPage() {
     }
 
     const category = categories?.find((c) => c.id === form.categoryId);
+    
+    // For IMEI products, quantity is always 1
+    const quantity = form.imei ? 1 : Math.max(1, parseInt(form.quantity) || 1);
 
     const newItem: ImportReceiptItem = {
       id: String(Date.now()),
@@ -149,6 +153,7 @@ export default function ImportNewPage() {
       categoryId: form.categoryId,
       categoryName: category?.name,
       importPrice: Number(form.importPrice),
+      quantity,
       supplierId: '', // Will use receipt-level supplier
       supplierName: '',
       note: form.note || undefined,
@@ -161,11 +166,12 @@ export default function ImportNewPage() {
       imei: '',
       categoryId: '',
       importPrice: '',
+      quantity: '1',
       note: '',
     });
     toast({
       title: 'Đã thêm vào giỏ',
-      description: `${newItem.productName} đã được thêm vào giỏ nhập hàng`,
+      description: `${newItem.productName} x${quantity} đã được thêm vào giỏ nhập hàng`,
     });
   };
 
@@ -202,6 +208,7 @@ export default function ImportNewPage() {
           imei: item.imei || null,
           category_id: item.categoryId || null,
           import_price: item.importPrice,
+          quantity: item.quantity,
           supplier_id: selectedSupplierId || null,
           note: item.note || null,
         })),
@@ -428,7 +435,7 @@ export default function ImportNewPage() {
 
                 {/* Import Price */}
                 <div className="form-field">
-                  <Label htmlFor="importPrice">Giá nhập *</Label>
+                  <Label htmlFor="importPrice">Giá nhập (đơn vị) *</Label>
                   <Input
                     id="importPrice"
                     type="number"
@@ -436,6 +443,28 @@ export default function ImportNewPage() {
                     onChange={(e) => setForm({ ...form, importPrice: e.target.value })}
                     placeholder="VD: 28000000"
                   />
+                </div>
+
+                {/* Quantity - only show for non-IMEI products */}
+                <div className="form-field">
+                  <Label htmlFor="quantity">
+                    Số lượng {form.imei ? '(IMEI = 1)' : '*'}
+                  </Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min="1"
+                    value={form.imei ? '1' : form.quantity}
+                    onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                    placeholder="1"
+                    disabled={!!form.imei}
+                    className={form.imei ? 'opacity-50' : ''}
+                  />
+                  {!form.imei && form.importPrice && form.quantity && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Thành tiền: {(Number(form.importPrice) * Number(form.quantity)).toLocaleString('vi-VN')} VND
+                    </p>
+                  )}
                 </div>
 
                 {/* Note */}
