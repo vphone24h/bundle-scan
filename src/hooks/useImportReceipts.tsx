@@ -204,16 +204,20 @@ export function useCreateImportReceipt() {
       // Process products - LOGIC MỚI CHO SẢN PHẨM KHÔNG IMEI
       for (const p of products) {
         if (p.imei) {
-          // SẢN PHẨM CÓ IMEI: Kiểm tra trùng IMEI trước
+          // SẢN PHẨM CÓ IMEI: Kiểm tra trùng IMEI trong phạm vi TENANT hiện tại
+          // Chỉ chặn nếu IMEI đã tồn tại trong cùng kho (tenant) với status: in_stock, sold, returned
           const { data: existingIMEI } = await supabase
             .from('products')
             .select('id, name, sku, status')
             .eq('imei', p.imei)
-            .eq('status', 'in_stock')
+            .eq('tenant_id', tenantId) // Chỉ kiểm tra trong tenant hiện tại
+            .in('status', ['in_stock', 'sold', 'returned'])
             .maybeSingle();
 
           if (existingIMEI) {
-            throw new Error(`IMEI "${p.imei}" đã tồn tại trong kho (${existingIMEI.name} - ${existingIMEI.sku}). Không thể nhập trùng IMEI.`);
+            const statusText = existingIMEI.status === 'in_stock' ? 'tồn kho' : 
+                               existingIMEI.status === 'sold' ? 'đã bán' : 'đã trả hàng';
+            throw new Error(`IMEI "${p.imei}" đã tồn tại trong kho (${existingIMEI.name} - ${existingIMEI.sku}, trạng thái: ${statusText}). Vui lòng kiểm tra lịch sử nhập/bán/trả hàng.`);
           }
 
           // Tạo bản ghi riêng lẻ (quantity luôn = 1)
