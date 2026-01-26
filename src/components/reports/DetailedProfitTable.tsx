@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Download, Search, Loader2 } from 'lucide-react';
+import { Download, Search, Loader2, X, FolderOpen } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -26,7 +26,7 @@ import { useDetailedProfitReport } from '@/hooks/useDetailedProfitReport';
 import { useBranches } from '@/hooks/useBranches';
 import { useCategories } from '@/hooks/useCategories';
 import { formatCurrency } from '@/lib/mockData';
-import { startOfMonth, subDays, startOfWeek, subWeeks, subMonths } from 'date-fns';
+import { startOfMonth, subDays, startOfWeek, subWeeks, subMonths, endOfWeek, endOfMonth } from 'date-fns';
 
 const timePresets = [
   { label: 'Hôm nay', value: 'today' },
@@ -39,9 +39,9 @@ const timePresets = [
 
 export function DetailedProfitTable() {
   const today = format(new Date(), 'yyyy-MM-dd');
-  const firstDayOfMonth = format(startOfMonth(new Date()), 'yyyy-MM-dd');
 
-  const [startDate, setStartDate] = useState(firstDayOfMonth);
+  const [timePreset, setTimePreset] = useState('this_month');
+  const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(today);
   const [branchId, setBranchId] = useState('_all_');
   const [categoryId, setCategoryId] = useState('_all_');
@@ -92,8 +92,19 @@ export function DetailedProfitTable() {
         return;
     }
 
+    setTimePreset(preset);
     setStartDate(format(start, 'yyyy-MM-dd'));
     setEndDate(format(end, 'yyyy-MM-dd'));
+  };
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setTimePreset('this_month');
+    setStartDate(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+    setEndDate(today);
+    setBranchId('_all_');
+    setCategoryId('_all_');
+    setSearch('');
   };
 
   // Export to CSV
@@ -104,35 +115,41 @@ export function DetailedProfitTable() {
       'Sản phẩm',
       'SKU',
       'IMEI',
+      'Khách hàng',
       'Chi nhánh',
       'Giá nhập',
       'Giá bán',
       'Số lượng',
       'Lợi nhuận',
+      'Margin %',
       'Ngày bán',
       'Trạng thái',
-      'Khách hàng',
       'Mã phiếu',
     ];
 
-    const rows = data.items.map(item => [
-      item.productName,
-      item.sku,
-      item.imei || '—',
-      item.branchName,
-      item.importPrice,
-      item.salePrice,
-      item.quantity,
-      item.profit,
-      format(new Date(item.saleDate), 'dd/MM/yyyy HH:mm'),
-      item.status === 'sold' ? 'Đã bán' : 'Trả hàng',
-      item.customerName || '—',
-      item.receiptCode,
-    ]);
+    const rows = data.items.map(item => {
+      const margin = item.salePrice > 0 ? ((item.profit / item.salePrice) * 100).toFixed(1) : '0';
+      return [
+        item.productName,
+        item.sku,
+        item.imei || 'N/A',
+        item.customerName || 'Khách lẻ',
+        item.branchName,
+        item.importPrice,
+        item.salePrice,
+        item.quantity,
+        item.profit,
+        margin + '%',
+        format(new Date(item.saleDate), 'dd/MM/yyyy HH:mm'),
+        item.status === 'sold' ? 'Đã bán' : 'Trả hàng',
+        item.receiptCode,
+      ];
+    });
 
     // Add totals row
     rows.push([
       'TỔNG CỘNG',
+      '',
       '',
       '',
       '',
@@ -158,204 +175,276 @@ export function DetailedProfitTable() {
     link.click();
   };
 
+  // Format price with abbreviation
+  const formatPrice = (value: number) => {
+    if (Math.abs(value) >= 1000000) {
+      return (value / 1000000).toFixed(1) + 'Tr';
+    } else if (Math.abs(value) >= 1000) {
+      return Math.round(value / 1000) + 'K';
+    }
+    return value.toLocaleString('vi-VN');
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <CardTitle className="text-lg">Báo cáo lợi nhuận chi tiết</CardTitle>
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={!data?.items.length}>
-            <Download className="h-4 w-4 mr-2" />
-            Xuất Excel
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 items-end">
-          {/* Time presets */}
-          <div className="flex flex-wrap gap-2">
-            {timePresets.map((preset) => (
-              <Button
-                key={preset.value}
-                variant="outline"
-                size="sm"
-                onClick={() => handleTimePreset(preset.value)}
-              >
-                {preset.label}
-              </Button>
-            ))}
+    <div className="space-y-4">
+      {/* Filters Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              Tìm kiếm & Lọc dữ liệu
+            </CardTitle>
+            <Button variant="outline" size="sm" onClick={handleClearFilters}>
+              <X className="h-4 w-4 mr-1" />
+              Xóa bộ lọc
+            </Button>
           </div>
-        </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Time preset */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Khoảng thời gian</Label>
+              <Select value={timePreset} onValueChange={handleTimePreset}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn thời gian" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {timePresets.map((preset) => (
+                    <SelectItem key={preset.value} value={preset.value}>
+                      {preset.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="flex flex-wrap gap-3 items-end">
-          {/* Date range */}
-          <div>
-            <Label>Từ ngày</Label>
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-36"
-            />
-          </div>
-          <div>
-            <Label>Đến ngày</Label>
-            <Input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-36"
-            />
-          </div>
-
-          {/* Branch filter */}
-          <div>
-            <Label>Chi nhánh</Label>
-            <Select value={branchId} onValueChange={setBranchId}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Tất cả" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                <SelectItem value="_all_">Tất cả</SelectItem>
-                {branches?.map((branch) => (
-                  <SelectItem key={branch.id} value={branch.id}>
-                    {branch.name}
+            {/* Branch filter */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Chi nhánh</Label>
+              <Select value={branchId} onValueChange={setBranchId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tất cả chi nhánh" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="_all_">
+                    <span className="flex items-center gap-2">
+                      <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                      Tất cả chi nhánh
+                    </span>
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Category filter */}
-          <div>
-            <Label>Danh mục</Label>
-            <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Tất cả" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                <SelectItem value="_all_">Tất cả</SelectItem>
-                {categories?.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Search */}
-          <div className="flex-1 min-w-[200px]">
-            <Label>Tìm kiếm</Label>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Tên SP, SKU, IMEI..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Summary */}
-        {data && (
-          <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Tổng SL</p>
-              <p className="text-xl font-bold">{data.totals.totalQuantity}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Tổng doanh thu</p>
-              <p className="text-xl font-bold">{formatCurrency(data.totals.totalRevenue)}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Tổng lợi nhuận</p>
-              <p className={`text-xl font-bold ${data.totals.totalProfit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                {formatCurrency(data.totals.totalProfit)}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Table */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin" />
-          </div>
-        ) : !data?.items.length ? (
-          <div className="text-center py-12 text-muted-foreground">
-            Không có dữ liệu trong khoảng thời gian này
-          </div>
-        ) : (
-          <div className="border rounded-lg overflow-auto max-h-[500px]">
-            <Table>
-              <TableHeader className="sticky top-0 bg-background z-10">
-                <TableRow>
-                  <TableHead className="min-w-[180px]">Sản phẩm</TableHead>
-                  <TableHead className="min-w-[120px]">IMEI</TableHead>
-                  <TableHead className="hidden md:table-cell">Chi nhánh</TableHead>
-                  <TableHead className="text-right hidden lg:table-cell">Giá nhập</TableHead>
-                  <TableHead className="text-right">Giá bán</TableHead>
-                  <TableHead className="text-center">SL</TableHead>
-                  <TableHead className="text-right">Lợi nhuận</TableHead>
-                  <TableHead className="hidden sm:table-cell">Ngày bán</TableHead>
-                  <TableHead className="hidden md:table-cell">Trạng thái</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.items.map((item) => (
-                  <TableRow 
-                    key={item.id}
-                    className={item.status === 'returned' ? 'bg-red-50 dark:bg-red-950/20' : ''}
-                  >
-                    <TableCell>
-                      <div>
-                        <p className="font-medium line-clamp-1">{item.productName}</p>
-                        <p className="text-xs text-muted-foreground">{item.sku}</p>
-                        {item.customerName && (
-                          <p className="text-xs text-muted-foreground">KH: {item.customerName}</p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-mono text-sm">
-                        {item.imei || '—'}
+                  {branches?.map((branch) => (
+                    <SelectItem key={branch.id} value={branch.id}>
+                      <span className="flex items-center gap-2">
+                        <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                        {branch.name}
                       </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Category filter */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Danh mục</Label>
+              <Select value={categoryId} onValueChange={setCategoryId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tất cả danh mục" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="_all_">
+                    <span className="flex items-center gap-2">
+                      <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                      Tất cả danh mục
+                    </span>
+                  </SelectItem>
+                  {categories?.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      <span className="flex items-center gap-2">
+                        <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                        {cat.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Search */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Tìm kiếm</Label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Tên SP, SKU, IMEI..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Results Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FolderOpen className="h-4 w-4" />
+              Chi tiết đơn hàng
+            </CardTitle>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">
+                {data?.items.length || 0} hoạt động
+              </span>
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={!data?.items.length}>
+                <Download className="h-4 w-4 mr-1" />
+                Xuất Excel
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {/* Table */}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : !data?.items.length ? (
+            <div className="text-center py-12 text-muted-foreground">
+              Không có dữ liệu trong khoảng thời gian này
+            </div>
+          ) : (
+            <div className="overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30 hover:bg-muted/30">
+                    <TableHead className="text-primary font-semibold min-w-[200px]">SẢN PHẨM</TableHead>
+                    <TableHead className="text-primary font-semibold min-w-[140px]">IMEI</TableHead>
+                    <TableHead className="text-primary font-semibold min-w-[140px]">KHÁCH HÀNG</TableHead>
+                    <TableHead className="text-primary font-semibold text-center">CHI NHÁNH</TableHead>
+                    <TableHead className="text-primary font-semibold text-right">GIÁ NHẬP</TableHead>
+                    <TableHead className="text-primary font-semibold text-right">GIÁ BÁN</TableHead>
+                    <TableHead className="text-primary font-semibold text-center">SỐ LƯỢNG</TableHead>
+                    <TableHead className="text-primary font-semibold text-right">LỢI NHUẬN</TableHead>
+                    <TableHead className="text-primary font-semibold text-right min-w-[100px]">NGÀY BÁN</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.items.map((item) => {
+                    const margin = item.salePrice > 0 ? ((item.profit / item.salePrice) * 100).toFixed(1) : '0';
+                    const isReturn = item.status === 'returned';
+                    
+                    return (
+                      <TableRow 
+                        key={item.id}
+                        className={isReturn ? 'bg-red-50/50 dark:bg-red-950/10' : ''}
+                      >
+                        {/* Product */}
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-primary">{item.productName}</p>
+                            <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
+                          </div>
+                        </TableCell>
+
+                        {/* IMEI */}
+                        <TableCell>
+                          <span className="font-mono text-sm text-muted-foreground">
+                            {item.imei || 'N/A'}
+                          </span>
+                        </TableCell>
+
+                        {/* Customer */}
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{item.customerName || 'Khách lẻ'}</p>
+                            {item.customerName && (
+                              <p className="text-xs text-muted-foreground">N/A</p>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        {/* Branch */}
+                        <TableCell className="text-center">
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-100">
+                            {item.branchName}
+                          </Badge>
+                        </TableCell>
+
+                        {/* Import Price */}
+                        <TableCell className="text-right">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                            {formatPrice(item.importPrice)}
+                          </span>
+                        </TableCell>
+
+                        {/* Sale Price */}
+                        <TableCell className="text-right">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                            {formatPrice(item.salePrice)}
+                          </span>
+                        </TableCell>
+
+                        {/* Quantity */}
+                        <TableCell className="text-center font-medium">
+                          {item.quantity}
+                        </TableCell>
+
+                        {/* Profit */}
+                        <TableCell className="text-right">
+                          <div>
+                            <p className={`font-medium ${item.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
+                              {item.profit >= 0 ? '+' : ''}{formatPrice(item.profit)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Margin: {margin}%
+                            </p>
+                          </div>
+                        </TableCell>
+
+                        {/* Sale Date */}
+                        <TableCell className="text-right">
+                          <div>
+                            <p className="font-medium">
+                              {format(new Date(item.saleDate), 'd/M/yyyy', { locale: vi })}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(item.saleDate), 'HH:mm')}
+                            </p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+
+                  {/* Totals Row */}
+                  <TableRow className="bg-muted/50 font-semibold border-t-2">
+                    <TableCell colSpan={4} className="text-right">
+                      TỔNG CỘNG
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {item.branchName}
-                    </TableCell>
-                    <TableCell className="text-right hidden lg:table-cell">
-                      {formatCurrency(item.importPrice)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(item.salePrice)}
+                    <TableCell className="text-right">—</TableCell>
+                    <TableCell className="text-right text-emerald-600 dark:text-emerald-400">
+                      {formatPrice(data.totals.totalRevenue)}
                     </TableCell>
                     <TableCell className="text-center">
-                      {item.quantity}
+                      {data.totals.totalQuantity}
                     </TableCell>
-                    <TableCell className={`text-right font-medium ${item.profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                      {item.profit >= 0 ? '+' : ''}{formatCurrency(item.profit)}
+                    <TableCell className={`text-right ${data.totals.totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
+                      {data.totals.totalProfit >= 0 ? '+' : ''}{formatPrice(data.totals.totalProfit)}
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      {format(new Date(item.saleDate), 'dd/MM/yyyy', { locale: vi })}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {item.status === 'sold' ? (
-                        <Badge variant="default">Đã bán</Badge>
-                      ) : (
-                        <Badge variant="destructive">Trả hàng</Badge>
-                      )}
-                    </TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
