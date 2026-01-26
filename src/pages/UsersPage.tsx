@@ -77,7 +77,8 @@ export default function UsersPage() {
   const { data: users, isLoading } = useQuery({
     queryKey: ['users-with-roles'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Lấy user_roles
+      const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select(`
           id,
@@ -85,13 +86,27 @@ export default function UsersPage() {
           user_role,
           branch_id,
           created_at,
-          profiles!user_roles_user_id_fkey(display_name, phone),
           branches(name)
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data as unknown as UserWithRole[];
+      if (rolesError) throw rolesError;
+
+      // Lấy profiles riêng
+      const userIds = rolesData.map(r => r.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, phone')
+        .in('user_id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      const profilesMap = new Map(profilesData.map(p => [p.user_id, p]));
+
+      return rolesData.map(role => ({
+        ...role,
+        profiles: profilesMap.get(role.user_id) || null,
+      })) as unknown as UserWithRole[];
     },
   });
 
