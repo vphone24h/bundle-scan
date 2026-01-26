@@ -56,6 +56,12 @@ const getRoleName = (role: UserRole | undefined): string => {
   }
 };
 
+// Menu cho Platform Admin
+const platformAdminNavItems: NavItem[] = [
+  { title: 'Quản trị nền tảng', href: '/platform-admin', icon: Crown },
+];
+
+// Menu cho Tenant users
 const allNavItems: NavItem[] = [
   { title: 'Tổng quan', href: '/', icon: LayoutDashboard },
   { title: 'Sản phẩm', href: '/products', icon: Package, permission: 'canViewProducts' },
@@ -105,9 +111,16 @@ export function AppSidebar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
+  const hasTenant = !!platformUser?.tenant_id;
 
-  // Lọc menu theo quyền
+  // Lọc menu theo quyền và loại user
   const navItems = useMemo(() => {
+    // Platform Admin không có tenant -> chỉ hiện menu quản trị nền tảng
+    if (isPlatformAdmin && !hasTenant) {
+      return platformAdminNavItems;
+    }
+
+    // Tenant users -> hiện menu kho hàng
     if (!permissions) return allNavItems.filter(item => !item.permission);
     
     return allNavItems.filter(item => {
@@ -125,7 +138,7 @@ export function AppSidebar() {
       }
       return item;
     });
-  }, [permissions]);
+  }, [permissions, isPlatformAdmin, hasTenant]);
 
   const toggleExpand = (title: string) => {
     setExpandedItems((prev) =>
