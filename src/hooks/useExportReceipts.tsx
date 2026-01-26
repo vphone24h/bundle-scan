@@ -55,7 +55,9 @@ export interface ExportReceiptItemDetail {
   export_receipts?: {
     code: string;
     export_date: string;
+    branch_id: string | null;
     customers?: { name: string; phone: string } | null;
+    branches?: { name: string } | null;
   } | null;
 }
 
@@ -92,7 +94,9 @@ export function useExportReceiptItems() {
           export_receipts(
             code,
             export_date,
-            customers(name, phone)
+            branch_id,
+            customers(name, phone),
+            branches(name)
           )
         `)
         .order('created_at', { ascending: false });
