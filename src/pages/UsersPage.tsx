@@ -285,13 +285,16 @@ export default function UsersPage() {
                       }
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(user)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
+                      {/* Super Admin không thể bị chỉnh sửa */}
+                      {user.user_role !== 'super_admin' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(user)}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -319,7 +322,6 @@ export default function UsersPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="super_admin">Admin Tổng</SelectItem>
                   <SelectItem value="branch_admin">Admin Chi nhánh</SelectItem>
                   <SelectItem value="cashier">Thu ngân</SelectItem>
                   <SelectItem value="staff">Nhân viên</SelectItem>
@@ -416,7 +418,6 @@ export default function UsersPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="super_admin">Admin Tổng</SelectItem>
                   <SelectItem value="branch_admin">Admin Chi nhánh</SelectItem>
                   <SelectItem value="cashier">Thu ngân</SelectItem>
                   <SelectItem value="staff">Nhân viên</SelectItem>

@@ -69,6 +69,14 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Không cho phép tạo super_admin - chỉ có duy nhất 1 tài khoản
+    if (role === 'super_admin') {
+      return new Response(
+        JSON.stringify({ error: 'Không thể tạo thêm tài khoản Admin Tổng' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Create the user using admin API
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
