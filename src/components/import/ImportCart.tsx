@@ -10,7 +10,8 @@ interface ImportCartProps {
 }
 
 export function ImportCart({ items, onRemove, onCheckout }: ImportCartProps) {
-  const total = items.reduce((sum, item) => sum + item.importPrice, 0);
+  const total = items.reduce((sum, item) => sum + item.importPrice * item.quantity, 0);
+  const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <div className="bg-card border rounded-xl p-4 sticky top-4">
@@ -18,7 +19,7 @@ export function ImportCart({ items, onRemove, onCheckout }: ImportCartProps) {
         <ShoppingCart className="h-5 w-5 text-primary" />
         <h3 className="font-semibold">Giỏ nhập hàng</h3>
         <span className="ml-auto bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
-          {items.length}
+          {items.length} dòng / {totalQuantity} SP
         </span>
       </div>
 
@@ -44,9 +45,16 @@ export function ImportCart({ items, onRemove, onCheckout }: ImportCartProps) {
                       IMEI: {item.imei}
                     </p>
                   )}
-                  <p className="text-sm font-medium text-primary mt-1">
-                    {formatCurrency(item.importPrice)}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-sm font-medium text-primary">
+                      {formatCurrency(item.importPrice)} x {item.quantity}
+                    </p>
+                    {item.quantity > 1 && (
+                      <p className="text-xs text-muted-foreground">
+                        = {formatCurrency(item.importPrice * item.quantity)}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <Button
                   variant="ghost"

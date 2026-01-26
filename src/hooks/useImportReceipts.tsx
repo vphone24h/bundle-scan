@@ -115,6 +115,7 @@ export function useCreateImportReceipt() {
         imei?: string | null;
         category_id?: string | null;
         import_price: number;
+        quantity: number;
         supplier_id?: string | null;
         note?: string | null;
       }[];
@@ -131,7 +132,8 @@ export function useCreateImportReceipt() {
       const now = new Date();
       const code = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
 
-      const totalAmount = products.reduce((sum, p) => sum + p.import_price, 0);
+      // Calculate total considering quantity
+      const totalAmount = products.reduce((sum, p) => sum + p.import_price * p.quantity, 0);
       const paidAmount = payments.filter(p => p.type !== 'debt').reduce((sum, p) => sum + p.amount, 0);
       const debtAmount = payments.filter(p => p.type === 'debt').reduce((sum, p) => sum + p.amount, 0);
 
@@ -166,15 +168,54 @@ export function useCreateImportReceipt() {
         if (paymentsError) throw paymentsError;
       }
 
-      // Create products with branch_id
+      // Create products - for non-IMEI products with quantity > 1, create multiple rows
+      const productRows: {
+        name: string;
+        sku: string;
+        imei?: string | null;
+        category_id?: string | null;
+        import_price: number;
+        supplier_id?: string | null;
+        import_receipt_id: string;
+        branch_id?: string | null;
+        note?: string | null;
+      }[] = [];
+
+      for (const p of products) {
+        if (p.imei) {
+          // IMEI product: always 1 row
+          productRows.push({
+            name: p.name,
+            sku: p.sku,
+            imei: p.imei,
+            category_id: p.category_id,
+            import_price: p.import_price,
+            supplier_id: supplierId,
+            import_receipt_id: receipt.id,
+            branch_id: branchId || null,
+            note: p.note,
+          });
+        } else {
+          // Non-IMEI product: create `quantity` rows
+          for (let i = 0; i < p.quantity; i++) {
+            productRows.push({
+              name: p.name,
+              sku: p.sku,
+              imei: null,
+              category_id: p.category_id,
+              import_price: p.import_price,
+              supplier_id: supplierId,
+              import_receipt_id: receipt.id,
+              branch_id: branchId || null,
+              note: p.note,
+            });
+          }
+        }
+      }
+
       const { error: productsError } = await supabase
         .from('products')
-        .insert(products.map(p => ({
-          ...p,
-          import_receipt_id: receipt.id,
-          supplier_id: supplierId,
-          branch_id: branchId || null,
-        })));
+        .insert(productRows);
 
       if (productsError) throw productsError;
 
