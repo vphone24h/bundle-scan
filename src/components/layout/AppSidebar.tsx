@@ -24,6 +24,7 @@ import {
   Crown,
   CreditCard,
   Share2,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -87,6 +88,7 @@ const allNavItems: NavItem[] = [
       { title: 'Tạo phiếu xuất', href: '/export/new' },
       { title: 'Lịch sử xuất', href: '/export/history' },
       { title: 'Mẫu in hóa đơn', href: '/export/template', permission: 'canManageInvoiceTemplates' },
+      { title: 'Hoá đơn điện tử', href: '/einvoice', permission: 'canManageInvoiceTemplates' },
     ],
   },
   { title: 'Trả hàng', href: '/returns', icon: RotateCcw, permission: 'canImportProducts' },
