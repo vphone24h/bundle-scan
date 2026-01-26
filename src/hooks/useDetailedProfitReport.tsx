@@ -197,11 +197,15 @@ export function useDetailedProfitReport(filters?: {
         results.push(group);
       });
 
-      // 5. Xử lý dữ liệu trả hàng (lợi nhuận âm)
+      // 5. Xử lý dữ liệu trả hàng đủ tiền (fee_type = 'none')
+      // Theo nguyên tắc: Doanh thu = 0, Giá vốn = 0, Lợi nhuận = -(lãi lúc bán)
       returnItems?.forEach(item => {
-        const importPrice = Number(item.import_price);
-        const salePrice = Number(item.sale_price);
-        const profit = -(salePrice - importPrice); // Lợi nhuận âm
+        const originalImportPrice = Number(item.import_price);
+        const originalSalePrice = Number(item.sale_price);
+        const originalProfit = originalSalePrice - originalImportPrice;
+        
+        // Lợi nhuận âm = ngược lại số lãi lúc bán
+        const profit = -originalProfit;
 
         results.push({
           id: `return-${item.id}`,
@@ -210,10 +214,10 @@ export function useDetailedProfitReport(filters?: {
           imei: item.imei,
           branchId: item.branch_id,
           branchName: (item.branches as any)?.name || 'N/A',
-          importPrice,
-          salePrice,
-          quantity: item.imei ? 1 : 1, // Trả hàng thường là 1 sản phẩm
-          profit,
+          importPrice: 0, // Giá vốn = 0 trong báo cáo trả hàng
+          salePrice: 0,   // Doanh thu = 0 trong báo cáo trả hàng
+          quantity: 1,
+          profit,         // Chỉ hiển thị lợi nhuận âm
           saleDate: item.return_date,
           status: 'returned',
           customerId: item.customer_id,
@@ -226,10 +230,12 @@ export function useDetailedProfitReport(filters?: {
       results.sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime());
 
       // 7. Tính tổng
+      // Trả hàng đủ tiền: Doanh thu = 0, chỉ trừ lợi nhuận
       const totals = results.reduce(
         (acc, item) => {
           acc.totalQuantity += item.quantity;
-          acc.totalRevenue += item.salePrice * (item.status === 'returned' ? -1 : 1);
+          // Doanh thu: không bị ảnh hưởng bởi trả hàng (salePrice đã = 0 cho returned)
+          acc.totalRevenue += item.salePrice;
           acc.totalProfit += item.profit;
           return acc;
         },

@@ -340,7 +340,8 @@ export function useReportChartData(filters?: {
         });
       });
 
-      // Trừ dữ liệu trả hàng (chỉ fee_type = none)
+      // Trừ dữ liệu trả hàng đủ tiền (chỉ fee_type = 'none')
+      // Theo nguyên tắc: Doanh thu KHÔNG bị ảnh hưởng, chỉ trừ lợi nhuận
       returnItems?.forEach(ret => {
         const date = new Date(ret.return_date);
         const key = getKey(date);
@@ -350,10 +351,11 @@ export function useReportChartData(filters?: {
 
         const salePrice = Number(ret.sale_price);
         const importPrice = Number(ret.import_price);
-        const profit = salePrice - importPrice;
+        const originalProfit = salePrice - importPrice;
 
-        dataMap[key].revenue -= salePrice;
-        dataMap[key].profit -= profit;
+        // Doanh thu giữ nguyên (không trừ)
+        // Chỉ trừ lợi nhuận = lãi lúc bán
+        dataMap[key].profit -= originalProfit;
         dataMap[key].count += 1;
       });
 
