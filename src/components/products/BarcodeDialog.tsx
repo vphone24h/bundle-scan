@@ -19,6 +19,23 @@ import { Printer, ArrowLeft, Eye, Grid3X3, Barcode, DollarSign, Copy, Trash2, Pl
 import { cn } from '@/lib/utils';
 import { formatNumberWithSpaces } from '@/lib/formatNumber';
 
+// Import paper template images
+import paperTemplate1 from '@/assets/paper-template-1.jpg';
+import paperTemplate2 from '@/assets/paper-template-2.jpg';
+import paperTemplate3 from '@/assets/paper-template-3.jpg';
+import paperTemplate4 from '@/assets/paper-template-4.jpg';
+import paperTemplate5 from '@/assets/paper-template-5.jpg';
+import paperTemplate6 from '@/assets/paper-template-6.jpg';
+
+const paperTemplateImages: Record<string, string> = {
+  'paper-template-1': paperTemplate1,
+  'paper-template-2': paperTemplate2,
+  'paper-template-3': paperTemplate3,
+  'paper-template-4': paperTemplate4,
+  'paper-template-5': paperTemplate5,
+  'paper-template-6': paperTemplate6,
+};
+
 interface ProductForBarcode {
   id: string;
   name: string;
@@ -446,40 +463,60 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {mockPaperTemplates.map((paper) => (
-          <div
-            key={paper.id}
-            onClick={() => setSelectedPaper(paper.id)}
-            className={cn(
-              'paper-template cursor-pointer rounded-lg border p-4 transition-all hover:shadow-md',
-              selectedPaper === paper.id && 'border-primary ring-2 ring-primary/20'
-            )}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <Grid3X3 className="h-8 w-8 text-primary" />
-              <span className="text-xs font-medium bg-secondary px-2 py-1 rounded">
-                {paper.labelCount} nhãn
-              </span>
-            </div>
-            <h4 className="font-semibold text-sm">{paper.name}</h4>
-            <p className="text-xs text-muted-foreground mt-1">{paper.size}</p>
-            <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
-              {paper.description}
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-3 w-full text-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                setPreviewPaper(paper);
-              }}
+        {mockPaperTemplates.map((paper) => {
+          const imageUrl = paper.image ? paperTemplateImages[paper.image] : null;
+          return (
+            <div
+              key={paper.id}
+              onClick={() => setSelectedPaper(paper.id)}
+              className={cn(
+                'paper-template cursor-pointer rounded-lg border p-4 transition-all hover:shadow-md',
+                selectedPaper === paper.id && 'border-primary ring-2 ring-primary/20'
+              )}
             >
-              <Eye className="h-3 w-3 mr-1" />
-              Xem chi tiết
-            </Button>
-          </div>
-        ))}
+              {/* Thumbnail image */}
+              {imageUrl ? (
+                <div className="aspect-square mb-3 rounded-md overflow-hidden bg-muted">
+                  <img 
+                    src={imageUrl} 
+                    alt={paper.name} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center justify-between mb-3">
+                  <Grid3X3 className="h-8 w-8 text-primary" />
+                  <span className="text-xs font-medium bg-secondary px-2 py-1 rounded">
+                    {paper.labelCount} nhãn
+                  </span>
+                </div>
+              )}
+              
+              <div className="flex items-center justify-between mb-1">
+                <h4 className="font-semibold text-sm">{paper.name}</h4>
+                <span className="text-xs font-medium bg-secondary px-2 py-1 rounded">
+                  {paper.labelCount} nhãn
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">{paper.size}</p>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {paper.description}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-3 w-full text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPreviewPaper(paper);
+                }}
+              >
+                <Eye className="h-3 w-3 mr-1" />
+                Xem chi tiết
+              </Button>
+            </div>
+          );
+        })}
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
@@ -494,19 +531,30 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
 
       {/* Paper Preview Dialog */}
       <Dialog open={!!previewPaper} onOpenChange={() => setPreviewPaper(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{previewPaper?.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="aspect-video bg-muted rounded-lg flex items-center justify-center border-2 border-dashed">
-              <div className="text-center">
-                <Grid3X3 className="h-16 w-16 mx-auto text-muted-foreground" />
-                <p className="text-sm text-muted-foreground mt-2">
-                  Hình minh hoạ mẫu giấy
-                </p>
+            {/* Full size image */}
+            {previewPaper?.image && paperTemplateImages[previewPaper.image] ? (
+              <div className="rounded-lg overflow-hidden bg-muted border">
+                <img 
+                  src={paperTemplateImages[previewPaper.image]} 
+                  alt={previewPaper.name} 
+                  className="w-full h-auto object-contain max-h-[300px]"
+                />
               </div>
-            </div>
+            ) : (
+              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center border-2 border-dashed">
+                <div className="text-center">
+                  <Grid3X3 className="h-16 w-16 mx-auto text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Hình minh hoạ mẫu giấy
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Kích thước:</span>
