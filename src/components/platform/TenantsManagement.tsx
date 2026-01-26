@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   useAllTenants, 
@@ -17,7 +18,8 @@ import {
   CalendarPlus, 
   MoreHorizontal,
   Building2,
-  Loader2
+  Loader2,
+  FileText
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -38,6 +40,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   trial: { label: 'Dùng thử', variant: 'secondary' },
@@ -49,12 +53,14 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
 export function TenantsManagement() {
   const { data: tenants, isLoading } = useAllTenants();
   const manageTenant = useManageTenant();
+  const queryClient = useQueryClient();
   
   const [search, setSearch] = useState('');
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [actionDialog, setActionDialog] = useState<'lock' | 'unlock' | 'extend' | null>(null);
   const [reason, setReason] = useState('');
   const [days, setDays] = useState('30');
+  const [togglingEinvoice, setTogglingEinvoice] = useState<string | null>(null);
 
   const filteredTenants = tenants?.filter(t => 
     t.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -95,6 +101,34 @@ export function TenantsManagement() {
     }
   };
 
+  const handleToggleEinvoice = async (tenant: Tenant) => {
+    setTogglingEinvoice(tenant.id);
+    try {
+      const { error } = await supabase
+        .from('tenants')
+        .update({ einvoice_enabled: !tenant.einvoice_enabled })
+        .eq('id', tenant.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Thành công',
+        description: tenant.einvoice_enabled 
+          ? 'Đã tắt tính năng HĐĐT' 
+          : 'Đã bật tính năng HĐĐT',
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['all-tenants'] });
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+    setTogglingEinvoice(null);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -129,6 +163,7 @@ export function TenantsManagement() {
                 <TableHead>Email</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead>Gói dịch vụ</TableHead>
+                <TableHead>HĐĐT</TableHead>
                 <TableHead>Còn lại</TableHead>
                 <TableHead>Ngày tạo</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
@@ -160,6 +195,13 @@ export function TenantsManagement() {
                       {tenant.subscription_plan === 'yearly' && 'Năm'}
                       {tenant.subscription_plan === 'lifetime' && 'Vĩnh viễn'}
                       {!tenant.subscription_plan && '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={tenant.einvoice_enabled}
+                        onCheckedChange={() => handleToggleEinvoice(tenant)}
+                        disabled={togglingEinvoice === tenant.id}
+                      />
                     </TableCell>
                     <TableCell>
                       <span className={remaining <= 7 ? 'text-destructive font-medium' : ''}>
@@ -245,6 +287,16 @@ export function TenantsManagement() {
                     <span className={remaining <= 7 ? 'text-destructive font-medium' : ''}>
                       {remaining > 36500 ? 'Vĩnh viễn' : `${remaining} ngày`}
                     </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <FileText className="h-3 w-3" /> HĐĐT:
+                    </span>
+                    <Switch
+                      checked={tenant.einvoice_enabled}
+                      onCheckedChange={() => handleToggleEinvoice(tenant)}
+                      disabled={togglingEinvoice === tenant.id}
+                    />
                   </div>
                 </div>
                 <div className="mt-3 flex gap-2">
