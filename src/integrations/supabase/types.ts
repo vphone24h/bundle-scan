@@ -2123,6 +2123,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
+      get_user_tenant_id_secure: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2133,6 +2134,7 @@ export type Database = {
       is_authenticated: { Args: never; Returns: boolean }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_accessible: { Args: { _tenant_id: string }; Returns: boolean }
+      user_belongs_to_tenant: { Args: { _tenant_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "staff"
