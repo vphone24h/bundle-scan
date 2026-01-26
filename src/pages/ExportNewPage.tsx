@@ -36,13 +36,15 @@ import {
   Wallet,
   Banknote,
   FileText,
-  Printer
+  Printer,
+  ScanBarcode
 } from 'lucide-react';
 import { useCheckProductForSale, useSearchProductsByName, useCreateExportReceipt, type ExportReceiptItem, type ExportPayment } from '@/hooks/useExportReceipts';
 import { useSearchCustomerByPhone, useUpsertCustomer } from '@/hooks/useCustomers';
 import { useDefaultInvoiceTemplate } from '@/hooks/useInvoiceTemplates';
 import { ExportPaymentDialog } from '@/components/export/ExportPaymentDialog';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
+import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
 
 interface CartItem extends ExportReceiptItem {
   tempId: string;
@@ -81,16 +83,16 @@ export default function ExportNewPage() {
   const createReceipt = useCreateExportReceipt();
   const { data: invoiceTemplate } = useDefaultInvoiceTemplate();
 
-  // Search by IMEI
-  const handleImeiSearch = async () => {
-    if (!imeiSearch.trim()) return;
+  // Handle barcode scan (IMEI or SKU)
+  const handleBarcodeScan = async (barcode: string) => {
+    if (!barcode.trim()) return;
 
-    const result = await checkProduct.mutateAsync(imeiSearch.trim());
+    const result = await checkProduct.mutateAsync(barcode.trim());
     
     if (!result) {
       toast({
         title: 'Không tìm thấy',
-        description: 'IMEI này không tồn tại trong hệ thống',
+        description: `Mã "${barcode}" không tồn tại trong hệ thống`,
         variant: 'destructive',
       });
       return;
@@ -99,14 +101,14 @@ export default function ExportNewPage() {
     if (result.status !== 'in_stock') {
       toast({
         title: 'Không thể bán',
-        description: `IMEI này đang ở trạng thái "${result.status === 'sold' ? 'Đã bán' : 'Đã trả'}" và chưa được nhập lại`,
+        description: `Sản phẩm này đang ở trạng thái "${result.status === 'sold' ? 'Đã bán' : 'Đã trả'}" và chưa được nhập lại`,
         variant: 'destructive',
       });
       return;
     }
 
     // Check if already in cart
-    if (cart.some(item => item.imei === result.imei)) {
+    if (cart.some(item => item.imei === result.imei || item.product_id === result.id)) {
       toast({
         title: 'Đã có trong giỏ',
         description: 'Sản phẩm này đã được thêm vào giỏ hàng',
@@ -115,8 +117,31 @@ export default function ExportNewPage() {
       return;
     }
 
-    setSelectedProduct(result);
-    setSalePrice(result.import_price?.toString() || '');
+    // Auto-add to cart for faster checkout
+    const newItem: CartItem = {
+      tempId: Date.now().toString(),
+      product_id: result.id,
+      product_name: result.name,
+      sku: result.sku,
+      imei: result.imei,
+      category_id: result.category_id,
+      categoryName: result.categories?.name,
+      sale_price: Number(result.import_price) || 0, // Default to import price, can be changed
+      note: null,
+    };
+
+    setCart(prev => [...prev, newItem]);
+    
+    toast({
+      title: 'Đã thêm vào giỏ',
+      description: `${newItem.product_name} (${barcode})`,
+    });
+  };
+
+  // Search by IMEI (manual)
+  const handleImeiSearch = async () => {
+    if (!imeiSearch.trim()) return;
+    await handleBarcodeScan(imeiSearch.trim());
     setImeiSearch('');
   };
 
@@ -211,6 +236,13 @@ export default function ExportNewPage() {
     setCart(cart.filter(item => item.tempId !== tempId));
   };
 
+  // Update cart item price
+  const handleUpdateCartPrice = (tempId: string, newPrice: number) => {
+    setCart(cart.map(item => 
+      item.tempId === tempId ? { ...item, sale_price: newPrice } : item
+    ));
+  };
+
   // Calculate totals
   const totalAmount = cart.reduce((sum, item) => sum + item.sale_price, 0);
 
@@ -299,8 +331,30 @@ export default function ExportNewPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
+                <ScanBarcode className="h-5 w-5" />
+                Quét mã vạch
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Barcode Scanner */}
+              <BarcodeScannerInput
+                onScan={handleBarcodeScan}
+                placeholder="Quét mã vạch sản phẩm (IMEI/SKU)..."
+                disabled={checkProduct.isPending}
+              />
+              
+              <p className="text-xs text-muted-foreground">
+                Sử dụng máy quét mã vạch hoặc nhập thủ công. Sản phẩm sẽ tự động được thêm vào giỏ hàng.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Manual Search */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
                 <Search className="h-5 w-5" />
-                Tìm sản phẩm
+                Tìm thủ công
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -416,22 +470,32 @@ export default function ExportNewPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Sản phẩm</TableHead>
-                      <TableHead>IMEI/SKU</TableHead>
-                      <TableHead>Danh mục</TableHead>
+                      <TableHead className="hidden md:table-cell">IMEI/SKU</TableHead>
+                      <TableHead className="hidden sm:table-cell">Danh mục</TableHead>
                       <TableHead className="text-right">Giá bán</TableHead>
-                      <TableHead></TableHead>
+                      <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {cart.map((item) => (
                       <TableRow key={item.tempId}>
-                        <TableCell className="font-medium">{item.product_name}</TableCell>
-                        <TableCell>
+                        <TableCell className="font-medium">
+                          <div>{item.product_name}</div>
+                          <div className="text-xs text-muted-foreground md:hidden">
+                            {item.imei || item.sku}
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
                           {item.imei || item.sku}
                         </TableCell>
-                        <TableCell>{item.categoryName || '-'}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          {item.sale_price.toLocaleString('vi-VN')}đ
+                        <TableCell className="hidden sm:table-cell">{item.categoryName || '-'}</TableCell>
+                        <TableCell className="text-right">
+                          <Input
+                            type="number"
+                            value={item.sale_price}
+                            onChange={(e) => handleUpdateCartPrice(item.tempId, parseFloat(e.target.value) || 0)}
+                            className="w-28 text-right font-medium"
+                          />
                         </TableCell>
                         <TableCell>
                           <Button
