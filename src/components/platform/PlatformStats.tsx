@@ -22,42 +22,42 @@ export function PlatformStats() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Main Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tổng doanh nghiệp</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Tổng DN</CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground hidden sm:block" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalTenants}</div>
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="text-xl sm:text-2xl font-bold">{stats.totalTenants}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.activeTenants} đang hoạt động
+              {stats.activeTenants} hoạt động
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Đang dùng thử</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Dùng thử</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground hidden sm:block" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.trialTenants}</div>
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="text-xl sm:text-2xl font-bold">{stats.trialTenants}</div>
             <p className="text-xs text-muted-foreground">
-              Trong 30 ngày trial
+              30 ngày trial
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Chờ duyệt thanh toán</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Chờ duyệt</CardTitle>
+            <CreditCard className="h-4 w-4 text-muted-foreground hidden sm:block" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{stats.pendingPayments}</div>
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="text-xl sm:text-2xl font-bold text-orange-600">{stats.pendingPayments}</div>
             <p className="text-xs text-muted-foreground">
               Cần xử lý
             </p>
@@ -65,53 +65,53 @@ export function PlatformStats() {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tổng doanh thu</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Doanh thu</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground hidden sm:block" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="text-lg sm:text-2xl font-bold text-green-600">
               {formatNumber(stats.totalRevenue)}đ
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats.approvedPayments} đơn đã duyệt
+              {stats.approvedPayments} đơn duyệt
             </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Status Breakdown */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Trạng thái doanh nghiệp</CardTitle>
+          <CardHeader className="p-3 sm:p-6 pb-2">
+            <CardTitle className="text-base sm:text-lg">Trạng thái DN</CardTitle>
           </CardHeader>
-          <CardContent>
-      <div className="space-y-4">
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-primary/60" />
-                  <span>Đang dùng thử</span>
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-primary/60" />
+                  <span>Dùng thử</span>
                 </div>
                 <span className="font-medium">{stats.trialTenants}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-primary" />
-                  <span>Đang hoạt động</span>
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-primary" />
+                  <span>Hoạt động</span>
                 </div>
                 <span className="font-medium">{stats.activeTenants}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-muted-foreground" />
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-muted-foreground" />
                   <span>Hết hạn</span>
                 </div>
                 <span className="font-medium">{stats.expiredTenants}</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-destructive" />
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-destructive" />
                   <span>Bị khóa</span>
                 </div>
                 <span className="font-medium">{stats.lockedTenants}</span>
@@ -121,18 +121,18 @@ export function PlatformStats() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Gói dịch vụ</CardTitle>
+          <CardHeader className="p-3 sm:p-6 pb-2">
+            <CardTitle className="text-base sm:text-lg">Gói dịch vụ</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="space-y-3 text-sm">
               {plans?.map(plan => {
                 const count = tenants?.filter(t => t.subscription_plan === plan.plan_type).length || 0;
                 return (
                   <div key={plan.id} className="flex items-center justify-between">
                     <div>
                       <span className="font-medium">{plan.name}</span>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {formatNumber(plan.price)}đ
                       </p>
                     </div>

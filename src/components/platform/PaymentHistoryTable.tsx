@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSubscriptionHistory } from '@/hooks/useTenant';
@@ -28,64 +28,118 @@ export function PaymentHistoryTable() {
   }
 
   return (
-    <Card>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Thời gian</TableHead>
-            <TableHead>Hành động</TableHead>
-            <TableHead>Thay đổi</TableHead>
-            <TableHead>Ghi chú</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {history?.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                Chưa có lịch sử
-              </TableCell>
-            </TableRow>
-          )}
-          {history?.map((record) => {
-            const actionConfig = actionLabels[record.action] || { label: record.action, variant: 'outline' as const };
-            
-            return (
-              <TableRow key={record.id}>
-                <TableCell>
-                  {format(new Date(record.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={actionConfig.variant}>{actionConfig.label}</Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="text-sm space-y-1">
-                    {record.days_added && (
-                      <p>+{record.days_added} ngày</p>
-                    )}
-                    {record.old_status && record.new_status && (
-                      <p>
-                        <span className="text-muted-foreground">{record.old_status}</span>
-                        {' → '}
-                        <span className="font-medium">{record.new_status}</span>
-                      </p>
-                    )}
-                    {record.old_end_date && record.new_end_date && (
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(record.old_end_date), 'dd/MM/yyyy')}
-                        {' → '}
-                        {format(new Date(record.new_end_date), 'dd/MM/yyyy')}
-                      </p>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {record.note}
-                </TableCell>
+    <div className="space-y-3">
+      {/* Desktop Table */}
+      <div className="hidden md:block">
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Thời gian</TableHead>
+                <TableHead>Hành động</TableHead>
+                <TableHead>Thay đổi</TableHead>
+                <TableHead>Ghi chú</TableHead>
               </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {history?.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    Chưa có lịch sử
+                  </TableCell>
+                </TableRow>
+              )}
+              {history?.map((record) => {
+                const actionConfig = actionLabels[record.action] || { label: record.action, variant: 'outline' as const };
+                
+                return (
+                  <TableRow key={record.id}>
+                    <TableCell>
+                      {format(new Date(record.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={actionConfig.variant}>{actionConfig.label}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm space-y-1">
+                        {record.days_added && (
+                          <p>+{record.days_added} ngày</p>
+                        )}
+                        {record.old_status && record.new_status && (
+                          <p>
+                            <span className="text-muted-foreground">{record.old_status}</span>
+                            {' → '}
+                            <span className="font-medium">{record.new_status}</span>
+                          </p>
+                        )}
+                        {record.old_end_date && record.new_end_date && (
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(record.old_end_date), 'dd/MM/yyyy')}
+                            {' → '}
+                            {format(new Date(record.new_end_date), 'dd/MM/yyyy')}
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {record.note}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-3">
+        {history?.length === 0 && (
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              Chưa có lịch sử
+            </CardContent>
+          </Card>
+        )}
+        {history?.map((record) => {
+          const actionConfig = actionLabels[record.action] || { label: record.action, variant: 'outline' as const };
+          
+          return (
+            <Card key={record.id}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <Badge variant={actionConfig.variant}>{actionConfig.label}</Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {format(new Date(record.created_at), 'dd/MM HH:mm', { locale: vi })}
+                  </span>
+                </div>
+                <div className="text-sm space-y-1">
+                  {record.days_added && (
+                    <p className="font-medium">+{record.days_added} ngày</p>
+                  )}
+                  {record.old_status && record.new_status && (
+                    <p>
+                      <span className="text-muted-foreground">{record.old_status}</span>
+                      {' → '}
+                      <span className="font-medium">{record.new_status}</span>
+                    </p>
+                  )}
+                  {record.old_end_date && record.new_end_date && (
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(record.old_end_date), 'dd/MM/yyyy')}
+                      {' → '}
+                      {format(new Date(record.new_end_date), 'dd/MM/yyyy')}
+                    </p>
+                  )}
+                  {record.note && (
+                    <p className="text-muted-foreground mt-2">{record.note}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
   );
 }
