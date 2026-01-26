@@ -313,15 +313,24 @@ export default function SubscriptionPage() {
         </Card>
 
         {/* Subscription Plans */}
-        {!pendingPayment && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-3">
+          {pendingPayment && (
+            <div className="rounded-lg border bg-muted p-3 text-sm text-muted-foreground">
+              Bạn đang có 1 yêu cầu thanh toán <span className="font-medium">đang chờ duyệt</span>.
+              Hãy <span className="font-medium">Hủy</span> yêu cầu đó để chọn gói khác.
+            </div>
+          )}
+
+          <div
+            className={`grid gap-4 md:grid-cols-2 lg:grid-cols-3 ${
+              pendingPayment ? 'opacity-60 pointer-events-none' : ''
+            }`}
+          >
             {plans?.map((plan) => (
-              <Card 
+              <Card
                 key={plan.id}
                 className={`cursor-pointer transition-all ${
-                  selectedPlan === plan.id 
-                    ? 'ring-2 ring-primary' 
-                    : 'hover:border-primary/50'
+                  selectedPlan === plan.id ? 'ring-2 ring-primary' : 'hover:border-primary/50'
                 }`}
                 onClick={() => setSelectedPlan(plan.id)}
               >
@@ -360,7 +369,7 @@ export default function SubscriptionPage() {
               </Card>
             ))}
           </div>
-        )}
+        </div>
 
         {/* Payment Form */}
         {selectedPlan && !pendingPayment && (
