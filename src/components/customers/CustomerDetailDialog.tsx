@@ -1,0 +1,494 @@
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Phone, MapPin, Mail, Calendar, Edit2, ShoppingCart, Wallet, Star } from 'lucide-react';
+import {
+  useCustomerDetail,
+  usePointTransactions,
+  useCustomerPurchaseHistory,
+  MEMBERSHIP_TIER_NAMES,
+  MEMBERSHIP_TIER_COLORS,
+  POINT_TRANSACTION_TYPE_NAMES,
+} from '@/hooks/useCustomerPoints';
+import { useDebtDetail, useDebtPaymentHistory } from '@/hooks/useDebt';
+import { formatNumber } from '@/lib/formatNumber';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { CustomerFormDialog } from './CustomerFormDialog';
+import { PointAdjustDialog } from './PointAdjustDialog';
+
+interface CustomerDetailDialogProps {
+  customerId: string | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function CustomerDetailDialog({ customerId, open, onOpenChange }: CustomerDetailDialogProps) {
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showAdjustDialog, setShowAdjustDialog] = useState(false);
+
+  const { data: customer, isLoading } = useCustomerDetail(customerId);
+  const { data: pointTransactions } = usePointTransactions(customerId);
+  const { data: purchaseHistory } = useCustomerPurchaseHistory(customerId);
+  const { data: debtDetail } = useDebtDetail('customer', customerId);
+  const { data: debtPayments } = useDebtPaymentHistory('customer', customerId);
+
+  if (!customer && !isLoading) return null;
+
+  // Calculate debt from export receipts
+  const totalDebt = purchaseHistory?.reduce((sum, r) => sum + (r.debt_amount || 0), 0) || 0;
+  const paidDebt = debtPayments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+  const remainingDebt = totalDebt - paidDebt;
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Chi tiết khách hàng</DialogTitle>
+          </DialogHeader>
+
+          {isLoading ? (
+            <div className="py-8 text-center">Đang tải...</div>
+          ) : customer ? (
+            <div className="space-y-6">
+              {/* Header - Customer Overview */}
+              <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <h2 className="text-2xl font-bold">{customer.name}</h2>
+                        <Badge className={MEMBERSHIP_TIER_COLORS[customer.membership_tier]}>
+                          <Star className="h-3 w-3 mr-1" />
+                          {MEMBERSHIP_TIER_NAMES[customer.membership_tier]}
+                        </Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Phone className="h-4 w-4" />
+                          {customer.phone}
+                        </span>
+                        {customer.email && (
+                          <span className="flex items-center gap-1">
+                            <Mail className="h-4 w-4" />
+                            {customer.email}
+                          </span>
+                        )}
+                        {customer.address && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            {customer.address}
+                          </span>
+                        )}
+                        {customer.birthday && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            {format(new Date(customer.birthday), 'dd/MM/yyyy')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Sửa
+                    </Button>
+                  </div>
+
+                  <Separator className="my-4" />
+
+                  {/* Key Metrics */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center p-3 bg-background rounded-lg">
+                      <p className="text-2xl font-bold text-primary">
+                        {formatNumber(customer.current_points)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Điểm hiện tại</p>
+                      {customer.pending_points > 0 && (
+                        <p className="text-xs text-yellow-600">+{formatNumber(customer.pending_points)} treo</p>
+                      )}
+                    </div>
+                    <div className="text-center p-3 bg-background rounded-lg">
+                      <p className="text-2xl font-bold">{formatNumber(customer.total_spent)}</p>
+                      <p className="text-xs text-muted-foreground">Tổng chi tiêu</p>
+                    </div>
+                    <div className="text-center p-3 bg-background rounded-lg">
+                      <p className="text-2xl font-bold text-green-600">
+                        {formatNumber(customer.total_points_earned)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Tổng điểm tích</p>
+                    </div>
+                    <div className="text-center p-3 bg-background rounded-lg">
+                      <p className={`text-2xl font-bold ${remainingDebt > 0 ? 'text-red-600' : ''}`}>
+                        {formatNumber(remainingDebt)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Công nợ</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Tabs */}
+              <Tabs defaultValue="purchases" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="purchases">
+                    <ShoppingCart className="h-4 w-4 mr-2 hidden sm:inline" />
+                    Mua hàng
+                  </TabsTrigger>
+                  <TabsTrigger value="points">
+                    <Star className="h-4 w-4 mr-2 hidden sm:inline" />
+                    Điểm thưởng
+                  </TabsTrigger>
+                  <TabsTrigger value="debt">
+                    <Wallet className="h-4 w-4 mr-2 hidden sm:inline" />
+                    Công nợ
+                  </TabsTrigger>
+                  <TabsTrigger value="info">Thông tin</TabsTrigger>
+                </TabsList>
+
+                {/* Tab 1: Purchase History */}
+                <TabsContent value="purchases" className="mt-4">
+                  <Card>
+                    <CardContent className="p-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Ngày</TableHead>
+                            <TableHead>Mã đơn</TableHead>
+                            <TableHead className="hidden md:table-cell">Sản phẩm</TableHead>
+                            <TableHead className="text-right">Giá trị</TableHead>
+                            <TableHead className="text-right hidden sm:table-cell">Điểm</TableHead>
+                            <TableHead>Trạng thái</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {purchaseHistory?.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                Chưa có lịch sử mua hàng
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            purchaseHistory?.map((receipt) => (
+                              <TableRow key={receipt.id}>
+                                <TableCell>
+                                  {format(new Date(receipt.export_date), 'dd/MM/yyyy', { locale: vi })}
+                                </TableCell>
+                                <TableCell className="font-mono text-sm">{receipt.code}</TableCell>
+                                <TableCell className="hidden md:table-cell">
+                                  <div className="max-w-[200px]">
+                                    {receipt.export_receipt_items?.slice(0, 2).map((item, idx) => (
+                                      <div key={idx} className="text-sm truncate">
+                                        {item.product_name}
+                                        {item.imei && <span className="text-muted-foreground"> ({item.imei})</span>}
+                                      </div>
+                                    ))}
+                                    {(receipt.export_receipt_items?.length || 0) > 2 && (
+                                      <span className="text-xs text-muted-foreground">
+                                        +{(receipt.export_receipt_items?.length || 0) - 2} sản phẩm
+                                      </span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right font-medium">
+                                  {formatNumber(receipt.total_amount)}
+                                </TableCell>
+                                <TableCell className="text-right hidden sm:table-cell">
+                                  {receipt.points_earned > 0 && (
+                                    <span className="text-green-600">+{receipt.points_earned}</span>
+                                  )}
+                                  {receipt.points_redeemed > 0 && (
+                                    <span className="text-red-600 ml-1">-{receipt.points_redeemed}</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={receipt.status === 'completed' ? 'default' : 'secondary'}>
+                                    {receipt.status === 'completed' ? 'Hoàn tất' : 'Đã hủy'}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Tab 2: Points History */}
+                <TabsContent value="points" className="mt-4 space-y-4">
+                  {/* Points Summary */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="pt-4 text-center">
+                        <p className="text-xl font-bold text-green-600">
+                          {formatNumber(customer.total_points_earned)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Tổng tích</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-4 text-center">
+                        <p className="text-xl font-bold text-red-600">
+                          {formatNumber(customer.total_points_used)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Đã dùng</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-4 text-center">
+                        <p className="text-xl font-bold text-primary">
+                          {formatNumber(customer.current_points)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Còn lại</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button variant="outline" onClick={() => setShowAdjustDialog(true)}>
+                      Điều chỉnh điểm
+                    </Button>
+                  </div>
+
+                  {/* Points Transactions */}
+                  <Card>
+                    <CardContent className="p-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Thời gian</TableHead>
+                            <TableHead>Loại</TableHead>
+                            <TableHead className="text-right">Điểm</TableHead>
+                            <TableHead className="text-right hidden sm:table-cell">Số dư</TableHead>
+                            <TableHead className="hidden md:table-cell">Mô tả</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {pointTransactions?.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                Chưa có lịch sử điểm
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            pointTransactions?.map((tx) => (
+                              <TableRow key={tx.id}>
+                                <TableCell>
+                                  {format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant={
+                                      tx.transaction_type === 'earn'
+                                        ? 'default'
+                                        : tx.transaction_type === 'redeem' || tx.transaction_type === 'refund'
+                                        ? 'destructive'
+                                        : 'secondary'
+                                    }
+                                  >
+                                    {POINT_TRANSACTION_TYPE_NAMES[tx.transaction_type]}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right font-medium">
+                                  <span className={tx.points > 0 ? 'text-green-600' : 'text-red-600'}>
+                                    {tx.points > 0 ? '+' : ''}{formatNumber(tx.points)}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-right hidden sm:table-cell">
+                                  {formatNumber(tx.balance_after)}
+                                </TableCell>
+                                <TableCell className="hidden md:table-cell max-w-[200px] truncate">
+                                  {tx.description}
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Tab 3: Debt */}
+                <TabsContent value="debt" className="mt-4 space-y-4">
+                  {/* Debt Summary */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="pt-4 text-center">
+                        <p className="text-xl font-bold">{formatNumber(totalDebt)}</p>
+                        <p className="text-xs text-muted-foreground">Tổng nợ</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-4 text-center">
+                        <p className="text-xl font-bold text-green-600">{formatNumber(paidDebt)}</p>
+                        <p className="text-xs text-muted-foreground">Đã trả</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-4 text-center">
+                        <p className={`text-xl font-bold ${remainingDebt > 0 ? 'text-red-600' : ''}`}>
+                          {formatNumber(remainingDebt)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Còn lại</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Debt Orders */}
+                  <Card>
+                    <CardContent className="pt-4">
+                      <h4 className="font-semibold mb-3">Đơn hàng có công nợ</h4>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Ngày</TableHead>
+                            <TableHead>Mã đơn</TableHead>
+                            <TableHead className="text-right">Giá trị</TableHead>
+                            <TableHead className="text-right">Nợ</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {purchaseHistory?.filter(r => r.debt_amount > 0).length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                                Không có công nợ
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            purchaseHistory?.filter(r => r.debt_amount > 0).map((receipt) => (
+                              <TableRow key={receipt.id}>
+                                <TableCell>
+                                  {format(new Date(receipt.export_date), 'dd/MM/yyyy', { locale: vi })}
+                                </TableCell>
+                                <TableCell className="font-mono text-sm">{receipt.code}</TableCell>
+                                <TableCell className="text-right">{formatNumber(receipt.total_amount)}</TableCell>
+                                <TableCell className="text-right text-red-600 font-medium">
+                                  {formatNumber(receipt.debt_amount)}
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+
+                  {/* Payment History */}
+                  {debtPayments && debtPayments.length > 0 && (
+                    <Card>
+                      <CardContent className="pt-4">
+                        <h4 className="font-semibold mb-3">Lịch sử trả nợ</h4>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Ngày</TableHead>
+                              <TableHead className="text-right">Số tiền</TableHead>
+                              <TableHead>Nguồn tiền</TableHead>
+                              <TableHead className="hidden md:table-cell">Nội dung</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {debtPayments.map((payment) => (
+                              <TableRow key={payment.id}>
+                                <TableCell>
+                                  {format(new Date(payment.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                                </TableCell>
+                                <TableCell className="text-right text-green-600 font-medium">
+                                  +{formatNumber(payment.amount)}
+                                </TableCell>
+                                <TableCell>{payment.payment_source}</TableCell>
+                                <TableCell className="hidden md:table-cell">{payment.description}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+
+                {/* Tab 4: Other Info */}
+                <TabsContent value="info" className="mt-4">
+                  <Card>
+                    <CardContent className="pt-6 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm text-muted-foreground">Ngày sinh</label>
+                          <p className="font-medium">
+                            {customer.birthday
+                              ? format(new Date(customer.birthday), 'dd/MM/yyyy')
+                              : 'Chưa cập nhật'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm text-muted-foreground">Email</label>
+                          <p className="font-medium">{customer.email || 'Chưa cập nhật'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm text-muted-foreground">Địa chỉ</label>
+                          <p className="font-medium">{customer.address || 'Chưa cập nhật'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm text-muted-foreground">Trạng thái</label>
+                          <p className="font-medium">
+                            {customer.status === 'active' ? 'Hoạt động' : 'Ngừng theo dõi'}
+                          </p>
+                        </div>
+                      </div>
+                      {customer.note && (
+                        <div>
+                          <label className="text-sm text-muted-foreground">Ghi chú</label>
+                          <p className="font-medium">{customer.note}</p>
+                        </div>
+                      )}
+                      <div className="text-sm text-muted-foreground">
+                        Khách hàng từ: {format(new Date(customer.created_at), 'dd/MM/yyyy', { locale: vi })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      {customer && (
+        <>
+          <CustomerFormDialog
+            open={showEditDialog}
+            onOpenChange={setShowEditDialog}
+            customer={customer}
+          />
+          <PointAdjustDialog
+            open={showAdjustDialog}
+            onOpenChange={setShowAdjustDialog}
+            customerId={customer.id}
+            customerName={customer.name}
+            currentPoints={customer.current_points}
+          />
+        </>
+      )}
+    </>
+  );
+}

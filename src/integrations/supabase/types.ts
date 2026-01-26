@@ -218,35 +218,73 @@ export type Database = {
       customers: {
         Row: {
           address: string | null
+          birthday: string | null
           created_at: string
+          current_points: number
           email: string | null
           id: string
+          last_purchase_date: string | null
+          membership_tier: Database["public"]["Enums"]["membership_tier"]
           name: string
           note: string | null
+          pending_points: number
           phone: string
+          preferred_branch_id: string | null
+          status: Database["public"]["Enums"]["customer_status"]
+          total_points_earned: number
+          total_points_used: number
+          total_spent: number
           updated_at: string
         }
         Insert: {
           address?: string | null
+          birthday?: string | null
           created_at?: string
+          current_points?: number
           email?: string | null
           id?: string
+          last_purchase_date?: string | null
+          membership_tier?: Database["public"]["Enums"]["membership_tier"]
           name: string
           note?: string | null
+          pending_points?: number
           phone: string
+          preferred_branch_id?: string | null
+          status?: Database["public"]["Enums"]["customer_status"]
+          total_points_earned?: number
+          total_points_used?: number
+          total_spent?: number
           updated_at?: string
         }
         Update: {
           address?: string | null
+          birthday?: string | null
           created_at?: string
+          current_points?: number
           email?: string | null
           id?: string
+          last_purchase_date?: string | null
+          membership_tier?: Database["public"]["Enums"]["membership_tier"]
           name?: string
           note?: string | null
+          pending_points?: number
           phone?: string
+          preferred_branch_id?: string | null
+          status?: Database["public"]["Enums"]["customer_status"]
+          total_points_earned?: number
+          total_points_used?: number
+          total_spent?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customers_preferred_branch_id_fkey"
+            columns: ["preferred_branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       debt_payments: {
         Row: {
@@ -403,6 +441,9 @@ export type Database = {
           id: string
           note: string | null
           paid_amount: number
+          points_discount: number | null
+          points_earned: number | null
+          points_redeemed: number | null
           status: string
           total_amount: number
           updated_at: string
@@ -418,6 +459,9 @@ export type Database = {
           id?: string
           note?: string | null
           paid_amount?: number
+          points_discount?: number | null
+          points_earned?: number | null
+          points_redeemed?: number | null
           status?: string
           total_amount?: number
           updated_at?: string
@@ -433,6 +477,9 @@ export type Database = {
           id?: string
           note?: string | null
           paid_amount?: number
+          points_discount?: number | null
+          points_earned?: number | null
+          points_redeemed?: number | null
           status?: string
           total_amount?: number
           updated_at?: string
@@ -886,6 +933,147 @@ export type Database = {
         }
         Relationships: []
       }
+      membership_tier_settings: {
+        Row: {
+          benefits: string | null
+          created_at: string
+          description: string | null
+          id: string
+          min_spent: number
+          points_multiplier: number
+          tier: Database["public"]["Enums"]["membership_tier"]
+          updated_at: string
+        }
+        Insert: {
+          benefits?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          min_spent?: number
+          points_multiplier?: number
+          tier: Database["public"]["Enums"]["membership_tier"]
+          updated_at?: string
+        }
+        Update: {
+          benefits?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          min_spent?: number
+          points_multiplier?: number
+          tier?: Database["public"]["Enums"]["membership_tier"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      point_settings: {
+        Row: {
+          earn_points: number
+          id: string
+          is_enabled: boolean
+          max_redeem_percentage: number
+          points_expire: boolean
+          points_expire_days: number | null
+          redeem_points: number
+          redeem_value: number
+          require_full_payment: boolean
+          spend_amount: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          earn_points?: number
+          id?: string
+          is_enabled?: boolean
+          max_redeem_percentage?: number
+          points_expire?: boolean
+          points_expire_days?: number | null
+          redeem_points?: number
+          redeem_value?: number
+          require_full_payment?: boolean
+          spend_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          earn_points?: number
+          id?: string
+          is_enabled?: boolean
+          max_redeem_percentage?: number
+          points_expire?: boolean
+          points_expire_days?: number | null
+          redeem_points?: number
+          redeem_value?: number
+          require_full_payment?: boolean
+          spend_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      point_transactions: {
+        Row: {
+          balance_after: number
+          branch_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          description: string
+          id: string
+          note: string | null
+          points: number
+          reference_id: string | null
+          reference_type: string | null
+          status: Database["public"]["Enums"]["point_status"]
+          transaction_type: Database["public"]["Enums"]["point_transaction_type"]
+        }
+        Insert: {
+          balance_after?: number
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          description: string
+          id?: string
+          note?: string | null
+          points: number
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: Database["public"]["Enums"]["point_status"]
+          transaction_type: Database["public"]["Enums"]["point_transaction_type"]
+        }
+        Update: {
+          balance_after?: number
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          description?: string
+          id?: string
+          note?: string | null
+          points?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: Database["public"]["Enums"]["point_status"]
+          transaction_type?: Database["public"]["Enums"]["point_transaction_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_transactions_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           branch_id: string | null
@@ -1146,7 +1334,11 @@ export type Database = {
     Enums: {
       app_role: "admin" | "staff"
       cash_book_type: "expense" | "income"
+      customer_status: "active" | "inactive"
+      membership_tier: "regular" | "silver" | "gold" | "vip"
       payment_type: "cash" | "bank_card" | "e_wallet" | "debt"
+      point_status: "active" | "pending" | "expired"
+      point_transaction_type: "earn" | "redeem" | "refund" | "adjust" | "expire"
       product_status: "in_stock" | "sold" | "returned"
       receipt_status: "completed" | "cancelled"
       return_fee_type: "none" | "percentage" | "fixed_amount"
@@ -1281,7 +1473,11 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "staff"],
       cash_book_type: ["expense", "income"],
+      customer_status: ["active", "inactive"],
+      membership_tier: ["regular", "silver", "gold", "vip"],
       payment_type: ["cash", "bank_card", "e_wallet", "debt"],
+      point_status: ["active", "pending", "expired"],
+      point_transaction_type: ["earn", "redeem", "refund", "adjust", "expire"],
       product_status: ["in_stock", "sold", "returned"],
       receipt_status: ["completed", "cancelled"],
       return_fee_type: ["none", "percentage", "fixed_amount"],
