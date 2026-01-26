@@ -824,6 +824,322 @@ export type Database = {
           },
         ]
       }
+      einvoice_configs: {
+        Row: {
+          api_key_encrypted: string | null
+          api_url: string
+          company_address: string | null
+          company_email: string | null
+          company_name: string
+          company_phone: string | null
+          created_at: string
+          id: string
+          invoice_series: string | null
+          invoice_template: string | null
+          is_active: boolean
+          provider: Database["public"]["Enums"]["einvoice_provider"]
+          provider_name: string
+          sandbox_mode: boolean
+          tax_code: string
+          tenant_id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          api_key_encrypted?: string | null
+          api_url: string
+          company_address?: string | null
+          company_email?: string | null
+          company_name: string
+          company_phone?: string | null
+          created_at?: string
+          id?: string
+          invoice_series?: string | null
+          invoice_template?: string | null
+          is_active?: boolean
+          provider?: Database["public"]["Enums"]["einvoice_provider"]
+          provider_name: string
+          sandbox_mode?: boolean
+          tax_code: string
+          tenant_id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          api_key_encrypted?: string | null
+          api_url?: string
+          company_address?: string | null
+          company_email?: string | null
+          company_name?: string
+          company_phone?: string | null
+          created_at?: string
+          id?: string
+          invoice_series?: string | null
+          invoice_template?: string | null
+          is_active?: boolean
+          provider?: Database["public"]["Enums"]["einvoice_provider"]
+          provider_name?: string
+          sandbox_mode?: boolean
+          tax_code?: string
+          tenant_id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "einvoice_configs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      einvoice_items: {
+        Row: {
+          amount: number
+          created_at: string
+          einvoice_id: string
+          id: string
+          line_number: number
+          note: string | null
+          product_code: string | null
+          product_name: string
+          quantity: number
+          total_amount: number
+          unit: string | null
+          unit_price: number
+          vat_amount: number | null
+          vat_rate: number | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          einvoice_id: string
+          id?: string
+          line_number?: number
+          note?: string | null
+          product_code?: string | null
+          product_name: string
+          quantity?: number
+          total_amount?: number
+          unit?: string | null
+          unit_price?: number
+          vat_amount?: number | null
+          vat_rate?: number | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          einvoice_id?: string
+          id?: string
+          line_number?: number
+          note?: string | null
+          product_code?: string | null
+          product_name?: string
+          quantity?: number
+          total_amount?: number
+          unit?: string | null
+          unit_price?: number
+          vat_amount?: number | null
+          vat_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "einvoice_items_einvoice_id_fkey"
+            columns: ["einvoice_id"]
+            isOneToOne: false
+            referencedRelation: "einvoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      einvoice_logs: {
+        Row: {
+          action: string
+          created_at: string
+          einvoice_id: string | null
+          error_message: string | null
+          id: string
+          request_data: Json | null
+          response_data: Json | null
+          status_code: number | null
+          tenant_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          einvoice_id?: string | null
+          error_message?: string | null
+          id?: string
+          request_data?: Json | null
+          response_data?: Json | null
+          status_code?: number | null
+          tenant_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          einvoice_id?: string | null
+          error_message?: string | null
+          id?: string
+          request_data?: Json | null
+          response_data?: Json | null
+          status_code?: number | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "einvoice_logs_einvoice_id_fkey"
+            columns: ["einvoice_id"]
+            isOneToOne: false
+            referencedRelation: "einvoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "einvoice_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      einvoices: {
+        Row: {
+          adjustment_reason: string | null
+          amount_in_words: string | null
+          branch_id: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          config_id: string
+          created_at: string
+          created_by: string | null
+          customer_address: string | null
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string | null
+          customer_tax_code: string | null
+          error_message: string | null
+          export_receipt_id: string | null
+          id: string
+          invoice_date: string
+          invoice_number: string | null
+          invoice_series: string | null
+          lookup_code: string | null
+          original_invoice_id: string | null
+          provider_invoice_id: string | null
+          provider_response: Json | null
+          status: Database["public"]["Enums"]["einvoice_status"]
+          subtotal: number
+          tenant_id: string
+          total_amount: number
+          updated_at: string
+          vat_amount: number
+          vat_rate: number
+        }
+        Insert: {
+          adjustment_reason?: string | null
+          amount_in_words?: string | null
+          branch_id?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          config_id: string
+          created_at?: string
+          created_by?: string | null
+          customer_address?: string | null
+          customer_email?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          customer_tax_code?: string | null
+          error_message?: string | null
+          export_receipt_id?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string | null
+          invoice_series?: string | null
+          lookup_code?: string | null
+          original_invoice_id?: string | null
+          provider_invoice_id?: string | null
+          provider_response?: Json | null
+          status?: Database["public"]["Enums"]["einvoice_status"]
+          subtotal?: number
+          tenant_id: string
+          total_amount?: number
+          updated_at?: string
+          vat_amount?: number
+          vat_rate?: number
+        }
+        Update: {
+          adjustment_reason?: string | null
+          amount_in_words?: string | null
+          branch_id?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          config_id?: string
+          created_at?: string
+          created_by?: string | null
+          customer_address?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          customer_tax_code?: string | null
+          error_message?: string | null
+          export_receipt_id?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string | null
+          invoice_series?: string | null
+          lookup_code?: string | null
+          original_invoice_id?: string | null
+          provider_invoice_id?: string | null
+          provider_response?: Json | null
+          status?: Database["public"]["Enums"]["einvoice_status"]
+          subtotal?: number
+          tenant_id?: string
+          total_amount?: number
+          updated_at?: string
+          vat_amount?: number
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "einvoices_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "einvoices_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "einvoice_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "einvoices_export_receipt_id_fkey"
+            columns: ["export_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "export_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "einvoices_original_invoice_id_fkey"
+            columns: ["original_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "einvoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "einvoices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       export_receipt_items: {
         Row: {
           category_id: string | null
@@ -2553,6 +2869,14 @@ export type Database = {
       commission_status: "pending" | "approved" | "paid" | "cancelled"
       commission_type: "percentage" | "fixed"
       customer_status: "active" | "inactive"
+      einvoice_provider: "vnpt" | "viettel" | "fpt" | "misa" | "other"
+      einvoice_status:
+        | "draft"
+        | "pending"
+        | "issued"
+        | "cancelled"
+        | "adjusted"
+        | "error"
       membership_tier: "regular" | "silver" | "gold" | "vip"
       payment_status: "pending" | "approved" | "rejected" | "cancelled"
       payment_type: "cash" | "bank_card" | "e_wallet" | "debt"
@@ -2703,6 +3027,15 @@ export const Constants = {
       commission_status: ["pending", "approved", "paid", "cancelled"],
       commission_type: ["percentage", "fixed"],
       customer_status: ["active", "inactive"],
+      einvoice_provider: ["vnpt", "viettel", "fpt", "misa", "other"],
+      einvoice_status: [
+        "draft",
+        "pending",
+        "issued",
+        "cancelled",
+        "adjusted",
+        "error",
+      ],
       membership_tier: ["regular", "silver", "gold", "vip"],
       payment_status: ["pending", "approved", "rejected", "cancelled"],
       payment_type: ["cash", "bank_card", "e_wallet", "debt"],
