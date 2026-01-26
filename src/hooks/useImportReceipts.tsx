@@ -5,6 +5,12 @@ import { Database } from '@/integrations/supabase/types';
 type ReceiptStatus = Database['public']['Enums']['receipt_status'];
 type PaymentType = Database['public']['Enums']['payment_type'];
 
+// Helper to get current user's tenant_id
+async function getCurrentTenantId(): Promise<string | null> {
+  const { data } = await supabase.rpc('get_user_tenant_id_secure');
+  return data;
+}
+
 export interface ImportReceipt {
   id: string;
   code: string;
@@ -150,6 +156,10 @@ export function useCreateImportReceipt() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Get current tenant_id
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
       // Generate receipt code
       const now = new Date();
       const code = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
@@ -170,6 +180,7 @@ export function useCreateImportReceipt() {
           supplier_id: supplierId,
           branch_id: branchId || null,
           created_by: user.id,
+          tenant_id: tenantId,
           note,
         }])
         .select()
@@ -207,6 +218,7 @@ export function useCreateImportReceipt() {
               supplier_id: supplierId,
               import_receipt_id: receipt.id,
               branch_id: branchId || null,
+              tenant_id: tenantId,
               note: p.note,
             }])
             .select()
@@ -281,6 +293,7 @@ export function useCreateImportReceipt() {
                 supplier_id: supplierId,
                 import_receipt_id: receipt.id,
                 branch_id: branchId || null,
+                tenant_id: tenantId,
                 note: p.note,
               }])
               .select()
@@ -316,6 +329,7 @@ export function useCreateImportReceipt() {
           reference_id: receipt.id,
           reference_type: 'import_receipt',
           created_by: user.id,
+          tenant_id: tenantId,
         }));
 
       if (cashBookEntries.length > 0) {

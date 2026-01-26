@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+// Helper to get current user's tenant_id
+async function getCurrentTenantId(): Promise<string | null> {
+  const { data } = await supabase.rpc('get_user_tenant_id_secure');
+  return data;
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -8,6 +14,7 @@ export interface Customer {
   address: string | null;
   email: string | null;
   note: string | null;
+  tenant_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -53,9 +60,12 @@ export function useCreateCustomer() {
       email?: string | null;
       note?: string | null;
     }) => {
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
       const { data, error } = await supabase
         .from('customers')
-        .insert([customer])
+        .insert([{ ...customer, tenant_id: tenantId }])
         .select()
         .single();
 
@@ -104,9 +114,12 @@ export function useUpsertCustomer() {
         return data as Customer;
       } else {
         // Create new customer
+        const tenantId = await getCurrentTenantId();
+        if (!tenantId) throw new Error('Không tìm thấy tenant');
+
         const { data, error } = await supabase
           .from('customers')
-          .insert([customer])
+          .insert([{ ...customer, tenant_id: tenantId }])
           .select()
           .single();
 
