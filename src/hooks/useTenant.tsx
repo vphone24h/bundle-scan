@@ -207,24 +207,12 @@ export function useCancelPaymentRequest() {
 
   return useMutation({
     mutationFn: async (paymentId: string) => {
-      // Only allow cancelling pending payments
-      const { data: payment, error: fetchError } = await supabase
-        .from('payment_requests')
-        .select('status')
-        .eq('id', paymentId)
-        .single();
-
-      if (fetchError) throw fetchError;
-      if (payment.status !== 'pending') {
-        throw new Error('Chỉ có thể hủy yêu cầu đang chờ duyệt');
-      }
-
-      const { error } = await supabase
-        .from('payment_requests')
-        .update({ status: 'cancelled' as any })
-        .eq('id', paymentId);
+      const { data, error } = await supabase.functions.invoke('cancel-payment', {
+        body: { paymentId },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payment-requests'] });
