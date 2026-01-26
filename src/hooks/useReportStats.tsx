@@ -86,6 +86,7 @@ export function useReportStats(filters?: {
           sale_price,
           return_date,
           branch_id,
+          product_id,
           fee_type
         `)
         .eq('fee_type', 'none') // Chỉ lấy trả hàng hoàn tiền đầy đủ
@@ -99,10 +100,13 @@ export function useReportStats(filters?: {
       const { data: returnItems, error: returnError } = await returnQuery;
       if (returnError) throw returnError;
 
-      // 3. Lấy giá nhập của các sản phẩm đã bán để tính lợi nhuận
-      const productIds = exportReceipts?.flatMap(r => 
-        r.export_receipt_items?.map(i => i.product_id).filter(Boolean)
-      ) || [];
+      // 3. Lấy giá nhập của các sản phẩm đã bán / trả để tính lợi nhuận
+      const productIds = Array.from(
+        new Set([
+          ...(exportReceipts?.flatMap(r => r.export_receipt_items?.map(i => i.product_id).filter(Boolean)) || []),
+          ...(returnItems?.map((i: any) => i.product_id).filter(Boolean) || []),
+        ])
+      );
 
       let productsMap: Record<string, number> = {};
       if (productIds.length > 0) {
@@ -157,8 +161,9 @@ export function useReportStats(filters?: {
               return;
             }
 
-            // CHỈ tính sản phẩm đã bán
-            if (item.status === 'sold') {
+            // KHÔNG rollback dòng bán cũ: nếu item đã bị set status = 'returned'
+            // vẫn phải tính như một dòng bán tại thời điểm export_date.
+            if (item.status === 'sold' || item.status === 'returned') {
               totalSalesRevenue += salePrice;
               businessProfit += (salePrice - importPrice);
               productsSold++;
@@ -187,9 +192,10 @@ export function useReportStats(filters?: {
       });
 
       // Tính lợi nhuận âm từ trả hàng KHÔNG CÓ PHÍ
-      returnItems?.forEach(item => {
+      // NOTE: export_returns.import_price có thể = 0, nên phải lấy giá nhập từ product_id.
+      returnItems?.forEach((item: any) => {
         const salePrice = Number(item.sale_price);
-        const importPrice = Number(item.import_price);
+        const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
         const profit = salePrice - importPrice;
         
         totalReturnRevenue += salePrice;
@@ -274,10 +280,10 @@ export function useReportChartData(filters?: {
       const { data: receipts, error } = await query;
       if (error) throw error;
 
-      // Lấy trả hàng KHÔNG CÓ PHÍ để trừ vào doanh thu & lợi nhuận
+      // Lấy trả hàng KHÔNG CÓ PHÍ để trừ lợi nhuận
       let returnQuery = supabase
         .from('export_returns')
-        .select('id, sale_price, import_price, return_date, branch_id, fee_type')
+        .select('id, sale_price, import_price, return_date, branch_id, fee_type, product_id')
         .eq('fee_type', 'none')
         .gte('return_date', startDate)
         .lte('return_date', endDate + 'T23:59:59');
@@ -289,10 +295,13 @@ export function useReportChartData(filters?: {
       const { data: returnItems, error: returnError } = await returnQuery;
       if (returnError) throw returnError;
 
-      // Lấy giá nhập
-      const productIds = receipts?.flatMap(r => 
-        r.export_receipt_items?.map(i => i.product_id).filter(Boolean)
-      ) || [];
+      // Lấy giá nhập (gộp cả sản phẩm bán và sản phẩm trả)
+      const productIds = Array.from(
+        new Set([
+          ...(receipts?.flatMap(r => r.export_receipt_items?.map(i => i.product_id).filter(Boolean)) || []),
+          ...(returnItems?.map((i: any) => i.product_id).filter(Boolean) || []),
+        ])
+      );
 
       let productsMap: Record<string, number> = {};
       if (productIds.length > 0) {
@@ -330,7 +339,8 @@ export function useReportChartData(filters?: {
         }
 
         receipt.export_receipt_items?.forEach(item => {
-          if (item.status === 'sold') {
+          // Giữ dòng bán dù item đã bị set status = 'returned'
+          if (item.status === 'sold' || item.status === 'returned') {
             const salePrice = Number(item.sale_price);
             const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
             dataMap[key].revenue += salePrice;
@@ -342,7 +352,7 @@ export function useReportChartData(filters?: {
 
       // Trừ dữ liệu trả hàng đủ tiền (chỉ fee_type = 'none')
       // Theo nguyên tắc: Doanh thu KHÔNG bị ảnh hưởng, chỉ trừ lợi nhuận
-      returnItems?.forEach(ret => {
+      returnItems?.forEach((ret: any) => {
         const date = new Date(ret.return_date);
         const key = getKey(date);
         if (!dataMap[key]) {
@@ -350,7 +360,7 @@ export function useReportChartData(filters?: {
         }
 
         const salePrice = Number(ret.sale_price);
-        const importPrice = Number(ret.import_price);
+        const importPrice = ret.product_id ? (productsMap[ret.product_id] || 0) : 0;
         const originalProfit = salePrice - importPrice;
 
         // Doanh thu giữ nguyên (không trừ)
