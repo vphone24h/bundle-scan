@@ -248,6 +248,53 @@ export type Database = {
         }
         Relationships: []
       }
+      debt_payments: {
+        Row: {
+          amount: number
+          branch_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          entity_id: string
+          entity_type: string
+          id: string
+          payment_source: string | null
+          payment_type: string
+        }
+        Insert: {
+          amount: number
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          payment_source?: string | null
+          payment_type: string
+        }
+        Update: {
+          amount?: number
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          payment_source?: string | null
+          payment_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debt_payments_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       export_receipt_items: {
         Row: {
           category_id: string | null
