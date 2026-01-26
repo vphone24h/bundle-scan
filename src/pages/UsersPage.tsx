@@ -85,10 +85,10 @@ export default function UsersPage() {
   const [newBranchId, setNewBranchId] = useState<string>('');
 
   const { data: users, isLoading } = useQuery({
-    queryKey: ['users-with-roles'],
+    queryKey: ['users-with-roles', permissions?.role, permissions?.branchId],
     queryFn: async () => {
       // Lấy user_roles
-      const { data: rolesData, error: rolesError } = await supabase
+      let query = supabase
         .from('user_roles')
         .select(`
           id,
@@ -100,10 +100,19 @@ export default function UsersPage() {
         `)
         .order('created_at', { ascending: false });
 
+      // Branch Admin chỉ xem nhân viên trong chi nhánh của mình
+      if (permissions?.role === 'branch_admin' && permissions.branchId) {
+        query = query.eq('branch_id', permissions.branchId);
+      }
+
+      const { data: rolesData, error: rolesError } = await query;
+
       if (rolesError) throw rolesError;
 
       // Lấy profiles riêng
       const userIds = rolesData.map(r => r.user_id);
+      if (userIds.length === 0) return [];
+      
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, display_name, phone')
@@ -118,6 +127,7 @@ export default function UsersPage() {
         profiles: profilesMap.get(role.user_id) || null,
       })) as unknown as UserWithRole[];
     },
+    enabled: !!permissions,
   });
 
   const updateUserRole = useMutation({
@@ -222,7 +232,8 @@ export default function UsersPage() {
     createUser.mutate();
   };
 
-  if (!permissions?.canManageUsers) {
+  // Super Admin hoặc Branch Admin (quản lý nhân viên chi nhánh) mới được truy cập
+  if (!permissions?.canManageUsers && !permissions?.canManageBranchStaff) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center h-96">
@@ -231,6 +242,9 @@ export default function UsersPage() {
       </MainLayout>
     );
   }
+
+  const isSuperAdmin = permissions?.role === 'super_admin';
+  const isBranchAdmin = permissions?.role === 'branch_admin';
 
   return (
     <MainLayout>
@@ -245,7 +259,7 @@ export default function UsersPage() {
             <Shield className="h-5 w-5" />
             Danh sách người dùng
           </CardTitle>
-          {permissions?.role === 'super_admin' && (
+          {isSuperAdmin && (
             <Button onClick={() => setIsCreateOpen(true)}>
               <UserPlus className="h-4 w-4 mr-2" />
               Tạo tài khoản
@@ -285,8 +299,10 @@ export default function UsersPage() {
                       }
                     </TableCell>
                     <TableCell className="text-right">
-                      {/* Super Admin không thể bị chỉnh sửa */}
-                      {user.user_role !== 'super_admin' && (
+                      {/* Super Admin không thể bị chỉnh sửa, Branch Admin cũng không thể chỉnh sửa */}
+                      {user.user_role !== 'super_admin' && 
+                       user.user_role !== 'branch_admin' && 
+                       (isSuperAdmin || (isBranchAdmin && user.branch_id === permissions.branchId)) && (
                         <Button
                           variant="ghost"
                           size="sm"

@@ -52,8 +52,8 @@ const getRoleName = (role: UserRole | undefined): string => {
 
 const allNavItems: NavItem[] = [
   { title: 'Tổng quan', href: '/', icon: LayoutDashboard },
-  { title: 'Sản phẩm', href: '/products', icon: Package, permission: 'canManageProducts' },
-  { title: 'Tồn kho', href: '/inventory', icon: Boxes },
+  { title: 'Sản phẩm', href: '/products', icon: Package, permission: 'canViewProducts' },
+  { title: 'Tồn kho', href: '/inventory', icon: Boxes, permission: 'canViewInventory' },
   { title: 'Danh mục', href: '/categories', icon: FolderTree, permission: 'canManageCategories' },
   {
     title: 'Nhập hàng',
@@ -81,7 +81,7 @@ const allNavItems: NavItem[] = [
   { title: 'Báo cáo', href: '/reports', icon: BarChart3, permission: 'canViewReports' },
   { title: 'Sổ quỹ', href: '/cash-book', icon: Wallet, permission: 'canViewCashBook' },
   { title: 'Quản lý chi nhánh', href: '/branches', icon: Building2, permission: 'canManageBranches' },
-  { title: 'Quản lý người dùng', href: '/users', icon: Shield, permission: 'canManageUsers' },
+  { title: 'Quản lý người dùng', href: '/users', icon: Shield, permission: 'canManageBranchStaff' },
 ];
 
 export function AppSidebar() {
