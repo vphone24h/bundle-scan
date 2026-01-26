@@ -1,4 +1,4 @@
-import { Package, AlertTriangle, XCircle, TrendingUp } from 'lucide-react';
+import { Package, AlertTriangle, XCircle, TrendingUp, Wallet } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface InventoryStatsProps {
@@ -6,6 +6,7 @@ interface InventoryStatsProps {
   totalStock: number;
   lowStockItems: number;
   outOfStockItems: number;
+  totalValue?: number;
 }
 
 export function InventoryStats({
@@ -13,32 +14,41 @@ export function InventoryStats({
   totalStock,
   lowStockItems,
   outOfStockItems,
+  totalValue,
 }: InventoryStatsProps) {
   const stats = [
     {
       title: 'Tổng sản phẩm',
-      value: totalProducts,
+      value: totalProducts.toLocaleString('vi-VN'),
       icon: Package,
       color: 'text-primary',
       bgColor: 'bg-primary/10',
     },
     {
       title: 'Tổng tồn kho',
-      value: totalStock,
+      value: totalStock.toLocaleString('vi-VN'),
       icon: TrendingUp,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
     },
     {
+      title: 'Giá trị kho',
+      value: totalValue !== undefined ? `${totalValue.toLocaleString('vi-VN')} đ` : '0 đ',
+      icon: Wallet,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-100',
+      isLarge: true,
+    },
+    {
       title: 'Sắp hết hàng',
-      value: lowStockItems,
+      value: lowStockItems.toLocaleString('vi-VN'),
       icon: AlertTriangle,
       color: 'text-orange-600',
       bgColor: 'bg-orange-100',
     },
     {
       title: 'Hết hàng',
-      value: outOfStockItems,
+      value: outOfStockItems.toLocaleString('vi-VN'),
       icon: XCircle,
       color: 'text-destructive',
       bgColor: 'bg-destructive/10',
@@ -46,7 +56,7 @@ export function InventoryStats({
   ];
 
   return (
-    <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
       {stats.map((stat) => (
         <Card key={stat.title}>
           <CardContent className="p-3 sm:p-4">
@@ -54,9 +64,11 @@ export function InventoryStats({
               <div className={`rounded-lg p-2 sm:p-3 ${stat.bgColor}`}>
                 <stat.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${stat.color}`} />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-xs sm:text-sm text-muted-foreground truncate">{stat.title}</p>
-                <p className="text-xl sm:text-2xl font-bold">{stat.value}</p>
+                <p className={`font-bold truncate ${stat.isLarge ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl'}`}>
+                  {stat.value}
+                </p>
               </div>
             </div>
           </CardContent>
