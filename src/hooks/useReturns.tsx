@@ -376,11 +376,15 @@ export function useCreateExportReturn() {
       const code = `TX${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
 
       let newImportReceiptId: string | null = null;
+      let newProductId: string | null = null;
 
       if (feeType !== 'none' && storeKeepAmount > 0) {
+        // TRẢ HÀNG CÓ PHÍ: Tạo phiếu nhập MỚI + sản phẩm MỚI
+        // KHÔNG update sản phẩm cũ - sản phẩm cũ vẫn ở trạng thái 'sold'
         const importCode = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
         const newImportPrice = item.sale_price - storeKeepAmount;
 
+        // Tạo phiếu nhập mới
         const { data: newReceipt, error: receiptError } = await supabase
           .from('import_receipts')
           .insert([{
@@ -389,7 +393,7 @@ export function useCreateExportReturn() {
             paid_amount: newImportPrice,
             debt_amount: 0,
             created_by: user.id,
-            note: `Tu dong tao tu phieu tra hang ${code}`,
+            note: `Tự động tạo từ phiếu trả hàng ${code}`,
             tenant_id: tenantId,
             branch_id: item.branch_id,
           }])
@@ -399,30 +403,63 @@ export function useCreateExportReturn() {
         if (receiptError) throw receiptError;
         newImportReceiptId = newReceipt.id;
 
+        // Lấy thông tin sản phẩm gốc để copy
+        let originalProduct = null;
         if (item.product_id) {
-          const { error: updateError } = await supabase
+          const { data: productData } = await supabase
             .from('products')
-            .update({
-              status: 'in_stock',
-              import_price: newImportPrice,
-              import_receipt_id: newImportReceiptId,
-              import_date: now.toISOString(),
-            })
-            .eq('id', item.product_id);
-
-          if (updateError) throw updateError;
+            .select('name, sku, imei, category_id, supplier_id')
+            .eq('id', item.product_id)
+            .single();
+          originalProduct = productData;
         }
 
-        // Phí trả hàng - KHÔNG tính vào hạch toán kinh doanh
+        // Tạo SẢN PHẨM MỚI với cùng IMEI, giá nhập = giá bán - phí
+        const { data: newProduct, error: productError } = await supabase
+          .from('products')
+          .insert([{
+            name: originalProduct?.name || item.product_name,
+            sku: originalProduct?.sku || item.sku,
+            imei: originalProduct?.imei || item.imei,
+            import_price: newImportPrice,
+            sale_price: 0, // Giá bán mới sẽ được nhập sau
+            quantity: 1,
+            status: 'in_stock',
+            category_id: originalProduct?.category_id || null,
+            supplier_id: originalProduct?.supplier_id || null,
+            branch_id: item.branch_id,
+            import_receipt_id: newImportReceiptId,
+            import_date: now.toISOString(),
+            tenant_id: tenantId,
+          }])
+          .select()
+          .single();
+
+        if (productError) throw productError;
+        newProductId = newProduct.id;
+
+        // Ghi lịch sử IMEI nếu có
+        if (item.imei) {
+          await supabase.from('imei_histories').insert([{
+            product_id: newProduct.id,
+            imei: item.imei,
+            action_type: 'return_with_fee',
+            price: newImportPrice,
+            note: `Trả hàng có phí từ phiếu ${code}. Sản phẩm mới được tạo với giá nhập = ${newImportPrice.toLocaleString('vi-VN')}đ`,
+            created_by: user.id,
+          }]);
+        }
+
+        // Phí trả hàng - KHÔNG tính vào hạch toán kinh doanh (không ảnh hưởng báo cáo)
         const { error: incomeError } = await supabase
           .from('cash_book')
           .insert([{
             type: 'income' as const,
             category: 'Thu nhap khac',
-            description: `Phi tra hang: ${item.product_name} (${code})`,
+            description: `Phí trả hàng: ${item.product_name} (${code})`,
             amount: storeKeepAmount,
             payment_source: payments[0]?.source || 'cash',
-            is_business_accounting: false, // KHÔNG tính vào hạch toán
+            is_business_accounting: false, // KHÔNG tính vào hạch toán - không ảnh hưởng báo cáo
             branch_id: item.branch_id,
             reference_id: null,
             reference_type: 'export_return_fee',
