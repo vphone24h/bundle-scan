@@ -13,6 +13,7 @@ export interface Product {
   import_price: number;
   import_date: string;
   supplier_id: string | null;
+  branch_id: string | null;
   import_receipt_id: string | null;
   status: ProductStatus;
   note: string | null;
@@ -21,6 +22,7 @@ export interface Product {
   // Joined fields
   categories?: { name: string } | null;
   suppliers?: { name: string } | null;
+  branches?: { name: string } | null;
 }
 
 export function useProducts() {
@@ -32,7 +34,8 @@ export function useProducts() {
         .select(`
           *,
           categories(name),
-          suppliers(name)
+          suppliers(name),
+          branches(name)
         `)
         .order('import_date', { ascending: false });
 
