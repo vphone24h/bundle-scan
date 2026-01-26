@@ -90,7 +90,10 @@ export function useUpdatePointSettings() {
 
   return useMutation({
     mutationFn: async (settings: Partial<PointSettings>) => {
-      // Get existing settings
+      // Get tenant_id
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+
+      // Get existing settings for this tenant
       const { data: existing } = await supabase
         .from('point_settings')
         .select('id')
@@ -98,24 +101,25 @@ export function useUpdatePointSettings() {
         .maybeSingle();
 
       if (existing) {
-        const { data, error } = await supabase
+        // Update existing - don't require returning single row
+        const { error } = await supabase
           .from('point_settings')
           .update({
             ...settings,
             updated_at: new Date().toISOString(),
             updated_by: user?.id,
           })
-          .eq('id', existing.id)
-          .select()
-          .single();
+          .eq('id', existing.id);
 
         if (error) throw error;
-        return data;
+        return { ...settings, id: existing.id };
       } else {
+        // Insert new with tenant_id
         const { data, error } = await supabase
           .from('point_settings')
           .insert([{
             ...settings,
+            tenant_id: tenantId,
             updated_by: user?.id,
           }])
           .select()

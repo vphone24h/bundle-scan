@@ -52,6 +52,7 @@ export function useDefaultInvoiceTemplate() {
   return useQuery({
     queryKey: ['invoice-template-default'],
     queryFn: async () => {
+      // Try to get existing default template
       const { data, error } = await supabase
         .from('invoice_templates')
         .select('*')
@@ -59,7 +60,46 @@ export function useDefaultInvoiceTemplate() {
         .maybeSingle();
 
       if (error) throw error;
-      return data as InvoiceTemplate | null;
+      
+      // If no template exists, create one
+      if (!data) {
+        const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+        
+        const { data: newTemplate, error: insertError } = await supabase
+          .from('invoice_templates')
+          .insert([{
+            name: 'Mẫu mặc định',
+            paper_size: 'K80',
+            is_default: true,
+            tenant_id: tenantId,
+            show_logo: true,
+            show_store_name: true,
+            show_store_address: true,
+            show_store_phone: true,
+            show_customer_info: true,
+            show_sale_date: true,
+            show_receipt_code: true,
+            show_product_name: true,
+            show_sku: true,
+            show_imei: true,
+            show_sale_price: true,
+            show_total: true,
+            show_paid_amount: true,
+            show_debt: true,
+            show_note: true,
+            show_thank_you: true,
+            thank_you_text: 'Cảm ơn quý khách!',
+            font_size: 'medium',
+            text_align: 'left',
+          }])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        return newTemplate as InvoiceTemplate;
+      }
+      
+      return data as InvoiceTemplate;
     },
   });
 }
@@ -69,15 +109,17 @@ export function useUpdateInvoiceTemplate() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<InvoiceTemplate> & { id: string }) => {
-      const { data, error } = await supabase
+      // Update without requiring single row return
+      const { error } = await supabase
         .from('invoice_templates')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
 
       if (error) throw error;
-      return data as InvoiceTemplate;
+      return { id, ...updates } as InvoiceTemplate;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoice-templates'] });

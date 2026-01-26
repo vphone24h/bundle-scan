@@ -2025,6 +2025,7 @@ export type Database = {
           payment_source: string
           return_id: string
           return_type: Database["public"]["Enums"]["return_type"]
+          tenant_id: string | null
         }
         Insert: {
           amount: number
@@ -2033,6 +2034,7 @@ export type Database = {
           payment_source: string
           return_id: string
           return_type: Database["public"]["Enums"]["return_type"]
+          tenant_id?: string | null
         }
         Update: {
           amount?: number
@@ -2041,8 +2043,17 @@ export type Database = {
           payment_source?: string
           return_id?: string
           return_type?: Database["public"]["Enums"]["return_type"]
+          tenant_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "return_payments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_count_items: {
         Row: {
