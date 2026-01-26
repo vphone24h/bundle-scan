@@ -5,9 +5,16 @@ export interface Category {
   id: string;
   name: string;
   parent_id: string | null;
+  tenant_id: string | null;
   created_at: string;
   updated_at: string;
   children?: Category[];
+}
+
+// Helper to get current user's tenant_id
+async function getCurrentTenantId(): Promise<string | null> {
+  const { data } = await supabase.rpc('get_user_tenant_id_secure');
+  return data;
 }
 
 export function useCategories() {
@@ -30,9 +37,13 @@ export function useCreateCategory() {
 
   return useMutation({
     mutationFn: async (category: { name: string; parent_id?: string | null }) => {
+      // Get current tenant_id
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
       const { data, error } = await supabase
         .from('categories')
-        .insert([category])
+        .insert([{ ...category, tenant_id: tenantId }])
         .select()
         .single();
 

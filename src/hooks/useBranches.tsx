@@ -8,8 +8,15 @@ export interface Branch {
   phone: string | null;
   note: string | null;
   is_default: boolean;
+  tenant_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// Helper to get current user's tenant_id
+async function getCurrentTenantId(): Promise<string | null> {
+  const { data } = await supabase.rpc('get_user_tenant_id_secure');
+  return data;
 }
 
 export function useBranches() {
@@ -48,9 +55,13 @@ export function useCreateBranch() {
 
   return useMutation({
     mutationFn: async (branch: { name: string; address?: string; phone?: string; note?: string }) => {
+      // Get current tenant_id
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
       const { data, error } = await supabase
         .from('branches')
-        .insert([branch])
+        .insert([{ ...branch, tenant_id: tenantId }])
         .select()
         .single();
 

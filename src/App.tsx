@@ -31,6 +31,7 @@ import DebtPage from "./pages/DebtPage";
 import CustomersPage from "./pages/CustomersPage";
 import PlatformAdminPage from "./pages/PlatformAdminPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
+import AffiliatePage from "./pages/AffiliatePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/debt" element={<ProtectedRoute><DebtPage /></ProtectedRoute>} />
             <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
             <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
+            <Route path="/affiliate" element={<ProtectedRoute><AffiliatePage /></ProtectedRoute>} />
             
             {/* Platform Admin route */}
             <Route path="/platform-admin" element={<ProtectedRoute><PlatformAdminPage /></ProtectedRoute>} />
