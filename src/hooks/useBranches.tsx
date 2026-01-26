@@ -6,6 +6,7 @@ export interface Branch {
   name: string;
   address: string | null;
   phone: string | null;
+  note: string | null;
   is_default: boolean;
   created_at: string;
   updated_at: string;
@@ -46,7 +47,7 @@ export function useCreateBranch() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (branch: { name: string; address?: string; phone?: string }) => {
+    mutationFn: async (branch: { name: string; address?: string; phone?: string; note?: string }) => {
       const { data, error } = await supabase
         .from('branches')
         .insert([branch])

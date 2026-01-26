@@ -21,6 +21,7 @@ export type Database = {
           id: string
           is_default: boolean | null
           name: string
+          note: string | null
           phone: string | null
           updated_at: string
         }
@@ -30,6 +31,7 @@ export type Database = {
           id?: string
           is_default?: boolean | null
           name: string
+          note?: string | null
           phone?: string | null
           updated_at?: string
         }
@@ -39,6 +41,7 @@ export type Database = {
           id?: string
           is_default?: boolean | null
           name?: string
+          note?: string | null
           phone?: string | null
           updated_at?: string
         }
