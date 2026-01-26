@@ -27,6 +27,65 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+// Danh sách ngân hàng Việt Nam theo chuẩn VietQR
+const VIETNAMESE_BANKS = [
+  { code: 'VCB', name: 'Vietcombank', bin: '970436' },
+  { code: 'TCB', name: 'Techcombank', bin: '970407' },
+  { code: 'MB', name: 'MB Bank', bin: '970422' },
+  { code: 'ACB', name: 'ACB', bin: '970416' },
+  { code: 'VPB', name: 'VPBank', bin: '970432' },
+  { code: 'TPB', name: 'TPBank', bin: '970423' },
+  { code: 'STB', name: 'Sacombank', bin: '970403' },
+  { code: 'HDB', name: 'HDBank', bin: '970437' },
+  { code: 'VIB', name: 'VIB', bin: '970441' },
+  { code: 'SHB', name: 'SHB', bin: '970443' },
+  { code: 'EIB', name: 'Eximbank', bin: '970431' },
+  { code: 'MSB', name: 'MSB', bin: '970426' },
+  { code: 'OCB', name: 'OCB', bin: '970448' },
+  { code: 'LPB', name: 'LienVietPostBank', bin: '970449' },
+  { code: 'BIDV', name: 'BIDV', bin: '970418' },
+  { code: 'VBA', name: 'Agribank', bin: '970405' },
+  { code: 'NAB', name: 'Nam A Bank', bin: '970428' },
+  { code: 'SCB', name: 'SCB', bin: '970429' },
+  { code: 'NCB', name: 'NCB', bin: '970419' },
+  { code: 'SAIGONBANK', name: 'Saigonbank', bin: '970400' },
+  { code: 'BAB', name: 'Bac A Bank', bin: '970409' },
+  { code: 'PVCB', name: 'PVcomBank', bin: '970412' },
+  { code: 'OJB', name: 'OceanBank', bin: '970414' },
+  { code: 'GPB', name: 'GPBank', bin: '970408' },
+  { code: 'VAB', name: 'VietABank', bin: '970427' },
+  { code: 'SEAB', name: 'SeABank', bin: '970440' },
+  { code: 'COOPBANK', name: 'Co-opBank', bin: '970446' },
+  { code: 'KLB', name: 'Kienlongbank', bin: '970452' },
+  { code: 'BVB', name: 'Viet Capital Bank', bin: '970454' },
+  { code: 'WOO', name: 'Woori Bank', bin: '970457' },
+  { code: 'VRB', name: 'VRB', bin: '970421' },
+  { code: 'UOB', name: 'UOB Vietnam', bin: '970458' },
+  { code: 'SCVN', name: 'Standard Chartered VN', bin: '970410' },
+  { code: 'PBVN', name: 'Public Bank Vietnam', bin: '970439' },
+  { code: 'NHB', name: 'Nonghyup Bank', bin: '970456' },
+  { code: 'IVB', name: 'Indovina Bank', bin: '970434' },
+  { code: 'IBK', name: 'IBK HCM', bin: '970455' },
+  { code: 'HSBC', name: 'HSBC Vietnam', bin: '458761' },
+  { code: 'HLBVN', name: 'Hong Leong Bank VN', bin: '970442' },
+  { code: 'SHBVN', name: 'Shinhan Bank VN', bin: '970424' },
+  { code: 'CIMB', name: 'CIMB Vietnam', bin: '422589' },
+  { code: 'CAKE', name: 'CAKE by VPBank', bin: '546034' },
+  { code: 'UBANK', name: 'Ubank by VPBank', bin: '546035' },
+  { code: 'TIMO', name: 'Timo by Bản Việt', bin: '963388' },
+  { code: 'VTLMONEY', name: 'ViettelMoney', bin: '971005' },
+  { code: 'VNPTMONEY', name: 'VNPT Money', bin: '971011' },
+  { code: 'MOMO', name: 'Ví MoMo', bin: '999999' },
+  { code: 'ZALOPAY', name: 'ZaloPay', bin: '546037' },
+].sort((a, b) => a.name.localeCompare(b.name));
 
 interface PaymentConfig {
   id: string;
@@ -390,11 +449,21 @@ export function PaymentConfigManagement() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Tên ngân hàng</Label>
-              <Input
+              <Select
                 value={bankForm.bank_name}
-                onChange={(e) => setBankForm({ ...bankForm, bank_name: e.target.value })}
-                placeholder="VD: Vietcombank, MB Bank, ..."
-              />
+                onValueChange={(value) => setBankForm({ ...bankForm, bank_name: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn ngân hàng" />
+                </SelectTrigger>
+                <SelectContent>
+                  {VIETNAMESE_BANKS.map((bank) => (
+                    <SelectItem key={bank.code} value={bank.name}>
+                      {bank.name} ({bank.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Số tài khoản</Label>
