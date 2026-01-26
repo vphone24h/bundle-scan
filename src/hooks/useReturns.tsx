@@ -360,6 +360,10 @@ export function useCreateExportReturn() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Get tenant_id first
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
       let storeKeepAmount = 0;
       if (feeType === 'percentage') {
         storeKeepAmount = item.sale_price * (feePercentage / 100);
@@ -386,6 +390,8 @@ export function useCreateExportReturn() {
             debt_amount: 0,
             created_by: user.id,
             note: `Tu dong tao tu phieu tra hang ${code}`,
+            tenant_id: tenantId,
+            branch_id: item.branch_id,
           }])
           .select()
           .single();
@@ -421,6 +427,7 @@ export function useCreateExportReturn() {
             reference_id: null,
             reference_type: 'export_return_fee',
             created_by: user.id,
+            tenant_id: tenantId,
           }]);
 
         if (incomeError) throw incomeError;
@@ -484,6 +491,7 @@ export function useCreateExportReturn() {
           is_business_accounting: isBusinessAccounting,
           note,
           created_by: user.id,
+          tenant_id: tenantId,
         }])
         .select()
         .single();
@@ -491,9 +499,6 @@ export function useCreateExportReturn() {
       if (returnError) throw returnError;
 
       if (payments.length > 0) {
-        // Get tenant_id for return_payments
-        const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
-        
         const { error: paymentsError } = await supabase
           .from('return_payments')
           .insert(payments.map(p => ({
@@ -531,6 +536,7 @@ export function useCreateExportReturn() {
               reference_id: returnData.id,
               reference_type: 'export_return',
               created_by: user.id,
+              tenant_id: tenantId,
             }]);
 
           if (cashBookError) throw cashBookError;
@@ -544,6 +550,7 @@ export function useCreateExportReturn() {
         table_name: 'export_returns',
         record_id: returnData.id,
         branch_id: item.branch_id || null,
+        tenant_id: tenantId,
         new_data: {
           code,
           product_name: item.product_name,
