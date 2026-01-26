@@ -26,6 +26,9 @@ export interface ExportReceipt {
   total_amount: number;
   paid_amount: number;
   debt_amount: number;
+  points_earned: number;
+  points_redeemed: number;
+  points_discount: number;
   status: string;
   note: string | null;
   created_by: string | null;
@@ -120,11 +123,15 @@ export function useCreateExportReceipt() {
       items,
       payments,
       note,
+      pointsRedeemed = 0,
+      pointsDiscount = 0,
     }: {
       customerId: string;
       items: ExportReceiptItem[];
       payments: ExportPayment[];
       note?: string;
+      pointsRedeemed?: number;
+      pointsDiscount?: number;
     }) => {
       const totalAmount = items.reduce((sum, item) => sum + item.sale_price, 0);
       const paidAmount = payments
@@ -141,6 +148,47 @@ export function useCreateExportReceipt() {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
 
+      // ============ POINT CALCULATION ============
+      // Get point settings
+      const { data: pointSettings } = await supabase
+        .from('point_settings')
+        .select('*')
+        .limit(1)
+        .maybeSingle();
+
+      // Get customer info for tier multiplier
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('current_points, pending_points, total_points_earned, total_points_used, membership_tier, total_spent')
+        .eq('id', customerId)
+        .single();
+
+      // Get tier multiplier
+      let pointsMultiplier = 1;
+      if (customer?.membership_tier) {
+        const { data: tierSettings } = await supabase
+          .from('membership_tier_settings')
+          .select('points_multiplier')
+          .eq('tier', customer.membership_tier)
+          .maybeSingle();
+        if (tierSettings) {
+          pointsMultiplier = tierSettings.points_multiplier;
+        }
+      }
+
+      // Calculate points to earn (based on actual payment, not total amount)
+      let pointsToEarn = 0;
+      if (pointSettings?.is_enabled) {
+        // Points are calculated on actual payment amount (excluding points discount)
+        const amountForPoints = totalAmount - pointsDiscount;
+        const basePoints = Math.floor(amountForPoints / pointSettings.spend_amount) * pointSettings.earn_points;
+        pointsToEarn = Math.floor(basePoints * pointsMultiplier);
+      }
+
+      // Determine if points are pending or active
+      // If customer still has debt, points are pending
+      const pointsArePending = pointSettings?.require_full_payment && debtAmount > 0;
+
       // Create receipt
       const { data: receipt, error: receiptError } = await supabase
         .from('export_receipts')
@@ -151,6 +199,9 @@ export function useCreateExportReceipt() {
             total_amount: totalAmount,
             paid_amount: paidAmount,
             debt_amount: debtAmount,
+            points_earned: pointsToEarn,
+            points_redeemed: pointsRedeemed,
+            points_discount: pointsDiscount,
             note,
             created_by: user?.id,
           },
@@ -222,10 +273,6 @@ export function useCreateExportReceipt() {
       }
 
       // Create cash book entries for actual payments (not debt)
-      // Note: is_business_accounting = false because:
-      // - The profit is calculated directly from (sale_price - import_price) in reports
-      // - This entry is just for tracking cash flow, not for P&L calculation
-      // - Setting to true would cause double-counting
       const cashBookEntries = payments
         .filter((p) => p.payment_type !== 'debt' && p.amount > 0)
         .map((p) => ({
@@ -248,7 +295,75 @@ export function useCreateExportReceipt() {
         if (cashBookError) throw cashBookError;
       }
 
-      return receipt;
+      // ============ HANDLE POINTS ============
+      if (pointSettings?.is_enabled && customer) {
+        // 1. Handle points earned
+        if (pointsToEarn > 0) {
+          const newBalance = pointsArePending 
+            ? customer.current_points 
+            : customer.current_points + pointsToEarn;
+          
+          const newPending = pointsArePending 
+            ? (customer.pending_points || 0) + pointsToEarn 
+            : customer.pending_points || 0;
+
+          // Create point transaction
+          await supabase.from('point_transactions').insert([{
+            customer_id: customerId,
+            transaction_type: 'earn',
+            points: pointsToEarn,
+            balance_after: pointsArePending ? customer.current_points : newBalance,
+            status: pointsArePending ? 'pending' : 'active',
+            reference_type: 'export_receipt',
+            reference_id: receipt.id,
+            description: `Tích điểm từ đơn hàng ${code}`,
+            note: pointsArePending ? 'Điểm treo - chờ thanh toán đủ' : null,
+            created_by: user?.id,
+          }]);
+
+          // Update customer points
+          await supabase.from('customers').update({
+            current_points: pointsArePending ? customer.current_points : newBalance,
+            pending_points: newPending,
+            total_points_earned: customer.total_points_earned + pointsToEarn,
+            total_spent: customer.total_spent + totalAmount,
+            last_purchase_date: new Date().toISOString(),
+          }).eq('id', customerId);
+        } else {
+          // No points earned, just update total_spent and last_purchase_date
+          await supabase.from('customers').update({
+            total_spent: customer.total_spent + totalAmount,
+            last_purchase_date: new Date().toISOString(),
+          }).eq('id', customerId);
+        }
+
+        // 2. Handle points redeemed
+        if (pointsRedeemed > 0) {
+          const newBalance = customer.current_points - pointsRedeemed + (pointsArePending ? 0 : pointsToEarn);
+
+          // Create point transaction for redemption
+          await supabase.from('point_transactions').insert([{
+            customer_id: customerId,
+            transaction_type: 'redeem',
+            points: -pointsRedeemed,
+            balance_after: newBalance,
+            status: 'active',
+            reference_type: 'export_receipt',
+            reference_id: receipt.id,
+            description: `Đổi điểm cho đơn hàng ${code}`,
+            note: `Giảm giá ${pointsDiscount.toLocaleString('vi-VN')}đ`,
+            created_by: user?.id,
+          }]);
+
+          // Update customer used points
+          await supabase.from('customers').update({
+            current_points: newBalance,
+            total_points_used: customer.total_points_used + pointsRedeemed,
+          }).eq('id', customerId);
+        }
+      }
+
+      return { ...receipt, points_earned: pointsToEarn, points_pending: pointsArePending };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['export-receipts'] });
@@ -257,6 +372,9 @@ export function useCreateExportReceipt() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['customers-with-points'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-detail'] });
+      queryClient.invalidateQueries({ queryKey: ['point-transactions'] });
     },
   });
 }
