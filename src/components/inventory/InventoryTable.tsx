@@ -63,18 +63,18 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
 
   return (
     <>
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]">#</TableHead>
-              <TableHead className="min-w-[250px]">Sản phẩm</TableHead>
-              <TableHead>Chi nhánh</TableHead>
-              <TableHead className="text-center">Loại</TableHead>
-              <TableHead className="text-center">Tổng nhập</TableHead>
-              <TableHead className="text-center">Đã bán</TableHead>
-              <TableHead className="text-center">Tồn kho</TableHead>
-              <TableHead className="text-right">Thao tác</TableHead>
+              <TableHead className="w-[50px] whitespace-nowrap">#</TableHead>
+              <TableHead className="min-w-[200px]">Sản phẩm</TableHead>
+              <TableHead className="whitespace-nowrap hidden md:table-cell">Chi nhánh</TableHead>
+              <TableHead className="text-center whitespace-nowrap hidden sm:table-cell">Loại</TableHead>
+              <TableHead className="text-center whitespace-nowrap hidden lg:table-cell">Tổng nhập</TableHead>
+              <TableHead className="text-center whitespace-nowrap hidden lg:table-cell">Đã bán</TableHead>
+              <TableHead className="text-center whitespace-nowrap">Tồn kho</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -83,8 +83,8 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
                 <TableCell className="text-muted-foreground">{index + 1}</TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">
-                    <span className="font-medium">{item.productName}</span>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="font-medium line-clamp-2">{item.productName}</span>
+                    <span className="text-xs text-muted-foreground">
                       SKU: {item.sku}
                     </span>
                     {item.categoryName && (
@@ -92,14 +92,18 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
                         {item.categoryName}
                       </Badge>
                     )}
+                    {/* Mobile only: Show branch */}
+                    <span className="text-xs text-muted-foreground md:hidden">
+                      {item.branchName || '-'}
+                    </span>
                   </div>
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden md:table-cell">
                   {item.branchName || (
                     <span className="text-muted-foreground">-</span>
                   )}
                 </TableCell>
-                <TableCell className="text-center">
+                <TableCell className="text-center hidden sm:table-cell">
                   {item.hasImei ? (
                     <Badge variant="secondary" className="gap-1">
                       <Smartphone className="h-3 w-3" />
@@ -109,10 +113,10 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
                     <Badge variant="outline">Thường</Badge>
                   )}
                 </TableCell>
-                <TableCell className="text-center">
+                <TableCell className="text-center hidden lg:table-cell">
                   <Badge variant="outline">{item.totalImported}</Badge>
                 </TableCell>
-                <TableCell className="text-center">
+                <TableCell className="text-center hidden lg:table-cell">
                   <Badge variant="secondary">{item.totalSold}</Badge>
                 </TableCell>
                 <TableCell className="text-center">
@@ -125,17 +129,17 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
                     variant="outline"
                     size="sm"
                     onClick={() => handleViewDetail(item)}
-                    className="gap-2"
+                    className="gap-1 text-xs sm:text-sm sm:gap-2"
                   >
                     {item.hasImei ? (
                       <>
-                        <Smartphone className="h-4 w-4" />
-                        IMEI
+                        <Smartphone className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="hidden sm:inline">IMEI</span>
                       </>
                     ) : (
                       <>
-                        <FileText className="h-4 w-4" />
-                        Chi tiết
+                        <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="hidden sm:inline">Chi tiết</span>
                       </>
                     )}
                   </Button>
