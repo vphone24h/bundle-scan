@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   useCurrentTenant, 
   useSubscriptionPlans, 
@@ -22,7 +24,9 @@ import {
   History, 
   Loader2,
   Copy,
-  CheckCircle
+  CheckCircle,
+  Phone,
+  QrCode
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { formatNumber } from '@/lib/formatNumber';
@@ -37,6 +41,63 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+interface BankAccount {
+  id: string;
+  bank_name: string;
+  account_number: string;
+  account_holder: string;
+  is_active: boolean;
+}
+
+interface PaymentConfig {
+  config_key: string;
+  config_value: string | null;
+}
+
+// VietQR bank codes mapping
+const bankCodes: Record<string, string> = {
+  'Vietcombank': 'VCB',
+  'VCB': 'VCB',
+  'Techcombank': 'TCB',
+  'TCB': 'TCB',
+  'MB Bank': 'MB',
+  'MBBank': 'MB',
+  'MB': 'MB',
+  'BIDV': 'BIDV',
+  'VietinBank': 'ICB',
+  'Agribank': 'VBA',
+  'ACB': 'ACB',
+  'Sacombank': 'STB',
+  'VPBank': 'VPB',
+  'TPBank': 'TPB',
+  'SHB': 'SHB',
+  'Eximbank': 'EIB',
+  'OCB': 'OCB',
+  'MSB': 'MSB',
+  'HDBank': 'HDB',
+  'VIB': 'VIB',
+  'NCB': 'NCB',
+  'SeABank': 'SEAB',
+  'LienVietPostBank': 'LPB',
+  'PVcomBank': 'PVCB',
+  'BacABank': 'BAB',
+  'OceanBank': 'OJB',
+  'GPBank': 'GPB',
+  'NamABank': 'NAB',
+  'KienLongBank': 'KLB',
+  'ABBank': 'ABB',
+  'VietABank': 'VAB',
+  'BaoVietBank': 'BVBANK',
+  'SaigonBank': 'SGB',
+  'PublicBank': 'PBVN',
+  'UOB': 'UOB',
+  'StandardChartered': 'SCVN',
+  'HSBC': 'HSBC',
+  'Woori': 'WVN',
+  'Shinhan': 'SHBVN',
+  'CIMB': 'CIMB',
+};
+
 export default function SubscriptionPage() {
   const { data: tenant } = useCurrentTenant();
   const { data: plans } = useSubscriptionPlans();
@@ -49,9 +110,69 @@ export default function SubscriptionPage() {
   const [note, setNote] = useState('');
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentCode, setPaymentCode] = useState('');
+  const [selectedAmount, setSelectedAmount] = useState(0);
+
+  // Fetch payment config
+  const { data: configs } = useQuery({
+    queryKey: ['payment-config'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payment_config')
+        .select('*');
+      if (error) throw error;
+      return data as PaymentConfig[];
+    },
+  });
+
+  // Fetch bank accounts
+  const { data: bankAccounts } = useQuery({
+    queryKey: ['bank-accounts-active'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bank_accounts')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
+      if (error) throw error;
+      return data as BankAccount[];
+    },
+  });
+
+  const hotline = configs?.find(c => c.config_key === 'hotline')?.config_value || '0909 123 456';
+  const companyName = configs?.find(c => c.config_key === 'company_name')?.config_value || 'Kho Hàng Pro';
+  const primaryBank = bankAccounts?.[0];
 
   const remainingDays = calculateRemainingDays(tenant || null);
   const pendingPayment = payments?.find(p => p.status === 'pending');
+
+  // Generate VietQR URL
+  const generateVietQRUrl = (bank: BankAccount, amount: number, content: string) => {
+    const bankCode = getBankCode(bank.bank_name);
+    if (!bankCode) return null;
+    
+    const accountNo = bank.account_number.replace(/\s/g, '');
+    const template = 'compact2';
+    
+    // VietQR format: https://img.vietqr.io/image/{BANK_ID}-{ACCOUNT_NO}-{TEMPLATE}.png?amount={AMOUNT}&addInfo={CONTENT}
+    const url = `https://img.vietqr.io/image/${bankCode}-${accountNo}-${template}.png?amount=${amount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(bank.account_holder)}`;
+    
+    return url;
+  };
+
+  const getBankCode = (bankName: string): string | null => {
+    // Try exact match first
+    if (bankCodes[bankName]) return bankCodes[bankName];
+    
+    // Try partial match
+    for (const [key, code] of Object.entries(bankCodes)) {
+      if (bankName.toLowerCase().includes(key.toLowerCase()) || 
+          key.toLowerCase().includes(bankName.toLowerCase())) {
+        return code;
+      }
+    }
+    
+    return null;
+  };
 
   const handleSubmitPayment = async () => {
     if (!selectedPlan || !tenant) return;
@@ -68,6 +189,7 @@ export default function SubscriptionPage() {
       });
 
       setPaymentCode(result.payment_code);
+      setSelectedAmount(plan.price);
       setShowPaymentDialog(true);
       setSelectedPlan('');
       setNote('');
@@ -88,6 +210,11 @@ export default function SubscriptionPage() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({ title: 'Đã sao chép' });
+  };
+
+  // Generate transfer content: {TENANT_SUBDOMAIN} - {PAYMENT_CODE}
+  const getTransferContent = () => {
+    return `${tenant?.subdomain?.toUpperCase() || ''} ${paymentCode}`;
   };
 
   return (
@@ -147,7 +274,7 @@ export default function SubscriptionPage() {
 
         {/* Subscription Plans */}
         {!pendingPayment && (
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {plans?.map((plan) => (
               <Card 
                 key={plan.id}
@@ -271,49 +398,90 @@ export default function SubscriptionPage() {
         </Card>
       </div>
 
-      {/* Payment Instructions Dialog */}
+      {/* Payment Instructions Dialog with QR */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Hướng dẫn thanh toán</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5" />
+              Thanh toán qua QR
+            </DialogTitle>
             <DialogDescription>
-              Vui lòng chuyển khoản theo thông tin bên dưới
+              Quét mã QR hoặc chuyển khoản thủ công
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="bg-muted p-4 rounded-lg space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Ngân hàng:</span>
-                <span className="font-medium">Vietcombank</span>
+            {/* QR Code */}
+            {primaryBank && (
+              <div className="flex justify-center">
+                <div className="bg-white p-4 rounded-lg border">
+                  <img 
+                    src={generateVietQRUrl(primaryBank, selectedAmount, getTransferContent()) || ''} 
+                    alt="QR thanh toán"
+                    className="w-48 h-48 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
               </div>
+            )}
+
+            {/* Bank Info */}
+            <div className="bg-muted p-4 rounded-lg space-y-3">
+              {primaryBank ? (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Ngân hàng:</span>
+                    <span className="font-medium">{primaryBank.bank_name}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Số tài khoản:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-medium">{primaryBank.account_number}</span>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-6 w-6"
+                        onClick={() => copyToClipboard(primaryBank.account_number)}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Chủ tài khoản:</span>
+                    <span className="font-medium">{primaryBank.account_holder}</span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-center text-muted-foreground">Chưa có thông tin ngân hàng</p>
+              )}
+              
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Số tài khoản:</span>
+                <span className="text-sm text-muted-foreground">Số tiền:</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-medium">1234567890</span>
+                  <span className="font-bold text-primary">{formatNumber(selectedAmount)}đ</span>
                   <Button 
                     size="icon" 
                     variant="ghost" 
                     className="h-6 w-6"
-                    onClick={() => copyToClipboard('1234567890')}
+                    onClick={() => copyToClipboard(selectedAmount.toString())}
                   >
                     <Copy className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Chủ tài khoản:</span>
-                <span className="font-medium">CONG TY ABC</span>
-              </div>
-              <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Nội dung CK:</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-medium text-primary">{paymentCode}</span>
+                  <span className="font-mono font-medium text-primary">{getTransferContent()}</span>
                   <Button 
                     size="icon" 
                     variant="ghost" 
                     className="h-6 w-6"
-                    onClick={() => copyToClipboard(paymentCode)}
+                    onClick={() => copyToClipboard(getTransferContent())}
                   >
                     <Copy className="h-3 w-3" />
                   </Button>
@@ -321,9 +489,12 @@ export default function SubscriptionPage() {
               </div>
             </div>
 
-            <div className="text-sm text-muted-foreground">
-              <p>⚠️ Vui lòng nhập đúng nội dung chuyển khoản để được xử lý nhanh chóng.</p>
-              <p>📞 Liên hệ hỗ trợ nếu cần: 0909 123 456</p>
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p>⚠️ Vui lòng nhập đúng nội dung chuyển khoản để được xử lý tự động.</p>
+              <p className="flex items-center gap-1">
+                <Phone className="h-3 w-3" />
+                Hotline hỗ trợ: <a href={`tel:${hotline}`} className="text-primary font-medium">{hotline}</a>
+              </p>
             </div>
           </div>
 

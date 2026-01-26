@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TenantsManagement } from '@/components/platform/TenantsManagement';
 import { PaymentsManagement } from '@/components/platform/PaymentsManagement';
 import { PlansManagement } from '@/components/platform/PlansManagement';
+import { PaymentConfigManagement } from '@/components/platform/PaymentConfigManagement';
+import { PaymentHistoryTable } from '@/components/platform/PaymentHistoryTable';
 import { PlatformStats } from '@/components/platform/PlatformStats';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate } from 'react-router-dom';
@@ -36,11 +38,13 @@ export default function PlatformAdminPage() {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-6">
             <TabsTrigger value="overview">Tổng quan</TabsTrigger>
             <TabsTrigger value="tenants">Doanh nghiệp</TabsTrigger>
             <TabsTrigger value="payments">Thanh toán</TabsTrigger>
+            <TabsTrigger value="history">Lịch sử</TabsTrigger>
             <TabsTrigger value="plans">Gói dịch vụ</TabsTrigger>
+            <TabsTrigger value="config">Cấu hình</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
@@ -55,8 +59,16 @@ export default function PlatformAdminPage() {
             <PaymentsManagement />
           </TabsContent>
 
+          <TabsContent value="history" className="mt-6">
+            <PaymentHistoryTable />
+          </TabsContent>
+
           <TabsContent value="plans" className="mt-6">
             <PlansManagement />
+          </TabsContent>
+
+          <TabsContent value="config" className="mt-6">
+            <PaymentConfigManagement />
           </TabsContent>
         </Tabs>
       </div>
