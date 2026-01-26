@@ -50,12 +50,14 @@ import {
   Building2,
   Filter,
   Loader2,
+  BookOpen,
 } from 'lucide-react';
 import { format, subDays, startOfWeek, startOfMonth, subMonths, subWeeks } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useReportStats, useReportChartData } from '@/hooks/useReportStats';
 import { useBranches } from '@/hooks/useBranches';
 import { useCategories } from '@/hooks/useCategories';
+import { useReportsGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency } from '@/lib/mockData';
 
 const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -120,6 +122,7 @@ export default function ReportsPage() {
 
   const { data: branches } = useBranches();
   const { data: categories } = useCategories();
+  const reportsGuideUrl = useReportsGuideUrl();
 
   const filters = {
     startDate,
@@ -199,6 +202,16 @@ export default function ReportsPage() {
       <PageHeader
         title="Báo cáo doanh thu & Lợi nhuận"
         description="Phân tích chi tiết hoạt động kinh doanh"
+        actions={
+          reportsGuideUrl && (
+            <Button variant="secondary" size="sm" asChild>
+              <a href={reportsGuideUrl} target="_blank" rel="noopener noreferrer">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Hướng dẫn
+              </a>
+            </Button>
+          )
+        }
       />
 
       <div className="p-6 space-y-6">
