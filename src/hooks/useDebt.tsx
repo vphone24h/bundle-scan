@@ -392,6 +392,27 @@ export function useCreateDebtPayment() {
         }]);
       }
 
+      // Audit log
+      const actionDesc = payment.entity_type === 'customer' 
+        ? (payment.payment_type === 'payment' ? 'Khách trả nợ' : 'Cộng nợ khách')
+        : (payment.payment_type === 'payment' ? 'Trả nợ NCC' : 'Cộng nợ NCC');
+      
+      await supabase.from('audit_logs').insert([{
+        user_id: user?.id,
+        action_type: 'create',
+        table_name: 'debt_payments',
+        record_id: data.id,
+        branch_id: payment.branch_id || null,
+        new_data: {
+          entity_type: payment.entity_type,
+          entity_id: payment.entity_id,
+          payment_type: payment.payment_type,
+          amount: payment.amount,
+          payment_source: payment.payment_source,
+        },
+        description: `${actionDesc}: ${payment.amount.toLocaleString('vi-VN')}đ - ${payment.description}`,
+      }]);
+
       return data;
     },
     onSuccess: (_, variables) => {

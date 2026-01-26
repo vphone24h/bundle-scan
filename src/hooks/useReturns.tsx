@@ -282,6 +282,25 @@ export function useCreateImportReturn() {
         }
       }
 
+      // Audit log
+      await supabase.from('audit_logs').insert([{
+        user_id: user.id,
+        action_type: 'create',
+        table_name: 'import_returns',
+        record_id: returnData.id,
+        branch_id: product.branch_id || null,
+        new_data: {
+          code,
+          product_name: product.name,
+          sku: product.sku,
+          imei: product.imei,
+          import_price: product.import_price,
+          total_refund: totalRefund,
+          supplier_id: product.supplier_id,
+        },
+        description: `Trả hàng nhập: ${product.name} (${product.sku}) - Hoàn: ${totalRefund.toLocaleString('vi-VN')}đ`,
+      }]);
+
       return returnData;
     },
     onSuccess: () => {
@@ -502,6 +521,27 @@ export function useCreateExportReturn() {
           if (cashBookError) throw cashBookError;
         }
       }
+
+      // Audit log
+      await supabase.from('audit_logs').insert([{
+        user_id: user.id,
+        action_type: 'create',
+        table_name: 'export_returns',
+        record_id: returnData.id,
+        branch_id: item.branch_id || null,
+        new_data: {
+          code,
+          product_name: item.product_name,
+          sku: item.sku,
+          imei: item.imei,
+          sale_price: item.sale_price,
+          refund_amount: refundAmount,
+          store_keep_amount: storeKeepAmount,
+          fee_type: feeType,
+          customer_id: item.customer_id,
+        },
+        description: `Trả hàng xuất: ${item.product_name} - Hoàn khách: ${refundAmount.toLocaleString('vi-VN')}đ${storeKeepAmount > 0 ? ` - Phí: ${storeKeepAmount.toLocaleString('vi-VN')}đ` : ''}`,
+      }]);
 
       return returnData;
     },
