@@ -109,6 +109,8 @@ export default function ImportNewPage() {
     setSuggestions([]);
   };
 
+  const [isCheckingIMEI, setIsCheckingIMEI] = useState(false);
+
   const handleAddToCart = async () => {
     if (!form.productName || !form.sku || !form.categoryId || !form.importPrice) {
       toast({
@@ -120,27 +122,42 @@ export default function ImportNewPage() {
     }
 
     // Check IMEI uniqueness
-    if (form.imei) {
-      const existingProduct = await checkIMEI.mutateAsync(form.imei);
-      if (existingProduct) {
+    if (form.imei && form.imei.trim()) {
+      // Check in cart first (local)
+      const inCart = cart.find(item => item.imei === form.imei.trim());
+      if (inCart) {
         toast({
-          title: 'IMEI đã tồn tại',
-          description: `Sản phẩm "${existingProduct.name}" đang có IMEI này trong kho`,
+          title: 'IMEI trùng trong giỏ',
+          description: `IMEI "${form.imei}" đã được thêm vào giỏ nhập hàng`,
           variant: 'destructive',
         });
         return;
       }
 
-      // Also check in cart
-      const inCart = cart.find(item => item.imei === form.imei);
-      if (inCart) {
+      // Check in database
+      try {
+        setIsCheckingIMEI(true);
+        const existingProduct = await checkIMEI.mutateAsync(form.imei.trim());
+        if (existingProduct) {
+          toast({
+            title: 'IMEI đã tồn tại trong kho',
+            description: `Sản phẩm "${existingProduct.name}" đang có IMEI "${form.imei}" với trạng thái "${existingProduct.status}". Không thể nhập trùng.`,
+            variant: 'destructive',
+          });
+          setIsCheckingIMEI(false);
+          return;
+        }
+      } catch (error: any) {
+        console.error('Error checking IMEI:', error);
         toast({
-          title: 'IMEI trùng trong giỏ',
-          description: 'IMEI này đã được thêm vào giỏ nhập hàng',
+          title: 'Lỗi kiểm tra IMEI',
+          description: error.message || 'Không thể kiểm tra IMEI',
           variant: 'destructive',
         });
+        setIsCheckingIMEI(false);
         return;
       }
+      setIsCheckingIMEI(false);
     }
 
     const category = categories?.find((c) => c.id === form.categoryId);
@@ -491,9 +508,13 @@ export default function ImportNewPage() {
               </div>
 
               <div className="mt-6 flex justify-end">
-                <Button onClick={handleAddToCart}>
-                  <ShoppingCart className="mr-2 h-4 w-4" />
-                  Thêm vào giỏ
+                <Button onClick={handleAddToCart} disabled={isCheckingIMEI}>
+                  {isCheckingIMEI ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                  )}
+                  {isCheckingIMEI ? 'Đang kiểm tra IMEI...' : 'Thêm vào giỏ'}
                 </Button>
               </div>
             </div>
