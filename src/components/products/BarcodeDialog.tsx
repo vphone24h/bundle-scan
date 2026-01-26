@@ -246,6 +246,66 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     </div>
   );
 
+  // Get sample product for preview
+  const sampleProduct = productEntries[0];
+
+  const renderBarcodePreview = () => (
+    <div className="flex-1 flex flex-col items-center">
+      <p className="text-xs text-muted-foreground mb-2">Xem trước nhãn</p>
+      <div className="border-2 border-dashed border-primary/30 rounded-lg p-4 bg-background min-w-[200px] max-w-[240px]">
+        {/* Barcode label preview */}
+        <div className="flex flex-col items-center gap-2 text-center">
+          {/* Store name */}
+          {settings.showStoreName && settings.storeName && (
+            <p className="text-[10px] font-semibold text-primary truncate w-full">
+              {settings.storeName}
+            </p>
+          )}
+
+          {/* Product name */}
+          {settings.showProductName && sampleProduct && (
+            <p className="text-[9px] text-foreground line-clamp-2 w-full">
+              {sampleProduct.name}
+            </p>
+          )}
+
+          {/* Barcode placeholder */}
+          <div className="w-full py-2">
+            <div className="flex items-end justify-center gap-[1px] h-10">
+              {/* Generate barcode-like lines */}
+              {Array.from({ length: 40 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-foreground"
+                  style={{
+                    width: i % 3 === 0 ? '2px' : '1px',
+                    height: `${20 + Math.random() * 20}px`,
+                  }}
+                />
+              ))}
+            </div>
+            {sampleProduct && (
+              <p className="text-[8px] text-muted-foreground mt-1 font-mono">
+                {sampleProduct.imei || sampleProduct.sku}
+              </p>
+            )}
+          </div>
+
+          {/* Price */}
+          {settings.showPrice && sampleProduct && (
+            <p className="text-sm font-bold text-foreground">
+              {formatNumberWithSpaces(sampleProduct.printPrice)}
+              {settings.priceWithVND && <span className="text-[10px] ml-1">VND</span>}
+            </p>
+          )}
+        </div>
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-2 text-center">
+        Nội dung thay đổi theo tuỳ chọn bên trái
+      </p>
+    </div>
+  );
+
   const renderSettings = () => (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -274,82 +334,91 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="space-y-3">
-          <div className="flex items-center space-x-3">
-            <Checkbox
-              id="showPrice"
-              checked={settings.showPrice}
-              onCheckedChange={(checked) =>
-                setSettings({ ...settings, showPrice: checked as boolean })
-              }
-            />
-            <Label htmlFor="showPrice" className="font-normal">
-              In giá
-            </Label>
-          </div>
-
-          {settings.showPrice && (
-            <div className="ml-7">
-              <RadioGroup
-                value={settings.priceWithVND ? 'with' : 'without'}
-                onValueChange={(v) =>
-                  setSettings({ ...settings, priceWithVND: v === 'with' })
+      {/* Main content: Options + Preview */}
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Options */}
+        <div className="flex-1 space-y-4">
+          <p className="text-sm font-medium text-muted-foreground">Tuỳ chọn hiển thị</p>
+          
+          <div className="space-y-3">
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="showPrice"
+                checked={settings.showPrice}
+                onCheckedChange={(checked) =>
+                  setSettings({ ...settings, showPrice: checked as boolean })
                 }
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="with" id="priceWith" />
-                  <Label htmlFor="priceWith" className="font-normal text-sm">
-                    Giá kèm VND (vd: 28,000,000 VND)
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="without" id="priceWithout" />
-                  <Label htmlFor="priceWithout" className="font-normal text-sm">
-                    Giá không kèm VND (vd: 28,000,000)
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-          )}
-
-          <div className="flex items-center space-x-3">
-            <Checkbox
-              id="showProductName"
-              checked={settings.showProductName}
-              onCheckedChange={(checked) =>
-                setSettings({ ...settings, showProductName: checked as boolean })
-              }
-            />
-            <Label htmlFor="showProductName" className="font-normal">
-              In tên sản phẩm
-            </Label>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <Checkbox
-              id="showStoreName"
-              checked={settings.showStoreName}
-              onCheckedChange={(checked) =>
-                setSettings({ ...settings, showStoreName: checked as boolean })
-              }
-            />
-            <Label htmlFor="showStoreName" className="font-normal">
-              In tên cửa hàng
-            </Label>
-          </div>
-
-          {settings.showStoreName && (
-            <div className="ml-7">
-              <Input
-                value={settings.storeName}
-                onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
-                placeholder="Tên cửa hàng"
-                className="max-w-xs"
               />
+              <Label htmlFor="showPrice" className="font-normal cursor-pointer">
+                In giá
+              </Label>
             </div>
-          )}
+
+            {settings.showPrice && (
+              <div className="ml-7 space-y-2">
+                <RadioGroup
+                  value={settings.priceWithVND ? 'with' : 'without'}
+                  onValueChange={(v) =>
+                    setSettings({ ...settings, priceWithVND: v === 'with' })
+                  }
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="with" id="priceWith" />
+                    <Label htmlFor="priceWith" className="font-normal text-sm cursor-pointer">
+                      Giá kèm VND (vd: 28,000,000 VND)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="without" id="priceWithout" />
+                    <Label htmlFor="priceWithout" className="font-normal text-sm cursor-pointer">
+                      Giá không kèm VND (vd: 28,000,000)
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            )}
+
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="showProductName"
+                checked={settings.showProductName}
+                onCheckedChange={(checked) =>
+                  setSettings({ ...settings, showProductName: checked as boolean })
+                }
+              />
+              <Label htmlFor="showProductName" className="font-normal cursor-pointer">
+                In tên sản phẩm
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="showStoreName"
+                checked={settings.showStoreName}
+                onCheckedChange={(checked) =>
+                  setSettings({ ...settings, showStoreName: checked as boolean })
+                }
+              />
+              <Label htmlFor="showStoreName" className="font-normal cursor-pointer">
+                In tên cửa hàng
+              </Label>
+            </div>
+
+            {settings.showStoreName && (
+              <div className="ml-7">
+                <Input
+                  value={settings.storeName}
+                  onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
+                  placeholder="Tên cửa hàng"
+                  className="max-w-xs"
+                />
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Live Preview */}
+        {sampleProduct && renderBarcodePreview()}
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
