@@ -238,6 +238,7 @@ export type Database = {
           check_same_email: boolean
           check_same_ip: boolean
           check_same_phone: boolean
+          commission_description: string | null
           created_at: string
           hold_days: number
           id: string
@@ -251,6 +252,7 @@ export type Database = {
           check_same_email?: boolean
           check_same_ip?: boolean
           check_same_phone?: boolean
+          commission_description?: string | null
           created_at?: string
           hold_days?: number
           id?: string
@@ -264,6 +266,7 @@ export type Database = {
           check_same_email?: boolean
           check_same_ip?: boolean
           check_same_phone?: boolean
+          commission_description?: string | null
           created_at?: string
           hold_days?: number
           id?: string

@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Save, Settings, Shield, Clock, Wallet } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, Save, Settings, Shield, Clock, Wallet, FileText } from 'lucide-react';
 import { useAffiliateSettings, useUpdateAffiliateSettings } from '@/hooks/useAffiliate';
 
 export function AffiliateSettingsManagement() {
@@ -20,6 +21,7 @@ export function AffiliateSettingsManagement() {
     check_same_ip: false,
     hold_days: 7,
     min_withdrawal_amount: 500000,
+    commission_description: '',
   });
 
   useEffect(() => {
@@ -33,6 +35,7 @@ export function AffiliateSettingsManagement() {
         check_same_ip: settings.check_same_ip,
         hold_days: settings.hold_days,
         min_withdrawal_amount: settings.min_withdrawal_amount,
+        commission_description: (settings as any).commission_description || '',
       });
     }
   }, [settings]);
@@ -169,6 +172,33 @@ export function AffiliateSettingsManagement() {
               checked={form.check_same_ip}
               onCheckedChange={(checked) => setForm({ ...form, check_same_ip: checked })}
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Mô tả hoa hồng */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Mô tả chương trình
+          </CardTitle>
+          <CardDescription>
+            Nội dung này sẽ hiển thị cho người dùng trên trang Affiliate
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label>Mô tả hoa hồng</Label>
+            <Textarea
+              placeholder="Nhập mô tả về chương trình hoa hồng affiliate..."
+              value={form.commission_description}
+              onChange={(e) => setForm({ ...form, commission_description: e.target.value })}
+              rows={4}
+            />
+            <p className="text-xs text-muted-foreground">
+              Mô tả chi tiết về cách tính hoa hồng, điều kiện nhận thưởng, v.v.
+            </p>
           </div>
         </CardContent>
       </Card>
