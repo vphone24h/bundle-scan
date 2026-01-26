@@ -422,7 +422,6 @@ export function useCreateExportReturn() {
             sku: originalProduct?.sku || item.sku,
             imei: originalProduct?.imei || item.imei,
             import_price: newImportPrice,
-            sale_price: 0, // Giá bán mới sẽ được nhập sau
             quantity: 1,
             status: 'in_stock',
             category_id: originalProduct?.category_id || null,
