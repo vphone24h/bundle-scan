@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { ImportHistoryTable } from '@/components/import/ImportHistoryTable';
-import { mockImportReceipts, mockProducts, formatCurrency, formatDate } from '@/lib/mockData';
-import { ImportReceipt, Product } from '@/types/warehouse';
+import { useImportReceipts, useImportReceiptDetails, ImportReceipt } from '@/hooks/useImportReceipts';
+import { useProducts } from '@/hooks/useProducts';
+import { formatCurrency, formatDate } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -15,43 +15,37 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, Download, Calendar, FileText, MoreHorizontal, Pencil, RotateCcw } from 'lucide-react';
+import { Search, Download, Calendar, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 export default function ImportHistoryPage() {
-  const [receipts] = useState<ImportReceipt[]>(mockImportReceipts);
-  const [products] = useState<Product[]>(mockProducts);
+  const { data: receipts, isLoading: receiptsLoading } = useImportReceipts();
+  const { data: products, isLoading: productsLoading } = useProducts();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedReceipt, setSelectedReceipt] = useState<ImportReceipt | null>(null);
+  const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
+  const { data: receiptDetails, isLoading: detailsLoading } = useImportReceiptDetails(selectedReceiptId);
 
-  const filteredReceipts = receipts.filter(
+  const filteredReceipts = receipts?.filter(
     (r) =>
       r.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.supplierName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      r.suppliers?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
 
-  const filteredProducts = products.filter(
+  const filteredProducts = products?.filter(
     (p) =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.imei?.includes(searchTerm) ||
       p.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) || [];
 
   const handleView = (receipt: ImportReceipt) => {
-    setSelectedReceipt(receipt);
+    setSelectedReceiptId(receipt.id);
   };
 
   const handleEdit = (receipt: ImportReceipt) => {
@@ -65,6 +59,18 @@ export default function ImportHistoryPage() {
   const handleExport = () => {
     console.log('Export to Excel');
   };
+
+  const isLoading = receiptsLoading || productsLoading;
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -113,12 +119,81 @@ export default function ImportHistoryPage() {
           </TabsList>
 
           <TabsContent value="receipts">
-            <ImportHistoryTable
-              receipts={filteredReceipts}
-              onView={handleView}
-              onEdit={handleEdit}
-              onReturn={handleReturn}
-            />
+            <div className="overflow-x-auto rounded-lg border bg-card">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Mã phiếu</th>
+                    <th>Ngày nhập</th>
+                    <th className="text-right">Tổng tiền</th>
+                    <th className="text-right">Đã thanh toán</th>
+                    <th className="text-right">Còn nợ</th>
+                    <th>Nhà cung cấp</th>
+                    <th>Trạng thái</th>
+                    <th className="w-16"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredReceipts.map((receipt) => (
+                    <tr key={receipt.id}>
+                      <td className="font-mono font-medium text-primary">{receipt.code}</td>
+                      <td>{formatDate(new Date(receipt.import_date))}</td>
+                      <td className="text-right font-medium">{formatCurrency(Number(receipt.total_amount))}</td>
+                      <td className="text-right text-success">{formatCurrency(Number(receipt.paid_amount))}</td>
+                      <td className="text-right">
+                        {Number(receipt.debt_amount) > 0 ? (
+                          <span className="text-destructive font-medium">
+                            {formatCurrency(Number(receipt.debt_amount))}
+                          </span>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                      <td>{receipt.suppliers?.name || '-'}</td>
+                      <td>
+                        <Badge
+                          className={cn(
+                            receipt.status === 'completed'
+                              ? 'status-in-stock'
+                              : 'bg-destructive/10 text-destructive border-destructive/20'
+                          )}
+                        >
+                          {receipt.status === 'completed' ? 'Hoàn tất' : 'Đã huỷ'}
+                        </Badge>
+                      </td>
+                      <td>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-popover">
+                            <DropdownMenuItem onClick={() => handleView(receipt)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Xem chi tiết
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEdit(receipt)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Chỉnh sửa
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleReturn(receipt)}>
+                              <RotateCcw className="mr-2 h-4 w-4" />
+                              Trả hàng
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredReceipts.length === 0 && (
+                <div className="py-12 text-center text-muted-foreground">
+                  Chưa có phiếu nhập nào
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="products">
@@ -133,7 +208,6 @@ export default function ImportHistoryPage() {
                     <th className="text-right">Giá nhập</th>
                     <th>Ngày nhập</th>
                     <th>Nhà cung cấp</th>
-                    <th>Mã phiếu</th>
                     <th>Trạng thái</th>
                     <th className="w-16"></th>
                   </tr>
@@ -144,15 +218,12 @@ export default function ImportHistoryPage() {
                       <td className="font-medium">{product.name}</td>
                       <td className="text-muted-foreground">{product.sku}</td>
                       <td className="font-mono text-sm">{product.imei || '-'}</td>
-                      <td>{product.categoryName}</td>
+                      <td>{product.categories?.name || '-'}</td>
                       <td className="text-right font-medium">
-                        {formatCurrency(product.importPrice)}
+                        {formatCurrency(Number(product.import_price))}
                       </td>
-                      <td>{formatDate(product.importDate)}</td>
-                      <td>{product.supplierName}</td>
-                      <td className="font-mono text-primary">
-                        {product.importReceiptId || '-'}
-                      </td>
+                      <td>{formatDate(new Date(product.import_date))}</td>
+                      <td>{product.suppliers?.name || '-'}</td>
                       <td>
                         <Badge
                           className={cn(
@@ -204,59 +275,59 @@ export default function ImportHistoryPage() {
       </div>
 
       {/* Receipt Detail Dialog */}
-      <Dialog open={!!selectedReceipt} onOpenChange={() => setSelectedReceipt(null)}>
+      <Dialog open={!!selectedReceiptId} onOpenChange={() => setSelectedReceiptId(null)}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Chi tiết phiếu nhập {selectedReceipt?.code}</DialogTitle>
+            <DialogTitle>Chi tiết phiếu nhập {receiptDetails?.receipt?.code}</DialogTitle>
           </DialogHeader>
 
-          {selectedReceipt && (
+          {detailsLoading ? (
+            <div className="py-8 flex justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : receiptDetails?.receipt && (
             <div className="space-y-6">
               {/* Info */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Ngày nhập:</span>
                   <span className="ml-2 font-medium">
-                    {formatDate(selectedReceipt.importDate)}
+                    {formatDate(new Date(receiptDetails.receipt.import_date))}
                   </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Nhà cung cấp:</span>
-                  <span className="ml-2 font-medium">{selectedReceipt.supplierName}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Người tạo:</span>
-                  <span className="ml-2 font-medium">{selectedReceipt.createdBy}</span>
+                  <span className="ml-2 font-medium">{receiptDetails.receipt.suppliers?.name || '-'}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Trạng thái:</span>
                   <Badge
                     className={cn(
                       'ml-2',
-                      selectedReceipt.status === 'completed'
+                      receiptDetails.receipt.status === 'completed'
                         ? 'status-in-stock'
                         : 'bg-destructive/10 text-destructive'
                     )}
                   >
-                    {selectedReceipt.status === 'completed' ? 'Hoàn tất' : 'Đã huỷ'}
+                    {receiptDetails.receipt.status === 'completed' ? 'Hoàn tất' : 'Đã huỷ'}
                   </Badge>
                 </div>
               </div>
 
               {/* Products */}
               <div>
-                <h4 className="font-semibold mb-3">Danh sách sản phẩm ({selectedReceipt.items.length})</h4>
+                <h4 className="font-semibold mb-3">Danh sách sản phẩm ({receiptDetails.products?.length || 0})</h4>
                 <div className="border rounded-lg divide-y">
-                  {selectedReceipt.items.map((item) => (
+                  {receiptDetails.products?.map((item: any) => (
                     <div key={item.id} className="p-3 flex items-center justify-between">
                       <div>
-                        <p className="font-medium">{item.productName}</p>
+                        <p className="font-medium">{item.name}</p>
                         <p className="text-xs text-muted-foreground">
                           SKU: {item.sku}
                           {item.imei && ` • IMEI: ${item.imei}`}
                         </p>
                       </div>
-                      <p className="font-medium">{formatCurrency(item.importPrice)}</p>
+                      <p className="font-medium">{formatCurrency(Number(item.import_price))}</p>
                     </div>
                   ))}
                 </div>
@@ -266,43 +337,45 @@ export default function ImportHistoryPage() {
               <div className="rounded-lg bg-muted/50 p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Tổng tiền:</span>
-                  <span className="font-bold">{formatCurrency(selectedReceipt.totalAmount)}</span>
+                  <span className="font-bold">{formatCurrency(Number(receiptDetails.receipt.total_amount))}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Đã thanh toán:</span>
                   <span className="text-success font-medium">
-                    {formatCurrency(selectedReceipt.paidAmount)}
+                    {formatCurrency(Number(receiptDetails.receipt.paid_amount))}
                   </span>
                 </div>
-                {selectedReceipt.debtAmount > 0 && (
+                {Number(receiptDetails.receipt.debt_amount) > 0 && (
                   <div className="flex justify-between text-sm">
                     <span>Còn nợ:</span>
                     <span className="text-destructive font-medium">
-                      {formatCurrency(selectedReceipt.debtAmount)}
+                      {formatCurrency(Number(receiptDetails.receipt.debt_amount))}
                     </span>
                   </div>
                 )}
-                <div className="pt-2 border-t text-xs text-muted-foreground">
-                  Thanh toán:{' '}
-                  {selectedReceipt.payments.map((p) => (
-                    <span key={p.type} className="mr-2">
-                      {p.type === 'cash'
-                        ? 'Tiền mặt'
-                        : p.type === 'bank_card'
-                        ? 'Thẻ NH'
-                        : p.type === 'e_wallet'
-                        ? 'Ví ĐT'
-                        : 'Công nợ'}
-                      : {formatCurrency(p.amount)}
-                    </span>
-                  ))}
-                </div>
+                {receiptDetails.payments && receiptDetails.payments.length > 0 && (
+                  <div className="pt-2 border-t text-xs text-muted-foreground">
+                    Thanh toán:{' '}
+                    {receiptDetails.payments.map((p: any) => (
+                      <span key={p.id} className="mr-2">
+                        {p.payment_type === 'cash'
+                          ? 'Tiền mặt'
+                          : p.payment_type === 'bank_card'
+                          ? 'Thẻ NH'
+                          : p.payment_type === 'e_wallet'
+                          ? 'Ví ĐT'
+                          : 'Công nợ'}
+                        : {formatCurrency(Number(p.amount))}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {selectedReceipt.note && (
+              {receiptDetails.receipt.note && (
                 <div>
                   <h4 className="font-semibold mb-2">Ghi chú</h4>
-                  <p className="text-sm text-muted-foreground">{selectedReceipt.note}</p>
+                  <p className="text-sm text-muted-foreground">{receiptDetails.receipt.note}</p>
                 </div>
               )}
             </div>

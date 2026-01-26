@@ -1,16 +1,33 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { mockDashboardStats, mockProducts, mockImportReceipts, formatCurrency, formatDate } from '@/lib/mockData';
-import { Package, TrendingUp, Wallet, Users, FolderTree, FileDown, AlertCircle } from 'lucide-react';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useProducts } from '@/hooks/useProducts';
+import { useImportReceipts } from '@/hooks/useImportReceipts';
+import { formatCurrency, formatDate } from '@/lib/mockData';
+import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { FolderTree, Users } from 'lucide-react';
 
 const Index = () => {
-  const stats = mockDashboardStats;
-  const recentProducts = mockProducts.slice(0, 5);
-  const recentReceipts = mockImportReceipts.slice(0, 3);
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: products, isLoading: productsLoading } = useProducts();
+  const { data: receipts, isLoading: receiptsLoading } = useImportReceipts();
+
+  const recentProducts = products?.slice(0, 5) || [];
+  const recentReceipts = receipts?.slice(0, 3) || [];
+
+  if (statsLoading) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -24,44 +41,44 @@ const Index = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Tổng sản phẩm"
-            value={stats.totalProducts}
+            value={stats?.totalProducts || 0}
             icon={<Package className="h-6 w-6" />}
           />
           <StatCard
             title="Tồn kho"
-            value={stats.inStockProducts}
+            value={stats?.inStockProducts || 0}
             icon={<TrendingUp className="h-6 w-6" />}
           />
           <StatCard
             title="Tổng giá trị nhập"
-            value={formatCurrency(stats.totalImportValue)}
+            value={formatCurrency(stats?.totalImportValue || 0)}
             icon={<Wallet className="h-6 w-6" />}
           />
           <StatCard
             title="Công nợ"
-            value={formatCurrency(stats.pendingDebt)}
+            value={formatCurrency(stats?.pendingDebt || 0)}
             icon={<AlertCircle className="h-6 w-6" />}
-            className={stats.pendingDebt > 0 ? 'border-warning/50' : ''}
+            className={(stats?.pendingDebt || 0) > 0 ? 'border-warning/50' : ''}
           />
         </div>
 
         {/* Quick stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-card border rounded-lg p-4 text-center">
-            <p className="text-3xl font-bold text-foreground">{stats.totalSuppliers}</p>
+            <p className="text-3xl font-bold text-foreground">{stats?.totalSuppliers || 0}</p>
             <p className="text-sm text-muted-foreground mt-1">Nhà cung cấp</p>
           </div>
           <div className="bg-card border rounded-lg p-4 text-center">
-            <p className="text-3xl font-bold text-foreground">{stats.totalCategories}</p>
+            <p className="text-3xl font-bold text-foreground">{stats?.totalCategories || 0}</p>
             <p className="text-sm text-muted-foreground mt-1">Danh mục</p>
           </div>
           <div className="bg-card border rounded-lg p-4 text-center">
-            <p className="text-3xl font-bold text-foreground">{stats.soldProducts}</p>
+            <p className="text-3xl font-bold text-foreground">{stats?.soldProducts || 0}</p>
             <p className="text-sm text-muted-foreground mt-1">Đã bán</p>
           </div>
           <div className="bg-card border rounded-lg p-4 text-center">
-            <p className="text-3xl font-bold text-foreground">{stats.recentImports}</p>
-            <p className="text-sm text-muted-foreground mt-1">Phiếu nhập gần đây</p>
+            <p className="text-3xl font-bold text-foreground">{stats?.recentImports || 0}</p>
+            <p className="text-sm text-muted-foreground mt-1">Nhập 7 ngày qua</p>
           </div>
         </div>
 
@@ -76,26 +93,32 @@ const Index = () => {
               </Button>
             </div>
             <div className="divide-y">
-              {recentProducts.map((product) => (
-                <div key={product.id} className="flex items-center gap-4 p-4">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Package className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{product.name}</p>
-                    <p className="text-xs text-muted-foreground">{product.categoryName}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-sm">{formatCurrency(product.importPrice)}</p>
-                    <Badge
-                      variant="outline"
-                      className={product.status === 'in_stock' ? 'status-in-stock' : 'status-sold'}
-                    >
-                      {product.status === 'in_stock' ? 'Tồn kho' : 'Đã bán'}
-                    </Badge>
-                  </div>
+              {recentProducts.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  Chưa có sản phẩm nào
                 </div>
-              ))}
+              ) : (
+                recentProducts.map((product) => (
+                  <div key={product.id} className="flex items-center gap-4 p-4">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Package className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{product.name}</p>
+                      <p className="text-xs text-muted-foreground">{product.categories?.name || 'Không có danh mục'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-sm">{formatCurrency(Number(product.import_price))}</p>
+                      <Badge
+                        variant="outline"
+                        className={product.status === 'in_stock' ? 'status-in-stock' : 'status-sold'}
+                      >
+                        {product.status === 'in_stock' ? 'Tồn kho' : 'Đã bán'}
+                      </Badge>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -108,23 +131,29 @@ const Index = () => {
               </Button>
             </div>
             <div className="divide-y">
-              {recentReceipts.map((receipt) => (
-                <div key={receipt.id} className="flex items-center gap-4 p-4">
-                  <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                    <FileDown className="h-5 w-5 text-accent" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm font-mono">{receipt.code}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {receipt.supplierName} • {receipt.items.length} SP
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-sm">{formatCurrency(receipt.totalAmount)}</p>
-                    <p className="text-xs text-muted-foreground">{formatDate(receipt.importDate)}</p>
-                  </div>
+              {recentReceipts.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  Chưa có phiếu nhập nào
                 </div>
-              ))}
+              ) : (
+                recentReceipts.map((receipt) => (
+                  <div key={receipt.id} className="flex items-center gap-4 p-4">
+                    <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                      <FileDown className="h-5 w-5 text-accent" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm font-mono">{receipt.code}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {receipt.suppliers?.name || 'Không rõ NCC'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-sm">{formatCurrency(Number(receipt.total_amount))}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(new Date(receipt.import_date))}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
