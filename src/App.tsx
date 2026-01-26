@@ -35,6 +35,7 @@ const CustomersPage = lazy(() => import("./pages/CustomersPage"));
 const PlatformAdminPage = lazy(() => import("./pages/PlatformAdminPage"));
 const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
 const AffiliatePage = lazy(() => import("./pages/AffiliatePage"));
+const EInvoicePage = lazy(() => import("./pages/EInvoicePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -84,6 +85,7 @@ const App = () => (
               <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
               <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
               <Route path="/affiliate" element={<ProtectedRoute><AffiliatePage /></ProtectedRoute>} />
+              <Route path="/einvoice" element={<ProtectedRoute><EInvoicePage /></ProtectedRoute>} />
               
               {/* Platform Admin route */}
               <Route path="/platform-admin" element={<ProtectedRoute><PlatformAdminPage /></ProtectedRoute>} />
