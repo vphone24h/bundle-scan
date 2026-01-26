@@ -18,7 +18,7 @@ import { exportToExcel, formatCurrencyForExcel } from '@/lib/exportExcel';
 export default function InventoryPage() {
   const { toast } = useToast();
   const { data: inventory, isLoading } = useInventory();
-  const { stats } = useInventoryStats();
+  // Bỏ useInventoryStats vì đã tính filteredStats bên dưới
   const [activeTab, setActiveTab] = useState('inventory');
 
   const [filters, setFilters] = useState<InventoryFilters>({
