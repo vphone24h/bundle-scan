@@ -149,6 +149,9 @@ export function useUpdateCashBookEntry() {
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Get tenant_id for audit log
+      const tenantId = await getCurrentTenantId();
+      
       // Get user's branch_id for audit log
       const { data: userRole } = await supabase
         .from('user_roles')
@@ -166,9 +169,10 @@ export function useUpdateCashBookEntry() {
 
       if (error) throw error;
 
-      // Ghi audit log
+      // Ghi audit log với tenant_id
       if (oldData) {
         await supabase.from('audit_logs').insert([{
+          tenant_id: tenantId,
           user_id: user?.id,
           action_type: 'update',
           table_name: 'cash_book',
@@ -219,6 +223,9 @@ export function useDeleteCashBookEntry() {
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Get tenant_id for audit log
+      const tenantId = await getCurrentTenantId();
+      
       // Get user's branch_id for audit log
       const { data: userRole } = await supabase
         .from('user_roles')
@@ -254,8 +261,9 @@ export function useDeleteCashBookEntry() {
 
       if (error) throw error;
 
-      // Ghi audit log với dữ liệu trước khi xóa và số dư nguồn tiền
+      // Ghi audit log với tenant_id, dữ liệu trước khi xóa và số dư nguồn tiền
       await supabase.from('audit_logs').insert([{
+        tenant_id: tenantId,
         user_id: user?.id,
         action_type: 'delete',
         table_name: 'cash_book',
