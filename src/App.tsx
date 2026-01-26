@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
+import PlatformAuthPage from "./pages/PlatformAuthPage";
 import RegisterPage from "./pages/RegisterPage";
 import ProductsPage from "./pages/ProductsPage";
 import CategoriesPage from "./pages/CategoriesPage";
@@ -41,6 +42,7 @@ const App = () => (
           <Routes>
             {/* Public routes */}
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/admin" element={<PlatformAuthPage />} />
             <Route path="/register" element={<RegisterPage />} />
             
             {/* Protected routes */}
