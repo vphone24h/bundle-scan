@@ -577,7 +577,7 @@ export default function ImportHistoryPage() {
 
       {/* Receipt Detail Dialog */}
       <Dialog open={!!selectedReceiptId} onOpenChange={() => setSelectedReceiptId(null)}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Chi tiết phiếu nhập {receiptDetails?.receipt?.code}</DialogTitle>
           </DialogHeader>
@@ -589,22 +589,25 @@ export default function ImportHistoryPage() {
           ) : receiptDetails?.receipt && (
             <div className="space-y-6">
               {/* Info */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm bg-muted/30 rounded-lg p-4">
                 <div>
-                  <span className="text-muted-foreground">Ngày nhập:</span>
-                  <span className="ml-2 font-medium">
+                  <span className="text-muted-foreground block text-xs">Ngày nhập</span>
+                  <span className="font-medium">
                     {formatDate(new Date(receiptDetails.receipt.import_date))}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Nhà cung cấp:</span>
-                  <span className="ml-2 font-medium">{receiptDetails.receipt.suppliers?.name || '-'}</span>
+                  <span className="text-muted-foreground block text-xs">Nhà cung cấp</span>
+                  <span className="font-medium">{receiptDetails.receipt.suppliers?.name || '-'}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Trạng thái:</span>
+                  <span className="text-muted-foreground block text-xs">Chi nhánh</span>
+                  <span className="font-medium">{receiptDetails.receipt.branches?.name || '-'}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-xs">Trạng thái</span>
                   <Badge
                     className={cn(
-                      'ml-2',
                       receiptDetails.receipt.status === 'completed'
                         ? 'status-in-stock'
                         : 'bg-destructive/10 text-destructive'
@@ -615,58 +618,101 @@ export default function ImportHistoryPage() {
                 </div>
               </div>
 
-              {/* Products */}
+              {/* Products Table */}
               <div>
-                <h4 className="font-semibold mb-3">Danh sách sản phẩm ({receiptDetails.productImports?.length || 0})</h4>
-                <div className="border rounded-lg divide-y">
-                  {receiptDetails.productImports?.map((item: any) => (
-                    <div key={item.id} className="p-3 flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{item.products?.name || 'N/A'}</p>
-                        <p className="text-xs text-muted-foreground">
-                          SKU: {item.products?.sku || 'N/A'}
-                          {item.products?.imei && ` • IMEI: ${item.products.imei}`}
-                          {item.quantity > 1 && ` • SL: ${item.quantity}`}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">{formatCurrency(Number(item.import_price))}</p>
-                        {item.quantity > 1 && (
-                          <p className="text-xs text-muted-foreground">
-                            x{item.quantity} = {formatCurrency(Number(item.import_price) * item.quantity)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                <h4 className="font-semibold mb-3">
+                  Danh sách sản phẩm ({receiptDetails.productImports?.length || 0} dòng)
+                </h4>
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="text-left p-3 font-medium">STT</th>
+                          <th className="text-left p-3 font-medium">Tên sản phẩm</th>
+                          <th className="text-left p-3 font-medium">SKU</th>
+                          <th className="text-left p-3 font-medium">IMEI</th>
+                          <th className="text-left p-3 font-medium">Danh mục</th>
+                          <th className="text-center p-3 font-medium">SL</th>
+                          <th className="text-right p-3 font-medium">Đơn giá</th>
+                          <th className="text-right p-3 font-medium">Thành tiền</th>
+                          <th className="text-center p-3 font-medium">Trạng thái</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {receiptDetails.productImports?.map((item: any, index: number) => (
+                          <tr key={item.id} className="hover:bg-muted/30">
+                            <td className="p-3 text-muted-foreground">{index + 1}</td>
+                            <td className="p-3 font-medium">{item.products?.name || 'N/A'}</td>
+                            <td className="p-3 font-mono text-xs">{item.products?.sku || '-'}</td>
+                            <td className="p-3 font-mono text-xs">
+                              {item.products?.imei || <span className="text-muted-foreground">-</span>}
+                            </td>
+                            <td className="p-3 text-muted-foreground">
+                              {item.products?.categories?.name || '-'}
+                            </td>
+                            <td className="p-3 text-center">{item.quantity}</td>
+                            <td className="p-3 text-right font-medium">
+                              {formatCurrency(Number(item.import_price))}
+                            </td>
+                            <td className="p-3 text-right font-medium">
+                              {formatCurrency(Number(item.import_price) * item.quantity)}
+                            </td>
+                            <td className="p-3 text-center">
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  'text-xs',
+                                  item.products?.status === 'in_stock'
+                                    ? 'border-success text-success'
+                                    : item.products?.status === 'sold'
+                                    ? 'border-primary text-primary'
+                                    : 'border-destructive text-destructive'
+                                )}
+                              >
+                                {item.products?.status === 'in_stock'
+                                  ? 'Tồn kho'
+                                  : item.products?.status === 'sold'
+                                  ? 'Đã bán'
+                                  : 'Đã trả'}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
 
-              {/* Payment */}
-              <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Tổng tiền:</span>
-                  <span className="font-bold">{formatCurrency(Number(receiptDetails.receipt.total_amount))}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Đã thanh toán:</span>
-                  <span className="text-success font-medium">
-                    {formatCurrency(Number(receiptDetails.receipt.paid_amount))}
-                  </span>
-                </div>
-                {Number(receiptDetails.receipt.debt_amount) > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Còn nợ:</span>
-                    <span className="text-destructive font-medium">
-                      {formatCurrency(Number(receiptDetails.receipt.debt_amount))}
+              {/* Payment Summary */}
+              <div className="rounded-lg bg-muted/50 p-4 space-y-3">
+                <h4 className="font-semibold">Thanh toán</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Tổng tiền:</span>
+                    <span className="ml-2 font-bold text-lg">{formatCurrency(Number(receiptDetails.receipt.total_amount))}</span>
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Đã thanh toán:</span>
+                    <span className="ml-2 text-success font-medium text-lg">
+                      {formatCurrency(Number(receiptDetails.receipt.paid_amount))}
                     </span>
                   </div>
-                )}
+                  {Number(receiptDetails.receipt.debt_amount) > 0 && (
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Còn nợ:</span>
+                      <span className="ml-2 text-destructive font-medium text-lg">
+                        {formatCurrency(Number(receiptDetails.receipt.debt_amount))}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 {receiptDetails.payments && receiptDetails.payments.length > 0 && (
-                  <div className="pt-2 border-t text-xs text-muted-foreground">
-                    Thanh toán:{' '}
+                  <div className="pt-3 border-t text-sm text-muted-foreground flex flex-wrap gap-3">
+                    <span>Hình thức:</span>
                     {receiptDetails.payments.map((p: any) => (
-                      <span key={p.id} className="mr-2">
+                      <Badge key={p.id} variant="outline" className="font-normal">
                         {p.payment_type === 'cash'
                           ? 'Tiền mặt'
                           : p.payment_type === 'bank_card'
@@ -675,14 +721,14 @@ export default function ImportHistoryPage() {
                           ? 'Ví ĐT'
                           : 'Công nợ'}
                         : {formatCurrency(Number(p.amount))}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 )}
               </div>
 
               {receiptDetails.receipt.note && (
-                <div>
+                <div className="rounded-lg border p-4">
                   <h4 className="font-semibold mb-2">Ghi chú</h4>
                   <p className="text-sm text-muted-foreground">{receiptDetails.receipt.note}</p>
                 </div>
