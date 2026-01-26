@@ -2,6 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from './usePermissions';
 
+// Helper to get current user's tenant_id
+async function getCurrentTenantId(): Promise<string | null> {
+  const { data } = await supabase.rpc('get_user_tenant_id_secure');
+  return data;
+}
+
 export interface DebtSummary {
   entity_id: string;
   entity_name: string;
@@ -359,13 +365,17 @@ export function useCreateDebtPayment() {
       branch_id?: string | null;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
-
+      
+      // Get current tenant_id
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
       // Insert debt payment
       const { data, error } = await supabase
         .from('debt_payments')
         .insert([{
           ...payment,
           created_by: user?.id,
+          tenant_id: tenantId,
         }])
         .select()
         .single();
@@ -389,6 +399,7 @@ export function useCreateDebtPayment() {
           reference_id: data.id,
           reference_type: 'debt_payment',
           created_by: user?.id,
+          tenant_id: tenantId,
         }]);
       }
 

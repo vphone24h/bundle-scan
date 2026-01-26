@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+// Helper to get current user's tenant_id
+async function getCurrentTenantId(): Promise<string | null> {
+  const { data } = await supabase.rpc('get_user_tenant_id_secure');
+  return data;
+}
 export interface ExportReceiptItem {
   id?: string;
   product_id: string | null;
@@ -150,6 +155,9 @@ export function useCreateExportReceipt() {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
 
+      // Get current tenant_id
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
       // ============ POINT CALCULATION ============
       // Get point settings
       const { data: pointSettings } = await supabase
@@ -206,6 +214,7 @@ export function useCreateExportReceipt() {
             points_discount: pointsDiscount,
             note,
             created_by: user?.id,
+            tenant_id: tenantId,
           },
         ])
         .select()
@@ -330,6 +339,7 @@ export function useCreateExportReceipt() {
           reference_id: receipt.id,
           reference_type: 'export_receipt',
           created_by: user?.id,
+          tenant_id: tenantId,
         }));
 
       if (cashBookEntries.length > 0) {

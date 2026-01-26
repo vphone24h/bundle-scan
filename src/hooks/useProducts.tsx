@@ -4,6 +4,12 @@ import { Database } from '@/integrations/supabase/types';
 
 type ProductStatus = Database['public']['Enums']['product_status'];
 
+// Helper to get current user's tenant_id
+async function getCurrentTenantId(): Promise<string | null> {
+  const { data } = await supabase.rpc('get_user_tenant_id_secure');
+  return data;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -61,9 +67,12 @@ export function useCreateProduct() {
       import_receipt_id?: string | null;
       note?: string | null;
     }) => {
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
       const { data, error } = await supabase
         .from('products')
-        .insert([product])
+        .insert([{ ...product, tenant_id: tenantId }])
         .select()
         .single();
 
