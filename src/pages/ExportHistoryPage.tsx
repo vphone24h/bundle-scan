@@ -351,6 +351,7 @@ export default function ExportHistoryPage() {
                       <TableHead>Mã phiếu</TableHead>
                       <TableHead>Ngày bán</TableHead>
                       <TableHead>Khách hàng</TableHead>
+                      <TableHead className="hidden lg:table-cell">Chi nhánh</TableHead>
                       <TableHead className="text-center">Số SP</TableHead>
                       <TableHead className="text-right">Tổng tiền</TableHead>
                       <TableHead className="text-right">Đã TT</TableHead>
@@ -371,6 +372,9 @@ export default function ExportHistoryPage() {
                           <div className="text-xs text-muted-foreground">
                             {receipt.customers?.phone}
                           </div>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          {receipt.branches?.name || '-'}
                         </TableCell>
                         <TableCell className="text-center">
                           {receipt.export_receipt_items?.length || 0}
