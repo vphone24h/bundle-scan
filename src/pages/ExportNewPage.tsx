@@ -42,9 +42,11 @@ import {
 import { useCheckProductForSale, useSearchProductsByName, useCreateExportReceipt, type ExportReceiptItem, type ExportPayment } from '@/hooks/useExportReceipts';
 import { useSearchCustomerByPhone, useUpsertCustomer } from '@/hooks/useCustomers';
 import { useDefaultInvoiceTemplate } from '@/hooks/useInvoiceTemplates';
+import { usePointSettings, useCustomerDetail } from '@/hooks/useCustomerPoints';
 import { ExportPaymentDialog } from '@/components/export/ExportPaymentDialog';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
+import { formatNumber } from '@/lib/formatNumber';
 
 interface CartItem extends ExportReceiptItem {
   tempId: string;
@@ -68,6 +70,7 @@ export default function ExportNewPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [customerSuggestions, setCustomerSuggestions] = useState<any[]>([]);
 
   // Payment dialog
@@ -82,6 +85,8 @@ export default function ExportNewPage() {
   const upsertCustomer = useUpsertCustomer();
   const createReceipt = useCreateExportReceipt();
   const { data: invoiceTemplate } = useDefaultInvoiceTemplate();
+  const { data: pointSettings } = usePointSettings();
+  const { data: selectedCustomerData } = useCustomerDetail(selectedCustomerId);
 
   // Handle barcode scan (IMEI or SKU)
   const handleBarcodeScan = async (barcode: string) => {
@@ -185,6 +190,7 @@ export default function ExportNewPage() {
     setCustomerPhone(customer.phone);
     setCustomerAddress(customer.address || '');
     setCustomerEmail(customer.email || '');
+    setSelectedCustomerId(customer.id);
     setCustomerSuggestions([]);
   };
 
@@ -270,7 +276,7 @@ export default function ExportNewPage() {
   };
 
   // Handle payment completion
-  const handlePaymentComplete = async (payments: ExportPayment[]) => {
+  const handlePaymentComplete = async (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number) => {
     try {
       // Create or update customer
       const customer = await upsertCustomer.mutateAsync({
@@ -280,11 +286,13 @@ export default function ExportNewPage() {
         email: customerEmail || null,
       });
 
-      // Create export receipt
+      // Create export receipt with points
       const receipt = await createReceipt.mutateAsync({
         customerId: customer.id,
         items: cart.map(({ tempId, categoryName, ...item }) => item),
         payments,
+        pointsRedeemed,
+        pointsDiscount,
       });
 
       setCreatedReceipt({
@@ -303,10 +311,19 @@ export default function ExportNewPage() {
       setCustomerPhone('');
       setCustomerAddress('');
       setCustomerEmail('');
+      setSelectedCustomerId(null);
+
+      // Build success message with points info
+      let successMessage = `Phiếu xuất ${receipt.code} đã được tạo`;
+      if (receipt.points_earned > 0) {
+        successMessage += receipt.points_pending 
+          ? `. Khách được ${receipt.points_earned} điểm (treo - chờ thanh toán đủ)`
+          : `. Khách được cộng ${receipt.points_earned} điểm`;
+      }
 
       toast({
         title: 'Xuất hàng thành công',
-        description: `Phiếu xuất ${receipt.code} đã được tạo`,
+        description: successMessage,
       });
     } catch (error: any) {
       toast({
@@ -595,6 +612,30 @@ export default function ExportNewPage() {
                   onChange={(e) => setCustomerEmail(e.target.value)}
                 />
               </div>
+
+              {/* Customer Points Info */}
+              {selectedCustomerData && pointSettings?.is_enabled && (
+                <div className="p-3 rounded-lg bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 border border-yellow-200 dark:border-yellow-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium flex items-center gap-1">
+                      ⭐ Điểm thưởng
+                    </span>
+                    <Badge variant="outline" className="text-xs">
+                      {selectedCustomerData.membership_tier === 'vip' ? 'VIP' : 
+                       selectedCustomerData.membership_tier === 'gold' ? 'Vàng' :
+                       selectedCustomerData.membership_tier === 'silver' ? 'Bạc' : 'Thường'}
+                    </Badge>
+                  </div>
+                  <div className="mt-2 text-lg font-bold text-primary">
+                    {formatNumber(selectedCustomerData.current_points)} điểm
+                  </div>
+                  {selectedCustomerData.pending_points > 0 && (
+                    <div className="text-xs text-yellow-600">
+                      +{formatNumber(selectedCustomerData.pending_points)} điểm treo
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -641,6 +682,17 @@ export default function ExportNewPage() {
         totalAmount={totalAmount}
         onConfirm={handlePaymentComplete}
         isLoading={createReceipt.isPending || upsertCustomer.isPending}
+        customerPoints={selectedCustomerData ? {
+          current_points: selectedCustomerData.current_points,
+          pending_points: selectedCustomerData.pending_points,
+          membership_tier: selectedCustomerData.membership_tier,
+        } : null}
+        pointSettings={pointSettings ? {
+          is_enabled: pointSettings.is_enabled,
+          redeem_points: pointSettings.redeem_points,
+          redeem_value: pointSettings.redeem_value,
+          max_redeem_percentage: pointSettings.max_redeem_percentage,
+        } : null}
       />
 
       {/* Invoice Print Dialog */}
