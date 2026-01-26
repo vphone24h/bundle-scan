@@ -49,6 +49,7 @@ export default function ImportHistoryPage() {
   const [dateTo, setDateTo] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('_all_');
   const [supplierFilter, setSupplierFilter] = useState('_all_');
+  const [statusFilter, setStatusFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
   
   const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
@@ -120,9 +121,12 @@ export default function ImportHistoryPage() {
       // Supplier filter
       const matchesSupplier = supplierFilter === '_all_' || p.supplier_id === supplierFilter;
       
-      return matchesSearch && matchesDate && matchesCategory && matchesSupplier;
+      // Status filter
+      const matchesStatus = statusFilter === '_all_' || p.status === statusFilter;
+      
+      return matchesSearch && matchesDate && matchesCategory && matchesSupplier && matchesStatus;
     });
-  }, [products, searchTerm, dateFrom, dateTo, categoryFilter, supplierFilter]);
+  }, [products, searchTerm, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter]);
 
   const handleView = (receipt: ImportReceipt) => {
     setSelectedReceiptId(receipt.id);
@@ -142,9 +146,10 @@ export default function ImportHistoryPage() {
     setDateTo('');
     setCategoryFilter('_all_');
     setSupplierFilter('_all_');
+    setStatusFilter('_all_');
   };
 
-  const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_';
+  const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_';
 
   // Export to Excel
   const handleExportReceipts = () => {
@@ -265,7 +270,7 @@ export default function ImportHistoryPage() {
 
               {/* Extended filters */}
               {showFilters && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pt-4 border-t">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 pt-4 border-t">
                   <div className="space-y-2">
                     <Label className="text-xs">Từ ngày</Label>
                     <Input
@@ -311,6 +316,20 @@ export default function ImportHistoryPage() {
                             {sup.name}
                           </SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Trạng thái</Label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Tất cả" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="_all_">Tất cả trạng thái</SelectItem>
+                        <SelectItem value="in_stock">Tồn kho</SelectItem>
+                        <SelectItem value="sold">Đã bán</SelectItem>
+                        <SelectItem value="returned">Đã trả NCC</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
