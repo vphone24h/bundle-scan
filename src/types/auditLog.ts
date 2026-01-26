@@ -14,8 +14,15 @@ export interface AuditLog {
   created_at: string;
 }
 
-// Nhóm thao tác
-export type ActionGroup = 'inventory' | 'cashbook' | 'sales' | 'system' | 'report' | 'all';
+// Nhóm thao tác - theo 5 loại nghiệp vụ chính
+export type ActionGroup = 
+  | 'all' 
+  | 'cashbook'      // 1. Sổ quỹ: chỉnh, xóa
+  | 'import'        // 2. Nhập hàng, sửa nhập, trả hàng nhập
+  | 'export'        // 3. Xuất hàng, sửa xuất, trả hàng xuất
+  | 'debt'          // 4. Công nợ: trả nợ NCC, khách trả nợ
+  | 'stock_count'   // 5. Kiểm kho
+  | 'system';       // Hệ thống (ẩn nếu cần)
 
 export const ACTION_GROUPS: Record<ActionGroup, { label: string; icon: string; tables: string[] }> = {
   all: {
@@ -23,30 +30,35 @@ export const ACTION_GROUPS: Record<ActionGroup, { label: string; icon: string; t
     icon: 'List',
     tables: [],
   },
-  inventory: {
-    label: 'Kho hàng',
-    icon: 'Package',
-    tables: ['products', 'import_receipts', 'import_returns', 'categories', 'suppliers'],
-  },
   cashbook: {
     label: 'Sổ quỹ',
     icon: 'Wallet',
-    tables: ['cash_book', 'cash_book_categories', 'receipt_payments', 'return_payments'],
+    tables: ['cash_book', 'cash_book_categories'],
   },
-  sales: {
-    label: 'Bán hàng',
-    icon: 'ShoppingCart',
-    tables: ['export_receipts', 'export_receipt_items', 'export_returns', 'customers'],
+  import: {
+    label: 'Nhập hàng',
+    icon: 'Download',
+    tables: ['import_receipts', 'products', 'import_returns', 'receipt_payments'],
+  },
+  export: {
+    label: 'Xuất hàng',
+    icon: 'Upload',
+    tables: ['export_receipts', 'export_receipt_items', 'export_returns', 'export_receipt_payments', 'return_payments'],
+  },
+  debt: {
+    label: 'Công nợ',
+    icon: 'CreditCard',
+    tables: ['debt_payments'],
+  },
+  stock_count: {
+    label: 'Kiểm kho',
+    icon: 'ClipboardList',
+    tables: ['stock_counts', 'stock_count_items'],
   },
   system: {
     label: 'Hệ thống',
     icon: 'Settings',
-    tables: ['branches', 'user_roles', 'profiles', 'invoice_templates'],
-  },
-  report: {
-    label: 'Báo cáo',
-    icon: 'BarChart3',
-    tables: ['reports'],
+    tables: ['branches', 'user_roles', 'profiles', 'invoice_templates', 'categories', 'suppliers', 'customers'],
   },
 };
 
@@ -86,6 +98,9 @@ export const TABLE_LABELS: Record<string, string> = {
   return_payments: 'Thanh toán trả hàng',
   export_receipt_payments: 'Thanh toán xuất',
   imei_histories: 'Lịch sử IMEI',
+  debt_payments: 'Thanh toán công nợ',
+  stock_counts: 'Phiếu kiểm kho',
+  stock_count_items: 'Chi tiết kiểm kho',
 };
 
 // Time filter options

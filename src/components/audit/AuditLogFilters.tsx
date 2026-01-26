@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Search, Filter, Calendar, Users, Building2, Package, Wallet, ShoppingCart, Settings, BarChart3, List, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Search, Filter, Calendar, Users, Building2, Wallet, Download, Upload, CreditCard, ClipboardList, Settings, List, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -19,20 +18,22 @@ import { ActionGroup, ACTION_LABELS, TIME_FILTER_LABELS, TimeFilter } from '@/ty
 
 const ACTION_GROUP_ICONS: Record<ActionGroup, React.ReactNode> = {
   all: <List className="h-4 w-4" />,
-  inventory: <Package className="h-4 w-4" />,
   cashbook: <Wallet className="h-4 w-4" />,
-  sales: <ShoppingCart className="h-4 w-4" />,
+  import: <Download className="h-4 w-4" />,
+  export: <Upload className="h-4 w-4" />,
+  debt: <CreditCard className="h-4 w-4" />,
+  stock_count: <ClipboardList className="h-4 w-4" />,
   system: <Settings className="h-4 w-4" />,
-  report: <BarChart3 className="h-4 w-4" />,
 };
 
 const ACTION_GROUP_LABELS: Record<ActionGroup, string> = {
   all: 'Tất cả',
-  inventory: 'Kho hàng',
   cashbook: 'Sổ quỹ',
-  sales: 'Bán hàng',
+  import: 'Nhập hàng',
+  export: 'Xuất hàng',
+  debt: 'Công nợ',
+  stock_count: 'Kiểm kho',
   system: 'Hệ thống',
-  report: 'Báo cáo',
 };
 
 interface AuditLogFiltersProps {
