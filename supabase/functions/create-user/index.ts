@@ -77,6 +77,24 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Check if email already exists
+    const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+    if (listError) {
+      console.error('List users error:', listError)
+      return new Response(
+        JSON.stringify({ error: 'Không thể kiểm tra email' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const emailExists = existingUsers.users.some(u => u.email?.toLowerCase() === email.toLowerCase())
+    if (emailExists) {
+      return new Response(
+        JSON.stringify({ error: 'Email này đã được sử dụng cho tài khoản khác' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Create the user using admin API
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -89,8 +107,15 @@ Deno.serve(async (req) => {
 
     if (createError) {
       console.error('Create user error:', createError)
+      // Translate common error messages to Vietnamese
+      let errorMessage = createError.message
+      if (createError.message.includes('already been registered')) {
+        errorMessage = 'Email này đã được sử dụng cho tài khoản khác'
+      } else if (createError.message.includes('password')) {
+        errorMessage = 'Mật khẩu không hợp lệ'
+      }
       return new Response(
-        JSON.stringify({ error: createError.message }),
+        JSON.stringify({ error: errorMessage }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
