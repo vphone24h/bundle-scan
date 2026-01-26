@@ -174,11 +174,42 @@ export function useCreateImportReceipt() {
 
       if (productsError) throw productsError;
 
+      // Create cash book entries for actual payments (not debt)
+      const paymentSourceMap: Record<string, string> = {
+        'cash': 'Tiền mặt',
+        'bank_card': 'Thẻ ngân hàng',
+        'e_wallet': 'Ví điện tử',
+      };
+
+      const cashBookEntries = payments
+        .filter(p => p.type !== 'debt' && p.amount > 0)
+        .map(p => ({
+          type: 'expense' as const,
+          category: 'Nhập hàng',
+          description: `Thanh toán phiếu nhập ${code}`,
+          amount: p.amount,
+          payment_source: paymentSourceMap[p.type] || p.type,
+          is_business_accounting: true,
+          reference_id: receipt.id,
+          reference_type: 'import_receipt',
+          created_by: user.id,
+        }));
+
+      if (cashBookEntries.length > 0) {
+        const { error: cashBookError } = await supabase
+          .from('cash_book')
+          .insert(cashBookEntries);
+
+        if (cashBookError) throw cashBookError;
+      }
+
       return receipt;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['report-stats'] });
     },
   });
 }

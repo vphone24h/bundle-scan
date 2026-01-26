@@ -221,6 +221,35 @@ export function useCreateExportReceipt() {
         }
       }
 
+      // Create cash book entries for actual payments (not debt)
+      const paymentSourceMap: Record<string, string> = {
+        'cash': 'Tiền mặt',
+        'bank_card': 'Thẻ ngân hàng',
+        'e_wallet': 'Ví điện tử',
+      };
+
+      const cashBookEntries = payments
+        .filter((p) => p.payment_type !== 'debt' && p.amount > 0)
+        .map((p) => ({
+          type: 'income' as const,
+          category: 'Bán hàng',
+          description: `Thu tiền phiếu xuất ${code}`,
+          amount: p.amount,
+          payment_source: paymentSourceMap[p.payment_type] || p.payment_type,
+          is_business_accounting: true,
+          reference_id: receipt.id,
+          reference_type: 'export_receipt',
+          created_by: user?.id,
+        }));
+
+      if (cashBookEntries.length > 0) {
+        const { error: cashBookError } = await supabase
+          .from('cash_book')
+          .insert(cashBookEntries);
+
+        if (cashBookError) throw cashBookError;
+      }
+
       return receipt;
     },
     onSuccess: () => {
@@ -228,6 +257,8 @@ export function useCreateExportReceipt() {
       queryClient.invalidateQueries({ queryKey: ['export-receipt-items'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['report-stats'] });
     },
   });
 }
