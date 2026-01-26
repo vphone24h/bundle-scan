@@ -32,12 +32,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Search, Download, FileText, MoreHorizontal, Eye, RotateCcw, Loader2, Filter, X } from 'lucide-react';
+import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import type { Product } from '@/hooks/useProducts';
+import { EditImportReceiptDialog } from '@/components/import/EditImportReceiptDialog';
+import { ReturnImportReceiptDialog } from '@/components/import/ReturnImportReceiptDialog';
 
 export default function ImportHistoryPage() {
   const navigate = useNavigate();
@@ -59,6 +61,10 @@ export default function ImportHistoryPage() {
   
   const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
   const { data: receiptDetails, isLoading: detailsLoading } = useImportReceiptDetails(selectedReceiptId);
+
+  // Dialog states for edit and return
+  const [editReceipt, setEditReceipt] = useState<ImportReceipt | null>(null);
+  const [returnReceipt, setReturnReceipt] = useState<ImportReceipt | null>(null);
 
   // Filter receipts
   const filteredReceipts = useMemo(() => {
@@ -143,8 +149,13 @@ export default function ImportHistoryPage() {
     setSelectedReceiptId(receipt.id);
   };
 
-  // Không hỗ trợ chỉnh sửa phiếu nhập đã hoàn tất
-  // Chỉ cho phép xem chi tiết và trả hàng từng sản phẩm
+  const handleEdit = (receipt: ImportReceipt) => {
+    setEditReceipt(receipt);
+  };
+
+  const handleReturn = (receipt: ImportReceipt) => {
+    setReturnReceipt(receipt);
+  };
 
   const handleReturnProduct = (product: Product) => {
     if (product.status !== 'in_stock') {
@@ -458,6 +469,14 @@ export default function ImportHistoryPage() {
                               <Eye className="mr-2 h-4 w-4" />
                               Xem chi tiết
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEdit(receipt)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Chỉnh sửa
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleReturn(receipt)}>
+                              <RotateCcw className="mr-2 h-4 w-4" />
+                              Trả hàng
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>
@@ -672,6 +691,20 @@ export default function ImportHistoryPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Receipt Dialog */}
+      <EditImportReceiptDialog
+        receipt={editReceipt}
+        open={!!editReceipt}
+        onOpenChange={(open) => !open && setEditReceipt(null)}
+      />
+
+      {/* Return Receipt Dialog */}
+      <ReturnImportReceiptDialog
+        receipt={returnReceipt}
+        open={!!returnReceipt}
+        onOpenChange={(open) => !open && setReturnReceipt(null)}
+      />
     </MainLayout>
   );
 }
