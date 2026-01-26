@@ -48,7 +48,10 @@ const settingsSchema = z.object({
   earn_points: z.string().min(1),
   redeem_points: z.string().min(1),
   redeem_value: z.string().min(1),
-  max_redeem_percentage: z.string().min(1),
+  use_max_amount_limit: z.boolean(),
+  max_redeem_amount: z.string().optional(),
+  use_percentage_limit: z.boolean(),
+  max_redeem_percentage: z.string().optional(),
   points_expire: z.boolean(),
   points_expire_days: z.string().optional(),
   require_full_payment: z.boolean(),
@@ -78,6 +81,9 @@ export function PointSettingsDialog({ open, onOpenChange }: PointSettingsDialogP
       earn_points: '1',
       redeem_points: '1',
       redeem_value: '1000',
+      use_max_amount_limit: false,
+      max_redeem_amount: '',
+      use_percentage_limit: true,
       max_redeem_percentage: '30',
       points_expire: false,
       points_expire_days: '365',
@@ -93,6 +99,9 @@ export function PointSettingsDialog({ open, onOpenChange }: PointSettingsDialogP
         earn_points: String(settings.earn_points),
         redeem_points: String(settings.redeem_points),
         redeem_value: formatNumber(settings.redeem_value),
+        use_max_amount_limit: settings.use_max_amount_limit ?? false,
+        max_redeem_amount: settings.max_redeem_amount ? formatNumber(settings.max_redeem_amount) : '',
+        use_percentage_limit: settings.use_percentage_limit ?? true,
         max_redeem_percentage: String(settings.max_redeem_percentage),
         points_expire: settings.points_expire,
         points_expire_days: String(settings.points_expire_days || 365),
@@ -122,7 +131,10 @@ export function PointSettingsDialog({ open, onOpenChange }: PointSettingsDialogP
         earn_points: parseInt(data.earn_points),
         redeem_points: parseInt(data.redeem_points),
         redeem_value: parseFormattedNumber(data.redeem_value),
-        max_redeem_percentage: parseFloat(data.max_redeem_percentage),
+        use_max_amount_limit: data.use_max_amount_limit,
+        max_redeem_amount: data.use_max_amount_limit && data.max_redeem_amount ? parseFormattedNumber(data.max_redeem_amount) : null,
+        use_percentage_limit: data.use_percentage_limit,
+        max_redeem_percentage: data.use_percentage_limit ? parseFloat(data.max_redeem_percentage || '0') : 0,
         points_expire: data.points_expire,
         points_expire_days: data.points_expire ? parseInt(data.points_expire_days || '365') : null,
         require_full_payment: data.require_full_payment,
@@ -152,6 +164,8 @@ export function PointSettingsDialog({ open, onOpenChange }: PointSettingsDialogP
   };
 
   const watchPointsExpire = form.watch('points_expire');
+  const watchUseMaxAmountLimit = form.watch('use_max_amount_limit');
+  const watchUsePercentageLimit = form.watch('use_percentage_limit');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -274,21 +288,84 @@ export function PointSettingsDialog({ open, onOpenChange }: PointSettingsDialogP
                         {form.watch('redeem_points')} điểm = {form.watch('redeem_value')} VNĐ
                       </p>
 
-                      <FormField
-                        control={form.control}
-                        name="max_redeem_percentage"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Giới hạn dùng điểm (% đơn hàng)</FormLabel>
-                            <FormControl>
-                              <Input type="number" {...field} />
-                            </FormControl>
-                            <FormDescription>
-                              Tối đa {field.value}% giá trị đơn hàng được thanh toán bằng điểm
-                            </FormDescription>
-                          </FormItem>
+                      {/* Max Amount Limit */}
+                      <div className="border rounded-lg p-4 space-y-3">
+                        <FormField
+                          control={form.control}
+                          name="use_max_amount_limit"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center justify-between">
+                              <div>
+                                <FormLabel>Giới hạn số tiền tối đa</FormLabel>
+                                <FormDescription>Giới hạn số tiền tối đa được thanh toán bằng điểm</FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        {watchUseMaxAmountLimit && (
+                          <FormField
+                            control={form.control}
+                            name="max_redeem_amount"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Số tiền tối đa (VNĐ)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    {...field}
+                                    onChange={(e) => field.onChange(formatInputNumber(e.target.value))}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Tối đa {field.value || '0'} VNĐ được thanh toán bằng điểm mỗi đơn
+                                </FormDescription>
+                              </FormItem>
+                            )}
+                          />
                         )}
-                      />
+                      </div>
+
+                      {/* Percentage Limit */}
+                      <div className="border rounded-lg p-4 space-y-3">
+                        <FormField
+                          control={form.control}
+                          name="use_percentage_limit"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center justify-between">
+                              <div>
+                                <FormLabel>Giới hạn theo % đơn hàng</FormLabel>
+                                <FormDescription>Giới hạn % giá trị đơn hàng được thanh toán bằng điểm</FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        {watchUsePercentageLimit && (
+                          <FormField
+                            control={form.control}
+                            name="max_redeem_percentage"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Phần trăm tối đa (%)</FormLabel>
+                                <FormControl>
+                                  <Input type="number" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                  Tối đa {field.value || '0'}% giá trị đơn hàng được thanh toán bằng điểm
+                                </FormDescription>
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </div>
+
+                      <p className="text-sm text-muted-foreground italic">
+                        Nếu bật cả 2 giới hạn, hệ thống sẽ áp dụng giá trị thấp hơn.
+                      </p>
                     </CardContent>
                   </Card>
 
