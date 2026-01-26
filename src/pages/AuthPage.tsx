@@ -142,20 +142,22 @@ export default function AuthPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="store-id">ID Cửa hàng</Label>
-              <div className="relative">
-                <Store className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-0">
                 <Input
                   id="store-id"
                   type="text"
-                  placeholder="tencuahang"
+                  placeholder="vphone"
                   value={storeId}
                   onChange={(e) => setStoreId(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                  className="pl-10"
+                  className="rounded-r-none border-r-0"
                   required
                 />
+                <span className="inline-flex items-center px-3 h-10 border border-l-0 rounded-r-md bg-muted text-muted-foreground text-sm">
+                  .khohangpro.vn
+                </span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Ví dụ: cuahangabc, shop123
+                Nhập ID cửa hàng bạn đã đăng ký (không có dấu chấm)
               </p>
             </div>
             <div className="space-y-2">
