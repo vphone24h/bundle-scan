@@ -52,8 +52,18 @@ export function useInventory() {
 
       // Group products by name + sku + branch_id
       const inventoryMap = new Map<string, InventoryItem>();
+      // Track processed IMEIs to avoid duplicates
+      const processedImeis = new Set<string>();
 
       products?.forEach((product) => {
+        // Skip duplicate IMEIs (chỉ xử lý IMEI đầu tiên gặp)
+        if (product.imei) {
+          if (processedImeis.has(product.imei)) {
+            return; // Skip this duplicate IMEI
+          }
+          processedImeis.add(product.imei);
+        }
+
         const key = `${product.name}|${product.sku}|${product.branch_id || 'no-branch'}`;
         
         const existing = inventoryMap.get(key);
