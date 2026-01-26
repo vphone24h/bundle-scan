@@ -128,7 +128,24 @@ export function useUpdateCashBookEntry() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<CashBookEntry> & { id: string }) => {
+    mutationFn: async ({ 
+      id, 
+      oldData,
+      ...updates 
+    }: Partial<CashBookEntry> & { 
+      id: string;
+      oldData?: CashBookEntry; // Dữ liệu cũ để ghi audit log
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Get user's branch_id for audit log
+      const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('branch_id')
+        .eq('user_id', user?.id)
+        .single();
+      
+      // Update cash book entry
       const { data, error } = await supabase
         .from('cash_book')
         .update(updates)
@@ -137,11 +154,102 @@ export function useUpdateCashBookEntry() {
         .single();
 
       if (error) throw error;
+
+      // Ghi audit log
+      if (oldData) {
+        await supabase.from('audit_logs').insert([{
+          user_id: user?.id,
+          action_type: 'update',
+          table_name: 'cash_book',
+          record_id: id,
+          branch_id: userRole?.branch_id || null,
+          old_data: {
+            type: oldData.type,
+            category: oldData.category,
+            description: oldData.description,
+            amount: oldData.amount,
+            payment_source: oldData.payment_source,
+            is_business_accounting: oldData.is_business_accounting,
+            note: oldData.note,
+          },
+          new_data: {
+            type: data.type,
+            category: data.category,
+            description: data.description,
+            amount: data.amount,
+            payment_source: data.payment_source,
+            is_business_accounting: data.is_business_accounting,
+            note: data.note,
+          },
+          description: `Sửa sổ quỹ: ${oldData.description} → ${data.description}`,
+        }]);
+      }
+
       return data as CashBookEntry;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
+    },
+  });
+}
+
+export function useDeleteCashBookEntry() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      entry, 
+      reason 
+    }: { 
+      entry: CashBookEntry; 
+      reason: string;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Get user's branch_id for audit log
+      const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('branch_id')
+        .eq('user_id', user?.id)
+        .single();
+
+      // Delete cash book entry
+      const { error } = await supabase
+        .from('cash_book')
+        .delete()
+        .eq('id', entry.id);
+
+      if (error) throw error;
+
+      // Ghi audit log với dữ liệu trước khi xóa
+      await supabase.from('audit_logs').insert([{
+        user_id: user?.id,
+        action_type: 'delete',
+        table_name: 'cash_book',
+        record_id: entry.id,
+        branch_id: userRole?.branch_id || null,
+        old_data: {
+          type: entry.type,
+          category: entry.category,
+          description: entry.description,
+          amount: entry.amount,
+          payment_source: entry.payment_source,
+          is_business_accounting: entry.is_business_accounting,
+          note: entry.note,
+          transaction_date: entry.transaction_date,
+        },
+        new_data: null,
+        description: `Xóa sổ quỹ: ${entry.description} (${entry.type === 'income' ? 'Thu' : 'Chi'}: ${entry.amount}). Lý do: ${reason}`,
+      }]);
+
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['report-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
     },
   });
 }
