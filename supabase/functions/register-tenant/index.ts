@@ -75,6 +75,36 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Check if phone already exists (if provided)
+    if (phone) {
+      const { data: existingPhone } = await supabaseAdmin
+        .from('platform_users')
+        .select('id')
+        .eq('phone', phone)
+        .maybeSingle()
+
+      if (existingPhone) {
+        return new Response(
+          JSON.stringify({ error: 'Số điện thoại đã được sử dụng' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Also check in tenants table
+      const { data: existingTenantPhone } = await supabaseAdmin
+        .from('tenants')
+        .select('id')
+        .eq('phone', phone)
+        .maybeSingle()
+
+      if (existingTenantPhone) {
+        return new Response(
+          JSON.stringify({ error: 'Số điện thoại đã được sử dụng' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
     // Create user account
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
