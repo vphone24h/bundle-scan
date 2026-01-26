@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -29,7 +30,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -39,14 +47,21 @@ import {
   TrendingUp,
   Search,
   Filter,
-  Calendar,
   Loader2,
+  X,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Download,
+  Building2,
+  Check,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isToday } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useCashBook, useCashBookCategories, useCreateCashBookEntry, type CashBookEntry } from '@/hooks/useCashBook';
+import { useCashBook, useCashBookCategories, useCreateCashBookEntry, useUpdateCashBookEntry, type CashBookEntry } from '@/hooks/useCashBook';
 import { useBranches } from '@/hooks/useBranches';
 import { formatCurrency } from '@/lib/mockData';
+import { cn } from '@/lib/utils';
 
 const paymentSourceLabels: Record<string, string> = {
   cash: 'Tiền mặt',
@@ -54,79 +69,215 @@ const paymentSourceLabels: Record<string, string> = {
   e_wallet: 'Ví điện tử',
 };
 
+const defaultPaymentSources = [
+  { id: 'cash', name: 'Tiền mặt' },
+  { id: 'bank_card', name: 'Thẻ ngân hàng' },
+  { id: 'e_wallet', name: 'Ví điện tử' },
+];
+
 export default function CashBookPage() {
-  const [activeTab, setActiveTab] = useState<'expense' | 'income'>('expense');
+  // Main view tabs: by branch or total
+  const [viewMode, setViewMode] = useState<'branch' | 'total'>('total');
+  const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+  
+  // Transaction type filter
+  const [typeFilter, setTypeFilter] = useState<'all' | 'expense' | 'income'>('all');
+  
+  // Dialog states
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<CashBookEntry | null>(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  
+  // Filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
-  const [branchFilter, setBranchFilter] = useState('_all_');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [paymentSourceFilter, setPaymentSourceFilter] = useState('_all_');
+  const [accountingFilter, setAccountingFilter] = useState('_all_');
+  const [showFilters, setShowFilters] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
     type: 'expense' as 'expense' | 'income',
     category: '',
     description: '',
-    amount: '',
-    payment_source: 'cash',
+    payments: [{ source: 'cash', amount: '' }] as { source: string; amount: string }[],
     is_business_accounting: true,
     branch_id: '',
     note: '',
-    transaction_date: format(new Date(), 'yyyy-MM-dd'),
+    transaction_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
   });
 
-  const { data: entries, isLoading } = useCashBook({
-    type: activeTab,
-    branchId: branchFilter !== '_all_' ? branchFilter : undefined,
+  // Data hooks
+  const { data: allEntries, isLoading } = useCashBook({
+    branchId: viewMode === 'branch' && selectedBranchId ? selectedBranchId : undefined,
   });
-  const { data: categories } = useCashBookCategories(activeTab);
+  const { data: expenseCategories } = useCashBookCategories('expense');
+  const { data: incomeCategories } = useCashBookCategories('income');
   const { data: branches } = useBranches();
   const createEntry = useCreateCashBookEntry();
+  const updateEntry = useUpdateCashBookEntry();
+
+  // Get current categories based on form type
+  const currentCategories = formData.type === 'expense' ? expenseCategories : incomeCategories;
 
   // Filter entries
-  const filteredEntries = entries?.filter((entry) => {
-    const matchesSearch =
-      entry.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.category.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredEntries = useMemo(() => {
+    if (!allEntries) return [];
     
-    const matchesDate = !dateFilter ||
-      format(new Date(entry.transaction_date), 'yyyy-MM-dd') === dateFilter;
+    return allEntries.filter((entry) => {
+      // Type filter
+      const matchesType = typeFilter === 'all' || entry.type === typeFilter;
+      
+      // Search filter
+      const matchesSearch =
+        entry.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.category.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Date filter
+      let matchesDate = true;
+      if (dateFrom || dateTo) {
+        const entryDate = startOfDay(new Date(entry.transaction_date));
+        if (dateFrom && dateTo) {
+          matchesDate = isWithinInterval(entryDate, {
+            start: startOfDay(parseISO(dateFrom)),
+            end: endOfDay(parseISO(dateTo))
+          });
+        } else if (dateFrom) {
+          matchesDate = entryDate >= startOfDay(parseISO(dateFrom));
+        } else if (dateTo) {
+          matchesDate = entryDate <= endOfDay(parseISO(dateTo));
+        }
+      }
+      
+      // Payment source filter
+      const matchesPaymentSource = paymentSourceFilter === '_all_' || entry.payment_source === paymentSourceFilter;
+      
+      // Accounting filter
+      const matchesAccounting = accountingFilter === '_all_' || 
+        (accountingFilter === 'yes' && entry.is_business_accounting) ||
+        (accountingFilter === 'no' && !entry.is_business_accounting);
 
-    return matchesSearch && matchesDate;
-  });
+      return matchesType && matchesSearch && matchesDate && matchesPaymentSource && matchesAccounting;
+    });
+  }, [allEntries, typeFilter, searchTerm, dateFrom, dateTo, paymentSourceFilter, accountingFilter]);
 
   // Calculate totals
-  const totalExpenses = entries?.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.amount), 0) || 0;
-  const totalIncome = entries?.filter(e => e.type === 'income').reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+  const totalBalance = useMemo(() => {
+    if (!allEntries) return 0;
+    const income = allEntries.filter(e => e.type === 'income').reduce((sum, e) => sum + Number(e.amount), 0);
+    const expense = allEntries.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.amount), 0);
+    return income - expense;
+  }, [allEntries]);
+
+  const todayStats = useMemo(() => {
+    if (!allEntries) return { income: 0, expense: 0 };
+    const todayEntries = allEntries.filter(e => isToday(new Date(e.transaction_date)));
+    return {
+      income: todayEntries.filter(e => e.type === 'income').reduce((sum, e) => sum + Number(e.amount), 0),
+      expense: todayEntries.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.amount), 0),
+    };
+  }, [allEntries]);
+
+  const hasActiveFilters = dateFrom || dateTo || paymentSourceFilter !== '_all_' || accountingFilter !== '_all_' || searchTerm;
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setDateFrom('');
+    setDateTo('');
+    setPaymentSourceFilter('_all_');
+    setAccountingFilter('_all_');
+  };
 
   const handleOpenAdd = (type: 'expense' | 'income') => {
     setFormData({
-      ...formData,
       type,
       category: '',
       description: '',
-      amount: '',
+      payments: [{ source: 'cash', amount: '' }],
+      is_business_accounting: true,
+      branch_id: viewMode === 'branch' && selectedBranchId ? selectedBranchId : '',
       note: '',
+      transaction_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
     });
     setShowAddDialog(true);
   };
 
+  const handleOpenEdit = (entry: CashBookEntry) => {
+    setEditingEntry(entry);
+    setFormData({
+      type: entry.type,
+      category: entry.category,
+      description: entry.description,
+      payments: [{ source: entry.payment_source, amount: String(entry.amount) }],
+      is_business_accounting: entry.is_business_accounting ?? true,
+      branch_id: entry.branch_id || '',
+      note: entry.note || '',
+      transaction_date: format(new Date(entry.transaction_date), "yyyy-MM-dd'T'HH:mm"),
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleOpenDelete = (entry: CashBookEntry) => {
+    setEditingEntry(entry);
+    setDeleteReason('');
+    setShowDeleteDialog(true);
+  };
+
+  const addPaymentSource = () => {
+    setFormData({
+      ...formData,
+      payments: [...formData.payments, { source: 'cash', amount: '' }],
+    });
+  };
+
+  const removePaymentSource = (index: number) => {
+    setFormData({
+      ...formData,
+      payments: formData.payments.filter((_, i) => i !== index),
+    });
+  };
+
+  const updatePayment = (index: number, field: 'source' | 'amount', value: string) => {
+    const newPayments = [...formData.payments];
+    newPayments[index][field] = value;
+    setFormData({ ...formData, payments: newPayments });
+  };
+
+  const totalPaymentAmount = formData.payments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+
   const handleSubmit = async () => {
-    if (!formData.category || !formData.description || !formData.amount) {
+    if (!formData.category || !formData.description || totalPaymentAmount <= 0) {
       toast({
         title: 'Thiếu thông tin',
-        description: 'Vui lòng điền đầy đủ thông tin',
+        description: 'Vui lòng điền đầy đủ thông tin và số tiền',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (viewMode === 'total' && !formData.branch_id) {
+      toast({
+        title: 'Thiếu chi nhánh',
+        description: 'Vui lòng chọn chi nhánh khi thêm giao dịch ở tab Tổng sổ quỹ',
         variant: 'destructive',
       });
       return;
     }
 
     try {
+      // For now, we'll create one entry with the main payment source and total amount
+      // In a more complex implementation, you could create multiple entries
+      const mainPayment = formData.payments[0];
+      
       await createEntry.mutateAsync({
         type: formData.type,
         category: formData.category,
         description: formData.description,
-        amount: parseFloat(formData.amount),
-        payment_source: formData.payment_source,
+        amount: totalPaymentAmount,
+        payment_source: mainPayment.source,
         is_business_accounting: formData.is_business_accounting,
         branch_id: formData.branch_id || null,
         note: formData.note || undefined,
@@ -136,7 +287,7 @@ export default function CashBookPage() {
       setShowAddDialog(false);
       toast({
         title: 'Đã thêm',
-        description: `${formData.type === 'expense' ? 'Chi phí' : 'Thu nhập'} đã được ghi nhận`,
+        description: `${formData.type === 'expense' ? 'Phiếu chi' : 'Phiếu thu'} đã được ghi nhận`,
       });
     } catch (error: any) {
       toast({
@@ -147,37 +298,142 @@ export default function CashBookPage() {
     }
   };
 
+  const handleUpdate = async () => {
+    if (!editingEntry) return;
+    
+    if (!formData.category || !formData.description || totalPaymentAmount <= 0) {
+      toast({
+        title: 'Thiếu thông tin',
+        description: 'Vui lòng điền đầy đủ thông tin và số tiền',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const mainPayment = formData.payments[0];
+      
+      await updateEntry.mutateAsync({
+        id: editingEntry.id,
+        category: formData.category,
+        description: formData.description,
+        amount: totalPaymentAmount,
+        payment_source: mainPayment.source,
+        is_business_accounting: formData.is_business_accounting,
+        branch_id: formData.branch_id || null,
+        note: formData.note || undefined,
+      });
+
+      setShowEditDialog(false);
+      setEditingEntry(null);
+      toast({
+        title: 'Đã cập nhật',
+        description: 'Giao dịch đã được cập nhật',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể cập nhật giao dịch',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleExport = () => {
+    if (filteredEntries.length === 0) {
+      toast({ title: 'Không có dữ liệu', description: 'Không có giao dịch nào để xuất', variant: 'destructive' });
+      return;
+    }
+
+    const headers = ['Ngày', 'Loại', 'Danh mục', 'Mô tả', 'Số tiền', 'Nguồn tiền', 'Chi nhánh', 'Hạch toán KD', 'Ghi chú'];
+    const rows = filteredEntries.map(e => [
+      format(new Date(e.transaction_date), 'dd/MM/yyyy HH:mm'),
+      e.type === 'expense' ? 'Chi' : 'Thu',
+      e.category,
+      e.description,
+      e.type === 'expense' ? -Number(e.amount) : Number(e.amount),
+      paymentSourceLabels[e.payment_source] || e.payment_source,
+      e.branches?.name || '',
+      e.is_business_accounting ? 'Có' : 'Không',
+      e.note || ''
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `so-quy-${format(new Date(), 'yyyyMMdd')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    toast({ title: 'Xuất Excel thành công', description: `Đã xuất ${filteredEntries.length} giao dịch` });
+  };
+
   return (
     <MainLayout>
       <PageHeader
         title="Sổ quỹ"
-        description="Quản lý chi phí và thu nhập khác"
+        description="Quản lý dòng tiền thu chi"
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => handleOpenAdd('income')}>
+            <Button variant="outline" onClick={() => handleOpenAdd('income')} className="text-green-600 border-green-600 hover:bg-green-50">
               <TrendingUp className="h-4 w-4 mr-2" />
-              Thêm thu nhập
+              Phiếu thu
             </Button>
-            <Button onClick={() => handleOpenAdd('expense')}>
+            <Button onClick={() => handleOpenAdd('expense')} className="bg-destructive hover:bg-destructive/90">
               <TrendingDown className="h-4 w-4 mr-2" />
-              Thêm chi phí
+              Phiếu chi
             </Button>
           </div>
         }
       />
 
       <div className="p-6 space-y-6">
+        {/* View Mode Tabs */}
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'branch' | 'total')}>
+          <div className="flex items-center justify-between">
+            <TabsList>
+              <TabsTrigger value="total" className="gap-2">
+                <Wallet className="h-4 w-4" />
+                Tổng sổ quỹ
+              </TabsTrigger>
+              <TabsTrigger value="branch" className="gap-2">
+                <Building2 className="h-4 w-4" />
+                Theo chi nhánh
+              </TabsTrigger>
+            </TabsList>
+            
+            {viewMode === 'branch' && (
+              <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Chọn chi nhánh" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {branches?.map((branch) => (
+                    <SelectItem key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        </Tabs>
+
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Tổng chi phí</p>
-                  <p className="text-2xl font-bold text-destructive">{formatCurrency(totalExpenses)}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Tổng số dư</p>
+                  <p className={cn("text-2xl font-bold", totalBalance >= 0 ? 'text-green-600' : 'text-destructive')}>
+                    {formatCurrency(totalBalance)}
+                  </p>
                 </div>
-                <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
-                  <TrendingDown className="h-5 w-5 text-destructive" />
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Wallet className="h-5 w-5 text-primary" />
                 </div>
               </div>
             </CardContent>
@@ -187,8 +443,8 @@ export default function CashBookPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Tổng thu nhập khác</p>
-                  <p className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Tiền vào hôm nay</p>
+                  <p className="text-2xl font-bold text-green-600">{formatCurrency(todayStats.income)}</p>
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
                   <TrendingUp className="h-5 w-5 text-green-600" />
@@ -201,13 +457,27 @@ export default function CashBookPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Cân đối</p>
-                  <p className={`text-2xl font-bold ${totalIncome - totalExpenses >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                    {formatCurrency(totalIncome - totalExpenses)}
+                  <p className="text-sm font-medium text-muted-foreground">Tiền ra hôm nay</p>
+                  <p className="text-2xl font-bold text-destructive">{formatCurrency(todayStats.expense)}</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
+                  <TrendingDown className="h-5 w-5 text-destructive" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Chênh lệch hôm nay</p>
+                  <p className={cn("text-2xl font-bold", todayStats.income - todayStats.expense >= 0 ? 'text-green-600' : 'text-destructive')}>
+                    {formatCurrency(todayStats.income - todayStats.expense)}
                   </p>
                 </div>
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Wallet className="h-5 w-5 text-primary" />
+                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                  <Wallet className="h-5 w-5 text-muted-foreground" />
                 </div>
               </div>
             </CardContent>
@@ -217,178 +487,236 @@ export default function CashBookPage() {
         {/* Filters */}
         <Card>
           <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Tìm theo mô tả, danh mục..."
-                  className="pl-9"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            <div className="space-y-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm theo mô tả, danh mục..."
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as 'all' | 'expense' | 'income')}>
+                  <SelectTrigger className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="all">Tất cả</SelectItem>
+                    <SelectItem value="expense">Phiếu chi</SelectItem>
+                    <SelectItem value="income">Phiếu thu</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant={showFilters ? 'secondary' : 'outline'}
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <Filter className="mr-2 h-4 w-4" />
+                  Bộ lọc
+                  {hasActiveFilters && (
+                    <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
+                      !
+                    </Badge>
+                  )}
+                </Button>
+                <Button variant="outline" onClick={handleExport}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Xuất Excel
+                </Button>
               </div>
-              <Input
-                type="date"
-                className="w-40"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-              />
-              <Select value={branchFilter} onValueChange={setBranchFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Chi nhánh" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="_all_">Tất cả CN</SelectItem>
-                  {branches?.map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+
+              {showFilters && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pt-4 border-t">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Từ ngày</Label>
+                    <Input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Đến ngày</Label>
+                    <Input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Nguồn tiền</Label>
+                    <Select value={paymentSourceFilter} onValueChange={setPaymentSourceFilter}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="_all_">Tất cả nguồn</SelectItem>
+                        {defaultPaymentSources.map((src) => (
+                          <SelectItem key={src.id} value={src.id}>{src.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Hạch toán KD</Label>
+                    <Select value={accountingFilter} onValueChange={setAccountingFilter}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="_all_">Tất cả</SelectItem>
+                        <SelectItem value="yes">Có hạch toán</SelectItem>
+                        <SelectItem value="no">Không hạch toán</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full">
+                      <X className="h-4 w-4 mr-1" />
+                      Xóa lọc
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'expense' | 'income')}>
-          <TabsList>
-            <TabsTrigger value="expense" className="gap-2">
-              <TrendingDown className="h-4 w-4" />
-              Chi phí
-            </TabsTrigger>
-            <TabsTrigger value="income" className="gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Thu nhập khác
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="expense" className="mt-4">
-            <Card>
-              <CardContent className="pt-6">
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : filteredEntries?.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Chưa có chi phí nào
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Ngày</TableHead>
-                        <TableHead>Danh mục</TableHead>
-                        <TableHead>Mô tả</TableHead>
-                        <TableHead>Nguồn tiền</TableHead>
-                        <TableHead>Chi nhánh</TableHead>
-                        <TableHead className="text-right">Số tiền</TableHead>
-                        <TableHead>Hạch toán</TableHead>
+        {/* Transactions Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Lịch sử giao dịch ({filteredEntries.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : filteredEntries.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                {hasActiveFilters ? 'Không tìm thấy giao dịch phù hợp' : 'Chưa có giao dịch nào'}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ngày / Giờ</TableHead>
+                      <TableHead>Loại</TableHead>
+                      <TableHead>Danh mục</TableHead>
+                      <TableHead>Mô tả</TableHead>
+                      <TableHead className="text-right">Số tiền</TableHead>
+                      <TableHead>Nguồn tiền</TableHead>
+                      <TableHead>Chi nhánh</TableHead>
+                      <TableHead>Hạch toán</TableHead>
+                      <TableHead className="w-12"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredEntries.map((entry) => (
+                      <TableRow key={entry.id}>
+                        <TableCell className="whitespace-nowrap">
+                          {format(new Date(entry.transaction_date), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={cn(
+                            entry.type === 'expense' 
+                              ? 'bg-destructive/10 text-destructive border-destructive/20' 
+                              : 'bg-green-100 text-green-700 border-green-200'
+                          )}>
+                            {entry.type === 'expense' ? 'Chi' : 'Thu'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{entry.category}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">{entry.description}</TableCell>
+                        <TableCell className={cn(
+                          "text-right font-medium whitespace-nowrap",
+                          entry.type === 'expense' ? 'text-destructive' : 'text-green-600'
+                        )}>
+                          {entry.type === 'expense' ? '-' : '+'}{formatCurrency(Number(entry.amount))}
+                        </TableCell>
+                        <TableCell>{paymentSourceLabels[entry.payment_source] || entry.payment_source}</TableCell>
+                        <TableCell>{entry.branches?.name || '-'}</TableCell>
+                        <TableCell>
+                          {entry.is_business_accounting ? (
+                            <Badge variant="default" className="gap-1">
+                              <Check className="h-3 w-3" /> KD
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline">Không</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-popover">
+                              <DropdownMenuItem onClick={() => handleOpenEdit(entry)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Chỉnh sửa
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleOpenDelete(entry)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Xóa
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredEntries?.map((entry) => (
-                        <TableRow key={entry.id}>
-                          <TableCell>
-                            {format(new Date(entry.transaction_date), 'dd/MM/yyyy', { locale: vi })}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{entry.category}</Badge>
-                          </TableCell>
-                          <TableCell>{entry.description}</TableCell>
-                          <TableCell>{paymentSourceLabels[entry.payment_source]}</TableCell>
-                          <TableCell>{entry.branches?.name || '-'}</TableCell>
-                          <TableCell className="text-right font-medium text-destructive">
-                            -{formatCurrency(Number(entry.amount))}
-                          </TableCell>
-                          <TableCell>
-                            {entry.is_business_accounting ? (
-                              <Badge variant="default">KD</Badge>
-                            ) : (
-                              <Badge variant="outline">Không</Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="income" className="mt-4">
-            <Card>
-              <CardContent className="pt-6">
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : filteredEntries?.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Chưa có thu nhập khác
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Ngày</TableHead>
-                        <TableHead>Danh mục</TableHead>
-                        <TableHead>Mô tả</TableHead>
-                        <TableHead>Nguồn tiền</TableHead>
-                        <TableHead>Chi nhánh</TableHead>
-                        <TableHead className="text-right">Số tiền</TableHead>
-                        <TableHead>Hạch toán</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredEntries?.map((entry) => (
-                        <TableRow key={entry.id}>
-                          <TableCell>
-                            {format(new Date(entry.transaction_date), 'dd/MM/yyyy', { locale: vi })}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{entry.category}</Badge>
-                          </TableCell>
-                          <TableCell>{entry.description}</TableCell>
-                          <TableCell>{paymentSourceLabels[entry.payment_source]}</TableCell>
-                          <TableCell>{entry.branches?.name || '-'}</TableCell>
-                          <TableCell className="text-right font-medium text-green-600">
-                            +{formatCurrency(Number(entry.amount))}
-                          </TableCell>
-                          <TableCell>
-                            {entry.is_business_accounting ? (
-                              <Badge variant="default">KD</Badge>
-                            ) : (
-                              <Badge variant="outline">Không</Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Add Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {formData.type === 'expense' ? 'Thêm chi phí' : 'Thêm thu nhập'}
+            <DialogTitle className={formData.type === 'expense' ? 'text-destructive' : 'text-green-600'}>
+              {formData.type === 'expense' ? '➖ Thêm phiếu chi' : '➕ Thêm phiếu thu'}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
+            {/* Transaction Type Toggle */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={formData.type === 'expense' ? 'default' : 'outline'}
+                className={formData.type === 'expense' ? 'bg-destructive hover:bg-destructive/90 flex-1' : 'flex-1'}
+                onClick={() => setFormData({ ...formData, type: 'expense', category: '' })}
+              >
+                <TrendingDown className="h-4 w-4 mr-2" />
+                Phiếu chi
+              </Button>
+              <Button
+                type="button"
+                variant={formData.type === 'income' ? 'default' : 'outline'}
+                className={formData.type === 'income' ? 'bg-green-600 hover:bg-green-700 flex-1' : 'flex-1'}
+                onClick={() => setFormData({ ...formData, type: 'income', category: '' })}
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Phiếu thu
+              </Button>
+            </div>
+
             <div>
-              <Label>Ngày giao dịch</Label>
+              <Label>Ngày / Giờ giao dịch</Label>
               <Input
-                type="date"
+                type="datetime-local"
                 value={formData.transaction_date}
                 onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
               />
@@ -404,7 +732,7 @@ export default function CashBookPage() {
                   <SelectValue placeholder="Chọn danh mục" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {categories?.map((cat) => (
+                  {currentCategories?.map((cat) => (
                     <SelectItem key={cat.id} value={cat.name}>
                       {cat.name}
                     </SelectItem>
@@ -414,39 +742,173 @@ export default function CashBookPage() {
             </div>
 
             <div>
-              <Label>Mô tả *</Label>
+              <Label>Mô tả giao dịch *</Label>
               <Input
-                placeholder="Mô tả chi tiết"
+                placeholder="Ví dụ: Trả lương nhân viên, Tiếp khách..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               />
             </div>
 
+            {/* Payment Sources */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Nguồn tiền & Số tiền *</Label>
+                <Button type="button" variant="ghost" size="sm" onClick={addPaymentSource}>
+                  <Plus className="h-4 w-4 mr-1" /> Thêm nguồn
+                </Button>
+              </div>
+              {formData.payments.map((payment, index) => (
+                <div key={index} className="flex gap-2">
+                  <Select
+                    value={payment.source}
+                    onValueChange={(v) => updatePayment(index, 'source', v)}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {defaultPaymentSources.map((src) => (
+                        <SelectItem key={src.id} value={src.id}>{src.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    placeholder="Số tiền"
+                    value={payment.amount}
+                    onChange={(e) => updatePayment(index, 'amount', e.target.value)}
+                    className="flex-1"
+                  />
+                  {formData.payments.length > 1 && (
+                    <Button type="button" variant="ghost" size="icon" onClick={() => removePaymentSource(index)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {formData.payments.length > 1 && (
+                <div className="text-right text-sm font-medium">
+                  Tổng: {formatCurrency(totalPaymentAmount)}
+                </div>
+              )}
+            </div>
+
             <div>
-              <Label>Số tiền *</Label>
-              <Input
-                type="number"
-                placeholder="Nhập số tiền"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              <Label>Chi nhánh {viewMode === 'total' && '*'}</Label>
+              <Select
+                value={formData.branch_id}
+                onValueChange={(v) => setFormData({ ...formData, branch_id: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn chi nhánh" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {branches?.map((branch) => (
+                    <SelectItem key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <div>
+                <Label className="font-medium">Hạch toán kinh doanh</Label>
+                <p className="text-xs text-muted-foreground">
+                  {formData.type === 'expense' 
+                    ? 'Tính vào Chi phí trong báo cáo lợi nhuận'
+                    : 'Tính vào Thu nhập khác trong báo cáo lợi nhuận'}
+                </p>
+              </div>
+              <Switch
+                checked={formData.is_business_accounting}
+                onCheckedChange={(v) => setFormData({ ...formData, is_business_accounting: v })}
               />
             </div>
 
             <div>
-              <Label>Nguồn tiền</Label>
+              <Label>Ghi chú</Label>
+              <Textarea
+                placeholder="Ghi chú thêm (tùy chọn)"
+                value={formData.note}
+                onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+              Hủy
+            </Button>
+            <Button 
+              onClick={handleSubmit} 
+              disabled={createEntry.isPending}
+              className={formData.type === 'expense' ? 'bg-destructive hover:bg-destructive/90' : 'bg-green-600 hover:bg-green-700'}
+            >
+              {createEntry.isPending ? 'Đang lưu...' : 'Lưu'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Chỉnh sửa giao dịch</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label>Danh mục *</Label>
               <Select
-                value={formData.payment_source}
-                onValueChange={(v) => setFormData({ ...formData, payment_source: v })}
+                value={formData.category}
+                onValueChange={(v) => setFormData({ ...formData, category: v })}
               >
                 <SelectTrigger>
+                  <SelectValue placeholder="Chọn danh mục" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {currentCategories?.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Mô tả giao dịch *</Label>
+              <Input
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Select
+                value={formData.payments[0]?.source || 'cash'}
+                onValueChange={(v) => updatePayment(0, 'source', v)}
+              >
+                <SelectTrigger className="w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
-                  <SelectItem value="cash">Tiền mặt</SelectItem>
-                  <SelectItem value="bank_card">Thẻ ngân hàng</SelectItem>
-                  <SelectItem value="e_wallet">Ví điện tử</SelectItem>
+                  {defaultPaymentSources.map((src) => (
+                    <SelectItem key={src.id} value={src.id}>{src.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              <Input
+                type="number"
+                placeholder="Số tiền"
+                value={formData.payments[0]?.amount || ''}
+                onChange={(e) => updatePayment(0, 'amount', e.target.value)}
+                className="flex-1"
+              />
             </div>
 
             <div>
@@ -468,8 +930,8 @@ export default function CashBookPage() {
               </Select>
             </div>
 
-            <div className="flex items-center justify-between">
-              <Label>Hạch toán kinh doanh</Label>
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <Label className="font-medium">Hạch toán kinh doanh</Label>
               <Switch
                 checked={formData.is_business_accounting}
                 onCheckedChange={(v) => setFormData({ ...formData, is_business_accounting: v })}
@@ -479,7 +941,6 @@ export default function CashBookPage() {
             <div>
               <Label>Ghi chú</Label>
               <Textarea
-                placeholder="Ghi chú thêm (tùy chọn)"
                 value={formData.note}
                 onChange={(e) => setFormData({ ...formData, note: e.target.value })}
               />
@@ -487,11 +948,61 @@ export default function CashBookPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
               Hủy
             </Button>
-            <Button onClick={handleSubmit} disabled={createEntry.isPending}>
-              {createEntry.isPending ? 'Đang lưu...' : 'Lưu'}
+            <Button onClick={handleUpdate} disabled={updateEntry.isPending}>
+              {updateEntry.isPending ? 'Đang lưu...' : 'Cập nhật'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Xóa giao dịch</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc muốn xóa giao dịch này? Hành động này không thể hoàn tác.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="font-medium">{editingEntry?.description}</p>
+              <p className="text-sm text-muted-foreground">
+                {editingEntry && formatCurrency(Number(editingEntry.amount))} - {editingEntry?.category}
+              </p>
+            </div>
+
+            <div>
+              <Label>Lý do xóa *</Label>
+              <Textarea
+                placeholder="Nhập lý do xóa giao dịch..."
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Hủy
+            </Button>
+            <Button 
+              variant="destructive" 
+              disabled={!deleteReason.trim()}
+              onClick={() => {
+                // TODO: Implement delete with reason logging
+                toast({
+                  title: 'Chức năng đang phát triển',
+                  description: 'Tính năng xóa giao dịch cần quyền quản trị viên',
+                });
+                setShowDeleteDialog(false);
+              }}
+            >
+              Xóa
             </Button>
           </DialogFooter>
         </DialogContent>
