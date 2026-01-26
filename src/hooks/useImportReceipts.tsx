@@ -326,6 +326,24 @@ export function useCreateImportReceipt() {
         if (cashBookError) throw cashBookError;
       }
 
+      // Audit log
+      await supabase.from('audit_logs').insert([{
+        user_id: user.id,
+        action_type: 'create',
+        table_name: 'import_receipts',
+        record_id: receipt.id,
+        branch_id: branchId || null,
+        new_data: {
+          code: receipt.code,
+          total_amount: totalAmount,
+          paid_amount: paidAmount,
+          debt_amount: debtAmount,
+          supplier_id: supplierId,
+          products_count: products.length,
+        },
+        description: `Tạo phiếu nhập ${code} - ${products.length} sản phẩm - Tổng: ${totalAmount.toLocaleString('vi-VN')}đ`,
+      }]);
+
       return receipt;
     },
     onSuccess: () => {
@@ -443,6 +461,25 @@ export function useUpdateImportReceipt() {
           }
         }
       }
+
+      // Audit log
+      await supabase.from('audit_logs').insert([{
+        user_id: user.id,
+        action_type: 'update',
+        table_name: 'import_receipts',
+        record_id: receiptId,
+        old_data: { product_updates_count: productUpdates.length },
+        new_data: {
+          supplier_id: newSupplierId,
+          price_difference: totalPriceDiff,
+          products_updated: productUpdates.map(u => ({
+            productId: u.productId,
+            old_price: u.oldImportPrice,
+            new_price: u.import_price,
+          })),
+        },
+        description: `Sửa phiếu nhập - Thay đổi giá: ${totalPriceDiff.toLocaleString('vi-VN')}đ`,
+      }]);
 
       return { success: true };
     },
@@ -569,6 +606,22 @@ export function useReturnImportReceipt() {
             }]);
         }
       }
+
+      // Audit log
+      await supabase.from('audit_logs').insert([{
+        user_id: user.id,
+        action_type: 'create',
+        table_name: 'import_returns',
+        record_id: returnIds[0] || null,
+        branch_id: receipt.branch_id,
+        new_data: {
+          receipt_code: receipt.code,
+          products_returned: products.length,
+          total_refund: payments.reduce((sum, p) => sum + p.amount, 0),
+          products: products.map(p => ({ name: p.name, sku: p.sku, imei: p.imei })),
+        },
+        description: `Trả hàng nhập phiếu ${receipt.code} - ${products.length} sản phẩm`,
+      }]);
 
       return { returnIds, productsReturned: products.length, totalRefund };
     },

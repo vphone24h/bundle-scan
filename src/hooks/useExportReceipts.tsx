@@ -408,6 +408,25 @@ export function useCreateExportReceipt() {
         }
       }
 
+      // Audit log
+      await supabase.from('audit_logs').insert([{
+        user_id: user?.id,
+        action_type: 'create',
+        table_name: 'export_receipts',
+        record_id: receipt.id,
+        new_data: {
+          code: receipt.code,
+          customer_id: customerId,
+          total_amount: totalAmount,
+          paid_amount: paidAmount,
+          debt_amount: debtAmount,
+          items_count: items.length,
+          points_earned: pointsToEarn,
+          points_redeemed: pointsRedeemed,
+        },
+        description: `Tạo phiếu xuất ${code} - ${items.length} sản phẩm - Tổng: ${totalAmount.toLocaleString('vi-VN')}đ`,
+      }]);
+
       return { ...receipt, points_earned: pointsToEarn, points_pending: pointsArePending };
     },
     onSuccess: () => {

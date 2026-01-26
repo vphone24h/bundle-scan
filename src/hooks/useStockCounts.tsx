@@ -366,6 +366,22 @@ export function useCreateStockCount() {
         })
         .eq('id', stockCount.id);
 
+      // Audit log
+      await supabase.from('audit_logs').insert([{
+        user_id: user.id,
+        action_type: 'create',
+        table_name: 'stock_counts',
+        record_id: stockCount.id,
+        branch_id: data.branchId || null,
+        new_data: {
+          code: stockCount.code,
+          scope: data.scope,
+          items_count: stockCountItems.length,
+          total_system_quantity: totalSystem,
+        },
+        description: `Tạo phiếu kiểm kho ${stockCount.code} - ${stockCountItems.length} sản phẩm`,
+      }]);
+
       return stockCount;
     },
     onSuccess: () => {
