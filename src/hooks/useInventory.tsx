@@ -181,18 +181,65 @@ export function useProductImportHistory(productId: string | null) {
     queryFn: async () => {
       if (!productId) return [];
 
-      const { data, error } = await supabase
-        .from('product_imports')
-        .select(`
-          *,
-          import_receipts(code, import_date),
-          suppliers(name)
-        `)
-        .eq('product_id', productId)
-        .order('import_date', { ascending: false });
+      // Đầu tiên lấy thông tin sản phẩm để biết nó có IMEI hay không
+      const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('imei, name, sku')
+        .eq('id', productId)
+        .single();
 
-      if (error) throw error;
-      return data;
+      if (productError) throw productError;
+
+      if (product?.imei) {
+        // Sản phẩm có IMEI - lấy từ product_imports
+        const { data, error } = await supabase
+          .from('product_imports')
+          .select(`
+            *,
+            import_receipts(code, import_date),
+            suppliers(name)
+          `)
+          .eq('product_id', productId)
+          .order('import_date', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+      } else {
+        // Sản phẩm không IMEI - lấy từ bảng products theo name + sku, join với import_receipts
+        const { data: productRecords, error } = await supabase
+          .from('products')
+          .select(`
+            id,
+            import_price,
+            import_date,
+            quantity,
+            import_receipt_id,
+            supplier_id,
+            status,
+            import_receipts(code, import_date),
+            suppliers(name)
+          `)
+          .eq('name', product.name)
+          .eq('sku', product.sku)
+          .not('import_receipt_id', 'is', null)
+          .order('import_date', { ascending: false });
+
+        if (error) throw error;
+
+        // Map dữ liệu thành format tương tự product_imports
+        return (productRecords || []).map(record => ({
+          id: record.id,
+          product_id: record.id,
+          import_price: record.import_price,
+          import_date: record.import_date,
+          quantity: record.quantity,
+          import_receipt_id: record.import_receipt_id,
+          supplier_id: record.supplier_id,
+          import_receipts: record.import_receipts,
+          suppliers: record.suppliers,
+          note: null,
+        }));
+      }
     },
     enabled: !!productId,
   });
