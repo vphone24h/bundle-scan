@@ -17,6 +17,7 @@ import {
   Wallet,
   Building2,
   RotateCcw,
+  Boxes,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { title: 'Tổng quan', href: '/', icon: LayoutDashboard },
   { title: 'Sản phẩm', href: '/products', icon: Package },
+  { title: 'Tồn kho', href: '/inventory', icon: Boxes },
   { title: 'Danh mục', href: '/categories', icon: FolderTree },
   {
     title: 'Nhập hàng',
