@@ -49,6 +49,9 @@ const FIELD_LABELS: Record<string, string> = {
   import_date: 'Ngày nhập',
   export_date: 'Ngày xuất',
   is_business_accounting: 'Hạch toán KD',
+  transaction_date: 'Ngày giao dịch',
+  balance_before: 'Số dư trước xóa',
+  balance_after: 'Số dư sau xóa',
 };
 
 // Status translations
@@ -256,9 +259,35 @@ export function AuditLogDetailDialog({
                 <Separator />
                 <div>
                   <h4 className="font-medium text-sm mb-3 text-destructive">Dữ liệu đã xóa</h4>
+                  
+                  {/* Hiển thị số dư nguồn tiền nếu là xóa sổ quỹ */}
+                  {log.table_name === 'cash_book' && (log.old_data as Record<string, unknown>).balance_before !== undefined && (
+                    <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                      <h5 className="font-medium text-sm mb-2 text-destructive">Biến động số dư nguồn tiền</h5>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-2 bg-background rounded">
+                          <div className="text-xs text-muted-foreground">Số dư trước xóa</div>
+                          <div className="font-semibold text-lg">
+                            {Number((log.old_data as Record<string, unknown>).balance_before || 0).toLocaleString('vi-VN')} đ
+                          </div>
+                        </div>
+                        <div className="text-center p-2 bg-background rounded">
+                          <div className="text-xs text-muted-foreground">Số dư sau xóa</div>
+                          <div className="font-semibold text-lg">
+                            {Number((log.old_data as Record<string, unknown>).balance_after || 0).toLocaleString('vi-VN')} đ
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-center text-sm">
+                        <span className="text-muted-foreground">Nguồn tiền: </span>
+                        <span className="font-medium">{(log.old_data as Record<string, unknown>).payment_source as string || 'N/A'}</span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-1">
                     {Object.entries(log.old_data as Record<string, unknown>)
-                      .filter(([key]) => !['created_at', 'updated_at', 'id'].includes(key))
+                      .filter(([key]) => !['created_at', 'updated_at', 'id', 'balance_before', 'balance_after'].includes(key))
                       .map(([key, value]) => (
                         <div key={key} className="flex gap-2 text-sm">
                           <span className="font-medium min-w-[120px] text-muted-foreground">
