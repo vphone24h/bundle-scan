@@ -88,7 +88,7 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
         canViewReports: true,          // Xem báo cáo chi nhánh
         canViewCashBook: true,         // Xem sổ quỹ chi nhánh
         canViewImportPrice: true,      // Xem giá nhập
-        canViewAuditLogs: false,       // ❌ Không xem audit logs
+        canViewAuditLogs: true,        // ✅ Xem lịch sử thao tác chi nhánh
         canViewProducts: true,         // Xem sản phẩm
         canViewInventory: true,        // Xem tồn kho
         canManageUsers: false,         // ❌ Không tạo tài khoản

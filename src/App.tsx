@@ -21,6 +21,7 @@ import BranchesPage from "./pages/BranchesPage";
 import ReturnsPage from "./pages/ReturnsPage";
 import InventoryPage from "./pages/InventoryPage";
 import UsersPage from "./pages/UsersPage";
+import AuditLogsPage from "./pages/AuditLogsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/returns" element={<ProtectedRoute><ReturnsPage /></ProtectedRoute>} />
             <Route path="/inventory" element={<ProtectedRoute><InventoryPage /></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
+            <Route path="/audit-logs" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -18,6 +18,7 @@ import {
   RotateCcw,
   Boxes,
   Shield,
+  History,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -82,6 +83,7 @@ const allNavItems: NavItem[] = [
   { title: 'Sổ quỹ', href: '/cash-book', icon: Wallet, permission: 'canViewCashBook' },
   { title: 'Quản lý chi nhánh', href: '/branches', icon: Building2, permission: 'canManageBranches' },
   { title: 'Quản lý người dùng', href: '/users', icon: Shield, permission: 'canManageBranchStaff' },
+  { title: 'Lịch sử thao tác', href: '/audit-logs', icon: History, permission: 'canViewAuditLogs' },
 ];
 
 export function AppSidebar() {
