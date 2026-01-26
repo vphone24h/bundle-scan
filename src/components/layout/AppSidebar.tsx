@@ -15,6 +15,7 @@ import {
   User,
   BarChart3,
   Wallet,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,7 @@ const navItems: NavItem[] = [
   { title: 'Nhà cung cấp', href: '/suppliers', icon: Users },
   { title: 'Báo cáo', href: '/reports', icon: BarChart3 },
   { title: 'Sổ quỹ', href: '/cash-book', icon: Wallet },
+  { title: 'Quản lý chi nhánh', href: '/branches', icon: Building2 },
 ];
 
 export function AppSidebar() {
