@@ -1153,6 +1153,7 @@ export type Database = {
           sale_price: number
           sku: string
           status: string
+          warranty: string | null
         }
         Insert: {
           category_id?: string | null
@@ -1166,6 +1167,7 @@ export type Database = {
           sale_price: number
           sku: string
           status?: string
+          warranty?: string | null
         }
         Update: {
           category_id?: string | null
@@ -1179,6 +1181,7 @@ export type Database = {
           sale_price?: number
           sku?: string
           status?: string
+          warranty?: string | null
         }
         Relationships: [
           {
