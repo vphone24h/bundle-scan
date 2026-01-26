@@ -77,22 +77,43 @@ export function useImportReceiptDetails(receiptId: string | null) {
 
       if (paymentsError) throw paymentsError;
 
-      // Lấy lịch sử nhập hàng từ product_imports thay vì products trực tiếp
-      const { data: productImports, error: importsError } = await supabase
-        .from('product_imports')
+      // Lấy sản phẩm trực tiếp từ bảng products (có import_receipt_id)
+      const { data: products, error: productsError } = await supabase
+        .from('products')
         .select(`
-          *,
-          products(id, name, sku, imei, category_id, status, categories(name)),
-          suppliers(name)
+          id,
+          name,
+          sku,
+          imei,
+          import_price,
+          quantity,
+          status,
+          category_id,
+          categories(name)
         `)
         .eq('import_receipt_id', receiptId);
 
-      if (importsError) throw importsError;
+      if (productsError) throw productsError;
+
+      // Chuyển đổi thành định dạng tương thích với UI
+      const productItems = (products || []).map(p => ({
+        id: p.id,
+        import_price: p.import_price,
+        quantity: p.quantity,
+        products: {
+          id: p.id,
+          name: p.name,
+          sku: p.sku,
+          imei: p.imei,
+          status: p.status,
+          categories: p.categories
+        }
+      }));
 
       return {
         receipt,
         payments: payments as ReceiptPayment[],
-        productImports: productImports || [],
+        productImports: productItems,
       };
     },
     enabled: !!receiptId,
