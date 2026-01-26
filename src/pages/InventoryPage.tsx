@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Download, Package, ClipboardList } from 'lucide-react';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, format } from 'date-fns';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
@@ -13,6 +13,7 @@ import { InventoryTable } from '@/components/inventory/InventoryTable';
 import { InventoryStats } from '@/components/inventory/InventoryStats';
 import { StockCountTab } from '@/components/stockCount/StockCountTab';
 import { useToast } from '@/hooks/use-toast';
+import { exportToExcel, formatCurrencyForExcel } from '@/lib/exportExcel';
 
 export default function InventoryPage() {
   const { toast } = useToast();
@@ -112,36 +113,39 @@ export default function InventoryPage() {
       return;
     }
 
-    // Create CSV content
-    const headers = ['STT', 'Tên sản phẩm', 'SKU', 'Chi nhánh', 'Loại', 'Tổng nhập', 'Đã bán', 'Tồn kho'];
-    const rows = filteredInventory.map((item, index) => [
-      index + 1,
-      item.productName,
-      item.sku,
-      item.branchName || '',
-      item.hasImei ? 'Có IMEI' : 'Không IMEI',
-      item.totalImported,
-      item.totalSold,
-      item.stock,
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-      ),
-    ].join('\n');
-
-    // Add BOM for Excel UTF-8 support
-    const BOM = '\uFEFF';
-    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `ton-kho-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
+    exportToExcel({
+      filename: `Ton_kho_${format(new Date(), 'ddMMyyyy')}`,
+      sheetName: 'Tồn kho',
+      columns: [
+        { header: 'STT', key: 'stt', width: 6 },
+        { header: 'Tên sản phẩm', key: 'productName', width: 35 },
+        { header: 'SKU', key: 'sku', width: 18 },
+        { header: 'Chi nhánh', key: 'branchName', width: 20 },
+        { header: 'Danh mục', key: 'categoryName', width: 18 },
+        { header: 'Loại', key: 'type', width: 12 },
+        { header: 'Tổng nhập', key: 'totalImported', width: 12 },
+        { header: 'Đã bán', key: 'totalSold', width: 10 },
+        { header: 'Tồn kho', key: 'stock', width: 10 },
+        { header: 'Giá nhập TB', key: 'avgImportPrice', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Giá trị tồn', key: 'stockValue', width: 18, format: (v) => formatCurrencyForExcel(v) },
+      ],
+      data: filteredInventory.map((item, index) => ({
+        stt: index + 1,
+        productName: item.productName,
+        sku: item.sku,
+        branchName: item.branchName || '',
+        categoryName: item.categoryName || '',
+        type: item.hasImei ? 'Có IMEI' : 'Không IMEI',
+        totalImported: item.totalImported,
+        totalSold: item.totalSold,
+        stock: item.stock,
+        avgImportPrice: item.avgImportPrice,
+        stockValue: item.stock * item.avgImportPrice,
+      })),
+    });
 
     toast({
-      title: 'Xuất thành công',
+      title: 'Xuất Excel thành công',
       description: `Đã xuất ${filteredInventory.length} dòng dữ liệu`,
     });
   };

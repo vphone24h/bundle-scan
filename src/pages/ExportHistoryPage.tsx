@@ -57,6 +57,7 @@ import {
 } from '@/hooks/useExportReceipts';
 import { useDefaultInvoiceTemplate } from '@/hooks/useInvoiceTemplates';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
+import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib/exportExcel';
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   completed: { label: 'Hoàn tất', variant: 'default' },
@@ -176,11 +177,51 @@ export default function ExportHistoryPage() {
     navigate(`/returns?type=export&itemId=${item.id}`);
   };
 
-  // Export to Excel (simplified)
+  // Export to Excel
   const handleExportExcel = () => {
+    if (!filteredReceipts?.length) {
+      toast({
+        title: 'Không có dữ liệu',
+        description: 'Không có phiếu xuất nào để xuất',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    exportToExcel({
+      filename: `Lich_su_xuat_hang_${format(new Date(), 'ddMMyyyy')}`,
+      sheetName: 'Lịch sử xuất hàng',
+      columns: [
+        { header: 'STT', key: 'stt', width: 6 },
+        { header: 'Mã phiếu', key: 'code', width: 18 },
+        { header: 'Ngày xuất', key: 'export_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
+        { header: 'Khách hàng', key: 'customer_name', width: 25 },
+        { header: 'SĐT', key: 'customer_phone', width: 15 },
+        { header: 'Số SP', key: 'item_count', width: 8 },
+        { header: 'Tổng tiền', key: 'total_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Đã thanh toán', key: 'paid_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Công nợ', key: 'debt_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Trạng thái', key: 'status', width: 15, format: (v) => statusLabels[v]?.label || v },
+        { header: 'Chi nhánh', key: 'branch_name', width: 20 },
+      ],
+      data: filteredReceipts.map((r, index) => ({
+        stt: index + 1,
+        code: r.code,
+        export_date: r.export_date,
+        customer_name: r.customers?.name || 'Khách lẻ',
+        customer_phone: r.customers?.phone || '',
+        item_count: r.export_receipt_items?.length || 0,
+        total_amount: r.total_amount,
+        paid_amount: r.paid_amount,
+        debt_amount: r.debt_amount,
+        status: r.status,
+        branch_name: branches?.find(b => b.id === r.branch_id)?.name || '',
+      })),
+    });
+
     toast({
-      title: 'Xuất Excel',
-      description: 'Tính năng đang được phát triển',
+      title: 'Xuất Excel thành công',
+      description: `Đã xuất ${filteredReceipts.length} phiếu xuất hàng`,
     });
   };
 
