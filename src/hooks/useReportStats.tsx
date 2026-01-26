@@ -45,7 +45,7 @@ export function useReportStats(filters?: {
       const startDate = filters?.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
       const endDate = filters?.endDate || new Date().toISOString().split('T')[0];
 
-      // 1. Lấy dữ liệu phiếu xuất và sản phẩm đã bán
+      // 1. Lấy dữ liệu phiếu xuất và sản phẩm đã bán (CHỈ status = 'sold')
       let exportQuery = supabase
         .from('export_receipts')
         .select(`
@@ -77,7 +77,29 @@ export function useReportStats(filters?: {
       const { data: exportReceipts, error: exportError } = await exportQuery;
       if (exportError) throw exportError;
 
-      // 2. Lấy giá nhập của các sản phẩm đã bán để tính lợi nhuận
+      // 2. Lấy dữ liệu trả hàng KHÔNG CÓ PHÍ để tính lợi nhuận âm
+      let returnQuery = supabase
+        .from('export_returns')
+        .select(`
+          id,
+          import_price,
+          sale_price,
+          return_date,
+          branch_id,
+          fee_type
+        `)
+        .eq('fee_type', 'none') // Chỉ lấy trả hàng hoàn tiền đầy đủ
+        .gte('return_date', startDate)
+        .lte('return_date', endDate + 'T23:59:59');
+
+      if (filters?.branchId) {
+        returnQuery = returnQuery.eq('branch_id', filters.branchId);
+      }
+
+      const { data: returnItems, error: returnError } = await returnQuery;
+      if (returnError) throw returnError;
+
+      // 3. Lấy giá nhập của các sản phẩm đã bán để tính lợi nhuận
       const productIds = exportReceipts?.flatMap(r => 
         r.export_receipt_items?.map(i => i.product_id).filter(Boolean)
       ) || [];
@@ -95,7 +117,7 @@ export function useReportStats(filters?: {
         }, {} as Record<string, number>);
       }
 
-      // 3. Lấy dữ liệu sổ quỹ (chi phí và thu nhập khác)
+      // 4. Lấy dữ liệu sổ quỹ (chi phí và thu nhập khác)
       let cashBookQuery = supabase
         .from('cash_book')
         .select('*')
@@ -121,6 +143,7 @@ export function useReportStats(filters?: {
       const paymentsBySource = { cash: 0, bank_card: 0, e_wallet: 0, debt: 0 };
       const profitByCategoryMap: Record<string, { categoryName: string; revenue: number; profit: number; count: number }> = {};
 
+      // Tính lợi nhuận từ bán hàng (CHỈ status = 'sold')
       exportReceipts?.forEach(receipt => {
         if (receipt.status !== 'cancelled') {
           salesCount++;
@@ -134,6 +157,7 @@ export function useReportStats(filters?: {
               return;
             }
 
+            // CHỈ tính sản phẩm đã bán
             if (item.status === 'sold') {
               totalSalesRevenue += salePrice;
               businessProfit += (salePrice - importPrice);
@@ -148,11 +172,6 @@ export function useReportStats(filters?: {
               profitByCategoryMap[catId].revenue += salePrice;
               profitByCategoryMap[catId].profit += (salePrice - importPrice);
               profitByCategoryMap[catId].count++;
-            } else if (item.status === 'returned') {
-              totalReturnRevenue += salePrice;
-              businessProfit -= (salePrice - importPrice); // Hoàn lãi
-              productsReturned++;
-              returnCount++;
             }
           });
 
@@ -165,6 +184,18 @@ export function useReportStats(filters?: {
             }
           });
         }
+      });
+
+      // Tính lợi nhuận âm từ trả hàng KHÔNG CÓ PHÍ
+      returnItems?.forEach(item => {
+        const salePrice = Number(item.sale_price);
+        const importPrice = Number(item.import_price);
+        const profit = salePrice - importPrice;
+        
+        totalReturnRevenue += salePrice;
+        businessProfit -= profit; // Hoàn lãi
+        productsReturned++;
+        returnCount++;
       });
 
       // Tính chi phí và thu nhập khác từ sổ quỹ
