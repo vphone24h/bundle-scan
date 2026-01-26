@@ -188,7 +188,7 @@ export function useCreateImportReceipt() {
           description: `Thanh toán phiếu nhập ${code}`,
           amount: p.amount,
           payment_source: p.type, // Use the original payment type directly
-          is_business_accounting: true,
+          is_business_accounting: false, // Không hạch toán vì chi phí đã tính trong lợi nhuận (giá bán - giá nhập)
           branch_id: branchId || null,
           reference_id: receipt.id,
           reference_type: 'import_receipt',
