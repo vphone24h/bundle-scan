@@ -18,6 +18,7 @@ interface Customer {
   total_spent: number;
   membership_tier: 'regular' | 'silver' | 'gold' | 'vip';
   status: 'active' | 'inactive';
+  birthday: string | null;
 }
 
 interface CustomerSearchComboboxProps {

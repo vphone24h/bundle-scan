@@ -77,6 +77,7 @@ export function useUpsertCustomer() {
       phone: string;
       address?: string | null;
       email?: string | null;
+      birthday?: string | null;
     }) => {
       // First try to find existing customer by phone
       const { data: existing } = await supabase
@@ -93,6 +94,7 @@ export function useUpsertCustomer() {
             name: customer.name,
             address: customer.address,
             email: customer.email,
+            birthday: customer.birthday,
           })
           .eq('id', existing.id)
           .select()
