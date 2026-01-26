@@ -479,6 +479,8 @@ export function useCreateExportReturn() {
 
       if (itemError) throw itemError;
 
+      // Ghi nhận tiền hoàn trả cho khách - KHÔNG tính vào hạch toán kinh doanh
+      // (Chỉ là đảo dòng tiền, không phải hoạt động kinh doanh mới)
       for (const payment of payments) {
         if (payment.source !== 'debt') {
           const { error: cashBookError } = await supabase
@@ -489,7 +491,7 @@ export function useCreateExportReturn() {
               description: `Hoan tien tra hang: ${item.product_name} (${code})`,
               amount: payment.amount,
               payment_source: payment.source,
-              is_business_accounting: feeType === 'none',
+              is_business_accounting: false, // KHÔNG tính vào hạch toán - chỉ đảo dòng tiền
               branch_id: item.branch_id,
               reference_id: returnData.id,
               reference_type: 'export_return',
