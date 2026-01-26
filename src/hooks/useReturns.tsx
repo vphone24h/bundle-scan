@@ -242,6 +242,9 @@ export function useCreateImportReturn() {
       if (returnError) throw returnError;
 
       if (payments.length > 0) {
+        // Get tenant_id for return_payments
+        const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+        
         const { error: paymentsError } = await supabase
           .from('return_payments')
           .insert(payments.map(p => ({
@@ -249,6 +252,7 @@ export function useCreateImportReturn() {
             return_type: 'import_return' as const,
             payment_source: p.source,
             amount: p.amount,
+            tenant_id: tenantId,
           })));
 
         if (paymentsError) throw paymentsError;
@@ -480,6 +484,9 @@ export function useCreateExportReturn() {
       if (returnError) throw returnError;
 
       if (payments.length > 0) {
+        // Get tenant_id for return_payments
+        const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+        
         const { error: paymentsError } = await supabase
           .from('return_payments')
           .insert(payments.map(p => ({
@@ -487,6 +494,7 @@ export function useCreateExportReturn() {
             return_type: 'export_return' as const,
             payment_source: p.source,
             amount: p.amount,
+            tenant_id: tenantId,
           })));
 
         if (paymentsError) throw paymentsError;
