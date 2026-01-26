@@ -382,7 +382,9 @@ export default function ExportHistoryPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Sản phẩm</TableHead>
-                      <TableHead className="text-right">Giá bán</TableHead>
+                      <TableHead className="text-center">SL</TableHead>
+                      <TableHead className="text-right">Đơn giá</TableHead>
+                      <TableHead className="text-right">Thành tiền</TableHead>
                       <TableHead>Khách hàng</TableHead>
                       <TableHead>Ngày bán</TableHead>
                       <TableHead>Chi nhánh</TableHead>
@@ -391,54 +393,62 @@ export default function ExportHistoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredItems?.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <div className="font-medium">{item.product_name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            SKU: {item.sku}
-                          </div>
-                          {item.imei && (
+                    {filteredItems?.map((item) => {
+                      const quantity = (item as any).quantity || 1;
+                      const totalPrice = item.sale_price * quantity;
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            <div className="font-medium">{item.product_name}</div>
                             <div className="text-xs text-muted-foreground">
-                              IMEI: {item.imei}
+                              SKU: {item.sku}
                             </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {item.sale_price.toLocaleString('vi-VN')}đ
-                        </TableCell>
-                        <TableCell>
-                          <div>{item.export_receipts?.customers?.name || '-'}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {item.export_receipts?.customers?.phone}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {item.export_receipts?.export_date ? 
-                            format(new Date(item.export_receipts.export_date), 'dd/MM/yyyy', { locale: vi }) : '-'}
-                        </TableCell>
-                        <TableCell>
-                          {item.export_receipts?.branches?.name || '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={item.status === 'sold' ? 'default' : 'secondary'}>
-                            {item.status === 'sold' ? 'Đã bán' : 'Đã trả'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleReturn(item)}
-                            disabled={item.status === 'returned' || returnProduct.isPending}
-                            title="Trả hàng"
-                          >
-                            <RotateCcw className="h-4 w-4 mr-1" />
-                            Trả
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                            {item.imei && (
+                              <div className="text-xs text-muted-foreground">
+                                IMEI: {item.imei}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">{quantity}</TableCell>
+                          <TableCell className="text-right font-medium">
+                            {item.sale_price.toLocaleString('vi-VN')}đ
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {totalPrice.toLocaleString('vi-VN')}đ
+                          </TableCell>
+                          <TableCell>
+                            <div>{item.export_receipts?.customers?.name || '-'}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {item.export_receipts?.customers?.phone}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {item.export_receipts?.export_date ? 
+                              format(new Date(item.export_receipts.export_date), 'dd/MM/yyyy', { locale: vi }) : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {item.export_receipts?.branches?.name || '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={item.status === 'sold' ? 'default' : 'secondary'}>
+                              {item.status === 'sold' ? 'Đã bán' : 'Đã trả'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleReturn(item)}
+                              disabled={item.status === 'returned' || returnProduct.isPending}
+                              title="Trả hàng"
+                            >
+                              <RotateCcw className="h-4 w-4 mr-1" />
+                              Trả
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
@@ -493,25 +503,35 @@ export default function ExportHistoryPage() {
                     <TableRow>
                       <TableHead>Tên SP</TableHead>
                       <TableHead>IMEI/SKU</TableHead>
-                      <TableHead className="text-right">Giá bán</TableHead>
+                      <TableHead className="text-center">SL</TableHead>
+                      <TableHead className="text-right">Đơn giá</TableHead>
+                      <TableHead className="text-right">Thành tiền</TableHead>
                       <TableHead>TT</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selectedReceipt.export_receipt_items?.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.product_name}</TableCell>
-                        <TableCell>{item.imei || item.sku}</TableCell>
-                        <TableCell className="text-right">
-                          {item.sale_price.toLocaleString('vi-VN')}đ
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={item.status === 'sold' ? 'default' : 'secondary'} className="text-xs">
-                            {item.status === 'sold' ? 'Đã bán' : 'Đã trả'}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {selectedReceipt.export_receipt_items?.map((item) => {
+                      const quantity = (item as any).quantity || 1;
+                      const totalPrice = item.sale_price * quantity;
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.product_name}</TableCell>
+                          <TableCell>{item.imei || item.sku}</TableCell>
+                          <TableCell className="text-center">{quantity}</TableCell>
+                          <TableCell className="text-right">
+                            {item.sale_price.toLocaleString('vi-VN')}đ
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {totalPrice.toLocaleString('vi-VN')}đ
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={item.status === 'sold' ? 'default' : 'secondary'} className="text-xs">
+                              {item.status === 'sold' ? 'Đã bán' : 'Đã trả'}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

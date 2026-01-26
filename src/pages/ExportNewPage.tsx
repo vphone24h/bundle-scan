@@ -41,7 +41,8 @@ import { ExportPaymentDialog } from '@/components/export/ExportPaymentDialog';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
 import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombobox';
-import { formatNumber } from '@/lib/formatNumber';
+import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/formatNumber';
+import { PriceInput } from '@/components/ui/price-input';
 import { cn } from '@/lib/utils';
 
 interface SelectedCustomer {
@@ -431,11 +432,10 @@ export default function ExportNewPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Giá bán</Label>
-                      <Input
-                        type="number"
+                      <PriceInput
                         placeholder="Nhập giá bán"
                         value={salePrice}
-                        onChange={(e) => setSalePrice(e.target.value)}
+                        onChange={(val) => setSalePrice(val.toString())}
                       />
                     </div>
                     <div>
@@ -495,11 +495,10 @@ export default function ExportNewPage() {
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">{item.categoryName || '-'}</TableCell>
                         <TableCell className="text-right">
-                          <Input
-                            type="number"
+                          <PriceInput
                             value={item.sale_price}
-                            onChange={(e) => handleUpdateCartPrice(item.tempId, parseFloat(e.target.value) || 0)}
-                            className="w-28 text-right font-medium"
+                            onChange={(val) => handleUpdateCartPrice(item.tempId, val)}
+                            className="w-32 text-right font-medium"
                           />
                         </TableCell>
                         <TableCell>
