@@ -246,16 +246,24 @@ export function useCreateExportReceipt() {
         if (paymentsError) throw paymentsError;
       }
 
-      // Update product status to 'sold' for items with product_id
+      // Update product status/quantity for items with product_id
       for (const item of items) {
         if (item.product_id) {
-          await supabase
+          // Lấy thông tin sản phẩm
+          const { data: product } = await supabase
             .from('products')
-            .update({ status: 'sold' })
-            .eq('id', item.product_id);
+            .select('imei, quantity')
+            .eq('id', item.product_id)
+            .single();
 
-          // Record IMEI history if applicable
-          if (item.imei) {
+          if (product?.imei) {
+            // SẢN PHẨM CÓ IMEI: Đánh dấu là đã bán
+            await supabase
+              .from('products')
+              .update({ status: 'sold' })
+              .eq('id', item.product_id);
+
+            // Record IMEI history
             await supabase.from('imei_histories').insert([
               {
                 product_id: item.product_id,
@@ -268,6 +276,23 @@ export function useCreateExportReceipt() {
                 created_by: user?.id,
               },
             ]);
+          } else {
+            // SẢN PHẨM KHÔNG IMEI: Giảm số lượng
+            const newQuantity = (product?.quantity || 1) - 1;
+            
+            if (newQuantity <= 0) {
+              // Hết hàng -> đánh dấu sold
+              await supabase
+                .from('products')
+                .update({ status: 'sold', quantity: 0 })
+                .eq('id', item.product_id);
+            } else {
+              // Còn hàng -> giảm quantity
+              await supabase
+                .from('products')
+                .update({ quantity: newQuantity })
+                .eq('id', item.product_id);
+            }
           }
         }
       }

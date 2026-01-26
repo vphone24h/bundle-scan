@@ -620,18 +620,26 @@ export default function ImportHistoryPage() {
 
               {/* Products */}
               <div>
-                <h4 className="font-semibold mb-3">Danh sách sản phẩm ({receiptDetails.products?.length || 0})</h4>
+                <h4 className="font-semibold mb-3">Danh sách sản phẩm ({receiptDetails.productImports?.length || 0})</h4>
                 <div className="border rounded-lg divide-y">
-                  {receiptDetails.products?.map((item: any) => (
+                  {receiptDetails.productImports?.map((item: any) => (
                     <div key={item.id} className="p-3 flex items-center justify-between">
                       <div>
-                        <p className="font-medium">{item.name}</p>
+                        <p className="font-medium">{item.products?.name || 'N/A'}</p>
                         <p className="text-xs text-muted-foreground">
-                          SKU: {item.sku}
-                          {item.imei && ` • IMEI: ${item.imei}`}
+                          SKU: {item.products?.sku || 'N/A'}
+                          {item.products?.imei && ` • IMEI: ${item.products.imei}`}
+                          {item.quantity > 1 && ` • SL: ${item.quantity}`}
                         </p>
                       </div>
-                      <p className="font-medium">{formatCurrency(Number(item.import_price))}</p>
+                      <div className="text-right">
+                        <p className="font-medium">{formatCurrency(Number(item.import_price))}</p>
+                        {item.quantity > 1 && (
+                          <p className="text-xs text-muted-foreground">
+                            x{item.quantity} = {formatCurrency(Number(item.import_price) * item.quantity)}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

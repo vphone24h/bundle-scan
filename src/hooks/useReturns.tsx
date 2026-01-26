@@ -394,13 +394,38 @@ export function useCreateExportReturn() {
 
         if (incomeError) throw incomeError;
       } else {
+        // Trả hàng không có phí - hoàn lại kho với giá nhập TB hiện tại
         if (item.product_id) {
-          const { error: updateError } = await supabase
+          // Lấy thông tin sản phẩm
+          const { data: existingProduct } = await supabase
             .from('products')
-            .update({ status: 'in_stock' })
-            .eq('id', item.product_id);
+            .select('imei, quantity, status')
+            .eq('id', item.product_id)
+            .single();
 
-          if (updateError) throw updateError;
+          if (existingProduct?.imei) {
+            // SẢN PHẨM CÓ IMEI: Đánh dấu in_stock
+            const { error: updateError } = await supabase
+              .from('products')
+              .update({ status: 'in_stock' })
+              .eq('id', item.product_id);
+
+            if (updateError) throw updateError;
+          } else {
+            // SẢN PHẨM KHÔNG IMEI: Cộng lại quantity
+            const currentQty = existingProduct?.quantity || 0;
+            const newStatus = existingProduct?.status === 'sold' ? 'in_stock' : existingProduct?.status;
+            
+            const { error: updateError } = await supabase
+              .from('products')
+              .update({ 
+                quantity: currentQty + 1,
+                status: newStatus,
+              })
+              .eq('id', item.product_id);
+
+            if (updateError) throw updateError;
+          }
         }
       }
 

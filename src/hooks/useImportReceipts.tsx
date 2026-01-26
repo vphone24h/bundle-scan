@@ -77,21 +77,22 @@ export function useImportReceiptDetails(receiptId: string | null) {
 
       if (paymentsError) throw paymentsError;
 
-      const { data: products, error: productsError } = await supabase
-        .from('products')
+      // Lấy lịch sử nhập hàng từ product_imports thay vì products trực tiếp
+      const { data: productImports, error: importsError } = await supabase
+        .from('product_imports')
         .select(`
           *,
-          categories(name),
+          products(id, name, sku, imei, category_id, status, categories(name)),
           suppliers(name)
         `)
         .eq('import_receipt_id', receiptId);
 
-      if (productsError) throw productsError;
+      if (importsError) throw importsError;
 
       return {
         receipt,
         payments: payments as ReceiptPayment[],
-        products,
+        productImports: productImports || [],
       };
     },
     enabled: !!receiptId,
@@ -168,59 +169,119 @@ export function useCreateImportReceipt() {
         if (paymentsError) throw paymentsError;
       }
 
-      // Create products - for non-IMEI products with quantity > 1, create multiple rows
-      const productRows: {
-        name: string;
-        sku: string;
-        imei?: string | null;
-        category_id?: string | null;
-        import_price: number;
-        supplier_id?: string | null;
-        import_receipt_id: string;
-        branch_id?: string | null;
-        note?: string | null;
-      }[] = [];
-
+      // Process products - LOGIC MỚI CHO SẢN PHẨM KHÔNG IMEI
       for (const p of products) {
         if (p.imei) {
-          // IMEI product: always 1 row
-          productRows.push({
-            name: p.name,
-            sku: p.sku,
-            imei: p.imei,
-            category_id: p.category_id,
-            import_price: p.import_price,
-            supplier_id: supplierId,
-            import_receipt_id: receipt.id,
-            branch_id: branchId || null,
-            note: p.note,
-          });
-        } else {
-          // Non-IMEI product: create `quantity` rows
-          for (let i = 0; i < p.quantity; i++) {
-            productRows.push({
+          // SẢN PHẨM CÓ IMEI: Tạo bản ghi riêng lẻ (quantity luôn = 1)
+          const { data: newProduct, error: productError } = await supabase
+            .from('products')
+            .insert([{
               name: p.name,
               sku: p.sku,
-              imei: null,
+              imei: p.imei,
               category_id: p.category_id,
               import_price: p.import_price,
+              quantity: 1,
+              total_import_cost: p.import_price,
               supplier_id: supplierId,
               import_receipt_id: receipt.id,
               branch_id: branchId || null,
               note: p.note,
-            });
+            }])
+            .select()
+            .single();
+
+          if (productError) throw productError;
+
+          // Tạo bản ghi lịch sử nhập hàng
+          await supabase.from('product_imports').insert([{
+            product_id: newProduct.id,
+            import_receipt_id: receipt.id,
+            quantity: 1,
+            import_price: p.import_price,
+            supplier_id: supplierId,
+            note: p.note,
+            created_by: user.id,
+          }]);
+
+        } else {
+          // SẢN PHẨM KHÔNG IMEI: Tìm sản phẩm có cùng name + sku + branch + in_stock
+          const { data: existingProduct } = await supabase
+            .from('products')
+            .select('id, quantity, import_price, total_import_cost')
+            .eq('name', p.name)
+            .eq('sku', p.sku)
+            .eq('branch_id', branchId || '')
+            .eq('status', 'in_stock')
+            .is('imei', null)
+            .maybeSingle();
+
+          if (existingProduct) {
+            // CẬP NHẬT SẢN PHẨM ĐÃ TỒN TẠI
+            const newQuantity = existingProduct.quantity + p.quantity;
+            const newTotalCost = existingProduct.total_import_cost + (p.import_price * p.quantity);
+            const newAvgPrice = newTotalCost / newQuantity;
+
+            await supabase
+              .from('products')
+              .update({
+                quantity: newQuantity,
+                total_import_cost: newTotalCost,
+                import_price: newAvgPrice, // Cập nhật giá nhập TB
+                import_receipt_id: receipt.id, // Cập nhật phiếu nhập gần nhất
+              })
+              .eq('id', existingProduct.id);
+
+            // Tạo bản ghi lịch sử nhập hàng
+            await supabase.from('product_imports').insert([{
+              product_id: existingProduct.id,
+              import_receipt_id: receipt.id,
+              quantity: p.quantity,
+              import_price: p.import_price,
+              supplier_id: supplierId,
+              note: p.note,
+              created_by: user.id,
+            }]);
+
+          } else {
+            // TẠO SẢN PHẨM MỚI với quantity
+            const totalCost = p.import_price * p.quantity;
+            
+            const { data: newProduct, error: productError } = await supabase
+              .from('products')
+              .insert([{
+                name: p.name,
+                sku: p.sku,
+                imei: null,
+                category_id: p.category_id,
+                import_price: p.import_price,
+                quantity: p.quantity,
+                total_import_cost: totalCost,
+                supplier_id: supplierId,
+                import_receipt_id: receipt.id,
+                branch_id: branchId || null,
+                note: p.note,
+              }])
+              .select()
+              .single();
+
+            if (productError) throw productError;
+
+            // Tạo bản ghi lịch sử nhập hàng
+            await supabase.from('product_imports').insert([{
+              product_id: newProduct.id,
+              import_receipt_id: receipt.id,
+              quantity: p.quantity,
+              import_price: p.import_price,
+              supplier_id: supplierId,
+              note: p.note,
+              created_by: user.id,
+            }]);
           }
         }
       }
 
-      const { error: productsError } = await supabase
-        .from('products')
-        .insert(productRows);
-
-      if (productsError) throw productsError;
-
       // Create cash book entries for actual payments (not debt)
-      // payment_source must match constraint: 'cash', 'bank_card', 'e_wallet'
       const cashBookEntries = payments
         .filter(p => p.type !== 'debt' && p.amount > 0)
         .map(p => ({
@@ -228,8 +289,8 @@ export function useCreateImportReceipt() {
           category: 'Nhập hàng',
           description: `Thanh toán phiếu nhập ${code}`,
           amount: p.amount,
-          payment_source: p.type, // Use the original payment type directly
-          is_business_accounting: false, // Không hạch toán vì chi phí đã tính trong lợi nhuận (giá bán - giá nhập)
+          payment_source: p.type,
+          is_business_accounting: false,
           branch_id: branchId || null,
           reference_id: receipt.id,
           reference_type: 'import_receipt',
@@ -249,6 +310,7 @@ export function useCreateImportReceipt() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
     },

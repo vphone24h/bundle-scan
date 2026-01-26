@@ -107,20 +107,24 @@ export function useDetailedProfitReport(filters?: {
       const { data: returnItems, error: returnError } = await returnQuery;
       if (returnError) throw returnError;
 
-      // 3. Lấy giá nhập của các sản phẩm đã bán
+      // 3. Lấy giá nhập (trung bình) của các sản phẩm đã bán
       const productIds = soldItems?.map(i => i.product_id).filter(Boolean) || [];
-      let productsMap: Record<string, number> = {};
+      let productsMap: Record<string, { import_price: number; quantity: number }> = {};
       
       if (productIds.length > 0) {
         const { data: products } = await supabase
           .from('products')
-          .select('id, import_price')
+          .select('id, import_price, quantity, imei')
           .in('id', productIds);
         
         productsMap = (products || []).reduce((acc, p) => {
-          acc[p.id] = Number(p.import_price);
+          // import_price đã là giá trung bình cho sản phẩm không IMEI
+          acc[p.id] = { 
+            import_price: Number(p.import_price),
+            quantity: p.quantity || 1,
+          };
           return acc;
-        }, {} as Record<string, number>);
+        }, {} as Record<string, { import_price: number; quantity: number }>);
       }
 
       // 4. Xử lý dữ liệu bán hàng
@@ -131,7 +135,9 @@ export function useDetailedProfitReport(filters?: {
 
       soldItems?.forEach(item => {
         const receipt = item.export_receipts as any;
-        const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
+        // Sử dụng giá nhập trung bình từ products table
+        const productInfo = item.product_id ? productsMap[item.product_id] : null;
+        const importPrice = productInfo?.import_price || 0;
         const salePrice = Number(item.sale_price);
         const profit = salePrice - importPrice;
 

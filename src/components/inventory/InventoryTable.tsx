@@ -14,6 +14,7 @@ import { InventoryItem } from '@/hooks/useInventory';
 import { IMEIDetailDialog } from './IMEIDetailDialog';
 import { NonIMEIDetailDialog } from './NonIMEIDetailDialog';
 import { cn } from '@/lib/utils';
+import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
 
 interface InventoryTableProps {
   data: InventoryItem[];
@@ -74,6 +75,7 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
               <TableHead className="text-center whitespace-nowrap hidden lg:table-cell">Tổng nhập</TableHead>
               <TableHead className="text-center whitespace-nowrap hidden lg:table-cell">Đã bán</TableHead>
               <TableHead className="text-center whitespace-nowrap">Tồn kho</TableHead>
+              <TableHead className="text-right whitespace-nowrap hidden md:table-cell">Giá nhập TB</TableHead>
               <TableHead className="text-right whitespace-nowrap">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
@@ -124,6 +126,9 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
                     {item.stock}
                   </Badge>
                 </TableCell>
+                <TableCell className="text-right hidden md:table-cell font-medium">
+                  {formatCurrencyWithSpaces(item.avgImportPrice)}
+                </TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="outline"
@@ -166,10 +171,11 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
         <NonIMEIDetailDialog
           open={showNonIMEIDialog}
           onOpenChange={setShowNonIMEIDialog}
+          productId={selectedItem.productId}
           productName={selectedItem.productName}
           sku={selectedItem.sku}
-          products={selectedItem.products}
           totalStock={selectedItem.stock}
+          avgImportPrice={selectedItem.avgImportPrice}
         />
       )}
     </>

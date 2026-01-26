@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Package, History } from 'lucide-react';
+import { Package, History, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -17,65 +17,31 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
-import { ProductDetail } from '@/hooks/useInventory';
+import { useProductImportHistory } from '@/hooks/useInventory';
 
 interface NonIMEIDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  productId: string;
   productName: string;
   sku: string;
-  products: ProductDetail[];
   totalStock: number;
-}
-
-interface ImportGroup {
-  importDate: string;
-  importPrice: number;
-  supplierName: string | null;
-  quantity: number;
-  soldQuantity: number;
+  avgImportPrice: number;
 }
 
 export function NonIMEIDetailDialog({
   open,
   onOpenChange,
+  productId,
   productName,
   sku,
-  products,
   totalStock,
+  avgImportPrice,
 }: NonIMEIDetailDialogProps) {
-  // Group products by import date and supplier
-  const importGroups = products.reduce<ImportGroup[]>((acc, product) => {
-    const dateKey = format(new Date(product.importDate), 'yyyy-MM-dd');
-    const existingGroup = acc.find(
-      (g) =>
-        format(new Date(g.importDate), 'yyyy-MM-dd') === dateKey &&
-        g.importPrice === product.importPrice &&
-        g.supplierName === product.supplierName
-    );
+  const { data: importHistory, isLoading } = useProductImportHistory(open ? productId : null);
 
-    if (existingGroup) {
-      existingGroup.quantity += 1;
-      if (product.status === 'sold') {
-        existingGroup.soldQuantity += 1;
-      }
-    } else {
-      acc.push({
-        importDate: product.importDate,
-        importPrice: product.importPrice,
-        supplierName: product.supplierName,
-        quantity: 1,
-        soldQuantity: product.status === 'sold' ? 1 : 0,
-      });
-    }
-
-    return acc;
-  }, []);
-
-  // Sort by import date descending
-  importGroups.sort(
-    (a, b) => new Date(b.importDate).getTime() - new Date(a.importDate).getTime()
-  );
+  // Tính tổng số lượng đã nhập
+  const totalImported = importHistory?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -89,7 +55,11 @@ export function NonIMEIDetailDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-auto">
-          {importGroups.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : !importHistory || importHistory.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Package className="h-12 w-12 text-muted-foreground/50 mb-4" />
               <p className="text-muted-foreground">Chưa có lịch sử nhập hàng</p>
@@ -100,59 +70,58 @@ export function NonIMEIDetailDialog({
                 <TableRow>
                   <TableHead className="w-[50px]">#</TableHead>
                   <TableHead>Ngày nhập</TableHead>
+                  <TableHead>Mã phiếu</TableHead>
                   <TableHead className="text-right">Giá nhập</TableHead>
-                  <TableHead className="text-center">Số lượng nhập</TableHead>
-                  <TableHead className="text-center">Đã bán</TableHead>
-                  <TableHead className="text-center">Còn lại</TableHead>
+                  <TableHead className="text-center">Số lượng</TableHead>
+                  <TableHead className="text-right">Thành tiền</TableHead>
                   <TableHead>Nhà cung cấp</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {importGroups.map((group, index) => {
-                  const remaining = group.quantity - group.soldQuantity;
-                  return (
-                    <TableRow key={index}>
-                      <TableCell className="text-muted-foreground">
-                        {index + 1}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(group.importDate), 'dd/MM/yyyy', {
-                          locale: vi,
-                        })}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrencyWithSpaces(group.importPrice)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline">{group.quantity}</Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="secondary">{group.soldQuantity}</Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge
-                          variant={remaining === 0 ? 'destructive' : 'default'}
-                          className={remaining === 0 ? 'bg-muted text-muted-foreground' : ''}
-                        >
-                          {remaining}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{group.supplierName || '-'}</TableCell>
-                    </TableRow>
-                  );
-                })}
+                {importHistory.map((item, index) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="text-muted-foreground">
+                      {index + 1}
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(item.import_date), 'dd/MM/yyyy', {
+                        locale: vi,
+                      })}
+                    </TableCell>
+                    <TableCell className="font-mono text-primary">
+                      {item.import_receipts?.code || '-'}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatCurrencyWithSpaces(item.import_price)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline">{item.quantity}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrencyWithSpaces(item.import_price * item.quantity)}
+                    </TableCell>
+                    <TableCell>{item.suppliers?.name || '-'}</TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}
         </div>
 
         <div className="border-t pt-4 flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
-            Tổng nhập: <strong>{products.length}</strong> | Tồn kho hiện tại:{' '}
-            <strong className={totalStock <= 2 ? 'text-destructive' : ''}>
-              {totalStock}
-            </strong>
-          </span>
+          <div className="space-x-4">
+            <span className="text-muted-foreground">
+              Tổng nhập: <strong>{totalImported}</strong>
+            </span>
+            <span className="text-muted-foreground">
+              Tồn kho: <strong className={totalStock <= 2 ? 'text-destructive' : ''}>{totalStock}</strong>
+            </span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">
+              Giá nhập TB: <strong className="text-primary">{formatCurrencyWithSpaces(avgImportPrice)}</strong>
+            </span>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

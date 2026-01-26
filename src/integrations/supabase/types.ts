@@ -1083,6 +1083,67 @@ export type Database = {
           },
         ]
       }
+      product_imports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          import_date: string
+          import_price: number
+          import_receipt_id: string | null
+          note: string | null
+          product_id: string
+          quantity: number
+          supplier_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          import_date?: string
+          import_price: number
+          import_receipt_id?: string | null
+          note?: string | null
+          product_id: string
+          quantity?: number
+          supplier_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          import_date?: string
+          import_price?: number
+          import_receipt_id?: string | null
+          note?: string | null
+          product_id?: string
+          quantity?: number
+          supplier_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_imports_import_receipt_id_fkey"
+            columns: ["import_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "import_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_imports_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_imports_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           branch_id: string | null
@@ -1095,9 +1156,11 @@ export type Database = {
           import_receipt_id: string | null
           name: string
           note: string | null
+          quantity: number
           sku: string
           status: Database["public"]["Enums"]["product_status"]
           supplier_id: string | null
+          total_import_cost: number
           updated_at: string
         }
         Insert: {
@@ -1111,9 +1174,11 @@ export type Database = {
           import_receipt_id?: string | null
           name: string
           note?: string | null
+          quantity?: number
           sku: string
           status?: Database["public"]["Enums"]["product_status"]
           supplier_id?: string | null
+          total_import_cost?: number
           updated_at?: string
         }
         Update: {
@@ -1127,9 +1192,11 @@ export type Database = {
           import_receipt_id?: string | null
           name?: string
           note?: string | null
+          quantity?: number
           sku?: string
           status?: Database["public"]["Enums"]["product_status"]
           supplier_id?: string | null
+          total_import_cost?: number
           updated_at?: string
         }
         Relationships: [
