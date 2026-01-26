@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { usePagination } from '@/hooks/usePagination';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -233,6 +235,17 @@ export default function ReturnsPage() {
       (a, b) => new Date(b.return_date).getTime() - new Date(a.return_date).getTime()
     );
   }, [filteredImportReturns, filteredExportReturns]);
+
+  // Pagination for each tab
+  const allReturnsPagination = usePagination(combinedReturns, { storageKey: 'returns-all' });
+  const exportReturnsPagination = usePagination(
+    filteredExportReturns.map(r => ({ ...r, returnType: 'export' as const })),
+    { storageKey: 'returns-export' }
+  );
+  const importReturnsPagination = usePagination(
+    filteredImportReturns.map(r => ({ ...r, returnType: 'import' as const })),
+    { storageKey: 'returns-import' }
+  );
 
   const getEmployeeName = (userId: string | null) => {
     if (!userId || !profiles) return '-';
@@ -606,9 +619,21 @@ export default function ReturnsPage() {
                 <div className="text-center py-8 text-muted-foreground">
                   Đang tải...
                 </div>
-              ) : renderHistoryTable(combinedReturns)}
+              ) : renderHistoryTable(allReturnsPagination.paginatedData)}
             </CardContent>
           </Card>
+          {combinedReturns.length > 0 && (
+            <TablePagination
+              currentPage={allReturnsPagination.currentPage}
+              totalPages={allReturnsPagination.totalPages}
+              pageSize={allReturnsPagination.pageSize}
+              totalItems={allReturnsPagination.totalItems}
+              startIndex={allReturnsPagination.startIndex}
+              endIndex={allReturnsPagination.endIndex}
+              onPageChange={allReturnsPagination.setPage}
+              onPageSizeChange={allReturnsPagination.setPageSize}
+            />
+          )}
         </TabsContent>
 
         {/* Tab: Export Returns */}
@@ -619,9 +644,21 @@ export default function ReturnsPage() {
                 <div className="text-center py-8 text-muted-foreground">
                   Đang tải...
                 </div>
-              ) : renderHistoryTable(filteredExportReturns.map(r => ({ ...r, returnType: 'export' as const })))}
+              ) : renderHistoryTable(exportReturnsPagination.paginatedData)}
             </CardContent>
           </Card>
+          {filteredExportReturns.length > 0 && (
+            <TablePagination
+              currentPage={exportReturnsPagination.currentPage}
+              totalPages={exportReturnsPagination.totalPages}
+              pageSize={exportReturnsPagination.pageSize}
+              totalItems={exportReturnsPagination.totalItems}
+              startIndex={exportReturnsPagination.startIndex}
+              endIndex={exportReturnsPagination.endIndex}
+              onPageChange={exportReturnsPagination.setPage}
+              onPageSizeChange={exportReturnsPagination.setPageSize}
+            />
+          )}
         </TabsContent>
 
         {/* Tab: Import Returns */}
@@ -632,9 +669,21 @@ export default function ReturnsPage() {
                 <div className="text-center py-8 text-muted-foreground">
                   Đang tải...
                 </div>
-              ) : renderHistoryTable(filteredImportReturns.map(r => ({ ...r, returnType: 'import' as const })))}
+              ) : renderHistoryTable(importReturnsPagination.paginatedData)}
             </CardContent>
           </Card>
+          {filteredImportReturns.length > 0 && (
+            <TablePagination
+              currentPage={importReturnsPagination.currentPage}
+              totalPages={importReturnsPagination.totalPages}
+              pageSize={importReturnsPagination.pageSize}
+              totalItems={importReturnsPagination.totalItems}
+              startIndex={importReturnsPagination.startIndex}
+              endIndex={importReturnsPagination.endIndex}
+              onPageChange={importReturnsPagination.setPage}
+              onPageSizeChange={importReturnsPagination.setPageSize}
+            />
+          )}
         </TabsContent>
       </Tabs>
 

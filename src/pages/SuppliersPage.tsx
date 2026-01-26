@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier, Supplier } from '@/hooks/useSuppliers';
+import { usePagination } from '@/hooks/usePagination';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { formatDate } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +46,9 @@ export default function SuppliersPage() {
       s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.phone?.includes(searchTerm)
   ) || [];
+
+  // Pagination
+  const pagination = usePagination(filteredSuppliers, { storageKey: 'suppliers' });
 
   const handleAdd = () => {
     setEditSupplier(null);
@@ -138,7 +143,7 @@ export default function SuppliersPage() {
 
         {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredSuppliers.map((supplier) => (
+          {pagination.paginatedData.map((supplier) => (
             <div key={supplier.id} className="bg-card border rounded-xl p-4 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
@@ -197,6 +202,19 @@ export default function SuppliersPage() {
           <div className="text-center py-12 text-muted-foreground">
             Không tìm thấy nhà cung cấp nào
           </div>
+        )}
+
+        {filteredSuppliers.length > 0 && (
+          <TablePagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            totalItems={pagination.totalItems}
+            startIndex={pagination.startIndex}
+            endIndex={pagination.endIndex}
+            onPageChange={pagination.setPage}
+            onPageSizeChange={pagination.setPageSize}
+          />
         )}
       </div>
 
