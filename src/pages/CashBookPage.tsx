@@ -60,11 +60,13 @@ import {
   Banknote,
   CreditCard,
   Settings,
+  BookOpen,
 } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isToday } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useCashBook, useCashBookCategories, useCreateCashBookEntry, useUpdateCashBookEntry, useDeleteCashBookEntry, type CashBookEntry } from '@/hooks/useCashBook';
 import { useBranches } from '@/hooks/useBranches';
+import { useCashBookGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency } from '@/lib/mockData';
 import { cn } from '@/lib/utils';
 
@@ -166,6 +168,7 @@ export default function CashBookPage() {
   const { data: expenseCategories } = useCashBookCategories('expense');
   const { data: incomeCategories } = useCashBookCategories('income');
   const { data: branches } = useBranches();
+  const cashBookGuideUrl = useCashBookGuideUrl();
   const createEntry = useCreateCashBookEntry();
   const updateEntry = useUpdateCashBookEntry();
   const deleteEntry = useDeleteCashBookEntry();
@@ -558,6 +561,14 @@ export default function CashBookPage() {
         description="Quản lý dòng tiền thu chi"
         actions={
           <div className="flex gap-2">
+            {cashBookGuideUrl && (
+              <Button variant="secondary" size="sm" asChild>
+                <a href={cashBookGuideUrl} target="_blank" rel="noopener noreferrer">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Hướng dẫn
+                </a>
+              </Button>
+            )}
             <Button variant="outline" onClick={() => handleOpenAdd('income')} className="text-green-600 border-green-600 hover:bg-green-50">
               <TrendingUp className="h-4 w-4 mr-2" />
               Phiếu thu

@@ -57,6 +57,8 @@ export function PaymentConfigManagement() {
   const [supportEmail, setSupportEmail] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [userGuideUrl, setUserGuideUrl] = useState('');
+  const [cashBookGuideUrl, setCashBookGuideUrl] = useState('');
+  const [reportsGuideUrl, setReportsGuideUrl] = useState('');
   const [savingConfig, setSavingConfig] = useState(false);
 
   // Bank account dialog
@@ -101,11 +103,15 @@ export function PaymentConfigManagement() {
       const emailConfig = configs.find(c => c.config_key === 'support_email');
       const companyConfig = configs.find(c => c.config_key === 'company_name');
       const guideConfig = configs.find(c => c.config_key === 'user_guide_url');
+      const cashBookGuideConfig = configs.find(c => c.config_key === 'cash_book_guide_url');
+      const reportsGuideConfig = configs.find(c => c.config_key === 'reports_guide_url');
       
       if (hotlineConfig?.config_value) setHotline(hotlineConfig.config_value);
       if (emailConfig?.config_value) setSupportEmail(emailConfig.config_value);
       if (companyConfig?.config_value) setCompanyName(companyConfig.config_value);
       if (guideConfig?.config_value) setUserGuideUrl(guideConfig.config_value);
+      if (cashBookGuideConfig?.config_value) setCashBookGuideUrl(cashBookGuideConfig.config_value);
+      if (reportsGuideConfig?.config_value) setReportsGuideUrl(reportsGuideConfig.config_value);
     }
   }, [configs]);
 
@@ -118,6 +124,8 @@ export function PaymentConfigManagement() {
         { config_key: 'support_email', config_value: supportEmail },
         { config_key: 'company_name', config_value: companyName },
         { config_key: 'user_guide_url', config_value: userGuideUrl },
+        { config_key: 'cash_book_guide_url', config_value: cashBookGuideUrl },
+        { config_key: 'reports_guide_url', config_value: reportsGuideUrl },
       ];
 
       for (const update of updates) {
@@ -280,12 +288,30 @@ export function PaymentConfigManagement() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Link hướng dẫn sử dụng</Label>
+              <Label>Link hướng dẫn (Tổng quan)</Label>
               <Input
                 type="url"
                 value={userGuideUrl}
                 onChange={(e) => setUserGuideUrl(e.target.value)}
                 placeholder="https://example.com/huong-dan"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Link hướng dẫn (Sổ quỹ)</Label>
+              <Input
+                type="url"
+                value={cashBookGuideUrl}
+                onChange={(e) => setCashBookGuideUrl(e.target.value)}
+                placeholder="https://example.com/so-quy"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Link hướng dẫn (Báo cáo)</Label>
+              <Input
+                type="url"
+                value={reportsGuideUrl}
+                onChange={(e) => setReportsGuideUrl(e.target.value)}
+                placeholder="https://example.com/bao-cao"
               />
             </div>
           </div>
