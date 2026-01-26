@@ -116,9 +116,12 @@ export default function RegisterPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="bg-muted p-4 rounded-lg text-center">
-              <p className="text-sm text-muted-foreground">Địa chỉ truy cập của bạn:</p>
-              <p className="font-mono font-bold text-primary mt-1">
-                {tenantInfo.subdomain}.yourdomain.com
+              <p className="text-sm text-muted-foreground">ID cửa hàng của bạn:</p>
+              <p className="font-mono font-bold text-primary text-lg mt-1">
+                {tenantInfo.subdomain}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Sử dụng ID này khi đăng nhập
               </p>
             </div>
             
@@ -178,23 +181,23 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="subdomain">Tên miền phụ *</Label>
-              <div className="flex items-center gap-2">
+              <Label htmlFor="subdomain">ID Cửa hàng *</Label>
+              <div className="flex items-center gap-0">
                 <Input
                   id="subdomain"
                   name="subdomain"
-                  placeholder="congty-abc"
+                  placeholder="vphone"
                   value={formData.subdomain}
                   onChange={handleChange}
-                  className="flex-1"
+                  className="flex-1 rounded-r-none border-r-0"
                   required
                 />
-                <span className="text-sm text-muted-foreground whitespace-nowrap">
-                  .yourdomain.com
+                <span className="inline-flex items-center px-3 h-10 border border-l-0 rounded-r-md bg-muted text-muted-foreground text-sm whitespace-nowrap">
+                  .khohangpro.vn
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Chỉ sử dụng chữ thường, số và dấu gạch ngang
+                Chỉ sử dụng chữ thường, số và dấu gạch ngang. Đây là ID để đăng nhập.
               </p>
             </div>
 
