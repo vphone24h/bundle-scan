@@ -85,13 +85,19 @@ export default function InventoryPage() {
     storageKey: 'inventory-list'
   });
 
-  // Calculate filtered stats
+  // Calculate filtered stats including total value
   const filteredStats = useMemo(() => {
+    // Tính tổng giá trị kho = sum(stock * avgImportPrice) cho mỗi item
+    const totalValue = filteredInventory.reduce((sum, item) => {
+      return sum + (item.stock * item.avgImportPrice);
+    }, 0);
+
     return {
       totalProducts: filteredInventory.length,
       totalStock: filteredInventory.reduce((sum, item) => sum + item.stock, 0),
       lowStockItems: filteredInventory.filter((item) => item.stock > 0 && item.stock <= 2).length,
       outOfStockItems: filteredInventory.filter((item) => item.stock === 0).length,
+      totalValue,
     };
   }, [filteredInventory]);
 
