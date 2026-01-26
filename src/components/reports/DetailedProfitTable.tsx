@@ -40,24 +40,42 @@ const timePresets = [
   { label: 'Tháng trước', value: 'last_month' },
 ];
 
-export function DetailedProfitTable() {
+interface DetailedProfitTableProps {
+  externalFilters?: {
+    startDate?: string;
+    endDate?: string;
+    branchId?: string;
+    categoryId?: string;
+  };
+}
+
+export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProps) {
   const today = format(new Date(), 'yyyy-MM-dd');
 
+  // Nếu có external filters thì dùng, không thì dùng local state
+  const useExternalFilters = !!externalFilters;
+  
   const [timePreset, setTimePreset] = useState('this_month');
-  const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(today);
-  const [branchId, setBranchId] = useState('_all_');
-  const [categoryId, setCategoryId] = useState('_all_');
+  const [localStartDate, setLocalStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [localEndDate, setLocalEndDate] = useState(today);
+  const [localBranchId, setLocalBranchId] = useState('_all_');
+  const [localCategoryId, setLocalCategoryId] = useState('_all_');
   const [search, setSearch] = useState('');
 
   const { data: branches } = useBranches();
   const { data: categories } = useCategories();
 
+  // Sử dụng external filters nếu có, ngược lại dùng local
+  const startDate = useExternalFilters ? externalFilters.startDate || localStartDate : localStartDate;
+  const endDate = useExternalFilters ? externalFilters.endDate || localEndDate : localEndDate;
+  const branchId = useExternalFilters ? externalFilters.branchId : (localBranchId !== '_all_' ? localBranchId : undefined);
+  const categoryId = useExternalFilters ? externalFilters.categoryId : (localCategoryId !== '_all_' ? localCategoryId : undefined);
+
   const filters = {
     startDate,
     endDate,
-    branchId: branchId !== '_all_' ? branchId : undefined,
-    categoryId: categoryId !== '_all_' ? categoryId : undefined,
+    branchId,
+    categoryId,
     search: search || undefined,
   };
 
@@ -99,17 +117,17 @@ export function DetailedProfitTable() {
     }
 
     setTimePreset(preset);
-    setStartDate(format(start, 'yyyy-MM-dd'));
-    setEndDate(format(end, 'yyyy-MM-dd'));
+    setLocalStartDate(format(start, 'yyyy-MM-dd'));
+    setLocalEndDate(format(end, 'yyyy-MM-dd'));
   };
 
   // Clear all filters
   const handleClearFilters = () => {
     setTimePreset('this_month');
-    setStartDate(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
-    setEndDate(today);
-    setBranchId('_all_');
-    setCategoryId('_all_');
+    setLocalStartDate(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+    setLocalEndDate(today);
+    setLocalBranchId('_all_');
+    setLocalCategoryId('_all_');
     setSearch('');
   };
 
@@ -187,107 +205,122 @@ export function DetailedProfitTable() {
 
   return (
     <div className="space-y-4">
-      {/* Filters Card */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              Tìm kiếm & Lọc dữ liệu
-            </CardTitle>
-            <Button variant="outline" size="sm" onClick={handleClearFilters}>
-              <X className="h-4 w-4 mr-1" />
-              Xóa bộ lọc
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Time preset */}
-            <div>
-              <Label className="text-xs text-muted-foreground">Khoảng thời gian</Label>
-              <Select value={timePreset} onValueChange={handleTimePreset}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn thời gian" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {timePresets.map((preset) => (
-                    <SelectItem key={preset.value} value={preset.value}>
-                      {preset.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      {/* Filters Card - Ẩn bộ lọc thời gian/chi nhánh/danh mục khi dùng external filters */}
+      {!useExternalFilters && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Search className="h-4 w-4" />
+                Tìm kiếm & Lọc dữ liệu
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={handleClearFilters}>
+                <X className="h-4 w-4 mr-1" />
+                Xóa bộ lọc
+              </Button>
             </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Time preset */}
+              <div>
+                <Label className="text-xs text-muted-foreground">Khoảng thời gian</Label>
+                <Select value={timePreset} onValueChange={handleTimePreset}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn thời gian" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {timePresets.map((preset) => (
+                      <SelectItem key={preset.value} value={preset.value}>
+                        {preset.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Branch filter */}
-            <div>
-              <Label className="text-xs text-muted-foreground">Chi nhánh</Label>
-              <Select value={branchId} onValueChange={setBranchId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Tất cả chi nhánh" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="_all_">
-                    <span className="flex items-center gap-2">
-                      <FolderOpen className="h-4 w-4 text-muted-foreground" />
-                      Tất cả chi nhánh
-                    </span>
-                  </SelectItem>
-                  {branches?.map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
+              {/* Branch filter */}
+              <div>
+                <Label className="text-xs text-muted-foreground">Chi nhánh</Label>
+                <Select value={localBranchId} onValueChange={setLocalBranchId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tất cả chi nhánh" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="_all_">
                       <span className="flex items-center gap-2">
                         <FolderOpen className="h-4 w-4 text-muted-foreground" />
-                        {branch.name}
+                        Tất cả chi nhánh
                       </span>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                    {branches?.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        <span className="flex items-center gap-2">
+                          <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                          {branch.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Category filter */}
-            <div>
-              <Label className="text-xs text-muted-foreground">Danh mục</Label>
-              <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Tất cả danh mục" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="_all_">
-                    <span className="flex items-center gap-2">
-                      <FolderOpen className="h-4 w-4 text-muted-foreground" />
-                      Tất cả danh mục
-                    </span>
-                  </SelectItem>
-                  {categories?.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
+              {/* Category filter */}
+              <div>
+                <Label className="text-xs text-muted-foreground">Danh mục</Label>
+                <Select value={localCategoryId} onValueChange={setLocalCategoryId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tất cả danh mục" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="_all_">
                       <span className="flex items-center gap-2">
                         <FolderOpen className="h-4 w-4 text-muted-foreground" />
-                        {cat.name}
+                        Tất cả danh mục
                       </span>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                    {categories?.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <span className="flex items-center gap-2">
+                          <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                          {cat.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Search */}
-            <div>
-              <Label className="text-xs text-muted-foreground">Tìm kiếm</Label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Tên SP, SKU, IMEI..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8"
-                />
+              {/* Search */}
+              <div>
+                <Label className="text-xs text-muted-foreground">Tìm kiếm</Label>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Tên SP, SKU, IMEI..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Search only when using external filters */}
+      {useExternalFilters && (
+        <div className="relative max-w-sm">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Tìm kiếm sản phẩm, SKU, IMEI..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+      )}
 
       {/* Results Card */}
       <Card>

@@ -467,7 +467,7 @@ export default function ReportsPage() {
 
           {/* Detailed Profit Report */}
           <TabsContent value="detailed">
-            <DetailedProfitTable />
+            <DetailedProfitTable externalFilters={filters} />
           </TabsContent>
 
           {/* Profit by Category */}
