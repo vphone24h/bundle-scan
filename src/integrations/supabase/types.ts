@@ -14,6 +14,122 @@ export type Database = {
   }
   public: {
     Tables: {
+      branches: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          is_default: boolean | null
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cash_book: {
+        Row: {
+          amount: number
+          branch_id: string | null
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          is_business_accounting: boolean | null
+          note: string | null
+          payment_source: string
+          reference_id: string | null
+          reference_type: string | null
+          transaction_date: string
+          type: Database["public"]["Enums"]["cash_book_type"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          branch_id?: string | null
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          is_business_accounting?: boolean | null
+          note?: string | null
+          payment_source: string
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_date?: string
+          type: Database["public"]["Enums"]["cash_book_type"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          branch_id?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          is_business_accounting?: boolean | null
+          note?: string | null
+          payment_source?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_date?: string
+          type?: Database["public"]["Enums"]["cash_book_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_book_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_book_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean | null
+          name: string
+          type: Database["public"]["Enums"]["cash_book_type"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name: string
+          type: Database["public"]["Enums"]["cash_book_type"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          type?: Database["public"]["Enums"]["cash_book_type"]
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -177,6 +293,7 @@ export type Database = {
       }
       export_receipts: {
         Row: {
+          branch_id: string | null
           code: string
           created_at: string
           created_by: string | null
@@ -191,6 +308,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          branch_id?: string | null
           code: string
           created_at?: string
           created_by?: string | null
@@ -205,6 +323,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          branch_id?: string | null
           code?: string
           created_at?: string
           created_by?: string | null
@@ -219,6 +338,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "export_receipts_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "export_receipts_customer_id_fkey"
             columns: ["customer_id"]
@@ -287,6 +413,7 @@ export type Database = {
       }
       import_receipts: {
         Row: {
+          branch_id: string | null
           code: string
           created_at: string
           created_by: string | null
@@ -301,6 +428,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          branch_id?: string | null
           code: string
           created_at?: string
           created_by?: string | null
@@ -315,6 +443,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          branch_id?: string | null
           code?: string
           created_at?: string
           created_by?: string | null
@@ -329,6 +458,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "import_receipts_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "import_receipts_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -436,6 +572,7 @@ export type Database = {
       }
       products: {
         Row: {
+          branch_id: string | null
           category_id: string | null
           created_at: string
           id: string
@@ -451,6 +588,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          branch_id?: string | null
           category_id?: string | null
           created_at?: string
           id?: string
@@ -466,6 +604,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          branch_id?: string | null
           category_id?: string | null
           created_at?: string
           id?: string
@@ -481,6 +620,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "products_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_category_id_fkey"
             columns: ["category_id"]
@@ -633,6 +779,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "staff"
+      cash_book_type: "expense" | "income"
       payment_type: "cash" | "bank_card" | "e_wallet" | "debt"
       product_status: "in_stock" | "sold" | "returned"
       receipt_status: "completed" | "cancelled"
@@ -764,6 +911,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "staff"],
+      cash_book_type: ["expense", "income"],
       payment_type: ["cash", "bank_card", "e_wallet", "debt"],
       product_status: ["in_stock", "sold", "returned"],
       receipt_status: ["completed", "cancelled"],
