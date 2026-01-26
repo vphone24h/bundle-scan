@@ -110,17 +110,17 @@ export default function AuditLogsPage() {
         }
       />
 
-      <div className="space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         {/* Filters */}
         <Card>
           <CardContent className="pt-4">
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col gap-3">
               <div className="flex-1">
                 <Label className="sr-only">Tìm kiếm</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Tìm theo mô tả, bảng dữ liệu, người thực hiện..."
+                    placeholder="Tìm theo mô tả, người thực hiện..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="pl-9"
@@ -128,51 +128,53 @@ export default function AuditLogsPage() {
                 </div>
               </div>
 
-              <div className="w-full md:w-48">
-                <Label className="sr-only">Loại thao tác</Label>
-                <Select value={actionFilter} onValueChange={setActionFilter}>
-                  <SelectTrigger>
-                    <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Loại thao tác" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả thao tác</SelectItem>
-                    <SelectItem value="create">Tạo mới</SelectItem>
-                    <SelectItem value="update">Cập nhật</SelectItem>
-                    <SelectItem value="delete">Xóa</SelectItem>
-                    <SelectItem value="login">Đăng nhập</SelectItem>
-                    <SelectItem value="logout">Đăng xuất</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {permissions?.role === 'super_admin' && (
-                <div className="w-full md:w-48">
-                  <Label className="sr-only">Chi nhánh</Label>
-                  <Select value={branchFilter} onValueChange={setBranchFilter}>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1 sm:flex-none sm:w-44">
+                  <Label className="sr-only">Loại thao tác</Label>
+                  <Select value={actionFilter} onValueChange={setActionFilter}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Chi nhánh" />
+                      <Filter className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Loại thao tác" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tất cả chi nhánh</SelectItem>
-                      {branches?.map(branch => (
-                        <SelectItem key={branch.id} value={branch.id}>
-                          {branch.name}
-                        </SelectItem>
-                      ))}
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="all">Tất cả thao tác</SelectItem>
+                      <SelectItem value="create">Tạo mới</SelectItem>
+                      <SelectItem value="update">Cập nhật</SelectItem>
+                      <SelectItem value="delete">Xóa</SelectItem>
+                      <SelectItem value="login">Đăng nhập</SelectItem>
+                      <SelectItem value="logout">Đăng xuất</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              )}
+
+                {permissions?.role === 'super_admin' && (
+                  <div className="flex-1 sm:flex-none sm:w-44">
+                    <Label className="sr-only">Chi nhánh</Label>
+                    <Select value={branchFilter} onValueChange={setBranchFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chi nhánh" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="all">Tất cả chi nhánh</SelectItem>
+                        {branches?.map(branch => (
+                          <SelectItem key={branch.id} value={branch.id}>
+                            {branch.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Logs Table */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <History className="h-5 w-5" />
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <History className="h-4 w-4 sm:h-5 sm:w-5" />
               Danh sách thao tác ({filteredLogs?.length || 0})
             </CardTitle>
           </CardHeader>
@@ -184,18 +186,18 @@ export default function AuditLogsPage() {
                 Không có lịch sử thao tác nào
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-44">Thời gian</TableHead>
-                      <TableHead className="w-36">Người thực hiện</TableHead>
-                      <TableHead className="w-28">Thao tác</TableHead>
-                      <TableHead className="w-32">Bảng dữ liệu</TableHead>
+                      <TableHead className="whitespace-nowrap min-w-[140px]">Thời gian</TableHead>
+                      <TableHead className="whitespace-nowrap hidden sm:table-cell">Người thực hiện</TableHead>
+                      <TableHead className="whitespace-nowrap">Thao tác</TableHead>
+                      <TableHead className="whitespace-nowrap hidden md:table-cell">Bảng dữ liệu</TableHead>
                       {permissions?.role === 'super_admin' && (
-                        <TableHead className="w-32">Chi nhánh</TableHead>
+                        <TableHead className="whitespace-nowrap hidden lg:table-cell">Chi nhánh</TableHead>
                       )}
-                      <TableHead>Mô tả</TableHead>
+                      <TableHead className="hidden xl:table-cell">Mô tả</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -204,12 +206,16 @@ export default function AuditLogsPage() {
                       return (
                         <TableRow key={log.id}>
                           <TableCell>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                              {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: vi })}
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                              <Clock className="h-3 w-3 text-muted-foreground hidden sm:block" />
+                              <span>{format(new Date(log.created_at), 'dd/MM/yy HH:mm', { locale: vi })}</span>
+                            </div>
+                            {/* Mobile: Show user below time */}
+                            <div className="sm:hidden text-xs text-muted-foreground mt-1">
+                              {log.user_id ? profileMap.get(log.user_id) || 'N/A' : 'Hệ thống'}
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden sm:table-cell">
                             <div className="flex items-center gap-2">
                               <User className="h-3.5 w-3.5 text-muted-foreground" />
                               <span className="text-sm">
@@ -218,24 +224,24 @@ export default function AuditLogsPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge className={`${actionInfo.color} text-white`}>
+                            <Badge className={`${actionInfo.color} text-white text-xs`}>
                               {actionInfo.label}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden md:table-cell">
                             <span className="text-sm text-muted-foreground">
                               {log.table_name ? TABLE_LABELS[log.table_name] || log.table_name : '-'}
                             </span>
                           </TableCell>
                           {permissions?.role === 'super_admin' && (
-                            <TableCell>
+                            <TableCell className="hidden lg:table-cell">
                               <span className="text-sm">
-                                {log.branch_id ? branchMap.get(log.branch_id) || 'N/A' : 'Toàn hệ thống'}
+                                {log.branch_id ? branchMap.get(log.branch_id) || 'N/A' : 'Toàn HT'}
                               </span>
                             </TableCell>
                           )}
-                          <TableCell>
-                            <span className="text-sm">{log.description || '-'}</span>
+                          <TableCell className="hidden xl:table-cell">
+                            <span className="text-sm line-clamp-1">{log.description || '-'}</span>
                           </TableCell>
                         </TableRow>
                       );
