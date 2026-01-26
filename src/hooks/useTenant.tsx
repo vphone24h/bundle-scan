@@ -21,6 +21,7 @@ export interface Tenant {
   note: string | null;
   locked_at: string | null;
   locked_reason: string | null;
+  einvoice_enabled: boolean;
   created_at: string;
   updated_at: string;
 }

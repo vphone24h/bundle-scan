@@ -6,10 +6,56 @@ import { EInvoiceConfigForm } from '@/components/einvoice/EInvoiceConfigForm';
 import { EInvoiceList } from '@/components/einvoice/EInvoiceList';
 import { EInvoiceLogs } from '@/components/einvoice/EInvoiceLogs';
 import { EInvoiceStats } from '@/components/einvoice/EInvoiceStats';
-import { FileText, Settings, History, BarChart3 } from 'lucide-react';
+import { FileText, Settings, History, BarChart3, Lock, Loader2 } from 'lucide-react';
+import { useCurrentTenant } from '@/hooks/useTenant';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export default function EInvoicePage() {
   const [activeTab, setActiveTab] = useState('invoices');
+  const { data: tenant, isLoading: loadingTenant } = useCurrentTenant();
+
+  if (loadingTenant) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Check if e-invoice is enabled for this tenant
+  if (!tenant?.einvoice_enabled) {
+    return (
+      <MainLayout>
+        <div className="p-4 sm:p-6 space-y-6">
+          <PageHeader
+            title="Hoá Đơn Điện Tử"
+            description="Quản lý và phát hành hoá đơn điện tử kết nối cơ quan thuế"
+          />
+          
+          <Card className="max-w-lg mx-auto">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Lock className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <CardTitle>Tính năng chưa được kích hoạt</CardTitle>
+              <CardDescription>
+                Tính năng Hoá đơn điện tử chưa được bật cho cửa hàng của bạn.
+                Vui lòng liên hệ quản trị viên để được hỗ trợ kích hoạt.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <Button variant="outline" onClick={() => window.history.back()}>
+                Quay lại
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

@@ -2711,6 +2711,7 @@ export type Database = {
         Row: {
           address: string | null
           created_at: string
+          einvoice_enabled: boolean
           email: string | null
           id: string
           locked_at: string | null
@@ -2735,6 +2736,7 @@ export type Database = {
         Insert: {
           address?: string | null
           created_at?: string
+          einvoice_enabled?: boolean
           email?: string | null
           id?: string
           locked_at?: string | null
@@ -2759,6 +2761,7 @@ export type Database = {
         Update: {
           address?: string | null
           created_at?: string
+          einvoice_enabled?: boolean
           email?: string | null
           id?: string
           locked_at?: string | null
