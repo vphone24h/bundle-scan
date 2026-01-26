@@ -170,7 +170,12 @@ export default function AuthPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="login-password">Mật khẩu</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="login-password">Mật khẩu</Label>
+                <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                  Quên mật khẩu?
+                </Link>
+              </div>
               <Input
                 id="login-password"
                 type="password"
@@ -184,6 +189,12 @@ export default function AuthPage() {
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Đăng nhập
             </Button>
+            
+            <div className="text-center">
+              <Link to="/forgot-store-id" className="text-sm text-muted-foreground hover:text-primary hover:underline">
+                Quên ID cửa hàng?
+              </Link>
+            </div>
           </form>
 
           <div className="relative">

@@ -9,6 +9,9 @@ import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import PlatformAuthPage from "./pages/PlatformAuthPage";
 import RegisterPage from "./pages/RegisterPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ForgotStoreIdPage from "./pages/ForgotStoreIdPage";
 import ProductsPage from "./pages/ProductsPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import SuppliersPage from "./pages/SuppliersPage";
@@ -44,6 +47,9 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/admin" element={<PlatformAuthPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/forgot-store-id" element={<ForgotStoreIdPage />} />
             
             {/* Protected routes */}
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
