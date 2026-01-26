@@ -100,6 +100,7 @@ export const mockPaperTemplates: PaperTemplate[] = [
     size: '104 x 22 mm',
     labelCount: 3,
     dimensions: { width: 104, height: 22, unit: 'mm' },
+    image: 'paper-template-1',
   },
   {
     id: '2',
@@ -108,6 +109,7 @@ export const mockPaperTemplates: PaperTemplate[] = [
     size: '72 x 22 mm',
     labelCount: 2,
     dimensions: { width: 72, height: 22, unit: 'mm' },
+    image: 'paper-template-2',
   },
   {
     id: '3',
@@ -116,6 +118,7 @@ export const mockPaperTemplates: PaperTemplate[] = [
     size: '74 x 22 mm',
     labelCount: 2,
     dimensions: { width: 74, height: 22, unit: 'mm' },
+    image: 'paper-template-3',
   },
   {
     id: '4',
@@ -124,6 +127,7 @@ export const mockPaperTemplates: PaperTemplate[] = [
     size: '202 x 162 mm',
     labelCount: 12,
     dimensions: { width: 202, height: 162, unit: 'mm' },
+    image: 'paper-template-4',
   },
   {
     id: '5',
@@ -132,6 +136,7 @@ export const mockPaperTemplates: PaperTemplate[] = [
     size: 'A4 (210 x 297 mm)',
     labelCount: 65,
     dimensions: { width: 210, height: 297, unit: 'mm' },
+    image: 'paper-template-5',
   },
   {
     id: '6',
@@ -140,6 +145,7 @@ export const mockPaperTemplates: PaperTemplate[] = [
     size: '75 x 10 mm',
     labelCount: 1,
     dimensions: { width: 75, height: 10, unit: 'mm' },
+    image: 'paper-template-6',
   },
 ];
 
