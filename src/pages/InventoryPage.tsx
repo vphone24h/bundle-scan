@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { Download, Package, ClipboardList } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { usePagination } from '@/hooks/usePagination';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -77,6 +79,11 @@ export default function InventoryPage() {
       return true;
     });
   }, [inventory, filters]);
+
+  // Pagination
+  const pagination = usePagination(filteredInventory, { 
+    storageKey: 'inventory-list'
+  });
 
   // Calculate filtered stats
   const filteredStats = useMemo(() => {
@@ -169,7 +176,20 @@ export default function InventoryPage() {
             <InventoryFiltersComponent filters={filters} onFiltersChange={setFilters} />
 
             {/* Table */}
-            <InventoryTable data={filteredInventory} isLoading={isLoading} />
+            <InventoryTable data={pagination.paginatedData} isLoading={isLoading} />
+            
+            {filteredInventory.length > 0 && (
+              <TablePagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                startIndex={pagination.startIndex}
+                endIndex={pagination.endIndex}
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="stock-count">

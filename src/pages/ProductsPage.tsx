@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProductTable } from '@/components/products/ProductTable';
+import { usePagination } from '@/hooks/usePagination';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { useProducts, Product } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
@@ -106,6 +108,11 @@ export default function ProductsPage() {
       return matchesSearch && matchesDate && matchesCategory && matchesSupplier && matchesStatus && matchesBranch;
     });
   }, [mappedProducts, searchTerm, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter]);
+
+  // Pagination
+  const pagination = usePagination(filteredProducts, { 
+    storageKey: 'products-list'
+  });
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -330,12 +337,25 @@ export default function ProductsPage() {
 
         {/* Table */}
         <ProductTable
-          products={filteredProducts}
+          products={pagination.paginatedData}
           selectedProducts={selectedProducts}
           onSelectionChange={setSelectedProducts}
           onEdit={handleEdit}
           onPrintBarcode={handlePrintBarcode}
         />
+        
+        {filteredProducts.length > 0 && (
+          <TablePagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            totalItems={pagination.totalItems}
+            startIndex={pagination.startIndex}
+            endIndex={pagination.endIndex}
+            onPageChange={pagination.setPage}
+            onPageSizeChange={pagination.setPageSize}
+          />
+        )}
       </div>
 
       {/* Barcode Dialog */}

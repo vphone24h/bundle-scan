@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { usePagination } from '@/hooks/usePagination';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -128,6 +130,16 @@ export default function ExportHistoryPage() {
       item.export_receipts?.customers?.phone?.includes(searchTerm);
 
     return matchesSearch;
+  }) || [];
+
+  // Pagination for receipts tab
+  const receiptsPagination = usePagination(filteredReceipts || [], { 
+    storageKey: 'export-receipts'
+  });
+
+  // Pagination for items tab
+  const itemsPagination = usePagination(filteredItems, { 
+    storageKey: 'export-items'
   });
 
   // Handle view detail
@@ -307,7 +319,7 @@ export default function ExportHistoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredReceipts?.map((receipt) => (
+                    {receiptsPagination.paginatedData.map((receipt) => (
                       <TableRow key={receipt.id}>
                         <TableCell className="font-medium">{receipt.code}</TableCell>
                         <TableCell>
@@ -361,6 +373,18 @@ export default function ExportHistoryPage() {
                   </TableBody>
                 </Table>
               )}
+              {(filteredReceipts?.length || 0) > 0 && (
+                <TablePagination
+                  currentPage={receiptsPagination.currentPage}
+                  totalPages={receiptsPagination.totalPages}
+                  pageSize={receiptsPagination.pageSize}
+                  totalItems={receiptsPagination.totalItems}
+                  startIndex={receiptsPagination.startIndex}
+                  endIndex={receiptsPagination.endIndex}
+                  onPageChange={receiptsPagination.setPage}
+                  onPageSizeChange={receiptsPagination.setPageSize}
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -393,7 +417,7 @@ export default function ExportHistoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredItems?.map((item) => {
+                    {itemsPagination.paginatedData.map((item) => {
                       const quantity = (item as any).quantity || 1;
                       const totalPrice = item.sale_price * quantity;
                       return (
@@ -451,6 +475,18 @@ export default function ExportHistoryPage() {
                     })}
                   </TableBody>
                 </Table>
+              )}
+              {filteredItems.length > 0 && (
+                <TablePagination
+                  currentPage={itemsPagination.currentPage}
+                  totalPages={itemsPagination.totalPages}
+                  pageSize={itemsPagination.pageSize}
+                  totalItems={itemsPagination.totalItems}
+                  startIndex={itemsPagination.startIndex}
+                  endIndex={itemsPagination.endIndex}
+                  onPageChange={itemsPagination.setPage}
+                  onPageSizeChange={itemsPagination.setPageSize}
+                />
               )}
             </CardContent>
           </Card>
