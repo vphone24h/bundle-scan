@@ -43,6 +43,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { getBankCode, generateVietQRUrl as generateQRUrl } from '@/lib/vietnameseBanks';
 
 interface BankAccount {
   id: string;
@@ -56,50 +57,6 @@ interface PaymentConfig {
   config_key: string;
   config_value: string | null;
 }
-
-// VietQR bank codes mapping
-const bankCodes: Record<string, string> = {
-  'Vietcombank': 'VCB',
-  'VCB': 'VCB',
-  'Techcombank': 'TCB',
-  'TCB': 'TCB',
-  'MB Bank': 'MB',
-  'MBBank': 'MB',
-  'MB': 'MB',
-  'BIDV': 'BIDV',
-  'VietinBank': 'ICB',
-  'Agribank': 'VBA',
-  'ACB': 'ACB',
-  'Sacombank': 'STB',
-  'VPBank': 'VPB',
-  'TPBank': 'TPB',
-  'SHB': 'SHB',
-  'Eximbank': 'EIB',
-  'OCB': 'OCB',
-  'MSB': 'MSB',
-  'HDBank': 'HDB',
-  'VIB': 'VIB',
-  'NCB': 'NCB',
-  'SeABank': 'SEAB',
-  'LienVietPostBank': 'LPB',
-  'PVcomBank': 'PVCB',
-  'BacABank': 'BAB',
-  'OceanBank': 'OJB',
-  'GPBank': 'GPB',
-  'NamABank': 'NAB',
-  'KienLongBank': 'KLB',
-  'ABBank': 'ABB',
-  'VietABank': 'VAB',
-  'BaoVietBank': 'BVBANK',
-  'SaigonBank': 'SGB',
-  'PublicBank': 'PBVN',
-  'UOB': 'UOB',
-  'StandardChartered': 'SCVN',
-  'HSBC': 'HSBC',
-  'Woori': 'WVN',
-  'Shinhan': 'SHBVN',
-  'CIMB': 'CIMB',
-};
 
 export default function SubscriptionPage() {
   const { data: tenant } = useCurrentTenant();
@@ -149,33 +106,12 @@ export default function SubscriptionPage() {
   const remainingDays = calculateRemainingDays(tenant || null);
   const pendingPayment = payments?.find(p => p.status === 'pending');
 
-  // Generate VietQR URL
+  // Generate VietQR URL using shared utility
   const generateVietQRUrl = (bank: BankAccount, amount: number, content: string) => {
     const bankCode = getBankCode(bank.bank_name);
     if (!bankCode) return null;
     
-    const accountNo = bank.account_number.replace(/\s/g, '');
-    const template = 'compact2';
-    
-    // VietQR format: https://img.vietqr.io/image/{BANK_ID}-{ACCOUNT_NO}-{TEMPLATE}.png?amount={AMOUNT}&addInfo={CONTENT}
-    const url = `https://img.vietqr.io/image/${bankCode}-${accountNo}-${template}.png?amount=${amount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(bank.account_holder)}`;
-    
-    return url;
-  };
-
-  const getBankCode = (bankName: string): string | null => {
-    // Try exact match first
-    if (bankCodes[bankName]) return bankCodes[bankName];
-    
-    // Try partial match
-    for (const [key, code] of Object.entries(bankCodes)) {
-      if (bankName.toLowerCase().includes(key.toLowerCase()) || 
-          key.toLowerCase().includes(bankName.toLowerCase())) {
-        return code;
-      }
-    }
-    
-    return null;
+    return generateQRUrl(bankCode, bank.account_number, amount, content, bank.account_holder);
   };
 
   const handleSubmitPayment = async () => {
