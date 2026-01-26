@@ -1,1 +1,10 @@
 project_id = "rodpbhesrwykmpywiiyd"
+
+[functions.register-tenant]
+verify_jwt = false
+
+[functions.approve-payment]
+verify_jwt = false
+
+[functions.manage-tenant]
+verify_jwt = false
