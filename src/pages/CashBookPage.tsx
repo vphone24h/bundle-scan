@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+import { usePagination } from '@/hooks/usePagination';
+import { TablePagination } from '@/components/ui/table-pagination';
 import {
   Select,
   SelectContent,
@@ -210,6 +212,11 @@ export default function CashBookPage() {
       return matchesType && matchesSearch && matchesDate && matchesPaymentSource && matchesAccounting;
     });
   }, [allEntries, typeFilter, searchTerm, dateFrom, dateTo, paymentSourceFilter, accountingFilter]);
+
+  // Pagination for transactions
+  const pagination = usePagination(filteredEntries, { 
+    storageKey: 'cashbook-entries'
+  });
 
   // Calculate totals
   const totalBalance = useMemo(() => {
@@ -838,7 +845,7 @@ export default function CashBookPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredEntries.map((entry) => (
+                    {pagination.paginatedData.map((entry) => (
                       <TableRow key={entry.id}>
                         <TableCell className="whitespace-nowrap">
                           {format(new Date(entry.transaction_date), 'dd/MM/yyyy HH:mm', { locale: vi })}
@@ -900,6 +907,18 @@ export default function CashBookPage() {
                   </TableBody>
                 </Table>
               </div>
+            )}
+            {filteredEntries.length > 0 && (
+              <TablePagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                startIndex={pagination.startIndex}
+                endIndex={pagination.endIndex}
+                onPageChange={pagination.setPage}
+                onPageSizeChange={pagination.setPageSize}
+              />
             )}
           </CardContent>
         </Card>

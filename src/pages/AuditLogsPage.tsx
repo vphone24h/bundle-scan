@@ -4,6 +4,8 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { AuditLogFiltersComponent } from '@/components/audit/AuditLogFilters';
 import { AuditLogTable } from '@/components/audit/AuditLogTable';
+import { usePagination } from '@/hooks/usePagination';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { useAuditLogs, AuditLogFilters, useAuditLogUsers } from '@/hooks/useAuditLogs';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useBranches } from '@/hooks/useBranches';
@@ -86,6 +88,11 @@ export default function AuditLogsPage() {
     });
   }, [logs, filters.search, profileMap]);
 
+  // Pagination
+  const pagination = usePagination(filteredLogs, { 
+    storageKey: 'audit-logs'
+  });
+
   return (
     <MainLayout>
       <PageHeader 
@@ -105,12 +112,25 @@ export default function AuditLogsPage() {
 
         {/* Table */}
         <AuditLogTable
-          logs={filteredLogs}
+          logs={pagination.paginatedData}
           isLoading={isLoading}
           profileMap={profileMap}
           roleMap={roleMap}
           branchMap={branchMap}
         />
+        
+        {filteredLogs.length > 0 && (
+          <TablePagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            totalItems={pagination.totalItems}
+            startIndex={pagination.startIndex}
+            endIndex={pagination.endIndex}
+            onPageChange={pagination.setPage}
+            onPageSizeChange={pagination.setPageSize}
+          />
+        )}
       </div>
     </MainLayout>
   );

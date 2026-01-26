@@ -7,6 +7,8 @@ import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useBranches } from '@/hooks/useBranches';
 import { formatCurrency, formatDate } from '@/lib/mockData';
+import { usePagination } from '@/hooks/usePagination';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -158,6 +160,16 @@ export default function ImportHistoryPage() {
       return matchesSearch && matchesDate && matchesCategory && matchesSupplier && matchesStatus && matchesBranch;
     });
   }, [products, searchTerm, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter]);
+
+  // Pagination for receipts tab
+  const receiptsPagination = usePagination(filteredReceipts, { 
+    storageKey: 'import-receipts'
+  });
+
+  // Pagination for products tab
+  const productsPagination = usePagination(filteredProducts, { 
+    storageKey: 'import-products'
+  });
 
   const handleView = (receipt: ImportReceipt) => {
     setSelectedReceiptId(receipt.id);
@@ -443,7 +455,7 @@ export default function ImportHistoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredReceipts.map((receipt) => (
+                  {receiptsPagination.paginatedData.map((receipt) => (
                     <tr key={receipt.id}>
                       <td className="font-mono font-medium text-primary">{receipt.code}</td>
                       <td>{formatDate(new Date(receipt.import_date))}</td>
@@ -511,6 +523,18 @@ export default function ImportHistoryPage() {
                 </div>
               )}
             </div>
+            {filteredReceipts.length > 0 && (
+              <TablePagination
+                currentPage={receiptsPagination.currentPage}
+                totalPages={receiptsPagination.totalPages}
+                pageSize={receiptsPagination.pageSize}
+                totalItems={receiptsPagination.totalItems}
+                startIndex={receiptsPagination.startIndex}
+                endIndex={receiptsPagination.endIndex}
+                onPageChange={receiptsPagination.setPage}
+                onPageSizeChange={receiptsPagination.setPageSize}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="products">
@@ -539,7 +563,7 @@ export default function ImportHistoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredProducts.map((product) => (
+                  {productsPagination.paginatedData.map((product) => (
                     <tr key={product.id}>
                       <td className="font-medium">{product.name}</td>
                       <td className="text-muted-foreground">{product.sku}</td>
@@ -598,6 +622,18 @@ export default function ImportHistoryPage() {
                 </div>
               )}
             </div>
+            {filteredProducts.length > 0 && (
+              <TablePagination
+                currentPage={productsPagination.currentPage}
+                totalPages={productsPagination.totalPages}
+                pageSize={productsPagination.pageSize}
+                totalItems={productsPagination.totalItems}
+                startIndex={productsPagination.startIndex}
+                endIndex={productsPagination.endIndex}
+                onPageChange={productsPagination.setPage}
+                onPageSizeChange={productsPagination.setPageSize}
+              />
+            )}
           </TabsContent>
         </Tabs>
       </div>
