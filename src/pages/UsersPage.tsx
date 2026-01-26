@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -16,26 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { toast } from 'sonner';
-import { Shield, Edit2, UserPlus, Loader2 } from 'lucide-react';
+import { Shield, Edit2, UserPlus } from 'lucide-react';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
-import { useAuth } from '@/hooks/useAuth';
+import { EditUserDialog } from '@/components/users/EditUserDialog';
+import { CreateUserDialog } from '@/components/users/CreateUserDialog';
 
 interface UserWithRole {
   id: string;
@@ -67,27 +50,15 @@ const roleColors: Record<UserRole, string> = {
 };
 
 export default function UsersPage() {
-  const queryClient = useQueryClient();
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
-  const [editRole, setEditRole] = useState<UserRole>('staff');
-  const [editBranchId, setEditBranchId] = useState<string>('');
-  
-  // Create user form state
-  const [newEmail, setNewEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newDisplayName, setNewDisplayName] = useState('');
-  const [newPhone, setNewPhone] = useState('');
-  const [newRole, setNewRole] = useState<UserRole>('staff');
-  const [newBranchId, setNewBranchId] = useState<string>('');
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['users-with-roles', permissions?.role, permissions?.branchId],
     queryFn: async () => {
-      // Lấy user_roles
       let query = supabase
         .from('user_roles')
         .select(`
@@ -100,7 +71,6 @@ export default function UsersPage() {
         `)
         .order('created_at', { ascending: false });
 
-      // Branch Admin chỉ xem nhân viên trong chi nhánh của mình
       if (permissions?.role === 'branch_admin' && permissions.branchId) {
         query = query.eq('branch_id', permissions.branchId);
       }
@@ -109,7 +79,6 @@ export default function UsersPage() {
 
       if (rolesError) throw rolesError;
 
-      // Lấy profiles riêng
       const userIds = rolesData.map(r => r.user_id);
       if (userIds.length === 0) return [];
       
@@ -130,109 +99,11 @@ export default function UsersPage() {
     enabled: !!permissions,
   });
 
-  const updateUserRole = useMutation({
-    mutationFn: async ({ userId, role, branchId }: { userId: string; role: UserRole; branchId: string | null }) => {
-      const { error } = await supabase
-        .from('user_roles')
-        .update({ 
-          user_role: role, 
-          branch_id: role === 'super_admin' ? null : branchId 
-        })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users-with-roles'] });
-      toast.success('Cập nhật quyền thành công');
-      setIsEditOpen(false);
-    },
-    onError: (error) => {
-      toast.error('Lỗi: ' + (error as Error).message);
-    },
-  });
-
-  const createUser = useMutation({
-    mutationFn: async () => {
-      // 1. Create auth user using admin API via edge function
-      const response = await supabase.functions.invoke('create-user', {
-        body: {
-          email: newEmail,
-          password: newPassword,
-          displayName: newDisplayName,
-          phone: newPhone,
-          role: newRole,
-          branchId: newRole === 'super_admin' ? null : newBranchId,
-        },
-      });
-
-      if (response.error) throw new Error(response.error.message);
-      if (response.data?.error) throw new Error(response.data.error);
-      
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users-with-roles'] });
-      toast.success('Tạo tài khoản thành công');
-      setIsCreateOpen(false);
-      resetCreateForm();
-    },
-    onError: (error) => {
-      toast.error('Lỗi: ' + (error as Error).message);
-    },
-  });
-
-  const resetCreateForm = () => {
-    setNewEmail('');
-    setNewPassword('');
-    setNewDisplayName('');
-    setNewPhone('');
-    setNewRole('staff');
-    setNewBranchId('');
-  };
-
   const handleEdit = (user: UserWithRole) => {
     setSelectedUser(user);
-    setEditRole(user.user_role);
-    setEditBranchId(user.branch_id || '');
     setIsEditOpen(true);
   };
 
-  const handleSave = () => {
-    if (!selectedUser) return;
-
-    if (editRole !== 'super_admin' && !editBranchId) {
-      toast.error('Vui lòng chọn chi nhánh cho tài khoản này');
-      return;
-    }
-
-    updateUserRole.mutate({
-      userId: selectedUser.user_id,
-      role: editRole,
-      branchId: editRole === 'super_admin' ? null : editBranchId,
-    });
-  };
-
-  const handleCreateUser = () => {
-    if (!newEmail || !newPassword || !newDisplayName) {
-      toast.error('Vui lòng điền đầy đủ thông tin bắt buộc');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      toast.error('Mật khẩu phải có ít nhất 6 ký tự');
-      return;
-    }
-
-    if (newRole !== 'super_admin' && !newBranchId) {
-      toast.error('Vui lòng chọn chi nhánh cho tài khoản này');
-      return;
-    }
-
-    createUser.mutate();
-  };
-
-  // Super Admin hoặc Branch Admin (quản lý nhân viên chi nhánh) mới được truy cập
   if (!permissions?.canManageUsers && !permissions?.canManageBranchStaff) {
     return (
       <MainLayout>
@@ -245,6 +116,15 @@ export default function UsersPage() {
 
   const isSuperAdmin = permissions?.role === 'super_admin';
   const isBranchAdmin = permissions?.role === 'branch_admin';
+
+  const canEditUser = (user: UserWithRole) => {
+    if (user.user_role === 'super_admin') return false;
+    if (isSuperAdmin) return true;
+    if (isBranchAdmin && user.branch_id === permissions.branchId && user.user_role !== 'branch_admin') {
+      return true;
+    }
+    return false;
+  };
 
   return (
     <MainLayout>
@@ -302,9 +182,7 @@ export default function UsersPage() {
                           }
                         </TableCell>
                         <TableCell className="text-right">
-                          {user.user_role !== 'super_admin' && 
-                           user.user_role !== 'branch_admin' && 
-                           (isSuperAdmin || (isBranchAdmin && user.branch_id === permissions.branchId)) && (
+                          {canEditUser(user) && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -336,9 +214,7 @@ export default function UsersPage() {
                           {user.profiles?.phone || 'Chưa có SĐT'}
                         </p>
                       </div>
-                      {user.user_role !== 'super_admin' && 
-                       user.user_role !== 'branch_admin' && 
-                       (isSuperAdmin || (isBranchAdmin && user.branch_id === permissions.branchId)) && (
+                      {canEditUser(user) && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -370,157 +246,19 @@ export default function UsersPage() {
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Chỉnh sửa quyền</DialogTitle>
-            <DialogDescription>
-              Cập nhật vai trò và chi nhánh cho {selectedUser?.profiles?.display_name}
-            </DialogDescription>
-          </DialogHeader>
+      <EditUserDialog
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        user={selectedUser}
+        branches={branches}
+        isSuperAdmin={isSuperAdmin}
+      />
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Vai trò</Label>
-              <Select value={editRole} onValueChange={(v) => setEditRole(v as UserRole)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="branch_admin">Admin Chi nhánh</SelectItem>
-                  <SelectItem value="cashier">Thu ngân</SelectItem>
-                  <SelectItem value="staff">Nhân viên</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {editRole !== 'super_admin' && (
-              <div className="space-y-2">
-                <Label>Chi nhánh</Label>
-                <Select value={editBranchId} onValueChange={setEditBranchId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn chi nhánh" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {branches?.map((branch) => (
-                      <SelectItem key={branch.id} value={branch.id}>
-                        {branch.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Hủy
-            </Button>
-            <Button onClick={handleSave} disabled={updateUserRole.isPending}>
-              Lưu
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create User Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={(open) => {
-        setIsCreateOpen(open);
-        if (!open) resetCreateForm();
-      }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Tạo tài khoản mới</DialogTitle>
-            <DialogDescription>
-              Tạo tài khoản cho nhân viên hoặc quản lý
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Email <span className="text-destructive">*</span></Label>
-              <Input
-                type="email"
-                placeholder="email@example.com"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Mật khẩu <span className="text-destructive">*</span></Label>
-              <Input
-                type="password"
-                placeholder="Tối thiểu 6 ký tự"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Tên hiển thị <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="Nguyễn Văn A"
-                value={newDisplayName}
-                onChange={(e) => setNewDisplayName(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Số điện thoại</Label>
-              <Input
-                placeholder="0901234567"
-                value={newPhone}
-                onChange={(e) => setNewPhone(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Vai trò <span className="text-destructive">*</span></Label>
-              <Select value={newRole} onValueChange={(v) => setNewRole(v as UserRole)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="branch_admin">Admin Chi nhánh</SelectItem>
-                  <SelectItem value="cashier">Thu ngân</SelectItem>
-                  <SelectItem value="staff">Nhân viên</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {newRole !== 'super_admin' && (
-              <div className="space-y-2">
-                <Label>Chi nhánh <span className="text-destructive">*</span></Label>
-                <Select value={newBranchId} onValueChange={setNewBranchId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn chi nhánh" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {branches?.map((branch) => (
-                      <SelectItem key={branch.id} value={branch.id}>
-                        {branch.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-              Hủy
-            </Button>
-            <Button onClick={handleCreateUser} disabled={createUser.isPending}>
-              {createUser.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Tạo tài khoản
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreateUserDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        branches={branches}
+      />
     </MainLayout>
   );
 }

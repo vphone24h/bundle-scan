@@ -1,0 +1,148 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    // Get the authorization header to verify the caller is authenticated
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Không có quyền truy cập' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Create Supabase client with service role for admin operations
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+
+    // Verify the caller is a super_admin
+    const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: authHeader } },
+    })
+
+    const { data: { user: caller }, error: callerError } = await supabaseClient.auth.getUser()
+    if (callerError || !caller) {
+      return new Response(
+        JSON.stringify({ error: 'Không thể xác thực người dùng' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Check if caller is super_admin
+    const { data: callerRole, error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_role')
+      .eq('user_id', caller.id)
+      .single()
+
+    if (roleError || callerRole?.user_role !== 'super_admin') {
+      return new Response(
+        JSON.stringify({ error: 'Chỉ Admin Tổng mới có quyền chỉnh sửa tài khoản' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Parse request body
+    const { userId, email, password, displayName, phone } = await req.json()
+
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: 'Thiếu thông tin người dùng' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Check target user's role - cannot edit super_admin
+    const { data: targetRole, error: targetRoleError } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_role')
+      .eq('user_id', userId)
+      .single()
+
+    if (targetRoleError) {
+      return new Response(
+        JSON.stringify({ error: 'Không tìm thấy người dùng' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (targetRole.user_role === 'super_admin') {
+      return new Response(
+        JSON.stringify({ error: 'Không thể chỉnh sửa tài khoản Admin Tổng' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Update auth user (email/password) if provided
+    const authUpdates: { email?: string; password?: string } = {}
+    if (email) authUpdates.email = email
+    if (password) authUpdates.password = password
+
+    if (Object.keys(authUpdates).length > 0) {
+      const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
+        userId,
+        authUpdates
+      )
+
+      if (authUpdateError) {
+        console.error('Auth update error:', authUpdateError)
+        return new Response(
+          JSON.stringify({ error: authUpdateError.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
+    // Update profile (displayName/phone) if provided
+    const profileUpdates: { display_name?: string; phone?: string } = {}
+    if (displayName) profileUpdates.display_name = displayName
+    if (phone !== undefined) profileUpdates.phone = phone
+
+    if (Object.keys(profileUpdates).length > 0) {
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .update(profileUpdates)
+        .eq('user_id', userId)
+
+      if (profileError) {
+        console.error('Profile update error:', profileError)
+        return new Response(
+          JSON.stringify({ error: 'Không thể cập nhật thông tin người dùng' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        message: 'Cập nhật thành công'
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('Unexpected error:', error)
+    return new Response(
+      JSON.stringify({ error: 'Lỗi hệ thống' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+})
