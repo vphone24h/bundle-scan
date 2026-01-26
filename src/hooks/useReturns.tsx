@@ -377,6 +377,7 @@ export function useCreateExportReturn() {
           if (updateError) throw updateError;
         }
 
+        // Phí trả hàng - KHÔNG tính vào hạch toán kinh doanh
         const { error: incomeError } = await supabase
           .from('cash_book')
           .insert([{
@@ -385,7 +386,7 @@ export function useCreateExportReturn() {
             description: `Phi tra hang: ${item.product_name} (${code})`,
             amount: storeKeepAmount,
             payment_source: payments[0]?.source || 'cash',
-            is_business_accounting: isBusinessAccounting,
+            is_business_accounting: false, // KHÔNG tính vào hạch toán
             branch_id: item.branch_id,
             reference_id: null,
             reference_type: 'export_return_fee',
