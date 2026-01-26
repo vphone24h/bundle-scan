@@ -55,6 +55,9 @@ import {
   Download,
   Building2,
   Check,
+  Banknote,
+  CreditCard,
+  Settings,
 } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isToday } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -87,8 +90,17 @@ export default function CashBookPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showAdjustBalanceDialog, setShowAdjustBalanceDialog] = useState(false);
   const [editingEntry, setEditingEntry] = useState<CashBookEntry | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
+  
+  // Balance adjustment form
+  const [adjustBalanceData, setAdjustBalanceData] = useState({
+    source: 'cash' as string,
+    currentBalance: 0,
+    newBalance: '',
+    reason: '',
+  });
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -172,6 +184,27 @@ export default function CashBookPage() {
     return income - expense;
   }, [allEntries]);
 
+  // Calculate balance by payment source
+  const balanceBySource = useMemo(() => {
+    if (!allEntries) return { cash: 0, bank_card: 0, e_wallet: 0 };
+    
+    const result: Record<string, number> = { cash: 0, bank_card: 0, e_wallet: 0 };
+    
+    allEntries.forEach((entry) => {
+      const source = entry.payment_source;
+      const amount = Number(entry.amount);
+      if (result[source] !== undefined) {
+        if (entry.type === 'income') {
+          result[source] += amount;
+        } else {
+          result[source] -= amount;
+        }
+      }
+    });
+    
+    return result;
+  }, [allEntries]);
+
   const todayStats = useMemo(() => {
     if (!allEntries) return { income: 0, expense: 0 };
     const todayEntries = allEntries.filter(e => isToday(new Date(e.transaction_date)));
@@ -224,6 +257,66 @@ export default function CashBookPage() {
     setEditingEntry(entry);
     setDeleteReason('');
     setShowDeleteDialog(true);
+  };
+
+  const handleOpenAdjustBalance = (source: string) => {
+    setAdjustBalanceData({
+      source,
+      currentBalance: balanceBySource[source] || 0,
+      newBalance: '',
+      reason: '',
+    });
+    setShowAdjustBalanceDialog(true);
+  };
+
+  const handleAdjustBalance = async () => {
+    const newBalance = parseFloat(adjustBalanceData.newBalance);
+    if (isNaN(newBalance) || !adjustBalanceData.reason.trim()) {
+      toast({
+        title: 'Thiếu thông tin',
+        description: 'Vui lòng nhập số dư mới và lý do điều chỉnh',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const difference = newBalance - adjustBalanceData.currentBalance;
+    if (difference === 0) {
+      toast({
+        title: 'Không có thay đổi',
+        description: 'Số dư mới trùng với số dư hiện tại',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Get default branch
+      const defaultBranch = branches?.find(b => b.is_default) || branches?.[0];
+
+      await createEntry.mutateAsync({
+        type: difference > 0 ? 'income' : 'expense',
+        category: 'Điều chỉnh số dư',
+        description: `Điều chỉnh ${paymentSourceLabels[adjustBalanceData.source]}: ${adjustBalanceData.reason}`,
+        amount: Math.abs(difference),
+        payment_source: adjustBalanceData.source,
+        is_business_accounting: false,
+        branch_id: defaultBranch?.id || null,
+        note: `Số dư trước: ${formatCurrency(adjustBalanceData.currentBalance)} → Số dư sau: ${formatCurrency(newBalance)}`,
+      });
+
+      setShowAdjustBalanceDialog(false);
+      toast({
+        title: 'Đã điều chỉnh số dư',
+        description: `${paymentSourceLabels[adjustBalanceData.source]}: ${formatCurrency(adjustBalanceData.currentBalance)} → ${formatCurrency(newBalance)}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể điều chỉnh số dư',
+        variant: 'destructive',
+      });
+    }
   };
 
   const addPaymentSource = () => {
@@ -483,6 +576,88 @@ export default function CashBookPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Balance by Payment Source */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Wallet className="h-5 w-5" />
+              Số dư theo nguồn tiền
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Cash */}
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <Banknote className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Tiền mặt</p>
+                    <p className={cn("text-lg font-bold", balanceBySource.cash >= 0 ? 'text-green-600' : 'text-destructive')}>
+                      {formatCurrency(balanceBySource.cash)}
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={() => handleOpenAdjustBalance('cash')}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Bank Card */}
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <CreditCard className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Thẻ ngân hàng</p>
+                    <p className={cn("text-lg font-bold", balanceBySource.bank_card >= 0 ? 'text-green-600' : 'text-destructive')}>
+                      {formatCurrency(balanceBySource.bank_card)}
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={() => handleOpenAdjustBalance('bank_card')}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* E-Wallet */}
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                    <Wallet className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Ví điện tử</p>
+                    <p className={cn("text-lg font-bold", balanceBySource.e_wallet >= 0 ? 'text-green-600' : 'text-destructive')}>
+                      {formatCurrency(balanceBySource.e_wallet)}
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={() => handleOpenAdjustBalance('e_wallet')}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Filters */}
         <Card>
@@ -1003,6 +1178,78 @@ export default function CashBookPage() {
               }}
             >
               Xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Adjust Balance Dialog */}
+      <Dialog open={showAdjustBalanceDialog} onOpenChange={setShowAdjustBalanceDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Điều chỉnh số dư - {paymentSourceLabels[adjustBalanceData.source]}
+            </DialogTitle>
+            <DialogDescription>
+              Điều chỉnh số dư thực tế của nguồn tiền này. Hệ thống sẽ tự động tạo phiếu thu/chi để cân bằng.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="p-4 bg-muted rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Số dư hiện tại (hệ thống):</span>
+                <span className={cn("font-bold text-lg", adjustBalanceData.currentBalance >= 0 ? 'text-green-600' : 'text-destructive')}>
+                  {formatCurrency(adjustBalanceData.currentBalance)}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <Label>Số dư thực tế *</Label>
+              <Input
+                type="number"
+                placeholder="Nhập số dư thực tế"
+                value={adjustBalanceData.newBalance}
+                onChange={(e) => setAdjustBalanceData({ ...adjustBalanceData, newBalance: e.target.value })}
+              />
+              {adjustBalanceData.newBalance && (
+                <div className="mt-2 text-sm">
+                  {(() => {
+                    const newBalance = parseFloat(adjustBalanceData.newBalance) || 0;
+                    const diff = newBalance - adjustBalanceData.currentBalance;
+                    if (diff === 0) return <span className="text-muted-foreground">Không có thay đổi</span>;
+                    return (
+                      <span className={diff > 0 ? 'text-green-600' : 'text-destructive'}>
+                        {diff > 0 ? 'Tăng' : 'Giảm'} {formatCurrency(Math.abs(diff))}
+                        {diff > 0 ? ' → Tạo phiếu thu' : ' → Tạo phiếu chi'}
+                      </span>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label>Lý do điều chỉnh *</Label>
+              <Textarea
+                placeholder="Ví dụ: Cân đối tiền mặt cuối ngày, Tiền thừa/thiếu khi kiểm kê..."
+                value={adjustBalanceData.reason}
+                onChange={(e) => setAdjustBalanceData({ ...adjustBalanceData, reason: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAdjustBalanceDialog(false)}>
+              Hủy
+            </Button>
+            <Button 
+              onClick={handleAdjustBalance} 
+              disabled={createEntry.isPending || !adjustBalanceData.newBalance || !adjustBalanceData.reason.trim()}
+            >
+              {createEntry.isPending ? 'Đang xử lý...' : 'Xác nhận điều chỉnh'}
             </Button>
           </DialogFooter>
         </DialogContent>
