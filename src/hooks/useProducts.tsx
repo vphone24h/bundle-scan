@@ -109,11 +109,18 @@ export function useUpdateProduct() {
 export function useCheckIMEI() {
   return useMutation({
     mutationFn: async (imei: string) => {
+      // Lấy tenant_id hiện tại để kiểm tra trong phạm vi cửa hàng
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
+      // Kiểm tra IMEI trong phạm vi TENANT với các status: in_stock, sold, returned
+      // Đồng bộ với logic trong useCreateImportReceipt
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, status')
+        .select('id, name, sku, status')
         .eq('imei', imei)
-        .eq('status', 'in_stock')
+        .eq('tenant_id', tenantId)
+        .in('status', ['in_stock', 'sold', 'returned'])
         .maybeSingle();
 
       if (error) throw error;
