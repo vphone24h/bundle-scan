@@ -25,6 +25,7 @@ import { Search, Barcode, Loader2, Filter, X, Download } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/mockData';
+import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib/exportExcel';
 
 // Map Product to the format expected by ProductTable
 function mapProductForTable(product: Product) {
@@ -146,27 +147,34 @@ export default function ProductsPage() {
       return;
     }
 
-    const headers = ['Tên sản phẩm', 'SKU', 'IMEI', 'Danh mục', 'Giá nhập', 'Ngày nhập', 'Nhà cung cấp', 'Chi nhánh', 'Trạng thái'];
-    const rows = filteredProducts.map(p => [
-      p.name,
-      p.sku,
-      p.imei || '',
-      p.categoryName || '',
-      p.importPrice,
-      format(p.importDate, 'dd/MM/yyyy'),
-      p.supplierName || '',
-      p.branchName || '',
-      p.status === 'in_stock' ? 'Tồn kho' : p.status === 'sold' ? 'Đã bán' : 'Đã trả'
-    ]);
-
-    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `san-pham-${format(new Date(), 'yyyyMMdd')}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    exportToExcel({
+      filename: `San_pham_${format(new Date(), 'ddMMyyyy')}`,
+      sheetName: 'Sản phẩm',
+      columns: [
+        { header: 'STT', key: 'stt', width: 6 },
+        { header: 'Tên sản phẩm', key: 'name', width: 35 },
+        { header: 'SKU', key: 'sku', width: 18 },
+        { header: 'IMEI', key: 'imei', width: 18 },
+        { header: 'Danh mục', key: 'categoryName', width: 18 },
+        { header: 'Giá nhập', key: 'importPrice', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Ngày nhập', key: 'importDate', width: 12, format: (v) => formatDateForExcel(v) },
+        { header: 'Nhà cung cấp', key: 'supplierName', width: 20 },
+        { header: 'Chi nhánh', key: 'branchName', width: 18 },
+        { header: 'Trạng thái', key: 'status', width: 12, format: (v) => v === 'in_stock' ? 'Tồn kho' : v === 'sold' ? 'Đã bán' : 'Đã trả' },
+      ],
+      data: filteredProducts.map((p, index) => ({
+        stt: index + 1,
+        name: p.name,
+        sku: p.sku,
+        imei: p.imei || '',
+        categoryName: p.categoryName || '',
+        importPrice: p.importPrice,
+        importDate: p.importDate,
+        supplierName: p.supplierName || '',
+        branchName: p.branchName || '',
+        status: p.status,
+      })),
+    });
 
     toast({ title: 'Xuất Excel thành công', description: `Đã xuất ${filteredProducts.length} sản phẩm` });
   };

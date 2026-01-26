@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
+import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib/exportExcel';
 import {
   Plus,
   Wallet,
@@ -529,27 +530,34 @@ export default function CashBookPage() {
       return;
     }
 
-    const headers = ['Ngày', 'Loại', 'Danh mục', 'Mô tả', 'Số tiền', 'Nguồn tiền', 'Chi nhánh', 'Hạch toán KD', 'Ghi chú'];
-    const rows = filteredEntries.map(e => [
-      format(new Date(e.transaction_date), 'dd/MM/yyyy HH:mm'),
-      e.type === 'expense' ? 'Chi' : 'Thu',
-      e.category,
-      e.description,
-      e.type === 'expense' ? -Number(e.amount) : Number(e.amount),
-      paymentSourceLabels[e.payment_source] || e.payment_source,
-      e.branches?.name || '',
-      e.is_business_accounting ? 'Có' : 'Không',
-      e.note || ''
-    ]);
-
-    const csvContent = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `so-quy-${format(new Date(), 'yyyyMMdd')}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    exportToExcel({
+      filename: `So_quy_${format(new Date(), 'ddMMyyyy')}`,
+      sheetName: 'Sổ quỹ',
+      columns: [
+        { header: 'STT', key: 'stt', width: 6 },
+        { header: 'Ngày', key: 'transaction_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
+        { header: 'Loại', key: 'type', width: 8, format: (v) => v === 'expense' ? 'Chi' : 'Thu' },
+        { header: 'Danh mục', key: 'category', width: 20 },
+        { header: 'Mô tả', key: 'description', width: 35 },
+        { header: 'Số tiền', key: 'amount', width: 15, format: (v, row) => formatCurrencyForExcel(row.type === 'expense' ? -Number(v) : Number(v)) },
+        { header: 'Nguồn tiền', key: 'payment_source', width: 15, format: (v) => paymentSourceLabels[v] || v },
+        { header: 'Chi nhánh', key: 'branch_name', width: 20 },
+        { header: 'Hạch toán KD', key: 'is_business_accounting', width: 12, format: (v) => v ? 'Có' : 'Không' },
+        { header: 'Ghi chú', key: 'note', width: 30 },
+      ],
+      data: filteredEntries.map((e, index) => ({
+        stt: index + 1,
+        transaction_date: e.transaction_date,
+        type: e.type,
+        category: e.category,
+        description: e.description,
+        amount: e.amount,
+        payment_source: e.payment_source,
+        branch_name: e.branches?.name || '',
+        is_business_accounting: e.is_business_accounting,
+        note: e.note || '',
+      })),
+    });
 
     toast({ title: 'Xuất Excel thành công', description: `Đã xuất ${filteredEntries.length} giao dịch` });
   };

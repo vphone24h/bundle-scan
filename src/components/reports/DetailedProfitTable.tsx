@@ -28,6 +28,7 @@ import { useDetailedProfitReport } from '@/hooks/useDetailedProfitReport';
 import { useBranches } from '@/hooks/useBranches';
 import { useCategories } from '@/hooks/useCategories';
 import { formatCurrency } from '@/lib/mockData';
+import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib/exportExcel';
 import { startOfMonth, subDays, startOfWeek, subWeeks, subMonths, endOfWeek, endOfMonth } from 'date-fns';
 
 const timePresets = [
@@ -112,72 +113,66 @@ export function DetailedProfitTable() {
     setSearch('');
   };
 
-  // Export to CSV
+  // Export to Excel
   const handleExport = () => {
     if (!data?.items.length) return;
 
-    const headers = [
-      'Sản phẩm',
-      'SKU',
-      'IMEI',
-      'Khách hàng',
-      'Chi nhánh',
-      'Giá nhập',
-      'Giá bán',
-      'Số lượng',
-      'Lợi nhuận',
-      'Margin %',
-      'Ngày bán',
-      'Trạng thái',
-      'Mã phiếu',
-    ];
-
-    const rows = data.items.map(item => {
-      const margin = item.salePrice > 0 ? ((item.profit / item.salePrice) * 100).toFixed(1) : '0';
-      return [
-        item.productName,
-        item.sku,
-        item.imei || 'N/A',
-        item.customerName || 'Khách lẻ',
-        item.branchName,
-        item.importPrice,
-        item.salePrice,
-        item.quantity,
-        item.profit,
-        margin + '%',
-        format(new Date(item.saleDate), 'dd/MM/yyyy HH:mm'),
-        item.status === 'sold' ? 'Đã bán' : 'Trả hàng',
-        item.receiptCode,
-      ];
-    });
+    const exportData: any[] = data.items.map((item, index) => ({
+      stt: index + 1,
+      productName: item.productName,
+      sku: item.sku,
+      imei: item.imei || '',
+      customerName: item.customerName || 'Khách lẻ',
+      branchName: item.branchName,
+      importPrice: item.importPrice,
+      salePrice: item.salePrice,
+      quantity: item.quantity,
+      profit: item.profit,
+      margin: item.salePrice > 0 ? ((item.profit / item.salePrice) * 100).toFixed(1) + '%' : '0%',
+      saleDate: item.saleDate,
+      status: item.status === 'sold' ? 'Đã bán' : 'Trả hàng',
+      receiptCode: item.receiptCode,
+    }));
 
     // Add totals row
-    rows.push([
-      'TỔNG CỘNG',
-      '',
-      '',
-      '',
-      '',
-      '',
-      data.totals.totalRevenue,
-      data.totals.totalQuantity,
-      data.totals.totalProfit,
-      '',
-      '',
-      '',
-      '',
-    ]);
+    exportData.push({
+      stt: '',
+      productName: 'TỔNG CỘNG',
+      sku: '',
+      imei: '',
+      customerName: '',
+      branchName: '',
+      importPrice: data.totals.totalRevenue - data.totals.totalProfit,
+      salePrice: data.totals.totalRevenue,
+      quantity: data.totals.totalQuantity,
+      profit: data.totals.totalProfit,
+      margin: data.totals.totalRevenue > 0 ? ((data.totals.totalProfit / data.totals.totalRevenue) * 100).toFixed(1) + '%' : '0%',
+      saleDate: '',
+      status: '',
+      receiptCode: '',
+    });
 
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
-    ].join('\n');
-
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `bao-cao-loi-nhuan-chi-tiet_${startDate}_${endDate}.csv`;
-    link.click();
+    exportToExcel({
+      filename: `Bao_cao_loi_nhuan_${startDate}_${endDate}`,
+      sheetName: 'Lợi nhuận chi tiết',
+      columns: [
+        { header: 'STT', key: 'stt', width: 6 },
+        { header: 'Sản phẩm', key: 'productName', width: 35 },
+        { header: 'SKU', key: 'sku', width: 15 },
+        { header: 'IMEI', key: 'imei', width: 18 },
+        { header: 'Khách hàng', key: 'customerName', width: 20 },
+        { header: 'Chi nhánh', key: 'branchName', width: 18 },
+        { header: 'Giá nhập', key: 'importPrice', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Giá bán', key: 'salePrice', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Số lượng', key: 'quantity', width: 10 },
+        { header: 'Lợi nhuận', key: 'profit', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Margin %', key: 'margin', width: 12 },
+        { header: 'Ngày bán', key: 'saleDate', width: 18, format: (v) => v ? formatDateForExcel(v, 'dd/MM/yyyy HH:mm') : '' },
+        { header: 'Trạng thái', key: 'status', width: 12 },
+        { header: 'Mã phiếu', key: 'receiptCode', width: 18 },
+      ],
+      data: exportData,
+    });
   };
 
   // Format price with abbreviation

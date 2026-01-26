@@ -39,6 +39,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
+import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib/exportExcel';
 import type { Product } from '@/hooks/useProducts';
 import { EditImportReceiptDialog } from '@/components/import/EditImportReceiptDialog';
 import { ReturnImportReceiptDialog } from '@/components/import/ReturnImportReceiptDialog';
@@ -207,64 +208,78 @@ export default function ImportHistoryPage() {
 
   const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_';
 
-  // Export to Excel
+  // Export to Excel - Receipts
   const handleExportReceipts = () => {
     if (filteredReceipts.length === 0) {
       toast({ title: 'Không có dữ liệu', description: 'Không có phiếu nhập nào để xuất', variant: 'destructive' });
       return;
     }
 
-    const headers = ['Mã phiếu', 'Ngày nhập', 'Tổng tiền', 'Đã thanh toán', 'Còn nợ', 'Nhà cung cấp', 'Chi nhánh', 'Trạng thái'];
-    const rows = filteredReceipts.map(r => [
-      r.code,
-      format(new Date(r.import_date), 'dd/MM/yyyy HH:mm'),
-      r.total_amount,
-      r.paid_amount,
-      r.debt_amount,
-      r.suppliers?.name || '',
-      r.branches?.name || '',
-      r.status === 'completed' ? 'Hoàn tất' : 'Đã huỷ'
-    ]);
-
-    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `phieu-nhap-hang-${format(new Date(), 'yyyyMMdd')}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    exportToExcel({
+      filename: `Phieu_nhap_hang_${format(new Date(), 'ddMMyyyy')}`,
+      sheetName: 'Phiếu nhập hàng',
+      columns: [
+        { header: 'STT', key: 'stt', width: 6 },
+        { header: 'Mã phiếu', key: 'code', width: 18 },
+        { header: 'Ngày nhập', key: 'import_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
+        { header: 'Tổng tiền', key: 'total_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Đã thanh toán', key: 'paid_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Còn nợ', key: 'debt_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Nhà cung cấp', key: 'supplier_name', width: 25 },
+        { header: 'Chi nhánh', key: 'branch_name', width: 20 },
+        { header: 'Trạng thái', key: 'status', width: 12, format: (v) => v === 'completed' ? 'Hoàn tất' : 'Đã huỷ' },
+      ],
+      data: filteredReceipts.map((r, index) => ({
+        stt: index + 1,
+        code: r.code,
+        import_date: r.import_date,
+        total_amount: r.total_amount,
+        paid_amount: r.paid_amount,
+        debt_amount: r.debt_amount,
+        supplier_name: r.suppliers?.name || '',
+        branch_name: r.branches?.name || '',
+        status: r.status,
+      })),
+    });
 
     toast({ title: 'Xuất Excel thành công', description: `Đã xuất ${filteredReceipts.length} phiếu nhập` });
   };
 
+  // Export to Excel - Products
   const handleExportProducts = () => {
     if (filteredProducts.length === 0) {
       toast({ title: 'Không có dữ liệu', description: 'Không có sản phẩm nào để xuất', variant: 'destructive' });
       return;
     }
 
-    const headers = ['Tên sản phẩm', 'SKU', 'IMEI', 'Danh mục', 'Giá nhập', 'Ngày nhập', 'Nhà cung cấp', 'Chi nhánh', 'Trạng thái'];
-    const rows = filteredProducts.map(p => [
-      p.name,
-      p.sku,
-      p.imei || '',
-      p.categories?.name || '',
-      p.import_price,
-      format(new Date(p.import_date), 'dd/MM/yyyy'),
-      p.suppliers?.name || '',
-      p.branches?.name || '',
-      p.status === 'in_stock' ? 'Tồn kho' : p.status === 'sold' ? 'Đã bán' : 'Đã trả'
-    ]);
-
-    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `san-pham-nhap-${format(new Date(), 'yyyyMMdd')}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    exportToExcel({
+      filename: `San_pham_nhap_${format(new Date(), 'ddMMyyyy')}`,
+      sheetName: 'Sản phẩm nhập',
+      columns: [
+        { header: 'STT', key: 'stt', width: 6 },
+        { header: 'Tên sản phẩm', key: 'name', width: 35 },
+        { header: 'SKU', key: 'sku', width: 18 },
+        { header: 'IMEI', key: 'imei', width: 18 },
+        { header: 'Danh mục', key: 'category_name', width: 18 },
+        { header: 'Giá nhập', key: 'import_price', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Ngày nhập', key: 'import_date', width: 12, format: (v) => formatDateForExcel(v) },
+        { header: 'Nhà cung cấp', key: 'supplier_name', width: 20 },
+        { header: 'Chi nhánh', key: 'branch_name', width: 18 },
+        { header: 'Trạng thái', key: 'status', width: 12, format: (v) => v === 'in_stock' ? 'Tồn kho' : v === 'sold' ? 'Đã bán' : 'Đã trả' },
+      ],
+      data: filteredProducts.map((p, index) => ({
+        stt: index + 1,
+        name: p.name,
+        sku: p.sku,
+        imei: p.imei || '',
+        category_name: p.categories?.name || '',
+        import_price: p.import_price,
+        import_date: p.import_date,
+        supplier_name: p.suppliers?.name || '',
+        branch_name: p.branches?.name || '',
+        status: p.status,
+      })),
+    });
 
     toast({ title: 'Xuất Excel thành công', description: `Đã xuất ${filteredProducts.length} sản phẩm` });
   };
