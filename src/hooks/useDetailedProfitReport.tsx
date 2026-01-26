@@ -77,6 +77,8 @@ export function useDetailedProfitReport(filters?: {
       if (soldError) throw soldError;
 
       // 2. Lấy dữ liệu trả hàng từ export_returns
+      // CHỈ lấy trả hàng KHÔNG CÓ PHÍ (fee_type = 'none') để hiển thị lợi nhuận âm
+      // Trả hàng có phí sẽ tạo phiếu nhập mới, không ảnh hưởng báo cáo
       let returnQuery = supabase
         .from('export_returns')
         .select(`
@@ -90,9 +92,11 @@ export function useDetailedProfitReport(filters?: {
           return_date,
           branch_id,
           customer_id,
+          fee_type,
           branches(name),
           customers(name)
         `)
+        .eq('fee_type', 'none') // Chỉ lấy trả hàng hoàn tiền đầy đủ
         .gte('return_date', startDate)
         .lte('return_date', endDate + 'T23:59:59');
 
