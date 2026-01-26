@@ -87,8 +87,21 @@ export function useInventory() {
             // Cập nhật giá TB cho IMEI products
             existing.totalImportCost += Number(product.import_price);
             existing.avgImportPrice = existing.totalImportCost / existing.totalImported;
+          } else {
+            // Sản phẩm không IMEI: cộng dồn số lượng nếu có nhiều bản ghi
+            const quantity = product.quantity || 1;
+            const totalCost = Number(product.total_import_cost || product.import_price);
+            
+            if (product.status === 'in_stock') {
+              existing.totalImported += quantity;
+              existing.stock += quantity;
+              existing.totalImportCost += totalCost;
+              existing.avgImportPrice = existing.totalImportCost / existing.totalImported;
+              existing.products.push(productDetail);
+            } else if (product.status === 'sold') {
+              existing.totalSold += quantity;
+            }
           }
-          // Sản phẩm không IMEI: đã được gộp trong DB, không cần xử lý thêm
         } else {
           if (product.imei) {
             // Sản phẩm có IMEI
@@ -111,9 +124,9 @@ export function useInventory() {
           } else {
             // Sản phẩm không IMEI - đã có quantity và total_import_cost trong DB
             const quantity = product.quantity || 1;
-            const totalCost = product.total_import_cost || product.import_price;
-            const soldQty = product.status === 'sold' ? quantity : 0;
+            const totalCost = Number(product.total_import_cost || product.import_price);
             const stockQty = product.status === 'in_stock' ? quantity : 0;
+            const soldQty = product.status === 'sold' ? quantity : 0;
             
             inventoryMap.set(key, {
               productId: product.id,
@@ -128,8 +141,8 @@ export function useInventory() {
               totalSold: soldQty,
               stock: stockQty,
               avgImportPrice: Number(product.import_price), // Đã là giá TB
-              totalImportCost: Number(totalCost),
-              products: [productDetail],
+              totalImportCost: totalCost,
+              products: product.status === 'in_stock' ? [productDetail] : [],
             });
           }
         }
