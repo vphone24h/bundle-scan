@@ -316,3 +316,248 @@ export function useCreateImportReceipt() {
     },
   });
 }
+
+// Hook chỉnh sửa phiếu nhập (tên SP, danh mục, NCC, giá)
+export function useUpdateImportReceipt() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      receiptId,
+      productUpdates,
+      newSupplierId,
+    }: {
+      receiptId: string;
+      productUpdates: {
+        productId: string;
+        name?: string;
+        category_id?: string | null;
+        import_price?: number;
+        oldImportPrice?: number;
+      }[];
+      newSupplierId?: string | null;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Cập nhật nhà cung cấp nếu có
+      if (newSupplierId !== undefined) {
+        const { error: receiptError } = await supabase
+          .from('import_receipts')
+          .update({ supplier_id: newSupplierId })
+          .eq('id', receiptId);
+        
+        if (receiptError) throw receiptError;
+      }
+
+      // Cập nhật từng sản phẩm
+      let totalPriceDiff = 0;
+      for (const update of productUpdates) {
+        const updateData: Record<string, any> = {};
+        
+        if (update.name) updateData.name = update.name;
+        if (update.category_id !== undefined) updateData.category_id = update.category_id;
+        if (update.import_price !== undefined) {
+          updateData.import_price = update.import_price;
+          updateData.total_import_cost = update.import_price;
+          totalPriceDiff += update.import_price - (update.oldImportPrice || 0);
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          const { error } = await supabase
+            .from('products')
+            .update(updateData)
+            .eq('id', update.productId);
+          
+          if (error) throw error;
+
+          // Cập nhật product_imports nếu có thay đổi giá
+          if (update.import_price !== undefined) {
+            await supabase
+              .from('product_imports')
+              .update({ import_price: update.import_price })
+              .eq('product_id', update.productId)
+              .eq('import_receipt_id', receiptId);
+          }
+        }
+      }
+
+      // Cập nhật tổng tiền phiếu nhập nếu giá thay đổi
+      if (totalPriceDiff !== 0) {
+        const { data: receipt } = await supabase
+          .from('import_receipts')
+          .select('total_amount, paid_amount')
+          .eq('id', receiptId)
+          .single();
+
+        if (receipt) {
+          const newTotalAmount = Number(receipt.total_amount) + totalPriceDiff;
+          const paidAmount = Number(receipt.paid_amount);
+          const newDebtAmount = Math.max(0, newTotalAmount - paidAmount);
+
+          await supabase
+            .from('import_receipts')
+            .update({
+              total_amount: newTotalAmount,
+              debt_amount: newDebtAmount,
+            })
+            .eq('id', receiptId);
+
+          // Cập nhật sổ quỹ nếu giá thay đổi
+          if (totalPriceDiff !== 0) {
+            const { data: existingEntry } = await supabase
+              .from('cash_book')
+              .select('id, amount')
+              .eq('reference_id', receiptId)
+              .eq('reference_type', 'import_receipt')
+              .maybeSingle();
+
+            if (existingEntry) {
+              // Cập nhật entry sổ quỹ hiện có
+              await supabase
+                .from('cash_book')
+                .update({ amount: Number(existingEntry.amount) + totalPriceDiff })
+                .eq('id', existingEntry.id);
+            }
+          }
+        }
+      }
+
+      return { success: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['import-receipt'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['report-stats'] });
+    },
+  });
+}
+
+// Hook trả hàng toàn bộ phiếu nhập
+export function useReturnImportReceipt() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      receiptId,
+      payments,
+      note,
+    }: {
+      receiptId: string;
+      payments: { source: string; amount: number }[];
+      note?: string | null;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Lấy thông tin phiếu nhập và sản phẩm
+      const { data: receipt, error: receiptError } = await supabase
+        .from('import_receipts')
+        .select('*, suppliers(name), branches(name)')
+        .eq('id', receiptId)
+        .single();
+
+      if (receiptError) throw receiptError;
+
+      // Lấy tất cả sản phẩm của phiếu nhập còn tồn kho
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('import_receipt_id', receiptId)
+        .eq('status', 'in_stock');
+
+      if (productsError) throw productsError;
+
+      if (!products || products.length === 0) {
+        throw new Error('Không còn sản phẩm nào trong kho để trả');
+      }
+
+      const now = new Date();
+      const baseCode = `TN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+
+      const returnIds: string[] = [];
+
+      // Tạo phiếu trả hàng cho từng sản phẩm
+      for (let i = 0; i < products.length; i++) {
+        const product = products[i];
+        const code = products.length === 1 ? baseCode : `${baseCode}_${i + 1}`;
+
+        const { data: returnData, error: returnError } = await supabase
+          .from('import_returns')
+          .insert([{
+            code,
+            product_id: product.id,
+            import_receipt_id: receiptId,
+            supplier_id: receipt.supplier_id,
+            branch_id: receipt.branch_id,
+            product_name: product.name,
+            sku: product.sku,
+            imei: product.imei,
+            import_price: product.import_price,
+            original_import_date: product.import_date,
+            total_refund_amount: product.import_price,
+            note: note || `Trả toàn bộ phiếu ${receipt.code}`,
+            created_by: user.id,
+          }])
+          .select()
+          .single();
+
+        if (returnError) throw returnError;
+        returnIds.push(returnData.id);
+
+        // Cập nhật trạng thái sản phẩm
+        await supabase
+          .from('products')
+          .update({ status: 'returned' })
+          .eq('id', product.id);
+      }
+
+      // Tạo thanh toán và sổ quỹ
+      const totalRefund = payments.reduce((sum, p) => sum + p.amount, 0);
+
+      for (const payment of payments) {
+        // Lưu thanh toán cho phiếu trả hàng đầu tiên
+        if (returnIds[0]) {
+          await supabase
+            .from('return_payments')
+            .insert([{
+              return_id: returnIds[0],
+              return_type: 'import_return',
+              payment_source: payment.source,
+              amount: payment.amount,
+            }]);
+        }
+
+        // Ghi sổ quỹ (thu tiền từ NCC)
+        if (payment.source !== 'debt') {
+          await supabase
+            .from('cash_book')
+            .insert([{
+              type: 'income' as const,
+              category: 'Tra hang nhap',
+              description: `Tra toan bo phieu nhap ${receipt.code}`,
+              amount: payment.amount,
+              payment_source: payment.source,
+              is_business_accounting: false,
+              branch_id: receipt.branch_id,
+              reference_id: returnIds[0],
+              reference_type: 'import_return',
+              created_by: user.id,
+            }]);
+        }
+      }
+
+      return { returnIds, productsReturned: products.length, totalRefund };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['import-receipt'] });
+      queryClient.invalidateQueries({ queryKey: ['import-returns'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+    },
+  });
+}
