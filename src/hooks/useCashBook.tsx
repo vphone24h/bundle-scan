@@ -4,6 +4,12 @@ import type { Database } from '@/integrations/supabase/types';
 
 type CashBookType = Database['public']['Enums']['cash_book_type'];
 
+// Helper to get current user's tenant_id
+async function getCurrentTenantId(): Promise<string | null> {
+  const { data } = await supabase.rpc('get_user_tenant_id_secure');
+  return data;
+}
+
 export interface CashBookEntry {
   id: string;
   transaction_date: string;
@@ -104,12 +110,17 @@ export function useCreateCashBookEntry() {
       transaction_date?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
+      
+      // Get current tenant_id
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
 
       const { data, error } = await supabase
         .from('cash_book')
         .insert([{
           ...entry,
           created_by: user?.id,
+          tenant_id: tenantId,
         }])
         .select()
         .single();
