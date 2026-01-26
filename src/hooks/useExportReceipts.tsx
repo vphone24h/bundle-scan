@@ -52,10 +52,12 @@ export interface ExportReceiptItemDetail {
   created_at: string;
   // Joined
   categories?: { name: string } | null;
+  products?: { import_price: number } | null;
   export_receipts?: {
     code: string;
     export_date: string;
     branch_id: string | null;
+    customer_id: string | null;
     customers?: { name: string; phone: string } | null;
     branches?: { name: string } | null;
   } | null;
@@ -91,10 +93,12 @@ export function useExportReceiptItems() {
         .select(`
           *,
           categories(name),
+          products(import_price),
           export_receipts(
             code,
             export_date,
             branch_id,
+            customer_id,
             customers(name, phone),
             branches(name)
           )

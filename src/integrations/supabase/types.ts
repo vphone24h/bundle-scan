@@ -357,6 +357,133 @@ export type Database = {
           },
         ]
       }
+      export_returns: {
+        Row: {
+          branch_id: string | null
+          code: string
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          export_receipt_id: string | null
+          export_receipt_item_id: string | null
+          fee_amount: number | null
+          fee_percentage: number | null
+          fee_type: Database["public"]["Enums"]["return_fee_type"]
+          id: string
+          imei: string | null
+          import_price: number
+          is_business_accounting: boolean | null
+          new_import_receipt_id: string | null
+          note: string | null
+          original_sale_date: string | null
+          product_id: string
+          product_name: string
+          refund_amount: number
+          return_date: string
+          sale_price: number
+          sku: string
+          store_keep_amount: number
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          code: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          export_receipt_id?: string | null
+          export_receipt_item_id?: string | null
+          fee_amount?: number | null
+          fee_percentage?: number | null
+          fee_type?: Database["public"]["Enums"]["return_fee_type"]
+          id?: string
+          imei?: string | null
+          import_price: number
+          is_business_accounting?: boolean | null
+          new_import_receipt_id?: string | null
+          note?: string | null
+          original_sale_date?: string | null
+          product_id: string
+          product_name: string
+          refund_amount?: number
+          return_date?: string
+          sale_price: number
+          sku: string
+          store_keep_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          export_receipt_id?: string | null
+          export_receipt_item_id?: string | null
+          fee_amount?: number | null
+          fee_percentage?: number | null
+          fee_type?: Database["public"]["Enums"]["return_fee_type"]
+          id?: string
+          imei?: string | null
+          import_price?: number
+          is_business_accounting?: boolean | null
+          new_import_receipt_id?: string | null
+          note?: string | null
+          original_sale_date?: string | null
+          product_id?: string
+          product_name?: string
+          refund_amount?: number
+          return_date?: string
+          sale_price?: number
+          sku?: string
+          store_keep_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_returns_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_returns_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_returns_export_receipt_id_fkey"
+            columns: ["export_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "export_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_returns_export_receipt_item_id_fkey"
+            columns: ["export_receipt_item_id"]
+            isOneToOne: false
+            referencedRelation: "export_receipt_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_returns_new_import_receipt_id_fkey"
+            columns: ["new_import_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "import_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_returns_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       imei_histories: {
         Row: {
           action_type: string
@@ -470,6 +597,95 @@ export type Database = {
           },
           {
             foreignKeyName: "import_receipts_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_returns: {
+        Row: {
+          branch_id: string | null
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          imei: string | null
+          import_price: number
+          import_receipt_id: string | null
+          note: string | null
+          original_import_date: string | null
+          product_id: string
+          product_name: string
+          return_date: string
+          sku: string
+          supplier_id: string | null
+          total_refund_amount: number
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          imei?: string | null
+          import_price: number
+          import_receipt_id?: string | null
+          note?: string | null
+          original_import_date?: string | null
+          product_id: string
+          product_name: string
+          return_date?: string
+          sku: string
+          supplier_id?: string | null
+          total_refund_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          imei?: string | null
+          import_price?: number
+          import_receipt_id?: string | null
+          note?: string | null
+          original_import_date?: string | null
+          product_id?: string
+          product_name?: string
+          return_date?: string
+          sku?: string
+          supplier_id?: string | null
+          total_refund_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_returns_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_returns_import_receipt_id_fkey"
+            columns: ["import_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "import_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_returns_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_returns_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
@@ -715,6 +931,33 @@ export type Database = {
           },
         ]
       }
+      return_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          payment_source: string
+          return_id: string
+          return_type: Database["public"]["Enums"]["return_type"]
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          payment_source: string
+          return_id: string
+          return_type: Database["public"]["Enums"]["return_type"]
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_source?: string
+          return_id?: string
+          return_type?: Database["public"]["Enums"]["return_type"]
+        }
+        Relationships: []
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -786,6 +1029,8 @@ export type Database = {
       payment_type: "cash" | "bank_card" | "e_wallet" | "debt"
       product_status: "in_stock" | "sold" | "returned"
       receipt_status: "completed" | "cancelled"
+      return_fee_type: "none" | "percentage" | "fixed_amount"
+      return_type: "import_return" | "export_return"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -918,6 +1163,8 @@ export const Constants = {
       payment_type: ["cash", "bank_card", "e_wallet", "debt"],
       product_status: ["in_stock", "sold", "returned"],
       receipt_status: ["completed", "cancelled"],
+      return_fee_type: ["none", "percentage", "fixed_amount"],
+      return_type: ["import_return", "export_return"],
     },
   },
 } as const
