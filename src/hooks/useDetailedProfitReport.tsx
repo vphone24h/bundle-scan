@@ -56,7 +56,10 @@ export function useDetailedProfitReport(filters?: {
             customers(name)
           )
         `)
-        .eq('status', 'sold')
+        // KHÔNG được rollback / sửa dòng bán cũ.
+        // Khi trả hàng, export_receipt_items.status thường bị set = 'returned',
+        // nhưng báo cáo vẫn phải giữ dòng bán (thời điểm bán).
+        .in('status', ['sold', 'returned'])
         .neq('export_receipts.status', 'cancelled')
         .gte('export_receipts.export_date', startDate)
         .lte('export_receipts.export_date', endDate + 'T23:59:59');
@@ -92,6 +95,7 @@ export function useDetailedProfitReport(filters?: {
           return_date,
           branch_id,
           customer_id,
+          product_id,
           fee_type,
           branches(name),
           customers(name)
@@ -112,7 +116,12 @@ export function useDetailedProfitReport(filters?: {
       if (returnError) throw returnError;
 
       // 3. Lấy giá nhập (trung bình) của các sản phẩm đã bán
-      const productIds = soldItems?.map(i => i.product_id).filter(Boolean) || [];
+      const productIds = Array.from(
+        new Set([
+          ...(soldItems?.map(i => i.product_id).filter(Boolean) || []),
+          ...(returnItems?.map((i: any) => i.product_id).filter(Boolean) || []),
+        ])
+      );
       let productsMap: Record<string, { import_price: number; quantity: number }> = {};
       
       if (productIds.length > 0) {
@@ -198,13 +207,17 @@ export function useDetailedProfitReport(filters?: {
       });
 
       // 5. Xử lý dữ liệu trả hàng đủ tiền (fee_type = 'none')
-      // Theo nguyên tắc: Doanh thu = 0, Giá vốn = 0, Lợi nhuận = -(lãi lúc bán)
-      returnItems?.forEach(item => {
-        const originalImportPrice = Number(item.import_price);
+      // Nguyên tắc: tạo phát sinh mới tại thời điểm trả hàng
+      // - Doanh thu = 0
+      // - Giá vốn = 0
+      // - Lợi nhuận = -(lãi lúc bán)
+      // NOTE: export_returns.import_price hiện có thể = 0, nên phải tính lãi lúc bán dựa trên product_id.
+      returnItems?.forEach((item: any) => {
         const originalSalePrice = Number(item.sale_price);
+        const productInfo = item.product_id ? productsMap[item.product_id] : null;
+        const originalImportPrice = productInfo?.import_price || 0;
         const originalProfit = originalSalePrice - originalImportPrice;
-        
-        // Lợi nhuận âm = ngược lại số lãi lúc bán
+
         const profit = -originalProfit;
 
         results.push({
