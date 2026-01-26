@@ -90,11 +90,12 @@ function formatValue(value: unknown): string {
 
 const ACTION_GROUP_LABELS: Record<ActionGroup, { label: string; color: string }> = {
   all: { label: 'Khác', color: 'bg-gray-500' },
-  inventory: { label: 'Kho hàng', color: 'bg-emerald-500' },
   cashbook: { label: 'Sổ quỹ', color: 'bg-amber-500' },
-  sales: { label: 'Bán hàng', color: 'bg-blue-500' },
+  import: { label: 'Nhập hàng', color: 'bg-emerald-500' },
+  export: { label: 'Xuất hàng', color: 'bg-blue-500' },
+  debt: { label: 'Công nợ', color: 'bg-orange-500' },
+  stock_count: { label: 'Kiểm kho', color: 'bg-cyan-500' },
   system: { label: 'Hệ thống', color: 'bg-purple-500' },
-  report: { label: 'Báo cáo', color: 'bg-indigo-500' },
 };
 
 export function AuditLogTable({ logs, isLoading, profileMap, roleMap, branchMap }: AuditLogTableProps) {
