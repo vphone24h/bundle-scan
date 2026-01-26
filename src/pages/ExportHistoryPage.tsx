@@ -402,6 +402,7 @@ export default function ExportHistoryPage() {
                       <TableHead className="text-right">Giá bán</TableHead>
                       <TableHead>Khách hàng</TableHead>
                       <TableHead>Ngày bán</TableHead>
+                      <TableHead>Chi nhánh</TableHead>
                       <TableHead>Trạng thái</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
@@ -432,6 +433,9 @@ export default function ExportHistoryPage() {
                         <TableCell>
                           {item.export_receipts?.export_date ? 
                             format(new Date(item.export_receipts.export_date), 'dd/MM/yyyy', { locale: vi }) : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {item.export_receipts?.branches?.name || '-'}
                         </TableCell>
                         <TableCell>
                           <Badge variant={item.status === 'sold' ? 'default' : 'secondary'}>
