@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ImportCart } from '@/components/import/ImportCart';
@@ -7,6 +7,7 @@ import { useCategories, useCreateCategory } from '@/hooks/useCategories';
 import { useSuppliers, useCreateSupplier } from '@/hooks/useSuppliers';
 import { useProducts, useCheckIMEI } from '@/hooks/useProducts';
 import { useCreateImportReceipt } from '@/hooks/useImportReceipts';
+import { useBranches } from '@/hooks/useBranches';
 import { ImportReceiptItem, PaymentSource } from '@/types/warehouse';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +27,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2 } from 'lucide-react';
+import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 
@@ -35,10 +36,22 @@ export default function ImportNewPage() {
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
   const { data: products } = useProducts();
+  const { data: branches } = useBranches();
   const createCategory = useCreateCategory();
   const createSupplier = useCreateSupplier();
   const createImportReceipt = useCreateImportReceipt();
   const checkIMEI = useCheckIMEI();
+
+  // Branch state - default to first branch
+  const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+
+  // Set default branch
+  useEffect(() => {
+    if (branches && branches.length > 0 && !selectedBranchId) {
+      const defaultBranch = branches.find(b => b.is_default) || branches[0];
+      setSelectedBranchId(defaultBranch.id);
+    }
+  }, [branches, selectedBranchId]);
 
   const [cart, setCart] = useState<ImportReceiptItem[]>([]);
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -193,6 +206,7 @@ export default function ImportNewPage() {
           amount: p.amount,
         })),
         supplierId: mainSupplierId,
+        branchId: selectedBranchId || null,
       });
 
       toast({
@@ -269,6 +283,29 @@ export default function ImportNewPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Form */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Branch Selection */}
+            <div className="bg-card border rounded-xl p-6">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Chi nhánh nhập hàng
+              </h3>
+              <Select
+                value={selectedBranchId}
+                onValueChange={setSelectedBranchId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn chi nhánh" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {branches?.map((branch) => (
+                    <SelectItem key={branch.id} value={branch.id}>
+                      {branch.name} {branch.is_default && '(Mặc định)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="bg-card border rounded-xl p-6">
               <h3 className="font-semibold mb-4">Thông tin sản phẩm</h3>
 

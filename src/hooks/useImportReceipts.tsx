@@ -106,6 +106,7 @@ export function useCreateImportReceipt() {
       products,
       payments,
       supplierId,
+      branchId,
       note,
     }: {
       products: {
@@ -119,6 +120,7 @@ export function useCreateImportReceipt() {
       }[];
       payments: { type: PaymentType; amount: number }[];
       supplierId: string | null;
+      branchId?: string | null;
       note?: string | null;
     }) => {
       // Get current user
@@ -142,6 +144,7 @@ export function useCreateImportReceipt() {
           paid_amount: paidAmount,
           debt_amount: debtAmount,
           supplier_id: supplierId,
+          branch_id: branchId || null,
           created_by: user.id,
           note,
         }])
@@ -163,13 +166,14 @@ export function useCreateImportReceipt() {
         if (paymentsError) throw paymentsError;
       }
 
-      // Create products
+      // Create products with branch_id
       const { error: productsError } = await supabase
         .from('products')
         .insert(products.map(p => ({
           ...p,
           import_receipt_id: receipt.id,
           supplier_id: supplierId,
+          branch_id: branchId || null,
         })));
 
       if (productsError) throw productsError;
@@ -190,6 +194,7 @@ export function useCreateImportReceipt() {
           amount: p.amount,
           payment_source: paymentSourceMap[p.type] || p.type,
           is_business_accounting: true,
+          branch_id: branchId || null,
           reference_id: receipt.id,
           reference_type: 'import_receipt',
           created_by: user.id,
