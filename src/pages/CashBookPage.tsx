@@ -134,6 +134,7 @@ export default function CashBookPage() {
     newBalance: '',
     reason: '',
     includeInAccounting: false,
+    branchId: '' as string,
   });
   
   // Filters
@@ -299,12 +300,14 @@ export default function CashBookPage() {
   };
 
   const handleOpenAdjustBalance = (source: string) => {
+    const defaultBranch = branches?.find(b => b.is_default) || branches?.[0];
     setAdjustBalanceData({
       source,
       currentBalance: balanceBySource[source] || 0,
       newBalance: '',
       reason: '',
       includeInAccounting: false,
+      branchId: defaultBranch?.id || '',
     });
     setShowAdjustBalanceDialog(true);
   };
@@ -315,6 +318,16 @@ export default function CashBookPage() {
       toast({
         title: 'Thiếu thông tin',
         description: 'Vui lòng nhập số dư mới và lý do điều chỉnh',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Require branch selection in total view
+    if (viewMode === 'total' && !adjustBalanceData.branchId) {
+      toast({
+        title: 'Thiếu chi nhánh',
+        description: 'Vui lòng chọn chi nhánh để ghi nhận điều chỉnh',
         variant: 'destructive',
       });
       return;
@@ -331,8 +344,9 @@ export default function CashBookPage() {
     }
 
     try {
-      // Get default branch
-      const defaultBranch = branches?.find(b => b.is_default) || branches?.[0];
+      // Use selected branch or the branch from branch view
+      const branchId = viewMode === 'total' ? adjustBalanceData.branchId : selectedBranchId;
+      const branchName = branches?.find(b => b.id === branchId)?.name || '';
 
       await createEntry.mutateAsync({
         type: difference > 0 ? 'income' : 'expense',
@@ -341,8 +355,8 @@ export default function CashBookPage() {
         amount: Math.abs(difference),
         payment_source: adjustBalanceData.source,
         is_business_accounting: adjustBalanceData.includeInAccounting,
-        branch_id: defaultBranch?.id || null,
-        note: `Số dư trước: ${formatCurrency(adjustBalanceData.currentBalance)} → Số dư sau: ${formatCurrency(newBalance)}`,
+        branch_id: branchId || null,
+        note: `Số dư trước: ${formatCurrency(adjustBalanceData.currentBalance)} → Số dư sau: ${formatCurrency(newBalance)}${branchName ? ` (Chi nhánh: ${branchName})` : ''}`,
       });
 
       setShowAdjustBalanceDialog(false);
@@ -1274,6 +1288,34 @@ export default function CashBookPage() {
                 onChange={(e) => setAdjustBalanceData({ ...adjustBalanceData, reason: e.target.value })}
               />
             </div>
+
+            {/* Branch Selection - Show only in total view */}
+            {viewMode === 'total' && (
+              <div>
+                <Label className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Chi nhánh ghi nhận *
+                </Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Chọn chi nhánh để ghi nhận khoản điều chỉnh này
+                </p>
+                <Select
+                  value={adjustBalanceData.branchId}
+                  onValueChange={(v) => setAdjustBalanceData({ ...adjustBalanceData, branchId: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn chi nhánh" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {branches?.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name} {branch.is_default && '(Mặc định)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
               <div>
