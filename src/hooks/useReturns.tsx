@@ -214,6 +214,10 @@ export function useCreateImportReturn() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Get tenant_id
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
       const now = new Date();
       const code = `TN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
 
@@ -235,6 +239,7 @@ export function useCreateImportReturn() {
           total_refund_amount: totalRefund,
           note,
           created_by: user.id,
+          tenant_id: tenantId,
         }])
         .select()
         .single();
@@ -280,6 +285,7 @@ export function useCreateImportReturn() {
               reference_id: returnData.id,
               reference_type: 'import_return',
               created_by: user.id,
+              tenant_id: tenantId,
             }]);
 
           if (cashBookError) throw cashBookError;
@@ -293,6 +299,7 @@ export function useCreateImportReturn() {
         table_name: 'import_returns',
         record_id: returnData.id,
         branch_id: product.branch_id || null,
+        tenant_id: tenantId,
         new_data: {
           code,
           product_name: product.name,
