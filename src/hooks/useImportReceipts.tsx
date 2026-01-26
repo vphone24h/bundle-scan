@@ -179,12 +179,7 @@ export function useCreateImportReceipt() {
       if (productsError) throw productsError;
 
       // Create cash book entries for actual payments (not debt)
-      const paymentSourceMap: Record<string, string> = {
-        'cash': 'Tiền mặt',
-        'bank_card': 'Thẻ ngân hàng',
-        'e_wallet': 'Ví điện tử',
-      };
-
+      // payment_source must match constraint: 'cash', 'bank_card', 'e_wallet'
       const cashBookEntries = payments
         .filter(p => p.type !== 'debt' && p.amount > 0)
         .map(p => ({
@@ -192,7 +187,7 @@ export function useCreateImportReceipt() {
           category: 'Nhập hàng',
           description: `Thanh toán phiếu nhập ${code}`,
           amount: p.amount,
-          payment_source: paymentSourceMap[p.type] || p.type,
+          payment_source: p.type, // Use the original payment type directly
           is_business_accounting: true,
           branch_id: branchId || null,
           reference_id: receipt.id,
