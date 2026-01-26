@@ -373,6 +373,8 @@ export function useCreateDebtPayment() {
       if (error) throw error;
 
       // If it's a payment (not addition), also create cash book entry
+      // Note: is_business_accounting = false because this is just cash flow from debt collection/payment
+      // The actual revenue/expense was already recorded when the original sale/purchase was made
       if (payment.payment_type === 'payment' && payment.payment_source) {
         const cashBookType = payment.entity_type === 'customer' ? 'income' as const : 'expense' as const;
         
@@ -382,7 +384,7 @@ export function useCreateDebtPayment() {
           description: payment.description,
           amount: payment.amount,
           payment_source: payment.payment_source,
-          is_business_accounting: true,
+          is_business_accounting: false, // Không tính hạch toán kinh doanh - chỉ là dòng tiền
           branch_id: payment.branch_id || null,
           reference_id: data.id,
           reference_type: 'debt_payment',
