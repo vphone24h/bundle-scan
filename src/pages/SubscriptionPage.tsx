@@ -13,6 +13,7 @@ import {
   useCurrentTenant, 
   useSubscriptionPlans, 
   useCreatePaymentRequest,
+  useCancelPaymentRequest,
   usePaymentRequests,
   useSubscriptionHistory,
   calculateRemainingDays 
@@ -26,7 +27,9 @@ import {
   Copy,
   CheckCircle,
   Phone,
-  QrCode
+  QrCode,
+  Trash2,
+  XCircle
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { formatNumber } from '@/lib/formatNumber';
@@ -101,9 +104,10 @@ const bankCodes: Record<string, string> = {
 export default function SubscriptionPage() {
   const { data: tenant } = useCurrentTenant();
   const { data: plans } = useSubscriptionPlans();
-  const { data: payments } = usePaymentRequests(tenant?.id);
+  const { data: payments, refetch: refetchPayments } = usePaymentRequests(tenant?.id);
   const { data: history } = useSubscriptionHistory(tenant?.id);
   const createPayment = useCreatePaymentRequest();
+  const cancelPayment = useCancelPaymentRequest();
 
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
@@ -263,9 +267,45 @@ export default function SubscriptionPage() {
               </div>
 
               {pendingPayment && (
-                <div className="bg-primary/10 text-primary px-4 py-2 rounded-lg text-sm">
-                  <p className="font-medium">Đang chờ duyệt thanh toán</p>
-                  <p className="text-xs">Mã: {pendingPayment.payment_code}</p>
+                <div className="bg-primary/10 text-primary px-4 py-3 rounded-lg">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-medium">Đang chờ duyệt thanh toán</p>
+                      <p className="text-xs">Mã: {pendingPayment.payment_code}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={async () => {
+                        if (confirm('Bạn có chắc muốn hủy yêu cầu thanh toán này?')) {
+                          try {
+                            await cancelPayment.mutateAsync(pendingPayment.id);
+                            toast({
+                              title: 'Đã hủy yêu cầu',
+                              description: 'Bạn có thể tạo yêu cầu thanh toán mới',
+                            });
+                          } catch (error: any) {
+                            toast({
+                              title: 'Lỗi',
+                              description: error.message,
+                              variant: 'destructive',
+                            });
+                          }
+                        }
+                      }}
+                      disabled={cancelPayment.isPending}
+                    >
+                      {cancelPayment.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Hủy
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

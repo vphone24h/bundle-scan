@@ -201,6 +201,37 @@ export function useCreatePaymentRequest() {
   });
 }
 
+// Cancel/Delete pending payment request
+export function useCancelPaymentRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (paymentId: string) => {
+      // Only allow cancelling pending payments
+      const { data: payment, error: fetchError } = await supabase
+        .from('payment_requests')
+        .select('status')
+        .eq('id', paymentId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (payment.status !== 'pending') {
+        throw new Error('Chỉ có thể hủy yêu cầu đang chờ duyệt');
+      }
+
+      const { error } = await supabase
+        .from('payment_requests')
+        .update({ status: 'cancelled' as any })
+        .eq('id', paymentId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payment-requests'] });
+    },
+  });
+}
+
 // Approve/Reject payment (platform admin)
 export function useApprovePayment() {
   const queryClient = useQueryClient();
