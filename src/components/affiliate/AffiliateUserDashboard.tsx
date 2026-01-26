@@ -180,6 +180,8 @@ export function AffiliateUserDashboard() {
 
   // Chưa đăng ký affiliate
   if (!affiliate) {
+    const description = (settings as any)?.commission_description;
+    
     return (
       <Card>
         <CardHeader>
@@ -192,6 +194,13 @@ export function AffiliateUserDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Mô tả từ admin */}
+          {description && (
+            <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+              <p className="text-sm whitespace-pre-wrap">{description}</p>
+            </div>
+          )}
+          
           <div className="grid gap-4 md:grid-cols-3">
             <div className="flex items-start gap-3 p-4 rounded-lg border">
               <Link2 className="h-8 w-8 text-primary shrink-0" />
