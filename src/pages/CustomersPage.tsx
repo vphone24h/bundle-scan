@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { usePagination } from '@/hooks/usePagination';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +61,9 @@ export default function CustomersPage() {
   });
 
   const { data: branches } = useBranches();
+
+  // Pagination
+  const pagination = usePagination(customers || [], { storageKey: 'customers' });
 
   const handleViewDetail = (customerId: string) => {
     setSelectedCustomerId(customerId);
@@ -240,7 +245,7 @@ export default function CustomersPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  customers?.map((customer) => (
+                  pagination.paginatedData.map((customer) => (
                     <TableRow key={customer.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewDetail(customer.id)}>
                       <TableCell>
                         <div>
@@ -314,6 +319,19 @@ export default function CustomersPage() {
               </TableBody>
             </Table>
           </div>
+          
+          {(customers?.length || 0) > 0 && (
+            <TablePagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              pageSize={pagination.pageSize}
+              totalItems={pagination.totalItems}
+              startIndex={pagination.startIndex}
+              endIndex={pagination.endIndex}
+              onPageChange={pagination.setPage}
+              onPageSizeChange={pagination.setPageSize}
+            />
+          )}
         </CardContent>
       </Card>
 

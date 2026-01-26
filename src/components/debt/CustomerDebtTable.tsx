@@ -4,6 +4,8 @@ import { formatNumber } from '@/lib/formatNumber';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { usePagination } from '@/hooks/usePagination';
+import { TablePagination } from '@/components/ui/table-pagination';
 import {
   Table,
   TableBody,
@@ -33,6 +35,9 @@ export function CustomerDebtTable({ showSettled }: CustomerDebtTableProps) {
   const [showDetail, setShowDetail] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showAddition, setShowAddition] = useState(false);
+
+  // Pagination
+  const pagination = usePagination(debts || [], { storageKey: 'customer-debt' });
 
   const handleViewDetail = (debt: DebtSummary) => {
     setSelectedDebt(debt);
@@ -89,7 +94,7 @@ export function CustomerDebtTable({ showSettled }: CustomerDebtTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {debts.map((debt) => (
+            {pagination.paginatedData.map((debt) => (
               <TableRow key={debt.entity_id}>
                 <TableCell>
                   <div>
@@ -165,6 +170,19 @@ export function CustomerDebtTable({ showSettled }: CustomerDebtTableProps) {
           </TableBody>
         </Table>
       </div>
+
+      {(debts?.length || 0) > 0 && (
+        <TablePagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          pageSize={pagination.pageSize}
+          totalItems={pagination.totalItems}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          onPageChange={pagination.setPage}
+          onPageSizeChange={pagination.setPageSize}
+        />
+      )}
 
       {/* Dialogs */}
       {selectedDebt && (

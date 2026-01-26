@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Download, Search, Loader2, X, FolderOpen } from 'lucide-react';
+import { usePagination } from '@/hooks/usePagination';
+import { TablePagination } from '@/components/ui/table-pagination';
 import {
   Table,
   TableBody,
@@ -59,6 +61,9 @@ export function DetailedProfitTable() {
   };
 
   const { data, isLoading } = useDetailedProfitReport(filters);
+
+  // Pagination
+  const pagination = usePagination(data?.items || [], { storageKey: 'detailed-profit' });
 
   // Handle time preset
   const handleTimePreset = (preset: string) => {
@@ -335,7 +340,7 @@ export function DetailedProfitTable() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.items.map((item) => {
+                  {pagination.paginatedData.map((item) => {
                     const margin = item.salePrice > 0 ? ((item.profit / item.salePrice) * 100).toFixed(1) : '0';
                     const isReturn = item.status === 'returned';
                     
@@ -442,6 +447,19 @@ export function DetailedProfitTable() {
                 </TableBody>
               </Table>
             </div>
+          )}
+          
+          {(data?.items?.length || 0) > 0 && (
+            <TablePagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              pageSize={pagination.pageSize}
+              totalItems={pagination.totalItems}
+              startIndex={pagination.startIndex}
+              endIndex={pagination.endIndex}
+              onPageChange={pagination.setPage}
+              onPageSizeChange={pagination.setPageSize}
+            />
           )}
         </CardContent>
       </Card>
