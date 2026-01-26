@@ -61,6 +61,7 @@ export default function ImportNewPage() {
   const [cart, setCart] = useState<ImportReceiptItem[]>([]);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
 
@@ -225,6 +226,10 @@ export default function ImportNewPage() {
   };
 
   const handlePaymentConfirm = async (payments: PaymentSource[]) => {
+    // Prevent double submission
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
     try {
       await createImportReceipt.mutateAsync({
         products: cart.map(item => ({
@@ -258,6 +263,8 @@ export default function ImportNewPage() {
         description: error.message,
         variant: 'destructive',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -544,9 +551,10 @@ export default function ImportNewPage() {
       {/* Payment Dialog */}
       <PaymentDialog
         open={paymentOpen}
-        onClose={() => setPaymentOpen(false)}
+        onClose={() => !isSubmitting && setPaymentOpen(false)}
         totalAmount={totalAmount}
         onConfirm={handlePaymentConfirm}
+        isSubmitting={isSubmitting}
       />
 
       {/* Excel Import Dialog */}

@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Banknote, CreditCard, Wallet, Clock, AlertCircle } from 'lucide-react';
+import { Banknote, CreditCard, Wallet, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PaymentDialogProps {
@@ -20,6 +20,7 @@ interface PaymentDialogProps {
   onClose: () => void;
   totalAmount: number;
   onConfirm: (payments: PaymentSource[]) => void;
+  isSubmitting?: boolean;
 }
 
 type PaymentType = 'cash' | 'bank_card' | 'e_wallet' | 'debt';
@@ -31,7 +32,7 @@ const paymentOptions: { type: PaymentType; label: string; icon: React.ReactNode 
   { type: 'debt', label: 'Công nợ', icon: <Clock className="h-5 w-5" /> },
 ];
 
-export function PaymentDialog({ open, onClose, totalAmount, onConfirm }: PaymentDialogProps) {
+export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitting = false }: PaymentDialogProps) {
   const [selectedTypes, setSelectedTypes] = useState<PaymentType[]>(['cash']);
   const [amounts, setAmounts] = useState<Record<PaymentType, number>>({
     cash: totalAmount,
@@ -159,11 +160,18 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm }: Payment
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             Huỷ
           </Button>
-          <Button onClick={handleConfirm} disabled={!isValid}>
-            Xác nhận thanh toán
+          <Button onClick={handleConfirm} disabled={!isValid || isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Đang xử lý...
+              </>
+            ) : (
+              'Xác nhận thanh toán'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
