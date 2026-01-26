@@ -114,17 +114,19 @@ export function useCheckIMEI() {
       if (!tenantId) throw new Error('Không tìm thấy tenant');
 
       // Kiểm tra IMEI trong phạm vi TENANT với các status: in_stock, sold, returned
-      // Đồng bộ với logic trong useCreateImportReceipt
+      // Sử dụng .select() thay vì .maybeSingle() vì có thể có nhiều bản ghi cùng IMEI
       const { data, error } = await supabase
         .from('products')
         .select('id, name, sku, status')
         .eq('imei', imei)
         .eq('tenant_id', tenantId)
         .in('status', ['in_stock', 'sold', 'returned'])
-        .maybeSingle();
+        .limit(1);
 
       if (error) throw error;
-      return data;
+      
+      // Trả về bản ghi đầu tiên nếu có
+      return data && data.length > 0 ? data[0] : null;
     },
   });
 }
