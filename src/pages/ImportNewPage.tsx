@@ -3,6 +3,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ImportCart } from '@/components/import/ImportCart';
 import { PaymentDialog } from '@/components/import/PaymentDialog';
+import { ExcelImportDialog } from '@/components/import/ExcelImportDialog';
 import { useCategories, useCreateCategory } from '@/hooks/useCategories';
 import { useSuppliers, useCreateSupplier } from '@/hooks/useSuppliers';
 import { useProducts, useCheckIMEI } from '@/hooks/useProducts';
@@ -32,6 +33,7 @@ import {
 import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { downloadImportTemplate } from '@/lib/excelTemplates';
 
 export default function ImportNewPage() {
   const navigate = useNavigate();
@@ -58,6 +60,7 @@ export default function ImportNewPage() {
 
   const [cart, setCart] = useState<ImportReceiptItem[]>([]);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
 
@@ -259,10 +262,15 @@ export default function ImportNewPage() {
   };
 
   const handleExportTemplate = () => {
+    downloadImportTemplate();
     toast({
-      title: 'Tải file mẫu',
-      description: 'File Excel mẫu đang được tải xuống...',
+      title: 'Tải file mẫu thành công',
+      description: 'File Excel mẫu đã được tải xuống',
     });
+  };
+
+  const handleExcelImport = (items: ImportReceiptItem[]) => {
+    setCart(prev => [...prev, ...items]);
   };
 
   const handleAddNewSupplier = async () => {
@@ -312,7 +320,7 @@ export default function ImportNewPage() {
               <Download className="mr-2 h-4 w-4" />
               Tải file mẫu
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => setExcelImportOpen(true)}>
               <FileSpreadsheet className="mr-2 h-4 w-4" />
               Nhập từ Excel
             </Button>
@@ -539,6 +547,21 @@ export default function ImportNewPage() {
         onClose={() => setPaymentOpen(false)}
         totalAmount={totalAmount}
         onConfirm={handlePaymentConfirm}
+      />
+
+      {/* Excel Import Dialog */}
+      <ExcelImportDialog
+        open={excelImportOpen}
+        onOpenChange={setExcelImportOpen}
+        categories={categories?.map(c => ({ id: c.id, name: c.name })) || []}
+        onImport={handleExcelImport}
+        checkIMEI={async (imei: string) => {
+          try {
+            return await checkIMEI.mutateAsync(imei);
+          } catch {
+            return null;
+          }
+        }}
       />
 
       {/* Add Supplier Dialog */}
