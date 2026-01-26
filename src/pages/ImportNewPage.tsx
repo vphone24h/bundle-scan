@@ -3,7 +3,10 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ImportCart } from '@/components/import/ImportCart';
 import { PaymentDialog } from '@/components/import/PaymentDialog';
-import { mockCategories, mockSuppliers, mockProducts } from '@/lib/mockData';
+import { useCategories, useCreateCategory } from '@/hooks/useCategories';
+import { useSuppliers, useCreateSupplier } from '@/hooks/useSuppliers';
+import { useProducts, useCheckIMEI } from '@/hooks/useProducts';
+import { useCreateImportReceipt } from '@/hooks/useImportReceipts';
 import { ImportReceiptItem, PaymentSource } from '@/types/warehouse';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,12 +26,20 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { FileSpreadsheet, Download, Plus, ShoppingCart } from 'lucide-react';
+import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 
 export default function ImportNewPage() {
   const navigate = useNavigate();
+  const { data: categories } = useCategories();
+  const { data: suppliers } = useSuppliers();
+  const { data: products } = useProducts();
+  const createCategory = useCreateCategory();
+  const createSupplier = useCreateSupplier();
+  const createImportReceipt = useCreateImportReceipt();
+  const checkIMEI = useCheckIMEI();
+
   const [cart, setCart] = useState<ImportReceiptItem[]>([]);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
@@ -50,7 +61,7 @@ export default function ImportNewPage() {
   const [newCategoryName, setNewCategoryName] = useState('');
 
   // Suggestions
-  const [suggestions, setSuggestions] = useState<typeof mockProducts>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
   const totalAmount = useMemo(
     () => cart.reduce((sum, item) => sum + item.importPrice, 0),
@@ -59,8 +70,8 @@ export default function ImportNewPage() {
 
   const handleProductNameChange = (value: string) => {
     setForm({ ...form, productName: value });
-    if (value.length >= 1) {
-      const matches = mockProducts.filter((p) =>
+    if (value.length >= 1 && products) {
+      const matches = products.filter((p) =>
         p.name.toLowerCase().includes(value.toLowerCase())
       );
       setSuggestions(matches.slice(0, 5));
@@ -69,18 +80,18 @@ export default function ImportNewPage() {
     }
   };
 
-  const handleSelectSuggestion = (product: typeof mockProducts[0]) => {
+  const handleSelectSuggestion = (product: any) => {
     setForm({
       ...form,
       productName: product.name,
       sku: product.sku,
-      categoryId: product.categoryId,
-      supplierId: product.supplierId,
+      categoryId: product.category_id || '',
+      supplierId: product.supplier_id || '',
     });
     setSuggestions([]);
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!form.productName || !form.sku || !form.categoryId || !form.importPrice || !form.supplierId) {
       toast({
         title: 'Thiếu thông tin',
@@ -90,8 +101,32 @@ export default function ImportNewPage() {
       return;
     }
 
-    const category = mockCategories.find((c) => c.id === form.categoryId);
-    const supplier = mockSuppliers.find((s) => s.id === form.supplierId);
+    // Check IMEI uniqueness
+    if (form.imei) {
+      const existingProduct = await checkIMEI.mutateAsync(form.imei);
+      if (existingProduct) {
+        toast({
+          title: 'IMEI đã tồn tại',
+          description: `Sản phẩm "${existingProduct.name}" đang có IMEI này trong kho`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Also check in cart
+      const inCart = cart.find(item => item.imei === form.imei);
+      if (inCart) {
+        toast({
+          title: 'IMEI trùng trong giỏ',
+          description: 'IMEI này đã được thêm vào giỏ nhập hàng',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    const category = categories?.find((c) => c.id === form.categoryId);
+    const supplier = suppliers?.find((s) => s.id === form.supplierId);
 
     const newItem: ImportReceiptItem = {
       id: String(Date.now()),
@@ -138,15 +173,42 @@ export default function ImportNewPage() {
     setPaymentOpen(true);
   };
 
-  const handlePaymentConfirm = (payments: PaymentSource[]) => {
-    console.log('Import completed:', { cart, payments, totalAmount });
-    toast({
-      title: 'Nhập hàng thành công!',
-      description: `Đã nhập ${cart.length} sản phẩm với tổng giá trị ${totalAmount.toLocaleString('vi-VN')} VND`,
-    });
-    setPaymentOpen(false);
-    setCart([]);
-    navigate('/import/history');
+  const handlePaymentConfirm = async (payments: PaymentSource[]) => {
+    try {
+      // Get the main supplier (first item's supplier)
+      const mainSupplierId = cart[0]?.supplierId || null;
+
+      await createImportReceipt.mutateAsync({
+        products: cart.map(item => ({
+          name: item.productName,
+          sku: item.sku,
+          imei: item.imei || null,
+          category_id: item.categoryId || null,
+          import_price: item.importPrice,
+          supplier_id: item.supplierId || null,
+          note: item.note || null,
+        })),
+        payments: payments.map(p => ({
+          type: p.type as 'cash' | 'bank_card' | 'e_wallet' | 'debt',
+          amount: p.amount,
+        })),
+        supplierId: mainSupplierId,
+      });
+
+      toast({
+        title: 'Nhập hàng thành công!',
+        description: `Đã nhập ${cart.length} sản phẩm với tổng giá trị ${totalAmount.toLocaleString('vi-VN')} VND`,
+      });
+      setPaymentOpen(false);
+      setCart([]);
+      navigate('/import/history');
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi nhập hàng',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleExportTemplate = () => {
@@ -154,6 +216,34 @@ export default function ImportNewPage() {
       title: 'Tải file mẫu',
       description: 'File Excel mẫu đang được tải xuống...',
     });
+  };
+
+  const handleAddNewSupplier = async () => {
+    if (!newSupplierForm.name.trim()) return;
+    try {
+      await createSupplier.mutateAsync({
+        name: newSupplierForm.name.trim(),
+        phone: newSupplierForm.phone.trim() || null,
+        address: newSupplierForm.address.trim() || null,
+      });
+      toast({ title: 'Đã thêm nhà cung cấp', description: newSupplierForm.name });
+      setSupplierDialogOpen(false);
+      setNewSupplierForm({ name: '', phone: '', address: '' });
+    } catch (error: any) {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleAddNewCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    try {
+      await createCategory.mutateAsync({ name: newCategoryName.trim() });
+      toast({ title: 'Đã thêm danh mục', description: newCategoryName });
+      setCategoryDialogOpen(false);
+      setNewCategoryName('');
+    } catch (error: any) {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    }
   };
 
   return (
@@ -242,9 +332,9 @@ export default function ImportNewPage() {
                         <SelectValue placeholder="Chọn danh mục" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        {mockCategories.map((cat) => (
+                        {categories?.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
-                            {cat.parentId ? `— ${cat.name}` : cat.name}
+                            {cat.parent_id ? `— ${cat.name}` : cat.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -284,7 +374,7 @@ export default function ImportNewPage() {
                         <SelectValue placeholder="Chọn nhà cung cấp" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        {mockSuppliers.map((sup) => (
+                        {suppliers?.map((sup) => (
                           <SelectItem key={sup.id} value={sup.id}>
                             {sup.name}
                           </SelectItem>
@@ -380,13 +470,10 @@ export default function ImportNewPage() {
               Huỷ
             </Button>
             <Button
-              onClick={() => {
-                toast({ title: 'Đã thêm nhà cung cấp', description: newSupplierForm.name });
-                setSupplierDialogOpen(false);
-                setNewSupplierForm({ name: '', phone: '', address: '' });
-              }}
-              disabled={!newSupplierForm.name.trim()}
+              onClick={handleAddNewSupplier}
+              disabled={!newSupplierForm.name.trim() || createSupplier.isPending}
             >
+              {createSupplier.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Thêm mới
             </Button>
           </DialogFooter>
@@ -412,13 +499,10 @@ export default function ImportNewPage() {
               Huỷ
             </Button>
             <Button
-              onClick={() => {
-                toast({ title: 'Đã thêm danh mục', description: newCategoryName });
-                setCategoryDialogOpen(false);
-                setNewCategoryName('');
-              }}
-              disabled={!newCategoryName.trim()}
+              onClick={handleAddNewCategory}
+              disabled={!newCategoryName.trim() || createCategory.isPending}
             >
+              {createCategory.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Thêm mới
             </Button>
           </DialogFooter>

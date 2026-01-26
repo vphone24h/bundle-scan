@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { mockSuppliers, formatDate } from '@/lib/mockData';
-import { Supplier } from '@/types/warehouse';
+import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier, Supplier } from '@/hooks/useSuppliers';
+import { formatDate } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,10 +20,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Pencil, Trash2, Phone, MapPin, Search } from 'lucide-react';
+import { Plus, MoreHorizontal, Pencil, Trash2, Phone, MapPin, Search, Loader2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 export default function SuppliersPage() {
-  const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
+  const { data: suppliers, isLoading } = useSuppliers();
+  const createSupplier = useCreateSupplier();
+  const updateSupplier = useUpdateSupplier();
+  const deleteSupplier = useDeleteSupplier();
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editSupplier, setEditSupplier] = useState<Supplier | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,11 +39,11 @@ export default function SuppliersPage() {
     note: '',
   });
 
-  const filteredSuppliers = suppliers.filter(
+  const filteredSuppliers = suppliers?.filter(
     (s) =>
       s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.phone?.includes(searchTerm)
-  );
+  ) || [];
 
   const handleAdd = () => {
     setEditSupplier(null);
@@ -57,36 +62,54 @@ export default function SuppliersPage() {
     setDialogOpen(true);
   };
 
-  const handleDelete = (supplier: Supplier) => {
+  const handleDelete = async (supplier: Supplier) => {
     if (confirm(`Bạn có chắc muốn xoá nhà cung cấp "${supplier.name}"?`)) {
-      setSuppliers(suppliers.filter((s) => s.id !== supplier.id));
+      try {
+        await deleteSupplier.mutateAsync(supplier.id);
+        toast({ title: 'Đã xoá nhà cung cấp' });
+      } catch (error: any) {
+        toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+      }
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) return;
 
-    if (editSupplier) {
-      setSuppliers(
-        suppliers.map((s) =>
-          s.id === editSupplier.id
-            ? { ...s, ...form }
-            : s
-        )
-      );
-    } else {
-      const newSupplier: Supplier = {
-        id: String(Date.now()),
-        name: form.name.trim(),
-        phone: form.phone.trim() || undefined,
-        address: form.address.trim() || undefined,
-        note: form.note.trim() || undefined,
-        createdAt: new Date(),
-      };
-      setSuppliers([...suppliers, newSupplier]);
+    try {
+      if (editSupplier) {
+        await updateSupplier.mutateAsync({
+          id: editSupplier.id,
+          name: form.name.trim(),
+          phone: form.phone.trim() || null,
+          address: form.address.trim() || null,
+          note: form.note.trim() || null,
+        });
+        toast({ title: 'Đã cập nhật nhà cung cấp' });
+      } else {
+        await createSupplier.mutateAsync({
+          name: form.name.trim(),
+          phone: form.phone.trim() || null,
+          address: form.address.trim() || null,
+          note: form.note.trim() || null,
+        });
+        toast({ title: 'Đã thêm nhà cung cấp mới' });
+      }
+      setDialogOpen(false);
+    } catch (error: any) {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
     }
-    setDialogOpen(false);
   };
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -121,7 +144,7 @@ export default function SuppliersPage() {
                 <div>
                   <h3 className="font-semibold">{supplier.name}</h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Thêm: {formatDate(supplier.createdAt)}
+                    Thêm: {formatDate(new Date(supplier.created_at))}
                   </p>
                 </div>
                 <DropdownMenu>
@@ -233,7 +256,13 @@ export default function SuppliersPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Huỷ
             </Button>
-            <Button onClick={handleSave} disabled={!form.name.trim()}>
+            <Button 
+              onClick={handleSave} 
+              disabled={!form.name.trim() || createSupplier.isPending || updateSupplier.isPending}
+            >
+              {(createSupplier.isPending || updateSupplier.isPending) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               {editSupplier ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </DialogFooter>

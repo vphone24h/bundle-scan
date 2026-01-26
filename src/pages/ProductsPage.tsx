@@ -3,8 +3,8 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProductTable } from '@/components/products/ProductTable';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
-import { mockProducts, mockCategories } from '@/lib/mockData';
-import { Product } from '@/types/warehouse';
+import { useProducts, Product } from '@/hooks/useProducts';
+import { useCategories } from '@/hooks/useCategories';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -14,18 +14,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Barcode, Filter } from 'lucide-react';
+import { Search, Barcode, Loader2 } from 'lucide-react';
+
+// Map Product to the format expected by ProductTable
+function mapProductForTable(product: Product) {
+  return {
+    id: product.id,
+    name: product.name,
+    sku: product.sku,
+    imei: product.imei || undefined,
+    categoryId: product.category_id || '',
+    categoryName: product.categories?.name,
+    importPrice: Number(product.import_price),
+    importDate: new Date(product.import_date),
+    supplierId: product.supplier_id || '',
+    supplierName: product.suppliers?.name,
+    status: product.status as 'in_stock' | 'sold' | 'returned',
+    note: product.note || undefined,
+    importReceiptId: product.import_receipt_id || undefined,
+  };
+}
 
 export default function ProductsPage() {
-  const [products] = useState<Product[]>(mockProducts);
+  const { data: products, isLoading } = useProducts();
+  const { data: categories } = useCategories();
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [barcodeOpen, setBarcodeOpen] = useState(false);
-  const [productsForBarcode, setProductsForBarcode] = useState<Product[]>([]);
+  const [productsForBarcode, setProductsForBarcode] = useState<any[]>([]);
 
-  const filteredProducts = products.filter((p) => {
+  const mappedProducts = products?.map(mapProductForTable) || [];
+
+  const filteredProducts = mappedProducts.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -35,23 +57,29 @@ export default function ProductsPage() {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const handleEdit = (product: Product) => {
+  const handleEdit = (product: any) => {
     console.log('Edit product:', product);
-    // TODO: Open edit dialog
   };
 
-  const handlePrintBarcode = (products: Product[]) => {
-    setProductsForBarcode(products);
+  const handlePrintBarcode = (prods: any[]) => {
+    setProductsForBarcode(prods);
     setBarcodeOpen(true);
   };
 
   const handlePrintSelected = () => {
-    const selected = products.filter((p) => selectedProducts.includes(p.id));
+    const selected = mappedProducts.filter((p) => selectedProducts.includes(p.id));
     handlePrintBarcode(selected);
   };
 
-  // Get unique parent categories
-  const parentCategories = mockCategories.filter((c) => !c.parentId);
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -86,9 +114,9 @@ export default function ProductsPage() {
             </SelectTrigger>
             <SelectContent className="bg-popover">
               <SelectItem value="all">Tất cả danh mục</SelectItem>
-              {mockCategories.map((cat) => (
+              {categories?.map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
-                  {cat.parentId ? `— ${cat.name}` : cat.name}
+                  {cat.parent_id ? `— ${cat.name}` : cat.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -109,7 +137,7 @@ export default function ProductsPage() {
         {/* Results info */}
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Hiển thị {filteredProducts.length} / {products.length} sản phẩm
+            Hiển thị {filteredProducts.length} / {mappedProducts.length} sản phẩm
           </p>
           {selectedProducts.length > 0 && (
             <p className="text-sm font-medium text-primary">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Package,
@@ -7,15 +7,23 @@ import {
   FileDown,
   History,
   Users,
-  Barcode,
-  ChevronDown,
-  ChevronRight,
   Menu,
   X,
   Warehouse,
+  LogOut,
+  User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { useProfile, useUserRole } from '@/hooks/useProfile';
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface NavItem {
   title: string;
@@ -42,6 +50,10 @@ const navItems: NavItem[] = [
 
 export function AppSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut, user } = useAuth();
+  const { data: profile } = useProfile();
+  const { data: userRole } = useUserRole();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Nhập hàng']);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -54,6 +66,11 @@ export function AppSidebar() {
   const isActive = (href: string) => {
     if (href === '/') return location.pathname === '/';
     return location.pathname.startsWith(href);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
   };
 
   const NavContent = () => (
@@ -86,11 +103,14 @@ export function AppSidebar() {
                 >
                   <item.icon className="h-5 w-5" />
                   <span className="flex-1 text-left">{item.title}</span>
-                  {expandedItems.includes(item.title) ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
+                  <svg
+                    className={cn('h-4 w-4 transition-transform', expandedItems.includes(item.title) && 'rotate-180')}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
                 {expandedItems.includes(item.title) && (
                   <div className="ml-4 mt-1 space-y-1 animate-fade-in">
@@ -134,17 +154,33 @@ export function AppSidebar() {
         ))}
       </nav>
 
-      {/* Footer */}
+      {/* Footer - User info */}
       <div className="px-4 py-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-sidebar-accent flex items-center justify-center">
-            <span className="text-sm font-medium text-sidebar-foreground">NV</span>
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-sidebar-foreground">Nhân viên</p>
-            <p className="text-xs text-sidebar-muted">admin@khohang.vn</p>
-          </div>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent/50 transition-colors">
+              <div className="h-9 w-9 rounded-full bg-sidebar-accent flex items-center justify-center">
+                <User className="h-4 w-4 text-sidebar-foreground" />
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">
+                  {profile?.display_name || user?.email?.split('@')[0]}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-sidebar-muted text-sidebar-muted">
+                    {userRole?.role === 'admin' ? 'Admin' : 'Nhân viên'}
+                  </Badge>
+                </div>
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 bg-popover">
+            <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+              <LogOut className="mr-2 h-4 w-4" />
+              Đăng xuất
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </>
   );

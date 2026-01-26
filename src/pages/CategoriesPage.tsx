@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { CategoryTree } from '@/components/categories/CategoryTree';
-import { mockCategories } from '@/lib/mockData';
-import { Category } from '@/types/warehouse';
+import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, Category } from '@/hooks/useCategories';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,13 +20,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, FolderPlus } from 'lucide-react';
+import { FolderPlus, Loader2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>(mockCategories);
+  const { data: categories, isLoading } = useCategories();
+  const createCategory = useCreateCategory();
+  const updateCategory = useUpdateCategory();
+  const deleteCategory = useDeleteCategory();
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editCategory, setEditCategory] = useState<Category | null>(null);
-  const [parentId, setParentId] = useState<string>('');
+  const [parentId, setParentId] = useState<string>('_none_');
   const [name, setName] = useState('');
 
   const handleAdd = () => {
@@ -46,42 +50,68 @@ export default function CategoriesPage() {
 
   const handleEdit = (category: Category) => {
     setEditCategory(category);
-    setParentId(category.parentId || '_none_');
+    setParentId(category.parent_id || '_none_');
     setName(category.name);
     setDialogOpen(true);
   };
 
-  const handleDelete = (category: Category) => {
+  const handleDelete = async (category: Category) => {
     if (confirm(`Bạn có chắc muốn xoá danh mục "${category.name}"?`)) {
-      setCategories(categories.filter((c) => c.id !== category.id && c.parentId !== category.id));
+      try {
+        await deleteCategory.mutateAsync(category.id);
+        toast({ title: 'Đã xoá danh mục' });
+      } catch (error: any) {
+        toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+      }
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) return;
 
-    if (editCategory) {
-      setCategories(
-        categories.map((c) =>
-          c.id === editCategory.id
-            ? { ...c, name: name.trim(), parentId: parentId === '_none_' ? undefined : parentId || undefined }
-            : c
-        )
-      );
-    } else {
-      const newCategory: Category = {
-        id: String(Date.now()),
-        name: name.trim(),
-        parentId: parentId === '_none_' ? undefined : parentId || undefined,
-        createdAt: new Date(),
-      };
-      setCategories([...categories, newCategory]);
+    try {
+      const parentIdValue = parentId === '_none_' ? null : parentId;
+      
+      if (editCategory) {
+        await updateCategory.mutateAsync({
+          id: editCategory.id,
+          name: name.trim(),
+          parent_id: parentIdValue,
+        });
+        toast({ title: 'Đã cập nhật danh mục' });
+      } else {
+        await createCategory.mutateAsync({
+          name: name.trim(),
+          parent_id: parentIdValue,
+        });
+        toast({ title: 'Đã thêm danh mục mới' });
+      }
+      setDialogOpen(false);
+    } catch (error: any) {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
     }
-    setDialogOpen(false);
   };
 
   // Get only parent categories for the select
-  const parentOptions = categories.filter((c) => !c.parentId);
+  const parentOptions = categories?.filter((c) => !c.parent_id) || [];
+
+  // Map to old Category format for CategoryTree
+  const mappedCategories = categories?.map(c => ({
+    id: c.id,
+    name: c.name,
+    parentId: c.parent_id || undefined,
+    createdAt: new Date(c.created_at),
+  })) || [];
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -99,9 +129,9 @@ export default function CategoriesPage() {
       <div className="p-6 lg:p-8">
         <div className="bg-card border rounded-xl p-4">
           <CategoryTree
-            categories={categories}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
+            categories={mappedCategories}
+            onEdit={(cat) => handleEdit(categories?.find(c => c.id === cat.id) as Category)}
+            onDelete={(cat) => handleDelete(categories?.find(c => c.id === cat.id) as Category)}
             onAddChild={handleAddChild}
           />
         </div>
@@ -151,7 +181,13 @@ export default function CategoriesPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Huỷ
             </Button>
-            <Button onClick={handleSave} disabled={!name.trim()}>
+            <Button 
+              onClick={handleSave} 
+              disabled={!name.trim() || createCategory.isPending || updateCategory.isPending}
+            >
+              {(createCategory.isPending || updateCategory.isPending) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               {editCategory ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </DialogFooter>
