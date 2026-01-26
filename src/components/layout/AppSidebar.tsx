@@ -5,6 +5,7 @@ import {
   Package,
   FolderTree,
   FileDown,
+  FileUp,
   History,
   Users,
   Menu,
@@ -45,6 +46,16 @@ const navItems: NavItem[] = [
       { title: 'Lịch sử nhập', href: '/import/history' },
     ],
   },
+  {
+    title: 'Xuất hàng',
+    href: '/export',
+    icon: FileUp,
+    children: [
+      { title: 'Tạo phiếu xuất', href: '/export/new' },
+      { title: 'Lịch sử xuất', href: '/export/history' },
+      { title: 'Mẫu in hóa đơn', href: '/export/template' },
+    ],
+  },
   { title: 'Nhà cung cấp', href: '/suppliers', icon: Users },
 ];
 
@@ -54,7 +65,7 @@ export function AppSidebar() {
   const { signOut, user } = useAuth();
   const { data: profile } = useProfile();
   const { data: userRole } = useUserRole();
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Nhập hàng']);
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Nhập hàng', 'Xuất hàng']);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const toggleExpand = (title: string) => {

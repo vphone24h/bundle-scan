@@ -46,6 +46,245 @@ export type Database = {
           },
         ]
       }
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          note: string | null
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          note?: string | null
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          note?: string | null
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      export_receipt_items: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          id: string
+          imei: string | null
+          note: string | null
+          product_id: string | null
+          product_name: string
+          receipt_id: string
+          sale_price: number
+          sku: string
+          status: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          imei?: string | null
+          note?: string | null
+          product_id?: string | null
+          product_name: string
+          receipt_id: string
+          sale_price: number
+          sku: string
+          status?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          imei?: string | null
+          note?: string | null
+          product_id?: string | null
+          product_name?: string
+          receipt_id?: string
+          sale_price?: number
+          sku?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_receipt_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_receipt_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_receipt_items_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "export_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      export_receipt_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          payment_type: string
+          receipt_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          payment_type: string
+          receipt_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_type?: string
+          receipt_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_receipt_payments_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "export_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      export_receipts: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          debt_amount: number
+          export_date: string
+          id: string
+          note: string | null
+          paid_amount: number
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          debt_amount?: number
+          export_date?: string
+          id?: string
+          note?: string | null
+          paid_amount?: number
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          debt_amount?: number
+          export_date?: string
+          id?: string
+          note?: string | null
+          paid_amount?: number
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_receipts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      imei_histories: {
+        Row: {
+          action_type: string
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          id: string
+          imei: string
+          note: string | null
+          price: number | null
+          product_id: string
+          reference_id: string | null
+          reference_type: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          imei: string
+          note?: string | null
+          price?: number | null
+          product_id: string
+          reference_id?: string | null
+          reference_type?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          imei?: string
+          note?: string | null
+          price?: number | null
+          product_id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imei_histories_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imei_histories_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_receipts: {
         Row: {
           code: string
@@ -98,6 +337,102 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      invoice_templates: {
+        Row: {
+          created_at: string
+          field_order: Json | null
+          font_size: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          paper_size: string
+          show_customer_info: boolean | null
+          show_debt: boolean | null
+          show_imei: boolean | null
+          show_logo: boolean | null
+          show_note: boolean | null
+          show_paid_amount: boolean | null
+          show_product_name: boolean | null
+          show_receipt_code: boolean | null
+          show_sale_date: boolean | null
+          show_sale_price: boolean | null
+          show_sku: boolean | null
+          show_store_address: boolean | null
+          show_store_name: boolean | null
+          show_store_phone: boolean | null
+          show_thank_you: boolean | null
+          show_total: boolean | null
+          store_address: string | null
+          store_name: string | null
+          store_phone: string | null
+          text_align: string | null
+          thank_you_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          field_order?: Json | null
+          font_size?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          paper_size?: string
+          show_customer_info?: boolean | null
+          show_debt?: boolean | null
+          show_imei?: boolean | null
+          show_logo?: boolean | null
+          show_note?: boolean | null
+          show_paid_amount?: boolean | null
+          show_product_name?: boolean | null
+          show_receipt_code?: boolean | null
+          show_sale_date?: boolean | null
+          show_sale_price?: boolean | null
+          show_sku?: boolean | null
+          show_store_address?: boolean | null
+          show_store_name?: boolean | null
+          show_store_phone?: boolean | null
+          show_thank_you?: boolean | null
+          show_total?: boolean | null
+          store_address?: string | null
+          store_name?: string | null
+          store_phone?: string | null
+          text_align?: string | null
+          thank_you_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          field_order?: Json | null
+          font_size?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          paper_size?: string
+          show_customer_info?: boolean | null
+          show_debt?: boolean | null
+          show_imei?: boolean | null
+          show_logo?: boolean | null
+          show_note?: boolean | null
+          show_paid_amount?: boolean | null
+          show_product_name?: boolean | null
+          show_receipt_code?: boolean | null
+          show_sale_date?: boolean | null
+          show_sale_price?: boolean | null
+          show_sku?: boolean | null
+          show_store_address?: boolean | null
+          show_store_name?: boolean | null
+          show_store_phone?: boolean | null
+          show_thank_you?: boolean | null
+          show_total?: boolean | null
+          store_address?: string | null
+          store_name?: string | null
+          store_phone?: string | null
+          text_align?: string | null
+          thank_you_text?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       products: {
         Row: {

@@ -12,6 +12,9 @@ import CategoriesPage from "./pages/CategoriesPage";
 import SuppliersPage from "./pages/SuppliersPage";
 import ImportNewPage from "./pages/ImportNewPage";
 import ImportHistoryPage from "./pages/ImportHistoryPage";
+import ExportNewPage from "./pages/ExportNewPage";
+import ExportHistoryPage from "./pages/ExportHistoryPage";
+import InvoiceTemplatePage from "./pages/InvoiceTemplatePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +34,9 @@ const App = () => (
             <Route path="/suppliers" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
             <Route path="/import/new" element={<ProtectedRoute><ImportNewPage /></ProtectedRoute>} />
             <Route path="/import/history" element={<ProtectedRoute><ImportHistoryPage /></ProtectedRoute>} />
+            <Route path="/export/new" element={<ProtectedRoute><ExportNewPage /></ProtectedRoute>} />
+            <Route path="/export/history" element={<ProtectedRoute><ExportHistoryPage /></ProtectedRoute>} />
+            <Route path="/export/template" element={<ProtectedRoute><InvoiceTemplatePage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
