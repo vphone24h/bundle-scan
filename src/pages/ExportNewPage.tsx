@@ -62,6 +62,7 @@ interface SelectedCustomer {
 interface CartItem extends ExportReceiptItem {
   tempId: string;
   categoryName?: string;
+  quantity: number;
 }
 
 export default function ExportNewPage() {
@@ -72,6 +73,7 @@ export default function ExportNewPage() {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [salePrice, setSalePrice] = useState('');
   const [itemNote, setItemNote] = useState('');
+  const [itemQuantity, setItemQuantity] = useState(1);
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -142,6 +144,7 @@ export default function ExportNewPage() {
       categoryName: result.categories?.name,
       sale_price: Number(result.import_price) || 0, // Default to import price, can be changed
       note: null,
+      quantity: 1, // IMEI products always have quantity 1
     };
 
     setCart(prev => [...prev, newItem]);
@@ -176,6 +179,7 @@ export default function ExportNewPage() {
   const handleSelectProduct = (product: any) => {
     setSelectedProduct(product);
     setSalePrice(product.import_price?.toString() || '');
+    setItemQuantity(product.imei ? 1 : 1); // Default to 1, user can change for non-IMEI
     setNameSearch('');
     setProductSuggestions([]);
   };
@@ -201,6 +205,8 @@ export default function ExportNewPage() {
       return;
     }
 
+    const quantity = selectedProduct.imei ? 1 : itemQuantity;
+    
     const newItem: CartItem = {
       tempId: Date.now().toString(),
       product_id: selectedProduct.id,
@@ -211,12 +217,14 @@ export default function ExportNewPage() {
       categoryName: selectedProduct.categories?.name,
       sale_price: parseFloat(salePrice),
       note: itemNote || null,
+      quantity: quantity,
     };
 
     setCart([...cart, newItem]);
     setSelectedProduct(null);
     setSalePrice('');
     setItemNote('');
+    setItemQuantity(1);
     
     toast({
       title: 'Đã thêm vào giỏ',
@@ -236,8 +244,16 @@ export default function ExportNewPage() {
     ));
   };
 
+  // Update cart item quantity (for non-IMEI products)
+  const handleUpdateCartQuantity = (tempId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    setCart(cart.map(item => 
+      item.tempId === tempId ? { ...item, quantity: newQuantity } : item
+    ));
+  };
+
   // Calculate totals
-  const totalAmount = cart.reduce((sum, item) => sum + item.sale_price, 0);
+  const totalAmount = cart.reduce((sum, item) => sum + (item.sale_price * item.quantity), 0);
 
   // Handle proceed to payment
   const handleProceedToPayment = () => {
@@ -438,14 +454,27 @@ export default function ExportNewPage() {
                         onChange={(val) => setSalePrice(val.toString())}
                       />
                     </div>
-                    <div>
-                      <Label>Ghi chú</Label>
-                      <Input
-                        placeholder="Ghi chú (tùy chọn)"
-                        value={itemNote}
-                        onChange={(e) => setItemNote(e.target.value)}
-                      />
-                    </div>
+                    {!selectedProduct.imei && (
+                      <div>
+                        <Label>Số lượng</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={itemQuantity}
+                          onChange={(e) => setItemQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="text-center"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Label>Ghi chú</Label>
+                    <Input
+                      placeholder="Ghi chú (tùy chọn)"
+                      value={itemNote}
+                      onChange={(e) => setItemNote(e.target.value)}
+                    />
                   </div>
 
                   <Button onClick={handleAddToCart} className="w-full">
@@ -477,7 +506,9 @@ export default function ExportNewPage() {
                       <TableHead>Sản phẩm</TableHead>
                       <TableHead className="hidden md:table-cell">IMEI/SKU</TableHead>
                       <TableHead className="hidden sm:table-cell">Danh mục</TableHead>
-                      <TableHead className="text-right">Giá bán</TableHead>
+                      <TableHead className="text-center w-20">SL</TableHead>
+                      <TableHead className="text-right">Đơn giá</TableHead>
+                      <TableHead className="text-right">Thành tiền</TableHead>
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -494,12 +525,28 @@ export default function ExportNewPage() {
                           {item.imei || item.sku}
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">{item.categoryName || '-'}</TableCell>
+                        <TableCell className="text-center">
+                          {item.imei ? (
+                            <span className="text-sm font-medium">1</span>
+                          ) : (
+                            <Input
+                              type="number"
+                              min={1}
+                              value={item.quantity}
+                              onChange={(e) => handleUpdateCartQuantity(item.tempId, Math.max(1, parseInt(e.target.value) || 1))}
+                              className="w-16 text-center h-8"
+                            />
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <PriceInput
                             value={item.sale_price}
                             onChange={(val) => handleUpdateCartPrice(item.tempId, val)}
-                            className="w-32 text-right font-medium"
+                            className="w-28 text-right font-medium"
                           />
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-primary">
+                          {formatNumber(item.sale_price * item.quantity)}đ
                         </TableCell>
                         <TableCell>
                           <Button

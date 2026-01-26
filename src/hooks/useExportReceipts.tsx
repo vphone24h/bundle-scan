@@ -10,6 +10,7 @@ export interface ExportReceiptItem {
   category_id: string | null;
   sale_price: number;
   note?: string | null;
+  quantity?: number; // For non-IMEI products
 }
 
 export interface ExportPayment {
@@ -133,7 +134,8 @@ export function useCreateExportReceipt() {
       pointsRedeemed?: number;
       pointsDiscount?: number;
     }) => {
-      const totalAmount = items.reduce((sum, item) => sum + item.sale_price, 0);
+      // Calculate total amount considering quantity
+      const totalAmount = items.reduce((sum, item) => sum + (item.sale_price * (item.quantity || 1)), 0);
       const paidAmount = payments
         .filter((p) => p.payment_type !== 'debt')
         .reduce((sum, p) => sum + p.amount, 0);
@@ -211,21 +213,37 @@ export function useCreateExportReceipt() {
 
       if (receiptError) throw receiptError;
 
-      // Insert items
-      const itemsToInsert = items.map((item) => ({
-        receipt_id: receipt.id,
-        product_id: item.product_id,
-        product_name: item.product_name,
-        sku: item.sku,
-        imei: item.imei,
-        category_id: item.category_id,
-        sale_price: item.sale_price,
-        note: item.note,
-      }));
+      // Insert items - expand quantity for non-IMEI products
+      const expandedItems: Array<{
+        receipt_id: string;
+        product_id: string | null;
+        product_name: string;
+        sku: string;
+        imei: string | null;
+        category_id: string | null;
+        sale_price: number;
+        note: string | null | undefined;
+      }> = [];
+      
+      for (const item of items) {
+        const qty = item.quantity || 1;
+        for (let i = 0; i < qty; i++) {
+          expandedItems.push({
+            receipt_id: receipt.id,
+            product_id: item.product_id,
+            product_name: item.product_name,
+            sku: item.sku,
+            imei: item.imei,
+            category_id: item.category_id,
+            sale_price: item.sale_price,
+            note: item.note,
+          });
+        }
+      }
 
       const { error: itemsError } = await supabase
         .from('export_receipt_items')
-        .insert(itemsToInsert);
+        .insert(expandedItems);
 
       if (itemsError) throw itemsError;
 
@@ -249,6 +267,8 @@ export function useCreateExportReceipt() {
       // Update product status/quantity for items with product_id
       for (const item of items) {
         if (item.product_id) {
+          const qty = item.quantity || 1;
+          
           // Lấy thông tin sản phẩm
           const { data: product } = await supabase
             .from('products')
@@ -277,8 +297,8 @@ export function useCreateExportReceipt() {
               },
             ]);
           } else {
-            // SẢN PHẨM KHÔNG IMEI: Giảm số lượng
-            const newQuantity = (product?.quantity || 1) - 1;
+            // SẢN PHẨM KHÔNG IMEI: Giảm số lượng theo quantity đã bán
+            const newQuantity = (product?.quantity || qty) - qty;
             
             if (newQuantity <= 0) {
               // Hết hàng -> đánh dấu sold
