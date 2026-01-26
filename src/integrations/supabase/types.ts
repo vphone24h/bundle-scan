@@ -971,6 +971,7 @@ export type Database = {
           earn_points: number
           id: string
           is_enabled: boolean
+          max_redeem_amount: number | null
           max_redeem_percentage: number
           points_expire: boolean
           points_expire_days: number | null
@@ -980,11 +981,14 @@ export type Database = {
           spend_amount: number
           updated_at: string
           updated_by: string | null
+          use_max_amount_limit: boolean | null
+          use_percentage_limit: boolean | null
         }
         Insert: {
           earn_points?: number
           id?: string
           is_enabled?: boolean
+          max_redeem_amount?: number | null
           max_redeem_percentage?: number
           points_expire?: boolean
           points_expire_days?: number | null
@@ -994,11 +998,14 @@ export type Database = {
           spend_amount?: number
           updated_at?: string
           updated_by?: string | null
+          use_max_amount_limit?: boolean | null
+          use_percentage_limit?: boolean | null
         }
         Update: {
           earn_points?: number
           id?: string
           is_enabled?: boolean
+          max_redeem_amount?: number | null
           max_redeem_percentage?: number
           points_expire?: boolean
           points_expire_days?: number | null
@@ -1008,6 +1015,8 @@ export type Database = {
           spend_amount?: number
           updated_at?: string
           updated_by?: string | null
+          use_max_amount_limit?: boolean | null
+          use_percentage_limit?: boolean | null
         }
         Relationships: []
       }

@@ -10,6 +10,9 @@ export interface PointSettings {
   earn_points: number;
   redeem_points: number;
   redeem_value: number;
+  use_max_amount_limit: boolean;
+  max_redeem_amount: number | null;
+  use_percentage_limit: boolean;
   max_redeem_percentage: number;
   points_expire: boolean;
   points_expire_days: number | null;
