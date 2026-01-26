@@ -32,21 +32,21 @@ export default function CategoriesPage() {
 
   const handleAdd = () => {
     setEditCategory(null);
-    setParentId('');
+    setParentId('_none_');
     setName('');
     setDialogOpen(true);
   };
 
   const handleAddChild = (pid: string) => {
     setEditCategory(null);
-    setParentId(pid);
+    setParentId(pid || '_none_');
     setName('');
     setDialogOpen(true);
   };
 
   const handleEdit = (category: Category) => {
     setEditCategory(category);
-    setParentId(category.parentId || '');
+    setParentId(category.parentId || '_none_');
     setName(category.name);
     setDialogOpen(true);
   };
@@ -64,7 +64,7 @@ export default function CategoriesPage() {
       setCategories(
         categories.map((c) =>
           c.id === editCategory.id
-            ? { ...c, name: name.trim(), parentId: parentId || undefined }
+            ? { ...c, name: name.trim(), parentId: parentId === '_none_' ? undefined : parentId || undefined }
             : c
         )
       );
@@ -72,7 +72,7 @@ export default function CategoriesPage() {
       const newCategory: Category = {
         id: String(Date.now()),
         name: name.trim(),
-        parentId: parentId || undefined,
+        parentId: parentId === '_none_' ? undefined : parentId || undefined,
         createdAt: new Date(),
       };
       setCategories([...categories, newCategory]);
@@ -134,7 +134,7 @@ export default function CategoriesPage() {
                   <SelectValue placeholder="Chọn danh mục cha" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
-                  <SelectItem value="">Không có (danh mục gốc)</SelectItem>
+                  <SelectItem value="_none_">Không có (danh mục gốc)</SelectItem>
                   {parentOptions
                     .filter((c) => c.id !== editCategory?.id)
                     .map((cat) => (
