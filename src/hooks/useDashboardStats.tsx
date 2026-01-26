@@ -19,7 +19,7 @@ export function useDashboardStats() {
       // Get products stats
       const { data: products, error: productsError } = await supabase
         .from('products')
-        .select('status, import_price');
+        .select('status, import_price, quantity');
 
       if (productsError) throw productsError;
 
@@ -56,11 +56,18 @@ export function useDashboardStats() {
 
       if (recentError) throw recentError;
 
+      // Chỉ tính giá trị kho cho sản phẩm còn tồn (in_stock)
+      const inStockProducts = products?.filter(p => p.status === 'in_stock') || [];
+      
       const stats: DashboardStats = {
         totalProducts: products?.length || 0,
-        inStockProducts: products?.filter(p => p.status === 'in_stock').length || 0,
+        inStockProducts: inStockProducts.length,
         soldProducts: products?.filter(p => p.status === 'sold').length || 0,
-        totalImportValue: products?.reduce((sum, p) => sum + Number(p.import_price), 0) || 0,
+        // Tổng giá trị kho = sum(quantity * import_price) cho sản phẩm còn tồn
+        totalImportValue: inStockProducts.reduce((sum, p) => {
+          const quantity = (p as any).quantity || 1;
+          return sum + (Number(p.import_price) * quantity);
+        }, 0),
         pendingDebt: receipts?.reduce((sum, r) => sum + Number(r.debt_amount), 0) || 0,
         totalSuppliers: suppliersCount || 0,
         totalCategories: categoriesCount || 0,
