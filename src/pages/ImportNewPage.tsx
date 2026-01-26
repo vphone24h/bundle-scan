@@ -58,14 +58,16 @@ export default function ImportNewPage() {
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
 
-  // Form state
+  // Receipt-level supplier (applies to entire receipt)
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
+
+  // Form state (product-level only)
   const [form, setForm] = useState({
     productName: '',
     sku: '',
     imei: '',
     categoryId: '',
     importPrice: '',
-    supplierId: '',
     note: '',
   });
 
@@ -99,16 +101,15 @@ export default function ImportNewPage() {
       productName: product.name,
       sku: product.sku,
       categoryId: product.category_id || '',
-      supplierId: product.supplier_id || '',
     });
     setSuggestions([]);
   };
 
   const handleAddToCart = async () => {
-    if (!form.productName || !form.sku || !form.categoryId || !form.importPrice || !form.supplierId) {
+    if (!form.productName || !form.sku || !form.categoryId || !form.importPrice) {
       toast({
         title: 'Thiếu thông tin',
-        description: 'Vui lòng điền đầy đủ các trường bắt buộc',
+        description: 'Vui lòng điền đầy đủ các trường bắt buộc (Tên, SKU, Danh mục, Giá nhập)',
         variant: 'destructive',
       });
       return;
@@ -139,7 +140,6 @@ export default function ImportNewPage() {
     }
 
     const category = categories?.find((c) => c.id === form.categoryId);
-    const supplier = suppliers?.find((s) => s.id === form.supplierId);
 
     const newItem: ImportReceiptItem = {
       id: String(Date.now()),
@@ -149,8 +149,8 @@ export default function ImportNewPage() {
       categoryId: form.categoryId,
       categoryName: category?.name,
       importPrice: Number(form.importPrice),
-      supplierId: form.supplierId,
-      supplierName: supplier?.name,
+      supplierId: '', // Will use receipt-level supplier
+      supplierName: '',
       note: form.note || undefined,
     };
 
@@ -161,7 +161,6 @@ export default function ImportNewPage() {
       imei: '',
       categoryId: '',
       importPrice: '',
-      supplierId: '',
       note: '',
     });
     toast({
@@ -183,14 +182,19 @@ export default function ImportNewPage() {
       });
       return;
     }
+    if (!selectedSupplierId) {
+      toast({
+        title: 'Chưa chọn nhà cung cấp',
+        description: 'Vui lòng chọn nhà cung cấp cho phiếu nhập',
+        variant: 'destructive',
+      });
+      return;
+    }
     setPaymentOpen(true);
   };
 
   const handlePaymentConfirm = async (payments: PaymentSource[]) => {
     try {
-      // Get the main supplier (first item's supplier)
-      const mainSupplierId = cart[0]?.supplierId || null;
-
       await createImportReceipt.mutateAsync({
         products: cart.map(item => ({
           name: item.productName,
@@ -198,14 +202,14 @@ export default function ImportNewPage() {
           imei: item.imei || null,
           category_id: item.categoryId || null,
           import_price: item.importPrice,
-          supplier_id: item.supplierId || null,
+          supplier_id: selectedSupplierId || null,
           note: item.note || null,
         })),
         payments: payments.map(p => ({
           type: p.type as 'cash' | 'bank_card' | 'e_wallet' | 'debt',
           amount: p.amount,
         })),
-        supplierId: mainSupplierId,
+        supplierId: selectedSupplierId || null,
         branchId: selectedBranchId || null,
       });
 
@@ -283,27 +287,62 @@ export default function ImportNewPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Form */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Branch Selection */}
             <div className="bg-card border rounded-xl p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
-                Chi nhánh nhập hàng
+                Thông tin phiếu nhập
               </h3>
-              <Select
-                value={selectedBranchId}
-                onValueChange={setSelectedBranchId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn chi nhánh" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {branches?.map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {branch.name} {branch.is_default && '(Mặc định)'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Branch Selection */}
+                <div className="form-field">
+                  <Label>Chi nhánh nhập hàng *</Label>
+                  <Select
+                    value={selectedBranchId}
+                    onValueChange={setSelectedBranchId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn chi nhánh" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {branches?.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name} {branch.is_default && '(Mặc định)'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Supplier Selection */}
+                <div className="form-field">
+                  <Label>Nhà cung cấp *</Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={selectedSupplierId}
+                      onValueChange={setSelectedSupplierId}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Chọn nhà cung cấp" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        {suppliers?.map((sup) => (
+                          <SelectItem key={sup.id} value={sup.id}>
+                            {sup.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setSupplierDialogOpen(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="bg-card border rounded-xl p-6">
@@ -397,36 +436,6 @@ export default function ImportNewPage() {
                     onChange={(e) => setForm({ ...form, importPrice: e.target.value })}
                     placeholder="VD: 28000000"
                   />
-                </div>
-
-                {/* Supplier */}
-                <div className="form-field md:col-span-2">
-                  <Label>Nhà cung cấp *</Label>
-                  <div className="flex gap-2">
-                    <Select
-                      value={form.supplierId}
-                      onValueChange={(v) => setForm({ ...form, supplierId: v })}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Chọn nhà cung cấp" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        {suppliers?.map((sup) => (
-                          <SelectItem key={sup.id} value={sup.id}>
-                            {sup.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setSupplierDialogOpen(true)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
                 </div>
 
                 {/* Note */}
