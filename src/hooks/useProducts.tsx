@@ -17,6 +17,8 @@ export interface Product {
   import_receipt_id: string | null;
   status: ProductStatus;
   note: string | null;
+  quantity: number;
+  total_import_cost: number;
   created_at: string;
   updated_at: string;
   // Joined fields
