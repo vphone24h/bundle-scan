@@ -274,6 +274,21 @@ export function useReportChartData(filters?: {
       const { data: receipts, error } = await query;
       if (error) throw error;
 
+      // Lấy trả hàng KHÔNG CÓ PHÍ để trừ vào doanh thu & lợi nhuận
+      let returnQuery = supabase
+        .from('export_returns')
+        .select('id, sale_price, import_price, return_date, branch_id, fee_type')
+        .eq('fee_type', 'none')
+        .gte('return_date', startDate)
+        .lte('return_date', endDate + 'T23:59:59');
+
+      if (filters?.branchId) {
+        returnQuery = returnQuery.eq('branch_id', filters.branchId);
+      }
+
+      const { data: returnItems, error: returnError } = await returnQuery;
+      if (returnError) throw returnError;
+
       // Lấy giá nhập
       const productIds = receipts?.flatMap(r => 
         r.export_receipt_items?.map(i => i.product_id).filter(Boolean)
@@ -296,19 +311,19 @@ export function useReportChartData(filters?: {
       const groupBy = filters?.groupBy || 'day';
       const dataMap: Record<string, { date: string; revenue: number; profit: number; count: number }> = {};
 
+      const getKey = (d: Date) => {
+        if (groupBy === 'day') return d.toISOString().split('T')[0];
+        if (groupBy === 'week') {
+          const weekStart = new Date(d);
+          weekStart.setDate(d.getDate() - d.getDay());
+          return weekStart.toISOString().split('T')[0];
+        }
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      };
+
       receipts?.forEach(receipt => {
         const date = new Date(receipt.export_date);
-        let key: string;
-
-        if (groupBy === 'day') {
-          key = date.toISOString().split('T')[0];
-        } else if (groupBy === 'week') {
-          const weekStart = new Date(date);
-          weekStart.setDate(date.getDate() - date.getDay());
-          key = weekStart.toISOString().split('T')[0];
-        } else {
-          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        }
+        const key = getKey(date);
 
         if (!dataMap[key]) {
           dataMap[key] = { date: key, revenue: 0, profit: 0, count: 0 };
@@ -323,6 +338,23 @@ export function useReportChartData(filters?: {
             dataMap[key].count++;
           }
         });
+      });
+
+      // Trừ dữ liệu trả hàng (chỉ fee_type = none)
+      returnItems?.forEach(ret => {
+        const date = new Date(ret.return_date);
+        const key = getKey(date);
+        if (!dataMap[key]) {
+          dataMap[key] = { date: key, revenue: 0, profit: 0, count: 0 };
+        }
+
+        const salePrice = Number(ret.sale_price);
+        const importPrice = Number(ret.import_price);
+        const profit = salePrice - importPrice;
+
+        dataMap[key].revenue -= salePrice;
+        dataMap[key].profit -= profit;
+        dataMap[key].count += 1;
       });
 
       return Object.values(dataMap).sort((a, b) => a.date.localeCompare(b.date));
