@@ -8,9 +8,10 @@ import { PlansManagement } from '@/components/platform/PlansManagement';
 import { PaymentConfigManagement } from '@/components/platform/PaymentConfigManagement';
 import { PaymentHistoryTable } from '@/components/platform/PaymentHistoryTable';
 import { PlatformStats } from '@/components/platform/PlatformStats';
+import { AffiliateManagement } from '@/components/platform/AffiliateManagement';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Users } from 'lucide-react';
 
 export default function PlatformAdminPage() {
   const { data: platformUser, isLoading } = usePlatformUser();
@@ -38,12 +39,16 @@ export default function PlatformAdminPage() {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-6">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-7">
             <TabsTrigger value="overview">Tổng quan</TabsTrigger>
             <TabsTrigger value="tenants">Doanh nghiệp</TabsTrigger>
             <TabsTrigger value="payments">Thanh toán</TabsTrigger>
             <TabsTrigger value="history">Lịch sử</TabsTrigger>
             <TabsTrigger value="plans">Gói dịch vụ</TabsTrigger>
+            <TabsTrigger value="affiliate" className="flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Affiliate</span>
+            </TabsTrigger>
             <TabsTrigger value="config">Cấu hình</TabsTrigger>
           </TabsList>
 
@@ -65,6 +70,10 @@ export default function PlatformAdminPage() {
 
           <TabsContent value="plans" className="mt-6">
             <PlansManagement />
+          </TabsContent>
+
+          <TabsContent value="affiliate" className="mt-6">
+            <AffiliateManagement />
           </TabsContent>
 
           <TabsContent value="config" className="mt-6">
