@@ -45,10 +45,10 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if caller is super_admin
+    // Check if caller is super_admin and get their tenant_id
     const { data: callerRole, error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .select('user_role')
+      .select('user_role, tenant_id')
       .eq('user_id', caller.id)
       .single()
 
@@ -58,6 +58,8 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    const callerTenantId = callerRole.tenant_id
 
     // Parse request body
     const { email, password, displayName, phone, role, branchId } = await req.json()
@@ -120,24 +122,28 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Update the profile with phone number if provided
+    // Update the profile with phone number and tenant_id
+    const profileUpdateData: Record<string, any> = { tenant_id: callerTenantId }
     if (phone) {
-      const { error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .update({ phone })
-        .eq('user_id', newUser.user.id)
+      profileUpdateData.phone = phone
+    }
+    
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .update(profileUpdateData)
+      .eq('user_id', newUser.user.id)
 
-      if (profileError) {
-        console.error('Profile update error:', profileError)
-      }
+    if (profileError) {
+      console.error('Profile update error:', profileError)
     }
 
-    // Update the user_role with the specified role and branch
+    // Update the user_role with the specified role, branch and tenant_id
     const { error: roleUpdateError } = await supabaseAdmin
       .from('user_roles')
       .update({
         user_role: role,
         branch_id: role === 'super_admin' ? null : branchId,
+        tenant_id: callerTenantId,
       })
       .eq('user_id', newUser.user.id)
 
