@@ -74,6 +74,39 @@ export type Database = {
           },
         ]
       }
+      bank_accounts: {
+        Row: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at: string
+          display_order: number | null
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          account_holder: string
+          account_number: string
+          bank_name: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          account_holder?: string
+          account_number?: string
+          bank_name?: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       branches: {
         Row: {
           address: string | null
@@ -1089,6 +1122,30 @@ export type Database = {
           },
         ]
       }
+      payment_config: {
+        Row: {
+          config_key: string
+          config_value: string | null
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          config_key: string
+          config_value?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          config_key?: string
+          config_value?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_requests: {
         Row: {
           amount: number
@@ -1838,6 +1895,9 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          discount_amount: number | null
+          discount_percentage: number | null
+          display_order: number | null
           duration_days: number | null
           id: string
           is_active: boolean
@@ -1851,6 +1911,9 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          discount_amount?: number | null
+          discount_percentage?: number | null
+          display_order?: number | null
           duration_days?: number | null
           id?: string
           is_active?: boolean
@@ -1864,6 +1927,9 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          discount_amount?: number | null
+          discount_percentage?: number | null
+          display_order?: number | null
           duration_days?: number | null
           id?: string
           is_active?: boolean
