@@ -19,7 +19,7 @@ export function useDashboardStats() {
       // Get products stats
       const { data: products, error: productsError } = await supabase
         .from('products')
-        .select('status, import_price, quantity');
+        .select('status, import_price, quantity, imei');
 
       if (productsError) throw productsError;
 
@@ -57,13 +57,25 @@ export function useDashboardStats() {
       if (recentError) throw recentError;
 
       // Chỉ tính giá trị kho cho sản phẩm còn tồn (in_stock)
-      const inStockProducts = products?.filter(p => p.status === 'in_stock') || [];
+      // Loại trừ IMEI trùng lặp
+      const processedImeis = new Set<string>();
+      const inStockProducts = (products || []).filter(p => {
+        if (p.status !== 'in_stock') return false;
+        // Skip duplicate IMEIs
+        if ((p as any).imei) {
+          if (processedImeis.has((p as any).imei)) {
+            return false;
+          }
+          processedImeis.add((p as any).imei);
+        }
+        return true;
+      });
       
       const stats: DashboardStats = {
         totalProducts: products?.length || 0,
         inStockProducts: inStockProducts.length,
         soldProducts: products?.filter(p => p.status === 'sold').length || 0,
-        // Tổng giá trị kho = sum(quantity * import_price) cho sản phẩm còn tồn
+        // Tổng giá trị kho = sum(quantity * import_price) cho sản phẩm còn tồn (đã loại trừ trùng)
         totalImportValue: inStockProducts.reduce((sum, p) => {
           const quantity = (p as any).quantity || 1;
           return sum + (Number(p.import_price) * quantity);
