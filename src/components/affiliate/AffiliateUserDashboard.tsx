@@ -55,7 +55,7 @@ import {
   useCreateWithdrawal,
   useUpdateAffiliateBank,
 } from '@/hooks/useAffiliate';
-import { useTenant } from '@/hooks/useTenant';
+import { useCurrentTenant } from '@/hooks/useTenant';
 import { VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
 
 const commissionStatusConfig = {
@@ -75,7 +75,7 @@ const withdrawalStatusConfig = {
 export function AffiliateUserDashboard() {
   const { data: settings, isLoading: settingsLoading } = useAffiliateSettings();
   const { data: affiliate, isLoading: affiliateLoading } = useMyAffiliate();
-  const { tenant } = useTenant();
+  const { data: tenant } = useCurrentTenant();
   const createAffiliate = useCreateAffiliate();
   const { data: referrals } = useMyReferrals();
   const { data: commissions } = useMyCommissions();
