@@ -222,7 +222,10 @@ export function useCreateExportReceipt() {
       }
 
       // Create cash book entries for actual payments (not debt)
-      // payment_source must match constraint: 'cash', 'bank_card', 'e_wallet'
+      // Note: is_business_accounting = false because:
+      // - The profit is calculated directly from (sale_price - import_price) in reports
+      // - This entry is just for tracking cash flow, not for P&L calculation
+      // - Setting to true would cause double-counting
       const cashBookEntries = payments
         .filter((p) => p.payment_type !== 'debt' && p.amount > 0)
         .map((p) => ({
@@ -230,8 +233,8 @@ export function useCreateExportReceipt() {
           category: 'Bán hàng',
           description: `Thu tiền phiếu xuất ${code}`,
           amount: p.amount,
-          payment_source: p.payment_type, // Use the original payment type directly
-          is_business_accounting: true,
+          payment_source: p.payment_type,
+          is_business_accounting: false, // Không tính hạch toán - lợi nhuận đã tính từ giá bán - giá nhập
           reference_id: receipt.id,
           reference_type: 'export_receipt',
           created_by: user?.id,
