@@ -63,7 +63,7 @@ import {
 } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isToday } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useCashBook, useCashBookCategories, useCreateCashBookEntry, useUpdateCashBookEntry, type CashBookEntry } from '@/hooks/useCashBook';
+import { useCashBook, useCashBookCategories, useCreateCashBookEntry, useUpdateCashBookEntry, useDeleteCashBookEntry, type CashBookEntry } from '@/hooks/useCashBook';
 import { useBranches } from '@/hooks/useBranches';
 import { formatCurrency } from '@/lib/mockData';
 import { cn } from '@/lib/utils';
@@ -168,6 +168,7 @@ export default function CashBookPage() {
   const { data: branches } = useBranches();
   const createEntry = useCreateCashBookEntry();
   const updateEntry = useUpdateCashBookEntry();
+  const deleteEntry = useDeleteCashBookEntry();
 
   // Get current categories based on form type
   const currentCategories = formData.type === 'expense' ? expenseCategories : incomeCategories;
@@ -469,6 +470,7 @@ export default function CashBookPage() {
       
       await updateEntry.mutateAsync({
         id: editingEntry.id,
+        oldData: editingEntry, // Truyền dữ liệu cũ để ghi audit log
         category: formData.category,
         description: formData.description,
         amount: totalPaymentAmount,
@@ -482,12 +484,37 @@ export default function CashBookPage() {
       setEditingEntry(null);
       toast({
         title: 'Đã cập nhật',
-        description: 'Giao dịch đã được cập nhật',
+        description: 'Giao dịch đã được cập nhật và ghi nhận vào lịch sử',
       });
     } catch (error: any) {
       toast({
         title: 'Lỗi',
         description: error.message || 'Không thể cập nhật giao dịch',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!editingEntry || !deleteReason.trim()) return;
+
+    try {
+      await deleteEntry.mutateAsync({
+        entry: editingEntry,
+        reason: deleteReason,
+      });
+
+      setShowDeleteDialog(false);
+      setEditingEntry(null);
+      setDeleteReason('');
+      toast({
+        title: 'Đã xóa',
+        description: 'Giao dịch đã được xóa và ghi nhận vào lịch sử',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể xóa giao dịch',
         variant: 'destructive',
       });
     }
@@ -1235,17 +1262,17 @@ export default function CashBookPage() {
             </Button>
             <Button 
               variant="destructive" 
-              disabled={!deleteReason.trim()}
-              onClick={() => {
-                // TODO: Implement delete with reason logging
-                toast({
-                  title: 'Chức năng đang phát triển',
-                  description: 'Tính năng xóa giao dịch cần quyền quản trị viên',
-                });
-                setShowDeleteDialog(false);
-              }}
+              disabled={!deleteReason.trim() || deleteEntry.isPending}
+              onClick={handleDelete}
             >
-              Xóa
+              {deleteEntry.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Đang xóa...
+                </>
+              ) : (
+                'Xóa'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
