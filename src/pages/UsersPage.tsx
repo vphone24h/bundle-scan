@@ -30,6 +30,9 @@ interface UserWithRole {
     display_name: string;
     phone: string | null;
   } | null;
+  platform_user: {
+    email: string | null;
+  } | null;
   branches: {
     name: string;
   } | null;
@@ -82,6 +85,7 @@ export default function UsersPage() {
       const userIds = rolesData.map(r => r.user_id);
       if (userIds.length === 0) return [];
       
+      // Fetch profiles
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, display_name, phone')
@@ -89,11 +93,21 @@ export default function UsersPage() {
 
       if (profilesError) throw profilesError;
 
+      // Fetch platform_users for email
+      const { data: platformUsersData, error: platformUsersError } = await supabase
+        .from('platform_users')
+        .select('user_id, email')
+        .in('user_id', userIds);
+
+      if (platformUsersError) throw platformUsersError;
+
       const profilesMap = new Map(profilesData.map(p => [p.user_id, p]));
+      const platformUsersMap = new Map(platformUsersData.map(p => [p.user_id, p]));
 
       return rolesData.map(role => ({
         ...role,
         profiles: profilesMap.get(role.user_id) || null,
+        platform_user: platformUsersMap.get(role.user_id) || null,
       })) as unknown as UserWithRole[];
     },
     enabled: !!permissions,
@@ -157,6 +171,7 @@ export default function UsersPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Tên</TableHead>
+                      <TableHead>Email</TableHead>
                       <TableHead>SĐT</TableHead>
                       <TableHead>Vai trò</TableHead>
                       <TableHead>Chi nhánh</TableHead>
@@ -168,6 +183,9 @@ export default function UsersPage() {
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
                           {user.profiles?.display_name || 'Chưa cập nhật'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {user.platform_user?.email || '-'}
                         </TableCell>
                         <TableCell>{user.profiles?.phone || '-'}</TableCell>
                         <TableCell>
@@ -209,6 +227,9 @@ export default function UsersPage() {
                       <div className="min-w-0 flex-1">
                         <p className="font-medium truncate">
                           {user.profiles?.display_name || 'Chưa cập nhật'}
+                        </p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {user.platform_user?.email || 'Chưa có email'}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           {user.profiles?.phone || 'Chưa có SĐT'}
