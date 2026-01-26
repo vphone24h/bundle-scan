@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { PriceInput } from '@/components/ui/price-input';
 import {
   Select,
   SelectContent,
@@ -436,12 +437,11 @@ export default function ImportNewPage() {
                 {/* Import Price */}
                 <div className="form-field">
                   <Label htmlFor="importPrice">Giá nhập (đơn vị) *</Label>
-                  <Input
+                  <PriceInput
                     id="importPrice"
-                    type="number"
                     value={form.importPrice}
-                    onChange={(e) => setForm({ ...form, importPrice: e.target.value })}
-                    placeholder="VD: 28000000"
+                    onChange={(val) => setForm({ ...form, importPrice: val.toString() })}
+                    placeholder="VD: 28 000 000"
                   />
                 </div>
 
