@@ -66,17 +66,31 @@ import { useBranches } from '@/hooks/useBranches';
 import { formatCurrency } from '@/lib/mockData';
 import { cn } from '@/lib/utils';
 
-const paymentSourceLabels: Record<string, string> = {
+const defaultPaymentSourceLabels: Record<string, string> = {
   cash: 'Tiền mặt',
   bank_card: 'Thẻ ngân hàng',
   e_wallet: 'Ví điện tử',
 };
 
-const defaultPaymentSources = [
-  { id: 'cash', name: 'Tiền mặt' },
-  { id: 'bank_card', name: 'Thẻ ngân hàng' },
-  { id: 'e_wallet', name: 'Ví điện tử' },
+const builtInPaymentSources = [
+  { id: 'cash', name: 'Tiền mặt', icon: 'banknote', color: 'green' },
+  { id: 'bank_card', name: 'Thẻ ngân hàng', icon: 'credit-card', color: 'blue' },
+  { id: 'e_wallet', name: 'Ví điện tử', icon: 'wallet', color: 'purple' },
 ];
+
+// Load custom payment sources from localStorage
+const getCustomPaymentSources = (): { id: string; name: string }[] => {
+  try {
+    const stored = localStorage.getItem('customPaymentSources');
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveCustomPaymentSources = (sources: { id: string; name: string }[]) => {
+  localStorage.setItem('customPaymentSources', JSON.stringify(sources));
+};
 
 export default function CashBookPage() {
   // Main view tabs: by branch or total
@@ -91,8 +105,27 @@ export default function CashBookPage() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAdjustBalanceDialog, setShowAdjustBalanceDialog] = useState(false);
+  const [showAddSourceDialog, setShowAddSourceDialog] = useState(false);
   const [editingEntry, setEditingEntry] = useState<CashBookEntry | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
+  const [newSourceName, setNewSourceName] = useState('');
+  
+  // Custom payment sources state
+  const [customPaymentSources, setCustomPaymentSources] = useState<{ id: string; name: string }[]>(getCustomPaymentSources());
+  
+  // All payment sources (built-in + custom)
+  const allPaymentSources = useMemo(() => {
+    return [...builtInPaymentSources, ...customPaymentSources.map(s => ({ ...s, icon: 'wallet', color: 'gray' }))];
+  }, [customPaymentSources]);
+  
+  // Payment source labels
+  const paymentSourceLabels = useMemo(() => {
+    const labels: Record<string, string> = { ...defaultPaymentSourceLabels };
+    customPaymentSources.forEach(s => {
+      labels[s.id] = s.name;
+    });
+    return labels;
+  }, [customPaymentSources]);
   
   // Balance adjustment form
   const [adjustBalanceData, setAdjustBalanceData] = useState({
@@ -100,6 +133,7 @@ export default function CashBookPage() {
     currentBalance: 0,
     newBalance: '',
     reason: '',
+    includeInAccounting: false,
   });
   
   // Filters
@@ -184,26 +218,31 @@ export default function CashBookPage() {
     return income - expense;
   }, [allEntries]);
 
-  // Calculate balance by payment source
+  // Calculate balance by payment source (including custom sources)
   const balanceBySource = useMemo(() => {
-    if (!allEntries) return { cash: 0, bank_card: 0, e_wallet: 0 };
+    if (!allEntries) return {};
     
-    const result: Record<string, number> = { cash: 0, bank_card: 0, e_wallet: 0 };
+    // Initialize with all sources (built-in + custom)
+    const result: Record<string, number> = {};
+    allPaymentSources.forEach(src => {
+      result[src.id] = 0;
+    });
     
     allEntries.forEach((entry) => {
       const source = entry.payment_source;
       const amount = Number(entry.amount);
-      if (result[source] !== undefined) {
-        if (entry.type === 'income') {
-          result[source] += amount;
-        } else {
-          result[source] -= amount;
-        }
+      if (result[source] === undefined) {
+        result[source] = 0;
+      }
+      if (entry.type === 'income') {
+        result[source] += amount;
+      } else {
+        result[source] -= amount;
       }
     });
     
     return result;
-  }, [allEntries]);
+  }, [allEntries, allPaymentSources]);
 
   const todayStats = useMemo(() => {
     if (!allEntries) return { income: 0, expense: 0 };
@@ -265,6 +304,7 @@ export default function CashBookPage() {
       currentBalance: balanceBySource[source] || 0,
       newBalance: '',
       reason: '',
+      includeInAccounting: false,
     });
     setShowAdjustBalanceDialog(true);
   };
@@ -300,7 +340,7 @@ export default function CashBookPage() {
         description: `Điều chỉnh ${paymentSourceLabels[adjustBalanceData.source]}: ${adjustBalanceData.reason}`,
         amount: Math.abs(difference),
         payment_source: adjustBalanceData.source,
-        is_business_accounting: false,
+        is_business_accounting: adjustBalanceData.includeInAccounting,
         branch_id: defaultBranch?.id || null,
         note: `Số dư trước: ${formatCurrency(adjustBalanceData.currentBalance)} → Số dư sau: ${formatCurrency(newBalance)}`,
       });
@@ -580,81 +620,76 @@ export default function CashBookPage() {
         {/* Balance by Payment Source */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Wallet className="h-5 w-5" />
-              Số dư theo nguồn tiền
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Wallet className="h-5 w-5" />
+                Số dư theo nguồn tiền
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={() => setShowAddSourceDialog(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                Thêm nguồn tiền
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Cash */}
-              <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <Banknote className="h-5 w-5 text-green-600" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {allPaymentSources.map((source) => {
+                const balance = balanceBySource[source.id] || 0;
+                const isBuiltIn = builtInPaymentSources.some(s => s.id === source.id);
+                const colorClass = source.color === 'green' ? 'bg-green-100' : 
+                                   source.color === 'blue' ? 'bg-blue-100' : 
+                                   source.color === 'purple' ? 'bg-purple-100' : 'bg-muted';
+                const iconColorClass = source.color === 'green' ? 'text-green-600' : 
+                                       source.color === 'blue' ? 'text-blue-600' : 
+                                       source.color === 'purple' ? 'text-purple-600' : 'text-muted-foreground';
+                
+                return (
+                  <div key={source.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={cn("h-10 w-10 rounded-full flex items-center justify-center", colorClass)}>
+                        {source.icon === 'banknote' ? (
+                          <Banknote className={cn("h-5 w-5", iconColorClass)} />
+                        ) : source.icon === 'credit-card' ? (
+                          <CreditCard className={cn("h-5 w-5", iconColorClass)} />
+                        ) : (
+                          <Wallet className={cn("h-5 w-5", iconColorClass)} />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">{source.name}</p>
+                        <p className={cn("text-lg font-bold", balance >= 0 ? 'text-green-600' : 'text-destructive')}>
+                          {formatCurrency(balance)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => handleOpenAdjustBalance(source.id)}
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                      {!isBuiltIn && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => {
+                            const updated = customPaymentSources.filter(s => s.id !== source.id);
+                            setCustomPaymentSources(updated);
+                            saveCustomPaymentSources(updated);
+                            toast({ title: 'Đã xóa nguồn tiền', description: source.name });
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Tiền mặt</p>
-                    <p className={cn("text-lg font-bold", balanceBySource.cash >= 0 ? 'text-green-600' : 'text-destructive')}>
-                      {formatCurrency(balanceBySource.cash)}
-                    </p>
-                  </div>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => handleOpenAdjustBalance('cash')}
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Bank Card */}
-              <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <CreditCard className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Thẻ ngân hàng</p>
-                    <p className={cn("text-lg font-bold", balanceBySource.bank_card >= 0 ? 'text-green-600' : 'text-destructive')}>
-                      {formatCurrency(balanceBySource.bank_card)}
-                    </p>
-                  </div>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => handleOpenAdjustBalance('bank_card')}
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* E-Wallet */}
-              <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                    <Wallet className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Ví điện tử</p>
-                    <p className={cn("text-lg font-bold", balanceBySource.e_wallet >= 0 ? 'text-green-600' : 'text-destructive')}>
-                      {formatCurrency(balanceBySource.e_wallet)}
-                    </p>
-                  </div>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8"
-                  onClick={() => handleOpenAdjustBalance('e_wallet')}
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -727,7 +762,7 @@ export default function CashBookPage() {
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
                         <SelectItem value="_all_">Tất cả nguồn</SelectItem>
-                        {defaultPaymentSources.map((src) => (
+                        {allPaymentSources.map((src) => (
                           <SelectItem key={src.id} value={src.id}>{src.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -943,7 +978,7 @@ export default function CashBookPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover">
-                      {defaultPaymentSources.map((src) => (
+                      {allPaymentSources.map((src) => (
                         <SelectItem key={src.id} value={src.id}>{src.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -1072,7 +1107,7 @@ export default function CashBookPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {defaultPaymentSources.map((src) => (
+                  {allPaymentSources.map((src) => (
                     <SelectItem key={src.id} value={src.id}>{src.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -1239,6 +1274,19 @@ export default function CashBookPage() {
                 onChange={(e) => setAdjustBalanceData({ ...adjustBalanceData, reason: e.target.value })}
               />
             </div>
+
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <div>
+                <Label className="font-medium">Tính vào hạch toán kinh doanh</Label>
+                <p className="text-xs text-muted-foreground">
+                  Nếu bật, khoản điều chỉnh sẽ ảnh hưởng đến báo cáo lợi nhuận
+                </p>
+              </div>
+              <Switch
+                checked={adjustBalanceData.includeInAccounting}
+                onCheckedChange={(v) => setAdjustBalanceData({ ...adjustBalanceData, includeInAccounting: v })}
+              />
+            </div>
           </div>
 
           <DialogFooter>
@@ -1250,6 +1298,64 @@ export default function CashBookPage() {
               disabled={createEntry.isPending || !adjustBalanceData.newBalance || !adjustBalanceData.reason.trim()}
             >
               {createEntry.isPending ? 'Đang xử lý...' : 'Xác nhận điều chỉnh'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Payment Source Dialog */}
+      <Dialog open={showAddSourceDialog} onOpenChange={setShowAddSourceDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Thêm nguồn tiền mới
+            </DialogTitle>
+            <DialogDescription>
+              Tạo nguồn tiền tùy chỉnh để quản lý các quỹ khác như: Quỹ marketing, Tiền mặt 2, Chuyển khoản...
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label>Tên nguồn tiền *</Label>
+              <Input
+                placeholder="Ví dụ: Quỹ marketing, Tiền mặt tại quầy 2..."
+                value={newSourceName}
+                onChange={(e) => setNewSourceName(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowAddSourceDialog(false);
+              setNewSourceName('');
+            }}>
+              Hủy
+            </Button>
+            <Button 
+              onClick={() => {
+                if (!newSourceName.trim()) {
+                  toast({ title: 'Lỗi', description: 'Vui lòng nhập tên nguồn tiền', variant: 'destructive' });
+                  return;
+                }
+                
+                // Create unique ID
+                const id = newSourceName.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now();
+                const newSource = { id, name: newSourceName.trim() };
+                
+                const updated = [...customPaymentSources, newSource];
+                setCustomPaymentSources(updated);
+                saveCustomPaymentSources(updated);
+                
+                setShowAddSourceDialog(false);
+                setNewSourceName('');
+                toast({ title: 'Đã thêm nguồn tiền', description: newSourceName.trim() });
+              }}
+              disabled={!newSourceName.trim()}
+            >
+              Thêm nguồn tiền
             </Button>
           </DialogFooter>
         </DialogContent>
