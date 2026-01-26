@@ -56,6 +56,7 @@ export function PaymentConfigManagement() {
   const [hotline, setHotline] = useState('');
   const [supportEmail, setSupportEmail] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [userGuideUrl, setUserGuideUrl] = useState('');
   const [savingConfig, setSavingConfig] = useState(false);
 
   // Bank account dialog
@@ -99,10 +100,12 @@ export function PaymentConfigManagement() {
       const hotlineConfig = configs.find(c => c.config_key === 'hotline');
       const emailConfig = configs.find(c => c.config_key === 'support_email');
       const companyConfig = configs.find(c => c.config_key === 'company_name');
+      const guideConfig = configs.find(c => c.config_key === 'user_guide_url');
       
       if (hotlineConfig?.config_value) setHotline(hotlineConfig.config_value);
       if (emailConfig?.config_value) setSupportEmail(emailConfig.config_value);
       if (companyConfig?.config_value) setCompanyName(companyConfig.config_value);
+      if (guideConfig?.config_value) setUserGuideUrl(guideConfig.config_value);
     }
   }, [configs]);
 
@@ -114,6 +117,7 @@ export function PaymentConfigManagement() {
         { config_key: 'hotline', config_value: hotline },
         { config_key: 'support_email', config_value: supportEmail },
         { config_key: 'company_name', config_value: companyName },
+        { config_key: 'user_guide_url', config_value: userGuideUrl },
       ];
 
       for (const update of updates) {
@@ -249,7 +253,7 @@ export function PaymentConfigManagement() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Tên công ty</Label>
               <Input
@@ -273,6 +277,15 @@ export function PaymentConfigManagement() {
                 value={supportEmail}
                 onChange={(e) => setSupportEmail(e.target.value)}
                 placeholder="support@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Link hướng dẫn sử dụng</Label>
+              <Input
+                type="url"
+                value={userGuideUrl}
+                onChange={(e) => setUserGuideUrl(e.target.value)}
+                placeholder="https://example.com/huong-dan"
               />
             </div>
           </div>

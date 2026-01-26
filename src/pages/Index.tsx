@@ -4,17 +4,18 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useProducts } from '@/hooks/useProducts';
 import { useImportReceipts } from '@/hooks/useImportReceipts';
+import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
-import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2 } from 'lucide-react';
+import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
-import { FolderTree, Users } from 'lucide-react';
 
 const Index = () => {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: receipts, isLoading: receiptsLoading } = useImportReceipts();
+  const userGuideUrl = useUserGuideUrl();
 
   const recentProducts = products?.slice(0, 5) || [];
   const recentReceipts = receipts?.slice(0, 3) || [];
@@ -184,6 +185,14 @@ const Index = () => {
               Nhà cung cấp
             </Link>
           </Button>
+          {userGuideUrl && (
+            <Button variant="secondary" asChild>
+              <a href={userGuideUrl} target="_blank" rel="noopener noreferrer">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Hướng dẫn sử dụng
+              </a>
+            </Button>
+          )}
         </div>
       </div>
     </MainLayout>

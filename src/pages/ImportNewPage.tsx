@@ -8,6 +8,7 @@ import { useSuppliers, useCreateSupplier } from '@/hooks/useSuppliers';
 import { useProducts, useCheckIMEI } from '@/hooks/useProducts';
 import { useCreateImportReceipt } from '@/hooks/useImportReceipts';
 import { useBranches } from '@/hooks/useBranches';
+import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { ImportReceiptItem, PaymentSource } from '@/types/warehouse';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +29,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2 } from 'lucide-react';
+import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 
@@ -38,6 +39,7 @@ export default function ImportNewPage() {
   const { data: suppliers } = useSuppliers();
   const { data: products } = useProducts();
   const { data: branches } = useBranches();
+  const userGuideUrl = useUserGuideUrl();
   const createCategory = useCreateCategory();
   const createSupplier = useCreateSupplier();
   const createImportReceipt = useCreateImportReceipt();
@@ -278,7 +280,15 @@ export default function ImportNewPage() {
         title="Tạo phiếu nhập hàng"
         description="Nhập hàng thủ công hoặc từ file Excel"
         actions={
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {userGuideUrl && (
+              <Button variant="secondary" asChild>
+                <a href={userGuideUrl} target="_blank" rel="noopener noreferrer">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Hướng dẫn sử dụng
+                </a>
+              </Button>
+            )}
             <Button variant="outline" onClick={handleExportTemplate}>
               <Download className="mr-2 h-4 w-4" />
               Tải file mẫu
