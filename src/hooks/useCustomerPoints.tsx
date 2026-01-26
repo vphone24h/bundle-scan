@@ -157,7 +157,7 @@ export function useUpdateMembershipTier() {
 
   return useMutation({
     mutationFn: async (tier: MembershipTierSettings) => {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('membership_tier_settings')
         .update({
           min_spent: tier.min_spent,
@@ -166,12 +166,10 @@ export function useUpdateMembershipTier() {
           benefits: tier.benefits,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', tier.id)
-        .select()
-        .single();
+        .eq('id', tier.id);
 
       if (error) throw error;
-      return data;
+      return tier;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['membership-tiers'] });
