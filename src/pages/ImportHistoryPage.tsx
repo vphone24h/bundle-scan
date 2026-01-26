@@ -490,6 +490,7 @@ export default function ImportHistoryPage() {
                     <th className="text-right">Giá nhập</th>
                     <th>Ngày nhập</th>
                     <th>Nhà cung cấp</th>
+                    <th>Chi nhánh</th>
                     <th>Trạng thái</th>
                     <th className="w-16"></th>
                   </tr>
@@ -506,6 +507,7 @@ export default function ImportHistoryPage() {
                       </td>
                       <td>{formatDate(new Date(product.import_date))}</td>
                       <td>{product.suppliers?.name || '-'}</td>
+                      <td>{product.branches?.name || '-'}</td>
                       <td>
                         <Badge
                           className={cn(
