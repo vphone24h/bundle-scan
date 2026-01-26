@@ -66,6 +66,20 @@ export default function ImportHistoryPage() {
   const [editReceipt, setEditReceipt] = useState<ImportReceipt | null>(null);
   const [returnReceipt, setReturnReceipt] = useState<ImportReceipt | null>(null);
 
+  // Calculate receipt return status
+  const getReceiptReturnStatus = (receipt: ImportReceipt): 'completed' | 'cancelled' | 'full_return' => {
+    if (receipt.status === 'cancelled') return 'cancelled';
+    
+    // Check if all products from this receipt are returned
+    const receiptProducts = products?.filter(p => p.import_receipt_id === receipt.id) || [];
+    if (receiptProducts.length === 0) return receipt.status as 'completed' | 'cancelled';
+    
+    const allReturned = receiptProducts.every(p => p.status === 'returned');
+    if (allReturned) return 'full_return';
+    
+    return 'completed';
+  };
+
   // Filter receipts
   const filteredReceipts = useMemo(() => {
     if (!receipts) return [];
@@ -447,15 +461,22 @@ export default function ImportHistoryPage() {
                       <td>{receipt.suppliers?.name || '-'}</td>
                       <td>{receipt.branches?.name || '-'}</td>
                       <td>
-                        <Badge
-                          className={cn(
-                            receipt.status === 'completed'
-                              ? 'status-in-stock'
-                              : 'bg-destructive/10 text-destructive border-destructive/20'
-                          )}
-                        >
-                          {receipt.status === 'completed' ? 'Hoàn tất' : 'Đã huỷ'}
-                        </Badge>
+                        {(() => {
+                          const returnStatus = getReceiptReturnStatus(receipt);
+                          return (
+                            <Badge
+                              className={cn(
+                                returnStatus === 'completed'
+                                  ? 'status-in-stock'
+                                  : returnStatus === 'full_return'
+                                  ? 'bg-destructive/10 text-destructive border-destructive/20'
+                                  : 'bg-destructive/10 text-destructive border-destructive/20'
+                              )}
+                            >
+                              {returnStatus === 'completed' ? 'Hoàn tất' : returnStatus === 'full_return' ? 'Đã trả' : 'Đã huỷ'}
+                            </Badge>
+                          );
+                        })()}
                       </td>
                       <td>
                         <DropdownMenu>
@@ -507,7 +528,9 @@ export default function ImportHistoryPage() {
                     <th>SKU</th>
                     <th>IMEI</th>
                     <th>Danh mục</th>
+                    <th className="text-center">SL</th>
                     <th className="text-right">Giá nhập</th>
+                    <th className="text-right">Thành tiền</th>
                     <th>Ngày nhập</th>
                     <th>Nhà cung cấp</th>
                     <th>Chi nhánh</th>
@@ -522,8 +545,12 @@ export default function ImportHistoryPage() {
                       <td className="text-muted-foreground">{product.sku}</td>
                       <td className="font-mono text-sm">{product.imei || '-'}</td>
                       <td>{product.categories?.name || '-'}</td>
+                      <td className="text-center font-medium">{product.quantity}</td>
                       <td className="text-right font-medium">
                         {formatCurrency(Number(product.import_price))}
+                      </td>
+                      <td className="text-right font-medium text-primary">
+                        {formatCurrency(Number(product.import_price) * product.quantity)}
                       </td>
                       <td>{formatDate(new Date(product.import_date))}</td>
                       <td>{product.suppliers?.name || '-'}</td>
