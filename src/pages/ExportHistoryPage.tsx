@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -38,10 +39,12 @@ import {
   FileText,
   Package,
   Calendar,
-  Filter
+  Filter,
+  X
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { useBranches } from '@/hooks/useBranches';
 import { 
   useExportReceipts, 
   useExportReceiptItems, 
@@ -70,6 +73,8 @@ export default function ExportHistoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('_all_');
+  const [branchFilter, setBranchFilter] = useState('_all_');
+  const [showFilters, setShowFilters] = useState(false);
   
   // Detail dialog
   const [selectedReceipt, setSelectedReceipt] = useState<ExportReceipt | null>(null);
@@ -83,6 +88,7 @@ export default function ExportHistoryPage() {
   const { data: receipts, isLoading: receiptsLoading } = useExportReceipts();
   const { data: items, isLoading: itemsLoading } = useExportReceiptItems();
   const { data: template } = useDefaultInvoiceTemplate();
+  const { data: branches } = useBranches();
   const returnProduct = useReturnProduct();
 
   // Filter receipts
@@ -96,9 +102,19 @@ export default function ExportHistoryPage() {
     
     const matchesDate = !dateFilter || 
       format(new Date(receipt.export_date), 'yyyy-MM-dd') === dateFilter;
+    
+    const matchesBranch = branchFilter === '_all_' || receipt.branch_id === branchFilter;
 
-    return matchesSearch && matchesStatus && matchesDate;
+    return matchesSearch && matchesStatus && matchesDate && matchesBranch;
   });
+
+  const hasActiveFilters = dateFilter || statusFilter !== '_all_' || branchFilter !== '_all_';
+
+  const clearFilters = () => {
+    setDateFilter('');
+    setStatusFilter('_all_');
+    setBranchFilter('_all_');
+  };
 
   // Filter items
   const filteredItems = items?.filter((item) => {
@@ -183,42 +199,86 @@ export default function ExportHistoryPage() {
       {/* Filters */}
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Tìm theo mã phiếu, IMEI, tên SP, khách hàng, SĐT..."
-                  className="pl-9"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+          <div className="space-y-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm theo mã phiếu, IMEI, tên SP, khách hàng, SĐT..."
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                type="date"
-                className="w-40"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-              />
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Trạng thái" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="_all_">Tất cả</SelectItem>
-                  <SelectItem value="completed">Hoàn tất</SelectItem>
-                  <SelectItem value="partial_return">Trả một phần</SelectItem>
-                  <SelectItem value="full_return">Đã trả hàng</SelectItem>
-                  <SelectItem value="cancelled">Đã hủy</SelectItem>
-                </SelectContent>
-              </Select>
+              <Button
+                variant={showFilters ? 'secondary' : 'outline'}
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                Bộ lọc
+                {hasActiveFilters && (
+                  <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
+                    !
+                  </Badge>
+                )}
+              </Button>
               <Button variant="outline" onClick={handleExportExcel}>
                 <FileDown className="h-4 w-4 mr-2" />
                 Xuất Excel
               </Button>
             </div>
+
+            {showFilters && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t">
+                <div className="space-y-2">
+                  <Label className="text-xs">Ngày</Label>
+                  <Input
+                    type="date"
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Trạng thái</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tất cả" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="_all_">Tất cả</SelectItem>
+                      <SelectItem value="completed">Hoàn tất</SelectItem>
+                      <SelectItem value="partial_return">Trả một phần</SelectItem>
+                      <SelectItem value="full_return">Đã trả hàng</SelectItem>
+                      <SelectItem value="cancelled">Đã hủy</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Chi nhánh</Label>
+                  <Select value={branchFilter} onValueChange={setBranchFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tất cả" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="_all_">Tất cả chi nhánh</SelectItem>
+                      {branches?.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full">
+                    <X className="h-4 w-4 mr-1" />
+                    Xóa lọc
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

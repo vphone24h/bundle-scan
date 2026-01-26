@@ -5,6 +5,7 @@ import { useImportReceipts, useImportReceiptDetails, ImportReceipt } from '@/hoo
 import { useProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
+import { useBranches } from '@/hooks/useBranches';
 import { formatCurrency, formatDate } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,7 @@ export default function ImportHistoryPage() {
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
+  const { data: branches } = useBranches();
   
   // Search & filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,6 +52,7 @@ export default function ImportHistoryPage() {
   const [categoryFilter, setCategoryFilter] = useState('_all_');
   const [supplierFilter, setSupplierFilter] = useState('_all_');
   const [statusFilter, setStatusFilter] = useState('_all_');
+  const [branchFilter, setBranchFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
   
   const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
@@ -84,9 +87,12 @@ export default function ImportHistoryPage() {
       // Supplier filter
       const matchesSupplier = supplierFilter === '_all_' || r.supplier_id === supplierFilter;
       
-      return matchesSearch && matchesDate && matchesSupplier;
+      // Branch filter
+      const matchesBranch = branchFilter === '_all_' || r.branch_id === branchFilter;
+      
+      return matchesSearch && matchesDate && matchesSupplier && matchesBranch;
     });
-  }, [receipts, searchTerm, dateFrom, dateTo, supplierFilter]);
+  }, [receipts, searchTerm, dateFrom, dateTo, supplierFilter, branchFilter]);
 
   // Filter products
   const filteredProducts = useMemo(() => {
@@ -124,9 +130,12 @@ export default function ImportHistoryPage() {
       // Status filter
       const matchesStatus = statusFilter === '_all_' || p.status === statusFilter;
       
-      return matchesSearch && matchesDate && matchesCategory && matchesSupplier && matchesStatus;
+      // Branch filter
+      const matchesBranch = branchFilter === '_all_' || p.branch_id === branchFilter;
+      
+      return matchesSearch && matchesDate && matchesCategory && matchesSupplier && matchesStatus && matchesBranch;
     });
-  }, [products, searchTerm, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter]);
+  }, [products, searchTerm, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter]);
 
   const handleView = (receipt: ImportReceipt) => {
     setSelectedReceiptId(receipt.id);
@@ -147,9 +156,10 @@ export default function ImportHistoryPage() {
     setCategoryFilter('_all_');
     setSupplierFilter('_all_');
     setStatusFilter('_all_');
+    setBranchFilter('_all_');
   };
 
-  const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_';
+  const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_';
 
   // Export to Excel
   const handleExportReceipts = () => {
@@ -158,7 +168,7 @@ export default function ImportHistoryPage() {
       return;
     }
 
-    const headers = ['Mã phiếu', 'Ngày nhập', 'Tổng tiền', 'Đã thanh toán', 'Còn nợ', 'Nhà cung cấp', 'Trạng thái'];
+    const headers = ['Mã phiếu', 'Ngày nhập', 'Tổng tiền', 'Đã thanh toán', 'Còn nợ', 'Nhà cung cấp', 'Chi nhánh', 'Trạng thái'];
     const rows = filteredReceipts.map(r => [
       r.code,
       format(new Date(r.import_date), 'dd/MM/yyyy HH:mm'),
@@ -166,6 +176,7 @@ export default function ImportHistoryPage() {
       r.paid_amount,
       r.debt_amount,
       r.suppliers?.name || '',
+      r.branches?.name || '',
       r.status === 'completed' ? 'Hoàn tất' : 'Đã huỷ'
     ]);
 
@@ -187,7 +198,7 @@ export default function ImportHistoryPage() {
       return;
     }
 
-    const headers = ['Tên sản phẩm', 'SKU', 'IMEI', 'Danh mục', 'Giá nhập', 'Ngày nhập', 'Nhà cung cấp', 'Trạng thái'];
+    const headers = ['Tên sản phẩm', 'SKU', 'IMEI', 'Danh mục', 'Giá nhập', 'Ngày nhập', 'Nhà cung cấp', 'Chi nhánh', 'Trạng thái'];
     const rows = filteredProducts.map(p => [
       p.name,
       p.sku,
@@ -196,6 +207,7 @@ export default function ImportHistoryPage() {
       p.import_price,
       format(new Date(p.import_date), 'dd/MM/yyyy'),
       p.suppliers?.name || '',
+      p.branches?.name || '',
       p.status === 'in_stock' ? 'Tồn kho' : p.status === 'sold' ? 'Đã bán' : 'Đã trả'
     ]);
 
@@ -270,7 +282,7 @@ export default function ImportHistoryPage() {
 
               {/* Extended filters */}
               {showFilters && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 pt-4 border-t">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 pt-4 border-t">
                   <div className="space-y-2">
                     <Label className="text-xs">Từ ngày</Label>
                     <Input
@@ -314,6 +326,22 @@ export default function ImportHistoryPage() {
                         {suppliers?.map((sup) => (
                           <SelectItem key={sup.id} value={sup.id}>
                             {sup.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Chi nhánh</Label>
+                    <Select value={branchFilter} onValueChange={setBranchFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Tất cả" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="_all_">Tất cả chi nhánh</SelectItem>
+                        {branches?.map((branch) => (
+                          <SelectItem key={branch.id} value={branch.id}>
+                            {branch.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -375,6 +403,7 @@ export default function ImportHistoryPage() {
                     <th className="text-right">Đã thanh toán</th>
                     <th className="text-right">Còn nợ</th>
                     <th>Nhà cung cấp</th>
+                    <th>Chi nhánh</th>
                     <th>Trạng thái</th>
                     <th className="w-16"></th>
                   </tr>
@@ -396,6 +425,7 @@ export default function ImportHistoryPage() {
                         )}
                       </td>
                       <td>{receipt.suppliers?.name || '-'}</td>
+                      <td>{receipt.branches?.name || '-'}</td>
                       <td>
                         <Badge
                           className={cn(

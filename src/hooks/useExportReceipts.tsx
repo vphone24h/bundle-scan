@@ -22,6 +22,7 @@ export interface ExportReceipt {
   code: string;
   export_date: string;
   customer_id: string | null;
+  branch_id: string | null;
   total_amount: number;
   paid_amount: number;
   debt_amount: number;
@@ -32,6 +33,7 @@ export interface ExportReceipt {
   updated_at: string;
   // Joined
   customers?: { name: string; phone: string; address: string | null } | null;
+  branches?: { name: string } | null;
   export_receipt_items?: ExportReceiptItemDetail[];
   export_receipt_payments?: { payment_type: string; amount: number }[];
 }
@@ -66,6 +68,7 @@ export function useExportReceipts() {
         .select(`
           *,
           customers(name, phone, address),
+          branches(name),
           export_receipt_items(*),
           export_receipt_payments(*)
         `)

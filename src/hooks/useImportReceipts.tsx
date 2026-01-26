@@ -13,6 +13,7 @@ export interface ImportReceipt {
   paid_amount: number;
   debt_amount: number;
   supplier_id: string | null;
+  branch_id: string | null;
   created_by: string | null;
   note: string | null;
   status: ReceiptStatus;
@@ -20,6 +21,7 @@ export interface ImportReceipt {
   updated_at: string;
   // Joined fields
   suppliers?: { name: string } | null;
+  branches?: { name: string } | null;
   profiles?: { display_name: string } | null;
 }
 
@@ -39,7 +41,8 @@ export function useImportReceipts() {
         .from('import_receipts')
         .select(`
           *,
-          suppliers(name)
+          suppliers(name),
+          branches(name)
         `)
         .order('import_date', { ascending: false });
 
@@ -59,7 +62,8 @@ export function useImportReceiptDetails(receiptId: string | null) {
         .from('import_receipts')
         .select(`
           *,
-          suppliers(name)
+          suppliers(name),
+          branches(name)
         `)
         .eq('id', receiptId)
         .single();

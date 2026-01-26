@@ -6,6 +6,7 @@ import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { useProducts, Product } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
+import { useBranches } from '@/hooks/useBranches';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +37,8 @@ function mapProductForTable(product: Product) {
     importDate: new Date(product.import_date),
     supplierId: product.supplier_id || '',
     supplierName: product.suppliers?.name,
+    branchId: product.branch_id || '',
+    branchName: product.branches?.name,
     status: product.status as 'in_stock' | 'sold' | 'returned',
     note: product.note || undefined,
     importReceiptId: product.import_receipt_id || undefined,
@@ -46,6 +49,7 @@ export default function ProductsPage() {
   const { data: products, isLoading } = useProducts();
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
+  const { data: branches } = useBranches();
   
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [barcodeOpen, setBarcodeOpen] = useState(false);
@@ -58,6 +62,7 @@ export default function ProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState('_all_');
   const [supplierFilter, setSupplierFilter] = useState('_all_');
   const [statusFilter, setStatusFilter] = useState('_all_');
+  const [branchFilter, setBranchFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
 
   const mappedProducts = products?.map(mapProductForTable) || [];
@@ -95,9 +100,12 @@ export default function ProductsPage() {
       // Status filter
       const matchesStatus = statusFilter === '_all_' || p.status === statusFilter;
       
-      return matchesSearch && matchesDate && matchesCategory && matchesSupplier && matchesStatus;
+      // Branch filter
+      const matchesBranch = branchFilter === '_all_' || p.branchId === branchFilter;
+      
+      return matchesSearch && matchesDate && matchesCategory && matchesSupplier && matchesStatus && matchesBranch;
     });
-  }, [mappedProducts, searchTerm, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter]);
+  }, [mappedProducts, searchTerm, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter]);
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -106,9 +114,10 @@ export default function ProductsPage() {
     setCategoryFilter('_all_');
     setSupplierFilter('_all_');
     setStatusFilter('_all_');
+    setBranchFilter('_all_');
   };
 
-  const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_';
+  const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_';
 
   const handleEdit = (product: any) => {
     console.log('Edit product:', product);
@@ -130,7 +139,7 @@ export default function ProductsPage() {
       return;
     }
 
-    const headers = ['Tên sản phẩm', 'SKU', 'IMEI', 'Danh mục', 'Giá nhập', 'Ngày nhập', 'Nhà cung cấp', 'Trạng thái'];
+    const headers = ['Tên sản phẩm', 'SKU', 'IMEI', 'Danh mục', 'Giá nhập', 'Ngày nhập', 'Nhà cung cấp', 'Chi nhánh', 'Trạng thái'];
     const rows = filteredProducts.map(p => [
       p.name,
       p.sku,
@@ -139,6 +148,7 @@ export default function ProductsPage() {
       p.importPrice,
       format(p.importDate, 'dd/MM/yyyy'),
       p.supplierName || '',
+      p.branchName || '',
       p.status === 'in_stock' ? 'Tồn kho' : p.status === 'sold' ? 'Đã bán' : 'Đã trả'
     ]);
 
@@ -215,7 +225,7 @@ export default function ProductsPage() {
 
               {/* Extended filters */}
               {showFilters && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 pt-4 border-t">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 pt-4 border-t">
                   <div className="space-y-2">
                     <Label className="text-xs">Từ ngày</Label>
                     <Input
@@ -259,6 +269,22 @@ export default function ProductsPage() {
                         {suppliers?.map((sup) => (
                           <SelectItem key={sup.id} value={sup.id}>
                             {sup.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Chi nhánh</Label>
+                    <Select value={branchFilter} onValueChange={setBranchFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Tất cả" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="_all_">Tất cả chi nhánh</SelectItem>
+                        {branches?.map((branch) => (
+                          <SelectItem key={branch.id} value={branch.id}>
+                            {branch.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
