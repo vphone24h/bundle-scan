@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X } from 'lucide-react';
+import { Search, Download, FileText, MoreHorizontal, Eye, RotateCcw, Loader2, Filter, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
@@ -143,16 +143,8 @@ export default function ImportHistoryPage() {
     setSelectedReceiptId(receipt.id);
   };
 
-  const handleEdit = (receipt: ImportReceipt) => {
-    console.log('Edit receipt:', receipt);
-  };
-
-  const handleReturn = (receipt: ImportReceipt) => {
-    toast({
-      title: 'Chọn sản phẩm để trả',
-      description: 'Vui lòng chọn sản phẩm cụ thể trong tab "Theo sản phẩm" để trả hàng',
-    });
-  };
+  // Không hỗ trợ chỉnh sửa phiếu nhập đã hoàn tất
+  // Chỉ cho phép xem chi tiết và trả hàng từng sản phẩm
 
   const handleReturnProduct = (product: Product) => {
     if (product.status !== 'in_stock') {
@@ -466,14 +458,6 @@ export default function ImportHistoryPage() {
                               <Eye className="mr-2 h-4 w-4" />
                               Xem chi tiết
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEdit(receipt)}>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Chỉnh sửa
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleReturn(receipt)}>
-                              <RotateCcw className="mr-2 h-4 w-4" />
-                              Trả hàng
-                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>
@@ -543,26 +527,20 @@ export default function ImportHistoryPage() {
                         </Badge>
                       </td>
                       <td>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-popover">
-                            <DropdownMenuItem>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Chỉnh sửa
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleReturnProduct(product)}
-                              disabled={product.status !== 'in_stock'}
-                            >
-                              <RotateCcw className="mr-2 h-4 w-4" />
-                              Trả hàng
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        {product.status === 'in_stock' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleReturnProduct(product)}
+                            className="h-7 text-xs"
+                          >
+                            <RotateCcw className="mr-1 h-3 w-3" />
+                            Trả NCC
+                          </Button>
+                        )}
+                        {product.status !== 'in_stock' && (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
                       </td>
                     </tr>
                   ))}
