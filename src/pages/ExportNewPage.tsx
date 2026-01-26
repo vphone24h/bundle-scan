@@ -63,6 +63,7 @@ interface CartItem extends ExportReceiptItem {
   tempId: string;
   categoryName?: string;
   quantity: number;
+  warranty?: string;
 }
 
 export default function ExportNewPage() {
@@ -74,6 +75,7 @@ export default function ExportNewPage() {
   const [salePrice, setSalePrice] = useState('');
   const [itemNote, setItemNote] = useState('');
   const [itemQuantity, setItemQuantity] = useState(1);
+  const [itemWarranty, setItemWarranty] = useState('');
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -145,6 +147,7 @@ export default function ExportNewPage() {
       sale_price: Number(result.import_price) || 0, // Default to import price, can be changed
       note: null,
       quantity: 1, // IMEI products always have quantity 1
+      warranty: null,
     };
 
     setCart(prev => [...prev, newItem]);
@@ -218,6 +221,7 @@ export default function ExportNewPage() {
       sale_price: parseFloat(salePrice),
       note: itemNote || null,
       quantity: quantity,
+      warranty: itemWarranty || null,
     };
 
     setCart([...cart, newItem]);
@@ -225,6 +229,7 @@ export default function ExportNewPage() {
     setSalePrice('');
     setItemNote('');
     setItemQuantity(1);
+    setItemWarranty('');
     
     toast({
       title: 'Đã thêm vào giỏ',
@@ -468,13 +473,23 @@ export default function ExportNewPage() {
                     )}
                   </div>
                   
-                  <div>
-                    <Label>Ghi chú</Label>
-                    <Input
-                      placeholder="Ghi chú (tùy chọn)"
-                      value={itemNote}
-                      onChange={(e) => setItemNote(e.target.value)}
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Bảo hành</Label>
+                      <Input
+                        placeholder="VD: 12 tháng"
+                        value={itemWarranty}
+                        onChange={(e) => setItemWarranty(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Ghi chú</Label>
+                      <Input
+                        placeholder="Ghi chú (tùy chọn)"
+                        value={itemNote}
+                        onChange={(e) => setItemNote(e.target.value)}
+                      />
+                    </div>
                   </div>
 
                   <Button onClick={handleAddToCart} className="w-full">

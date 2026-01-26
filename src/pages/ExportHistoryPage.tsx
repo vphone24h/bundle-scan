@@ -450,6 +450,7 @@ export default function ExportHistoryPage() {
                       <TableHead className="text-center">SL</TableHead>
                       <TableHead className="text-right">Đơn giá</TableHead>
                       <TableHead className="text-right">Thành tiền</TableHead>
+                      <TableHead>Bảo hành</TableHead>
                       <TableHead>Khách hàng</TableHead>
                       <TableHead>Ngày bán</TableHead>
                       <TableHead>Chi nhánh</TableHead>
@@ -475,18 +476,21 @@ export default function ExportHistoryPage() {
                             )}
                           </TableCell>
                           <TableCell className="text-center">{quantity}</TableCell>
-                          <TableCell className="text-right font-medium">
-                            {item.sale_price.toLocaleString('vi-VN')}đ
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {totalPrice.toLocaleString('vi-VN')}đ
-                          </TableCell>
-                          <TableCell>
-                            <div>{item.export_receipts?.customers?.name || '-'}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {item.export_receipts?.customers?.phone}
-                            </div>
-                          </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {item.sale_price.toLocaleString('vi-VN')}đ
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {totalPrice.toLocaleString('vi-VN')}đ
+                        </TableCell>
+                        <TableCell>
+                          {(item as any).warranty || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <div>{item.export_receipts?.customers?.name || '-'}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {item.export_receipts?.customers?.phone}
+                          </div>
+                        </TableCell>
                           <TableCell>
                             {item.export_receipts?.export_date ? 
                               format(new Date(item.export_receipts.export_date), 'dd/MM/yyyy', { locale: vi }) : '-'}

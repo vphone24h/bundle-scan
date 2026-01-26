@@ -16,6 +16,7 @@ export interface ExportReceiptItem {
   sale_price: number;
   note?: string | null;
   quantity?: number; // For non-IMEI products
+  warranty?: string | null; // Warranty info
 }
 
 export interface ExportPayment {
@@ -58,6 +59,7 @@ export interface ExportReceiptItemDetail {
   sale_price: number;
   status: string;
   note: string | null;
+  warranty: string | null;
   created_at: string;
   // Joined
   categories?: { name: string } | null;
@@ -232,6 +234,7 @@ export function useCreateExportReceipt() {
         category_id: string | null;
         sale_price: number;
         note: string | null | undefined;
+        warranty: string | null | undefined;
       }> = [];
       
       for (const item of items) {
@@ -246,6 +249,7 @@ export function useCreateExportReceipt() {
             category_id: item.category_id,
             sale_price: item.sale_price,
             note: item.note,
+            warranty: item.warranty,
           });
         }
       }
