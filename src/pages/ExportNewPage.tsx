@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Table,
   TableBody,
@@ -25,7 +29,9 @@ import {
   Mail,
   CreditCard,
   Banknote,
-  ScanBarcode
+  ScanBarcode,
+  CalendarIcon,
+  Cake
 } from 'lucide-react';
 import { useCheckProductForSale, useSearchProductsByName, useCreateExportReceipt, type ExportReceiptItem, type ExportPayment } from '@/hooks/useExportReceipts';
 import { useUpsertCustomer } from '@/hooks/useCustomers';
@@ -36,6 +42,7 @@ import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
 import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombobox';
 import { formatNumber } from '@/lib/formatNumber';
+import { cn } from '@/lib/utils';
 
 interface SelectedCustomer {
   id: string;
@@ -48,6 +55,7 @@ interface SelectedCustomer {
   total_spent: number;
   membership_tier: 'regular' | 'silver' | 'gold' | 'vip';
   status: 'active' | 'inactive';
+  birthday: string | null;
 }
 
 interface CartItem extends ExportReceiptItem {
@@ -72,6 +80,7 @@ export default function ExportNewPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [customerBirthday, setCustomerBirthday] = useState<Date | undefined>(undefined);
   const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer | null>(null);
 
   // Payment dialog
@@ -261,6 +270,7 @@ export default function ExportNewPage() {
         phone: customerPhone,
         address: customerAddress || null,
         email: customerEmail || null,
+        birthday: customerBirthday ? format(customerBirthday, 'yyyy-MM-dd') : null,
       });
 
       // Create export receipt with points
@@ -288,6 +298,7 @@ export default function ExportNewPage() {
       setCustomerPhone('');
       setCustomerAddress('');
       setCustomerEmail('');
+      setCustomerBirthday(undefined);
       setSelectedCustomer(null);
 
       // Build success message with points info
@@ -543,7 +554,7 @@ export default function ExportNewPage() {
                 setCustomerEmail={setCustomerEmail}
               />
 
-              {/* Address & Email - only show when customer selected or entering new info */}
+              {/* Additional fields - only show when customer selected or entering new info */}
               {(selectedCustomer || customerPhone.length >= 3) && (
                 <>
                   <div>
@@ -565,11 +576,58 @@ export default function ExportNewPage() {
                       Email
                     </Label>
                     <Input
+                      type="email"
                       placeholder="Email (tùy chọn)"
                       value={customerEmail}
                       onChange={(e) => setCustomerEmail(e.target.value)}
                       disabled={!!selectedCustomer}
                     />
+                  </div>
+
+                  <div>
+                    <Label className="flex items-center gap-1">
+                      <Cake className="h-3 w-3" />
+                      Ngày sinh
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !customerBirthday && "text-muted-foreground"
+                          )}
+                          disabled={!!selectedCustomer}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {customerBirthday ? (
+                            format(customerBirthday, "dd/MM/yyyy", { locale: vi })
+                          ) : (
+                            <span>Chọn ngày sinh (tùy chọn)</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={customerBirthday}
+                          onSelect={setCustomerBirthday}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                          captionLayout="dropdown-buttons"
+                          fromYear={1920}
+                          toYear={new Date().getFullYear()}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {selectedCustomer?.birthday && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Ngày sinh: {format(new Date(selectedCustomer.birthday), "dd/MM/yyyy")}
+                      </p>
+                    )}
                   </div>
                 </>
               )}
