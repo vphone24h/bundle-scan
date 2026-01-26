@@ -70,6 +70,7 @@ export function useImportReturns(filters?: {
   endDate?: string;
   supplierId?: string;
   branchId?: string;
+  createdBy?: string;
 }) {
   return useQuery({
     queryKey: ['import-returns', filters],
@@ -95,6 +96,9 @@ export function useImportReturns(filters?: {
       if (filters?.branchId) {
         query = query.eq('branch_id', filters.branchId);
       }
+      if (filters?.createdBy) {
+        query = query.eq('created_by', filters.createdBy);
+      }
 
       const { data, error } = await query;
       if (error) throw error;
@@ -108,6 +112,8 @@ export function useExportReturns(filters?: {
   endDate?: string;
   customerId?: string;
   branchId?: string;
+  feeType?: 'none' | 'percentage' | 'fixed_amount';
+  createdBy?: string;
 }) {
   return useQuery({
     queryKey: ['export-returns', filters],
@@ -133,10 +139,32 @@ export function useExportReturns(filters?: {
       if (filters?.branchId) {
         query = query.eq('branch_id', filters.branchId);
       }
+      if (filters?.feeType) {
+        query = query.eq('fee_type', filters.feeType);
+      }
+      if (filters?.createdBy) {
+        query = query.eq('created_by', filters.createdBy);
+      }
 
       const { data, error } = await query;
       if (error) throw error;
       return data as ExportReturn[];
+    },
+  });
+}
+
+// Hook to get all profiles (for employee filter)
+export function useAllProfiles() {
+  return useQuery({
+    queryKey: ['all-profiles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, display_name')
+        .order('display_name');
+
+      if (error) throw error;
+      return data as { user_id: string; display_name: string }[];
     },
   });
 }
