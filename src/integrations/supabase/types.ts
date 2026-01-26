@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action_type: string
+          branch_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          ip_address: string | null
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          branch_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          branch_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branches: {
         Row: {
           address: string | null
@@ -990,30 +1040,53 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          branch_id: string | null
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
+          user_role: Database["public"]["Enums"]["user_role"] | null
         }
         Insert: {
+          branch_id?: string | null
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id: string
+          user_role?: Database["public"]["Enums"]["user_role"] | null
         }
         Update: {
+          branch_id?: string | null
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+          user_role?: Database["public"]["Enums"]["user_role"] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      can_access_branch: {
+        Args: { _branch_id: string; _user_id: string }
+        Returns: boolean
+      }
+      get_user_branch: { Args: { _user_id: string }; Returns: string }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1031,6 +1104,7 @@ export type Database = {
       receipt_status: "completed" | "cancelled"
       return_fee_type: "none" | "percentage" | "fixed_amount"
       return_type: "import_return" | "export_return"
+      user_role: "super_admin" | "branch_admin" | "staff" | "cashier"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1165,6 +1239,7 @@ export const Constants = {
       receipt_status: ["completed", "cancelled"],
       return_fee_type: ["none", "percentage", "fixed_amount"],
       return_type: ["import_return", "export_return"],
+      user_role: ["super_admin", "branch_admin", "staff", "cashier"],
     },
   },
 } as const

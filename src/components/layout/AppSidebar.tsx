@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -6,7 +6,6 @@ import {
   FolderTree,
   FileDown,
   FileUp,
-  History,
   Users,
   Menu,
   X,
@@ -18,11 +17,13 @@ import {
   Building2,
   RotateCcw,
   Boxes,
+  Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile, useUserRole } from '@/hooks/useProfile';
+import { usePermissions, UserRole } from '@/hooks/usePermissions';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -35,18 +36,30 @@ interface NavItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  children?: { title: string; href: string }[];
+  children?: { title: string; href: string; permission?: string }[];
+  permission?: string; // Tên permission cần để hiển thị menu này
 }
 
-const navItems: NavItem[] = [
+const getRoleName = (role: UserRole | undefined): string => {
+  switch (role) {
+    case 'super_admin': return 'Admin Tổng';
+    case 'branch_admin': return 'Admin CN';
+    case 'cashier': return 'Thu Ngân';
+    case 'staff': return 'Nhân viên';
+    default: return 'Nhân viên';
+  }
+};
+
+const allNavItems: NavItem[] = [
   { title: 'Tổng quan', href: '/', icon: LayoutDashboard },
-  { title: 'Sản phẩm', href: '/products', icon: Package },
+  { title: 'Sản phẩm', href: '/products', icon: Package, permission: 'canManageProducts' },
   { title: 'Tồn kho', href: '/inventory', icon: Boxes },
-  { title: 'Danh mục', href: '/categories', icon: FolderTree },
+  { title: 'Danh mục', href: '/categories', icon: FolderTree, permission: 'canManageCategories' },
   {
     title: 'Nhập hàng',
     href: '/import',
     icon: FileDown,
+    permission: 'canImportProducts',
     children: [
       { title: 'Tạo phiếu nhập', href: '/import/new' },
       { title: 'Lịch sử nhập', href: '/import/history' },
@@ -56,17 +69,19 @@ const navItems: NavItem[] = [
     title: 'Xuất hàng',
     href: '/export',
     icon: FileUp,
+    permission: 'canExportProducts',
     children: [
       { title: 'Tạo phiếu xuất', href: '/export/new' },
       { title: 'Lịch sử xuất', href: '/export/history' },
-      { title: 'Mẫu in hóa đơn', href: '/export/template' },
+      { title: 'Mẫu in hóa đơn', href: '/export/template', permission: 'canManageInvoiceTemplates' },
     ],
   },
-  { title: 'Trả hàng', href: '/returns', icon: RotateCcw },
-  { title: 'Nhà cung cấp', href: '/suppliers', icon: Users },
-  { title: 'Báo cáo', href: '/reports', icon: BarChart3 },
-  { title: 'Sổ quỹ', href: '/cash-book', icon: Wallet },
-  { title: 'Quản lý chi nhánh', href: '/branches', icon: Building2 },
+  { title: 'Trả hàng', href: '/returns', icon: RotateCcw, permission: 'canImportProducts' },
+  { title: 'Nhà cung cấp', href: '/suppliers', icon: Users, permission: 'canManageSuppliers' },
+  { title: 'Báo cáo', href: '/reports', icon: BarChart3, permission: 'canViewReports' },
+  { title: 'Sổ quỹ', href: '/cash-book', icon: Wallet, permission: 'canViewCashBook' },
+  { title: 'Quản lý chi nhánh', href: '/branches', icon: Building2, permission: 'canManageBranches' },
+  { title: 'Quản lý người dùng', href: '/users', icon: Shield, permission: 'canManageUsers' },
 ];
 
 export function AppSidebar() {
@@ -74,9 +89,30 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { data: profile } = useProfile();
-  const { data: userRole } = useUserRole();
+  const { data: permissions, isLoading: permissionsLoading } = usePermissions();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Nhập hàng', 'Xuất hàng']);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  // Lọc menu theo quyền
+  const navItems = useMemo(() => {
+    if (!permissions) return allNavItems.filter(item => !item.permission);
+    
+    return allNavItems.filter(item => {
+      if (!item.permission) return true;
+      return permissions[item.permission as keyof typeof permissions] === true;
+    }).map(item => {
+      if (item.children) {
+        return {
+          ...item,
+          children: item.children.filter(child => {
+            if (!child.permission) return true;
+            return permissions[child.permission as keyof typeof permissions] === true;
+          }),
+        };
+      }
+      return item;
+    });
+  }, [permissions]);
 
   const toggleExpand = (title: string) => {
     setExpandedItems((prev) =>
@@ -189,7 +225,7 @@ export function AppSidebar() {
                 </p>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-sidebar-muted text-sidebar-muted">
-                    {userRole?.role === 'admin' ? 'Admin' : 'Nhân viên'}
+                    {getRoleName(permissions?.role)}
                   </Badge>
                 </div>
               </div>
