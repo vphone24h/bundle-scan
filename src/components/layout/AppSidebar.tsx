@@ -19,6 +19,7 @@ import {
   Boxes,
   Shield,
   History,
+  Receipt,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -79,6 +80,7 @@ const allNavItems: NavItem[] = [
   },
   { title: 'Trả hàng', href: '/returns', icon: RotateCcw, permission: 'canImportProducts' },
   { title: 'Nhà cung cấp', href: '/suppliers', icon: Users, permission: 'canManageSuppliers' },
+  { title: 'Công nợ', href: '/debt', icon: Receipt, permission: 'canViewCashBook' },
   { title: 'Báo cáo', href: '/reports', icon: BarChart3, permission: 'canViewReports' },
   { title: 'Sổ quỹ', href: '/cash-book', icon: Wallet, permission: 'canViewCashBook' },
   { title: 'Quản lý chi nhánh', href: '/branches', icon: Building2, permission: 'canManageBranches' },
