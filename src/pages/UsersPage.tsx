@@ -254,52 +254,88 @@ export default function UsersPage() {
       />
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
             Danh sách người dùng
           </CardTitle>
           {isSuperAdmin && (
-            <Button onClick={() => setIsCreateOpen(true)}>
+            <Button onClick={() => setIsCreateOpen(true)} size="sm" className="w-full sm:w-auto">
               <UserPlus className="h-4 w-4 mr-2" />
               Tạo tài khoản
             </Button>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 sm:px-6">
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Đang tải...</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tên</TableHead>
-                  <TableHead>SĐT</TableHead>
-                  <TableHead>Vai trò</TableHead>
-                  <TableHead>Chi nhánh</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tên</TableHead>
+                      <TableHead>SĐT</TableHead>
+                      <TableHead>Vai trò</TableHead>
+                      <TableHead>Chi nhánh</TableHead>
+                      <TableHead className="text-right">Thao tác</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users?.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">
+                          {user.profiles?.display_name || 'Chưa cập nhật'}
+                        </TableCell>
+                        <TableCell>{user.profiles?.phone || '-'}</TableCell>
+                        <TableCell>
+                          <Badge className={roleColors[user.user_role]}>
+                            {roleLabels[user.user_role]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {user.user_role === 'super_admin' 
+                            ? <span className="text-muted-foreground italic">Tất cả</span>
+                            : user.branches?.name || <span className="text-destructive">Chưa gán</span>
+                          }
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {user.user_role !== 'super_admin' && 
+                           user.user_role !== 'branch_admin' && 
+                           (isSuperAdmin || (isBranchAdmin && user.branch_id === permissions.branchId)) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(user)}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card List */}
+              <div className="md:hidden space-y-3">
                 {users?.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      {user.profiles?.display_name || 'Chưa cập nhật'}
-                    </TableCell>
-                    <TableCell>{user.profiles?.phone || '-'}</TableCell>
-                    <TableCell>
-                      <Badge className={roleColors[user.user_role]}>
-                        {roleLabels[user.user_role]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {user.user_role === 'super_admin' 
-                        ? <span className="text-muted-foreground italic">Tất cả</span>
-                        : user.branches?.name || <span className="text-destructive">Chưa gán</span>
-                      }
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {/* Super Admin không thể bị chỉnh sửa, Branch Admin cũng không thể chỉnh sửa */}
+                  <div 
+                    key={user.id} 
+                    className="bg-card border rounded-lg p-4 space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">
+                          {user.profiles?.display_name || 'Chưa cập nhật'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {user.profiles?.phone || 'Chưa có SĐT'}
+                        </p>
+                      </div>
                       {user.user_role !== 'super_admin' && 
                        user.user_role !== 'branch_admin' && 
                        (isSuperAdmin || (isBranchAdmin && user.branch_id === permissions.branchId)) && (
@@ -311,11 +347,25 @@ export default function UsersPage() {
                           <Edit2 className="h-4 w-4" />
                         </Button>
                       )}
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge className={roleColors[user.user_role]}>
+                        {roleLabels[user.user_role]}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {user.user_role === 'super_admin' 
+                          ? 'Tất cả chi nhánh'
+                          : user.branches?.name || 'Chưa gán chi nhánh'
+                        }
+                      </span>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+                {users?.length === 0 && (
+                  <p className="text-center py-8 text-muted-foreground">Không có người dùng nào</p>
+                )}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
