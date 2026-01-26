@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -70,6 +71,7 @@ const paymentLabels: Record<string, string> = {
 };
 
 export default function ExportHistoryPage() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('_all_');
@@ -149,8 +151,8 @@ export default function ExportHistoryPage() {
     setShowPrintDialog(true);
   };
 
-  // Handle return
-  const handleReturn = async (item: ExportReceiptItemDetail) => {
+  // Handle return - Navigate to Returns page
+  const handleReturn = (item: ExportReceiptItemDetail) => {
     if (item.status === 'returned') {
       toast({
         title: 'Đã trả hàng',
@@ -159,26 +161,7 @@ export default function ExportHistoryPage() {
       });
       return;
     }
-
-    try {
-      await returnProduct.mutateAsync({
-        itemId: item.id,
-        receiptId: item.receipt_id,
-        productId: item.product_id,
-        imei: item.imei,
-      });
-
-      toast({
-        title: 'Trả hàng thành công',
-        description: `${item.product_name} đã được hoàn về kho`,
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Lỗi',
-        description: error.message || 'Không thể trả hàng',
-        variant: 'destructive',
-      });
-    }
+    navigate(`/returns?type=export&itemId=${item.id}`);
   };
 
   // Export to Excel (simplified)

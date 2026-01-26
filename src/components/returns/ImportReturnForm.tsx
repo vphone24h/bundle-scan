@@ -1,0 +1,264 @@
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { formatNumberWithSpaces, parseFormattedNumber, formatCurrencyWithSpaces } from '@/lib/formatNumber';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { useCreateImportReturn } from '@/hooks/useReturns';
+import type { Product } from '@/hooks/useProducts';
+
+interface PaymentLine {
+  id: string;
+  source: string;
+  amount: number;
+  displayAmount: string;
+}
+
+const PAYMENT_SOURCES = [
+  { value: 'debt', label: 'Công nợ' },
+  { value: 'cash', label: 'Tiền mặt' },
+  { value: 'bank_card', label: 'Thẻ ngân hàng' },
+  { value: 'e_wallet', label: 'Ví điện tử' },
+];
+
+interface ImportReturnFormProps {
+  product: Product | null;
+  onSuccess: () => void;
+  onCancel: () => void;
+}
+
+export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnFormProps) {
+  const [note, setNote] = useState('');
+  const [payments, setPayments] = useState<PaymentLine[]>([
+    { id: '1', source: 'cash', amount: product?.import_price || 0, displayAmount: formatNumberWithSpaces(product?.import_price || 0) }
+  ]);
+
+  const createImportReturn = useCreateImportReturn();
+
+  if (!product) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground">
+          Chọn sản phẩm để trả hàng từ Lịch sử nhập hàng
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const totalPayment = payments.reduce((sum, p) => sum + p.amount, 0);
+  const remaining = product.import_price - totalPayment;
+
+  const handleAddPayment = () => {
+    setPayments([
+      ...payments,
+      { id: Date.now().toString(), source: 'cash', amount: 0, displayAmount: '' }
+    ]);
+  };
+
+  const handleRemovePayment = (id: string) => {
+    if (payments.length > 1) {
+      setPayments(payments.filter(p => p.id !== id));
+    }
+  };
+
+  const handlePaymentChange = (id: string, field: 'source' | 'amount', value: string) => {
+    setPayments(payments.map(p => {
+      if (p.id !== id) return p;
+      if (field === 'source') {
+        return { ...p, source: value };
+      } else {
+        const numValue = parseFormattedNumber(value);
+        return { ...p, amount: numValue, displayAmount: formatNumberWithSpaces(numValue) };
+      }
+    }));
+  };
+
+  const handleSubmit = async () => {
+    if (totalPayment !== product.import_price) {
+      toast({
+        title: 'Số tiền không khớp',
+        description: `Tổng tiền hoàn trả phải bằng ${formatCurrencyWithSpaces(product.import_price)}`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await createImportReturn.mutateAsync({
+        product: {
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          imei: product.imei,
+          import_price: product.import_price,
+          import_receipt_id: product.import_receipt_id,
+          supplier_id: product.supplier_id,
+          branch_id: product.branch_id,
+          import_date: product.import_date,
+        },
+        payments: payments.filter(p => p.amount > 0).map(p => ({
+          source: p.source,
+          amount: p.amount,
+        })),
+        note: note || null,
+      });
+
+      toast({
+        title: 'Trả hàng thành công',
+        description: `Đã trả ${product.name} cho nhà cung cấp`,
+      });
+
+      onSuccess();
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể hoàn tất trả hàng',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Product Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Thông tin sản phẩm trả</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <Label className="text-muted-foreground">Tên sản phẩm</Label>
+              <p className="font-medium">{product.name}</p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground">SKU</Label>
+              <p className="font-medium">{product.sku}</p>
+            </div>
+            {product.imei && (
+              <div>
+                <Label className="text-muted-foreground">IMEI</Label>
+                <p className="font-mono">{product.imei}</p>
+              </div>
+            )}
+            <div>
+              <Label className="text-muted-foreground">Giá nhập</Label>
+              <p className="font-bold text-primary">{formatCurrencyWithSpaces(product.import_price)}</p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground">Nhà cung cấp</Label>
+              <p>{product.suppliers?.name || '-'}</p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground">Chi nhánh</Label>
+              <p>{product.branches?.name || '-'}</p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground">Ngày nhập</Label>
+              <p>{new Date(product.import_date).toLocaleDateString('vi-VN')}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Payment Lines */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base">Dòng tiền hoàn trả</CardTitle>
+          <Button variant="outline" size="sm" onClick={handleAddPayment}>
+            <Plus className="h-4 w-4 mr-1" />
+            Thêm
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {payments.map((payment, index) => (
+              <div key={payment.id} className="flex gap-3 items-start">
+                <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground">Nguồn tiền</Label>
+                  <select
+                    value={payment.source}
+                    onChange={(e) => handlePaymentChange(payment.id, 'source', e.target.value)}
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                  >
+                    {PAYMENT_SOURCES.map(src => (
+                      <option key={src.value} value={src.value}>{src.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground">Số tiền</Label>
+                  <Input
+                    value={payment.displayAmount}
+                    onChange={(e) => handlePaymentChange(payment.id, 'amount', e.target.value)}
+                    placeholder="0"
+                    className="text-right"
+                  />
+                </div>
+                {payments.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="mt-5"
+                    onClick={() => handleRemovePayment(payment.id)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                )}
+              </div>
+            ))}
+
+            {/* Summary */}
+            <div className="pt-4 border-t space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Tổng hoàn trả:</span>
+                <span className="font-bold">{formatCurrencyWithSpaces(totalPayment)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Cần hoàn trả:</span>
+                <span className="font-bold">{formatCurrencyWithSpaces(product.import_price)}</span>
+              </div>
+              {remaining !== 0 && (
+                <div className="flex justify-between text-sm text-destructive">
+                  <span>Còn thiếu:</span>
+                  <span className="font-bold">{formatCurrencyWithSpaces(Math.abs(remaining))}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Note */}
+      <Card>
+        <CardContent className="pt-6">
+          <Label>Ghi chú</Label>
+          <Textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Ghi chú cho phiếu trả hàng..."
+            className="mt-2"
+          />
+        </CardContent>
+      </Card>
+
+      {/* Actions */}
+      <div className="flex justify-end gap-3">
+        <Button variant="outline" onClick={onCancel}>
+          Hủy
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={createImportReturn.isPending || remaining !== 0}
+        >
+          {createImportReturn.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          Xác nhận trả hàng
+        </Button>
+      </div>
+    </div>
+  );
+}

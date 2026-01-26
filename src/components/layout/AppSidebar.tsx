@@ -16,6 +16,7 @@ import {
   BarChart3,
   Wallet,
   Building2,
+  RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -59,6 +60,7 @@ const navItems: NavItem[] = [
       { title: 'Mẫu in hóa đơn', href: '/export/template' },
     ],
   },
+  { title: 'Trả hàng', href: '/returns', icon: RotateCcw },
   { title: 'Nhà cung cấp', href: '/suppliers', icon: Users },
   { title: 'Báo cáo', href: '/reports', icon: BarChart3 },
   { title: 'Sổ quỹ', href: '/cash-book', icon: Wallet },

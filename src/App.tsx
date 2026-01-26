@@ -18,6 +18,7 @@ import InvoiceTemplatePage from "./pages/InvoiceTemplatePage";
 import ReportsPage from "./pages/ReportsPage";
 import CashBookPage from "./pages/CashBookPage";
 import BranchesPage from "./pages/BranchesPage";
+import ReturnsPage from "./pages/ReturnsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
             <Route path="/cash-book" element={<ProtectedRoute><CashBookPage /></ProtectedRoute>} />
             <Route path="/branches" element={<ProtectedRoute><BranchesPage /></ProtectedRoute>} />
+            <Route path="/returns" element={<ProtectedRoute><ReturnsPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

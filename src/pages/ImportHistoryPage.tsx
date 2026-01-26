@@ -33,12 +33,14 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
+import type { Product } from '@/hooks/useProducts';
 
 export default function ImportHistoryPage() {
+  const navigate = useNavigate();
   const { data: receipts, isLoading: receiptsLoading } = useImportReceipts();
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: categories } = useCategories();
@@ -146,7 +148,22 @@ export default function ImportHistoryPage() {
   };
 
   const handleReturn = (receipt: ImportReceipt) => {
-    console.log('Return receipt:', receipt);
+    toast({
+      title: 'Chọn sản phẩm để trả',
+      description: 'Vui lòng chọn sản phẩm cụ thể trong tab "Theo sản phẩm" để trả hàng',
+    });
+  };
+
+  const handleReturnProduct = (product: Product) => {
+    if (product.status !== 'in_stock') {
+      toast({
+        title: 'Không thể trả hàng',
+        description: 'Sản phẩm này đã bán hoặc đã trả trước đó',
+        variant: 'destructive',
+      });
+      return;
+    }
+    navigate(`/returns?type=import&productId=${product.id}`);
   };
 
   const clearFilters = () => {
@@ -537,7 +554,10 @@ export default function ImportHistoryPage() {
                               <Pencil className="mr-2 h-4 w-4" />
                               Chỉnh sửa
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleReturnProduct(product)}
+                              disabled={product.status !== 'in_stock'}
+                            >
                               <RotateCcw className="mr-2 h-4 w-4" />
                               Trả hàng
                             </DropdownMenuItem>
