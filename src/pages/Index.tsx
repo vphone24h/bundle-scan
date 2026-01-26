@@ -35,6 +35,16 @@ const Index = () => {
       <PageHeader
         title="Tổng quan kho hàng"
         description="Theo dõi tình trạng kho và hoạt động nhập hàng"
+        actions={
+          userGuideUrl && (
+            <Button variant="secondary" size="sm" asChild>
+              <a href={userGuideUrl} target="_blank" rel="noopener noreferrer">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Hướng dẫn sử dụng
+              </a>
+            </Button>
+          )
+        }
       />
 
       <div className="p-6 lg:p-8 space-y-6">
@@ -185,14 +195,6 @@ const Index = () => {
               Nhà cung cấp
             </Link>
           </Button>
-          {userGuideUrl && (
-            <Button variant="secondary" asChild>
-              <a href={userGuideUrl} target="_blank" rel="noopener noreferrer">
-                <BookOpen className="mr-2 h-4 w-4" />
-                Hướng dẫn sử dụng
-              </a>
-            </Button>
-          )}
         </div>
       </div>
     </MainLayout>
