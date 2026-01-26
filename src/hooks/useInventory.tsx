@@ -135,7 +135,8 @@ export function useInventory() {
         }
       });
 
-      return Array.from(inventoryMap.values());
+      // Lọc bỏ sản phẩm có tồn kho = 0
+      return Array.from(inventoryMap.values()).filter(item => item.stock > 0);
     },
   });
 }
