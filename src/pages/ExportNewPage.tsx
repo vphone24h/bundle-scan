@@ -62,6 +62,7 @@ interface SelectedCustomer {
 interface CartItem extends ExportReceiptItem {
   tempId: string;
   categoryName?: string;
+  branchName?: string;
   quantity: number;
   warranty?: string;
 }
@@ -144,6 +145,8 @@ export default function ExportNewPage() {
       imei: result.imei,
       category_id: result.category_id,
       categoryName: result.categories?.name,
+      branch_id: result.branch_id,
+      branchName: result.branches?.name,
       sale_price: Number(result.import_price) || 0, // Default to import price, can be changed
       note: null,
       quantity: 1, // IMEI products always have quantity 1
@@ -218,6 +221,8 @@ export default function ExportNewPage() {
       imei: selectedProduct.imei,
       category_id: selectedProduct.category_id,
       categoryName: selectedProduct.categories?.name,
+      branch_id: selectedProduct.branch_id,
+      branchName: selectedProduct.branches?.name,
       sale_price: parseFloat(salePrice),
       note: itemNote || null,
       quantity: quantity,
@@ -295,13 +300,17 @@ export default function ExportNewPage() {
         birthday: customerBirthday ? format(customerBirthday, 'yyyy-MM-dd') : null,
       });
 
-      // Create export receipt with points
+      // Get branch_id from first cart item
+      const branchId = cart.find(item => item.branch_id)?.branch_id || null;
+
+      // Create export receipt with points and branch
       const receipt = await createReceipt.mutateAsync({
         customerId: customer.id,
-        items: cart.map(({ tempId, categoryName, ...item }) => item),
+        items: cart.map(({ tempId, categoryName, branchName, ...item }) => item),
         payments,
         pointsRedeemed,
         pointsDiscount,
+        branchId,
       });
 
       setCreatedReceipt({

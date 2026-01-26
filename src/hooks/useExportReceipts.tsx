@@ -17,6 +17,7 @@ export interface ExportReceiptItem {
   note?: string | null;
   quantity?: number; // For non-IMEI products
   warranty?: string | null; // Warranty info
+  branch_id?: string | null; // Branch of product
 }
 
 export interface ExportPayment {
@@ -133,6 +134,7 @@ export function useCreateExportReceipt() {
       note,
       pointsRedeemed = 0,
       pointsDiscount = 0,
+      branchId,
     }: {
       customerId: string;
       items: ExportReceiptItem[];
@@ -140,6 +142,7 @@ export function useCreateExportReceipt() {
       note?: string;
       pointsRedeemed?: number;
       pointsDiscount?: number;
+      branchId?: string | null;
     }) => {
       // Calculate total amount considering quantity
       const totalAmount = items.reduce((sum, item) => sum + (item.sale_price * (item.quantity || 1)), 0);
@@ -201,6 +204,9 @@ export function useCreateExportReceipt() {
       // If customer still has debt, points are pending
       const pointsArePending = pointSettings?.require_full_payment && debtAmount > 0;
 
+      // Get branch_id from first item if not provided
+      const effectiveBranchId = branchId || items.find(i => i.branch_id)?.branch_id || null;
+
       // Create receipt
       const { data: receipt, error: receiptError } = await supabase
         .from('export_receipts')
@@ -208,6 +214,7 @@ export function useCreateExportReceipt() {
           {
             code,
             customer_id: customerId,
+            branch_id: effectiveBranchId,
             total_amount: totalAmount,
             paid_amount: paidAmount,
             debt_amount: debtAmount,
@@ -549,7 +556,9 @@ export function useCheckProductForSale() {
           import_price,
           status,
           category_id,
-          categories(name)
+          branch_id,
+          categories(name),
+          branches(name)
         `)
         .eq('imei', imei)
         .maybeSingle();
@@ -573,7 +582,9 @@ export function useSearchProductsByName() {
           import_price,
           status,
           category_id,
-          categories(name)
+          branch_id,
+          categories(name),
+          branches(name)
         `)
         .eq('status', 'in_stock')
         .ilike('name', `%${searchTerm}%`)
