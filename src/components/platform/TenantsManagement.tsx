@@ -125,7 +125,8 @@ export function TenantsManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead>Doanh nghiệp</TableHead>
-                <TableHead>Subdomain</TableHead>
+                <TableHead>Store ID</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead>Gói dịch vụ</TableHead>
                 <TableHead>Còn lại</TableHead>
@@ -141,13 +142,15 @@ export function TenantsManagement() {
                 return (
                   <TableRow key={tenant.id}>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{tenant.name}</p>
-                        <p className="text-sm text-muted-foreground">{tenant.email}</p>
-                      </div>
+                      <p className="font-medium">{tenant.name}</p>
                     </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {tenant.subdomain}
+                    <TableCell>
+                      <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
+                        {tenant.subdomain}
+                      </code>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">{tenant.email || '-'}</span>
                     </TableCell>
                     <TableCell>
                       <Badge variant={status.variant}>{status.label}</Badge>
@@ -225,16 +228,24 @@ export function TenantsManagement() {
                     </div>
                     <div>
                       <p className="font-medium">{tenant.name}</p>
-                      <p className="text-sm text-muted-foreground">{tenant.subdomain}</p>
+                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
+                        {tenant.subdomain}
+                      </code>
                     </div>
                   </div>
                   <Badge variant={status.variant}>{status.label}</Badge>
                 </div>
-                <div className="mt-3 flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Còn lại:</span>
-                  <span className={remaining <= 7 ? 'text-destructive font-medium' : ''}>
-                    {remaining > 36500 ? 'Vĩnh viễn' : `${remaining} ngày`}
-                  </span>
+                <div className="mt-3 space-y-1 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Email:</span>
+                    <span>{tenant.email || '-'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Còn lại:</span>
+                    <span className={remaining <= 7 ? 'text-destructive font-medium' : ''}>
+                      {remaining > 36500 ? 'Vĩnh viễn' : `${remaining} ngày`}
+                    </span>
+                  </div>
                 </div>
                 <div className="mt-3 flex gap-2">
                   {tenant.status !== 'locked' ? (
