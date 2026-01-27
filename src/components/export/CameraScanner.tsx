@@ -1,9 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Camera, X, SwitchCamera, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface CameraScannerProps {
   onScan: (code: string) => void;
@@ -15,22 +13,46 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const html5QrcodeModuleRef = useRef<any>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      startScanner();
-    } else {
-      stopScanner();
+  const playBeep = useCallback(() => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 1200;
+      oscillator.type = 'sine';
+      gainNode.gain.value = 0.3;
+      
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.15);
+    } catch (e) {
+      // Audio not available
     }
+  }, []);
 
-    return () => {
-      stopScanner();
-    };
-  }, [isOpen, facingMode]);
+  const stopScanner = useCallback(async () => {
+    if (scannerRef.current) {
+      try {
+        const state = scannerRef.current.getState();
+        if (state === 2) { // SCANNING
+          await scannerRef.current.stop();
+        }
+        scannerRef.current.clear();
+      } catch (e) {
+        // Ignore errors during stop
+      }
+      scannerRef.current = null;
+    }
+  }, []);
 
-  const startScanner = async () => {
+  const startScanner = useCallback(async () => {
     if (!containerRef.current) return;
     
     setIsStarting(true);
@@ -39,6 +61,13 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
     try {
       // Stop existing scanner first
       await stopScanner();
+
+      // Dynamic import html5-qrcode
+      if (!html5QrcodeModuleRef.current) {
+        html5QrcodeModuleRef.current = await import('html5-qrcode');
+      }
+      
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = html5QrcodeModuleRef.current;
 
       const html5QrCode = new Html5Qrcode('qr-reader', {
         formatsToSupport: [
@@ -62,7 +91,7 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
           qrbox: { width: 250, height: 250 },
           aspectRatio: 1,
         },
-        (decodedText) => {
+        (decodedText: string) => {
           // Play beep sound
           playBeep();
           onScan(decodedText);
@@ -85,42 +114,19 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
     } finally {
       setIsStarting(false);
     }
-  };
+  }, [facingMode, onClose, onScan, playBeep, stopScanner]);
 
-  const stopScanner = async () => {
-    if (scannerRef.current) {
-      try {
-        const state = scannerRef.current.getState();
-        if (state === 2) { // SCANNING
-          await scannerRef.current.stop();
-        }
-        scannerRef.current.clear();
-      } catch (e) {
-        // Ignore errors during stop
-      }
-      scannerRef.current = null;
+  useEffect(() => {
+    if (isOpen) {
+      startScanner();
+    } else {
+      stopScanner();
     }
-  };
 
-  const playBeep = () => {
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = 1200;
-      oscillator.type = 'sine';
-      gainNode.gain.value = 0.3;
-      
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.15);
-    } catch (e) {
-      // Audio not available
-    }
-  };
+    return () => {
+      stopScanner();
+    };
+  }, [isOpen, startScanner, stopScanner]);
 
   const toggleCamera = () => {
     setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
@@ -134,8 +140,8 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-background">
+    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold flex items-center gap-2">
@@ -149,24 +155,24 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
 
           <div 
             ref={containerRef}
-            className="relative bg-black rounded-lg overflow-hidden"
+            className="relative bg-muted rounded-lg overflow-hidden"
             style={{ minHeight: '300px' }}
           >
             <div id="qr-reader" className="w-full" />
             
             {isStarting && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                <div className="text-center text-white space-y-2">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-                  <p className="text-sm">Đang khởi động camera...</p>
+              <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+                <div className="text-center space-y-2">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                  <p className="text-sm text-muted-foreground">Đang khởi động camera...</p>
                 </div>
               </div>
             )}
 
             {error && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-4">
-                <div className="text-center text-white space-y-3">
-                  <p className="text-sm text-red-400">{error}</p>
+              <div className="absolute inset-0 flex items-center justify-center bg-background/80 p-4">
+                <div className="text-center space-y-3">
+                  <p className="text-sm text-destructive">{error}</p>
                   <Button 
                     variant="secondary" 
                     size="sm"
