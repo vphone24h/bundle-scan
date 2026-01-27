@@ -9,9 +9,10 @@ import { PaymentConfigManagement } from '@/components/platform/PaymentConfigMana
 import { PaymentHistoryTable } from '@/components/platform/PaymentHistoryTable';
 import { PlatformStats } from '@/components/platform/PlatformStats';
 import { AffiliateManagement } from '@/components/platform/AffiliateManagement';
+import { PlatformAdvertisementsManagement } from '@/components/platform/PlatformAdvertisementsManagement';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate } from 'react-router-dom';
-import { Loader2, Users } from 'lucide-react';
+import { Loader2, Users, Megaphone } from 'lucide-react';
 
 export default function PlatformAdminPage() {
   const { data: platformUser, isLoading } = usePlatformUser();
@@ -49,6 +50,10 @@ export default function PlatformAdminPage() {
               <Users className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Affiliate</span>
             </TabsTrigger>
+            <TabsTrigger value="ads" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
+              <Megaphone className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Quảng cáo</span>
+            </TabsTrigger>
             <TabsTrigger value="config" className="text-xs sm:text-sm px-2 sm:px-3">Cấu hình</TabsTrigger>
           </TabsList>
 
@@ -74,6 +79,10 @@ export default function PlatformAdminPage() {
 
           <TabsContent value="affiliate" className="mt-6">
             <AffiliateManagement />
+          </TabsContent>
+
+          <TabsContent value="ads" className="mt-6">
+            <PlatformAdvertisementsManagement />
           </TabsContent>
 
           <TabsContent value="config" className="mt-6">
