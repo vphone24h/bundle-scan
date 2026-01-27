@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,16 +8,28 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { Warehouse, Loader2 } from 'lucide-react';
+import { useTenantResolver } from '@/hooks/useTenantResolver';
 
 export default function AuthPage() {
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const [loading, setLoading] = useState(false);
+  
+  // Auto-detect tenant from subdomain
+  const resolvedTenant = useTenantResolver();
+  const isSubdomainMode = resolvedTenant.status === 'resolved' && resolvedTenant.subdomain;
 
-  // Login form
+  // Login form - pre-fill store ID if detected from subdomain
   const [storeId, setStoreId] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  
+  // Auto-fill store ID from subdomain
+  useEffect(() => {
+    if (resolvedTenant.subdomain && resolvedTenant.status === 'resolved') {
+      setStoreId(resolvedTenant.subdomain);
+    }
+  }, [resolvedTenant.subdomain, resolvedTenant.status]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,31 +167,52 @@ export default function AuthPage() {
               <Warehouse className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl">Kho Hàng Pro</CardTitle>
-          <CardDescription>Đăng nhập vào cửa hàng của bạn</CardDescription>
+          <CardTitle className="text-2xl">
+            {isSubdomainMode && resolvedTenant.tenantName 
+              ? resolvedTenant.tenantName 
+              : 'Kho Hàng Pro'}
+          </CardTitle>
+          <CardDescription>
+            {isSubdomainMode 
+              ? 'Đăng nhập vào cửa hàng' 
+              : 'Đăng nhập vào cửa hàng của bạn'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="store-id">ID Cửa hàng</Label>
-              <div className="flex items-center gap-0">
-                <Input
-                  id="store-id"
-                  type="text"
-                  placeholder="vphone"
-                  value={storeId}
-                  onChange={(e) => setStoreId(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                  className="rounded-r-none border-r-0"
-                  required
-                />
-                <span className="inline-flex items-center px-3 h-10 border border-l-0 rounded-r-md bg-muted text-muted-foreground text-sm">
-                  .vkho.vn
-                </span>
+            {/* Ẩn Store ID input nếu đang ở subdomain mode */}
+            {!isSubdomainMode && (
+              <div className="space-y-2">
+                <Label htmlFor="store-id">ID Cửa hàng</Label>
+                <div className="flex items-center gap-0">
+                  <Input
+                    id="store-id"
+                    type="text"
+                    placeholder="vphone"
+                    value={storeId}
+                    onChange={(e) => setStoreId(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                    className="rounded-r-none border-r-0"
+                    required
+                  />
+                  <span className="inline-flex items-center px-3 h-10 border border-l-0 rounded-r-md bg-muted text-muted-foreground text-sm">
+                    .vkho.vn
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Nhập ID cửa hàng bạn đã đăng ký (không có dấu chấm)
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Nhập ID cửa hàng bạn đã đăng ký (không có dấu chấm)
-              </p>
-            </div>
+            )}
+            
+            {/* Hiển thị store info nếu đang ở subdomain mode */}
+            {isSubdomainMode && (
+              <div className="bg-muted p-3 rounded-lg text-center">
+                <p className="text-sm text-muted-foreground">Đang đăng nhập vào</p>
+                <p className="font-mono font-semibold text-primary">
+                  {resolvedTenant.subdomain}.vkho.vn
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="login-email">Email</Label>
               <Input
@@ -212,29 +245,37 @@ export default function AuthPage() {
               Đăng nhập
             </Button>
             
-            <div className="text-center">
-              <Link to="/forgot-store-id" className="text-sm text-muted-foreground hover:text-primary hover:underline">
-                Quên ID cửa hàng?
-              </Link>
-            </div>
+            {/* Chỉ hiển thị link "Quên ID cửa hàng" khi không ở subdomain mode */}
+            {!isSubdomainMode && (
+              <div className="text-center">
+                <Link to="/forgot-store-id" className="text-sm text-muted-foreground hover:text-primary hover:underline">
+                  Quên ID cửa hàng?
+                </Link>
+              </div>
+            )}
           </form>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">
-                Chưa có tài khoản?
-              </span>
-            </div>
-          </div>
+          {/* Chỉ hiển thị đăng ký khi ở main domain */}
+          {!isSubdomainMode && (
+            <>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">
+                    Chưa có tài khoản?
+                  </span>
+                </div>
+              </div>
 
-          <Button variant="outline" className="w-full" asChild>
-            <Link to="/register">
-              Đăng ký doanh nghiệp mới
-            </Link>
-          </Button>
+              <Button variant="outline" className="w-full" asChild>
+                <Link to="/register">
+                  Đăng ký doanh nghiệp mới
+                </Link>
+              </Button>
+            </>
+          )}
 
         </CardContent>
       </Card>
