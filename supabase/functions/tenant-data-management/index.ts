@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
     
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
+      db: { schema: 'public' }
     })
 
     // Verify caller
@@ -167,10 +168,22 @@ Deno.serve(async (req) => {
           }
 
           // Update tenant with backup flag
-          await supabaseAdmin
+          const { data: updateData, error: updateError } = await supabaseAdmin
             .from('tenants')
             .update({ is_data_hidden: true, has_data_backup: true })
             .eq('id', callerTenantId)
+            .select('id, is_data_hidden')
+            .single()
+
+          if (updateError) {
+            console.error('Error updating tenant:', updateError)
+            return new Response(
+              JSON.stringify({ error: 'Không thể cập nhật trạng thái: ' + updateError.message }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
+
+          console.log('Update result:', updateData)
 
           // Log action
           await supabaseAdmin.from('audit_logs').insert({
@@ -182,10 +195,22 @@ Deno.serve(async (req) => {
           })
         } else {
           // Just turn off visibility, don't change data
-          await supabaseAdmin
+          const { data: updateData, error: updateError } = await supabaseAdmin
             .from('tenants')
             .update({ is_data_hidden: false })
             .eq('id', callerTenantId)
+            .select('id, is_data_hidden')
+            .single()
+
+          if (updateError) {
+            console.error('Error updating tenant:', updateError)
+            return new Response(
+              JSON.stringify({ error: 'Không thể cập nhật trạng thái: ' + updateError.message }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+          }
+
+          console.log('Update result:', updateData)
 
           await supabaseAdmin.from('audit_logs').insert({
             tenant_id: callerTenantId,
