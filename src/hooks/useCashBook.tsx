@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { useCurrentTenant } from './useTenant';
 
 type CashBookType = Database['public']['Enums']['cash_book_type'];
 
@@ -44,9 +45,15 @@ export function useCashBook(filters?: {
   type?: CashBookType;
   branchId?: string;
 }) {
+  const { data: tenant } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden || false;
+
   return useQuery({
-    queryKey: ['cash-book', filters],
+    queryKey: ['cash-book', filters, isDataHidden],
     queryFn: async () => {
+      // Chế độ test: trả về dữ liệu rỗng
+      if (isDataHidden) return [] as CashBookEntry[];
+
       let query = supabase
         .from('cash_book')
         .select('*, branches(name)')
