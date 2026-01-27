@@ -38,13 +38,45 @@ export interface ProductDetail {
 // Process products into inventory items - extracted for reuse
 function processProductsToInventory(products: any[]): InventoryItem[] {
   const inventoryMap = new Map<string, InventoryItem>();
-  const processedImeis = new Set<string>();
+  // Track processed IMEIs with their status - prioritize 'in_stock' products
+  const processedImeis = new Map<string, string>(); // imei -> status
 
   for (const product of products) {
-    // Skip duplicate IMEIs
+    // Handle IMEI deduplication with priority for 'in_stock' status
     if (product.imei) {
-      if (processedImeis.has(product.imei)) continue;
-      processedImeis.add(product.imei);
+      const existingStatus = processedImeis.get(product.imei);
+      
+      if (existingStatus) {
+        // If we already have an 'in_stock' product with this IMEI, skip other statuses
+        if (existingStatus === 'in_stock') continue;
+        
+        // If current product is 'in_stock' but we previously processed a 'sold' one,
+        // we need to process this one instead (will be handled below)
+        if (product.status === 'in_stock') {
+          // Remove the old entry from inventory and reprocess with in_stock product
+          // Find and remove old entry
+          for (const [key, item] of inventoryMap.entries()) {
+            if (item.products.some(p => p.imei === product.imei)) {
+              // Decrease counts for the old 'sold' product
+              item.totalSold = Math.max(0, item.totalSold - 1);
+              item.totalImported = Math.max(0, item.totalImported - 1);
+              item.stock = item.totalImported - item.totalSold;
+              item.products = item.products.filter(p => p.imei !== product.imei);
+              
+              // Remove item if no products left
+              if (item.products.length === 0 && item.stock <= 0) {
+                inventoryMap.delete(key);
+              }
+              break;
+            }
+          }
+        } else {
+          // Both are not 'in_stock', skip duplicate
+          continue;
+        }
+      }
+      
+      processedImeis.set(product.imei, product.status);
     }
 
     const key = `${product.name}|${product.sku}|${product.branch_id || 'no-branch'}`;
