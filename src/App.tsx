@@ -36,6 +36,9 @@ const PlatformAdminPage = lazy(() => import("./pages/PlatformAdminPage"));
 const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
 const AffiliatePage = lazy(() => import("./pages/AffiliatePage"));
 const EInvoicePage = lazy(() => import("./pages/EInvoicePage"));
+const MinigamePage = lazy(() => import("./pages/MinigamePage"));
+const CreateMinigameCampaign = lazy(() => import("./components/minigame/CreateMinigameCampaign"));
+const PlayMinigame = lazy(() => import("./pages/PlayMinigame"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -63,6 +66,7 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/forgot-store-id" element={<ForgotStoreIdPage />} />
+              <Route path="/play/:id" element={<PlayMinigame />} />
               
               {/* Protected routes */}
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
@@ -86,6 +90,8 @@ const App = () => (
               <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
               <Route path="/affiliate" element={<ProtectedRoute><AffiliatePage /></ProtectedRoute>} />
               <Route path="/einvoice" element={<ProtectedRoute><EInvoicePage /></ProtectedRoute>} />
+              <Route path="/minigame" element={<ProtectedRoute><MinigamePage /></ProtectedRoute>} />
+              <Route path="/minigame/create" element={<ProtectedRoute><CreateMinigameCampaign /></ProtectedRoute>} />
               
               {/* Platform Admin route */}
               <Route path="/platform-admin" element={<ProtectedRoute><PlatformAdminPage /></ProtectedRoute>} />
