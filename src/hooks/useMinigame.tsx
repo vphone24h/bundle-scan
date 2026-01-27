@@ -71,6 +71,10 @@ export interface MinigameSpin {
   result_type: 'prize' | 'no_prize';
   prize_name?: string;
   prize_value?: string;
+  prize_code?: string;
+  is_virtual?: boolean;
+  claimed_at?: string;
+  claim_info?: Record<string, unknown>;
   ip_address?: string;
   spun_at: string;
   participant?: {
@@ -78,7 +82,10 @@ export interface MinigameSpin {
     phone: string;
     email?: string;
   };
-  prize?: MinigamePrize;
+  prize?: {
+    name: string;
+    color: string;
+  };
 }
 
 export function useMinigameCampaigns() {
