@@ -173,7 +173,7 @@ export default function AuthPage() {
                   required
                 />
                 <span className="inline-flex items-center px-3 h-10 border border-l-0 rounded-r-md bg-muted text-muted-foreground text-sm">
-                  .khohangpro.vn
+                  .vkho.vn
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
