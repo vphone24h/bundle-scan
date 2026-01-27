@@ -278,10 +278,10 @@ export function AppSidebar() {
       <Button
         variant="ghost"
         size="icon"
-        className="fixed top-4 left-4 z-50 lg:hidden"
+        className="fixed top-3 left-3 z-50 lg:hidden h-9 w-9 sm:h-10 sm:w-10 bg-card/80 backdrop-blur-sm shadow-sm border"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
       >
-        {isMobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        {isMobileOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
       </Button>
 
       {/* Mobile overlay */}
