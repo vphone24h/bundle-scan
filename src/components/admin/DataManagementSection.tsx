@@ -26,6 +26,11 @@ export function DataManagementSection() {
   const [isHidden, setIsHidden] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   
+  // Toggle password dialog states
+  const [showToggleDialog, setShowToggleDialog] = useState(false);
+  const [togglePassword, setTogglePassword] = useState('');
+  const [pendingToggleValue, setPendingToggleValue] = useState(false);
+  
   // Delete dialog states
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteStep, setDeleteStep] = useState<'confirm' | 'password'>('confirm');
@@ -40,32 +45,51 @@ export function DataManagementSection() {
     }
   }, [tenant?.is_data_hidden]);
 
-  const handleToggleVisibility = async (newValue: boolean) => {
+  const handleToggleRequest = (newValue: boolean) => {
+    setPendingToggleValue(newValue);
+    setTogglePassword('');
+    setShowToggleDialog(true);
+  };
+
+  const handleToggleVisibility = async () => {
+    if (!togglePassword) {
+      toast.error('Vui lòng nhập mật khẩu');
+      return;
+    }
+
     setIsToggling(true);
     try {
       const { data, error } = await supabase.functions.invoke('tenant-data-management', {
         body: {
           action: 'toggle_data_visibility',
-          isHidden: newValue,
+          isHidden: pendingToggleValue,
+          password: togglePassword,
         },
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      setIsHidden(newValue);
+      setIsHidden(pendingToggleValue);
+      setShowToggleDialog(false);
+      setTogglePassword('');
       await refetchTenant();
       
       // Invalidate all data queries to force refresh
       queryClient.invalidateQueries();
       
-      toast.success(newValue ? 'Đã ẩn toàn bộ dữ liệu' : 'Đã hiện lại dữ liệu');
+      toast.success(pendingToggleValue ? 'Đã bật chế độ test' : 'Đã tắt chế độ test');
     } catch (error) {
       console.error('Toggle visibility error:', error);
       toast.error('Không thể thay đổi trạng thái: ' + (error as Error).message);
     } finally {
       setIsToggling(false);
     }
+  };
+
+  const resetToggleDialog = () => {
+    setShowToggleDialog(false);
+    setTogglePassword('');
   };
 
   const handleDeleteData = async () => {
@@ -133,7 +157,7 @@ export function DataManagementSection() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Toggle Data Visibility */}
+        {/* Toggle Data Visibility - Test Mode */}
         <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
           <div className="flex items-center gap-3">
             {isHidden ? (
@@ -142,9 +166,9 @@ export function DataManagementSection() {
               <Eye className="h-5 w-5 text-primary" />
             )}
             <div>
-              <Label className="text-base font-medium">Ẩn toàn bộ dữ liệu</Label>
+              <Label className="text-base font-medium">Nút Test</Label>
               <p className="text-sm text-muted-foreground">
-                Khi bật, tất cả dữ liệu sẽ hiển thị là 0/trống
+                Khi bật, tất cả dữ liệu sẽ hiển thị là 0/trống (chế độ test)
               </p>
             </div>
           </div>
@@ -152,18 +176,18 @@ export function DataManagementSection() {
             {isToggling && <Loader2 className="h-4 w-4 animate-spin" />}
             <Switch
               checked={isHidden}
-              onCheckedChange={handleToggleVisibility}
+              onCheckedChange={handleToggleRequest}
               disabled={isToggling}
             />
           </div>
         </div>
 
-        {/* Delete All Data */}
+        {/* Delete All Data - Stop Test */}
         <div className="flex items-center justify-between p-4 border border-destructive/30 rounded-lg bg-destructive/5">
           <div className="flex items-center gap-3">
             <Trash2 className="h-5 w-5 text-destructive" />
             <div>
-              <Label className="text-base font-medium text-destructive">Xoá toàn bộ dữ liệu kho</Label>
+              <Label className="text-base font-medium text-destructive">Nút Ngưng Test</Label>
               <p className="text-sm text-muted-foreground">
                 Xoá sản phẩm, phiếu nhập/xuất, sổ quỹ, công nợ - KHÔNG THỂ HOÀN TÁC
               </p>
@@ -174,9 +198,45 @@ export function DataManagementSection() {
             onClick={() => setShowDeleteDialog(true)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Xoá dữ liệu
+            Ngưng Test
           </Button>
         </div>
+
+        {/* Toggle Password Dialog */}
+        <AlertDialog open={showToggleDialog} onOpenChange={resetToggleDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5" />
+                Xác thực mật khẩu
+              </AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-4">
+                  <p>
+                    Nhập mật khẩu Admin để {pendingToggleValue ? 'bật' : 'tắt'} chế độ test:
+                  </p>
+                  <Input
+                    type="password"
+                    placeholder="Mật khẩu..."
+                    value={togglePassword}
+                    onChange={(e) => setTogglePassword(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={resetToggleDialog}>Huỷ</AlertDialogCancel>
+              <Button
+                onClick={handleToggleVisibility}
+                disabled={isToggling || !togglePassword}
+              >
+                {isToggling && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Xác nhận
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={showDeleteDialog} onOpenChange={resetDeleteDialog}>
@@ -184,7 +244,7 @@ export function DataManagementSection() {
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2 text-destructive">
                 <AlertTriangle className="h-5 w-5" />
-                {deleteStep === 'confirm' ? 'Xác nhận xoá dữ liệu' : 'Xác thực mật khẩu'}
+                {deleteStep === 'confirm' ? 'Xác nhận Ngưng Test' : 'Xác thực mật khẩu'}
               </AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div className="space-y-4">
@@ -244,7 +304,7 @@ export function DataManagementSection() {
                 }
               >
                 {isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                {deleteStep === 'confirm' ? 'Tiếp tục' : 'Xoá dữ liệu'}
+                {deleteStep === 'confirm' ? 'Tiếp tục' : 'Ngưng Test'}
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
