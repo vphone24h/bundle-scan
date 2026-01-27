@@ -620,6 +620,35 @@ export type Database = {
           },
         ]
       }
+      cash_book_backup: {
+        Row: {
+          backup_date: string | null
+          data: Json
+          id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          backup_date?: string | null
+          data: Json
+          id?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          backup_date?: string | null
+          data?: Json
+          id?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_book_backup_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_book_categories: {
         Row: {
           created_at: string
@@ -1365,6 +1394,35 @@ export type Database = {
           },
         ]
       }
+      export_receipts_backup: {
+        Row: {
+          backup_date: string | null
+          data: Json
+          id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          backup_date?: string | null
+          data: Json
+          id?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          backup_date?: string | null
+          data?: Json
+          id?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_receipts_backup_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       export_returns: {
         Row: {
           branch_id: string | null
@@ -1625,6 +1683,35 @@ export type Database = {
           },
           {
             foreignKeyName: "import_receipts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_receipts_backup: {
+        Row: {
+          backup_date: string | null
+          data: Json
+          id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          backup_date?: string | null
+          data: Json
+          id?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          backup_date?: string | null
+          data?: Json
+          id?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_receipts_backup_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -2307,6 +2394,35 @@ export type Database = {
           },
         ]
       }
+      products_backup: {
+        Row: {
+          backup_date: string | null
+          data: Json
+          id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          backup_date?: string | null
+          data: Json
+          id?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          backup_date?: string | null
+          data?: Json
+          id?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_backup_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -2761,6 +2877,7 @@ export type Database = {
           created_at: string
           einvoice_enabled: boolean
           email: string | null
+          has_data_backup: boolean | null
           id: string
           is_data_hidden: boolean | null
           locked_at: string | null
@@ -2789,6 +2906,7 @@ export type Database = {
           created_at?: string
           einvoice_enabled?: boolean
           email?: string | null
+          has_data_backup?: boolean | null
           id?: string
           is_data_hidden?: boolean | null
           locked_at?: string | null
@@ -2817,6 +2935,7 @@ export type Database = {
           created_at?: string
           einvoice_enabled?: boolean
           email?: string | null
+          has_data_backup?: boolean | null
           id?: string
           is_data_hidden?: boolean | null
           locked_at?: string | null

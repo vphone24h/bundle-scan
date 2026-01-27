@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -13,7 +14,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { EyeOff, Eye, Trash2, Loader2, AlertTriangle, ShieldAlert } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { EyeOff, Eye, Trash2, Loader2, AlertTriangle, ShieldAlert, RotateCcw, Database } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useQueryClient } from '@tanstack/react-query';
@@ -24,6 +33,7 @@ export function DataManagementSection() {
   const queryClient = useQueryClient();
   
   const [isHidden, setIsHidden] = useState(false);
+  const [hasBackup, setHasBackup] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   
   // Toggle password dialog states
@@ -31,19 +41,23 @@ export function DataManagementSection() {
   const [togglePassword, setTogglePassword] = useState('');
   const [pendingToggleValue, setPendingToggleValue] = useState(false);
   
-  // Delete dialog states
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleteStep, setDeleteStep] = useState<'confirm' | 'password'>('confirm');
+  // Stop test dialog states
+  const [showStopTestDialog, setShowStopTestDialog] = useState(false);
   const [confirmText, setConfirmText] = useState('');
+  const [restoreOption, setRestoreOption] = useState<'restore' | 'delete'>('restore');
+  
+  // Password confirmation dialog
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [password, setPassword] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
 
   // Sync with tenant data
   useEffect(() => {
-    if (tenant?.is_data_hidden !== undefined) {
-      setIsHidden(tenant.is_data_hidden);
+    if (tenant) {
+      setIsHidden(tenant.is_data_hidden || false);
+      setHasBackup((tenant as any).has_data_backup || false);
     }
-  }, [tenant?.is_data_hidden]);
+  }, [tenant]);
 
   const handleToggleRequest = (newValue: boolean) => {
     setPendingToggleValue(newValue);
@@ -71,6 +85,9 @@ export function DataManagementSection() {
       if (data?.error) throw new Error(data.error);
 
       setIsHidden(pendingToggleValue);
+      if (pendingToggleValue) {
+        setHasBackup(true);
+      }
       setShowToggleDialog(false);
       setTogglePassword('');
       await refetchTenant();
@@ -78,7 +95,9 @@ export function DataManagementSection() {
       // Invalidate all data queries to force refresh
       queryClient.invalidateQueries();
       
-      toast.success(pendingToggleValue ? 'Đã bật chế độ test' : 'Đã tắt chế độ test');
+      toast.success(pendingToggleValue 
+        ? 'Đã bật chế độ Test - Dữ liệu gốc đã được backup' 
+        : 'Đã tắt chế độ Test');
     } catch (error) {
       console.error('Toggle visibility error:', error);
       toast.error('Không thể thay đổi trạng thái: ' + (error as Error).message);
@@ -92,84 +111,109 @@ export function DataManagementSection() {
     setTogglePassword('');
   };
 
-  const handleDeleteData = async () => {
-    if (deleteStep === 'confirm') {
-      if (confirmText.toLowerCase() !== 'tôi đồng ý xoá') {
-        toast.error('Vui lòng nhập đúng văn bản xác nhận');
-        return;
-      }
-      setDeleteStep('password');
+  const handleStopTestRequest = () => {
+    setConfirmText('');
+    setRestoreOption(hasBackup ? 'restore' : 'delete');
+    setShowStopTestDialog(true);
+  };
+
+  const handleConfirmTextSubmit = () => {
+    if (confirmText.toLowerCase() !== 'tôi đồng ý xoá') {
+      toast.error('Vui lòng nhập đúng "tôi đồng ý xoá"');
       return;
     }
+    setShowStopTestDialog(false);
+    setPassword('');
+    setShowPasswordDialog(true);
+  };
 
+  const handleStopTest = async () => {
     if (!password) {
       toast.error('Vui lòng nhập mật khẩu');
       return;
     }
 
-    setIsDeleting(true);
+    setIsStopping(true);
     try {
       const { data, error } = await supabase.functions.invoke('tenant-data-management', {
         body: {
-          action: 'delete_all_data',
+          action: 'stop_test_mode',
           confirmText: confirmText.toLowerCase(),
           password,
+          restoreOption,
         },
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      // Close dialog and reset
-      setShowDeleteDialog(false);
-      setDeleteStep('confirm');
+      // Reset states
+      setShowPasswordDialog(false);
       setConfirmText('');
       setPassword('');
+      setIsHidden(false);
+      setHasBackup(false);
       
       // Invalidate all data queries
+      await refetchTenant();
       queryClient.invalidateQueries();
       
-      toast.success('Đã xoá toàn bộ dữ liệu kho thành công');
+      toast.success(
+        restoreOption === 'restore' 
+          ? 'Đã khôi phục dữ liệu gốc thành công' 
+          : 'Đã xoá toàn bộ dữ liệu kho thành công'
+      );
     } catch (error) {
-      console.error('Delete data error:', error);
-      toast.error('Không thể xoá dữ liệu: ' + (error as Error).message);
+      console.error('Stop test error:', error);
+      toast.error('Không thể thực hiện: ' + (error as Error).message);
     } finally {
-      setIsDeleting(false);
+      setIsStopping(false);
     }
   };
 
-  const resetDeleteDialog = () => {
-    setShowDeleteDialog(false);
-    setDeleteStep('confirm');
+  const resetStopTestDialog = () => {
+    setShowStopTestDialog(false);
     setConfirmText('');
+  };
+
+  const resetPasswordDialog = () => {
+    setShowPasswordDialog(false);
     setPassword('');
   };
 
   return (
-    <Card className="border-destructive/50">
+    <Card className="border-orange-200 bg-orange-50/50">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-destructive">
-          <ShieldAlert className="h-5 w-5" />
-          Quản lý dữ liệu kho
+        <CardTitle className="flex items-center gap-2 text-orange-700">
+          <Database className="h-5 w-5" />
+          Quản lý dữ liệu Test
         </CardTitle>
         <CardDescription>
-          Các thao tác nhạy cảm - Chỉ Super Admin có quyền thực hiện
+          Bật chế độ Test để ẩn toàn bộ dữ liệu kho (giống như mới tạo). Dữ liệu thật sẽ được backup tự động.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Toggle Data Visibility - Test Mode */}
-        <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+        <div className="flex items-center justify-between p-4 border rounded-lg bg-white">
           <div className="flex items-center gap-3">
             {isHidden ? (
-              <EyeOff className="h-5 w-5 text-warning" />
+              <EyeOff className="h-5 w-5 text-orange-500" />
             ) : (
               <Eye className="h-5 w-5 text-primary" />
             )}
             <div>
               <Label className="text-base font-medium">Nút Test</Label>
               <p className="text-sm text-muted-foreground">
-                Khi bật, tất cả dữ liệu sẽ hiển thị là 0/trống (chế độ test)
+                {isHidden 
+                  ? 'Đang ẩn dữ liệu - Tất cả module hiển thị trống' 
+                  : 'Đang hiển thị dữ liệu bình thường'}
               </p>
+              {hasBackup && (
+                <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                  <Database className="h-3 w-3" />
+                  Có bản backup dữ liệu gốc
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -182,20 +226,20 @@ export function DataManagementSection() {
           </div>
         </div>
 
-        {/* Delete All Data - Stop Test */}
-        <div className="flex items-center justify-between p-4 border border-destructive/30 rounded-lg bg-destructive/5">
+        {/* Stop Test Button */}
+        <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-white">
           <div className="flex items-center gap-3">
-            <Trash2 className="h-5 w-5 text-destructive" />
+            <AlertTriangle className="h-5 w-5 text-destructive" />
             <div>
               <Label className="text-base font-medium text-destructive">Nút Ngưng Test</Label>
               <p className="text-sm text-muted-foreground">
-                Xoá sản phẩm, phiếu nhập/xuất, sổ quỹ, công nợ - KHÔNG THỂ HOÀN TÁC
+                Kết thúc chế độ test: xoá dữ liệu hoặc khôi phục bản gốc
               </p>
             </div>
           </div>
           <Button
             variant="destructive"
-            onClick={() => setShowDeleteDialog(true)}
+            onClick={handleStopTestRequest}
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Ngưng Test
@@ -208,20 +252,25 @@ export function DataManagementSection() {
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
                 <ShieldAlert className="h-5 w-5" />
-                Xác thực mật khẩu
+                {pendingToggleValue ? 'Bật chế độ Test' : 'Tắt chế độ Test'}
               </AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div className="space-y-4">
                   <p>
-                    Nhập mật khẩu Admin để {pendingToggleValue ? 'bật' : 'tắt'} chế độ test:
+                    {pendingToggleValue 
+                      ? 'Dữ liệu hiện tại sẽ được backup tự động. Toàn bộ module sẽ hiển thị trống.'
+                      : 'Dữ liệu sẽ được hiển thị lại bình thường.'}
                   </p>
-                  <Input
-                    type="password"
-                    placeholder="Mật khẩu..."
-                    value={togglePassword}
-                    onChange={(e) => setTogglePassword(e.target.value)}
-                    autoFocus
-                  />
+                  <div className="space-y-2">
+                    <Label>Nhập mật khẩu Admin để xác nhận</Label>
+                    <Input
+                      type="password"
+                      placeholder="Mật khẩu..."
+                      value={togglePassword}
+                      onChange={(e) => setTogglePassword(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -238,77 +287,130 @@ export function DataManagementSection() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={showDeleteDialog} onOpenChange={resetDeleteDialog}>
-          <AlertDialogContent>
+        {/* Stop Test Confirmation Dialog */}
+        <AlertDialog open={showStopTestDialog} onOpenChange={resetStopTestDialog}>
+          <AlertDialogContent className="max-w-md">
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2 text-destructive">
                 <AlertTriangle className="h-5 w-5" />
-                {deleteStep === 'confirm' ? 'Xác nhận Ngưng Test' : 'Xác thực mật khẩu'}
+                Ngưng chế độ Test
               </AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div className="space-y-4">
-                  {deleteStep === 'confirm' ? (
-                    <>
-                      <p className="text-destructive font-medium">
-                        CẢNH BÁO: Hành động này không thể hoàn tác!
-                      </p>
-                      <p>
-                        Toàn bộ dữ liệu sau sẽ bị xoá vĩnh viễn:
-                      </p>
-                      <ul className="list-disc list-inside text-sm space-y-1">
-                        <li>Tất cả sản phẩm và IMEI</li>
-                        <li>Phiếu nhập hàng và lịch sử nhập</li>
-                        <li>Phiếu xuất hàng và lịch sử bán</li>
-                        <li>Sổ quỹ và các giao dịch</li>
-                        <li>Công nợ nhà cung cấp/khách hàng</li>
-                        <li>Phiếu kiểm kho</li>
-                        <li>Lịch sử thao tác (Audit logs)</li>
-                      </ul>
-                      <div className="pt-2">
-                        <Label>
-                          Nhập chính xác: <span className="font-mono text-destructive">"tôi đồng ý xoá"</span>
-                        </Label>
-                        <Input
-                          className="mt-2"
-                          placeholder="Nhập văn bản xác nhận..."
-                          value={confirmText}
-                          onChange={(e) => setConfirmText(e.target.value)}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <p>Nhập mật khẩu tài khoản Admin để xác thực:</p>
-                      <Input
-                        type="password"
-                        placeholder="Mật khẩu..."
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        autoFocus
+                  <p>Chọn hành động sau khi ngưng test:</p>
+                  
+                  <RadioGroup 
+                    value={restoreOption} 
+                    onValueChange={(v) => setRestoreOption(v as 'restore' | 'delete')}
+                    className="space-y-3"
+                  >
+                    <div className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors ${
+                      restoreOption === 'restore' ? 'border-primary bg-primary/5' : ''
+                    } ${!hasBackup ? 'opacity-50' : 'hover:bg-muted/50 cursor-pointer'}`}>
+                      <RadioGroupItem 
+                        value="restore" 
+                        id="restore" 
+                        className="mt-1" 
+                        disabled={!hasBackup} 
                       />
-                    </>
-                  )}
+                      <div className="flex-1">
+                        <Label 
+                          htmlFor="restore" 
+                          className={`font-medium flex items-center gap-2 cursor-pointer ${!hasBackup ? 'text-muted-foreground' : ''}`}
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          Khôi phục dữ liệu gốc
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          {hasBackup 
+                            ? 'Xoá dữ liệu test và khôi phục lại dữ liệu đã backup'
+                            : 'Không có bản backup'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors ${
+                      restoreOption === 'delete' ? 'border-destructive bg-destructive/5' : ''
+                    } hover:bg-muted/50 cursor-pointer`}>
+                      <RadioGroupItem value="delete" id="delete" className="mt-1" />
+                      <div className="flex-1">
+                        <Label htmlFor="delete" className="font-medium flex items-center gap-2 cursor-pointer">
+                          <Trash2 className="h-4 w-4" />
+                          Xoá toàn bộ dữ liệu
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          Xoá sạch tất cả dữ liệu, bắt đầu lại từ đầu
+                        </p>
+                      </div>
+                    </div>
+                  </RadioGroup>
+
+                  <div className="space-y-2 pt-2">
+                    <Label>
+                      Nhập <span className="font-mono text-destructive">"tôi đồng ý xoá"</span> để xác nhận
+                    </Label>
+                    <Input
+                      placeholder="tôi đồng ý xoá"
+                      value={confirmText}
+                      onChange={(e) => setConfirmText(e.target.value)}
+                    />
+                  </div>
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={resetDeleteDialog}>Huỷ</AlertDialogCancel>
+              <AlertDialogCancel onClick={resetStopTestDialog}>Huỷ</AlertDialogCancel>
               <Button
                 variant="destructive"
-                onClick={handleDeleteData}
-                disabled={
-                  isDeleting ||
-                  (deleteStep === 'confirm' && confirmText.toLowerCase() !== 'tôi đồng ý xoá') ||
-                  (deleteStep === 'password' && !password)
-                }
+                onClick={handleConfirmTextSubmit}
+                disabled={confirmText.toLowerCase() !== 'tôi đồng ý xoá'}
               >
-                {isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                {deleteStep === 'confirm' ? 'Tiếp tục' : 'Ngưng Test'}
+                Tiếp tục
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Password Confirmation Dialog */}
+        <Dialog open={showPasswordDialog} onOpenChange={resetPasswordDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-destructive flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5" />
+                Xác nhận mật khẩu Admin
+              </DialogTitle>
+              <DialogDescription>
+                {restoreOption === 'restore' 
+                  ? 'Dữ liệu test sẽ bị xoá và dữ liệu gốc sẽ được khôi phục.'
+                  : 'Toàn bộ dữ liệu kho sẽ bị xoá vĩnh viễn. Hành động này không thể hoàn tác.'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Nhập mật khẩu Admin</Label>
+                <Input
+                  type="password"
+                  placeholder="Mật khẩu..."
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={resetPasswordDialog}>
+                Huỷ
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleStopTest}
+                disabled={isStopping || !password}
+              >
+                {isStopping && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {restoreOption === 'restore' ? 'Khôi phục' : 'Xoá dữ liệu'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
