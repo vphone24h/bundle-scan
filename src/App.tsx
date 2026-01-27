@@ -37,6 +37,7 @@ const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
 const AffiliatePage = lazy(() => import("./pages/AffiliatePage"));
 const EInvoicePage = lazy(() => import("./pages/EInvoicePage"));
 const MinigamePage = lazy(() => import("./pages/MinigamePage"));
+const MinigameSettingsPage = lazy(() => import("./pages/MinigameSettingsPage"));
 const CreateMinigameCampaign = lazy(() => import("./components/minigame/CreateMinigameCampaign"));
 const PlayMinigame = lazy(() => import("./pages/PlayMinigame"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -92,6 +93,7 @@ const App = () => (
               <Route path="/einvoice" element={<ProtectedRoute><EInvoicePage /></ProtectedRoute>} />
               <Route path="/minigame" element={<ProtectedRoute><MinigamePage /></ProtectedRoute>} />
               <Route path="/minigame/create" element={<ProtectedRoute><CreateMinigameCampaign /></ProtectedRoute>} />
+              <Route path="/minigame/:id/settings" element={<ProtectedRoute><MinigameSettingsPage /></ProtectedRoute>} />
               
               {/* Platform Admin route */}
               <Route path="/platform-admin" element={<ProtectedRoute><PlatformAdminPage /></ProtectedRoute>} />
