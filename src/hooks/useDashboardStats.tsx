@@ -16,10 +16,10 @@ export function useDashboardStats() {
   return useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
-      // Get products stats
+      // Get products stats - lấy thêm total_import_cost, name, sku, branch_id để tính đúng như Tồn kho
       const { data: products, error: productsError } = await supabase
         .from('products')
-        .select('status, import_price, quantity, imei');
+        .select('status, import_price, quantity, imei, total_import_cost, name, sku, branch_id');
 
       if (productsError) throw productsError;
 
@@ -56,30 +56,68 @@ export function useDashboardStats() {
 
       if (recentError) throw recentError;
 
-      // Chỉ tính giá trị kho cho sản phẩm còn tồn (in_stock)
-      // Loại trừ IMEI trùng lặp
+      // Tính giá trị kho ĐÚNG như logic ở useInventory
+      // Gộp nhóm theo name + sku + branch_id, loại trừ IMEI trùng lặp
+      const inventoryMap = new Map<string, { stock: number; totalImportCost: number }>();
       const processedImeis = new Set<string>();
-      const inStockProducts = (products || []).filter(p => {
-        if (p.status !== 'in_stock') return false;
+
+      for (const product of (products || [])) {
         // Skip duplicate IMEIs
-        if ((p as any).imei) {
-          if (processedImeis.has((p as any).imei)) {
-            return false;
-          }
-          processedImeis.add((p as any).imei);
+        if (product.imei) {
+          if (processedImeis.has(product.imei)) continue;
+          processedImeis.add(product.imei);
         }
-        return true;
+
+        const key = `${product.name}|${product.sku}|${product.branch_id || 'no-branch'}`;
+        const existing = inventoryMap.get(key);
+
+        if (product.imei) {
+          // Sản phẩm có IMEI: mỗi IMEI = 1 đơn vị
+          if (existing) {
+            if (product.status === 'in_stock') {
+              existing.stock += 1;
+              existing.totalImportCost += Number(product.import_price);
+            }
+          } else {
+            inventoryMap.set(key, {
+              stock: product.status === 'in_stock' ? 1 : 0,
+              totalImportCost: product.status === 'in_stock' ? Number(product.import_price) : 0,
+            });
+          }
+        } else {
+          // Sản phẩm không IMEI: dùng quantity và total_import_cost
+          const quantity = product.quantity || 1;
+          const totalCost = Number(product.total_import_cost || (product.import_price * quantity));
+
+          if (existing) {
+            if (product.status === 'in_stock') {
+              existing.stock += quantity;
+              existing.totalImportCost += totalCost;
+            }
+          } else {
+            inventoryMap.set(key, {
+              stock: product.status === 'in_stock' ? quantity : 0,
+              totalImportCost: product.status === 'in_stock' ? totalCost : 0,
+            });
+          }
+        }
+      }
+
+      // Tính tổng giá trị kho = tổng totalImportCost của các sản phẩm có stock > 0
+      let totalImportValue = 0;
+      let inStockCount = 0;
+      inventoryMap.forEach((item) => {
+        if (item.stock > 0) {
+          totalImportValue += item.totalImportCost;
+          inStockCount += item.stock;
+        }
       });
-      
+
       const stats: DashboardStats = {
         totalProducts: products?.length || 0,
-        inStockProducts: inStockProducts.length,
+        inStockProducts: inStockCount,
         soldProducts: products?.filter(p => p.status === 'sold').length || 0,
-        // Tổng giá trị kho = sum(quantity * import_price) cho sản phẩm còn tồn (đã loại trừ trùng)
-        totalImportValue: inStockProducts.reduce((sum, p) => {
-          const quantity = (p as any).quantity || 1;
-          return sum + (Number(p.import_price) * quantity);
-        }, 0),
+        totalImportValue,
         pendingDebt: receipts?.reduce((sum, r) => sum + Number(r.debt_amount), 0) || 0,
         totalSuppliers: suppliersCount || 0,
         totalCategories: categoriesCount || 0,
