@@ -429,7 +429,8 @@ export function useCustomerPurchaseHistory(customerId: string | null) {
             sku,
             imei,
             sale_price,
-            status
+            status,
+            warranty
           )
         `)
         .eq('customer_id', customerId)
