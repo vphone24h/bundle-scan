@@ -95,8 +95,175 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   }, [products]);
 
   const handlePrint = () => {
-    console.log('Printing barcodes with settings:', { settings, selectedPaper, productEntries });
+    if (!selectedPaper) return;
+    
+    const paper = mockPaperTemplates.find(p => p.id === selectedPaper);
+    if (!paper) return;
+
+    // Create print content
+    const printContent = generatePrintContent(paper, productEntries, settings);
+    
+    // Open print window
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      
+      // Wait for images/fonts to load, then print
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    }
+    
     onClose();
+  };
+
+  // Generate print HTML content
+  const generatePrintContent = (
+    paper: PaperTemplate,
+    entries: ProductPriceEntry[],
+    printSettings: BarcodeSettings
+  ): string => {
+    const { width, height } = paper.dimensions;
+    
+    // Generate all labels (repeat by quantity)
+    const allLabels: ProductPriceEntry[] = [];
+    entries.forEach(entry => {
+      for (let i = 0; i < entry.quantity; i++) {
+        allLabels.push(entry);
+      }
+    });
+
+    const labelHTML = allLabels.map((entry, idx) => `
+      <div class="label" style="width: ${width}mm; height: ${height}mm;">
+        ${printSettings.showStoreName && printSettings.storeName ? 
+          `<div class="store-name">${printSettings.storeName}</div>` : ''}
+        ${printSettings.showProductName ? 
+          `<div class="product-name">${entry.name}</div>` : ''}
+        <div class="barcode-container">
+          <svg class="barcode" id="barcode-${idx}"></svg>
+          <div class="barcode-text">${entry.imei || entry.sku}</div>
+        </div>
+        ${printSettings.showPrice ? 
+          `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
+      </div>
+    `).join('');
+
+    // Generate barcode initialization script
+    const barcodeScript = allLabels.map((entry, idx) => 
+      `JsBarcode("#barcode-${idx}", "${entry.imei || entry.sku}", {
+        format: "CODE128",
+        width: 1.5,
+        height: 30,
+        displayValue: false,
+        margin: 2
+      });`
+    ).join('\n');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>In mã vạch</title>
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          @page {
+            size: ${paper.size.includes('A4') ? 'A4' : 'auto'};
+            margin: 0;
+          }
+          
+          body {
+            font-family: Arial, sans-serif;
+            padding: 5mm;
+          }
+          
+          .labels-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2mm;
+          }
+          
+          .label {
+            border: 0.5px dashed #ccc;
+            padding: 2mm;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            page-break-inside: avoid;
+            overflow: hidden;
+          }
+          
+          .store-name {
+            font-size: 8px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 1mm;
+          }
+          
+          .product-name {
+            font-size: 7px;
+            color: #333;
+            margin-bottom: 1mm;
+            max-height: 3em;
+            overflow: hidden;
+            line-height: 1.2;
+          }
+          
+          .barcode-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          }
+          
+          .barcode {
+            max-width: 100%;
+            height: auto;
+          }
+          
+          .barcode-text {
+            font-size: 6px;
+            font-family: monospace;
+            margin-top: 1mm;
+          }
+          
+          .price {
+            font-size: 10px;
+            font-weight: bold;
+            margin-top: 1mm;
+          }
+          
+          @media print {
+            body {
+              padding: 0;
+            }
+            .label {
+              border: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="labels-container">
+          ${labelHTML}
+        </div>
+        <script>
+          document.addEventListener('DOMContentLoaded', function() {
+            ${barcodeScript}
+          });
+        </script>
+      </body>
+      </html>
+    `;
   };
 
   const updateProductPrice = (productId: string, price: number) => {
