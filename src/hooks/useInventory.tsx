@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useMemo } from 'react';
+import { useCurrentTenant } from './useTenant';
 
 export interface InventoryItem {
   productId: string;
@@ -169,9 +170,17 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
 }
 
 export function useInventory() {
+  const { data: tenant } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden || false;
+
   return useQuery({
-    queryKey: ['inventory'],
+    queryKey: ['inventory', isDataHidden],
     queryFn: async () => {
+      // If data is hidden, return empty array
+      if (isDataHidden) {
+        return [] as InventoryItem[];
+      }
+
       const { data: products, error } = await supabase
         .from('products')
         .select(`

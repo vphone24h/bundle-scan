@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useCurrentTenant } from './useTenant';
 
 export interface DashboardStats {
   totalProducts: number;
@@ -13,9 +14,25 @@ export interface DashboardStats {
 }
 
 export function useDashboardStats() {
+  const { data: tenant } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden || false;
+
   return useQuery({
-    queryKey: ['dashboard-stats'],
+    queryKey: ['dashboard-stats', isDataHidden],
     queryFn: async () => {
+      // If data is hidden, return empty stats
+      if (isDataHidden) {
+        return {
+          totalProducts: 0,
+          inStockProducts: 0,
+          soldProducts: 0,
+          totalImportValue: 0,
+          pendingDebt: 0,
+          totalSuppliers: 0,
+          totalCategories: 0,
+          recentImports: 0,
+        } as DashboardStats;
+      }
       // Get products stats - lấy thêm total_import_cost, name, sku, branch_id để tính đúng như Tồn kho
       const { data: products, error: productsError } = await supabase
         .from('products')

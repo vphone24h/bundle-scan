@@ -2762,6 +2762,7 @@ export type Database = {
           einvoice_enabled: boolean
           email: string | null
           id: string
+          is_data_hidden: boolean | null
           locked_at: string | null
           locked_reason: string | null
           max_branches: number | null
@@ -2789,6 +2790,7 @@ export type Database = {
           einvoice_enabled?: boolean
           email?: string | null
           id?: string
+          is_data_hidden?: boolean | null
           locked_at?: string | null
           locked_reason?: string | null
           max_branches?: number | null
@@ -2816,6 +2818,7 @@ export type Database = {
           einvoice_enabled?: boolean
           email?: string | null
           id?: string
+          is_data_hidden?: boolean | null
           locked_at?: string | null
           locked_reason?: string | null
           max_branches?: number | null

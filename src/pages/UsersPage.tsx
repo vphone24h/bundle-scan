@@ -19,6 +19,7 @@ import { useBranches } from '@/hooks/useBranches';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
 import { EditUserDialog } from '@/components/users/EditUserDialog';
 import { CreateUserDialog } from '@/components/users/CreateUserDialog';
+import { DataManagementSection } from '@/components/admin/DataManagementSection';
 
 interface UserWithRole {
   id: string;
@@ -266,6 +267,13 @@ export default function UsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Data Management Section - Only for Super Admin */}
+      {isSuperAdmin && (
+        <div className="mt-6">
+          <DataManagementSection />
+        </div>
+      )}
 
       <EditUserDialog
         open={isEditOpen}
