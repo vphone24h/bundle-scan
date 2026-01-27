@@ -127,19 +127,63 @@ export function useAllTenants() {
   });
 }
 
-// Get subscription plans
-export function useSubscriptionPlans() {
+// Get subscription plans (all for admin, active only for users)
+export function useSubscriptionPlans(includeInactive = false) {
   return useQuery({
-    queryKey: ['subscription-plans'],
+    queryKey: ['subscription-plans', includeInactive],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('subscription_plans')
         .select('*')
-        .eq('is_active', true)
         .order('price');
 
+      if (!includeInactive) {
+        query = query.eq('is_active', true);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as SubscriptionPlan[];
+    },
+  });
+}
+
+// Create subscription plan
+export function useCreateSubscriptionPlan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (planData: Omit<SubscriptionPlan, 'id'>) => {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .insert(planData)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
+    },
+  });
+}
+
+// Delete subscription plan
+export function useDeleteSubscriptionPlan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (planId: string) => {
+      const { error } = await supabase
+        .from('subscription_plans')
+        .delete()
+        .eq('id', planId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
     },
   });
 }
