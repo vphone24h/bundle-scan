@@ -103,7 +103,6 @@ const allNavItems: NavItem[] = [
   { title: 'Quản lý người dùng', href: '/users', icon: Shield, permission: 'canManageBranchStaff' },
   { title: 'Lịch sử thao tác', href: '/audit-logs', icon: History, permission: 'canViewAuditLogs' },
   { title: 'Ứng dụng', href: '/applications', icon: AppWindow },
-  { title: 'Quản lý QC', href: '/advertisements', icon: Megaphone, permission: 'canManageBranches' },
   { title: 'Affiliate', href: '/affiliate', icon: Share2 },
   { title: 'Gói dịch vụ', href: '/subscription', icon: CreditCard },
 ];
