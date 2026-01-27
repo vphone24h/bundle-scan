@@ -1969,6 +1969,287 @@ export type Database = {
           },
         ]
       }
+      minigame_campaigns: {
+        Row: {
+          background_image: string | null
+          branch_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          max_spins_per_player: number | null
+          name: string
+          no_prize_message: string | null
+          no_prize_probability: number | null
+          password: string | null
+          require_email: boolean | null
+          require_name: boolean | null
+          require_phone: boolean | null
+          spin_button_color: string | null
+          spin_button_text: string | null
+          sponsor_logo: string | null
+          sponsor_name: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["minigame_status"]
+          tenant_id: string
+          total_participants: number | null
+          total_spins: number | null
+          total_views: number | null
+          updated_at: string
+          wheel_background_color: string | null
+          wheel_border_color: string | null
+          wheel_border_image: string | null
+        }
+        Insert: {
+          background_image?: string | null
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          max_spins_per_player?: number | null
+          name: string
+          no_prize_message?: string | null
+          no_prize_probability?: number | null
+          password?: string | null
+          require_email?: boolean | null
+          require_name?: boolean | null
+          require_phone?: boolean | null
+          spin_button_color?: string | null
+          spin_button_text?: string | null
+          sponsor_logo?: string | null
+          sponsor_name?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["minigame_status"]
+          tenant_id: string
+          total_participants?: number | null
+          total_spins?: number | null
+          total_views?: number | null
+          updated_at?: string
+          wheel_background_color?: string | null
+          wheel_border_color?: string | null
+          wheel_border_image?: string | null
+        }
+        Update: {
+          background_image?: string | null
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          max_spins_per_player?: number | null
+          name?: string
+          no_prize_message?: string | null
+          no_prize_probability?: number | null
+          password?: string | null
+          require_email?: boolean | null
+          require_name?: boolean | null
+          require_phone?: boolean | null
+          spin_button_color?: string | null
+          spin_button_text?: string | null
+          sponsor_logo?: string | null
+          sponsor_name?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["minigame_status"]
+          tenant_id?: string
+          total_participants?: number | null
+          total_spins?: number | null
+          total_views?: number | null
+          updated_at?: string
+          wheel_background_color?: string | null
+          wheel_border_color?: string | null
+          wheel_border_image?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minigame_campaigns_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "minigame_campaigns_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      minigame_participants: {
+        Row: {
+          campaign_id: string
+          email: string | null
+          first_played_at: string
+          id: string
+          ip_address: string | null
+          last_played_at: string | null
+          name: string
+          phone: string
+          total_spins: number | null
+          total_wins: number | null
+          user_agent: string | null
+        }
+        Insert: {
+          campaign_id: string
+          email?: string | null
+          first_played_at?: string
+          id?: string
+          ip_address?: string | null
+          last_played_at?: string | null
+          name: string
+          phone: string
+          total_spins?: number | null
+          total_wins?: number | null
+          user_agent?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          email?: string | null
+          first_played_at?: string
+          id?: string
+          ip_address?: string | null
+          last_played_at?: string | null
+          name?: string
+          phone?: string
+          total_spins?: number | null
+          total_wins?: number | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minigame_participants_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "minigame_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      minigame_prizes: {
+        Row: {
+          campaign_id: string
+          color: string | null
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          image: string | null
+          is_active: boolean | null
+          max_per_player: number | null
+          name: string
+          prize_type: string | null
+          prize_value: string | null
+          probability: number | null
+          remaining_quantity: number | null
+          total_quantity: number | null
+        }
+        Insert: {
+          campaign_id: string
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image?: string | null
+          is_active?: boolean | null
+          max_per_player?: number | null
+          name: string
+          prize_type?: string | null
+          prize_value?: string | null
+          probability?: number | null
+          remaining_quantity?: number | null
+          total_quantity?: number | null
+        }
+        Update: {
+          campaign_id?: string
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image?: string | null
+          is_active?: boolean | null
+          max_per_player?: number | null
+          name?: string
+          prize_type?: string | null
+          prize_value?: string | null
+          probability?: number | null
+          remaining_quantity?: number | null
+          total_quantity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minigame_prizes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "minigame_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      minigame_spins: {
+        Row: {
+          campaign_id: string
+          id: string
+          ip_address: string | null
+          participant_id: string
+          prize_id: string | null
+          prize_name: string | null
+          prize_value: string | null
+          result_type: Database["public"]["Enums"]["spin_result_type"]
+          spun_at: string
+        }
+        Insert: {
+          campaign_id: string
+          id?: string
+          ip_address?: string | null
+          participant_id: string
+          prize_id?: string | null
+          prize_name?: string | null
+          prize_value?: string | null
+          result_type: Database["public"]["Enums"]["spin_result_type"]
+          spun_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          id?: string
+          ip_address?: string | null
+          participant_id?: string
+          prize_id?: string | null
+          prize_name?: string | null
+          prize_value?: string | null
+          result_type?: Database["public"]["Enums"]["spin_result_type"]
+          spun_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minigame_spins_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "minigame_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "minigame_spins_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "minigame_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "minigame_spins_prize_id_fkey"
+            columns: ["prize_id"]
+            isOneToOne: false
+            referencedRelation: "minigame_prizes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_config: {
         Row: {
           config_key: string
@@ -3058,6 +3339,7 @@ export type Database = {
         | "adjusted"
         | "error"
       membership_tier: "regular" | "silver" | "gold" | "vip"
+      minigame_status: "draft" | "active" | "paused" | "expired"
       payment_status: "pending" | "approved" | "rejected" | "cancelled"
       payment_type: "cash" | "bank_card" | "e_wallet" | "debt"
       platform_role: "platform_admin" | "tenant_admin"
@@ -3067,6 +3349,7 @@ export type Database = {
       receipt_status: "completed" | "cancelled"
       return_fee_type: "none" | "percentage" | "fixed_amount"
       return_type: "import_return" | "export_return"
+      spin_result_type: "prize" | "no_prize"
       stock_count_item_status: "ok" | "missing" | "surplus" | "pending"
       stock_count_scope: "all" | "category" | "product"
       stock_count_status: "draft" | "confirmed"
@@ -3217,6 +3500,7 @@ export const Constants = {
         "error",
       ],
       membership_tier: ["regular", "silver", "gold", "vip"],
+      minigame_status: ["draft", "active", "paused", "expired"],
       payment_status: ["pending", "approved", "rejected", "cancelled"],
       payment_type: ["cash", "bank_card", "e_wallet", "debt"],
       platform_role: ["platform_admin", "tenant_admin"],
@@ -3226,6 +3510,7 @@ export const Constants = {
       receipt_status: ["completed", "cancelled"],
       return_fee_type: ["none", "percentage", "fixed_amount"],
       return_type: ["import_return", "export_return"],
+      spin_result_type: ["prize", "no_prize"],
       stock_count_item_status: ["ok", "missing", "surplus", "pending"],
       stock_count_scope: ["all", "category", "product"],
       stock_count_status: ["draft", "confirmed"],
