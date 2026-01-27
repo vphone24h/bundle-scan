@@ -84,7 +84,7 @@ export default function RegisterPage() {
       
       toast({
         title: 'Đăng ký thành công!',
-        description: 'Tài khoản của bạn đã được tạo. Bạn có 30 ngày dùng thử miễn phí.',
+        description: 'Tài khoản doanh nghiệp của bạn đã được tạo.',
       });
 
     } catch (error: any) {
@@ -125,11 +125,6 @@ export default function RegisterPage() {
               </p>
             </div>
             
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                ⏳ Bạn có <strong>30 ngày dùng thử miễn phí</strong> với đầy đủ tính năng.
-              </p>
-            </div>
 
             <Button 
               className="w-full" 
@@ -269,11 +264,6 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="bg-muted p-3 rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                🎉 Dùng thử miễn phí 30 ngày với đầy đủ tính năng. Không cần thẻ tín dụng.
-              </p>
-            </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
