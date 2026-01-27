@@ -1,0 +1,328 @@
+import { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { CalendarIcon, Upload, X, Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import {
+  Advertisement,
+  useCreateAdvertisement,
+  useUpdateAdvertisement,
+  useUploadAdImage,
+} from '@/hooks/useAdvertisements';
+
+interface AdvertisementFormDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  advertisement: Advertisement | null;
+  onClose: () => void;
+}
+
+export function AdvertisementFormDialog({
+  open,
+  onOpenChange,
+  advertisement,
+  onClose,
+}: AdvertisementFormDialogProps) {
+  const createAd = useCreateAdvertisement();
+  const updateAd = useUpdateAdvertisement();
+  const uploadImage = useUploadAdImage();
+
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [isActive, setIsActive] = useState(true);
+  const [adType, setAdType] = useState('partner');
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [hasEndDate, setHasEndDate] = useState(false);
+
+  useEffect(() => {
+    if (advertisement) {
+      setTitle(advertisement.title);
+      setDescription(advertisement.description || '');
+      setLinkUrl(advertisement.link_url);
+      setImageUrl(advertisement.image_url || '');
+      setIsActive(advertisement.is_active);
+      setAdType(advertisement.ad_type || 'partner');
+      setStartDate(new Date(advertisement.start_date));
+      if (advertisement.end_date) {
+        setEndDate(new Date(advertisement.end_date));
+        setHasEndDate(true);
+      } else {
+        setEndDate(undefined);
+        setHasEndDate(false);
+      }
+    } else {
+      resetForm();
+    }
+  }, [advertisement, open]);
+
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setLinkUrl('');
+    setImageUrl('');
+    setIsActive(true);
+    setAdType('partner');
+    setStartDate(new Date());
+    setEndDate(undefined);
+    setHasEndDate(false);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Ảnh phải nhỏ hơn 5MB');
+      return;
+    }
+
+    const url = await uploadImage.mutateAsync(file);
+    setImageUrl(url);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const data = {
+      title,
+      description: description || undefined,
+      link_url: linkUrl,
+      image_url: imageUrl || undefined,
+      is_active: isActive,
+      ad_type: adType,
+      start_date: startDate.toISOString(),
+      end_date: hasEndDate && endDate ? endDate.toISOString() : null,
+    };
+
+    if (advertisement) {
+      await updateAd.mutateAsync({ id: advertisement.id, ...data });
+    } else {
+      await createAd.mutateAsync(data);
+    }
+
+    onClose();
+  };
+
+  const isSubmitting = createAd.isPending || updateAd.isPending;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {advertisement ? 'Chỉnh sửa quảng cáo' : 'Thêm quảng cáo mới'}
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Title */}
+          <div className="space-y-2">
+            <Label htmlFor="title">Tên quảng cáo *</Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="VD: Ứng dụng ABC"
+              required
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Mô tả</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Mô tả ngắn về quảng cáo"
+              rows={3}
+            />
+          </div>
+
+          {/* Image Upload */}
+          <div className="space-y-2">
+            <Label>Ảnh banner</Label>
+            {imageUrl ? (
+              <div className="relative">
+                <img
+                  src={imageUrl}
+                  alt="Preview"
+                  className="w-full aspect-video object-cover rounded-lg"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2"
+                  onClick={() => setImageUrl('')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  disabled={uploadImage.isPending}
+                />
+                {uploadImage.isPending ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                    <span className="text-sm text-muted-foreground">
+                      Bấm để upload ảnh (tối đa 5MB)
+                    </span>
+                  </>
+                )}
+              </label>
+            )}
+          </div>
+
+          {/* Link URL */}
+          <div className="space-y-2">
+            <Label htmlFor="linkUrl">Link dẫn *</Label>
+            <Input
+              id="linkUrl"
+              type="url"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://example.com"
+              required
+            />
+          </div>
+
+          {/* Ad Type */}
+          <div className="space-y-2">
+            <Label>Loại quảng cáo</Label>
+            <Select value={adType} onValueChange={setAdType}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="partner">Đối tác</SelectItem>
+                <SelectItem value="internal">Nội bộ</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Start Date */}
+          <div className="space-y-2">
+            <Label>Ngày bắt đầu</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    'w-full justify-start text-left font-normal',
+                    !startDate && 'text-muted-foreground'
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {format(startDate, 'dd/MM/yyyy', { locale: vi })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={(date) => date && setStartDate(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* End Date */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Ngày kết thúc</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Có thời hạn</span>
+                <Switch checked={hasEndDate} onCheckedChange={setHasEndDate} />
+              </div>
+            </div>
+            {hasEndDate && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !endDate && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, 'dd/MM/yyyy', { locale: vi }) : 'Chọn ngày'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={setEndDate}
+                    disabled={(date) => date < startDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+
+          {/* Is Active */}
+          <div className="flex items-center justify-between">
+            <Label>Trạng thái hiển thị</Label>
+            <Switch checked={isActive} onCheckedChange={setIsActive} />
+          </div>
+
+          {/* Submit */}
+          <div className="flex gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              Hủy
+            </Button>
+            <Button type="submit" className="flex-1" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {advertisement ? 'Cập nhật' : 'Thêm mới'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

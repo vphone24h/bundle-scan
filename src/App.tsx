@@ -36,10 +36,8 @@ const PlatformAdminPage = lazy(() => import("./pages/PlatformAdminPage"));
 const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
 const AffiliatePage = lazy(() => import("./pages/AffiliatePage"));
 const EInvoicePage = lazy(() => import("./pages/EInvoicePage"));
-const MinigamePage = lazy(() => import("./pages/MinigamePage"));
-const MinigameSettingsPage = lazy(() => import("./pages/MinigameSettingsPage"));
-const CreateMinigameCampaign = lazy(() => import("./components/minigame/CreateMinigameCampaign"));
-const PlayMinigame = lazy(() => import("./pages/PlayMinigame"));
+const ApplicationsPage = lazy(() => import("./pages/ApplicationsPage"));
+const AdvertisementsAdminPage = lazy(() => import("./pages/AdvertisementsAdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -67,7 +65,6 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/forgot-store-id" element={<ForgotStoreIdPage />} />
-              <Route path="/play/:id" element={<PlayMinigame />} />
               
               {/* Protected routes */}
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
@@ -91,9 +88,8 @@ const App = () => (
               <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
               <Route path="/affiliate" element={<ProtectedRoute><AffiliatePage /></ProtectedRoute>} />
               <Route path="/einvoice" element={<ProtectedRoute><EInvoicePage /></ProtectedRoute>} />
-              <Route path="/minigame" element={<ProtectedRoute><MinigamePage /></ProtectedRoute>} />
-              <Route path="/minigame/create" element={<ProtectedRoute><CreateMinigameCampaign /></ProtectedRoute>} />
-              <Route path="/minigame/:id/settings" element={<ProtectedRoute><MinigameSettingsPage /></ProtectedRoute>} />
+              <Route path="/applications" element={<ProtectedRoute><ApplicationsPage /></ProtectedRoute>} />
+              <Route path="/advertisements" element={<ProtectedRoute><AdvertisementsAdminPage /></ProtectedRoute>} />
               
               {/* Platform Admin route */}
               <Route path="/platform-admin" element={<ProtectedRoute><PlatformAdminPage /></ProtectedRoute>} />

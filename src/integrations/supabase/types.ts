@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      advertisements: {
+        Row: {
+          ad_type: string | null
+          click_count: number | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_order: number | null
+          end_date: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          link_url: string
+          start_date: string | null
+          tenant_id: string | null
+          title: string
+          updated_at: string
+          view_count: number | null
+        }
+        Insert: {
+          ad_type?: string | null
+          click_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url: string
+          start_date?: string | null
+          tenant_id?: string | null
+          title: string
+          updated_at?: string
+          view_count?: number | null
+        }
+        Update: {
+          ad_type?: string | null
+          click_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string
+          start_date?: string | null
+          tenant_id?: string | null
+          title?: string
+          updated_at?: string
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advertisements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_clicks: {
         Row: {
           affiliate_id: string
@@ -1969,413 +2034,6 @@ export type Database = {
           },
         ]
       }
-      minigame_campaigns: {
-        Row: {
-          allow_duplicate_prize: boolean | null
-          allow_multiple_prizes: boolean | null
-          auto_generate_prize_code: boolean | null
-          background_image: string | null
-          background_image_url: string | null
-          branch_id: string | null
-          claim_method: string | null
-          continue_button_text: string | null
-          create_virtual_winners: boolean | null
-          created_at: string
-          created_by: string | null
-          custom_link_template: string | null
-          description: string | null
-          enable_facebook_comments: boolean | null
-          end_date: string | null
-          expire_date: string | null
-          id: string
-          info_guide_text: string | null
-          max_spins_per_player: number | null
-          name: string
-          no_prize_image_url: string | null
-          no_prize_message: string | null
-          no_prize_probability: number | null
-          no_prize_title: string | null
-          password: string | null
-          prize_code_prefix: string | null
-          prize_font_size: number | null
-          prize_image_size: number | null
-          prize_text_color: string | null
-          prize_use_image: boolean | null
-          project_avatar_url: string | null
-          project_description: string | null
-          project_title: string | null
-          require_email: boolean | null
-          require_info_each_spin: boolean | null
-          require_name: boolean | null
-          require_phone: boolean | null
-          require_prize_info: boolean | null
-          reset_spins_daily: boolean | null
-          rules_content: string | null
-          send_winner_notification: boolean | null
-          share_hashtag: string | null
-          share_image_url: string | null
-          share_quote: string | null
-          show_prize_code_suffix: boolean | null
-          spin_button_color: string | null
-          spin_button_text: string | null
-          sponsor_content: string | null
-          sponsor_logo: string | null
-          sponsor_name: string | null
-          start_date: string | null
-          status: Database["public"]["Enums"]["minigame_status"]
-          tenant_id: string
-          total_participants: number | null
-          total_spins: number | null
-          total_views: number | null
-          updated_at: string
-          verification_method: string | null
-          webhook_url: string | null
-          wheel_background_color: string | null
-          wheel_border_color: string | null
-          wheel_border_image: string | null
-          wheel_frame_url: string | null
-          win_title: string | null
-          winner_email_template: string | null
-        }
-        Insert: {
-          allow_duplicate_prize?: boolean | null
-          allow_multiple_prizes?: boolean | null
-          auto_generate_prize_code?: boolean | null
-          background_image?: string | null
-          background_image_url?: string | null
-          branch_id?: string | null
-          claim_method?: string | null
-          continue_button_text?: string | null
-          create_virtual_winners?: boolean | null
-          created_at?: string
-          created_by?: string | null
-          custom_link_template?: string | null
-          description?: string | null
-          enable_facebook_comments?: boolean | null
-          end_date?: string | null
-          expire_date?: string | null
-          id?: string
-          info_guide_text?: string | null
-          max_spins_per_player?: number | null
-          name: string
-          no_prize_image_url?: string | null
-          no_prize_message?: string | null
-          no_prize_probability?: number | null
-          no_prize_title?: string | null
-          password?: string | null
-          prize_code_prefix?: string | null
-          prize_font_size?: number | null
-          prize_image_size?: number | null
-          prize_text_color?: string | null
-          prize_use_image?: boolean | null
-          project_avatar_url?: string | null
-          project_description?: string | null
-          project_title?: string | null
-          require_email?: boolean | null
-          require_info_each_spin?: boolean | null
-          require_name?: boolean | null
-          require_phone?: boolean | null
-          require_prize_info?: boolean | null
-          reset_spins_daily?: boolean | null
-          rules_content?: string | null
-          send_winner_notification?: boolean | null
-          share_hashtag?: string | null
-          share_image_url?: string | null
-          share_quote?: string | null
-          show_prize_code_suffix?: boolean | null
-          spin_button_color?: string | null
-          spin_button_text?: string | null
-          sponsor_content?: string | null
-          sponsor_logo?: string | null
-          sponsor_name?: string | null
-          start_date?: string | null
-          status?: Database["public"]["Enums"]["minigame_status"]
-          tenant_id: string
-          total_participants?: number | null
-          total_spins?: number | null
-          total_views?: number | null
-          updated_at?: string
-          verification_method?: string | null
-          webhook_url?: string | null
-          wheel_background_color?: string | null
-          wheel_border_color?: string | null
-          wheel_border_image?: string | null
-          wheel_frame_url?: string | null
-          win_title?: string | null
-          winner_email_template?: string | null
-        }
-        Update: {
-          allow_duplicate_prize?: boolean | null
-          allow_multiple_prizes?: boolean | null
-          auto_generate_prize_code?: boolean | null
-          background_image?: string | null
-          background_image_url?: string | null
-          branch_id?: string | null
-          claim_method?: string | null
-          continue_button_text?: string | null
-          create_virtual_winners?: boolean | null
-          created_at?: string
-          created_by?: string | null
-          custom_link_template?: string | null
-          description?: string | null
-          enable_facebook_comments?: boolean | null
-          end_date?: string | null
-          expire_date?: string | null
-          id?: string
-          info_guide_text?: string | null
-          max_spins_per_player?: number | null
-          name?: string
-          no_prize_image_url?: string | null
-          no_prize_message?: string | null
-          no_prize_probability?: number | null
-          no_prize_title?: string | null
-          password?: string | null
-          prize_code_prefix?: string | null
-          prize_font_size?: number | null
-          prize_image_size?: number | null
-          prize_text_color?: string | null
-          prize_use_image?: boolean | null
-          project_avatar_url?: string | null
-          project_description?: string | null
-          project_title?: string | null
-          require_email?: boolean | null
-          require_info_each_spin?: boolean | null
-          require_name?: boolean | null
-          require_phone?: boolean | null
-          require_prize_info?: boolean | null
-          reset_spins_daily?: boolean | null
-          rules_content?: string | null
-          send_winner_notification?: boolean | null
-          share_hashtag?: string | null
-          share_image_url?: string | null
-          share_quote?: string | null
-          show_prize_code_suffix?: boolean | null
-          spin_button_color?: string | null
-          spin_button_text?: string | null
-          sponsor_content?: string | null
-          sponsor_logo?: string | null
-          sponsor_name?: string | null
-          start_date?: string | null
-          status?: Database["public"]["Enums"]["minigame_status"]
-          tenant_id?: string
-          total_participants?: number | null
-          total_spins?: number | null
-          total_views?: number | null
-          updated_at?: string
-          verification_method?: string | null
-          webhook_url?: string | null
-          wheel_background_color?: string | null
-          wheel_border_color?: string | null
-          wheel_border_image?: string | null
-          wheel_frame_url?: string | null
-          win_title?: string | null
-          winner_email_template?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "minigame_campaigns_branch_id_fkey"
-            columns: ["branch_id"]
-            isOneToOne: false
-            referencedRelation: "branches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "minigame_campaigns_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      minigame_participants: {
-        Row: {
-          campaign_id: string
-          email: string | null
-          first_played_at: string
-          id: string
-          ip_address: string | null
-          last_played_at: string | null
-          name: string
-          phone: string
-          total_spins: number | null
-          total_wins: number | null
-          user_agent: string | null
-        }
-        Insert: {
-          campaign_id: string
-          email?: string | null
-          first_played_at?: string
-          id?: string
-          ip_address?: string | null
-          last_played_at?: string | null
-          name: string
-          phone: string
-          total_spins?: number | null
-          total_wins?: number | null
-          user_agent?: string | null
-        }
-        Update: {
-          campaign_id?: string
-          email?: string | null
-          first_played_at?: string
-          id?: string
-          ip_address?: string | null
-          last_played_at?: string | null
-          name?: string
-          phone?: string
-          total_spins?: number | null
-          total_wins?: number | null
-          user_agent?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "minigame_participants_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "minigame_campaigns"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      minigame_prizes: {
-        Row: {
-          campaign_id: string
-          claim_link: string | null
-          color: string | null
-          created_at: string
-          description: string | null
-          display_order: number | null
-          id: string
-          image: string | null
-          image_url: string | null
-          is_active: boolean | null
-          max_per_player: number | null
-          name: string
-          prize_type: string | null
-          prize_value: string | null
-          probability: number | null
-          remaining_quantity: number | null
-          total_quantity: number | null
-        }
-        Insert: {
-          campaign_id: string
-          claim_link?: string | null
-          color?: string | null
-          created_at?: string
-          description?: string | null
-          display_order?: number | null
-          id?: string
-          image?: string | null
-          image_url?: string | null
-          is_active?: boolean | null
-          max_per_player?: number | null
-          name: string
-          prize_type?: string | null
-          prize_value?: string | null
-          probability?: number | null
-          remaining_quantity?: number | null
-          total_quantity?: number | null
-        }
-        Update: {
-          campaign_id?: string
-          claim_link?: string | null
-          color?: string | null
-          created_at?: string
-          description?: string | null
-          display_order?: number | null
-          id?: string
-          image?: string | null
-          image_url?: string | null
-          is_active?: boolean | null
-          max_per_player?: number | null
-          name?: string
-          prize_type?: string | null
-          prize_value?: string | null
-          probability?: number | null
-          remaining_quantity?: number | null
-          total_quantity?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "minigame_prizes_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "minigame_campaigns"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      minigame_spins: {
-        Row: {
-          campaign_id: string
-          claim_info: Json | null
-          claimed_at: string | null
-          id: string
-          ip_address: string | null
-          is_virtual: boolean | null
-          participant_id: string
-          prize_code: string | null
-          prize_id: string | null
-          prize_name: string | null
-          prize_value: string | null
-          result_type: Database["public"]["Enums"]["spin_result_type"]
-          spun_at: string
-        }
-        Insert: {
-          campaign_id: string
-          claim_info?: Json | null
-          claimed_at?: string | null
-          id?: string
-          ip_address?: string | null
-          is_virtual?: boolean | null
-          participant_id: string
-          prize_code?: string | null
-          prize_id?: string | null
-          prize_name?: string | null
-          prize_value?: string | null
-          result_type: Database["public"]["Enums"]["spin_result_type"]
-          spun_at?: string
-        }
-        Update: {
-          campaign_id?: string
-          claim_info?: Json | null
-          claimed_at?: string | null
-          id?: string
-          ip_address?: string | null
-          is_virtual?: boolean | null
-          participant_id?: string
-          prize_code?: string | null
-          prize_id?: string | null
-          prize_name?: string | null
-          prize_value?: string | null
-          result_type?: Database["public"]["Enums"]["spin_result_type"]
-          spun_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "minigame_spins_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "minigame_campaigns"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "minigame_spins_participant_id_fkey"
-            columns: ["participant_id"]
-            isOneToOne: false
-            referencedRelation: "minigame_participants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "minigame_spins_prize_id_fkey"
-            columns: ["prize_id"]
-            isOneToOne: false
-            referencedRelation: "minigame_prizes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       payment_config: {
         Row: {
           config_key: string
@@ -3465,7 +3123,6 @@ export type Database = {
         | "adjusted"
         | "error"
       membership_tier: "regular" | "silver" | "gold" | "vip"
-      minigame_status: "draft" | "active" | "paused" | "expired"
       payment_status: "pending" | "approved" | "rejected" | "cancelled"
       payment_type: "cash" | "bank_card" | "e_wallet" | "debt"
       platform_role: "platform_admin" | "tenant_admin"
@@ -3626,7 +3283,6 @@ export const Constants = {
         "error",
       ],
       membership_tier: ["regular", "silver", "gold", "vip"],
-      minigame_status: ["draft", "active", "paused", "expired"],
       payment_status: ["pending", "approved", "rejected", "cancelled"],
       payment_type: ["cash", "bank_card", "e_wallet", "debt"],
       platform_role: ["platform_admin", "tenant_admin"],
