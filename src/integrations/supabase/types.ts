@@ -686,6 +686,50 @@ export type Database = {
           },
         ]
       }
+      custom_domains: {
+        Row: {
+          created_at: string
+          domain: string
+          id: string
+          is_verified: boolean
+          ssl_status: string | null
+          tenant_id: string
+          updated_at: string
+          verification_token: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          id?: string
+          is_verified?: boolean
+          ssl_status?: string | null
+          tenant_id: string
+          updated_at?: string
+          verification_token?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          id?: string
+          is_verified?: boolean
+          ssl_status?: string | null
+          tenant_id?: string
+          updated_at?: string
+          verification_token?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_domains_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
@@ -2713,6 +2757,7 @@ export type Database = {
       tenants: {
         Row: {
           address: string | null
+          allow_custom_domain: boolean | null
           created_at: string
           einvoice_enabled: boolean
           email: string | null
@@ -2725,6 +2770,7 @@ export type Database = {
           note: string | null
           owner_id: string
           phone: string | null
+          primary_domain: string | null
           status: Database["public"]["Enums"]["tenant_status"]
           subdomain: string
           subscription_end_date: string | null
@@ -2738,6 +2784,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          allow_custom_domain?: boolean | null
           created_at?: string
           einvoice_enabled?: boolean
           email?: string | null
@@ -2750,6 +2797,7 @@ export type Database = {
           note?: string | null
           owner_id: string
           phone?: string | null
+          primary_domain?: string | null
           status?: Database["public"]["Enums"]["tenant_status"]
           subdomain: string
           subscription_end_date?: string | null
@@ -2763,6 +2811,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          allow_custom_domain?: boolean | null
           created_at?: string
           einvoice_enabled?: boolean
           email?: string | null
@@ -2775,6 +2824,7 @@ export type Database = {
           note?: string | null
           owner_id?: string
           phone?: string | null
+          primary_domain?: string | null
           status?: Database["public"]["Enums"]["tenant_status"]
           subdomain?: string
           subscription_end_date?: string | null
@@ -2848,6 +2898,7 @@ export type Database = {
       }
       can_become_affiliate: { Args: { _tenant_id: string }; Returns: boolean }
       generate_affiliate_code: { Args: never; Returns: string }
+      generate_domain_verification_token: { Args: never; Returns: string }
       get_current_tenant: { Args: never; Returns: string }
       get_user_branch: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
@@ -2866,6 +2917,7 @@ export type Database = {
       is_authenticated: { Args: never; Returns: boolean }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_accessible: { Args: { _tenant_id: string }; Returns: boolean }
+      resolve_tenant_by_domain: { Args: { _domain: string }; Returns: string }
       user_belongs_to_tenant: { Args: { _tenant_id: string }; Returns: boolean }
     }
     Enums: {
