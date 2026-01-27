@@ -28,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, Plus, MoreHorizontal, Eye, ShoppingCart, Wallet, Settings, Users } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Eye, ShoppingCart, Wallet, Settings, Users, Merge } from 'lucide-react';
 import { useCustomersWithPoints, MEMBERSHIP_TIER_NAMES, MEMBERSHIP_TIER_COLORS } from '@/hooks/useCustomerPoints';
 import { useBranches } from '@/hooks/useBranches';
 import { formatNumber } from '@/lib/formatNumber';
@@ -37,6 +37,7 @@ import { vi } from 'date-fns/locale';
 import { CustomerDetailDialog } from '@/components/customers/CustomerDetailDialog';
 import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog';
 import { PointSettingsDialog } from '@/components/customers/PointSettingsDialog';
+import { CustomerMergeDialog } from '@/components/customers/CustomerMergeDialog';
 import { useNavigate } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
 
@@ -52,6 +53,7 @@ export default function CustomersPage() {
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [showFormDialog, setShowFormDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
 
   const { data: customers, isLoading } = useCustomersWithPoints({
     search: search || undefined,
@@ -204,10 +206,16 @@ export default function CustomersPage() {
                 Thêm mới
               </Button>
               {permissions?.role === 'super_admin' && (
-                <Button variant="outline" onClick={() => setShowSettingsDialog(true)}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Cài đặt
-                </Button>
+                <>
+                  <Button variant="outline" onClick={() => setShowMergeDialog(true)}>
+                    <Merge className="h-4 w-4 mr-2" />
+                    Gộp trùng
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowSettingsDialog(true)}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Cài đặt
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -350,6 +358,11 @@ export default function CustomersPage() {
       <PointSettingsDialog
         open={showSettingsDialog}
         onOpenChange={setShowSettingsDialog}
+      />
+
+      <CustomerMergeDialog
+        open={showMergeDialog}
+        onOpenChange={setShowMergeDialog}
       />
     </MainLayout>
   );
