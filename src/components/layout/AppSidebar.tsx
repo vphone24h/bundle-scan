@@ -25,7 +25,8 @@ import {
   CreditCard,
   Share2,
   FileText,
-  Gift,
+  AppWindow,
+  Megaphone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -101,7 +102,8 @@ const allNavItems: NavItem[] = [
   { title: 'Quản lý chi nhánh', href: '/branches', icon: Building2, permission: 'canManageBranches' },
   { title: 'Quản lý người dùng', href: '/users', icon: Shield, permission: 'canManageBranchStaff' },
   { title: 'Lịch sử thao tác', href: '/audit-logs', icon: History, permission: 'canViewAuditLogs' },
-  { title: 'Mini Game', href: '/minigame', icon: Gift },
+  { title: 'Ứng dụng', href: '/applications', icon: AppWindow },
+  { title: 'Quản lý QC', href: '/advertisements', icon: Megaphone, permission: 'canManageBranches' },
   { title: 'Affiliate', href: '/affiliate', icon: Share2 },
   { title: 'Gói dịch vụ', href: '/subscription', icon: CreditCard },
 ];
