@@ -84,7 +84,28 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case 'toggle_data_visibility': {
-        const { isHidden } = body
+        const { isHidden, password: togglePassword } = body
+
+        // Verify password
+        if (!togglePassword) {
+          return new Response(
+            JSON.stringify({ error: 'Vui lòng nhập mật khẩu' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        // Verify password by signing in
+        const { error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+          email: caller.email!,
+          password: togglePassword,
+        })
+
+        if (signInError) {
+          return new Response(
+            JSON.stringify({ error: 'Mật khẩu không đúng' }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
 
         // Update tenant data visibility
         const { error: updateError } = await supabaseAdmin
@@ -104,15 +125,15 @@ Deno.serve(async (req) => {
         await supabaseAdmin.from('audit_logs').insert({
           tenant_id: callerTenantId,
           user_id: caller.id,
-          action_type: isHidden ? 'HIDE_ALL_DATA' : 'SHOW_ALL_DATA',
+          action_type: isHidden ? 'ENABLE_TEST_MODE' : 'DISABLE_TEST_MODE',
           table_name: 'tenants',
-          description: isHidden ? 'Ẩn toàn bộ dữ liệu kho' : 'Hiện lại toàn bộ dữ liệu kho',
+          description: isHidden ? 'Bật chế độ test (ẩn dữ liệu)' : 'Tắt chế độ test (hiện dữ liệu)',
         })
 
         return new Response(
           JSON.stringify({ 
             success: true, 
-            message: isHidden ? 'Đã ẩn toàn bộ dữ liệu' : 'Đã hiện lại dữ liệu'
+            message: isHidden ? 'Đã bật chế độ test' : 'Đã tắt chế độ test'
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
