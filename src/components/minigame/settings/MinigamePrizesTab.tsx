@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,11 +11,13 @@ import {
   useCreateMinigamePrize,
   useUpdateMinigamePrize,
   useDeleteMinigamePrize,
+  uploadPrizeImage,
   MinigameCampaign,
   MinigamePrize
 } from '@/hooks/useMinigame';
-import { ChevronUp, ChevronDown, Edit, Trash2, Loader2, Plus } from 'lucide-react';
+import { ChevronUp, ChevronDown, Edit, Trash2, Loader2, Plus, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface MinigamePrizesTabProps {
   campaign: MinigameCampaign;
@@ -36,9 +38,11 @@ const SEGMENT_COLORS = [
 ];
 
 export function MinigamePrizesTab({ campaign, prizes }: MinigamePrizesTabProps) {
+  const { toast } = useToast();
   const createPrize = useCreateMinigamePrize();
   const updatePrize = useUpdateMinigamePrize();
   const deletePrize = useDeleteMinigamePrize();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [prizeType, setPrizeType] = useState('gift');
   const [prizeName, setPrizeName] = useState('');
@@ -46,31 +50,80 @@ export function MinigamePrizesTab({ campaign, prizes }: MinigamePrizesTabProps) 
   const [prizeProbability, setPrizeProbability] = useState<number>(10);
   const [prizeClaimLink, setPrizeClaimLink] = useState('');
   const [prizeDescription, setPrizeDescription] = useState('');
+  const [prizeImage, setPrizeImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [editingPrize, setEditingPrize] = useState<MinigamePrize | null>(null);
 
   const totalProbability = prizes.reduce((sum, p) => sum + p.probability, 0) + campaign.no_prize_probability;
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'Lỗi',
+          description: 'Kích thước ảnh không được vượt quá 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setImageFile(file);
+      const url = URL.createObjectURL(file);
+      setPrizeImage(url);
+    }
+  };
+
+  const clearImage = () => {
+    setPrizeImage(null);
+    setImageFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleAddPrize = async () => {
     if (!prizeName.trim()) return;
 
-    await createPrize.mutateAsync({
-      campaign_id: campaign.id,
-      name: prizeName,
-      prize_type: prizeType,
-      probability: prizeProbability,
-      total_quantity: prizeQuantity,
-      remaining_quantity: prizeQuantity,
-      color: SEGMENT_COLORS[prizes.length % SEGMENT_COLORS.length],
-      display_order: prizes.length,
-      is_active: true,
-    });
+    try {
+      setIsUploading(true);
+      let imageUrl: string | undefined;
 
-    // Reset form
-    setPrizeName('');
-    setPrizeQuantity(1);
-    setPrizeProbability(10);
-    setPrizeClaimLink('');
-    setPrizeDescription('');
+      if (imageFile) {
+        imageUrl = await uploadPrizeImage(imageFile, campaign.id);
+      }
+
+      await createPrize.mutateAsync({
+        campaign_id: campaign.id,
+        name: prizeName,
+        prize_type: prizeType,
+        probability: prizeProbability,
+        total_quantity: prizeQuantity,
+        remaining_quantity: prizeQuantity,
+        color: SEGMENT_COLORS[prizes.length % SEGMENT_COLORS.length],
+        display_order: prizes.length,
+        is_active: true,
+        image: imageUrl,
+        description: prizeDescription,
+        claim_link: prizeClaimLink || undefined,
+      });
+
+      // Reset form
+      setPrizeName('');
+      setPrizeQuantity(1);
+      setPrizeProbability(10);
+      setPrizeClaimLink('');
+      setPrizeDescription('');
+      clearImage();
+    } catch (error) {
+      toast({
+        title: 'Lỗi',
+        description: 'Không thể thêm giải thưởng',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleMovePrize = async (prize: MinigamePrize, direction: 'up' | 'down') => {
@@ -128,8 +181,40 @@ export function MinigamePrizesTab({ campaign, prizes }: MinigamePrizesTabProps) 
 
           <div className="space-y-2">
             <Label>Hình ảnh</Label>
-            <Button variant="outline" size="sm">Chọn ảnh</Button>
-            <p className="text-xs text-muted-foreground">Vui lòng điền vào trường này.</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            {prizeImage ? (
+              <div className="relative inline-block">
+                <img
+                  src={prizeImage}
+                  alt="Preview"
+                  className="w-24 h-24 object-cover rounded-lg border"
+                />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute -top-2 -right-2 h-6 w-6"
+                  onClick={clearImage}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-4 w-4 mr-1" />
+                Chọn ảnh
+              </Button>
+            )}
+            <p className="text-xs text-muted-foreground">Định dạng: JPG, PNG, WebP, GIF. Tối đa 5MB.</p>
           </div>
 
           <div className="space-y-2">
@@ -174,10 +259,10 @@ export function MinigamePrizesTab({ campaign, prizes }: MinigamePrizesTabProps) 
 
           <Button
             onClick={handleAddPrize}
-            disabled={createPrize.isPending || !prizeName.trim()}
+            disabled={createPrize.isPending || isUploading || !prizeName.trim()}
             className="w-full"
           >
-            {createPrize.isPending ? (
+            {(createPrize.isPending || isUploading) ? (
               <Loader2 className="h-4 w-4 mr-1 animate-spin" />
             ) : (
               <Plus className="h-4 w-4 mr-1" />
@@ -246,11 +331,11 @@ export function MinigamePrizesTab({ campaign, prizes }: MinigamePrizesTabProps) 
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <div className="w-12 h-12 bg-muted rounded flex items-center justify-center mx-auto">
+                      <div className="w-12 h-12 bg-muted rounded flex items-center justify-center mx-auto overflow-hidden">
                         {prize.image ? (
-                          <img src={prize.image} alt={prize.name} className="w-full h-full object-cover rounded" />
+                          <img src={prize.image} alt={prize.name} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-xs text-muted-foreground">N/A</span>
+                          <ImageIcon className="h-5 w-5 text-muted-foreground" />
                         )}
                       </div>
                     </TableCell>

@@ -49,6 +49,25 @@ export interface MinigamePrize {
   max_per_player: number;
   display_order: number;
   is_active: boolean;
+  claim_link?: string;
+}
+
+// Upload prize image
+export async function uploadPrizeImage(file: File, campaignId: string): Promise<string> {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${campaignId}/${crypto.randomUUID()}.${fileExt}`;
+  
+  const { error: uploadError } = await supabase.storage
+    .from('minigame-assets')
+    .upload(fileName, file, { upsert: true });
+
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage
+    .from('minigame-assets')
+    .getPublicUrl(fileName);
+
+  return data.publicUrl;
 }
 
 export interface MinigameParticipant {
