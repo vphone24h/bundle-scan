@@ -143,28 +143,20 @@ export function useMembershipTiers() {
       // Lấy tenant_id của user hiện tại
       const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
 
-      // Ưu tiên lấy cài đặt của tenant, nếu không có thì lấy mặc định (tenant_id = null)
-      let { data, error } = await supabase
+      // Lấy cả tier của tenant + tier mặc định (tenant_id IS NULL), rồi ưu tiên tenant nếu có
+      const { data, error } = await supabase
         .from('membership_tier_settings')
         .select('*')
-        .eq('tenant_id', tenantId)
+        .or(`tenant_id.eq.${tenantId},tenant_id.is.null`)
         .order('min_spent', { ascending: true });
 
       if (error) throw error;
 
-      // Nếu tenant chưa có cài đặt riêng, lấy mặc định
-      if (!data || data.length === 0) {
-        const { data: defaultData, error: defaultError } = await supabase
-          .from('membership_tier_settings')
-          .select('*')
-          .is('tenant_id', null)
-          .order('min_spent', { ascending: true });
+      const rows = (data || []) as (MembershipTierSettings & { tenant_id: string | null })[];
+      const tenantRows = rows.filter((r) => r.tenant_id === tenantId);
+      if (tenantRows.length > 0) return tenantRows;
 
-        if (defaultError) throw defaultError;
-        data = defaultData;
-      }
-
-      return data as MembershipTierSettings[];
+      return rows.filter((r) => r.tenant_id == null) as MembershipTierSettings[];
     },
   });
 }
