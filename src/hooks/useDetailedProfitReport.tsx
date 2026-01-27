@@ -27,8 +27,8 @@ export function useDetailedProfitReport(filters?: {
   categoryId?: string;
   search?: string;
 }) {
-  const { data: tenant } = useCurrentTenant();
-  const isDataHidden = tenant?.is_data_hidden || false;
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
     queryKey: ['detailed-profit-report', filters, isDataHidden],
@@ -68,9 +68,6 @@ export function useDetailedProfitReport(filters?: {
             customers(name)
           )
         `)
-        // KHÔNG được rollback / sửa dòng bán cũ.
-        // Khi trả hàng, export_receipt_items.status thường bị set = 'returned',
-        // nhưng báo cáo vẫn phải giữ dòng bán (thời điểm bán).
         .in('status', ['sold', 'returned'])
         .neq('export_receipts.status', 'cancelled')
         .gte('export_receipts.export_date', startDate)
@@ -92,8 +89,6 @@ export function useDetailedProfitReport(filters?: {
       if (soldError) throw soldError;
 
       // 2. Lấy dữ liệu trả hàng từ export_returns
-      // CHỈ lấy trả hàng KHÔNG CÓ PHÍ (fee_type = 'none') để hiển thị lợi nhuận âm
-      // Trả hàng có phí sẽ tạo phiếu nhập mới, không ảnh hưởng báo cáo
       let returnQuery = supabase
         .from('export_returns')
         .select(`
@@ -112,7 +107,7 @@ export function useDetailedProfitReport(filters?: {
           branches(name),
           customers(name)
         `)
-        .eq('fee_type', 'none') // Chỉ lấy trả hàng hoàn tiền đầy đủ
+        .eq('fee_type', 'none')
         .gte('return_date', startDate)
         .lte('return_date', endDate + 'T23:59:59');
 
@@ -127,7 +122,7 @@ export function useDetailedProfitReport(filters?: {
       const { data: returnItems, error: returnError } = await returnQuery;
       if (returnError) throw returnError;
 
-      // 3. Lấy giá nhập (trung bình) của các sản phẩm đã bán
+      // 3. Lấy giá nhập của các sản phẩm
       const productIds = Array.from(
         new Set([
           ...(soldItems?.map(i => i.product_id).filter(Boolean) || []),
@@ -143,7 +138,6 @@ export function useDetailedProfitReport(filters?: {
           .in('id', productIds);
         
         productsMap = (products || []).reduce((acc, p) => {
-          // import_price đã là giá trung bình cho sản phẩm không IMEI
           acc[p.id] = { 
             import_price: Number(p.import_price),
             quantity: p.quantity || 1,
@@ -154,20 +148,16 @@ export function useDetailedProfitReport(filters?: {
 
       // 4. Xử lý dữ liệu bán hàng
       const results: DetailedProfitItem[] = [];
-
-      // Gộp các sản phẩm không có IMEI theo receipt + product_name + sku
       const nonImeiGroupMap: Record<string, DetailedProfitItem> = {};
 
       soldItems?.forEach(item => {
         const receipt = item.export_receipts as any;
-        // Sử dụng giá nhập trung bình từ products table
         const productInfo = item.product_id ? productsMap[item.product_id] : null;
         const importPrice = productInfo?.import_price || 0;
         const salePrice = Number(item.sale_price);
         const profit = salePrice - importPrice;
 
         if (item.imei) {
-          // Sản phẩm có IMEI - thêm từng dòng
           results.push({
             id: item.id,
             productName: item.product_name,
@@ -186,7 +176,6 @@ export function useDetailedProfitReport(filters?: {
             receiptCode: receipt?.code || '',
           });
         } else {
-          // Sản phẩm không IMEI - gộp theo receipt + sku
           const groupKey = `${receipt?.id}-${item.sku}`;
           if (!nonImeiGroupMap[groupKey]) {
             nonImeiGroupMap[groupKey] = {
@@ -213,17 +202,11 @@ export function useDetailedProfitReport(filters?: {
         }
       });
 
-      // Thêm các nhóm không IMEI vào results
       Object.values(nonImeiGroupMap).forEach(group => {
         results.push(group);
       });
 
-      // 5. Xử lý dữ liệu trả hàng đủ tiền (fee_type = 'none')
-      // Nguyên tắc: tạo phát sinh mới tại thời điểm trả hàng
-      // - Doanh thu = 0
-      // - Giá vốn = 0
-      // - Lợi nhuận = -(lãi lúc bán)
-      // NOTE: export_returns.import_price hiện có thể = 0, nên phải tính lãi lúc bán dựa trên product_id.
+      // 5. Xử lý dữ liệu trả hàng
       returnItems?.forEach((item: any) => {
         const originalSalePrice = Number(item.sale_price);
         const productInfo = item.product_id ? productsMap[item.product_id] : null;
@@ -239,10 +222,10 @@ export function useDetailedProfitReport(filters?: {
           imei: item.imei,
           branchId: item.branch_id,
           branchName: (item.branches as any)?.name || 'N/A',
-          importPrice: 0, // Giá vốn = 0 trong báo cáo trả hàng
-          salePrice: 0,   // Doanh thu = 0 trong báo cáo trả hàng
+          importPrice: 0,
+          salePrice: 0,
           quantity: 1,
-          profit,         // Chỉ hiển thị lợi nhuận âm
+          profit,
           saleDate: item.return_date,
           status: 'returned',
           customerId: item.customer_id,
@@ -251,15 +234,11 @@ export function useDetailedProfitReport(filters?: {
         });
       });
 
-      // 6. Sắp xếp theo ngày giảm dần
       results.sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime());
 
-      // 7. Tính tổng
-      // Trả hàng đủ tiền: Doanh thu = 0, chỉ trừ lợi nhuận
       const totals = results.reduce(
         (acc, item) => {
           acc.totalQuantity += item.quantity;
-          // Doanh thu: không bị ảnh hưởng bởi trả hàng (salePrice đã = 0 cho returned)
           acc.totalRevenue += item.salePrice;
           acc.totalProfit += item.profit;
           return acc;
@@ -272,5 +251,7 @@ export function useDetailedProfitReport(filters?: {
         totals,
       };
     },
+    enabled: !isTenantLoading,
+    refetchOnWindowFocus: false,
   });
 }

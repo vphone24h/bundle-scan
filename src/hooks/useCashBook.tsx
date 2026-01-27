@@ -45,8 +45,8 @@ export function useCashBook(filters?: {
   type?: CashBookType;
   branchId?: string;
 }) {
-  const { data: tenant } = useCurrentTenant();
-  const isDataHidden = tenant?.is_data_hidden || false;
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
     queryKey: ['cash-book', filters, isDataHidden],
@@ -76,6 +76,8 @@ export function useCashBook(filters?: {
       if (error) throw error;
       return data as CashBookEntry[];
     },
+    enabled: !isTenantLoading,
+    refetchOnWindowFocus: false,
   });
 }
 

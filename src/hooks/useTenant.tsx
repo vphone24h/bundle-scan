@@ -110,6 +110,11 @@ export function useCurrentTenant() {
       return data as Tenant;
     },
     enabled: !!platformUser?.tenant_id,
+    // Giữ cache lâu hơn và không refetch khi focus để tránh reset trạng thái
+    staleTime: 5 * 60 * 1000, // 5 phút
+    gcTime: 10 * 60 * 1000, // 10 phút
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 

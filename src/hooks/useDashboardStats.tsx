@@ -14,8 +14,8 @@ export interface DashboardStats {
 }
 
 export function useDashboardStats() {
-  const { data: tenant } = useCurrentTenant();
-  const isDataHidden = tenant?.is_data_hidden || false;
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
     queryKey: ['dashboard-stats', isDataHidden],
@@ -74,32 +74,18 @@ export function useDashboardStats() {
       if (recentError) throw recentError;
 
       // Tính giá trị kho ĐÚNG như logic ở useInventory
-      // Gộp nhóm theo name + sku + branch_id, ưu tiên sản phẩm in_stock khi có IMEI trùng
       const inventoryMap = new Map<string, { stock: number; totalImportCost: number }>();
-      // Track processed IMEIs with their status - prioritize 'in_stock' products
-      const processedImeis = new Map<string, string>(); // imei -> status
+      const processedImeis = new Map<string, string>();
 
       for (const product of (products || [])) {
-        // Handle IMEI deduplication with priority for 'in_stock' status
         if (product.imei) {
           const existingStatus = processedImeis.get(product.imei);
           
           if (existingStatus) {
-            // If we already have an 'in_stock' product with this IMEI, skip other statuses
             if (existingStatus === 'in_stock') continue;
-            
-            // If current product is 'in_stock' but we previously processed a 'sold' one,
-            // we need to remove old entry and reprocess
             if (product.status === 'in_stock') {
-              // Find and remove old entry's contribution
-              const oldKey = `${product.name}|${product.sku}|${product.branch_id || 'no-branch'}`;
-              const oldItem = inventoryMap.get(oldKey);
-              if (oldItem) {
-                // The old 'sold' product didn't contribute to stock anyway (status !== 'in_stock')
-                // So we just need to update the IMEI tracking
-              }
+              // Process this one instead
             } else {
-              // Both are not 'in_stock', skip duplicate
               continue;
             }
           }
@@ -111,7 +97,6 @@ export function useDashboardStats() {
         const existing = inventoryMap.get(key);
 
         if (product.imei) {
-          // Sản phẩm có IMEI: mỗi IMEI = 1 đơn vị
           if (existing) {
             if (product.status === 'in_stock') {
               existing.stock += 1;
@@ -124,7 +109,6 @@ export function useDashboardStats() {
             });
           }
         } else {
-          // Sản phẩm không IMEI: dùng quantity và total_import_cost
           const quantity = product.quantity || 1;
           const totalCost = Number(product.total_import_cost || (product.import_price * quantity));
 
@@ -142,7 +126,6 @@ export function useDashboardStats() {
         }
       }
 
-      // Tính tổng giá trị kho = tổng totalImportCost của các sản phẩm có stock > 0
       let totalImportValue = 0;
       let inStockCount = 0;
       inventoryMap.forEach((item) => {
@@ -165,5 +148,8 @@ export function useDashboardStats() {
 
       return stats;
     },
+    // Chờ tenant data sẵn sàng
+    enabled: !isTenantLoading,
+    refetchOnWindowFocus: false,
   });
 }

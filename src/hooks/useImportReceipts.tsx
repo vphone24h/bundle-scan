@@ -41,8 +41,8 @@ export interface ReceiptPayment {
 }
 
 export function useImportReceipts() {
-  const { data: tenant } = useCurrentTenant();
-  const isDataHidden = tenant?.is_data_hidden || false;
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
     queryKey: ['import-receipts', isDataHidden],
@@ -62,6 +62,8 @@ export function useImportReceipts() {
       if (error) throw error;
       return data as ImportReceipt[];
     },
+    enabled: !isTenantLoading,
+    refetchOnWindowFocus: false,
   });
 }
 

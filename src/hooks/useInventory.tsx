@@ -170,8 +170,8 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
 }
 
 export function useInventory() {
-  const { data: tenant } = useCurrentTenant();
-  const isDataHidden = tenant?.is_data_hidden || false;
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
     queryKey: ['inventory', isDataHidden],
@@ -196,8 +196,12 @@ export function useInventory() {
       if (error) throw error;
       return processProductsToInventory(products || []);
     },
-    staleTime: 30000, // Cache 30 giây
-    gcTime: 5 * 60 * 1000, // Giữ cache 5 phút
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000,
+    // Chờ tenant data sẵn sàng trước khi fetch
+    enabled: !isTenantLoading,
+    // Không refetch khi focus window để tránh reset trạng thái
+    refetchOnWindowFocus: false,
   });
 }
 
