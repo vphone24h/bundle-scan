@@ -1,24 +1,65 @@
-# Kiến Trúc Multi-Tenant Domain
+# Kiến Trúc Multi-Tenant Domain - vkho.vn
 
 ## Tổng quan
 
 Hệ thống hỗ trợ multi-tenant domain với các tính năng:
-- **Subdomain routing**: `ten-cua-hang.khoapp.vn`
+- **Subdomain routing**: `ten-cua-hang.vkho.vn`
 - **Custom domain**: `hoangmobile.vn` → trỏ đến tenant
-- **Path-based fallback**: `app.khoapp.vn/store/ten-cua-hang` (cho development)
+- **Path-based fallback**: `vkho.vn` với Store ID (cho giai đoạn đầu trên Lovable)
 
-## Cấu trúc Domain
+## Lộ trình Triển khai
+
+### Phase 1: Gắn vkho.vn vào Lovable (Hiện tại)
+- Domain: `vkho.vn` và `www.vkho.vn`
+- Login bằng Store ID như hiện tại
+- Nhanh chóng, không cần VPS
+
+### Phase 2: Self-host với Subdomain (Tương lai)
+- Wildcard: `*.vkho.vn`
+- Mỗi cửa hàng có subdomain riêng
+- Custom domain cho gói trả phí
+
+## Cấu trúc Domain (Phase 2)
 
 ```
-khoapp.vn                    # Landing page chính
-├── app.khoapp.vn            # App chính (login/register)
-├── admin.khoapp.vn          # Platform Admin
-├── api.khoapp.vn            # API Gateway
-└── *.khoapp.vn              # Wildcard cho tenant subdomains
-    ├── iphoneabc.khoapp.vn
-    ├── hoangmobile.khoapp.vn
+vkho.vn                      # Landing page chính
+├── app.vkho.vn              # App chính (login/register) 
+├── admin.vkho.vn            # Platform Admin
+├── api.vkho.vn              # API Gateway
+└── *.vkho.vn                # Wildcard cho tenant subdomains
+    ├── iphoneabc.vkho.vn
+    ├── hoangmobile.vkho.vn
     └── ...
 ```
+
+---
+
+## PHASE 1: Gắn vkho.vn vào Lovable
+
+### Bước 1: Cấu hình DNS tại nhà đăng ký domain
+
+Thêm các record sau:
+
+```
+Type   Name    Value              TTL
+A      @       185.158.133.1      Auto
+A      www     185.158.133.1      Auto
+TXT    _lovable   lovable_verify=... (sẽ được cung cấp khi thêm domain)
+```
+
+### Bước 2: Thêm domain trong Lovable
+
+1. Vào **Project Settings** → **Domains**
+2. Click **Connect Domain**
+3. Nhập `vkho.vn`
+4. Làm theo hướng dẫn để verify
+5. Thêm tiếp `www.vkho.vn` nếu cần
+
+### Bước 3: Chờ SSL được cấp
+
+Lovable sẽ tự động cấp SSL certificate (có thể mất đến 72 giờ)
+
+---
 
 ## Database Schema
 
@@ -98,30 +139,41 @@ function resolveTenant(hostname: string) {
 }
 ```
 
-## Triển Khai Production
+## PHASE 2: Self-host với Subdomain (Tương lai)
 
 ### Yêu cầu Infrastructure
 
-1. **Domain**: `khoapp.vn` hoặc domain bạn chọn
-2. **Wildcard SSL**: `*.khoapp.vn`
-3. **Reverse Proxy**: Nginx/Caddy với wildcard config
-4. **DNS Provider**: Cloudflare (khuyến nghị) cho:
-   - Wildcard DNS
-   - SSL miễn phí
-   - CDN
+1. **Domain**: `vkho.vn` ✅ (đã có)
+2. **Wildcard SSL**: `*.vkho.vn`
+3. **VPS**: Ubuntu 22.04+ (DigitalOcean, Vultr, AWS...)
+4. **Reverse Proxy**: Nginx hoặc Caddy
+5. **DNS Provider**: Chuyển sang Cloudflare (khuyến nghị)
+
+### Chuyển DNS sang Cloudflare
+
+1. Tạo tài khoản Cloudflare (miễn phí)
+2. Thêm domain `vkho.vn`
+3. Cập nhật Nameservers tại nhà đăng ký
+4. Cấu hình DNS Records:
+   ```
+   Type   Name    Value              Proxy
+   A      @       YOUR_VPS_IP        ✓
+   A      *       YOUR_VPS_IP        ✓
+   CNAME  www     vkho.vn            ✓
+   ```
 
 ### Nginx Configuration
 
 ```nginx
-# /etc/nginx/sites-available/khoapp.vn
+# /etc/nginx/sites-available/vkho.vn
 
 # Wildcard server block cho tenant subdomains
 server {
     listen 443 ssl http2;
-    server_name *.khoapp.vn;
+    server_name *.vkho.vn;
     
-    ssl_certificate /etc/letsencrypt/live/khoapp.vn/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/khoapp.vn/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/vkho.vn/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/vkho.vn/privkey.pem;
     
     location / {
         proxy_pass http://localhost:3000;
@@ -135,10 +187,10 @@ server {
 # Main domain
 server {
     listen 443 ssl http2;
-    server_name khoapp.vn www.khoapp.vn;
+    server_name vkho.vn www.vkho.vn;
     
-    ssl_certificate /etc/letsencrypt/live/khoapp.vn/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/khoapp.vn/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/vkho.vn/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/vkho.vn/privkey.pem;
     
     location / {
         proxy_pass http://localhost:3000;
@@ -153,7 +205,7 @@ server {
 # Caddyfile
 
 # Wildcard cho tenant subdomains
-*.khoapp.vn {
+*.vkho.vn {
     tls {
         dns cloudflare {env.CLOUDFLARE_API_TOKEN}
     }
@@ -161,23 +213,10 @@ server {
 }
 
 # Main domain
-khoapp.vn, www.khoapp.vn {
+vkho.vn, www.vkho.vn {
     reverse_proxy localhost:3000
 }
 ```
-
-### Cloudflare Setup
-
-1. **Thêm domain vào Cloudflare**
-2. **Cấu hình DNS Records**:
-   ```
-   Type  Name     Content           Proxy
-   A     @        YOUR_SERVER_IP    ✓
-   A     *        YOUR_SERVER_IP    ✓
-   CNAME www      khoapp.vn         ✓
-   ```
-3. **SSL/TLS Settings**: Full (strict)
-4. **Bật Wildcard DNS**: Trong DNS settings
 
 ### Let's Encrypt Wildcard SSL
 
@@ -193,11 +232,11 @@ chmod 600 ~/.cloudflare.ini
 sudo certbot certonly \
   --dns-cloudflare \
   --dns-cloudflare-credentials ~/.cloudflare.ini \
-  -d khoapp.vn \
-  -d "*.khoapp.vn"
+  -d vkho.vn \
+  -d "*.vkho.vn"
 ```
 
-## Frontend Implementation
+---
 
 ### Tenant Context Provider
 
