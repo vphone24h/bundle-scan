@@ -40,8 +40,8 @@ export function useReportStats(filters?: {
   branchId?: string;
   categoryId?: string;
 }) {
-  const { data: tenant } = useCurrentTenant();
-  const isDataHidden = tenant?.is_data_hidden || false;
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
     queryKey: ['report-stats', filters, isDataHidden],
@@ -113,7 +113,7 @@ export function useReportStats(filters?: {
           product_id,
           fee_type
         `)
-        .eq('fee_type', 'none') // Chỉ lấy trả hàng hoàn tiền đầy đủ
+        .eq('fee_type', 'none')
         .gte('return_date', startDate)
         .lte('return_date', endDate + 'T23:59:59');
 
@@ -171,7 +171,7 @@ export function useReportStats(filters?: {
       const paymentsBySource = { cash: 0, bank_card: 0, e_wallet: 0, debt: 0 };
       const profitByCategoryMap: Record<string, { categoryName: string; revenue: number; profit: number; count: number }> = {};
 
-      // Tính lợi nhuận từ bán hàng (CHỈ status = 'sold')
+      // Tính lợi nhuận từ bán hàng
       exportReceipts?.forEach(receipt => {
         if (receipt.status !== 'cancelled') {
           salesCount++;
@@ -180,19 +180,15 @@ export function useReportStats(filters?: {
             const salePrice = Number(item.sale_price);
             const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
             
-            // Lọc theo danh mục nếu có
             if (filters?.categoryId && item.category_id !== filters.categoryId) {
               return;
             }
 
-            // KHÔNG rollback dòng bán cũ: nếu item đã bị set status = 'returned'
-            // vẫn phải tính như một dòng bán tại thời điểm export_date.
             if (item.status === 'sold' || item.status === 'returned') {
               totalSalesRevenue += salePrice;
               businessProfit += (salePrice - importPrice);
               productsSold++;
 
-              // Tính theo danh mục
               const catId = item.category_id || 'uncategorized';
               const catName = item.categories?.name || 'Chưa phân loại';
               if (!profitByCategoryMap[catId]) {
@@ -204,7 +200,6 @@ export function useReportStats(filters?: {
             }
           });
 
-          // Thống kê theo nguồn tiền
           receipt.export_receipt_payments?.forEach(payment => {
             const amount = Number(payment.amount);
             const source = payment.payment_type as keyof typeof paymentsBySource;
@@ -215,15 +210,14 @@ export function useReportStats(filters?: {
         }
       });
 
-      // Tính lợi nhuận âm từ trả hàng KHÔNG CÓ PHÍ
-      // NOTE: export_returns.import_price có thể = 0, nên phải lấy giá nhập từ product_id.
+      // Tính lợi nhuận âm từ trả hàng
       returnItems?.forEach((item: any) => {
         const salePrice = Number(item.sale_price);
         const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
         const profit = salePrice - importPrice;
         
         totalReturnRevenue += salePrice;
-        businessProfit -= profit; // Hoàn lãi
+        businessProfit -= profit;
         productsReturned++;
         returnCount++;
       });
@@ -268,6 +262,8 @@ export function useReportStats(filters?: {
         profitByCategory,
       } as ReportStats;
     },
+    enabled: !isTenantLoading,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -278,8 +274,8 @@ export function useReportChartData(filters?: {
   branchId?: string;
   groupBy?: 'day' | 'week' | 'month';
 }) {
-  const { data: tenant } = useCurrentTenant();
-  const isDataHidden = tenant?.is_data_hidden || false;
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
     queryKey: ['report-chart-data', filters, isDataHidden],
@@ -325,7 +321,7 @@ export function useReportChartData(filters?: {
       const { data: returnItems, error: returnError } = await returnQuery;
       if (returnError) throw returnError;
 
-      // Lấy giá nhập (gộp cả sản phẩm bán và sản phẩm trả)
+      // Lấy giá nhập
       const productIds = Array.from(
         new Set([
           ...(receipts?.flatMap(r => r.export_receipt_items?.map(i => i.product_id).filter(Boolean)) || []),
@@ -369,7 +365,6 @@ export function useReportChartData(filters?: {
         }
 
         receipt.export_receipt_items?.forEach(item => {
-          // Giữ dòng bán dù item đã bị set status = 'returned'
           if (item.status === 'sold' || item.status === 'returned') {
             const salePrice = Number(item.sale_price);
             const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
@@ -380,8 +375,7 @@ export function useReportChartData(filters?: {
         });
       });
 
-      // Trừ dữ liệu trả hàng đủ tiền (chỉ fee_type = 'none')
-      // Theo nguyên tắc: Doanh thu KHÔNG bị ảnh hưởng, chỉ trừ lợi nhuận
+      // Trừ dữ liệu trả hàng
       returnItems?.forEach((ret: any) => {
         const date = new Date(ret.return_date);
         const key = getKey(date);
@@ -393,13 +387,13 @@ export function useReportChartData(filters?: {
         const importPrice = ret.product_id ? (productsMap[ret.product_id] || 0) : 0;
         const originalProfit = salePrice - importPrice;
 
-        // Doanh thu giữ nguyên (không trừ)
-        // Chỉ trừ lợi nhuận = lãi lúc bán
         dataMap[key].profit -= originalProfit;
         dataMap[key].count += 1;
       });
 
       return Object.values(dataMap).sort((a, b) => a.date.localeCompare(b.date));
     },
+    enabled: !isTenantLoading,
+    refetchOnWindowFocus: false,
   });
 }

@@ -77,8 +77,8 @@ export interface ExportReceiptItemDetail {
 }
 
 export function useExportReceipts() {
-  const { data: tenant } = useCurrentTenant();
-  const isDataHidden = tenant?.is_data_hidden || false;
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
     queryKey: ['export-receipts', isDataHidden],
@@ -100,12 +100,14 @@ export function useExportReceipts() {
       if (error) throw error;
       return data as ExportReceipt[];
     },
+    enabled: !isTenantLoading,
+    refetchOnWindowFocus: false,
   });
 }
 
 export function useExportReceiptItems() {
-  const { data: tenant } = useCurrentTenant();
-  const isDataHidden = tenant?.is_data_hidden || false;
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
     queryKey: ['export-receipt-items', isDataHidden],
@@ -133,6 +135,8 @@ export function useExportReceiptItems() {
       if (error) throw error;
       return data as ExportReceiptItemDetail[];
     },
+    enabled: !isTenantLoading,
+    refetchOnWindowFocus: false,
   });
 }
 
