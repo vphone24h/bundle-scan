@@ -29,16 +29,19 @@ import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import {
   Advertisement,
-  useCreateAdvertisement,
-  useUpdateAdvertisement,
   useUploadAdImage,
 } from '@/hooks/useAdvertisements';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { usePlatformUser } from '@/hooks/useTenant';
 
 interface AdvertisementFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   advertisement: Advertisement | null;
   onClose: () => void;
+  isPlatformAdmin?: boolean;
 }
 
 export function AdvertisementFormDialog({
@@ -46,9 +49,11 @@ export function AdvertisementFormDialog({
   onOpenChange,
   advertisement,
   onClose,
+  isPlatformAdmin = false,
 }: AdvertisementFormDialogProps) {
-  const createAd = useCreateAdvertisement();
-  const updateAd = useUpdateAdvertisement();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { data: platformUser } = usePlatformUser();
   const uploadImage = useUploadAdImage();
 
   const [title, setTitle] = useState('');
@@ -60,6 +65,47 @@ export function AdvertisementFormDialog({
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [hasEndDate, setHasEndDate] = useState(false);
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const { data: result, error } = await supabase
+        .from('advertisements')
+        .insert(data)
+        .select()
+        .single();
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-advertisements'] });
+      queryClient.invalidateQueries({ queryKey: ['advertisements'] });
+      toast({ title: 'Thành công', description: 'Đã thêm quảng cáo mới' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...data }: any) => {
+      const { data: result, error } = await supabase
+        .from('advertisements')
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-advertisements'] });
+      queryClient.invalidateQueries({ queryKey: ['advertisements'] });
+      toast({ title: 'Thành công', description: 'Đã cập nhật quảng cáo' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    },
+  });
 
   useEffect(() => {
     if (advertisement) {
@@ -99,7 +145,7 @@ export function AdvertisementFormDialog({
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Ảnh phải nhỏ hơn 5MB');
+      toast({ title: 'Lỗi', description: 'Ảnh phải nhỏ hơn 5MB', variant: 'destructive' });
       return;
     }
 
@@ -112,25 +158,26 @@ export function AdvertisementFormDialog({
 
     const data = {
       title,
-      description: description || undefined,
+      description: description || null,
       link_url: linkUrl,
-      image_url: imageUrl || undefined,
+      image_url: imageUrl || null,
       is_active: isActive,
       ad_type: adType,
       start_date: startDate.toISOString(),
       end_date: hasEndDate && endDate ? endDate.toISOString() : null,
+      tenant_id: isPlatformAdmin ? null : platformUser?.tenant_id,
     };
 
     if (advertisement) {
-      await updateAd.mutateAsync({ id: advertisement.id, ...data });
+      await updateMutation.mutateAsync({ id: advertisement.id, ...data });
     } else {
-      await createAd.mutateAsync(data);
+      await createMutation.mutateAsync(data);
     }
 
     onClose();
   };
 
-  const isSubmitting = createAd.isPending || updateAd.isPending;
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -166,15 +213,15 @@ export function AdvertisementFormDialog({
             />
           </div>
 
-          {/* Image Upload */}
+          {/* Image Upload - Facebook-like aspect ratio (1.91:1) */}
           <div className="space-y-2">
-            <Label>Ảnh banner</Label>
+            <Label>Ảnh banner (Tỷ lệ như Facebook: 1200x628)</Label>
             {imageUrl ? (
               <div className="relative">
                 <img
                   src={imageUrl}
                   alt="Preview"
-                  className="w-full aspect-video object-cover rounded-lg"
+                  className="w-full aspect-[1.91/1] object-cover rounded-lg"
                 />
                 <Button
                   type="button"
@@ -187,7 +234,7 @@ export function AdvertisementFormDialog({
                 </Button>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50">
+              <label className="flex flex-col items-center justify-center w-full aspect-[1.91/1] border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50">
                 <input
                   type="file"
                   accept="image/*"
@@ -200,8 +247,10 @@ export function AdvertisementFormDialog({
                 ) : (
                   <>
                     <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm text-muted-foreground text-center px-4">
                       Bấm để upload ảnh (tối đa 5MB)
+                      <br />
+                      <span className="text-xs">Khuyến nghị: 1200x628 pixels</span>
                     </span>
                   </>
                 )}
@@ -224,7 +273,7 @@ export function AdvertisementFormDialog({
 
           {/* Ad Type */}
           <div className="space-y-2">
-            <Label>Loại quảng cáo</Label>
+            <Label>Phân loại</Label>
             <Select value={adType} onValueChange={setAdType}>
               <SelectTrigger>
                 <SelectValue />
@@ -258,6 +307,7 @@ export function AdvertisementFormDialog({
                   selected={startDate}
                   onSelect={(date) => date && setStartDate(date)}
                   initialFocus
+                  className="pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>
@@ -293,6 +343,7 @@ export function AdvertisementFormDialog({
                     onSelect={setEndDate}
                     disabled={(date) => date < startDate}
                     initialFocus
+                    className="pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
