@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Phone, MapPin, Mail, Calendar, Edit2, ShoppingCart, Wallet, Star } from 'lucide-react';
+import { Phone, MapPin, Mail, Calendar, Edit2, ShoppingCart, Wallet, Star, Eye } from 'lucide-react';
 import {
   useCustomerDetail,
   usePointTransactions,
@@ -33,6 +33,7 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { CustomerFormDialog } from './CustomerFormDialog';
 import { PointAdjustDialog } from './PointAdjustDialog';
+import { CustomerPurchaseDetailDialog } from './CustomerPurchaseDetailDialog';
 
 interface CustomerDetailDialogProps {
   customerId: string | null;
@@ -43,6 +44,8 @@ interface CustomerDetailDialogProps {
 export function CustomerDetailDialog({ customerId, open, onOpenChange }: CustomerDetailDialogProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showAdjustDialog, setShowAdjustDialog] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
+  const [showPurchaseDetail, setShowPurchaseDetail] = useState(false);
 
   const { data: customer, isLoading } = useCustomerDetail(customerId);
   const { data: pointTransactions } = usePointTransactions(customerId);
@@ -176,18 +179,26 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                             <TableHead className="text-right">Giá trị</TableHead>
                             <TableHead className="text-right hidden sm:table-cell">Điểm</TableHead>
                             <TableHead>Trạng thái</TableHead>
+                            <TableHead className="w-[60px]"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {purchaseHistory?.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                                 Chưa có lịch sử mua hàng
                               </TableCell>
                             </TableRow>
                           ) : (
                             purchaseHistory?.map((receipt) => (
-                              <TableRow key={receipt.id}>
+                              <TableRow 
+                                key={receipt.id}
+                                className="cursor-pointer hover:bg-muted/50"
+                                onClick={() => {
+                                  setSelectedReceipt(receipt);
+                                  setShowPurchaseDetail(true);
+                                }}
+                              >
                                 <TableCell>
                                   {format(new Date(receipt.export_date), 'dd/MM/yyyy', { locale: vi })}
                                 </TableCell>
@@ -222,6 +233,19 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                                   <Badge variant={receipt.status === 'completed' ? 'default' : 'secondary'}>
                                     {receipt.status === 'completed' ? 'Hoàn tất' : 'Đã hủy'}
                                   </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedReceipt(receipt);
+                                      setShowPurchaseDetail(true);
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
                                 </TableCell>
                               </TableRow>
                             ))
@@ -489,6 +513,13 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
           />
         </>
       )}
+
+      {/* Purchase Detail Dialog */}
+      <CustomerPurchaseDetailDialog
+        receipt={selectedReceipt as any}
+        open={showPurchaseDetail}
+        onOpenChange={setShowPurchaseDetail}
+      />
     </>
   );
 }
