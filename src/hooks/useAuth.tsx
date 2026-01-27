@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, displayName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -19,6 +19,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check if session should be cleared (user didn't select "remember me" and browser was restarted)
+    const wasTempSession = sessionStorage.getItem('session_temp') === null && 
+                           localStorage.getItem('auth_remember_me') === 'false';
+    
+    if (wasTempSession) {
+      // Browser was closed and user didn't want to stay logged in - clear session
+      supabase.auth.signOut().then(() => {
+        setLoading(false);
+      });
+      return;
+    }
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -40,7 +52,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe: boolean = true) => {
+    // If not remembering, we'll handle session cleanup on browser close via the storage key
+    // Supabase uses localStorage by default which persists
+    // When rememberMe is false, we store a flag to clear session on next visit if browser was closed
+    if (!rememberMe) {
+      sessionStorage.setItem('session_temp', 'true');
+    } else {
+      sessionStorage.removeItem('session_temp');
+    }
+    
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };

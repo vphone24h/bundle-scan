@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { Warehouse, Loader2 } from 'lucide-react';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
+
+const REMEMBER_ME_KEY = 'auth_remember_me';
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -23,6 +26,10 @@ export default function AuthPage() {
   const [storeId, setStoreId] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(() => {
+    // Check if user previously selected "remember me"
+    return localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+  });
   
   // Auto-fill store ID from subdomain
   useEffect(() => {
@@ -36,8 +43,11 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
+      // Save remember me preference
+      localStorage.setItem(REMEMBER_ME_KEY, rememberMe.toString());
+
       // Sign in first (tenants table is protected by RLS when not authenticated)
-      const { error } = await signIn(loginEmail, loginPassword);
+      const { error } = await signIn(loginEmail, loginPassword, rememberMe);
       
       if (error) {
         toast({
@@ -240,6 +250,21 @@ export default function AuthPage() {
                 required
               />
             </div>
+            {/* Remember me checkbox */}
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="remember-me" 
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
+              />
+              <Label 
+                htmlFor="remember-me" 
+                className="text-sm font-normal cursor-pointer"
+              >
+                Duy trì đăng nhập
+              </Label>
+            </div>
+
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Đăng nhập
