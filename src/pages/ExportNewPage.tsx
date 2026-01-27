@@ -102,7 +102,7 @@ export default function ExportNewPage() {
   const { data: invoiceTemplate } = useDefaultInvoiceTemplate();
   const { data: pointSettings } = usePointSettings();
 
-  // Handle barcode scan (IMEI or SKU)
+  // Handle barcode scan (IMEI or SKU) - fill form instead of auto-add to cart
   const handleBarcodeScan = async (barcode: string) => {
     if (!barcode.trim()) return;
 
@@ -136,28 +136,18 @@ export default function ExportNewPage() {
       return;
     }
 
-    // Auto-add to cart for faster checkout
-    const newItem: CartItem = {
-      tempId: Date.now().toString(),
-      product_id: result.id,
-      product_name: result.name,
-      sku: result.sku,
-      imei: result.imei,
-      category_id: result.category_id,
-      categoryName: result.categories?.name,
-      branch_id: result.branch_id,
-      branchName: result.branches?.name,
-      sale_price: Number(result.import_price) || 0, // Default to import price, can be changed
-      note: null,
-      quantity: 1, // IMEI products always have quantity 1
-      warranty: null,
-    };
-
-    setCart(prev => [...prev, newItem]);
+    // Fill form with product info for user to review/edit before adding to cart
+    setSelectedProduct(result);
+    setSalePrice(result.import_price?.toString() || '');
+    setItemQuantity(result.imei ? 1 : 1);
+    setItemWarranty('');
+    setItemNote('');
+    setNameSearch('');
+    setProductSuggestions([]);
     
     toast({
-      title: 'Đã thêm vào giỏ',
-      description: `${newItem.product_name} (${barcode})`,
+      title: 'Đã quét thành công',
+      description: `${result.name} - Vui lòng kiểm tra và nhấn "Thêm vào giỏ"`,
     });
   };
 
