@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useCurrentTenant } from './useTenant';
 
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
@@ -76,9 +77,15 @@ export interface ExportReceiptItemDetail {
 }
 
 export function useExportReceipts() {
+  const { data: tenant } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden || false;
+
   return useQuery({
-    queryKey: ['export-receipts'],
+    queryKey: ['export-receipts', isDataHidden],
     queryFn: async () => {
+      // Chế độ test: trả về dữ liệu rỗng
+      if (isDataHidden) return [] as ExportReceipt[];
+
       const { data, error } = await supabase
         .from('export_receipts')
         .select(`
@@ -97,9 +104,15 @@ export function useExportReceipts() {
 }
 
 export function useExportReceiptItems() {
+  const { data: tenant } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden || false;
+
   return useQuery({
-    queryKey: ['export-receipt-items'],
+    queryKey: ['export-receipt-items', isDataHidden],
     queryFn: async () => {
+      // Chế độ test: trả về dữ liệu rỗng
+      if (isDataHidden) return [] as ExportReceiptItemDetail[];
+
       const { data, error } = await supabase
         .from('export_receipt_items')
         .select(`

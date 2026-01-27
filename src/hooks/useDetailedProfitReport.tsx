@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useCurrentTenant } from './useTenant';
 
 export interface DetailedProfitItem {
   id: string;
@@ -26,9 +27,20 @@ export function useDetailedProfitReport(filters?: {
   categoryId?: string;
   search?: string;
 }) {
+  const { data: tenant } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden || false;
+
   return useQuery({
-    queryKey: ['detailed-profit-report', filters],
+    queryKey: ['detailed-profit-report', filters, isDataHidden],
     queryFn: async () => {
+      // Chế độ test: trả về dữ liệu rỗng
+      if (isDataHidden) {
+        return {
+          items: [] as DetailedProfitItem[],
+          totals: { totalQuantity: 0, totalRevenue: 0, totalProfit: 0 },
+        };
+      }
+
       const startDate = filters?.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
       const endDate = filters?.endDate || new Date().toISOString().split('T')[0];
 

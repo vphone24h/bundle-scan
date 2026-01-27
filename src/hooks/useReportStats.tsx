@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useCurrentTenant } from './useTenant';
 
 export interface ReportStats {
   totalSalesRevenue: number; // Tổng doanh thu bán hàng
@@ -39,9 +40,32 @@ export function useReportStats(filters?: {
   branchId?: string;
   categoryId?: string;
 }) {
+  const { data: tenant } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden || false;
+
   return useQuery({
-    queryKey: ['report-stats', filters],
+    queryKey: ['report-stats', filters, isDataHidden],
     queryFn: async () => {
+      // Chế độ test: trả về dữ liệu rỗng
+      if (isDataHidden) {
+        return {
+          totalSalesRevenue: 0,
+          totalReturnRevenue: 0,
+          netRevenue: 0,
+          businessProfit: 0,
+          totalExpenses: 0,
+          otherIncome: 0,
+          netProfit: 0,
+          salesCount: 0,
+          returnCount: 0,
+          productsSold: 0,
+          productsReturned: 0,
+          paymentsBySource: { cash: 0, bank_card: 0, e_wallet: 0, debt: 0 },
+          expensesByCategory: {},
+          profitByCategory: [],
+        } as ReportStats;
+      }
+
       const startDate = filters?.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
       const endDate = filters?.endDate || new Date().toISOString().split('T')[0];
 
@@ -254,9 +278,15 @@ export function useReportChartData(filters?: {
   branchId?: string;
   groupBy?: 'day' | 'week' | 'month';
 }) {
+  const { data: tenant } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden || false;
+
   return useQuery({
-    queryKey: ['report-chart-data', filters],
+    queryKey: ['report-chart-data', filters, isDataHidden],
     queryFn: async () => {
+      // Chế độ test: trả về dữ liệu rỗng
+      if (isDataHidden) return [] as { date: string; revenue: number; profit: number; count: number }[];
+
       const startDate = filters?.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
       const endDate = filters?.endDate || new Date().toISOString().split('T')[0];
 

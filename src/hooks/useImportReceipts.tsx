@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
+import { useCurrentTenant } from './useTenant';
 
 type ReceiptStatus = Database['public']['Enums']['receipt_status'];
 type PaymentType = Database['public']['Enums']['payment_type'];
@@ -40,9 +41,15 @@ export interface ReceiptPayment {
 }
 
 export function useImportReceipts() {
+  const { data: tenant } = useCurrentTenant();
+  const isDataHidden = tenant?.is_data_hidden || false;
+
   return useQuery({
-    queryKey: ['import-receipts'],
+    queryKey: ['import-receipts', isDataHidden],
     queryFn: async () => {
+      // Chế độ test: trả về dữ liệu rỗng
+      if (isDataHidden) return [] as ImportReceipt[];
+
       const { data, error } = await supabase
         .from('import_receipts')
         .select(`
