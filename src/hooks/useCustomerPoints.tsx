@@ -140,12 +140,30 @@ export function useMembershipTiers() {
   return useQuery({
     queryKey: ['membership-tiers'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Lấy tenant_id của user hiện tại
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+
+      // Ưu tiên lấy cài đặt của tenant, nếu không có thì lấy mặc định (tenant_id = null)
+      let { data, error } = await supabase
         .from('membership_tier_settings')
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('min_spent', { ascending: true });
 
       if (error) throw error;
+
+      // Nếu tenant chưa có cài đặt riêng, lấy mặc định
+      if (!data || data.length === 0) {
+        const { data: defaultData, error: defaultError } = await supabase
+          .from('membership_tier_settings')
+          .select('*')
+          .is('tenant_id', null)
+          .order('min_spent', { ascending: true });
+
+        if (defaultError) throw defaultError;
+        data = defaultData;
+      }
+
       return data as MembershipTierSettings[];
     },
   });
