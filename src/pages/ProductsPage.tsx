@@ -204,13 +204,13 @@ export default function ProductsPage() {
         }
       />
 
-      <div className="p-6 lg:p-8 space-y-4">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-4">
         {/* Filters */}
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6">
             <div className="space-y-4">
               {/* Search row */}
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -220,51 +220,59 @@ export default function ProductsPage() {
                     className="pl-10"
                   />
                 </div>
-                <Button
-                  variant={showFilters ? 'secondary' : 'outline'}
-                  onClick={() => setShowFilters(!showFilters)}
-                >
-                  <Filter className="mr-2 h-4 w-4" />
-                  Bộ lọc
-                  {hasActiveFilters && (
-                    <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
-                      !
-                    </Badge>
-                  )}
-                </Button>
-                <Button variant="outline" onClick={handleExportProducts}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Xuất Excel
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant={showFilters ? 'secondary' : 'outline'}
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="flex-1 sm:flex-none"
+                    size="sm"
+                  >
+                    <Filter className="mr-1.5 sm:mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">Bộ lọc</span>
+                    <span className="sm:hidden">Lọc</span>
+                    {hasActiveFilters && (
+                      <Badge variant="secondary" className="ml-1.5 sm:ml-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                        !
+                      </Badge>
+                    )}
+                  </Button>
+                  <Button variant="outline" onClick={handleExportProducts} size="sm" className="flex-1 sm:flex-none">
+                    <Download className="mr-1.5 sm:mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">Xuất Excel</span>
+                    <span className="sm:hidden">Excel</span>
+                  </Button>
+                </div>
               </div>
 
               {/* Extended filters */}
               {showFilters && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 pt-4 border-t">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Từ ngày</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4 pt-4 border-t">
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label className="text-[10px] sm:text-xs">Từ ngày</Label>
                     <Input
                       type="date"
                       value={dateFrom}
                       onChange={(e) => setDateFrom(e.target.value)}
+                      className="text-sm"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Đến ngày</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label className="text-[10px] sm:text-xs">Đến ngày</Label>
                     <Input
                       type="date"
                       value={dateTo}
                       onChange={(e) => setDateTo(e.target.value)}
+                      className="text-sm"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Danh mục</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label className="text-[10px] sm:text-xs">Danh mục</Label>
                     <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger>
+                      <SelectTrigger className="text-sm">
                         <SelectValue placeholder="Tất cả" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả danh mục</SelectItem>
+                        <SelectItem value="_all_">Tất cả</SelectItem>
                         {categories?.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>
                             {cat.parent_id ? `— ${cat.name}` : cat.name}
@@ -273,14 +281,14 @@ export default function ProductsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Nhà cung cấp</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label className="text-[10px] sm:text-xs">Nhà cung cấp</Label>
                     <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-                      <SelectTrigger>
+                      <SelectTrigger className="text-sm">
                         <SelectValue placeholder="Tất cả" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả NCC</SelectItem>
+                        <SelectItem value="_all_">Tất cả</SelectItem>
                         {suppliers?.map((sup) => (
                           <SelectItem key={sup.id} value={sup.id}>
                             {sup.name}
@@ -289,14 +297,14 @@ export default function ProductsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Chi nhánh</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label className="text-[10px] sm:text-xs">Chi nhánh</Label>
                     <Select value={branchFilter} onValueChange={setBranchFilter}>
-                      <SelectTrigger>
+                      <SelectTrigger className="text-sm">
                         <SelectValue placeholder="Tất cả" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả chi nhánh</SelectItem>
+                        <SelectItem value="_all_">Tất cả</SelectItem>
                         {branches?.map((branch) => (
                           <SelectItem key={branch.id} value={branch.id}>
                             {branch.name}
@@ -305,22 +313,22 @@ export default function ProductsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Trạng thái</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label className="text-[10px] sm:text-xs">Trạng thái</Label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger>
+                      <SelectTrigger className="text-sm">
                         <SelectValue placeholder="Tất cả" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả trạng thái</SelectItem>
+                        <SelectItem value="_all_">Tất cả</SelectItem>
                         <SelectItem value="in_stock">Tồn kho</SelectItem>
                         <SelectItem value="sold">Đã bán</SelectItem>
-                        <SelectItem value="returned">Đã trả NCC</SelectItem>
+                        <SelectItem value="returned">Đã trả</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex items-end">
-                    <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full">
+                  <div className="flex items-end col-span-2 sm:col-span-1">
+                    <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full text-xs sm:text-sm">
                       <X className="h-4 w-4 mr-1" />
                       Xóa lọc
                     </Button>
@@ -332,12 +340,12 @@ export default function ProductsPage() {
         </Card>
 
         {/* Results info */}
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Hiển thị {filteredProducts.length} / {mappedProducts.length} sản phẩm
           </p>
           {selectedProducts.length > 0 && (
-            <p className="text-sm font-medium text-primary">
+            <p className="text-xs sm:text-sm font-medium text-primary">
               Đã chọn {selectedProducts.length} sản phẩm
             </p>
           )}
