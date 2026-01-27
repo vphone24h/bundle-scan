@@ -35,7 +35,7 @@ Hệ thống sử dụng kiến trúc **Multi-Tenant SaaS** với data isolation
 CREATE TABLE public.tenants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
-    subdomain TEXT UNIQUE NOT NULL,  -- VD: "shopA" -> shopA.khohangpro.vn
+    subdomain TEXT UNIQUE NOT NULL,  -- VD: "shopA" -> shopA.vkho.vn
     email TEXT,
     phone TEXT,
     address TEXT,
