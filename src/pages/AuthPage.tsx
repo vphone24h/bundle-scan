@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,8 +16,9 @@ const REMEMBER_ME_KEY = 'auth_remember_me';
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
   
   // Auto-detect tenant from subdomain
   const resolvedTenant = useTenantResolver();
@@ -38,6 +39,15 @@ export default function AuthPage() {
       setStoreId(resolvedTenant.subdomain);
     }
   }, [resolvedTenant.subdomain, resolvedTenant.status]);
+
+  // Redirect after auth state is updated
+  useEffect(() => {
+    if (pendingRedirect && user && !authLoading) {
+      navigate(pendingRedirect, { replace: true });
+      setPendingRedirect(null);
+      setLoading(false);
+    }
+  }, [user, authLoading, pendingRedirect, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +94,7 @@ export default function AuthPage() {
             title: 'Đăng nhập thành công',
             description: 'Chào mừng Platform Admin!',
           });
-          navigate('/platform-admin');
+          setPendingRedirect('/platform-admin');
           return;
         }
 
@@ -155,16 +165,15 @@ export default function AuthPage() {
         title: 'Đăng nhập thành công',
         description: 'Chào mừng bạn quay lại!',
       });
-      navigate('/');
+      setPendingRedirect('/');
     } catch (error: any) {
       toast({
         title: 'Lỗi',
         description: error.message || 'Đã xảy ra lỗi khi đăng nhập',
         variant: 'destructive',
       });
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
