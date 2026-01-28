@@ -52,9 +52,7 @@ export default function AuthPage() {
       if (error) {
         toast({
           title: 'Đăng nhập thất bại',
-          description: error.message === 'Invalid login credentials' 
-            ? 'Email hoặc mật khẩu không đúng'
-            : error.message,
+          description: 'ID cửa hàng, email hoặc mật khẩu không đúng',
           variant: 'destructive',
         });
         setLoading(false);
@@ -92,8 +90,8 @@ export default function AuthPage() {
         if (!userTenantId) {
           await supabase.auth.signOut();
           toast({
-            title: 'Không có quyền truy cập',
-            description: 'Tài khoản của bạn chưa được gán cửa hàng.',
+            title: 'Đăng nhập thất bại',
+            description: 'ID cửa hàng, email hoặc mật khẩu không đúng',
             variant: 'destructive',
           });
           setLoading(false);
@@ -109,8 +107,8 @@ export default function AuthPage() {
         if (tenantError) {
           await supabase.auth.signOut();
           toast({
-            title: 'Lỗi',
-            description: 'Không thể kiểm tra cửa hàng của bạn. Vui lòng thử lại.',
+            title: 'Đăng nhập thất bại',
+            description: 'ID cửa hàng, email hoặc mật khẩu không đúng',
             variant: 'destructive',
           });
           setLoading(false);
@@ -120,8 +118,8 @@ export default function AuthPage() {
         if (!tenant) {
           await supabase.auth.signOut();
           toast({
-            title: 'Không có quyền truy cập',
-            description: 'Không tìm thấy thông tin cửa hàng của tài khoản này.',
+            title: 'Đăng nhập thất bại',
+            description: 'ID cửa hàng, email hoặc mật khẩu không đúng',
             variant: 'destructive',
           });
           setLoading(false);
@@ -143,8 +141,8 @@ export default function AuthPage() {
         if (tenant.subdomain !== inputStoreId) {
           await supabase.auth.signOut();
           toast({
-            title: 'Sai ID cửa hàng',
-            description: `Tài khoản này thuộc cửa hàng "${tenant.subdomain}". Vui lòng nhập đúng ID cửa hàng.`,
+            title: 'Đăng nhập thất bại',
+            description: 'ID cửa hàng, email hoặc mật khẩu không đúng',
             variant: 'destructive',
           });
           setLoading(false);
