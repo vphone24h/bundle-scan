@@ -51,7 +51,8 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
   const updateProduct = useMutation({
     mutationFn: async ({ 
       productId, 
-      updates 
+      updates,
+      oldData
     }: { 
       productId: string; 
       updates: {
@@ -61,7 +62,15 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         category_id?: string | null;
         supplier_id?: string | null;
         branch_id?: string | null;
-      }
+      };
+      oldData: {
+        name: string;
+        sku: string;
+        imei: string | null;
+        category_id: string | null;
+        supplier_id: string | null;
+        branch_id: string | null;
+      };
     }) => {
       // Kiểm tra IMEI trùng nếu có giá trị mới
       if (updates.imei) {
@@ -84,6 +93,24 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         .eq('id', productId);
 
       if (error) throw error;
+
+      // Ghi nhận lịch sử thao tác
+      const tenantId = await supabase.rpc('get_user_tenant_id_secure');
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (tenantId.data) {
+        await supabase.from('audit_logs').insert({
+          tenant_id: tenantId.data,
+          user_id: user?.id,
+          action_type: 'UPDATE',
+          table_name: 'products',
+          record_id: productId,
+          description: `Chỉnh sửa sản phẩm: ${oldData.name}`,
+          old_data: oldData,
+          new_data: updates,
+          branch_id: updates.branch_id || oldData.branch_id,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -105,6 +132,15 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     }
 
     try {
+      const oldData = {
+        name: product.name,
+        sku: product.sku,
+        imei: product.imei,
+        category_id: product.category_id,
+        supplier_id: product.supplier_id,
+        branch_id: product.branch_id,
+      };
+
       await updateProduct.mutateAsync({
         productId: product.id,
         updates: {
@@ -115,6 +151,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           supplier_id: formData.supplier_id === '_none_' ? null : formData.supplier_id,
           branch_id: formData.branch_id === '_none_' ? null : formData.branch_id,
         },
+        oldData,
       });
 
       toast({
