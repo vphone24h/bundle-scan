@@ -103,15 +103,29 @@ export default function ExportNewPage() {
   const { data: pointSettings } = usePointSettings();
 
   // Handle barcode scan (IMEI or SKU) - fill form instead of auto-add to cart
+  // Supports format: IMEI_or_SKU|PRICE (e.g., "123456789|9000000")
   const handleBarcodeScan = async (barcode: string) => {
     if (!barcode.trim()) return;
 
-    const result = await checkProduct.mutateAsync(barcode.trim());
+    // Parse barcode - check if it contains price info (format: IMEI|PRICE)
+    let searchCode = barcode.trim();
+    let encodedPrice: number | null = null;
+    
+    if (barcode.includes('|')) {
+      const parts = barcode.split('|');
+      searchCode = parts[0];
+      const priceStr = parts[1];
+      if (priceStr && !isNaN(parseInt(priceStr))) {
+        encodedPrice = parseInt(priceStr);
+      }
+    }
+
+    const result = await checkProduct.mutateAsync(searchCode);
     
     if (!result) {
       toast({
         title: 'Không tìm thấy',
-        description: `Mã "${barcode}" không tồn tại trong hệ thống`,
+        description: `Mã "${searchCode}" không tồn tại trong hệ thống`,
         variant: 'destructive',
       });
       return;
@@ -137,8 +151,9 @@ export default function ExportNewPage() {
     }
 
     // Fill form with product info for user to review/edit before adding to cart
+    // Use encoded price from barcode if available, otherwise fall back to import price
     setSelectedProduct(result);
-    setSalePrice(result.import_price?.toString() || '');
+    setSalePrice(encodedPrice !== null ? encodedPrice.toString() : (result.import_price?.toString() || ''));
     setItemQuantity(result.imei ? 1 : 1);
     setItemWarranty('');
     setItemNote('');
