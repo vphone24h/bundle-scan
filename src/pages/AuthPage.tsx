@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { Warehouse, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import vkhoLogo from '@/assets/vkho-logo.png';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 
 const REMEMBER_ME_KEY = 'auth_remember_me';
@@ -171,14 +172,16 @@ export default function AuthPage() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary">
-              <Warehouse className="h-8 w-8 text-primary-foreground" />
-            </div>
+            <img 
+              src={vkhoLogo} 
+              alt="VKho Logo" 
+              className="h-20 w-20 object-contain"
+            />
           </div>
           <CardTitle className="text-2xl">
             {isSubdomainMode && resolvedTenant.tenantName 
               ? resolvedTenant.tenantName 
-              : 'Kho Hàng Pro'}
+              : 'Quản lý kho Dễ Dàng chi tiết'}
           </CardTitle>
           <CardDescription>
             {isSubdomainMode 
