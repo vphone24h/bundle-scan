@@ -12,6 +12,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
+const CURRENT_STORE_ID_KEY = 'current_store_id';
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -90,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Clear all React Query cache to prevent data leakage between tenants
     queryClient.clear();
     localStorage.removeItem('auth_remember_me');
+    localStorage.removeItem(CURRENT_STORE_ID_KEY);
     sessionStorage.removeItem('session_temp');
     await supabase.auth.signOut();
   };

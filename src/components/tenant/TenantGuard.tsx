@@ -1,7 +1,12 @@
-import { ReactNode, useMemo } from 'react';
-import { Navigate } from 'react-router-dom';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useCurrentTenant, usePlatformUser } from '@/hooks/useTenant';
+import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { useTenantResolver } from '@/hooks/useTenantResolver';
+
+const CURRENT_STORE_ID_KEY = 'current_store_id';
 
 interface TenantGuardProps {
   children: ReactNode;
@@ -56,14 +61,55 @@ function getEffectiveStatus(tenant: {
 export function TenantGuard({ children, allowExpired = false }: TenantGuardProps) {
   const { data: tenant, isLoading: tenantLoading } = useCurrentTenant();
   const { data: platformUser, isLoading: platformUserLoading } = usePlatformUser();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const location = useLocation();
+  const resolvedTenant = useTenantResolver();
+  const [forceAuth, setForceAuth] = useState(false);
 
-  const isLoading = tenantLoading || platformUserLoading;
+  const isLoading = tenantLoading || platformUserLoading || authLoading;
 
   // Calculate effective status based on dates
   const effectiveStatus = useMemo(() => {
     if (!tenant) return null;
     return getEffectiveStatus(tenant);
   }, [tenant]);
+
+  // Hard guard: ensure the authenticated session belongs to the intended store.
+  // If mismatch happens (common on main domain when switching stores/accounts), we force sign-out
+  // so the UI never shows another store's data or “0 data” due to RLS.
+  useEffect(() => {
+    if (!user?.id) return;
+    if (!tenant?.subdomain) return;
+
+    const expectedStoreId = (() => {
+      // Subdomain mode: expected store is derived from hostname.
+      if (resolvedTenant.status === 'resolved' && resolvedTenant.subdomain) {
+        return resolvedTenant.subdomain.toLowerCase();
+      }
+      // Main domain: expected store is the last store user selected at login.
+      const stored = (localStorage.getItem(CURRENT_STORE_ID_KEY) || '').trim().toLowerCase();
+      return stored || null;
+    })();
+
+    // If we can't determine expected store, don't block—AuthPage will capture it on next login.
+    if (!expectedStoreId) return;
+
+    const currentStoreId = tenant.subdomain.toLowerCase();
+    if (currentStoreId !== expectedStoreId) {
+      // Avoid loops: set local flag for immediate redirect.
+      setForceAuth(true);
+      // Fire-and-forget: signOut clears cache + session + store key.
+      void (async () => {
+        await signOut();
+        toast({
+          title: 'Sai phiên cửa hàng',
+          description: 'Phiên đăng nhập hiện tại thuộc cửa hàng khác. Vui lòng đăng nhập lại đúng ID cửa hàng.',
+          variant: 'destructive',
+        });
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, tenant?.subdomain, resolvedTenant.status, resolvedTenant.subdomain]);
 
   if (isLoading) {
     return (
@@ -76,6 +122,10 @@ export function TenantGuard({ children, allowExpired = false }: TenantGuardProps
   // Platform admin bypass - they can access everything
   if (platformUser?.platform_role === 'platform_admin') {
     return <>{children}</>;
+  }
+
+  if (forceAuth) {
+    return <Navigate to="/auth" replace state={{ from: location.pathname }} />;
   }
 
   // If tenant is locked, redirect to subscription page
