@@ -1,0 +1,264 @@
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, Save } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCategories } from '@/hooks/useCategories';
+import { useSuppliers } from '@/hooks/useSuppliers';
+import { useBranches } from '@/hooks/useBranches';
+import type { Product } from '@/hooks/useProducts';
+import { formatCurrency } from '@/lib/mockData';
+
+interface EditProductDialogProps {
+  product: Product | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function EditProductDialog({ product, open, onOpenChange }: EditProductDialogProps) {
+  const queryClient = useQueryClient();
+  const { data: categories } = useCategories();
+  const { data: suppliers } = useSuppliers();
+  const { data: branches } = useBranches();
+
+  const [formData, setFormData] = useState({
+    name: '',
+    sku: '',
+    imei: '',
+    category_id: '',
+    supplier_id: '',
+    branch_id: '',
+  });
+
+  useEffect(() => {
+    if (product) {
+      setFormData({
+        name: product.name || '',
+        sku: product.sku || '',
+        imei: product.imei || '',
+        category_id: product.category_id || '_none_',
+        supplier_id: product.supplier_id || '_none_',
+        branch_id: product.branch_id || '_none_',
+      });
+    }
+  }, [product]);
+
+  const updateProduct = useMutation({
+    mutationFn: async ({ 
+      productId, 
+      updates 
+    }: { 
+      productId: string; 
+      updates: {
+        name?: string;
+        sku?: string;
+        imei?: string | null;
+        category_id?: string | null;
+        supplier_id?: string | null;
+        branch_id?: string | null;
+      }
+    }) => {
+      // Kiểm tra IMEI trùng nếu có giá trị mới
+      if (updates.imei) {
+        const { data: existing } = await supabase
+          .from('products')
+          .select('id, name, sku')
+          .eq('imei', updates.imei)
+          .neq('id', productId)
+          .in('status', ['in_stock', 'sold', 'returned'])
+          .limit(1);
+
+        if (existing && existing.length > 0) {
+          throw new Error(`IMEI "${updates.imei}" đã tồn tại trong kho (${existing[0].name} - ${existing[0].sku})`);
+        }
+      }
+
+      const { error } = await supabase
+        .from('products')
+        .update(updates)
+        .eq('id', productId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    },
+  });
+
+  const handleSubmit = async () => {
+    if (!product) return;
+
+    if (!formData.name.trim()) {
+      toast({ title: 'Lỗi', description: 'Tên sản phẩm không được để trống', variant: 'destructive' });
+      return;
+    }
+
+    if (!formData.sku.trim()) {
+      toast({ title: 'Lỗi', description: 'SKU không được để trống', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      await updateProduct.mutateAsync({
+        productId: product.id,
+        updates: {
+          name: formData.name.trim(),
+          sku: formData.sku.trim(),
+          imei: formData.imei.trim() || null,
+          category_id: formData.category_id === '_none_' ? null : formData.category_id,
+          supplier_id: formData.supplier_id === '_none_' ? null : formData.supplier_id,
+          branch_id: formData.branch_id === '_none_' ? null : formData.branch_id,
+        },
+      });
+
+      toast({
+        title: 'Cập nhật thành công',
+        description: 'Thông tin sản phẩm đã được cập nhật',
+      });
+
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể cập nhật sản phẩm',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Chỉnh sửa sản phẩm</DialogTitle>
+        </DialogHeader>
+
+        {product && (
+          <div className="space-y-4">
+            {/* Price - read only */}
+            <div className="rounded-lg bg-muted/50 p-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Giá nhập:</span>
+                <span className="font-medium">
+                  {formatCurrency(Number(product.import_price))} (không thể sửa)
+                </span>
+              </div>
+            </div>
+
+            {/* Editable fields */}
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Tên sản phẩm <span className="text-destructive">*</span></Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Nhập tên sản phẩm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sku">SKU <span className="text-destructive">*</span></Label>
+                  <Input
+                    id="sku"
+                    value={formData.sku}
+                    onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
+                    placeholder="Nhập SKU"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="imei">IMEI</Label>
+                  <Input
+                    id="imei"
+                    value={formData.imei}
+                    onChange={(e) => setFormData(prev => ({ ...prev, imei: e.target.value }))}
+                    placeholder="Nhập IMEI"
+                    className="font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Thư mục</Label>
+                <Select 
+                  value={formData.category_id} 
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, category_id: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn thư mục" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="_none_">Không có</SelectItem>
+                    {categories?.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Nhà cung cấp</Label>
+                <Select 
+                  value={formData.supplier_id} 
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, supplier_id: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn nhà cung cấp" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="_none_">Không có</SelectItem>
+                    {suppliers?.map((sup) => (
+                      <SelectItem key={sup.id} value={sup.id}>
+                        {sup.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Chi nhánh</Label>
+                <Select 
+                  value={formData.branch_id} 
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, branch_id: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn chi nhánh" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="_none_">Không có</SelectItem>
+                    {branches?.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Hủy
+          </Button>
+          <Button onClick={handleSubmit} disabled={updateProduct.isPending}>
+            {updateProduct.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <Save className="h-4 w-4 mr-2" />
+            Lưu thay đổi
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
