@@ -88,29 +88,44 @@ export function usePlatformUser() {
       return data as PlatformUser | null;
     },
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 
-// Get current user's tenant
+// Combined query to get both platform user AND tenant in single request sequence
+// This eliminates the waterfall effect
 export function useCurrentTenant() {
-  const { data: platformUser } = usePlatformUser();
+  const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['current-tenant', platformUser?.tenant_id],
+    queryKey: ['current-tenant-combined', user?.id],
     queryFn: async () => {
+      if (!user?.id) return null;
+      
+      // First get platform user
+      const { data: platformUser, error: puError } = await supabase
+        .from('platform_users')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (puError) throw puError;
       if (!platformUser?.tenant_id) return null;
       
-      const { data, error } = await supabase
+      // Then get tenant
+      const { data: tenant, error: tenantError } = await supabase
         .from('tenants')
         .select('*')
         .eq('id', platformUser.tenant_id)
         .single();
 
-      if (error) throw error;
-      return data as Tenant;
+      if (tenantError) throw tenantError;
+      return tenant as Tenant;
     },
-    enabled: !!platformUser?.tenant_id,
-    // Giữ cache lâu hơn và không refetch khi focus để tránh reset trạng thái
+    enabled: !!user?.id,
     staleTime: 5 * 60 * 1000, // 5 phút
     gcTime: 10 * 60 * 1000, // 10 phút
     refetchOnWindowFocus: false,

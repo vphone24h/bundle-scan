@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   detectTenantFromHostname, 
@@ -14,35 +14,53 @@ export interface ResolvedTenant {
   isMainDomain: boolean;
 }
 
+// Cache tenant resolution to avoid repeated API calls
+let cachedResult: ResolvedTenant | null = null;
+let cacheHostname: string | null = null;
+
 /**
  * Hook to resolve tenant from current hostname/subdomain
- * 
- * Usage:
- * - On main domain (vkho.vn): returns { status: 'main_domain' }
- * - On subdomain (store.vkho.vn): resolves tenant and returns tenant info
+ * Results are cached per hostname to avoid redundant API calls
  */
 export function useTenantResolver() {
-  const [tenant, setTenant] = useState<ResolvedTenant>({
-    tenantId: null,
-    subdomain: null,
-    tenantName: null,
-    status: 'loading',
-    isMainDomain: true,
+  // Check cache first
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  
+  const [tenant, setTenant] = useState<ResolvedTenant>(() => {
+    // Return cached result if same hostname
+    if (cachedResult && cacheHostname === hostname) {
+      return cachedResult;
+    }
+    return {
+      tenantId: null,
+      subdomain: null,
+      tenantName: null,
+      status: 'loading',
+      isMainDomain: true,
+    };
   });
 
   useEffect(() => {
+    // Skip if already cached for this hostname
+    if (cachedResult && cacheHostname === hostname && tenant.status !== 'loading') {
+      return;
+    }
+
     const resolveTenant = async () => {
       const hostInfo = detectTenantFromHostname();
       
       // Main domain - no tenant resolution needed
       if (hostInfo.isMainDomain && !hostInfo.subdomain) {
-        setTenant({
+        const result: ResolvedTenant = {
           tenantId: null,
           subdomain: null,
           tenantName: null,
           status: 'main_domain',
           isMainDomain: true,
-        });
+        };
+        cachedResult = result;
+        cacheHostname = hostname;
+        setTenant(result);
         return;
       }
       
@@ -57,55 +75,70 @@ export function useTenantResolver() {
           
           if (error) {
             console.error('Error resolving tenant:', error);
-            setTenant({
+            const result: ResolvedTenant = {
               tenantId: null,
               subdomain: hostInfo.subdomain,
               tenantName: null,
               status: 'not_found',
               isMainDomain: false,
-            });
+            };
+            cachedResult = result;
+            cacheHostname = hostname;
+            setTenant(result);
             return;
           }
           
           if (!data) {
-            setTenant({
+            const result: ResolvedTenant = {
               tenantId: null,
               subdomain: hostInfo.subdomain,
               tenantName: null,
               status: 'not_found',
               isMainDomain: false,
-            });
+            };
+            cachedResult = result;
+            cacheHostname = hostname;
+            setTenant(result);
             return;
           }
           
           // Check if tenant is accessible
           if (data.status === 'locked') {
-            setTenant({
+            const result: ResolvedTenant = {
               tenantId: null,
               subdomain: hostInfo.subdomain,
               tenantName: data.name,
-              status: 'not_found', // Treat locked as not found
+              status: 'not_found',
               isMainDomain: false,
-            });
+            };
+            cachedResult = result;
+            cacheHostname = hostname;
+            setTenant(result);
             return;
           }
           
-          setTenant({
+          const result: ResolvedTenant = {
             tenantId: data.id,
             subdomain: data.subdomain,
             tenantName: data.name,
             status: 'resolved',
             isMainDomain: false,
-          });
+          };
+          cachedResult = result;
+          cacheHostname = hostname;
+          setTenant(result);
         } catch (err) {
           console.error('Error resolving tenant:', err);
-          setTenant({
+          const result: ResolvedTenant = {
             tenantId: null,
             subdomain: hostInfo.subdomain,
             tenantName: null,
             status: 'not_found',
             isMainDomain: false,
-          });
+          };
+          cachedResult = result;
+          cacheHostname = hostname;
+          setTenant(result);
         }
         return;
       }
@@ -120,39 +153,48 @@ export function useTenantResolver() {
           .maybeSingle();
         
         if (error || !data || !data.tenants) {
-          setTenant({
+          const result: ResolvedTenant = {
             tenantId: null,
             subdomain: null,
             tenantName: null,
             status: 'not_found',
             isMainDomain: false,
-          });
+          };
+          cachedResult = result;
+          cacheHostname = hostname;
+          setTenant(result);
           return;
         }
         
         const tenantData = data.tenants as any;
         
-        setTenant({
+        const result: ResolvedTenant = {
           tenantId: tenantData.id,
           subdomain: tenantData.subdomain,
           tenantName: tenantData.name,
           status: 'resolved',
           isMainDomain: false,
-        });
+        };
+        cachedResult = result;
+        cacheHostname = hostname;
+        setTenant(result);
       } catch (err) {
         console.error('Error resolving custom domain:', err);
-        setTenant({
+        const result: ResolvedTenant = {
           tenantId: null,
           subdomain: null,
           tenantName: null,
           status: 'not_found',
           isMainDomain: false,
-        });
+        };
+        cachedResult = result;
+        cacheHostname = hostname;
+        setTenant(result);
       }
     };
     
     resolveTenant();
-  }, []);
+  }, [hostname, tenant.status]);
   
   return tenant;
 }
