@@ -27,6 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { RestoreSupplierNoteSection } from './RestoreSupplierNoteSection';
 
 export function DataManagementSection() {
   const { data: tenant, refetch: refetchTenant } = useCurrentTenant();
@@ -411,6 +412,9 @@ export function DataManagementSection() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Restore supplier & note from old Excel */}
+        <RestoreSupplierNoteSection />
       </CardContent>
     </Card>
   );
