@@ -103,15 +103,27 @@ export default function ExportNewPage() {
   const { data: pointSettings } = usePointSettings();
 
   // Handle barcode scan (IMEI or SKU) - fill form instead of auto-add to cart
-  // Supports format: IMEI_or_SKU|PRICE (e.g., "123456789|9000000")
+  // Supports format: IMEI_or_SKU-P-PRICE (e.g., "353902103999926-P-24000000")
+  // Also supports legacy format: IMEI_or_SKU|PRICE
   const handleBarcodeScan = async (barcode: string) => {
     if (!barcode.trim()) return;
 
-    // Parse barcode - check if it contains price info (format: IMEI|PRICE)
+    // Parse barcode - check if it contains price info
+    // Format: IMEI-P-PRICE (preferred) or IMEI|PRICE (legacy)
     let searchCode = barcode.trim();
     let encodedPrice: number | null = null;
     
-    if (barcode.includes('|')) {
+    // Check for "-P-" delimiter first (new format)
+    if (barcode.includes('-P-')) {
+      const parts = barcode.split('-P-');
+      searchCode = parts[0];
+      const priceStr = parts[1];
+      if (priceStr && !isNaN(parseInt(priceStr))) {
+        encodedPrice = parseInt(priceStr);
+      }
+    } 
+    // Fallback to "|" delimiter (legacy format)
+    else if (barcode.includes('|')) {
       const parts = barcode.split('|');
       searchCode = parts[0];
       const priceStr = parts[1];

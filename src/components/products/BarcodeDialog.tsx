@@ -136,8 +136,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     });
 
     const labelHTML = allLabels.map((entry, idx) => {
-      // Encode format: IMEI_or_SKU|PRICE (e.g., "123456789|9000000")
-      const barcodeValue = `${entry.imei || entry.sku}|${entry.printPrice}`;
+      // Encode format: IMEI_or_SKU-P-PRICE (e.g., "353902103999926-P-24000000")
+      // Using "-P-" as delimiter because "|" may not scan correctly on some devices
+      const barcodeValue = `${entry.imei || entry.sku}-P-${entry.printPrice}`;
       return `
         <div class="label" style="width: ${width}mm; height: ${height}mm;">
           ${printSettings.showStoreName && printSettings.storeName ? 
@@ -155,8 +156,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     }).join('');
 
     // Generate barcode initialization script - encode both IMEI/SKU and price
+    // Using "-P-" as delimiter for better scanner compatibility
     const barcodeScript = allLabels.map((entry, idx) => {
-      const barcodeValue = `${entry.imei || entry.sku}|${entry.printPrice}`;
+      const barcodeValue = `${entry.imei || entry.sku}-P-${entry.printPrice}`;
       return `JsBarcode("#barcode-${idx}", "${barcodeValue}", {
         format: "CODE128",
         width: 1.5,
