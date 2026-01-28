@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X } from 'lucide-react';
+import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
@@ -43,6 +43,7 @@ import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib
 import type { Product } from '@/hooks/useProducts';
 import { EditImportReceiptDialog } from '@/components/import/EditImportReceiptDialog';
 import { ReturnImportReceiptDialog } from '@/components/import/ReturnImportReceiptDialog';
+import { EditProductIMEIDialog } from '@/components/import/EditProductIMEIDialog';
 
 export default function ImportHistoryPage() {
   const navigate = useNavigate();
@@ -68,6 +69,7 @@ export default function ImportHistoryPage() {
   // Dialog states for edit and return
   const [editReceipt, setEditReceipt] = useState<ImportReceipt | null>(null);
   const [returnReceipt, setReturnReceipt] = useState<ImportReceipt | null>(null);
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
 
   // Calculate receipt return status
   const getReceiptReturnStatus = (receipt: ImportReceipt): 'completed' | 'cancelled' | 'full_return' => {
@@ -227,6 +229,7 @@ export default function ImportHistoryPage() {
         { header: 'Còn nợ', key: 'debt_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
         { header: 'Nhà cung cấp', key: 'supplier_name', width: 25 },
         { header: 'Chi nhánh', key: 'branch_name', width: 20 },
+        { header: 'Ghi chú', key: 'note', width: 30 },
         { header: 'Trạng thái', key: 'status', width: 12, format: (v) => v === 'completed' ? 'Hoàn tất' : 'Đã huỷ' },
       ],
       data: filteredReceipts.map((r, index) => ({
@@ -238,6 +241,7 @@ export default function ImportHistoryPage() {
         debt_amount: r.debt_amount,
         supplier_name: r.suppliers?.name || '',
         branch_name: r.branches?.name || '',
+        note: r.note || '',
         status: r.status,
       })),
     });
@@ -265,6 +269,7 @@ export default function ImportHistoryPage() {
         { header: 'Ngày nhập', key: 'import_date', width: 12, format: (v) => formatDateForExcel(v) },
         { header: 'Nhà cung cấp', key: 'supplier_name', width: 20 },
         { header: 'Chi nhánh', key: 'branch_name', width: 18 },
+        { header: 'Ghi chú', key: 'note', width: 25 },
         { header: 'Trạng thái', key: 'status', width: 12, format: (v) => v === 'in_stock' ? 'Tồn kho' : v === 'sold' ? 'Đã bán' : 'Đã trả' },
       ],
       data: filteredProducts.map((p, index) => ({
@@ -277,6 +282,7 @@ export default function ImportHistoryPage() {
         import_date: p.import_date,
         supplier_name: p.suppliers?.name || '',
         branch_name: p.branches?.name || '',
+        note: p.note || '',
         status: p.status,
       })),
     });
@@ -465,6 +471,7 @@ export default function ImportHistoryPage() {
                     <th className="text-right">Còn nợ</th>
                     <th>Nhà cung cấp</th>
                     <th>Chi nhánh</th>
+                    <th>Ghi chú</th>
                     <th>Trạng thái</th>
                     <th className="w-16"></th>
                   </tr>
@@ -487,6 +494,14 @@ export default function ImportHistoryPage() {
                       </td>
                       <td>{receipt.suppliers?.name || '-'}</td>
                       <td>{receipt.branches?.name || '-'}</td>
+                      <td className="max-w-[150px] truncate" title={receipt.note || ''}>
+                        {receipt.note ? (
+                          <span className="flex items-center gap-1">
+                            <StickyNote className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate">{receipt.note}</span>
+                          </span>
+                        ) : '-'}
+                      </td>
                       <td>
                         {(() => {
                           const returnStatus = getReceiptReturnStatus(receipt);
@@ -573,8 +588,9 @@ export default function ImportHistoryPage() {
                     <th>Ngày nhập</th>
                     <th>Nhà cung cấp</th>
                     <th>Chi nhánh</th>
+                    <th>Ghi chú</th>
                     <th>Trạng thái</th>
-                    <th className="w-16"></th>
+                    <th className="w-24"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -594,6 +610,14 @@ export default function ImportHistoryPage() {
                       <td>{formatDate(new Date(product.import_date))}</td>
                       <td>{product.suppliers?.name || '-'}</td>
                       <td>{product.branches?.name || '-'}</td>
+                      <td className="max-w-[120px] truncate" title={product.note || ''}>
+                        {product.note ? (
+                          <span className="flex items-center gap-1">
+                            <StickyNote className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate">{product.note}</span>
+                          </span>
+                        ) : '-'}
+                      </td>
                       <td>
                         <Badge
                           className={cn(
@@ -612,20 +636,33 @@ export default function ImportHistoryPage() {
                         </Badge>
                       </td>
                       <td>
-                        {product.status === 'in_stock' && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleReturnProduct(product)}
-                            className="h-7 text-xs"
-                          >
-                            <RotateCcw className="mr-1 h-3 w-3" />
-                            Trả NCC
-                          </Button>
-                        )}
-                        {product.status !== 'in_stock' && (
-                          <span className="text-xs text-muted-foreground">-</span>
-                        )}
+                        <div className="flex gap-1">
+                          {product.status === 'in_stock' && (
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => setEditProduct(product)}
+                                className="h-7 w-7"
+                                title="Sửa IMEI"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleReturnProduct(product)}
+                                className="h-7 text-xs"
+                              >
+                                <RotateCcw className="mr-1 h-3 w-3" />
+                                Trả
+                              </Button>
+                            </>
+                          )}
+                          {product.status !== 'in_stock' && (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -828,6 +865,13 @@ export default function ImportHistoryPage() {
         receipt={returnReceipt}
         open={!!returnReceipt}
         onOpenChange={(open) => !open && setReturnReceipt(null)}
+      />
+
+      {/* Edit Product IMEI Dialog */}
+      <EditProductIMEIDialog
+        product={editProduct}
+        open={!!editProduct}
+        onOpenChange={(open) => !open && setEditProduct(null)}
       />
     </MainLayout>
   );
