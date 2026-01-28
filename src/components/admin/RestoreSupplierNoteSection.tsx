@@ -101,7 +101,7 @@ export function RestoreSupplierNoteSection() {
         const { data, error } = await supabase.functions.invoke('restore-product-metadata', {
           body: {
             tenantId: tenant.id,
-            matchRule: 'imei_name_sku',
+            matchRule: 'imei_only',
             duplicateRule: 'latest',
             fillMode: 'fill_missing_only',
             rows: batch,
