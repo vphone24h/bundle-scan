@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -30,6 +31,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
     name: '',
     sku: '',
     imei: '',
+    note: '',
     category_id: '',
     supplier_id: '',
     branch_id: '',
@@ -41,6 +43,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         name: product.name || '',
         sku: product.sku || '',
         imei: product.imei || '',
+        note: product.note || '',
         category_id: product.category_id || '_none_',
         supplier_id: product.supplier_id || '_none_',
         branch_id: product.branch_id || '_none_',
@@ -59,6 +62,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         name?: string;
         sku?: string;
         imei?: string | null;
+        note?: string | null;
         category_id?: string | null;
         supplier_id?: string | null;
         branch_id?: string | null;
@@ -67,6 +71,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         name: string;
         sku: string;
         imei: string | null;
+        note: string | null;
         category_id: string | null;
         supplier_id: string | null;
         branch_id: string | null;
@@ -136,6 +141,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         name: product.name,
         sku: product.sku,
         imei: product.imei,
+        note: product.note,
         category_id: product.category_id,
         supplier_id: product.supplier_id,
         branch_id: product.branch_id,
@@ -147,6 +153,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           name: formData.name.trim(),
           sku: formData.sku.trim(),
           imei: formData.imei.trim() || null,
+          note: formData.note.trim() || null,
           category_id: formData.category_id === '_none_' ? null : formData.category_id,
           supplier_id: formData.supplier_id === '_none_' ? null : formData.supplier_id,
           branch_id: formData.branch_id === '_none_' ? null : formData.branch_id,
@@ -220,6 +227,17 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                     className="font-mono"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="note">Ghi chú</Label>
+                <Textarea
+                  id="note"
+                  value={formData.note}
+                  onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
+                  placeholder="Nhập ghi chú (pin, tình trạng máy...)"
+                  rows={2}
+                />
               </div>
 
               <div className="space-y-2">
