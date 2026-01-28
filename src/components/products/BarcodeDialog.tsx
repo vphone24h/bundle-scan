@@ -135,31 +135,36 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       }
     });
 
-    const labelHTML = allLabels.map((entry, idx) => `
-      <div class="label" style="width: ${width}mm; height: ${height}mm;">
-        ${printSettings.showStoreName && printSettings.storeName ? 
-          `<div class="store-name">${printSettings.storeName}</div>` : ''}
-        ${printSettings.showProductName ? 
-          `<div class="product-name">${entry.name}</div>` : ''}
-        <div class="barcode-container">
-          <svg class="barcode" id="barcode-${idx}"></svg>
-          <div class="barcode-text">${entry.imei || entry.sku}</div>
+    const labelHTML = allLabels.map((entry, idx) => {
+      // Encode format: IMEI_or_SKU|PRICE (e.g., "123456789|9000000")
+      const barcodeValue = `${entry.imei || entry.sku}|${entry.printPrice}`;
+      return `
+        <div class="label" style="width: ${width}mm; height: ${height}mm;">
+          ${printSettings.showStoreName && printSettings.storeName ? 
+            `<div class="store-name">${printSettings.storeName}</div>` : ''}
+          ${printSettings.showProductName ? 
+            `<div class="product-name">${entry.name}</div>` : ''}
+          <div class="barcode-container">
+            <svg class="barcode" id="barcode-${idx}"></svg>
+            <div class="barcode-text">${entry.imei || entry.sku}</div>
+          </div>
+          ${printSettings.showPrice ? 
+            `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
         </div>
-        ${printSettings.showPrice ? 
-          `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
-    // Generate barcode initialization script
-    const barcodeScript = allLabels.map((entry, idx) => 
-      `JsBarcode("#barcode-${idx}", "${entry.imei || entry.sku}", {
+    // Generate barcode initialization script - encode both IMEI/SKU and price
+    const barcodeScript = allLabels.map((entry, idx) => {
+      const barcodeValue = `${entry.imei || entry.sku}|${entry.printPrice}`;
+      return `JsBarcode("#barcode-${idx}", "${barcodeValue}", {
         format: "CODE128",
         width: 1.5,
         height: 30,
         displayValue: false,
         margin: 2
-      });`
-    ).join('\n');
+      });`;
+    }).join('\n');
 
     return `
       <!DOCTYPE html>
