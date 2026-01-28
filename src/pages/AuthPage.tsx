@@ -13,6 +13,7 @@ import vkhoLogo from '@/assets/vkho-logo.png';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 
 const REMEMBER_ME_KEY = 'auth_remember_me';
+const CURRENT_STORE_ID_KEY = 'current_store_id';
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -112,6 +113,10 @@ export default function AuthPage() {
     try {
       // Save remember me preference
       localStorage.setItem(REMEMBER_ME_KEY, rememberMe.toString());
+
+      // Persist selected store id for main-domain mode so we can validate tenant-session consistency
+      // (In subdomain mode, storeId is derived from hostname, but keeping this doesn't hurt.)
+      localStorage.setItem(CURRENT_STORE_ID_KEY, storeId.toLowerCase().trim());
 
       // Sign in first (tenants table is protected by RLS when not authenticated)
       const { error } = await signIn(loginEmail, loginPassword, rememberMe);
