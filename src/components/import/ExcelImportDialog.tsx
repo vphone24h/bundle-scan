@@ -21,17 +21,22 @@ interface ExcelImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categories: { id: string; name: string }[];
-  onImport: (items: ImportReceiptItem[]) => void;
+  suppliers?: { id: string; name: string }[];
+  branches?: { id: string; name: string }[];
+  onImport: (items: ImportReceiptItem[], supplierName?: string, branchName?: string) => void;
   checkIMEI: (imei: string) => Promise<any>;
 }
 
 interface ParsedRow {
+  imei?: string;
   productName: string;
   sku: string;
-  imei?: string;
+  importPrice: number;
+  importDate?: string;
+  supplierName?: string;
+  branchName?: string;
   categoryName: string;
   categoryId?: string;
-  importPrice: number;
   quantity: number;
   note?: string;
   isValid: boolean;
@@ -42,6 +47,8 @@ export function ExcelImportDialog({
   open,
   onOpenChange,
   categories,
+  suppliers = [],
+  branches = [],
   onImport,
   checkIMEI,
 }: ExcelImportDialogProps) {
@@ -66,13 +73,18 @@ export function ExcelImportDialog({
       
       const parsed: ParsedRow[] = rows.map((row) => {
         const errors: string[] = [];
-        const productName = String(row[0] || '').trim();
-        const sku = String(row[1] || '').trim();
-        const imei = row[2] ? String(row[2]).trim() : undefined;
-        const categoryName = String(row[3] || '').trim();
-        const importPrice = Number(row[4]) || 0;
-        const quantity = imei ? 1 : (Number(row[5]) || 1); // IMEI products always have quantity 1
-        const note = row[6] ? String(row[6]).trim() : undefined;
+        
+        // Column order: IMEI | Tên sản phẩm | SKU | Giá nhập | Ngày nhập | Nhà cung cấp | Chi nhánh | Danh mục | Số lượng | Ghi chú
+        const imei = row[0] ? String(row[0]).trim() : undefined;
+        const productName = String(row[1] || '').trim();
+        const sku = String(row[2] || '').trim();
+        const importPrice = Number(row[3]) || 0;
+        const importDate = row[4] ? String(row[4]).trim() : undefined;
+        const supplierName = row[5] ? String(row[5]).trim() : undefined;
+        const branchName = row[6] ? String(row[6]).trim() : undefined;
+        const categoryName = String(row[7] || '').trim();
+        const quantity = imei ? 1 : (Number(row[8]) || 1); // IMEI products always have quantity 1
+        const note = row[9] ? String(row[9]).trim() : undefined;
 
         // Validate required fields
         if (!productName) errors.push('Thiếu tên sản phẩm');
@@ -89,13 +101,36 @@ export function ExcelImportDialog({
           errors.push(`Danh mục "${categoryName}" không tồn tại`);
         }
 
+        // Validate supplier if provided
+        if (supplierName && suppliers.length > 0) {
+          const matchedSupplier = suppliers.find(
+            (s) => s.name.toLowerCase() === supplierName.toLowerCase()
+          );
+          if (!matchedSupplier) {
+            errors.push(`NCC "${supplierName}" không tồn tại`);
+          }
+        }
+
+        // Validate branch if provided
+        if (branchName && branches.length > 0) {
+          const matchedBranch = branches.find(
+            (b) => b.name.toLowerCase() === branchName.toLowerCase()
+          );
+          if (!matchedBranch) {
+            errors.push(`Chi nhánh "${branchName}" không tồn tại`);
+          }
+        }
+
         return {
+          imei,
           productName,
           sku,
-          imei,
+          importPrice,
+          importDate,
+          supplierName,
+          branchName,
           categoryName,
           categoryId: matchedCategory?.id,
-          importPrice,
           quantity,
           note,
           isValid: errors.length === 0,
@@ -168,11 +203,15 @@ export function ExcelImportDialog({
       importPrice: row.importPrice,
       quantity: row.quantity,
       supplierId: '',
-      supplierName: '',
+      supplierName: row.supplierName || '',
       note: row.note,
     }));
 
-    onImport(items);
+    // Extract first supplier/branch for the receipt
+    const firstSupplier = validRows.find(r => r.supplierName)?.supplierName;
+    const firstBranch = validRows.find(r => r.branchName)?.branchName;
+    
+    onImport(items, firstSupplier, firstBranch);
     toast({
       title: 'Nhập dữ liệu thành công',
       description: `Đã thêm ${items.length} sản phẩm vào giỏ nhập hàng`,
@@ -245,11 +284,12 @@ export function ExcelImportDialog({
                   <thead className="bg-muted sticky top-0">
                     <tr>
                       <th className="p-2 text-left">STT</th>
+                      <th className="p-2 text-left">IMEI</th>
                       <th className="p-2 text-left">Tên sản phẩm</th>
                       <th className="p-2 text-left">SKU</th>
-                      <th className="p-2 text-left">IMEI</th>
-                      <th className="p-2 text-left">Danh mục</th>
                       <th className="p-2 text-right">Giá nhập</th>
+                      <th className="p-2 text-left">NCC</th>
+                      <th className="p-2 text-left">Danh mục</th>
                       <th className="p-2 text-center">SL</th>
                       <th className="p-2 text-left">Trạng thái</th>
                     </tr>
@@ -261,13 +301,14 @@ export function ExcelImportDialog({
                         className={row.isValid ? '' : 'bg-destructive/10'}
                       >
                         <td className="p-2">{index + 1}</td>
-                        <td className="p-2">{row.productName}</td>
-                        <td className="p-2">{row.sku}</td>
-                        <td className="p-2">{row.imei || '-'}</td>
-                        <td className="p-2">{row.categoryName}</td>
+                        <td className="p-2 font-mono text-xs">{row.imei || '-'}</td>
+                        <td className="p-2 max-w-[150px] truncate">{row.productName}</td>
+                        <td className="p-2 text-xs">{row.sku}</td>
                         <td className="p-2 text-right">
                           {formatCurrencyWithSpaces(row.importPrice)}
                         </td>
+                        <td className="p-2 text-xs">{row.supplierName || '-'}</td>
+                        <td className="p-2">{row.categoryName}</td>
                         <td className="p-2 text-center">{row.quantity}</td>
                         <td className="p-2">
                           {row.isValid ? (

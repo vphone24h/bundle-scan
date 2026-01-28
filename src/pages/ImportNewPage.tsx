@@ -276,8 +276,36 @@ export default function ImportNewPage() {
     });
   };
 
-  const handleExcelImport = (items: ImportReceiptItem[]) => {
+  const handleExcelImport = (items: ImportReceiptItem[], supplierName?: string, branchName?: string) => {
     setCart(prev => [...prev, ...items]);
+    
+    // Auto-select supplier from Excel if not already selected
+    if (supplierName && !selectedSupplierId && suppliers) {
+      const matchedSupplier = suppliers.find(
+        s => s.name.toLowerCase() === supplierName.toLowerCase()
+      );
+      if (matchedSupplier) {
+        setSelectedSupplierId(matchedSupplier.id);
+        toast({
+          title: 'Đã chọn nhà cung cấp từ Excel',
+          description: matchedSupplier.name,
+        });
+      }
+    }
+    
+    // Auto-select branch from Excel if provided
+    if (branchName && branches) {
+      const matchedBranch = branches.find(
+        b => b.name.toLowerCase() === branchName.toLowerCase()
+      );
+      if (matchedBranch) {
+        setSelectedBranchId(matchedBranch.id);
+        toast({
+          title: 'Đã chọn chi nhánh từ Excel',
+          description: matchedBranch.name,
+        });
+      }
+    }
   };
 
   const handleAddNewSupplier = async () => {
@@ -562,6 +590,8 @@ export default function ImportNewPage() {
         open={excelImportOpen}
         onOpenChange={setExcelImportOpen}
         categories={categories?.map(c => ({ id: c.id, name: c.name })) || []}
+        suppliers={suppliers?.map(s => ({ id: s.id, name: s.name })) || []}
+        branches={branches?.map(b => ({ id: b.id, name: b.name })) || []}
         onImport={handleExcelImport}
         checkIMEI={async (imei: string) => {
           try {
