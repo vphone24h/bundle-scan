@@ -81,7 +81,8 @@ export function useExportReceipts() {
   const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
-    queryKey: ['export-receipts', isDataHidden],
+    // Keyed by tenant to prevent cross-tenant cache leakage
+    queryKey: ['export-receipts', tenant?.id, isDataHidden],
     queryFn: async () => {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as ExportReceipt[];
@@ -110,7 +111,8 @@ export function useExportReceiptItems() {
   const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
-    queryKey: ['export-receipt-items', isDataHidden],
+    // Keyed by tenant to prevent cross-tenant cache leakage
+    queryKey: ['export-receipt-items', tenant?.id, isDataHidden],
     queryFn: async () => {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as ExportReceiptItemDetail[];
