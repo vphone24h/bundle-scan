@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { Shield, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import vkhoLogo from '@/assets/vkho-logo.png';
 
 export default function PlatformAuthPage() {
   const navigate = useNavigate();
@@ -79,9 +80,11 @@ export default function PlatformAuthPage() {
       <Card className="w-full max-w-md shadow-xl border-primary/20">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary">
-              <Shield className="h-8 w-8 text-primary-foreground" />
-            </div>
+            <img 
+              src={vkhoLogo} 
+              alt="VKho Logo" 
+              className="h-20 w-20 object-contain"
+            />
           </div>
           <CardTitle className="text-2xl">Quản trị Nền tảng</CardTitle>
           <CardDescription>Đăng nhập dành cho Platform Admin</CardDescription>
