@@ -138,34 +138,46 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const labelHTML = allLabels.map((entry, idx) => {
       // Encode format: CODE:PRICE (e.g., "353902103999926:24000000")
       // Using ":" as delimiter - simple and scanner-compatible
-      const barcodeValue = `${entry.imei || entry.sku}:${entry.printPrice}`;
+      const codeValue = `${entry.imei || entry.sku}:${entry.printPrice}`;
       return `
         <div class="label" style="width: ${width}mm; height: ${height}mm;">
           ${printSettings.showStoreName && printSettings.storeName ? 
             `<div class="store-name">${printSettings.storeName}</div>` : ''}
           ${printSettings.showProductName ? 
             `<div class="product-name">${entry.name}</div>` : ''}
-          <div class="barcode-container">
+          <div class="codes-container">
+            <div class="qr-code" id="qrcode-${idx}" data-value="${codeValue}"></div>
             <svg class="barcode" id="barcode-${idx}"></svg>
-            <div class="barcode-text">${entry.imei || entry.sku}</div>
           </div>
+          <div class="code-text">${entry.imei || entry.sku}</div>
           ${printSettings.showPrice ? 
             `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
         </div>
       `;
     }).join('');
 
-    // Generate barcode initialization script - encode both IMEI/SKU and price
-    // Using ":" as delimiter for maximum scanner compatibility
-    const barcodeScript = allLabels.map((entry, idx) => {
-      const barcodeValue = `${entry.imei || entry.sku}:${entry.printPrice}`;
-      return `JsBarcode("#barcode-${idx}", "${barcodeValue}", {
-        format: "CODE128",
-        width: 1.5,
-        height: 30,
-        displayValue: false,
-        margin: 2
-      });`;
+    // Generate initialization script for both QR and Barcode
+    const initScript = allLabels.map((entry, idx) => {
+      const codeValue = `${entry.imei || entry.sku}:${entry.printPrice}`;
+      return `
+        // QR Code for item ${idx}
+        new QRCode(document.getElementById("qrcode-${idx}"), {
+          text: "${codeValue}",
+          width: 64,
+          height: 64,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.H
+        });
+        // Barcode for item ${idx}
+        JsBarcode("#barcode-${idx}", "${codeValue}", {
+          format: "CODE128",
+          width: 1,
+          height: 20,
+          displayValue: false,
+          margin: 1
+        });
+      `;
     }).join('\n');
 
     return `
@@ -175,6 +187,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         <meta charset="UTF-8">
         <title>In mã vạch</title>
         <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
         <style>
           * {
             margin: 0;
@@ -200,7 +213,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           
           .label {
             border: 0.5px dashed #ccc;
-            padding: 2mm;
+            padding: 1mm;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -211,25 +224,37 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           }
           
           .store-name {
-            font-size: 8px;
+            font-size: 7px;
             font-weight: bold;
             color: #333;
-            margin-bottom: 1mm;
+            margin-bottom: 0.5mm;
           }
           
           .product-name {
-            font-size: 7px;
+            font-size: 6px;
             color: #333;
-            margin-bottom: 1mm;
-            max-height: 3em;
+            margin-bottom: 0.5mm;
+            max-height: 2em;
             overflow: hidden;
-            line-height: 1.2;
+            line-height: 1.1;
           }
           
-          .barcode-container {
+          .codes-container {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
+            justify-content: center;
+            gap: 2mm;
+          }
+          
+          .qr-code {
+            width: 64px;
+            height: 64px;
+          }
+          
+          .qr-code img {
+            width: 100% !important;
+            height: 100% !important;
           }
           
           .barcode {
@@ -237,16 +262,16 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             height: auto;
           }
           
-          .barcode-text {
-            font-size: 6px;
+          .code-text {
+            font-size: 5px;
             font-family: monospace;
-            margin-top: 1mm;
+            margin-top: 0.5mm;
           }
           
           .price {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: bold;
-            margin-top: 1mm;
+            margin-top: 0.5mm;
           }
           
           @media print {
@@ -265,7 +290,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         </div>
         <script>
           document.addEventListener('DOMContentLoaded', function() {
-            ${barcodeScript}
+            ${initScript}
           });
         </script>
       </body>
