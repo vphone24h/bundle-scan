@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { TenantGuard } from "@/components/tenant/TenantGuard";
 
 // Lazy load all pages for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -49,6 +50,20 @@ const PageLoader = () => (
   </div>
 );
 
+// Helper component to wrap protected routes with TenantGuard
+const GuardedRoute = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute>
+    <TenantGuard>{children}</TenantGuard>
+  </ProtectedRoute>
+);
+
+// Subscription page allows expired tenants
+const SubscriptionRoute = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute>
+    <TenantGuard allowExpired>{children}</TenantGuard>
+  </ProtectedRoute>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -66,33 +81,35 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/forgot-store-id" element={<ForgotStoreIdPage />} />
               
-              {/* Protected routes */}
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/products" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
-              <Route path="/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
-              <Route path="/suppliers" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
-              <Route path="/import/new" element={<ProtectedRoute><ImportNewPage /></ProtectedRoute>} />
-              <Route path="/import/history" element={<ProtectedRoute><ImportHistoryPage /></ProtectedRoute>} />
-              <Route path="/export/new" element={<ProtectedRoute><ExportNewPage /></ProtectedRoute>} />
-              <Route path="/export/history" element={<ProtectedRoute><ExportHistoryPage /></ProtectedRoute>} />
-              <Route path="/export/template" element={<ProtectedRoute><InvoiceTemplatePage /></ProtectedRoute>} />
-              <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
-              <Route path="/cash-book" element={<ProtectedRoute><CashBookPage /></ProtectedRoute>} />
-              <Route path="/branches" element={<ProtectedRoute><BranchesPage /></ProtectedRoute>} />
-              <Route path="/returns" element={<ProtectedRoute><ReturnsPage /></ProtectedRoute>} />
-              <Route path="/inventory" element={<ProtectedRoute><InventoryPage /></ProtectedRoute>} />
-              <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
-              <Route path="/audit-logs" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
-              <Route path="/debt" element={<ProtectedRoute><DebtPage /></ProtectedRoute>} />
-              <Route path="/customers" element={<ProtectedRoute><CustomersPage /></ProtectedRoute>} />
-              <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
-              <Route path="/affiliate" element={<ProtectedRoute><AffiliatePage /></ProtectedRoute>} />
-              <Route path="/einvoice" element={<ProtectedRoute><EInvoicePage /></ProtectedRoute>} />
-              <Route path="/applications" element={<ProtectedRoute><ApplicationsPage /></ProtectedRoute>} />
-              <Route path="/advertisements" element={<ProtectedRoute><AdvertisementsAdminPage /></ProtectedRoute>} />
+              {/* Subscription page - accessible even when expired */}
+              <Route path="/subscription" element={<SubscriptionRoute><SubscriptionPage /></SubscriptionRoute>} />
               
-              {/* Platform Admin route */}
-              <Route path="/platform-admin" element={<ProtectedRoute><PlatformAdminPage /></ProtectedRoute>} />
+              {/* Protected routes - blocked when expired/locked */}
+              <Route path="/" element={<GuardedRoute><Index /></GuardedRoute>} />
+              <Route path="/products" element={<GuardedRoute><ProductsPage /></GuardedRoute>} />
+              <Route path="/categories" element={<GuardedRoute><CategoriesPage /></GuardedRoute>} />
+              <Route path="/suppliers" element={<GuardedRoute><SuppliersPage /></GuardedRoute>} />
+              <Route path="/import/new" element={<GuardedRoute><ImportNewPage /></GuardedRoute>} />
+              <Route path="/import/history" element={<GuardedRoute><ImportHistoryPage /></GuardedRoute>} />
+              <Route path="/export/new" element={<GuardedRoute><ExportNewPage /></GuardedRoute>} />
+              <Route path="/export/history" element={<GuardedRoute><ExportHistoryPage /></GuardedRoute>} />
+              <Route path="/export/template" element={<GuardedRoute><InvoiceTemplatePage /></GuardedRoute>} />
+              <Route path="/reports" element={<GuardedRoute><ReportsPage /></GuardedRoute>} />
+              <Route path="/cash-book" element={<GuardedRoute><CashBookPage /></GuardedRoute>} />
+              <Route path="/branches" element={<GuardedRoute><BranchesPage /></GuardedRoute>} />
+              <Route path="/returns" element={<GuardedRoute><ReturnsPage /></GuardedRoute>} />
+              <Route path="/inventory" element={<GuardedRoute><InventoryPage /></GuardedRoute>} />
+              <Route path="/users" element={<GuardedRoute><UsersPage /></GuardedRoute>} />
+              <Route path="/audit-logs" element={<GuardedRoute><AuditLogsPage /></GuardedRoute>} />
+              <Route path="/debt" element={<GuardedRoute><DebtPage /></GuardedRoute>} />
+              <Route path="/customers" element={<GuardedRoute><CustomersPage /></GuardedRoute>} />
+              <Route path="/affiliate" element={<GuardedRoute><AffiliatePage /></GuardedRoute>} />
+              <Route path="/einvoice" element={<GuardedRoute><EInvoicePage /></GuardedRoute>} />
+              <Route path="/applications" element={<GuardedRoute><ApplicationsPage /></GuardedRoute>} />
+              <Route path="/advertisements" element={<GuardedRoute><AdvertisementsAdminPage /></GuardedRoute>} />
+              
+              {/* Platform Admin route - also guarded */}
+              <Route path="/platform-admin" element={<GuardedRoute><PlatformAdminPage /></GuardedRoute>} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
