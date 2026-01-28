@@ -135,18 +135,43 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       }
     });
 
+    // Calculate QR/Barcode sizes based on label dimensions
+    // Convert mm to approximate pixels (1mm ≈ 3.78px at 96dpi, but print uses ~2.8px)
+    const isSmallLabel = height <= 22; // Giấy cuộn nhỏ
+    const isJewelryLabel = height <= 10; // Tem trang sức
+    const isLargeLabel = height >= 100; // Mẫu A4, Tomy
+    
+    // QR size: proportional to label height
+    const qrSize = isJewelryLabel ? 28 : isSmallLabel ? 40 : isLargeLabel ? 80 : 64;
+    const barcodeHeight = isJewelryLabel ? 12 : isSmallLabel ? 16 : 20;
+    const barcodeWidth = isJewelryLabel ? 0.8 : 1;
+
     const labelHTML = allLabels.map((entry, idx) => {
       // Encode format: CODE:PRICE (e.g., "353902103999926:24000000")
       // Using ":" as delimiter - simple and scanner-compatible
       const codeValue = `${entry.imei || entry.sku}:${entry.printPrice}`;
+      
+      // For jewelry labels, only show barcode (too small for QR)
+      if (isJewelryLabel) {
+        return `
+          <div class="label jewelry-label" style="width: ${width}mm; height: ${height}mm;">
+            <div class="codes-container-inline">
+              <svg class="barcode" id="barcode-${idx}"></svg>
+            </div>
+            ${printSettings.showPrice ? 
+              `<div class="price-inline">${formatNumberWithSpaces(entry.printPrice)}</div>` : ''}
+          </div>
+        `;
+      }
+      
       return `
         <div class="label" style="width: ${width}mm; height: ${height}mm;">
           ${printSettings.showStoreName && printSettings.storeName ? 
             `<div class="store-name">${printSettings.storeName}</div>` : ''}
           ${printSettings.showProductName ? 
             `<div class="product-name">${entry.name}</div>` : ''}
-          <div class="codes-container">
-            <div class="qr-code" id="qrcode-${idx}" data-value="${codeValue}"></div>
+          <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
+            <div class="qr-code" id="qrcode-${idx}" data-value="${codeValue}" style="width: ${qrSize}px; height: ${qrSize}px;"></div>
             <svg class="barcode" id="barcode-${idx}"></svg>
           </div>
           <div class="code-text">${entry.imei || entry.sku}</div>
@@ -159,21 +184,35 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     // Generate initialization script for both QR and Barcode
     const initScript = allLabels.map((entry, idx) => {
       const codeValue = `${entry.imei || entry.sku}:${entry.printPrice}`;
+      
+      // For jewelry labels, only create barcode
+      if (isJewelryLabel) {
+        return `
+          JsBarcode("#barcode-${idx}", "${codeValue}", {
+            format: "CODE128",
+            width: ${barcodeWidth},
+            height: ${barcodeHeight},
+            displayValue: false,
+            margin: 0
+          });
+        `;
+      }
+      
       return `
         // QR Code for item ${idx}
         new QRCode(document.getElementById("qrcode-${idx}"), {
           text: "${codeValue}",
-          width: 64,
-          height: 64,
+          width: ${qrSize},
+          height: ${qrSize},
           colorDark: "#000000",
           colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.H
+          correctLevel: QRCode.CorrectLevel.M
         });
         // Barcode for item ${idx}
         JsBarcode("#barcode-${idx}", "${codeValue}", {
           format: "CODE128",
-          width: 1,
-          height: 20,
+          width: ${barcodeWidth},
+          height: ${barcodeHeight},
           displayValue: false,
           margin: 1
         });
@@ -247,12 +286,24 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             gap: 2mm;
           }
           
-          .qr-code {
-            width: 64px;
-            height: 64px;
+          .codes-small {
+            gap: 1mm;
           }
           
-          .qr-code img {
+          .codes-container-inline {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+          }
+          
+          .qr-code {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          
+          .qr-code img, .qr-code canvas {
             width: 100% !important;
             height: 100% !important;
           }
@@ -272,6 +323,18 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             font-size: 9px;
             font-weight: bold;
             margin-top: 0.5mm;
+          }
+          
+          .price-inline {
+            font-size: 6px;
+            font-weight: bold;
+            margin-left: 1mm;
+          }
+          
+          /* Jewelry label special styling */
+          .jewelry-label {
+            flex-direction: row;
+            padding: 0.5mm;
           }
           
           @media print {
