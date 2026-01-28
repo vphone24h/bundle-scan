@@ -16,7 +16,7 @@ const REMEMBER_ME_KEY = 'auth_remember_me';
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const { signIn, user, loading: authLoading } = useAuth();
+  const { signIn, signOut, user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
   
@@ -39,6 +39,62 @@ export default function AuthPage() {
       setStoreId(resolvedTenant.subdomain);
     }
   }, [resolvedTenant.subdomain, resolvedTenant.status]);
+
+  // If a user is already logged in but selects a different Store ID, force sign-out to prevent cross-store confusion.
+  // This is especially important in main-domain mode where multiple stores can be accessed from the same origin.
+  useEffect(() => {
+    if (!user || authLoading) return;
+
+    const desiredStoreId = (storeId || '').toLowerCase().trim();
+    if (!desiredStoreId) return;
+
+    // In subdomain mode, storeId is auto-filled from the hostname.
+    // In main-domain mode, user can type storeId.
+    const check = async () => {
+      try {
+        // Fetch current user's tenant subdomain
+        const { data: platformUser } = await supabase
+          .from('platform_users')
+          .select('tenant_id, platform_role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        // Platform admin is allowed anywhere
+        if (platformUser?.platform_role === 'platform_admin') return;
+
+        const { data: userRole } = await supabase
+          .from('user_roles')
+          .select('tenant_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        const userTenantId = platformUser?.tenant_id || userRole?.tenant_id;
+        if (!userTenantId) return;
+
+        const { data: tenant } = await supabase
+          .from('tenants')
+          .select('subdomain')
+          .eq('id', userTenantId)
+          .maybeSingle();
+
+        if (tenant?.subdomain && tenant.subdomain !== desiredStoreId) {
+          await signOut();
+          toast({
+            title: 'Đã chuyển cửa hàng',
+            description: 'Bạn đang đăng nhập ở cửa hàng khác. Vui lòng đăng nhập lại đúng ID cửa hàng.',
+            variant: 'destructive',
+          });
+          setPendingRedirect(null);
+          setLoading(false);
+        }
+      } catch {
+        // If anything fails, do nothing (we still have store-id verification after sign-in)
+      }
+    };
+
+    check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, authLoading, storeId, isSubdomainMode]);
 
   // Redirect after auth state is updated
   useEffect(() => {
