@@ -2,19 +2,61 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    
+    <!-- App Info -->
     <title>vkho.vn - Phần mềm quản lý kho miễn phí</title>
     <meta name="description" content="Phần mềm quản lý kho chuyên nghiệp cho iPhone/phụ kiện. Miễn phí trải nghiệm ngay!" />
     <meta name="author" content="vkho.vn" />
+    
+    <!-- PWA / Mobile App Meta Tags -->
+    <meta name="theme-color" content="#1e3a5f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="vkho.vn" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
 
+    <!-- Open Graph -->
     <meta property="og:title" content="Phần mềm quản lý kho chuyên nghiệp cho iPhone/phụ kiện" />
     <meta property="og:description" content="Miễn phí trải nghiệm ngay! Quản lý nhập xuất, tồn kho, IMEI, công nợ một cách dễ dàng." />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="vkho.vn" />
 
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Phần mềm quản lý kho chuyên nghiệp cho iPhone/phụ kiện" />
     <meta name="twitter:description" content="Miễn phí trải nghiệm ngay! Quản lý nhập xuất, tồn kho, IMEI, công nợ một cách dễ dàng." />
+    
+    <!-- Prevent zoom on input focus (iOS) -->
+    <style>
+      /* Safe area for notch devices */
+      :root {
+        --sat: env(safe-area-inset-top);
+        --sar: env(safe-area-inset-right);
+        --sab: env(safe-area-inset-bottom);
+        --sal: env(safe-area-inset-left);
+      }
+      
+      /* Prevent pull-to-refresh on mobile */
+      html, body {
+        overscroll-behavior-y: none;
+      }
+      
+      /* Smooth touch scrolling */
+      * {
+        -webkit-tap-highlight-color: transparent;
+      }
+    </style>
   </head>
 
   <body>
