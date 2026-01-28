@@ -46,7 +46,8 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
   const updateItem = useMutation({
     mutationFn: async ({ 
       itemId, 
-      updates 
+      updates,
+      oldData
     }: { 
       itemId: string; 
       updates: {
@@ -55,7 +56,14 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
         imei?: string | null;
         category_id?: string | null;
         warranty?: string | null;
-      }
+      };
+      oldData: {
+        product_name: string;
+        sku: string;
+        imei: string | null;
+        category_id: string | null;
+        warranty: string | null;
+      };
     }) => {
       // Kiểm tra IMEI trùng nếu có giá trị mới
       if (updates.imei) {
@@ -77,6 +85,23 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
         .eq('id', itemId);
 
       if (error) throw error;
+
+      // Ghi nhận lịch sử thao tác
+      const tenantId = await supabase.rpc('get_user_tenant_id_secure');
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (tenantId.data) {
+        await supabase.from('audit_logs').insert({
+          tenant_id: tenantId.data,
+          user_id: user?.id,
+          action_type: 'UPDATE',
+          table_name: 'export_receipt_items',
+          record_id: itemId,
+          description: `Chỉnh sửa sản phẩm đã bán: ${oldData.product_name}`,
+          old_data: oldData,
+          new_data: updates,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['export-receipts'] });
@@ -98,6 +123,14 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
     }
 
     try {
+      const oldData = {
+        product_name: item.product_name,
+        sku: item.sku,
+        imei: item.imei || null,
+        category_id: item.category_id || null,
+        warranty: item.warranty || null,
+      };
+
       await updateItem.mutateAsync({
         itemId: item.id,
         updates: {
@@ -107,6 +140,7 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
           category_id: formData.category_id === '_none_' ? null : formData.category_id,
           warranty: formData.warranty.trim() || null,
         },
+        oldData,
       });
 
       toast({
