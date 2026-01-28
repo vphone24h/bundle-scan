@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
 
 export interface Branch {
   id: string;
@@ -20,8 +21,10 @@ async function getCurrentTenantId(): Promise<string | null> {
 }
 
 export function useBranches() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['branches'],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['branches', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('branches')
@@ -31,12 +34,15 @@ export function useBranches() {
       if (error) throw error;
       return data as Branch[];
     },
+    enabled: !!user?.id,
   });
 }
 
 export function useDefaultBranch() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['default-branch'],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['default-branch', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('branches')
@@ -47,6 +53,7 @@ export function useDefaultBranch() {
       if (error) throw error;
       return data as Branch | null;
     },
+    enabled: !!user?.id,
   });
 }
 

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
 
 export interface InvoiceTemplate {
   id: string;
@@ -34,8 +35,10 @@ export interface InvoiceTemplate {
 }
 
 export function useInvoiceTemplates() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['invoice-templates'],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['invoice-templates', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('invoice_templates')
@@ -45,12 +48,15 @@ export function useInvoiceTemplates() {
       if (error) throw error;
       return data as InvoiceTemplate[];
     },
+    enabled: !!user?.id,
   });
 }
 
 export function useDefaultInvoiceTemplate() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['invoice-template-default'],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['invoice-template-default', user?.id],
     queryFn: async () => {
       // Try to get existing default template
       const { data, error } = await supabase

@@ -68,8 +68,10 @@ export interface CustomerWithPoints {
 
 // Hook: Lấy cài đặt tích điểm
 export function usePointSettings() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['point-settings'],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['point-settings', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('point_settings')
@@ -80,6 +82,7 @@ export function usePointSettings() {
       if (error) throw error;
       return data as PointSettings | null;
     },
+    enabled: !!user?.id,
   });
 }
 
@@ -137,8 +140,10 @@ export function useUpdatePointSettings() {
 
 // Hook: Lấy cài đặt hạng thành viên
 export function useMembershipTiers() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['membership-tiers'],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['membership-tiers', user?.id],
     queryFn: async () => {
       // Lấy tenant_id của user hiện tại
       const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
@@ -196,8 +201,10 @@ export function useCustomersWithPoints(filters?: {
   hasDebt?: boolean;
   status?: string;
 }) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['customers-with-points', filters],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['customers-with-points', user?.id, filters],
     queryFn: async () => {
       let query = supabase
         .from('customers')

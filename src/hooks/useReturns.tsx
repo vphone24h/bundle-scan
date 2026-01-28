@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
 
 // Types
 export interface ImportReturn {
@@ -72,8 +73,10 @@ export function useImportReturns(filters?: {
   branchId?: string;
   createdBy?: string;
 }) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['import-returns', filters],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['import-returns', user?.id, filters],
     queryFn: async () => {
       let query = supabase
         .from('import_returns')
@@ -104,6 +107,7 @@ export function useImportReturns(filters?: {
       if (error) throw error;
       return data as ImportReturn[];
     },
+    enabled: !!user?.id,
   });
 }
 
@@ -115,8 +119,10 @@ export function useExportReturns(filters?: {
   feeType?: 'none' | 'percentage' | 'fixed_amount';
   createdBy?: string;
 }) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['export-returns', filters],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['export-returns', user?.id, filters],
     queryFn: async () => {
       let query = supabase
         .from('export_returns')
@@ -150,13 +156,16 @@ export function useExportReturns(filters?: {
       if (error) throw error;
       return data as ExportReturn[];
     },
+    enabled: !!user?.id,
   });
 }
 
 // Hook to get all profiles (for employee filter)
 export function useAllProfiles() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['all-profiles'],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['all-profiles', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
@@ -166,6 +175,7 @@ export function useAllProfiles() {
       if (error) throw error;
       return data as { user_id: string; display_name: string }[];
     },
+    enabled: !!user?.id,
   });
 }
 

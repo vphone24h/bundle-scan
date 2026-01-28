@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from './usePermissions';
+import { useAuth } from './useAuth';
 
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
@@ -39,10 +40,12 @@ export interface DebtPayment {
 
 // Hook to get customer debt summary
 export function useCustomerDebts(showSettled: boolean = false) {
+  const { user } = useAuth();
   const { data: permissions } = usePermissions();
 
   return useQuery({
-    queryKey: ['customer-debts', showSettled, permissions?.branchId, permissions?.role],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['customer-debts', user?.id, showSettled, permissions?.branchId, permissions?.role],
     queryFn: async () => {
       // Get all export receipts with debt
       let query = supabase
@@ -143,10 +146,12 @@ export function useCustomerDebts(showSettled: boolean = false) {
 
 // Hook to get supplier debt summary
 export function useSupplierDebts(showSettled: boolean = false) {
+  const { user } = useAuth();
   const { data: permissions } = usePermissions();
 
   return useQuery({
-    queryKey: ['supplier-debts', showSettled, permissions?.branchId, permissions?.role],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['supplier-debts', user?.id, showSettled, permissions?.branchId, permissions?.role],
     queryFn: async () => {
       // Get all import receipts with debt
       let query = supabase

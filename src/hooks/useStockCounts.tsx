@@ -66,8 +66,10 @@ export function useStockCounts(filters?: {
   endDate?: string;
   search?: string;
 }) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['stock-counts', filters],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['stock-counts', user?.id, filters],
     queryFn: async () => {
       let query = supabase
         .from('stock_counts')
