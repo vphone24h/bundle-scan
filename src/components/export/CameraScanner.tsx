@@ -146,46 +146,74 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
 
       scannerRef.current = html5QrCode;
 
-      await html5QrCode.start(
-        {
-          facingMode: currentFacingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        {
-          fps: 20, // Higher FPS helps on desktop webcams
-          qrbox: { width: qrBoxWidth, height: qrBoxHeight },
-          disableFlip: false,
-        },
-        (decodedText: string) => {
-          const normalized = decodedText?.trim?.() ?? decodedText;
-          // Prevent duplicate scans within cooldown period
-          if (scanCooldownRef.current) return;
-          if (!normalized) return;
-          if (lastScannedRef.current === normalized) return;
-          
-          scanCooldownRef.current = true;
-          lastScannedRef.current = normalized;
-          
-          // Play beep sound
-          playBeep();
-          
-          // Stop scanner before callback
-          stopScanner().then(() => {
-            onScan(normalized);
-            onClose();
-          });
-          
-          // Reset cooldown after 2 seconds
-          setTimeout(() => {
-            scanCooldownRef.current = false;
-            lastScannedRef.current = null;
-          }, 2000);
-        },
-        () => {
-          // Ignore scan failures (QR not found) - this is normal
+      // iOS Safari is more strict with media constraints; overly specific width/height ideals
+      // can fail to start even though camera permission is granted.
+      const isIOS =
+        typeof navigator !== 'undefined' &&
+        /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+        !(window as any).MSStream;
+
+      const preferredConstraints: MediaTrackConstraints = isIOS
+        ? { facingMode: currentFacingMode }
+        : {
+            facingMode: currentFacingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          };
+
+      const fallbackConstraints: MediaTrackConstraints = { facingMode: currentFacingMode };
+
+      const fps = isIOS ? 15 : 20;
+
+      const startWithConstraints = async (constraints: MediaTrackConstraints) =>
+        html5QrCode.start(
+          constraints,
+          {
+            fps,
+            qrbox: { width: qrBoxWidth, height: qrBoxHeight },
+            disableFlip: false,
+          },
+          (decodedText: string) => {
+            const normalized = decodedText?.trim?.() ?? decodedText;
+            // Prevent duplicate scans within cooldown period
+            if (scanCooldownRef.current) return;
+            if (!normalized) return;
+            if (lastScannedRef.current === normalized) return;
+
+            scanCooldownRef.current = true;
+            lastScannedRef.current = normalized;
+
+            // Play beep sound
+            playBeep();
+
+            // Stop scanner before callback
+            stopScanner().then(() => {
+              onScan(normalized);
+              onClose();
+            });
+
+            // Reset cooldown after 2 seconds
+            setTimeout(() => {
+              scanCooldownRef.current = false;
+              lastScannedRef.current = null;
+            }, 2000);
+          },
+          () => {
+            // Ignore scan failures (QR not found) - this is normal
+          }
+        );
+
+      try {
+        await startWithConstraints(preferredConstraints);
+      } catch (startErr: any) {
+        // Retry once with minimal constraints (helps Safari / iOS)
+        const name = startErr?.name || '';
+        if (name === 'OverconstrainedError' || name === 'NotSupportedError' || isIOS) {
+          await startWithConstraints(fallbackConstraints);
+        } else {
+          throw startErr;
         }
-      );
+      }
       
       setIsScanning(true);
     } catch (err: any) {
@@ -207,7 +235,9 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
         }
         setError('Camera không hỗ trợ cấu hình này');
       } else {
-        setError('Không thể khởi động camera: ' + (err.message || 'Lỗi không xác định'));
+        // Include error name to help diagnose Safari/permission/constraint issues
+        const details = [err?.name, err?.message].filter(Boolean).join(' - ');
+        setError('Không thể khởi động camera: ' + (details || 'Lỗi không xác định'));
       }
     } finally {
       if (isMountedRef.current) {
