@@ -110,6 +110,22 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
       // Clear the container before creating new scanner
       qrReaderElement.innerHTML = '';
 
+      // Compute a larger, barcode-friendly scan box based on actual container size.
+      // 1D barcodes (CODE128/39/EAN/UPC) are detected more reliably with a wider-than-tall region.
+      const rect = qrReaderElement.getBoundingClientRect();
+      const containerW = Math.max(0, Math.floor(rect.width));
+      const containerH = Math.max(0, Math.floor(rect.height));
+
+      // Fallback sizes in case layout isn't measured yet
+      const fallbackW = 320;
+      const fallbackH = 320;
+
+      const effectiveW = containerW || fallbackW;
+      const effectiveH = containerH || fallbackH;
+
+      const qrBoxWidth = Math.max(220, Math.min(520, Math.floor(effectiveW * 0.9)));
+      const qrBoxHeight = Math.max(160, Math.min(300, Math.floor(effectiveH * 0.55)));
+
       const html5QrCode = new Html5Qrcode('qr-reader', {
         formatsToSupport: [
           Html5QrcodeSupportedFormats.QR_CODE,
@@ -120,33 +136,43 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
           Html5QrcodeSupportedFormats.UPC_A,
           Html5QrcodeSupportedFormats.UPC_E,
         ],
+        // On Chromium (desktop + Android), BarcodeDetector often improves 1D barcode detection stability.
+        // Safe no-op where unsupported.
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true,
+        },
         verbose: false,
       });
 
       scannerRef.current = html5QrCode;
 
       await html5QrCode.start(
-        { facingMode: currentFacingMode },
         {
-          fps: 15, // Increased FPS for better detection
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1,
+          facingMode: currentFacingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        {
+          fps: 20, // Higher FPS helps on desktop webcams
+          qrbox: { width: qrBoxWidth, height: qrBoxHeight },
           disableFlip: false,
         },
         (decodedText: string) => {
+          const normalized = decodedText?.trim?.() ?? decodedText;
           // Prevent duplicate scans within cooldown period
           if (scanCooldownRef.current) return;
-          if (lastScannedRef.current === decodedText) return;
+          if (!normalized) return;
+          if (lastScannedRef.current === normalized) return;
           
           scanCooldownRef.current = true;
-          lastScannedRef.current = decodedText;
+          lastScannedRef.current = normalized;
           
           // Play beep sound
           playBeep();
           
           // Stop scanner before callback
           stopScanner().then(() => {
-            onScan(decodedText);
+            onScan(normalized);
             onClose();
           });
           
