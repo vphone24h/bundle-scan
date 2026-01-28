@@ -245,6 +245,22 @@ export default function SubscriptionPage() {
                 </div>
               )}
             </div>
+
+            {/* Hotline Support */}
+            <div className="mt-4 pt-4 border-t flex items-center gap-3">
+              <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10 text-primary">
+                <Phone className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Hotline hỗ trợ</p>
+                <a 
+                  href={`tel:${hotline.replace(/\s/g, '')}`}
+                  className="font-semibold text-primary hover:underline"
+                >
+                  {hotline}
+                </a>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
