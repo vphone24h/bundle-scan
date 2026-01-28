@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AuthContextType {
   user: User | null;
@@ -17,6 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     // Check if session should be cleared (user didn't select "remember me" and browser was restarted)
@@ -34,6 +36,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        // Clear cache when user signs out or signs in (to prevent tenant data leakage)
+        if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
+          queryClient.clear();
+        }
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -81,6 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Clear all React Query cache to prevent data leakage between tenants
+    queryClient.clear();
+    localStorage.removeItem('auth_remember_me');
+    sessionStorage.removeItem('session_temp');
     await supabase.auth.signOut();
   };
 
