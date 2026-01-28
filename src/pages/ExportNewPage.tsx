@@ -102,19 +102,30 @@ export default function ExportNewPage() {
   const { data: invoiceTemplate } = useDefaultInvoiceTemplate();
   const { data: pointSettings } = usePointSettings();
 
-  // Handle barcode scan (IMEI or SKU) - fill form instead of auto-add to cart
-  // Supports format: IMEI_or_SKU-P-PRICE (e.g., "353902103999926-P-24000000")
-  // Also supports legacy format: IMEI_or_SKU|PRICE
+  // Handle barcode scan (IMEI or SKU) - auto-add to cart if price encoded
+  // Supports formats:
+  // - CODE:PRICE (new, e.g., "353902103999926:24000000") - auto add to cart
+  // - CODE-P-PRICE (legacy) - auto add to cart
+  // - CODE|PRICE (legacy) - auto add to cart
+  // - CODE only (no price) - fill form for manual entry
   const handleBarcodeScan = async (barcode: string) => {
     if (!barcode.trim()) return;
 
     // Parse barcode - check if it contains price info
-    // Format: IMEI-P-PRICE (preferred) or IMEI|PRICE (legacy)
     let searchCode = barcode.trim();
     let encodedPrice: number | null = null;
     
-    // Check for "-P-" delimiter first (new format)
-    if (barcode.includes('-P-')) {
+    // Check for ":" delimiter first (new format - most compatible)
+    if (barcode.includes(':')) {
+      const parts = barcode.split(':');
+      searchCode = parts[0];
+      const priceStr = parts[1];
+      if (priceStr && !isNaN(parseInt(priceStr))) {
+        encodedPrice = parseInt(priceStr);
+      }
+    }
+    // Check for "-P-" delimiter (legacy format)
+    else if (barcode.includes('-P-')) {
       const parts = barcode.split('-P-');
       searchCode = parts[0];
       const priceStr = parts[1];
@@ -162,10 +173,44 @@ export default function ExportNewPage() {
       return;
     }
 
-    // Fill form with product info for user to review/edit before adding to cart
-    // Use encoded price from barcode if available, otherwise leave empty (to not reveal import price)
+    // If barcode has encoded price -> AUTO ADD TO CART
+    if (encodedPrice !== null && encodedPrice > 0) {
+      const newItem: CartItem = {
+        tempId: Date.now().toString(),
+        product_id: result.id,
+        product_name: result.name,
+        sku: result.sku,
+        imei: result.imei,
+        category_id: result.category_id,
+        categoryName: result.categories?.name,
+        branch_id: result.branch_id,
+        branchName: result.branches?.name,
+        sale_price: encodedPrice,
+        note: null,
+        quantity: 1,
+        warranty: null,
+      };
+
+      setCart(prevCart => [...prevCart, newItem]);
+      
+      // Clear form for next scan
+      setSelectedProduct(null);
+      setSalePrice('');
+      setItemNote('');
+      setItemQuantity(1);
+      setItemWarranty('');
+      setImeiSearch('');
+      
+      toast({
+        title: 'Đã thêm vào giỏ',
+        description: `${result.name} - ${encodedPrice.toLocaleString('vi-VN')}đ`,
+      });
+      return;
+    }
+
+    // No price encoded -> Fill form for manual entry (don't reveal import price)
     setSelectedProduct(result);
-    setSalePrice(encodedPrice !== null ? encodedPrice.toString() : '');
+    setSalePrice(''); // Leave empty - don't reveal import price
     setItemQuantity(result.imei ? 1 : 1);
     setItemWarranty('');
     setItemNote('');
@@ -174,7 +219,7 @@ export default function ExportNewPage() {
     
     toast({
       title: 'Đã quét thành công',
-      description: `${result.name} - Vui lòng kiểm tra và nhấn "Thêm vào giỏ"`,
+      description: `${result.name} - Vui lòng nhập giá bán và nhấn "Thêm vào giỏ"`,
     });
   };
 
@@ -397,7 +442,7 @@ export default function ExportNewPage() {
               />
               
               <p className="text-xs text-muted-foreground">
-                Sử dụng máy quét mã vạch hoặc nhập thủ công. Sản phẩm sẽ tự động được thêm vào giỏ hàng.
+                Quét mã vạch có giá → tự động thêm vào giỏ. Quét mã không có giá → điền form để nhập giá bán.
               </p>
             </CardContent>
           </Card>
