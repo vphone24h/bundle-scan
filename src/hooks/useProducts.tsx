@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
+import { useAuth } from './useAuth';
 
 type ProductStatus = Database['public']['Enums']['product_status'];
 
@@ -34,8 +35,10 @@ export interface Product {
 }
 
 export function useProducts() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['products'],
+    // Keyed by user to prevent cross-tenant cache leakage when switching accounts/stores
+    queryKey: ['products', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
@@ -50,6 +53,7 @@ export function useProducts() {
       if (error) throw error;
       return data as Product[];
     },
+    enabled: !!user?.id,
   });
 }
 

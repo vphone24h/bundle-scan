@@ -45,7 +45,8 @@ export function useImportReceipts() {
   const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
-    queryKey: ['import-receipts', isDataHidden],
+    // Keyed by tenant to prevent cross-tenant cache leakage
+    queryKey: ['import-receipts', tenant?.id, isDataHidden],
     queryFn: async () => {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as ImportReceipt[];

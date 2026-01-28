@@ -174,7 +174,8 @@ export function useInventory() {
   const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
-    queryKey: ['inventory', isDataHidden],
+    // Keyed by tenant to prevent cross-tenant cache leakage
+    queryKey: ['inventory', tenant?.id, isDataHidden],
     queryFn: async () => {
       // If data is hidden, return empty array
       if (isDataHidden) {

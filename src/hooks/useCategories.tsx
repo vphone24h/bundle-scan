@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
 
 export interface Category {
   id: string;
@@ -18,8 +19,10 @@ async function getCurrentTenantId(): Promise<string | null> {
 }
 
 export function useCategories() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['categories'],
+    // Keyed by user to prevent cross-tenant cache leakage when switching accounts/stores
+    queryKey: ['categories', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
@@ -29,6 +32,7 @@ export function useCategories() {
       if (error) throw error;
       return data as Category[];
     },
+    enabled: !!user?.id,
   });
 }
 

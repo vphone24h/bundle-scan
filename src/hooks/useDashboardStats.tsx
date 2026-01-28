@@ -18,7 +18,8 @@ export function useDashboardStats() {
   const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
-    queryKey: ['dashboard-stats', isDataHidden],
+    // Keyed by tenant to prevent cross-tenant cache leakage
+    queryKey: ['dashboard-stats', tenant?.id, isDataHidden],
     queryFn: async () => {
       // If data is hidden, return empty stats
       if (isDataHidden) {
