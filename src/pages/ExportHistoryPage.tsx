@@ -43,7 +43,8 @@ import {
   Package,
   Calendar,
   Filter,
-  X
+  X,
+  Pencil
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -57,6 +58,7 @@ import {
 } from '@/hooks/useExportReceipts';
 import { useDefaultInvoiceTemplate } from '@/hooks/useInvoiceTemplates';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
+import { EditExportItemDialog } from '@/components/export/EditExportItemDialog';
 import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib/exportExcel';
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -88,6 +90,9 @@ export default function ExportHistoryPage() {
   // Print dialog
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [printReceipt, setPrintReceipt] = useState<any>(null);
+  
+  // Edit item dialog
+  const [editItem, setEditItem] = useState<ExportReceiptItemDetail | null>(null);
 
   // Hooks
   const { data: receipts, isLoading: receiptsLoading } = useExportReceipts();
@@ -508,16 +513,27 @@ export default function ExportHistoryPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleReturn(item)}
-                              disabled={item.status === 'returned' || returnProduct.isPending}
-                              title="Trả hàng"
-                            >
-                              <RotateCcw className="h-4 w-4 mr-1" />
-                              Trả
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setEditItem(item)}
+                                className="h-7 w-7"
+                                title="Sửa thông tin"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleReturn(item)}
+                                disabled={item.status === 'returned' || returnProduct.isPending}
+                                title="Trả hàng"
+                              >
+                                <RotateCcw className="h-4 w-4 mr-1" />
+                                Trả
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -670,6 +686,13 @@ export default function ExportHistoryPage() {
         onOpenChange={setShowPrintDialog}
         receipt={printReceipt}
         template={template}
+      />
+
+      {/* Edit Item Dialog */}
+      <EditExportItemDialog
+        item={editItem}
+        open={!!editItem}
+        onOpenChange={(open) => !open && setEditItem(null)}
       />
     </MainLayout>
   );
