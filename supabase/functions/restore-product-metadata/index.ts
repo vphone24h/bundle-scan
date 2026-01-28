@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
-    if (matchRule !== 'imei_name_sku') {
+    if (!['imei_name_sku', 'imei_sku', 'imei_only'].includes(matchRule)) {
       return new Response(JSON.stringify({ error: 'matchRule không hợp lệ' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -130,14 +130,20 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Deduplicate by (imei|name|sku) and take latest by importDate
+    // Deduplicate by match key and take latest by importDate
+    const makeKey = (imei: string, name: string, sku: string) => {
+      if (matchRule === 'imei_only') return imei
+      if (matchRule === 'imei_sku') return `${imei}|${sku}`
+      return `${imei}|${name}|${sku}` // imei_name_sku
+    }
+
     const dedup = new Map<string, { row: IncomingRow; ts: number }>()
     for (const r of incomingRows) {
       const imei = normalize(r.imei)
       const name = normalize(r.name)
       const sku = normalize(r.sku)
-      if (!imei || !name || !sku) continue
-      const key = `${imei}|${name}|${sku}`
+      if (!imei) continue // IMEI is always required
+      const key = makeKey(imei, name, sku)
       const ts = parseDDMMYYYY(r.importDate)
       const current = dedup.get(key)
       if (!current || ts >= current.ts) {
@@ -201,7 +207,7 @@ Deno.serve(async (req) => {
         .in('imei', group)
       if (prodErr) throw prodErr
       for (const p of prods ?? []) {
-        const key = `${normalize(p.imei)}|${normalize(p.name)}|${normalize(p.sku)}`
+        const key = makeKey(normalize(p.imei), normalize(p.name), normalize(p.sku))
         // If duplicates exist in DB, keep the first one; updates will still be safe (by id)
         if (!productIndex.has(key)) {
           productIndex.set(key, { id: p.id, supplier_id: p.supplier_id ?? null, note: p.note ?? null })
@@ -213,7 +219,7 @@ Deno.serve(async (req) => {
     let notFound = 0
 
     for (const r of rows) {
-      const key = `${normalize(r.imei)}|${normalize(r.name)}|${normalize(r.sku)}`
+      const key = makeKey(normalize(r.imei), normalize(r.name), normalize(r.sku))
       const p = productIndex.get(key)
       if (!p) {
         notFound += 1
