@@ -44,7 +44,8 @@ export function useReportStats(filters?: {
   const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
-    queryKey: ['report-stats', filters, isDataHidden],
+    // Keyed by tenant to prevent cross-tenant cache leakage
+    queryKey: ['report-stats', tenant?.id, filters, isDataHidden],
     queryFn: async () => {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) {
@@ -262,7 +263,7 @@ export function useReportStats(filters?: {
         profitByCategory,
       } as ReportStats;
     },
-    enabled: !isTenantLoading,
+    enabled: !isTenantLoading && !!tenant?.id,
     refetchOnWindowFocus: false,
   });
 }
@@ -278,7 +279,8 @@ export function useReportChartData(filters?: {
   const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
-    queryKey: ['report-chart-data', filters, isDataHidden],
+    // Keyed by tenant to prevent cross-tenant cache leakage
+    queryKey: ['report-chart-data', tenant?.id, filters, isDataHidden],
     queryFn: async () => {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as { date: string; revenue: number; profit: number; count: number }[];
@@ -393,7 +395,7 @@ export function useReportChartData(filters?: {
 
       return Object.values(dataMap).sort((a, b) => a.date.localeCompare(b.date));
     },
-    enabled: !isTenantLoading,
+    enabled: !isTenantLoading && !!tenant?.id,
     refetchOnWindowFocus: false,
   });
 }

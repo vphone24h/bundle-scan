@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from './usePermissions';
+import { useAuth } from './useAuth';
 import { AuditLog, ActionGroup, ACTION_GROUPS, getDateRange, TimeFilter } from '@/types/auditLog';
 
 export interface AuditLogFilters {
@@ -15,10 +16,12 @@ export interface AuditLogFilters {
 }
 
 export function useAuditLogs(filters: AuditLogFilters) {
+  const { user } = useAuth();
   const { data: permissions } = usePermissions();
 
   return useQuery({
-    queryKey: ['audit-logs', filters, permissions?.branchId, permissions?.role],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['audit-logs', user?.id, filters, permissions?.branchId, permissions?.role],
     queryFn: async () => {
       let query = supabase
         .from('audit_logs')
@@ -71,10 +74,12 @@ export function useAuditLogs(filters: AuditLogFilters) {
 
 // Hook to get all users for filter dropdown
 export function useAuditLogUsers() {
+  const { user } = useAuth();
   const { data: permissions } = usePermissions();
 
   return useQuery({
-    queryKey: ['audit-log-users', permissions?.branchId, permissions?.role],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['audit-log-users', user?.id, permissions?.branchId, permissions?.role],
     queryFn: async () => {
       // Get user_roles with profiles
       let query = supabase

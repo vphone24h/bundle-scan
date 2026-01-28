@@ -49,7 +49,8 @@ export function useCashBook(filters?: {
   const isDataHidden = tenant?.is_data_hidden ?? false;
 
   return useQuery({
-    queryKey: ['cash-book', filters, isDataHidden],
+    // Keyed by tenant to prevent cross-tenant cache leakage
+    queryKey: ['cash-book', tenant?.id, filters, isDataHidden],
     queryFn: async () => {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as CashBookEntry[];
@@ -76,14 +77,16 @@ export function useCashBook(filters?: {
       if (error) throw error;
       return data as CashBookEntry[];
     },
-    enabled: !isTenantLoading,
+    enabled: !isTenantLoading && !!tenant?.id,
     refetchOnWindowFocus: false,
   });
 }
 
 export function useCashBookCategories(type?: CashBookType) {
+  const { data: tenant } = useCurrentTenant();
   return useQuery({
-    queryKey: ['cash-book-categories', type],
+    // Keyed by tenant to prevent cross-tenant cache leakage
+    queryKey: ['cash-book-categories', tenant?.id, type],
     queryFn: async () => {
       let query = supabase
         .from('cash_book_categories')
@@ -98,6 +101,7 @@ export function useCashBookCategories(type?: CashBookType) {
       if (error) throw error;
       return data as CashBookCategory[];
     },
+    enabled: !!tenant?.id,
   });
 }
 

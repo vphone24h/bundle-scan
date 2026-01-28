@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
 
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
@@ -19,8 +20,10 @@ export interface Supplier {
 }
 
 export function useSuppliers() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['suppliers'],
+    // Keyed by user to prevent cross-tenant cache leakage
+    queryKey: ['suppliers', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('suppliers')
@@ -30,6 +33,7 @@ export function useSuppliers() {
       if (error) throw error;
       return data as Supplier[];
     },
+    enabled: !!user?.id,
   });
 }
 
