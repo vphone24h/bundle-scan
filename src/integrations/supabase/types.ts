@@ -3083,6 +3083,7 @@ export type Database = {
         Args: { _branch_id: string; _user_id: string }
         Returns: boolean
       }
+      can_access_cash_book: { Args: { _user_id: string }; Returns: boolean }
       can_become_affiliate: { Args: { _tenant_id: string }; Returns: boolean }
       generate_affiliate_code: { Args: never; Returns: string }
       generate_domain_verification_token: { Args: never; Returns: string }
@@ -3104,6 +3105,7 @@ export type Database = {
       is_authenticated: { Args: never; Returns: boolean }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_accessible: { Args: { _tenant_id: string }; Returns: boolean }
+      is_tenant_admin: { Args: { _user_id: string }; Returns: boolean }
       resolve_tenant_by_domain: { Args: { _domain: string }; Returns: string }
       user_belongs_to_tenant: { Args: { _tenant_id: string }; Returns: boolean }
     }
