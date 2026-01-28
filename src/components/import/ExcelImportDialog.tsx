@@ -74,7 +74,7 @@ export function ExcelImportDialog({
       const parsed: ParsedRow[] = rows.map((row) => {
         const errors: string[] = [];
         
-        // Column order: IMEI | Tên sản phẩm | SKU | Giá nhập | Ngày nhập | Nhà cung cấp | Chi nhánh | Danh mục | Số lượng | Ghi chú
+        // Column order: IMEI | Tên sản phẩm | SKU | Giá nhập | Ngày nhập | Nhà cung cấp | Chi nhánh | Thư mục | Số lượng | Ghi chú | Trạng thái
         const imei = row[0] ? String(row[0]).trim() : undefined;
         const productName = String(row[1] || '').trim();
         const sku = String(row[2] || '').trim();
@@ -82,23 +82,24 @@ export function ExcelImportDialog({
         const importDate = row[4] ? String(row[4]).trim() : undefined;
         const supplierName = row[5] ? String(row[5]).trim() : undefined;
         const branchName = row[6] ? String(row[6]).trim() : undefined;
-        const categoryName = String(row[7] || '').trim();
+        const categoryName = String(row[7] || '').trim(); // Thư mục = Danh mục
         const quantity = imei ? 1 : (Number(row[8]) || 1); // IMEI products always have quantity 1
         const note = row[9] ? String(row[9]).trim() : undefined;
+        // Column 10 is Trạng thái - ignored on import (always "Tồn kho" for new items)
 
         // Validate required fields
         if (!productName) errors.push('Thiếu tên sản phẩm');
         if (!sku) errors.push('Thiếu SKU');
-        if (!categoryName) errors.push('Thiếu danh mục');
+        if (!categoryName) errors.push('Thiếu thư mục/danh mục');
         if (importPrice <= 0) errors.push('Giá nhập không hợp lệ');
         if (quantity < 1) errors.push('Số lượng không hợp lệ');
 
-        // Find matching category
+        // Find matching category (Thư mục)
         const matchedCategory = categories.find(
           (c) => c.name.toLowerCase() === categoryName.toLowerCase()
         );
         if (categoryName && !matchedCategory) {
-          errors.push(`Danh mục "${categoryName}" không tồn tại`);
+          errors.push(`Thư mục "${categoryName}" không tồn tại`);
         }
 
         // Validate supplier if provided
@@ -289,7 +290,7 @@ export function ExcelImportDialog({
                       <th className="p-2 text-left">SKU</th>
                       <th className="p-2 text-right">Giá nhập</th>
                       <th className="p-2 text-left">NCC</th>
-                      <th className="p-2 text-left">Danh mục</th>
+                      <th className="p-2 text-left">Thư mục</th>
                       <th className="p-2 text-center">SL</th>
                       <th className="p-2 text-left">Trạng thái</th>
                     </tr>
