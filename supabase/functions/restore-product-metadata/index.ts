@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Permission: only super_admin or platform_admin, and must belong to tenant
+    // Permission: super_admin, branch_admin, or platform_admin, and must belong to tenant
     const { data: userRole } = await supabaseAdmin
       .from('user_roles')
       .select('tenant_id, user_role')
@@ -118,13 +118,13 @@ Deno.serve(async (req) => {
       .from('platform_users')
       .select('tenant_id, platform_role')
       .eq('user_id', caller.id)
-      .eq('tenant_id', tenantId)
       .maybeSingle()
 
     const isSuperAdmin = userRole?.user_role === 'super_admin'
+    const isBranchAdmin = userRole?.user_role === 'branch_admin'
     const isPlatformAdmin = platformUser?.platform_role === 'platform_admin'
-    if (!isSuperAdmin && !isPlatformAdmin) {
-      return new Response(JSON.stringify({ error: 'Chỉ Super Admin/Platform Admin mới có quyền thực hiện' }), {
+    if (!isSuperAdmin && !isBranchAdmin && !isPlatformAdmin) {
+      return new Response(JSON.stringify({ error: 'Chỉ Super Admin/Branch Admin/Platform Admin mới có quyền thực hiện' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
