@@ -163,9 +163,9 @@ export default function ExportNewPage() {
     }
 
     // Fill form with product info for user to review/edit before adding to cart
-    // Use encoded price from barcode if available, otherwise fall back to import price
+    // Use encoded price from barcode if available, otherwise leave empty (to not reveal import price)
     setSelectedProduct(result);
-    setSalePrice(encodedPrice !== null ? encodedPrice.toString() : (result.import_price?.toString() || ''));
+    setSalePrice(encodedPrice !== null ? encodedPrice.toString() : '');
     setItemQuantity(result.imei ? 1 : 1);
     setItemWarranty('');
     setItemNote('');
@@ -201,7 +201,7 @@ export default function ExportNewPage() {
   // Select product from suggestions
   const handleSelectProduct = (product: any) => {
     setSelectedProduct(product);
-    setSalePrice(product.import_price?.toString() || '');
+    setSalePrice(''); // Leave empty - don't reveal import price
     setItemQuantity(product.imei ? 1 : 1); // Default to 1, user can change for non-IMEI
     setNameSearch('');
     setProductSuggestions([]);
