@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Download, Package, ClipboardList } from 'lucide-react';
+import { Download, Package, ClipboardList, FileUp } from 'lucide-react';
 import { differenceInDays, format } from 'date-fns';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { usePagination } from '@/hooks/usePagination';
@@ -102,7 +102,7 @@ export default function InventoryPage() {
     };
   }, [filteredInventory]);
 
-  // Export to Excel
+  // Export to Excel (summary view)
   const handleExportExcel = () => {
     if (filteredInventory.length === 0) {
       toast({
@@ -150,6 +150,74 @@ export default function InventoryPage() {
     });
   };
 
+  // Export for re-import (detailed format matching import template)
+  const handleExportForReimport = () => {
+    if (filteredInventory.length === 0) {
+      toast({
+        title: 'Không có dữ liệu',
+        description: 'Không có dữ liệu tồn kho để xuất',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Flatten all in-stock products from inventory
+    const allProducts: any[] = [];
+    filteredInventory.forEach(item => {
+      item.products.forEach(product => {
+        if (product.status === 'in_stock') {
+          allProducts.push({
+            imei: product.imei || '',
+            productName: product.name,
+            sku: product.sku,
+            importPrice: product.importPrice,
+            importDate: product.importDate ? format(new Date(product.importDate), 'dd/MM/yyyy') : '',
+            supplierName: product.supplierName || '',
+            branchName: product.branchName || '',
+            categoryName: item.categoryName || '',
+            quantity: product.imei ? 1 : product.quantity,
+            note: product.note || '',
+            status: 'Tồn kho',
+          });
+        }
+      });
+    });
+
+    if (allProducts.length === 0) {
+      toast({
+        title: 'Không có dữ liệu',
+        description: 'Không có sản phẩm tồn kho để xuất',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Export with import template format
+    exportToExcel({
+      filename: `Du_lieu_nhap_lai_${format(new Date(), 'ddMMyyyy')}`,
+      sheetName: 'Nhập hàng',
+      columns: [
+        { header: 'IMEI', key: 'imei', width: 18 },
+        { header: 'Tên sản phẩm', key: 'productName', width: 35 },
+        { header: 'SKU', key: 'sku', width: 35 },
+        { header: 'Giá nhập', key: 'importPrice', width: 15 },
+        { header: 'Ngày nhập', key: 'importDate', width: 12 },
+        { header: 'Nhà cung cấp', key: 'supplierName', width: 18 },
+        { header: 'Chi nhánh', key: 'branchName', width: 15 },
+        { header: 'Thư mục', key: 'categoryName', width: 15 },
+        { header: 'Số lượng', key: 'quantity', width: 10 },
+        { header: 'Ghi chú', key: 'note', width: 30 },
+        { header: 'Trạng thái', key: 'status', width: 12 },
+      ],
+      data: allProducts,
+    });
+
+    toast({
+      title: 'Xuất file nhập lại thành công',
+      description: `Đã xuất ${allProducts.length} sản phẩm theo định dạng file mẫu nhập hàng`,
+    });
+  };
+
   return (
     <MainLayout>
       <PageHeader
@@ -157,10 +225,16 @@ export default function InventoryPage() {
         description="Quản lý và theo dõi tồn kho theo thời gian thực"
         actions={
           activeTab === 'inventory' && (
-            <Button onClick={handleExportExcel} className="gap-2">
-              <Download className="h-4 w-4" />
-              Xuất Excel
-            </Button>
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" onClick={handleExportForReimport} className="gap-2">
+                <FileUp className="h-4 w-4" />
+                Xuất file nhập lại
+              </Button>
+              <Button onClick={handleExportExcel} className="gap-2">
+                <Download className="h-4 w-4" />
+                Xuất Excel
+              </Button>
+            </div>
           )
         }
       />
