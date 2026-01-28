@@ -13,9 +13,13 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [isScanning, setIsScanning] = useState(false);
+  
   const scannerRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const html5QrcodeModuleRef = useRef<any>(null);
+  const isMountedRef = useRef(true);
+  const lastScannedRef = useRef<string | null>(null);
+  const scanCooldownRef = useRef(false);
 
   const playBeep = useCallback(() => {
     try {
@@ -41,19 +45,39 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
     if (scannerRef.current) {
       try {
         const state = scannerRef.current.getState();
-        if (state === 2) { // SCANNING
+        // State 2 = SCANNING, State 1 = PAUSED
+        if (state === 2 || state === 1) {
           await scannerRef.current.stop();
         }
+      } catch (e) {
+        console.log('Scanner stop error (ignored):', e);
+      }
+      try {
         scannerRef.current.clear();
       } catch (e) {
-        // Ignore errors during stop
+        // Ignore clear errors
       }
       scannerRef.current = null;
     }
+    setIsScanning(false);
   }, []);
 
-  const startScanner = useCallback(async () => {
-    if (!containerRef.current) return;
+  const startScanner = useCallback(async (currentFacingMode: 'environment' | 'user') => {
+    // Check if component is still mounted
+    if (!isMountedRef.current) return;
+    
+    // Check if qr-reader element exists
+    const qrReaderElement = document.getElementById('qr-reader');
+    if (!qrReaderElement) {
+      console.log('QR reader element not found, retrying...');
+      // Retry after a short delay
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          startScanner(currentFacingMode);
+        }
+      }, 100);
+      return;
+    }
     
     setIsStarting(true);
     setError(null);
@@ -61,13 +85,30 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
     try {
       // Stop existing scanner first
       await stopScanner();
+      
+      // Small delay to ensure cleanup is complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      if (!isMountedRef.current) return;
 
       // Dynamic import html5-qrcode
       if (!html5QrcodeModuleRef.current) {
-        html5QrcodeModuleRef.current = await import('html5-qrcode');
+        try {
+          html5QrcodeModuleRef.current = await import('html5-qrcode');
+        } catch (importError) {
+          console.error('Failed to import html5-qrcode:', importError);
+          setError('Không thể tải thư viện quét mã. Vui lòng tải lại trang.');
+          setIsStarting(false);
+          return;
+        }
       }
       
+      if (!isMountedRef.current) return;
+      
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = html5QrcodeModuleRef.current;
+
+      // Clear the container before creating new scanner
+      qrReaderElement.innerHTML = '';
 
       const html5QrCode = new Html5Qrcode('qr-reader', {
         formatsToSupport: [
@@ -85,57 +126,110 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
       scannerRef.current = html5QrCode;
 
       await html5QrCode.start(
-        { facingMode },
+        { facingMode: currentFacingMode },
         {
-          fps: 10,
+          fps: 15, // Increased FPS for better detection
           qrbox: { width: 250, height: 250 },
           aspectRatio: 1,
+          disableFlip: false,
         },
         (decodedText: string) => {
+          // Prevent duplicate scans within cooldown period
+          if (scanCooldownRef.current) return;
+          if (lastScannedRef.current === decodedText) return;
+          
+          scanCooldownRef.current = true;
+          lastScannedRef.current = decodedText;
+          
           // Play beep sound
           playBeep();
-          onScan(decodedText);
-          stopScanner();
-          onClose();
+          
+          // Stop scanner before callback
+          stopScanner().then(() => {
+            onScan(decodedText);
+            onClose();
+          });
+          
+          // Reset cooldown after 2 seconds
+          setTimeout(() => {
+            scanCooldownRef.current = false;
+            lastScannedRef.current = null;
+          }, 2000);
         },
         () => {
-          // Ignore scan failures (QR not found)
+          // Ignore scan failures (QR not found) - this is normal
         }
       );
+      
+      setIsScanning(true);
     } catch (err: any) {
       console.error('Camera error:', err);
+      if (!isMountedRef.current) return;
+      
       if (err.message?.includes('NotAllowedError') || err.name === 'NotAllowedError') {
         setError('Vui lòng cho phép truy cập camera để quét mã');
       } else if (err.message?.includes('NotFoundError') || err.name === 'NotFoundError') {
         setError('Không tìm thấy camera trên thiết bị');
+      } else if (err.message?.includes('NotReadableError') || err.name === 'NotReadableError') {
+        setError('Camera đang được sử dụng bởi ứng dụng khác');
+      } else if (err.message?.includes('OverconstrainedError')) {
+        // Try with different facing mode
+        if (currentFacingMode === 'environment') {
+          console.log('Trying user camera instead...');
+          startScanner('user');
+          return;
+        }
+        setError('Camera không hỗ trợ cấu hình này');
       } else {
         setError('Không thể khởi động camera: ' + (err.message || 'Lỗi không xác định'));
       }
     } finally {
-      setIsStarting(false);
+      if (isMountedRef.current) {
+        setIsStarting(false);
+      }
     }
-  }, [facingMode, onClose, onScan, playBeep, stopScanner]);
+  }, [onClose, onScan, playBeep, stopScanner]);
 
+  // Handle open/close
   useEffect(() => {
+    isMountedRef.current = true;
+    
     if (isOpen) {
-      startScanner();
+      // Delay start to ensure DOM is ready
+      const timer = setTimeout(() => {
+        startScanner(facingMode);
+      }, 150);
+      
+      return () => {
+        clearTimeout(timer);
+        stopScanner();
+      };
     } else {
       stopScanner();
     }
 
     return () => {
+      isMountedRef.current = false;
       stopScanner();
     };
-  }, [isOpen, startScanner, stopScanner]);
+  }, [isOpen]); // Only depend on isOpen, not startScanner/stopScanner
 
-  const toggleCamera = () => {
-    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
-  };
+  // Handle camera switch
+  const toggleCamera = useCallback(async () => {
+    const newFacingMode = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(newFacingMode);
+    await stopScanner();
+    startScanner(newFacingMode);
+  }, [facingMode, stopScanner, startScanner]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     stopScanner();
     onClose();
-  };
+  }, [stopScanner, onClose]);
+
+  const handleRetry = useCallback(() => {
+    startScanner(facingMode);
+  }, [startScanner, facingMode]);
 
   if (!isOpen) return null;
 
@@ -154,7 +248,6 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
           </div>
 
           <div 
-            ref={containerRef}
             className="relative bg-muted rounded-lg overflow-hidden"
             style={{ minHeight: '300px' }}
           >
@@ -176,10 +269,18 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
                   <Button 
                     variant="secondary" 
                     size="sm"
-                    onClick={startScanner}
+                    onClick={handleRetry}
                   >
                     Thử lại
                   </Button>
+                </div>
+              </div>
+            )}
+            
+            {isScanning && !error && (
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+                <div className="bg-primary/90 text-primary-foreground text-xs px-3 py-1 rounded-full animate-pulse">
+                  Đang quét...
                 </div>
               </div>
             )}
@@ -205,7 +306,7 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
-            Đưa mã QR hoặc mã vạch vào vùng quét
+            Đưa mã QR hoặc mã vạch vào vùng quét • FPS: 15
           </p>
         </CardContent>
       </Card>
