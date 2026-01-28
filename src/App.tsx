@@ -41,7 +41,16 @@ const ApplicationsPage = lazy(() => import("./pages/ApplicationsPage"));
 const AdvertisementsAdminPage = lazy(() => import("./pages/AdvertisementsAdminPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 2, // 2 minutes - reduce refetches
+      gcTime: 1000 * 60 * 10, // 10 minutes cache
+      refetchOnWindowFocus: false, // Don't refetch on tab switch
+      retry: 1, // Only 1 retry on failure
+    },
+  },
+});
 
 // Minimal loading fallback for Suspense
 const PageLoader = () => (
