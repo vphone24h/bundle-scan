@@ -34,6 +34,7 @@ export interface ProductDetail {
   status: 'in_stock' | 'sold' | 'returned';
   quantity: number;
   totalImportCost: number;
+  note: string | null;
 }
 
 // Process products into inventory items - extracted for reuse
@@ -97,6 +98,7 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
       status: product.status,
       quantity: product.quantity || 1,
       totalImportCost: product.total_import_cost || product.import_price,
+      note: product.note || null,
     };
 
     if (existing) {
@@ -187,7 +189,7 @@ export function useInventory() {
         .select(`
           id, name, sku, imei, import_price, import_date, 
           supplier_id, branch_id, category_id, status, 
-          quantity, total_import_cost,
+          quantity, total_import_cost, note,
           categories(name),
           suppliers(name),
           branches(name)
