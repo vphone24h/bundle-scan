@@ -43,7 +43,7 @@ import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib
 import type { Product } from '@/hooks/useProducts';
 import { EditImportReceiptDialog } from '@/components/import/EditImportReceiptDialog';
 import { ReturnImportReceiptDialog } from '@/components/import/ReturnImportReceiptDialog';
-import { EditProductIMEIDialog } from '@/components/import/EditProductIMEIDialog';
+import { EditProductDialog } from '@/components/import/EditProductDialog';
 
 export default function ImportHistoryPage() {
   const navigate = useNavigate();
@@ -867,8 +867,8 @@ export default function ImportHistoryPage() {
         onOpenChange={(open) => !open && setReturnReceipt(null)}
       />
 
-      {/* Edit Product IMEI Dialog */}
-      <EditProductIMEIDialog
+      {/* Edit Product Dialog */}
+      <EditProductDialog
         product={editProduct}
         open={!!editProduct}
         onOpenChange={(open) => !open && setEditProduct(null)}
