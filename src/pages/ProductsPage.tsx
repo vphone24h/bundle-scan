@@ -5,6 +5,7 @@ import { ProductTable } from '@/components/products/ProductTable';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
+import { EditProductDialog } from '@/components/import/EditProductDialog';
 import { useProducts, Product } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
@@ -57,6 +58,7 @@ export default function ProductsPage() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [productsForBarcode, setProductsForBarcode] = useState<any[]>([]);
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
   
   // Search & filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -128,7 +130,11 @@ export default function ProductsPage() {
   const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_';
 
   const handleEdit = (product: any) => {
-    console.log('Edit product:', product);
+    // Find the original product from the products array
+    const originalProduct = products?.find(p => p.id === product.id);
+    if (originalProduct) {
+      setEditProduct(originalProduct);
+    }
   };
 
   const handlePrintBarcode = (prods: any[]) => {
@@ -379,6 +385,13 @@ export default function ProductsPage() {
         open={barcodeOpen}
         onClose={() => setBarcodeOpen(false)}
         products={productsForBarcode}
+      />
+
+      {/* Edit Product Dialog */}
+      <EditProductDialog
+        product={editProduct}
+        open={!!editProduct}
+        onOpenChange={(open) => !open && setEditProduct(null)}
       />
     </MainLayout>
   );
