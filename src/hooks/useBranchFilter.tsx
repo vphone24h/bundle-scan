@@ -12,7 +12,7 @@ export function useBranchFilter() {
   const { data: permissions, isLoading } = usePermissions();
 
   const branchFilter = useMemo(() => {
-    if (!permissions) {
+    if (isLoading || !permissions) {
       return {
         branchId: undefined as string | null | undefined,
         shouldFilter: false,
