@@ -133,6 +133,9 @@ export function DeleteProductDialog({
     .replace(/\p{Diacritic}/gu, '');
   const isConfirmValid = normalizedConfirm === 'xoa';
 
+  const isReasonValid = !!reason.trim();
+  const isSubmitDisabled = deleteMutation.isPending || !isConfirmValid || !isReasonValid;
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -165,6 +168,9 @@ export function DeleteProductDialog({
               placeholder="VD: Máy hỏng không sửa được, IMEI nhập sai, sản phẩm thất lạc..."
               rows={3}
             />
+            {!isReasonValid && (
+              <p className="text-xs text-destructive">Vui lòng nhập lý do xóa để mở nút.</p>
+            )}
           </div>
 
           {/* Confirm text */}
@@ -179,6 +185,9 @@ export function DeleteProductDialog({
               placeholder="Nhập XÓA"
               className="uppercase"
             />
+            {!isConfirmValid && (
+              <p className="text-xs text-destructive">Vui lòng nhập đúng “XÓA” (có thể gõ XOA).</p>
+            )}
           </div>
         </div>
 
@@ -189,7 +198,7 @@ export function DeleteProductDialog({
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={deleteMutation.isPending || !isConfirmValid || !reason.trim()}
+            disabled={isSubmitDisabled}
           >
             {deleteMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <Trash2 className="h-4 w-4 mr-2" />
