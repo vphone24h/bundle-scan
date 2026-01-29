@@ -108,6 +108,19 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
+
+      // Also update email in platform_users table for display purposes
+      if (email) {
+        const { error: platformUserError } = await supabaseAdmin
+          .from('platform_users')
+          .update({ email: email })
+          .eq('user_id', userId)
+
+        if (platformUserError) {
+          console.error('Platform user email update error:', platformUserError)
+          // Not critical, continue
+        }
+      }
     }
 
     // Update profile (displayName/phone) if provided
