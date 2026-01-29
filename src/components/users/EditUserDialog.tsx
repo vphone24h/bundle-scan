@@ -53,6 +53,7 @@ interface EditUserDialogProps {
   user: UserWithRole | null;
   branches: Branch[] | undefined;
   isSuperAdmin: boolean;
+  tenantId?: string | null;
 }
 
 export function EditUserDialog({
@@ -61,6 +62,7 @@ export function EditUserDialog({
   user,
   branches,
   isSuperAdmin,
+  tenantId,
 }: EditUserDialogProps) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('role');
@@ -89,13 +91,19 @@ export function EditUserDialog({
 
   const updateUserRole = useMutation({
     mutationFn: async ({ userId, role, branchId }: { userId: string; role: UserRole; branchId: string | null }) => {
-      const { error } = await supabase
+      let query = supabase
         .from('user_roles')
         .update({ 
           user_role: role, 
           branch_id: role === 'super_admin' ? null : branchId 
         })
         .eq('user_id', userId);
+
+      if (tenantId) {
+        query = query.eq('tenant_id', tenantId);
+      }
+
+      const { error } = await query;
 
       if (error) throw error;
     },
