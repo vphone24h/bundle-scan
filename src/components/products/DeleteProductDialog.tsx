@@ -182,7 +182,7 @@ export function DeleteProductDialog({
               id="confirmDelete"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              placeholder="Nhập XÓA"
+              placeholder="XÓA"
               className="uppercase"
             />
             {!isConfirmValid && (
