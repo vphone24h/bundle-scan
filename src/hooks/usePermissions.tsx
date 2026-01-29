@@ -181,6 +181,9 @@ export function usePermissions() {
     },
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000, // Cache 5 phút
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 
@@ -216,6 +219,10 @@ export function useAccessibleBranches() {
       return [];
     },
     enabled: !!permissions,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 
