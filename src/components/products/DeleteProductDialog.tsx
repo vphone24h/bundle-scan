@@ -97,10 +97,14 @@ export function DeleteProductDialog({
 
       return product;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Invalidate với refetchType: 'all' để đảm bảo refetch ngay lập tức
+      await queryClient.invalidateQueries({ 
+        queryKey: ['inventory'],
+        refetchType: 'all'
+      });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['all-products'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
 
       toast({
