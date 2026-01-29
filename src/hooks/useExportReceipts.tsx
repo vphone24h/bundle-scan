@@ -500,8 +500,12 @@ export function useCreateExportReceipt() {
 
       return { ...receipt, points_earned: pointsToEarn, points_pending: pointsArePending };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['export-receipts'] });
+    onSuccess: async () => {
+      // Invalidate với refetchType: 'all' để đảm bảo refetch ngay lập tức
+      await queryClient.invalidateQueries({ 
+        queryKey: ['export-receipts'],
+        refetchType: 'all'
+      });
       queryClient.invalidateQueries({ queryKey: ['export-receipt-items'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['all-products'] });
