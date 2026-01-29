@@ -63,21 +63,13 @@ export function DeleteProductDialog({
 
       if (fetchError) throw fetchError;
 
-      // Xóa sản phẩm (soft delete bằng cách đổi status)
+      // Xóa sản phẩm (hard delete vì enum không có status 'deleted')
       const { error: deleteError } = await supabase
         .from('products')
-        .update({ status: 'deleted' as any })
+        .delete()
         .eq('id', productId);
 
-      if (deleteError) {
-        // Nếu không hỗ trợ soft delete, thực hiện hard delete
-        const { error: hardDeleteError } = await supabase
-          .from('products')
-          .delete()
-          .eq('id', productId);
-
-        if (hardDeleteError) throw hardDeleteError;
-      }
+      if (deleteError) throw deleteError;
 
       // Ghi log thao tác
       await supabase.from('audit_logs').insert({
