@@ -83,6 +83,10 @@ export function usePointSettings() {
       return data as PointSettings | null;
     },
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 phút - setting ít thay đổi
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 
@@ -145,24 +149,27 @@ export function useMembershipTiers() {
     // Keyed by user to prevent cross-tenant cache leakage
     queryKey: ['membership-tiers', user?.id],
     queryFn: async () => {
-      // Lấy tenant_id của user hiện tại
-      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
-
-      // Lấy cả tier của tenant + tier mặc định (tenant_id IS NULL), rồi ưu tiên tenant nếu có
+      // Fetch all tiers - RLS sẽ filter theo tenant, nếu không có RLS thì fetch cả global
       const { data, error } = await supabase
         .from('membership_tier_settings')
         .select('*')
-        .or(`tenant_id.eq.${tenantId},tenant_id.is.null`)
         .order('min_spent', { ascending: true });
 
       if (error) throw error;
 
       const rows = (data || []) as (MembershipTierSettings & { tenant_id: string | null })[];
-      const tenantRows = rows.filter((r) => r.tenant_id === tenantId);
+      
+      // Ưu tiên tier có tenant_id (của tenant hiện tại do RLS), nếu không có thì dùng global
+      const tenantRows = rows.filter((r) => r.tenant_id !== null);
       if (tenantRows.length > 0) return tenantRows;
 
       return rows.filter((r) => r.tenant_id == null) as MembershipTierSettings[];
     },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 phút - tier setting ít thay đổi
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 
@@ -208,7 +215,7 @@ export function useCustomersWithPoints(filters?: {
     queryFn: async () => {
       let query = supabase
         .from('customers')
-        .select('*')
+        .select('id, name, phone, email, address, note, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (filters?.search) {
@@ -236,6 +243,11 @@ export function useCustomersWithPoints(filters?: {
       if (error) throw error;
       return data as CustomerWithPoints[];
     },
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 2, // 2 phút
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 

@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   detectTenantFromHostname, 
-  TenantInfo,
   getStoreIdFromSubdomain 
 } from '@/lib/tenantResolver';
 
@@ -17,17 +16,150 @@ export interface ResolvedTenant {
 // Cache tenant resolution to avoid repeated API calls
 let cachedResult: ResolvedTenant | null = null;
 let cacheHostname: string | null = null;
+let resolutionPromise: Promise<ResolvedTenant> | null = null;
+
+/**
+ * Resolve tenant - shared function that caches and deduplicates requests
+ */
+async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
+  // Return cached result immediately
+  if (cachedResult && cacheHostname === hostname) {
+    return cachedResult;
+  }
+  
+  // If already resolving, wait for that promise
+  if (resolutionPromise) {
+    return resolutionPromise;
+  }
+  
+  // Start resolution
+  resolutionPromise = (async () => {
+    const hostInfo = detectTenantFromHostname();
+    
+    // Main domain - no tenant resolution needed
+    if (hostInfo.isMainDomain && !hostInfo.subdomain) {
+      const result: ResolvedTenant = {
+        tenantId: null,
+        subdomain: null,
+        tenantName: null,
+        status: 'main_domain',
+        isMainDomain: true,
+      };
+      cachedResult = result;
+      cacheHostname = hostname;
+      return result;
+    }
+    
+    // Has subdomain - resolve tenant
+    if (hostInfo.subdomain) {
+      try {
+        const { data, error } = await supabase
+          .from('tenants')
+          .select('id, name, subdomain, status')
+          .eq('subdomain', hostInfo.subdomain)
+          .maybeSingle();
+        
+        if (error || !data || data.status === 'locked') {
+          const result: ResolvedTenant = {
+            tenantId: null,
+            subdomain: hostInfo.subdomain,
+            tenantName: data?.name || null,
+            status: 'not_found',
+            isMainDomain: false,
+          };
+          cachedResult = result;
+          cacheHostname = hostname;
+          return result;
+        }
+        
+        const result: ResolvedTenant = {
+          tenantId: data.id,
+          subdomain: data.subdomain,
+          tenantName: data.name,
+          status: 'resolved',
+          isMainDomain: false,
+        };
+        cachedResult = result;
+        cacheHostname = hostname;
+        return result;
+      } catch (err) {
+        console.error('Error resolving tenant:', err);
+        const result: ResolvedTenant = {
+          tenantId: null,
+          subdomain: hostInfo.subdomain,
+          tenantName: null,
+          status: 'not_found',
+          isMainDomain: false,
+        };
+        cachedResult = result;
+        cacheHostname = hostname;
+        return result;
+      }
+    }
+    
+    // Custom domain case - resolve via custom_domains table
+    try {
+      const { data, error } = await supabase
+        .from('custom_domains')
+        .select('tenant_id, tenants(id, name, subdomain, status)')
+        .eq('domain', hostInfo.hostname)
+        .eq('is_verified', true)
+        .maybeSingle();
+      
+      if (error || !data || !data.tenants) {
+        const result: ResolvedTenant = {
+          tenantId: null,
+          subdomain: null,
+          tenantName: null,
+          status: 'not_found',
+          isMainDomain: false,
+        };
+        cachedResult = result;
+        cacheHostname = hostname;
+        return result;
+      }
+      
+      const tenantData = data.tenants as any;
+      
+      const result: ResolvedTenant = {
+        tenantId: tenantData.id,
+        subdomain: tenantData.subdomain,
+        tenantName: tenantData.name,
+        status: 'resolved',
+        isMainDomain: false,
+      };
+      cachedResult = result;
+      cacheHostname = hostname;
+      return result;
+    } catch (err) {
+      console.error('Error resolving custom domain:', err);
+      const result: ResolvedTenant = {
+        tenantId: null,
+        subdomain: null,
+        tenantName: null,
+        status: 'not_found',
+        isMainDomain: false,
+      };
+      cachedResult = result;
+      cacheHostname = hostname;
+      return result;
+    }
+  })();
+  
+  const result = await resolutionPromise;
+  resolutionPromise = null;
+  return result;
+}
 
 /**
  * Hook to resolve tenant from current hostname/subdomain
  * Results are cached per hostname to avoid redundant API calls
  */
 export function useTenantResolver() {
-  // Check cache first
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   
   const [tenant, setTenant] = useState<ResolvedTenant>(() => {
-    // Return cached result if same hostname
+    // Return cached result if same hostname (sync check)
     if (cachedResult && cacheHostname === hostname) {
       return cachedResult;
     }
@@ -41,159 +173,25 @@ export function useTenantResolver() {
   });
 
   useEffect(() => {
-    // Skip if already cached for this hostname
-    if (cachedResult && cacheHostname === hostname && tenant.status !== 'loading') {
+    // Skip if already resolved and cached for this hostname
+    if (cachedResult && cacheHostname === hostname) {
+      if (tenant.status === 'loading') {
+        setTenant(cachedResult);
+      }
       return;
     }
 
-    const resolveTenant = async () => {
-      const hostInfo = detectTenantFromHostname();
-      
-      // Main domain - no tenant resolution needed
-      if (hostInfo.isMainDomain && !hostInfo.subdomain) {
-        const result: ResolvedTenant = {
-          tenantId: null,
-          subdomain: null,
-          tenantName: null,
-          status: 'main_domain',
-          isMainDomain: true,
-        };
-        cachedResult = result;
-        cacheHostname = hostname;
-        setTenant(result);
-        return;
-      }
-      
-      // Has subdomain - resolve tenant
-      if (hostInfo.subdomain) {
-        try {
-          const { data, error } = await supabase
-            .from('tenants')
-            .select('id, name, subdomain, status')
-            .eq('subdomain', hostInfo.subdomain)
-            .maybeSingle();
-          
-          if (error) {
-            console.error('Error resolving tenant:', error);
-            const result: ResolvedTenant = {
-              tenantId: null,
-              subdomain: hostInfo.subdomain,
-              tenantName: null,
-              status: 'not_found',
-              isMainDomain: false,
-            };
-            cachedResult = result;
-            cacheHostname = hostname;
-            setTenant(result);
-            return;
-          }
-          
-          if (!data) {
-            const result: ResolvedTenant = {
-              tenantId: null,
-              subdomain: hostInfo.subdomain,
-              tenantName: null,
-              status: 'not_found',
-              isMainDomain: false,
-            };
-            cachedResult = result;
-            cacheHostname = hostname;
-            setTenant(result);
-            return;
-          }
-          
-          // Check if tenant is accessible
-          if (data.status === 'locked') {
-            const result: ResolvedTenant = {
-              tenantId: null,
-              subdomain: hostInfo.subdomain,
-              tenantName: data.name,
-              status: 'not_found',
-              isMainDomain: false,
-            };
-            cachedResult = result;
-            cacheHostname = hostname;
-            setTenant(result);
-            return;
-          }
-          
-          const result: ResolvedTenant = {
-            tenantId: data.id,
-            subdomain: data.subdomain,
-            tenantName: data.name,
-            status: 'resolved',
-            isMainDomain: false,
-          };
-          cachedResult = result;
-          cacheHostname = hostname;
-          setTenant(result);
-        } catch (err) {
-          console.error('Error resolving tenant:', err);
-          const result: ResolvedTenant = {
-            tenantId: null,
-            subdomain: hostInfo.subdomain,
-            tenantName: null,
-            status: 'not_found',
-            isMainDomain: false,
-          };
-          cachedResult = result;
-          cacheHostname = hostname;
-          setTenant(result);
-        }
-        return;
-      }
-      
-      // Custom domain case - resolve via custom_domains table
-      try {
-        const { data, error } = await supabase
-          .from('custom_domains')
-          .select('tenant_id, tenants(id, name, subdomain, status)')
-          .eq('domain', hostInfo.hostname)
-          .eq('is_verified', true)
-          .maybeSingle();
-        
-        if (error || !data || !data.tenants) {
-          const result: ResolvedTenant = {
-            tenantId: null,
-            subdomain: null,
-            tenantName: null,
-            status: 'not_found',
-            isMainDomain: false,
-          };
-          cachedResult = result;
-          cacheHostname = hostname;
-          setTenant(result);
-          return;
-        }
-        
-        const tenantData = data.tenants as any;
-        
-        const result: ResolvedTenant = {
-          tenantId: tenantData.id,
-          subdomain: tenantData.subdomain,
-          tenantName: tenantData.name,
-          status: 'resolved',
-          isMainDomain: false,
-        };
-        cachedResult = result;
-        cacheHostname = hostname;
-        setTenant(result);
-      } catch (err) {
-        console.error('Error resolving custom domain:', err);
-        const result: ResolvedTenant = {
-          tenantId: null,
-          subdomain: null,
-          tenantName: null,
-          status: 'not_found',
-          isMainDomain: false,
-        };
-        cachedResult = result;
-        cacheHostname = hostname;
-        setTenant(result);
-      }
-    };
+    let cancelled = false;
     
-    resolveTenant();
+    resolveTenantOnce(hostname).then((result) => {
+      if (!cancelled) {
+        setTenant(result);
+      }
+    });
+    
+    return () => {
+      cancelled = true;
+    };
   }, [hostname, tenant.status]);
   
   return tenant;

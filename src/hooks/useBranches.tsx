@@ -28,13 +28,17 @@ export function useBranches() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('branches')
-        .select('*')
+        .select('id, name, address, phone, note, is_default, tenant_id, created_at, updated_at')
         .order('is_default', { ascending: false });
 
       if (error) throw error;
       return data as Branch[];
     },
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 phút - branches ít thay đổi
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 
@@ -46,7 +50,7 @@ export function useDefaultBranch() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('branches')
-        .select('*')
+        .select('id, name, address, phone, note, is_default, tenant_id, created_at, updated_at')
         .eq('is_default', true)
         .maybeSingle();
 
@@ -54,6 +58,10 @@ export function useDefaultBranch() {
       return data as Branch | null;
     },
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 
