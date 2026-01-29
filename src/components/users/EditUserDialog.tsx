@@ -39,6 +39,9 @@ interface UserWithRole {
     display_name: string;
     phone: string | null;
   } | null;
+  platform_user?: {
+    email: string | null;
+  } | null;
   branches: {
     name: string;
   } | null;
@@ -248,6 +251,15 @@ export function EditUserDialog({
                   placeholder="0901234567"
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Email hiện tại</Label>
+                <Input
+                  value={user?.platform_user?.email || 'Không có email'}
+                  disabled
+                  className="bg-muted"
                 />
               </div>
 
