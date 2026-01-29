@@ -123,7 +123,9 @@ export function DeleteProductDialog({
     deleteMutation.mutate();
   };
 
-  const isConfirmValid = confirmText.toLowerCase() === 'xóa';
+  // Accept both with and without Vietnamese accents for easier validation
+  const normalizedText = confirmText.trim().toLowerCase();
+  const isConfirmValid = normalizedText === 'xóa' || normalizedText === 'xoa';
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
