@@ -51,7 +51,7 @@ export function useProducts() {
           suppliers(name),
           branches(name)
         `)
-        .neq('status', 'deleted' as any) // Exclude deleted products
+        .in('status', ['in_stock', 'sold', 'returned'])
         .order('import_date', { ascending: false });
 
       // Apply branch filter for non-Super Admin users
