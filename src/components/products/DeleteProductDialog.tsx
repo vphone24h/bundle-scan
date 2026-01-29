@@ -63,10 +63,14 @@ export function DeleteProductDialog({
 
       if (fetchError) throw fetchError;
 
-      // Soft delete: cập nhật status sang 'deleted'
+      // Soft delete: cập nhật status sang 'deleted' và lưu lý do vào note
+      const deleteNote = `[ĐÃ XÓA] ${reason.trim()}`;
       const { error: deleteError } = await supabase
         .from('products')
-        .update({ status: 'deleted' as any })
+        .update({ 
+          status: 'deleted' as any,
+          note: deleteNote
+        })
         .eq('id', productId);
 
       if (deleteError) throw deleteError;
@@ -99,12 +103,11 @@ export function DeleteProductDialog({
     },
     onSuccess: async (data) => {
       // Invalidate với refetchType: 'all' để đảm bảo refetch ngay lập tức
-      await queryClient.invalidateQueries({ 
-        queryKey: ['inventory'],
-        refetchType: 'all'
-      });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['all-products'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['all-products'], refetchType: 'all' }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'], refetchType: 'all' }),
+      ]);
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
 
       toast({
