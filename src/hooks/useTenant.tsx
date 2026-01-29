@@ -130,6 +130,9 @@ export function useCurrentTenant() {
     gcTime: 10 * 60 * 1000, // 10 phút
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    refetchOnReconnect: false,
+    // Prevent flashing loaders when query temporarily refetches
+    placeholderData: (previous) => previous,
   });
 }
 

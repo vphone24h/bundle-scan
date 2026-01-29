@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 
 const Index = () => {
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: receipts, isLoading: receiptsLoading } = useImportReceipts();
   const userGuideUrl = useUserGuideUrl();
@@ -20,7 +20,8 @@ const Index = () => {
   const recentProducts = products?.slice(0, 5) || [];
   const recentReceipts = receipts?.slice(0, 3) || [];
 
-  if (statsLoading) {
+  // Only show full-screen loader on first load (no cached data yet)
+  if (statsLoading && !stats) {
     return (
       <MainLayout>
         <div className="min-h-screen flex items-center justify-center">
@@ -36,14 +37,22 @@ const Index = () => {
         title="Tổng quan kho hàng"
         description="Theo dõi tình trạng kho và hoạt động nhập hàng"
         actions={
-          userGuideUrl && (
-            <Button variant="secondary" size="sm" asChild>
-              <a href={userGuideUrl} target="_blank" rel="noopener noreferrer">
-                <BookOpen className="mr-2 h-4 w-4" />
-                Hướng dẫn sử dụng
-              </a>
-            </Button>
-          )
+          <div className="flex items-center gap-2">
+            {statsFetching && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                Đang cập nhật…
+              </div>
+            )}
+            {userGuideUrl && (
+              <Button variant="secondary" size="sm" asChild>
+                <a href={userGuideUrl} target="_blank" rel="noopener noreferrer">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Hướng dẫn sử dụng
+                </a>
+              </Button>
+            )}
+          </div>
         }
       />
 
