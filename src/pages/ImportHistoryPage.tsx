@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote } from 'lucide-react';
+import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
@@ -44,6 +44,8 @@ import type { Product } from '@/hooks/useProducts';
 import { EditImportReceiptDialog } from '@/components/import/EditImportReceiptDialog';
 import { ReturnImportReceiptDialog } from '@/components/import/ReturnImportReceiptDialog';
 import { EditProductDialog } from '@/components/import/EditProductDialog';
+import { DeleteProductDialog } from '@/components/products/DeleteProductDialog';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export default function ImportHistoryPage() {
   const navigate = useNavigate();
@@ -52,6 +54,7 @@ export default function ImportHistoryPage() {
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
   const { data: branches } = useBranches();
+  const { data: permissions } = usePermissions();
   
   // Search & filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -70,6 +73,7 @@ export default function ImportHistoryPage() {
   const [editReceipt, setEditReceipt] = useState<ImportReceipt | null>(null);
   const [returnReceipt, setReturnReceipt] = useState<ImportReceipt | null>(null);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
 
   // Calculate receipt return status
   const getReceiptReturnStatus = (receipt: ImportReceipt): 'completed' | 'cancelled' | 'full_return' => {
@@ -644,7 +648,7 @@ export default function ImportHistoryPage() {
                                 size="icon"
                                 onClick={() => setEditProduct(product)}
                                 className="h-7 w-7"
-                                title="Sửa IMEI"
+                                title="Sửa thông tin"
                               >
                                 <Pencil className="h-3 w-3" />
                               </Button>
@@ -657,6 +661,18 @@ export default function ImportHistoryPage() {
                                 <RotateCcw className="mr-1 h-3 w-3" />
                                 Trả
                               </Button>
+                              {/* Delete button - only for IMEI products and super_admin */}
+                              {product.imei && permissions?.canDeleteIMEIProducts && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => setDeleteProduct(product)}
+                                  className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  title="Xóa sản phẩm"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              )}
                             </>
                           )}
                           {product.status !== 'in_stock' && (
@@ -873,6 +889,18 @@ export default function ImportHistoryPage() {
         open={!!editProduct}
         onOpenChange={(open) => !open && setEditProduct(null)}
       />
+
+      {/* Delete Product Dialog - only for IMEI products */}
+      {deleteProduct && deleteProduct.imei && (
+        <DeleteProductDialog
+          open={!!deleteProduct}
+          onOpenChange={(open) => !open && setDeleteProduct(null)}
+          productId={deleteProduct.id}
+          productName={deleteProduct.name}
+          sku={deleteProduct.sku}
+          imei={deleteProduct.imei}
+        />
+      )}
     </MainLayout>
   );
 }
