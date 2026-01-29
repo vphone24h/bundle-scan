@@ -29,6 +29,7 @@ import {
   Megaphone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { prefetchRoute } from '@/lib/routePrefetch';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -208,6 +209,8 @@ export function AppSidebar() {
                       <Link
                         key={child.href}
                         to={child.href}
+                          onMouseEnter={() => prefetchRoute(child.href)}
+                          onTouchStart={() => prefetchRoute(child.href)}
                         onClick={() => setIsMobileOpen(false)}
                         className={cn(
                           'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors',
@@ -228,6 +231,8 @@ export function AppSidebar() {
             ) : (
               <Link
                 to={item.href}
+                  onMouseEnter={() => prefetchRoute(item.href)}
+                  onTouchStart={() => prefetchRoute(item.href)}
                 onClick={() => setIsMobileOpen(false)}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
