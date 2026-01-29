@@ -46,6 +46,7 @@ function mapProductForTable(product: Product) {
     status: product.status as 'in_stock' | 'sold' | 'returned',
     note: product.note || undefined,
     importReceiptId: product.import_receipt_id || undefined,
+    quantity: product.quantity || 1, // Default to 1 for IMEI products
   };
 }
 

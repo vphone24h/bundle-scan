@@ -27,6 +27,9 @@ export interface UserPermissions {
   canManageCustomers: boolean;
   canManageInvoiceTemplates: boolean;
   canManageCashBook: boolean;
+  // Quyền đặc biệt (chỉ Super Admin)
+  canAdjustProductQuantity: boolean;
+  canDeleteIMEIProducts: boolean;
 }
 
 const DEFAULT_PERMISSIONS: UserPermissions = {
@@ -50,6 +53,8 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
   canManageCustomers: false,
   canManageInvoiceTemplates: false,
   canManageCashBook: false,
+  canAdjustProductQuantity: false,
+  canDeleteIMEIProducts: false,
 };
 
 function getPermissionsForRole(role: UserRole, branchId: string | null): UserPermissions {
@@ -78,6 +83,8 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
         canManageCustomers: true,      // Quản lý khách hàng
         canManageInvoiceTemplates: true, // Mẫu hóa đơn
         canManageCashBook: true,       // Quản lý sổ quỹ
+        canAdjustProductQuantity: true, // ✅ Chỉ Super Admin được điều chỉnh số lượng
+        canDeleteIMEIProducts: true,    // ✅ Chỉ Super Admin được xóa sản phẩm IMEI
       };
 
     case 'branch_admin':
@@ -102,6 +109,8 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
         canManageCustomers: true,      // Quản lý khách hàng
         canManageInvoiceTemplates: true, // Mẫu hóa đơn
         canManageCashBook: true,       // Quản lý sổ quỹ chi nhánh
+        canAdjustProductQuantity: false, // ❌ Branch Admin không được điều chỉnh số lượng
+        canDeleteIMEIProducts: false,    // ❌ Branch Admin không được xóa sản phẩm IMEI
       };
 
     case 'cashier':
@@ -126,6 +135,8 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
         canManageCustomers: true,      // ✅ Thêm khách khi bán
         canManageInvoiceTemplates: false, // ❌ Không quản lý mẫu HĐ
         canManageCashBook: true,       // ✅ Thu chi tại quầy
+        canAdjustProductQuantity: false, // ❌
+        canDeleteIMEIProducts: false,    // ❌
       };
 
     case 'staff':
@@ -151,6 +162,8 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
         canManageCustomers: true,      // ✅ Thêm khách khi bán
         canManageInvoiceTemplates: false, // ❌ Không quản lý mẫu HĐ
         canManageCashBook: false,      // ❌ Không quản lý sổ quỹ
+        canAdjustProductQuantity: false, // ❌
+        canDeleteIMEIProducts: false,    // ❌
       };
   }
 }
