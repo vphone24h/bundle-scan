@@ -47,6 +47,7 @@ const queryClient = new QueryClient({
       staleTime: 1000 * 60 * 2, // 2 minutes - reduce refetches
       gcTime: 1000 * 60 * 10, // 10 minutes cache
       refetchOnWindowFocus: false, // Don't refetch on tab switch
+      refetchOnReconnect: false, // Don't refetch when browser/network reconnects (often triggered by tab/minimize)
       retry: 1, // Only 1 retry on failure
     },
   },
