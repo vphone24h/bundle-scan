@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useImportReceipts, useImportReceiptDetails, ImportReceipt } from '@/hooks/useImportReceipts';
-import { useProducts } from '@/hooks/useProducts';
+import { useAllProducts } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useBranches } from '@/hooks/useBranches';
@@ -50,7 +50,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 export default function ImportHistoryPage() {
   const navigate = useNavigate();
   const { data: receipts, isLoading: receiptsLoading } = useImportReceipts();
-  const { data: products, isLoading: productsLoading } = useProducts();
+  const { data: products, isLoading: productsLoading } = useAllProducts();
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
   const { data: branches } = useBranches();
@@ -429,6 +429,7 @@ export default function ImportHistoryPage() {
                         <SelectItem value="in_stock">Tồn kho</SelectItem>
                         <SelectItem value="sold">Đã bán</SelectItem>
                         <SelectItem value="returned">Đã trả NCC</SelectItem>
+                        <SelectItem value="deleted">Đã xóa</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -629,6 +630,8 @@ export default function ImportHistoryPage() {
                               ? 'status-in-stock'
                               : product.status === 'sold'
                               ? 'status-sold'
+                              : product.status === 'deleted'
+                              ? 'bg-destructive/10 text-destructive border-destructive/20'
                               : 'status-pending'
                           )}
                         >
@@ -636,6 +639,8 @@ export default function ImportHistoryPage() {
                             ? 'Tồn kho'
                             : product.status === 'sold'
                             ? 'Đã bán'
+                            : product.status === 'deleted'
+                            ? 'Đã xóa'
                             : 'Đã trả'}
                         </Badge>
                       </td>
@@ -798,13 +803,17 @@ export default function ImportHistoryPage() {
                                     ? 'border-success text-success'
                                     : item.products?.status === 'sold'
                                     ? 'border-primary text-primary'
-                                    : 'border-destructive text-destructive'
+                                    : item.products?.status === 'deleted'
+                                    ? 'border-destructive text-destructive bg-destructive/10'
+                                    : 'border-amber-500 text-amber-600'
                                 )}
                               >
                                 {item.products?.status === 'in_stock'
                                   ? 'Tồn kho'
                                   : item.products?.status === 'sold'
                                   ? 'Đã bán'
+                                  : item.products?.status === 'deleted'
+                                  ? 'Đã xóa'
                                   : 'Đã trả'}
                               </Badge>
                             </td>

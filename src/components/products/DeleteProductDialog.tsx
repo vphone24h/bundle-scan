@@ -63,10 +63,10 @@ export function DeleteProductDialog({
 
       if (fetchError) throw fetchError;
 
-      // Xóa sản phẩm (hard delete vì enum không có status 'deleted')
+      // Soft delete: cập nhật status sang 'deleted'
       const { error: deleteError } = await supabase
         .from('products')
-        .delete()
+        .update({ status: 'deleted' as any })
         .eq('id', productId);
 
       if (deleteError) throw deleteError;
@@ -99,6 +99,7 @@ export function DeleteProductDialog({
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['all-products'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
 
