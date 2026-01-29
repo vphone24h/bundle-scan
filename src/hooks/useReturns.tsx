@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useBranchFilter } from './useBranchFilter';
+import { useCurrentTenant } from './useTenant';
 
 // Types
 export interface ImportReturn {
@@ -73,10 +75,12 @@ export function useImportReturns(filters?: {
   branchId?: string;
   createdBy?: string;
 }) {
-  const { user } = useAuth();
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const { branchId: userBranchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+
   return useQuery({
-    // Keyed by user to prevent cross-tenant cache leakage
-    queryKey: ['import-returns', user?.id, filters],
+    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
+    queryKey: ['import-returns', tenant?.id, userBranchId, filters],
     queryFn: async () => {
       let query = supabase
         .from('import_returns')
@@ -96,18 +100,27 @@ export function useImportReturns(filters?: {
       if (filters?.supplierId) {
         query = query.eq('supplier_id', filters.supplierId);
       }
-      if (filters?.branchId) {
-        query = query.eq('branch_id', filters.branchId);
-      }
       if (filters?.createdBy) {
         query = query.eq('created_by', filters.createdBy);
+      }
+
+      // Priority: UI filter > user's assigned branch filter
+      if (filters?.branchId) {
+        // If user is trying to filter a branch they don't have access to, return empty
+        if (shouldFilter && userBranchId && filters.branchId !== userBranchId) {
+          return [] as ImportReturn[];
+        }
+        query = query.eq('branch_id', filters.branchId);
+      } else if (shouldFilter && userBranchId) {
+        // Apply user's branch filter
+        query = query.eq('branch_id', userBranchId);
       }
 
       const { data, error } = await query;
       if (error) throw error;
       return data as ImportReturn[];
     },
-    enabled: !!user?.id,
+    enabled: !isTenantLoading && !branchLoading,
   });
 }
 
@@ -119,10 +132,12 @@ export function useExportReturns(filters?: {
   feeType?: 'none' | 'percentage' | 'fixed_amount';
   createdBy?: string;
 }) {
-  const { user } = useAuth();
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const { branchId: userBranchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+
   return useQuery({
-    // Keyed by user to prevent cross-tenant cache leakage
-    queryKey: ['export-returns', user?.id, filters],
+    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
+    queryKey: ['export-returns', tenant?.id, userBranchId, filters],
     queryFn: async () => {
       let query = supabase
         .from('export_returns')
@@ -142,9 +157,6 @@ export function useExportReturns(filters?: {
       if (filters?.customerId) {
         query = query.eq('customer_id', filters.customerId);
       }
-      if (filters?.branchId) {
-        query = query.eq('branch_id', filters.branchId);
-      }
       if (filters?.feeType) {
         query = query.eq('fee_type', filters.feeType);
       }
@@ -152,11 +164,23 @@ export function useExportReturns(filters?: {
         query = query.eq('created_by', filters.createdBy);
       }
 
+      // Priority: UI filter > user's assigned branch filter
+      if (filters?.branchId) {
+        // If user is trying to filter a branch they don't have access to, return empty
+        if (shouldFilter && userBranchId && filters.branchId !== userBranchId) {
+          return [] as ExportReturn[];
+        }
+        query = query.eq('branch_id', filters.branchId);
+      } else if (shouldFilter && userBranchId) {
+        // Apply user's branch filter
+        query = query.eq('branch_id', userBranchId);
+      }
+
       const { data, error } = await query;
       if (error) throw error;
       return data as ExportReturn[];
     },
-    enabled: !!user?.id,
+    enabled: !isTenantLoading && !branchLoading,
   });
 }
 
