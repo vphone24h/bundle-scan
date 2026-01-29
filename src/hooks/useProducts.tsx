@@ -79,7 +79,22 @@ export function useAllProducts() {
       let query = supabase
         .from('products')
         .select(`
-          *,
+          id,
+          name,
+          sku,
+          imei,
+          category_id,
+          import_price,
+          import_date,
+          supplier_id,
+          branch_id,
+          import_receipt_id,
+          status,
+          note,
+          quantity,
+          total_import_cost,
+          created_at,
+          updated_at,
           categories(name),
           suppliers(name),
           branches(name)
