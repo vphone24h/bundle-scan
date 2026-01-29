@@ -398,6 +398,7 @@ export function useCreateImportReceipt() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['all-products'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
