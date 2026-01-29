@@ -109,16 +109,48 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Also update email in platform_users table for display purposes
+      // Also update/insert email in platform_users table for display purposes
       if (email) {
-        const { error: platformUserError } = await supabaseAdmin
+        // First check if platform_users record exists
+        const { data: existingPlatformUser } = await supabaseAdmin
           .from('platform_users')
-          .update({ email: email })
+          .select('id')
           .eq('user_id', userId)
+          .maybeSingle()
 
-        if (platformUserError) {
-          console.error('Platform user email update error:', platformUserError)
-          // Not critical, continue
+        if (existingPlatformUser) {
+          // Update existing record
+          const { error: platformUserError } = await supabaseAdmin
+            .from('platform_users')
+            .update({ email: email })
+            .eq('user_id', userId)
+
+          if (platformUserError) {
+            console.error('Platform user email update error:', platformUserError)
+          }
+        } else {
+          // Get tenant_id from caller's platform_users record
+          const { data: callerPlatformUser } = await supabaseAdmin
+            .from('platform_users')
+            .select('tenant_id')
+            .eq('user_id', caller.id)
+            .single()
+
+          if (callerPlatformUser) {
+            // Create new platform_users record for this user
+            const { error: insertError } = await supabaseAdmin
+              .from('platform_users')
+              .insert({
+                user_id: userId,
+                email: email,
+                tenant_id: callerPlatformUser.tenant_id,
+                is_active: true,
+              })
+
+            if (insertError) {
+              console.error('Platform user insert error:', insertError)
+            }
+          }
         }
       }
     }
