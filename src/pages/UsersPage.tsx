@@ -78,7 +78,8 @@ export default function UsersPage() {
           created_at,
           branches(name)
         `)
-        .eq('tenant_id', currentTenant.id)
+        // Support legacy rows where tenant_id was not set yet
+        .or(`tenant_id.eq.${currentTenant.id},tenant_id.is.null`)
         .order('created_at', { ascending: false });
 
       if (permissions?.role === 'branch_admin' && permissions.branchId) {

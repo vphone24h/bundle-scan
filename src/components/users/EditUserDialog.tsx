@@ -91,19 +91,42 @@ export function EditUserDialog({
 
   const updateUserRole = useMutation({
     mutationFn: async ({ userId, role, branchId }: { userId: string; role: UserRole; branchId: string | null }) => {
-      let query = supabase
-        .from('user_roles')
-        .update({ 
-          user_role: role, 
-          branch_id: role === 'super_admin' ? null : branchId 
-        })
-        .eq('user_id', userId);
+      const updates = {
+        user_role: role,
+        branch_id: role === 'super_admin' ? null : branchId,
+      } as Record<string, unknown>;
 
+      // 1) Prefer updating the row in the current tenant
       if (tenantId) {
-        query = query.eq('tenant_id', tenantId);
+        const { data: updatedRows, error } = await supabase
+          .from('user_roles')
+          .update(updates)
+          .eq('user_id', userId)
+          .eq('tenant_id', tenantId)
+          .select('id');
+
+        if (error) throw error;
+
+        // 2) If nothing was updated, this is likely a legacy row with tenant_id = NULL.
+        //    Update it and also attach tenant_id so it won't "revert" on reload.
+        if (!updatedRows || updatedRows.length === 0) {
+          const { error: legacyError } = await supabase
+            .from('user_roles')
+            .update({ ...updates, tenant_id: tenantId })
+            .eq('user_id', userId)
+            .is('tenant_id', null);
+
+          if (legacyError) throw legacyError;
+        }
+
+        return;
       }
 
-      const { error } = await query;
+      // Fallback (should be rare): no tenantId available
+      const { error } = await supabase
+        .from('user_roles')
+        .update(updates)
+        .eq('user_id', userId);
 
       if (error) throw error;
     },
