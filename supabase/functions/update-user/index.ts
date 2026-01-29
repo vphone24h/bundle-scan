@@ -136,14 +136,28 @@ Deno.serve(async (req) => {
             .eq('user_id', caller.id)
             .single()
 
+          // Fetch existing profile to satisfy NOT NULL display_name constraint on platform_users
+          const { data: targetProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('display_name, phone')
+            .eq('user_id', userId)
+            .maybeSingle()
+
           if (callerPlatformUser) {
-            // Create new platform_users record for this user
+            const resolvedDisplayName =
+              (displayName?.trim() || '') ||
+              (targetProfile?.display_name?.trim() || '') ||
+              email
+
+            // Create new platform_users record for this user (display_name is required)
             const { error: insertError } = await supabaseAdmin
               .from('platform_users')
               .insert({
                 user_id: userId,
                 email: email,
                 tenant_id: callerPlatformUser.tenant_id,
+                display_name: resolvedDisplayName,
+                phone: phone !== undefined ? phone : (targetProfile?.phone ?? null),
                 is_active: true,
               })
 
