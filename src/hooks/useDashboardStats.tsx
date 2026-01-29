@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
+import { useBranchFilter } from './useBranchFilter';
 
 export interface DashboardStats {
   totalProducts: number;
@@ -16,10 +17,11 @@ export interface DashboardStats {
 export function useDashboardStats() {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
+  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   return useQuery({
-    // Keyed by tenant to prevent cross-tenant cache leakage
-    queryKey: ['dashboard-stats', tenant?.id, isDataHidden],
+    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
+    queryKey: ['dashboard-stats', tenant?.id, branchId, isDataHidden],
     queryFn: async () => {
       // If data is hidden, return empty stats
       if (isDataHidden) {
@@ -34,43 +36,63 @@ export function useDashboardStats() {
           recentImports: 0,
         } as DashboardStats;
       }
+
       // Get products stats - lấy thêm total_import_cost, name, sku, branch_id để tính đúng như Tồn kho
-      const { data: products, error: productsError } = await supabase
+      let productsQuery = supabase
         .from('products')
         .select('status, import_price, quantity, imei, total_import_cost, name, sku, branch_id');
 
+      // Apply branch filter for non-Super Admin users
+      if (shouldFilter && branchId) {
+        productsQuery = productsQuery.eq('branch_id', branchId);
+      }
+
+      const { data: products, error: productsError } = await productsQuery;
+
       if (productsError) throw productsError;
 
-      // Get suppliers count
+      // Get suppliers count (no branch filter - global data)
       const { count: suppliersCount, error: suppliersError } = await supabase
         .from('suppliers')
         .select('*', { count: 'exact', head: true });
 
       if (suppliersError) throw suppliersError;
 
-      // Get categories count
+      // Get categories count (no branch filter - global data)
       const { count: categoriesCount, error: categoriesError } = await supabase
         .from('categories')
         .select('*', { count: 'exact', head: true });
 
       if (categoriesError) throw categoriesError;
 
-      // Get pending debt
-      const { data: receipts, error: receiptsError } = await supabase
+      // Get pending debt with branch filter
+      let receiptsQuery = supabase
         .from('import_receipts')
         .select('debt_amount')
         .eq('status', 'completed');
 
+      if (shouldFilter && branchId) {
+        receiptsQuery = receiptsQuery.eq('branch_id', branchId);
+      }
+
+      const { data: receipts, error: receiptsError } = await receiptsQuery;
+
       if (receiptsError) throw receiptsError;
 
-      // Get recent imports (last 7 days)
+      // Get recent imports (last 7 days) with branch filter
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       
-      const { count: recentCount, error: recentError } = await supabase
+      let recentQuery = supabase
         .from('import_receipts')
         .select('*', { count: 'exact', head: true })
         .gte('import_date', sevenDaysAgo.toISOString());
+
+      if (shouldFilter && branchId) {
+        recentQuery = recentQuery.eq('branch_id', branchId);
+      }
+
+      const { count: recentCount, error: recentError } = await recentQuery;
 
       if (recentError) throw recentError;
 
@@ -149,8 +171,8 @@ export function useDashboardStats() {
 
       return stats;
     },
-    // Chờ tenant data sẵn sàng
-    enabled: !isTenantLoading,
+    // Chờ tenant data và branch filter sẵn sàng
+    enabled: !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,
   });
 }

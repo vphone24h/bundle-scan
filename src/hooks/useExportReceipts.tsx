@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
+import { useBranchFilter } from './useBranchFilter';
 
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
@@ -79,15 +80,16 @@ export interface ExportReceiptItemDetail {
 export function useExportReceipts() {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
+  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   return useQuery({
-    // Keyed by tenant to prevent cross-tenant cache leakage
-    queryKey: ['export-receipts', tenant?.id, isDataHidden],
+    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
+    queryKey: ['export-receipts', tenant?.id, branchId, isDataHidden],
     queryFn: async () => {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as ExportReceipt[];
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('export_receipts')
         .select(`
           *,
@@ -98,10 +100,17 @@ export function useExportReceipts() {
         `)
         .order('export_date', { ascending: false });
 
+      // Apply branch filter for non-Super Admin users
+      if (shouldFilter && branchId) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
       return data as ExportReceipt[];
     },
-    enabled: !isTenantLoading,
+    enabled: !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,
   });
 }
@@ -109,15 +118,27 @@ export function useExportReceipts() {
 export function useExportReceiptItems() {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
+  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   return useQuery({
-    // Keyed by tenant to prevent cross-tenant cache leakage
-    queryKey: ['export-receipt-items', tenant?.id, isDataHidden],
+    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
+    queryKey: ['export-receipt-items', tenant?.id, branchId, isDataHidden],
     queryFn: async () => {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as ExportReceiptItemDetail[];
 
-      const { data, error } = await supabase
+      // For branch filtering, we need to filter via export_receipts
+      // First get export_receipt_ids for the branch
+      let receiptIds: string[] | null = null;
+      if (shouldFilter && branchId) {
+        const { data: receipts } = await supabase
+          .from('export_receipts')
+          .select('id')
+          .eq('branch_id', branchId);
+        receiptIds = receipts?.map(r => r.id) || [];
+      }
+
+      let query = supabase
         .from('export_receipt_items')
         .select(`
           *,
@@ -134,10 +155,20 @@ export function useExportReceiptItems() {
         `)
         .order('created_at', { ascending: false });
 
+      // Apply branch filter via receipt_id
+      if (receiptIds !== null) {
+        if (receiptIds.length === 0) {
+          return [] as ExportReceiptItemDetail[];
+        }
+        query = query.in('receipt_id', receiptIds);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
       return data as ExportReceiptItemDetail[];
     },
-    enabled: !isTenantLoading,
+    enabled: !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,
   });
 }

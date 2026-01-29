@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
+import { useBranchFilter } from './useBranchFilter';
 
 type ProductStatus = Database['public']['Enums']['product_status'];
 
@@ -36,11 +37,13 @@ export interface Product {
 
 export function useProducts() {
   const { user } = useAuth();
+  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+
   return useQuery({
-    // Keyed by user to prevent cross-tenant cache leakage when switching accounts/stores
-    queryKey: ['products', user?.id],
+    // Keyed by user AND branch to prevent cross-tenant/branch cache leakage
+    queryKey: ['products', user?.id, branchId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
         .select(`
           *,
@@ -50,10 +53,17 @@ export function useProducts() {
         `)
         .order('import_date', { ascending: false });
 
+      // Apply branch filter for non-Super Admin users
+      if (shouldFilter && branchId) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
       return data as Product[];
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !branchLoading,
   });
 }
 

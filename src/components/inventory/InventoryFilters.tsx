@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Search, Filter, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useCategories } from '@/hooks/useCategories';
-import { useBranches } from '@/hooks/useBranches';
+import { useAccessibleBranches, usePermissions } from '@/hooks/usePermissions';
 
 export interface InventoryFilters {
   search: string;
@@ -29,8 +29,12 @@ interface InventoryFiltersProps {
 
 export function InventoryFiltersComponent({ filters, onFiltersChange }: InventoryFiltersProps) {
   const { data: categories } = useCategories();
-  const { data: branches } = useBranches();
+  const { data: branches } = useAccessibleBranches();
+  const { data: permissions } = usePermissions();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Chỉ Super Admin mới thấy bộ lọc chi nhánh
+  const canFilterBranch = permissions?.canViewAllBranches;
 
   const handleSearchChange = (value: string) => {
     onFiltersChange({ ...filters, search: value });
@@ -131,23 +135,25 @@ export function InventoryFiltersComponent({ filters, onFiltersChange }: Inventor
             </Select>
           </div>
 
-          {/* Branch */}
-          <div>
-            <label className="mb-2 block text-sm font-medium">Chi nhánh</label>
-            <Select value={filters.branchId || '_all_'} onValueChange={handleBranchChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Tất cả chi nhánh" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                <SelectItem value="_all_">Tất cả chi nhánh</SelectItem>
-                {branches?.map((branch) => (
-                  <SelectItem key={branch.id} value={branch.id}>
-                    {branch.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Branch - Chỉ hiện cho Super Admin */}
+          {canFilterBranch && (
+            <div>
+              <label className="mb-2 block text-sm font-medium">Chi nhánh</label>
+              <Select value={filters.branchId || '_all_'} onValueChange={handleBranchChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tất cả chi nhánh" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="_all_">Tất cả chi nhánh</SelectItem>
+                  {branches?.map((branch) => (
+                    <SelectItem key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Product Type */}
           <div>

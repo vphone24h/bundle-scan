@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { useCurrentTenant } from './useTenant';
+import { useBranchFilter } from './useBranchFilter';
 
 type CashBookType = Database['public']['Enums']['cash_book_type'];
 
@@ -47,10 +48,11 @@ export function useCashBook(filters?: {
 }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
+  const { branchId: userBranchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   return useQuery({
-    // Keyed by tenant to prevent cross-tenant cache leakage
-    queryKey: ['cash-book', tenant?.id, filters, isDataHidden],
+    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
+    queryKey: ['cash-book', tenant?.id, userBranchId, filters, isDataHidden],
     queryFn: async () => {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as CashBookEntry[];
@@ -69,15 +71,24 @@ export function useCashBook(filters?: {
       if (filters?.type) {
         query = query.eq('type', filters.type);
       }
+
+      // Priority: UI filter > user's assigned branch filter
       if (filters?.branchId) {
+        // If user is trying to filter a branch they don't have access to, return empty
+        if (shouldFilter && userBranchId && filters.branchId !== userBranchId) {
+          return [] as CashBookEntry[];
+        }
         query = query.eq('branch_id', filters.branchId);
+      } else if (shouldFilter && userBranchId) {
+        // Apply user's branch filter
+        query = query.eq('branch_id', userBranchId);
       }
 
       const { data, error } = await query;
       if (error) throw error;
       return data as CashBookEntry[];
     },
-    enabled: !isTenantLoading && !!tenant?.id,
+    enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
     refetchOnWindowFocus: false,
   });
 }

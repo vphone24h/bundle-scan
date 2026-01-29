@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useMemo } from 'react';
 import { useCurrentTenant } from './useTenant';
+import { useBranchFilter } from './useBranchFilter';
 
 export interface InventoryItem {
   productId: string;
@@ -174,17 +175,18 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
 export function useInventory() {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
+  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   return useQuery({
-    // Keyed by tenant to prevent cross-tenant cache leakage
-    queryKey: ['inventory', tenant?.id, isDataHidden],
+    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
+    queryKey: ['inventory', tenant?.id, branchId, isDataHidden],
     queryFn: async () => {
       // If data is hidden, return empty array
       if (isDataHidden) {
         return [] as InventoryItem[];
       }
 
-      const { data: products, error } = await supabase
+      let query = supabase
         .from('products')
         .select(`
           id, name, sku, imei, import_price, import_date, 
@@ -196,13 +198,20 @@ export function useInventory() {
         `)
         .order('name', { ascending: true });
 
+      // Apply branch filter for non-Super Admin users
+      if (shouldFilter && branchId) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      const { data: products, error } = await query;
+
       if (error) throw error;
       return processProductsToInventory(products || []);
     },
     staleTime: 30000,
     gcTime: 5 * 60 * 1000,
-    // Chờ tenant data sẵn sàng trước khi fetch
-    enabled: !isTenantLoading,
+    // Chờ tenant data và branch filter sẵn sàng trước khi fetch
+    enabled: !isTenantLoading && !branchLoading,
     // Không refetch khi focus window để tránh reset trạng thái
     refetchOnWindowFocus: false,
   });
