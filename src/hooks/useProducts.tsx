@@ -68,6 +68,38 @@ export function useProducts() {
   });
 }
 
+// Hook to get ALL products including deleted (for Import History page)
+export function useAllProducts() {
+  const { user } = useAuth();
+  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+
+  return useQuery({
+    queryKey: ['all-products', user?.id, branchId],
+    queryFn: async () => {
+      let query = supabase
+        .from('products')
+        .select(`
+          *,
+          categories(name),
+          suppliers(name),
+          branches(name)
+        `)
+        .order('import_date', { ascending: false });
+
+      // Apply branch filter for non-Super Admin users
+      if (shouldFilter && branchId) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return data as Product[];
+    },
+    enabled: !!user?.id && !branchLoading,
+  });
+}
+
 export function useCreateProduct() {
   const queryClient = useQueryClient();
 

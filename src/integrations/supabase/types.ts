@@ -3130,7 +3130,7 @@ export type Database = {
       platform_role: "platform_admin" | "tenant_admin"
       point_status: "active" | "pending" | "expired"
       point_transaction_type: "earn" | "redeem" | "refund" | "adjust" | "expire"
-      product_status: "in_stock" | "sold" | "returned"
+      product_status: "in_stock" | "sold" | "returned" | "deleted"
       receipt_status: "completed" | "cancelled"
       return_fee_type: "none" | "percentage" | "fixed_amount"
       return_type: "import_return" | "export_return"
@@ -3290,7 +3290,7 @@ export const Constants = {
       platform_role: ["platform_admin", "tenant_admin"],
       point_status: ["active", "pending", "expired"],
       point_transaction_type: ["earn", "redeem", "refund", "adjust", "expire"],
-      product_status: ["in_stock", "sold", "returned"],
+      product_status: ["in_stock", "sold", "returned", "deleted"],
       receipt_status: ["completed", "cancelled"],
       return_fee_type: ["none", "percentage", "fixed_amount"],
       return_type: ["import_return", "export_return"],
