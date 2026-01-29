@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { useCurrentTenant } from './useTenant';
+import { useBranchFilter } from './useBranchFilter';
 
 type ReceiptStatus = Database['public']['Enums']['receipt_status'];
 type PaymentType = Database['public']['Enums']['payment_type'];
@@ -43,15 +44,16 @@ export interface ReceiptPayment {
 export function useImportReceipts() {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
+  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   return useQuery({
-    // Keyed by tenant to prevent cross-tenant cache leakage
-    queryKey: ['import-receipts', tenant?.id, isDataHidden],
+    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
+    queryKey: ['import-receipts', tenant?.id, branchId, isDataHidden],
     queryFn: async () => {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as ImportReceipt[];
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('import_receipts')
         .select(`
           *,
@@ -60,10 +62,17 @@ export function useImportReceipts() {
         `)
         .order('import_date', { ascending: false });
 
+      // Apply branch filter for non-Super Admin users
+      if (shouldFilter && branchId) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
       return data as ImportReceipt[];
     },
-    enabled: !isTenantLoading,
+    enabled: !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,
   });
 }

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
+import { useBranchFilter } from './useBranchFilter';
 
 export interface ReportStats {
   totalSalesRevenue: number; // Tổng doanh thu bán hàng
@@ -42,10 +43,14 @@ export function useReportStats(filters?: {
 }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
+  const { branchId: userBranchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+
+  // Determine effective branch filter
+  const effectiveBranchId = filters?.branchId || (shouldFilter ? userBranchId : undefined);
 
   return useQuery({
-    // Keyed by tenant to prevent cross-tenant cache leakage
-    queryKey: ['report-stats', tenant?.id, filters, isDataHidden],
+    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
+    queryKey: ['report-stats', tenant?.id, effectiveBranchId, filters, isDataHidden],
     queryFn: async () => {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) {
@@ -95,8 +100,9 @@ export function useReportStats(filters?: {
         .gte('export_date', startDate)
         .lte('export_date', endDate + 'T23:59:59');
 
-      if (filters?.branchId) {
-        exportQuery = exportQuery.eq('branch_id', filters.branchId);
+      // Apply branch filter (priority: UI filter > user's assigned branch)
+      if (effectiveBranchId) {
+        exportQuery = exportQuery.eq('branch_id', effectiveBranchId);
       }
 
       const { data: exportReceipts, error: exportError } = await exportQuery;
@@ -118,8 +124,8 @@ export function useReportStats(filters?: {
         .gte('return_date', startDate)
         .lte('return_date', endDate + 'T23:59:59');
 
-      if (filters?.branchId) {
-        returnQuery = returnQuery.eq('branch_id', filters.branchId);
+      if (effectiveBranchId) {
+        returnQuery = returnQuery.eq('branch_id', effectiveBranchId);
       }
 
       const { data: returnItems, error: returnError } = await returnQuery;
@@ -154,8 +160,8 @@ export function useReportStats(filters?: {
         .gte('transaction_date', startDate)
         .lte('transaction_date', endDate + 'T23:59:59');
 
-      if (filters?.branchId) {
-        cashBookQuery = cashBookQuery.eq('branch_id', filters.branchId);
+      if (effectiveBranchId) {
+        cashBookQuery = cashBookQuery.eq('branch_id', effectiveBranchId);
       }
 
       const { data: cashBookEntries, error: cashBookError } = await cashBookQuery;
@@ -263,7 +269,7 @@ export function useReportStats(filters?: {
         profitByCategory,
       } as ReportStats;
     },
-    enabled: !isTenantLoading && !!tenant?.id,
+    enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
     refetchOnWindowFocus: false,
   });
 }
@@ -277,10 +283,14 @@ export function useReportChartData(filters?: {
 }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
+  const { branchId: userBranchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+
+  // Determine effective branch filter
+  const effectiveBranchId = filters?.branchId || (shouldFilter ? userBranchId : undefined);
 
   return useQuery({
-    // Keyed by tenant to prevent cross-tenant cache leakage
-    queryKey: ['report-chart-data', tenant?.id, filters, isDataHidden],
+    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
+    queryKey: ['report-chart-data', tenant?.id, effectiveBranchId, filters, isDataHidden],
     queryFn: async () => {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as { date: string; revenue: number; profit: number; count: number }[];
@@ -301,8 +311,8 @@ export function useReportChartData(filters?: {
         .lte('export_date', endDate + 'T23:59:59')
         .neq('status', 'cancelled');
 
-      if (filters?.branchId) {
-        query = query.eq('branch_id', filters.branchId);
+      if (effectiveBranchId) {
+        query = query.eq('branch_id', effectiveBranchId);
       }
 
       const { data: receipts, error } = await query;
@@ -316,8 +326,8 @@ export function useReportChartData(filters?: {
         .gte('return_date', startDate)
         .lte('return_date', endDate + 'T23:59:59');
 
-      if (filters?.branchId) {
-        returnQuery = returnQuery.eq('branch_id', filters.branchId);
+      if (effectiveBranchId) {
+        returnQuery = returnQuery.eq('branch_id', effectiveBranchId);
       }
 
       const { data: returnItems, error: returnError } = await returnQuery;
@@ -395,7 +405,7 @@ export function useReportChartData(filters?: {
 
       return Object.values(dataMap).sort((a, b) => a.date.localeCompare(b.date));
     },
-    enabled: !isTenantLoading && !!tenant?.id,
+    enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
     refetchOnWindowFocus: false,
   });
 }
