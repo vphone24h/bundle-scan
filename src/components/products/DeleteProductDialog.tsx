@@ -123,9 +123,15 @@ export function DeleteProductDialog({
     deleteMutation.mutate();
   };
 
-  // Accept both with and without Vietnamese accents for easier validation
-  const normalizedText = confirmText.trim().toLowerCase();
-  const isConfirmValid = normalizedText === 'xóa' || normalizedText === 'xoa';
+  // Robust confirmation check: accept various Unicode/IME variants of "XÓA"
+  // (e.g. composed/decomposed accents, different keyboard input methods)
+  const normalizedConfirm = confirmText
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    // Remove all diacritics marks
+    .replace(/\p{Diacritic}/gu, '');
+  const isConfirmValid = normalizedConfirm === 'xoa';
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
