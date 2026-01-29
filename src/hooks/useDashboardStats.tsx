@@ -174,5 +174,9 @@ export function useDashboardStats() {
     // Chờ tenant data và branch filter sẵn sàng
     enabled: !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+    // Keep previous stats to avoid blank screen + spinner during transient refetches
+    placeholderData: (previous) => previous,
   });
 }
