@@ -196,6 +196,8 @@ export function useInventory() {
           suppliers(name),
           branches(name)
         `)
+        // Chỉ lấy sản phẩm chưa bị xóa
+        .in('status', ['in_stock', 'sold', 'returned'])
         .order('name', { ascending: true });
 
       // Apply branch filter for non-Super Admin users
