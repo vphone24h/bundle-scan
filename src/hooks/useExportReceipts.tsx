@@ -504,6 +504,8 @@ export function useCreateExportReceipt() {
       queryClient.invalidateQueries({ queryKey: ['export-receipts'] });
       queryClient.invalidateQueries({ queryKey: ['export-receipt-items'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['all-products'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
