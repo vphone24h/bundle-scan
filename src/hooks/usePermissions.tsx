@@ -163,11 +163,30 @@ export function usePermissions() {
     queryFn: async () => {
       if (!user?.id) return DEFAULT_PERMISSIONS;
 
-      const { data, error } = await supabase
+      // Resolve tenant first, then pick the correct user_roles row for that tenant.
+      // Without tenant_id filtering, `.single()` can return the wrong branch after reload.
+      const { data: platformUser, error: puError } = await supabase
+        .from('platform_users')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (puError) {
+        console.error('Error fetching platform user:', puError);
+        return DEFAULT_PERMISSIONS;
+      }
+
+      const tenantId = platformUser?.tenant_id;
+      let rolesQuery = supabase
         .from('user_roles')
         .select('user_role, branch_id')
-        .eq('user_id', user.id)
-        .single();
+        .eq('user_id', user.id);
+
+      if (tenantId) {
+        rolesQuery = rolesQuery.eq('tenant_id', tenantId);
+      }
+
+      const { data, error } = await rolesQuery.maybeSingle();
 
       if (error || !data) {
         console.error('Error fetching permissions:', error);
@@ -176,7 +195,6 @@ export function usePermissions() {
 
       const role = (data.user_role as UserRole) || 'staff';
       const branchId = data.branch_id as string | null;
-
       return getPermissionsForRole(role, branchId);
     },
     enabled: !!user?.id,

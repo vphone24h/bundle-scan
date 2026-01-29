@@ -20,6 +20,7 @@ import { usePermissions, UserRole } from '@/hooks/usePermissions';
 import { EditUserDialog } from '@/components/users/EditUserDialog';
 import { CreateUserDialog } from '@/components/users/CreateUserDialog';
 import { DataManagementSection } from '@/components/admin/DataManagementSection';
+import { useCurrentTenant } from '@/hooks/useTenant';
 
 interface UserWithRole {
   id: string;
@@ -56,13 +57,16 @@ const roleColors: Record<UserRole, string> = {
 export default function UsersPage() {
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
+  const { data: currentTenant } = useCurrentTenant();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
 
   const { data: users, isLoading } = useQuery({
-    queryKey: ['users-with-roles', permissions?.role, permissions?.branchId],
+    queryKey: ['users-with-roles', currentTenant?.id, permissions?.role, permissions?.branchId],
     queryFn: async () => {
+      if (!currentTenant?.id) return [];
+
       let query = supabase
         .from('user_roles')
         .select(`
@@ -70,9 +74,11 @@ export default function UsersPage() {
           user_id,
           user_role,
           branch_id,
+          tenant_id,
           created_at,
           branches(name)
         `)
+        .eq('tenant_id', currentTenant.id)
         .order('created_at', { ascending: false });
 
       if (permissions?.role === 'branch_admin' && permissions.branchId) {
@@ -98,6 +104,7 @@ export default function UsersPage() {
       const { data: platformUsersData, error: platformUsersError } = await supabase
         .from('platform_users')
         .select('user_id, email')
+        .eq('tenant_id', currentTenant.id)
         .in('user_id', userIds);
 
       if (platformUsersError) throw platformUsersError;
@@ -111,7 +118,7 @@ export default function UsersPage() {
         platform_user: platformUsersMap.get(role.user_id) || null,
       })) as unknown as UserWithRole[];
     },
-    enabled: !!permissions,
+    enabled: !!permissions && !!currentTenant?.id,
   });
 
   const handleEdit = (user: UserWithRole) => {
@@ -281,6 +288,7 @@ export default function UsersPage() {
         user={selectedUser}
         branches={branches}
         isSuperAdmin={isSuperAdmin}
+        tenantId={currentTenant?.id || null}
       />
 
       <CreateUserDialog
