@@ -28,9 +28,12 @@ export interface Product {
   importDate: Date;
   supplierId: string;
   supplierName?: string;
+  branchId?: string;
+  branchName?: string;
   status: 'in_stock' | 'sold' | 'returned';
   note?: string;
   importReceiptId?: string;
+  quantity?: number; // For non-IMEI products
 }
 
 export interface ImportReceiptItem {
