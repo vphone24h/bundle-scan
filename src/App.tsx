@@ -2,7 +2,7 @@ import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, keepPreviousData } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -48,6 +48,9 @@ const queryClient = new QueryClient({
       gcTime: 1000 * 60 * 10, // 10 minutes cache
       refetchOnWindowFocus: false, // Don't refetch on tab switch
       refetchOnReconnect: false, // Don't refetch when browser/network reconnects (often triggered by tab/minimize)
+      refetchOnMount: false, // Don't refetch just because component remounts
+      // Keep previous data while refetching so pages don't flash blank + spinner
+      placeholderData: keepPreviousData,
       retry: 1, // Only 1 retry on failure
     },
   },
