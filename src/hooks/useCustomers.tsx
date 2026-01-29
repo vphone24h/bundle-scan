@@ -28,13 +28,17 @@ export function useCustomers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('customers')
-        .select('*')
+        .select('id, name, phone, address, email, note, tenant_id, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data as Customer[];
     },
     enabled: !!user?.id,
+    staleTime: 1000 * 60 * 2, // 2 phút
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 

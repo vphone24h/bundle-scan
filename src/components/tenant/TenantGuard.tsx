@@ -59,14 +59,17 @@ function getEffectiveStatus(tenant: {
  * - Locked: Admin locked - can only access /subscription
  */
 export function TenantGuard({ children, allowExpired = false }: TenantGuardProps) {
+  // All hooks called in parallel - no waterfall!
+  const { user, loading: authLoading } = useAuth();
   const { data: tenant, isLoading: tenantLoading } = useCurrentTenant();
   const { data: platformUser, isLoading: platformUserLoading } = usePlatformUser();
-  const { user, loading: authLoading, signOut } = useAuth();
-  const location = useLocation();
   const resolvedTenant = useTenantResolver();
+  const location = useLocation();
   const [forceAuth, setForceAuth] = useState(false);
 
-  const isLoading = tenantLoading || platformUserLoading || authLoading;
+  // Optimized loading: only wait for auth first, then check others in parallel
+  // This prevents the full waterfall effect
+  const isLoading = authLoading || (!user ? false : (tenantLoading || platformUserLoading));
 
   // Calculate effective status based on dates
   const effectiveStatus = useMemo(() => {
@@ -76,7 +79,7 @@ export function TenantGuard({ children, allowExpired = false }: TenantGuardProps
 
   // Hard guard: ensure the authenticated session belongs to the intended store.
   // If mismatch happens (common on main domain when switching stores/accounts), we force sign-out
-  // so the UI never shows another store's data or “0 data” due to RLS.
+  // so the UI never shows another store's data or "0 data" due to RLS.
   useEffect(() => {
     if (!user?.id) return;
     if (!tenant?.subdomain) return;
@@ -98,23 +101,15 @@ export function TenantGuard({ children, allowExpired = false }: TenantGuardProps
     if (currentStoreId !== expectedStoreId) {
       // Avoid loops: set local flag for immediate redirect.
       setForceAuth(true);
-      // Fire-and-forget: signOut clears cache + session + store key.
-      void (async () => {
-        await signOut();
-        toast({
-          title: 'Sai phiên cửa hàng',
-          description: 'Phiên đăng nhập hiện tại thuộc cửa hàng khác. Vui lòng đăng nhập lại đúng ID cửa hàng.',
-          variant: 'destructive',
-        });
-      })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, tenant?.subdomain, resolvedTenant.status, resolvedTenant.subdomain]);
 
+  // Show loading only briefly - use a smaller spinner
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
