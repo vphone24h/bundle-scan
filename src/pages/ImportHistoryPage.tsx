@@ -624,25 +624,34 @@ export default function ImportHistoryPage() {
                         ) : '-'}
                       </td>
                       <td>
-                        <Badge
-                          className={cn(
-                            product.status === 'in_stock'
-                              ? 'status-in-stock'
+                        {product.status === 'deleted' ? (
+                          <div className="flex flex-col gap-1">
+                            <Badge className="bg-destructive/10 text-destructive border-destructive/20">
+                              Đã xóa
+                            </Badge>
+                            {product.note && (
+                              <span className="text-xs text-destructive/80 max-w-[150px] truncate" title={product.note}>
+                                {product.note.replace('[ĐÃ XÓA] ', '')}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <Badge
+                            className={cn(
+                              product.status === 'in_stock'
+                                ? 'status-in-stock'
+                                : product.status === 'sold'
+                                ? 'status-sold'
+                                : 'status-pending'
+                            )}
+                          >
+                            {product.status === 'in_stock'
+                              ? 'Tồn kho'
                               : product.status === 'sold'
-                              ? 'status-sold'
-                              : product.status === 'deleted'
-                              ? 'bg-destructive/10 text-destructive border-destructive/20'
-                              : 'status-pending'
-                          )}
-                        >
-                          {product.status === 'in_stock'
-                            ? 'Tồn kho'
-                            : product.status === 'sold'
-                            ? 'Đã bán'
-                            : product.status === 'deleted'
-                            ? 'Đã xóa'
-                            : 'Đã trả'}
-                        </Badge>
+                              ? 'Đã bán'
+                              : 'Đã trả'}
+                          </Badge>
+                        )}
                       </td>
                       <td>
                         <div className="flex gap-1">
