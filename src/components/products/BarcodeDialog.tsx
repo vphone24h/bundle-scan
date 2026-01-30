@@ -199,7 +199,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         `;
       }
       
-      // Tất cả các mẫu đều dùng chung template với transform từ adjustments
+      // Template đơn giản - CHỈ BARCODE, không QR
       return `
         <div class="label" style="width: ${width}mm; height: ${height}mm;">
           <div class="label-content-wrapper">
@@ -210,7 +210,6 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             ${printSettings.showCustomDescription && printSettings.customDescription ? 
               `<div class="custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
             <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
-              <div class="qr-code" id="qrcode-${idx}" data-value="${codeValue}" style="width: ${qrSize}px; height: ${qrSize}px;"></div>
               <svg class="barcode" id="barcode-${idx}"></svg>
             </div>
             <div class="code-text">${entry.imei || entry.sku}</div>
@@ -222,39 +221,17 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     }).join('');
 
     // Generate initialization script for both QR and Barcode
+    // CHỈ tạo Barcode, không tạo QR
     const initScript = allLabels.map((entry, idx) => {
       const codeValue = `${entry.imei || entry.sku}:${entry.printPrice}`;
       
-      // For jewelry labels, only create barcode
-      if (isJewelryLabel) {
-        return `
-          JsBarcode("#barcode-${idx}", "${codeValue}", {
-            format: "CODE128",
-            width: ${barcodeWidth},
-            height: ${barcodeHeight},
-            displayValue: false,
-            margin: 0
-          });
-        `;
-      }
-      
       return `
-        // QR Code for item ${idx}
-        new QRCode(document.getElementById("qrcode-${idx}"), {
-          text: "${codeValue}",
-          width: ${qrSize},
-          height: ${qrSize},
-          colorDark: "#000000",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.M
-        });
-        // Barcode for item ${idx}
         JsBarcode("#barcode-${idx}", "${codeValue}", {
           format: "CODE128",
           width: ${barcodeWidth},
           height: ${barcodeHeight},
           displayValue: false,
-          margin: 1
+          margin: 0
         });
       `;
     }).join('\n');
