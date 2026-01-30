@@ -2935,6 +2935,80 @@ export type Database = {
           },
         ]
       }
+      tenant_landing_settings: {
+        Row: {
+          banner_image_url: string | null
+          banner_link_url: string | null
+          created_at: string
+          id: string
+          is_enabled: boolean | null
+          meta_description: string | null
+          meta_title: string | null
+          primary_color: string | null
+          show_banner: boolean | null
+          show_store_info: boolean | null
+          show_warranty_lookup: boolean | null
+          store_address: string | null
+          store_description: string | null
+          store_email: string | null
+          store_logo_url: string | null
+          store_name: string | null
+          store_phone: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          banner_image_url?: string | null
+          banner_link_url?: string | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          primary_color?: string | null
+          show_banner?: boolean | null
+          show_store_info?: boolean | null
+          show_warranty_lookup?: boolean | null
+          store_address?: string | null
+          store_description?: string | null
+          store_email?: string | null
+          store_logo_url?: string | null
+          store_name?: string | null
+          store_phone?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          banner_image_url?: string | null
+          banner_link_url?: string | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          meta_description?: string | null
+          meta_title?: string | null
+          primary_color?: string | null
+          show_banner?: boolean | null
+          show_store_info?: boolean | null
+          show_warranty_lookup?: boolean | null
+          store_address?: string | null
+          store_description?: string | null
+          store_email?: string | null
+          store_logo_url?: string | null
+          store_name?: string | null
+          store_phone?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_landing_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           address: string | null
