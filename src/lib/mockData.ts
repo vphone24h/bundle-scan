@@ -149,11 +149,11 @@ export const mockPaperTemplates: PaperTemplate[] = [
   },
   {
     id: '7',
-    name: 'Giấy cuộn 50x30mm (365B)',
+    name: 'Giấy cuộn 55x30mm (365B)',
     description: 'Tem cuộn tối ưu cho máy in nhiệt KiotViet 365B',
-    size: '50 x 30 mm',
+    size: '55 x 30 mm',
     labelCount: 1,
-    dimensions: { width: 50, height: 30, unit: 'mm' },
+    dimensions: { width: 55, height: 30, unit: 'mm' },
     image: 'paper-template-7',
   },
 ];
