@@ -19,8 +19,22 @@ export interface TenantLandingSettings {
   meta_title: string | null;
   meta_description: string | null;
   is_enabled: boolean;
+  warranty_hotline: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface WarrantyResult {
+  id: string;
+  imei: string | null;
+  product_name: string;
+  sku: string;
+  warranty: string | null;
+  sale_price: number;
+  created_at: string;
+  branch_name: string | null;
+  export_date: string;
+  customer_phone: string | null;
 }
 
 // Hook để lấy landing settings của tenant hiện tại (cho admin)
@@ -124,42 +138,127 @@ export function useUpdateTenantLandingSettings() {
   });
 }
 
-// Hook tra cứu bảo hành công khai
-export function useWarrantyLookup(imei: string, tenantId: string | null) {
+// Hook tra cứu bảo hành công khai - hỗ trợ IMEI hoặc SĐT
+export function useWarrantyLookup(searchValue: string, tenantId: string | null) {
   return useQuery({
-    queryKey: ['warranty-lookup', imei, tenantId],
-    queryFn: async () => {
-      if (!imei || !tenantId) return null;
+    queryKey: ['warranty-lookup', searchValue, tenantId],
+    queryFn: async (): Promise<WarrantyResult[] | null> => {
+      if (!searchValue || !tenantId) return null;
 
-      // Tìm sản phẩm đã bán với IMEI này trong tenant
-      const { data, error } = await supabase
-        .from('export_receipt_items')
-        .select(`
-          id,
-          imei,
-          product_name,
-          sku,
-          warranty,
-          sale_price,
-          created_at,
-          receipt_id,
-          export_receipts!inner (
+      const isPhoneNumber = /^0\d{9,10}$/.test(searchValue.replace(/\s/g, ''));
+      
+      if (isPhoneNumber) {
+        // Tìm theo SĐT khách hàng - trả về tất cả sản phẩm đã mua
+        const { data, error } = await supabase
+          .from('export_receipt_items')
+          .select(`
             id,
-            code,
-            export_date,
-            tenant_id
-          )
-        `)
-        .eq('imei', imei)
-        .eq('export_receipts.tenant_id', tenantId)
-        .eq('status', 'sold')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+            imei,
+            product_name,
+            sku,
+            warranty,
+            sale_price,
+            created_at,
+            export_receipts!inner (
+              id,
+              code,
+              export_date,
+              tenant_id,
+              branch_id,
+              branches (name),
+              customers (phone)
+            )
+          `)
+          .eq('export_receipts.tenant_id', tenantId)
+          .eq('export_receipts.customers.phone', searchValue)
+          .eq('status', 'sold')
+          .order('created_at', { ascending: false })
+          .limit(20);
 
-      if (error) throw error;
-      return data;
+        if (error) throw error;
+        
+        // Map kết quả
+        return (data || []).map((item: any) => ({
+          id: item.id,
+          imei: item.imei,
+          product_name: item.product_name,
+          sku: item.sku,
+          warranty: item.warranty,
+          sale_price: item.sale_price,
+          created_at: item.created_at,
+          branch_name: item.export_receipts?.branches?.name || null,
+          export_date: item.export_receipts?.export_date || item.created_at,
+          customer_phone: item.export_receipts?.customers?.phone || null,
+        }));
+      } else {
+        // Tìm theo IMEI
+        const { data, error } = await supabase
+          .from('export_receipt_items')
+          .select(`
+            id,
+            imei,
+            product_name,
+            sku,
+            warranty,
+            sale_price,
+            created_at,
+            export_receipts!inner (
+              id,
+              code,
+              export_date,
+              tenant_id,
+              branch_id,
+              branches (name),
+              customers (phone)
+            )
+          `)
+          .eq('imei', searchValue)
+          .eq('export_receipts.tenant_id', tenantId)
+          .eq('status', 'sold')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (error) throw error;
+        
+        return (data || []).map((item: any) => ({
+          id: item.id,
+          imei: item.imei,
+          product_name: item.product_name,
+          sku: item.sku,
+          warranty: item.warranty,
+          sale_price: item.sale_price,
+          created_at: item.created_at,
+          branch_name: item.export_receipts?.branches?.name || null,
+          export_date: item.export_receipts?.export_date || item.created_at,
+          customer_phone: item.export_receipts?.customers?.phone || null,
+        }));
+      }
     },
-    enabled: !!imei && !!tenantId && imei.length >= 5,
+    enabled: !!searchValue && !!tenantId && searchValue.length >= 5,
   });
+}
+
+// Upload file lên storage
+export async function uploadLandingAsset(
+  file: File, 
+  tenantId: string, 
+  type: 'logo' | 'banner'
+): Promise<string> {
+  const ext = file.name.split('.').pop() || 'png';
+  const fileName = `${tenantId}/${type}-${Date.now()}.${ext}`;
+  
+  const { data, error } = await supabase.storage
+    .from('landing-assets')
+    .upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: true,
+    });
+
+  if (error) throw error;
+
+  const { data: publicUrl } = supabase.storage
+    .from('landing-assets')
+    .getPublicUrl(data.path);
+
+  return publicUrl.publicUrl;
 }

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { usePublicLandingSettings, useWarrantyLookup } from '@/hooks/useTenantLanding';
+import { usePublicLandingSettings, useWarrantyLookup, WarrantyResult } from '@/hooks/useTenantLanding';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,52 +13,58 @@ import {
   Shield, 
   CheckCircle, 
   XCircle,
-  ExternalLink,
   Store,
-  Loader2
+  Loader2,
+  Building2,
+  Headphones
 } from 'lucide-react';
 import { format, addMonths, isAfter } from 'date-fns';
 import { vi } from 'date-fns/locale';
+
+interface WarrantyStatus {
+  valid: boolean;
+  message: string;
+  endDate: Date | null;
+  startDate: Date;
+  months: number;
+}
+
+function calculateWarrantyStatus(item: WarrantyResult): WarrantyStatus | null {
+  const saleDate = new Date(item.export_date);
+  const warrantyMonths = parseInt(item.warranty || '0', 10);
+  
+  if (!warrantyMonths || warrantyMonths <= 0) {
+    return { valid: false, message: 'Không có BH', endDate: null, startDate: saleDate, months: 0 };
+  }
+  
+  const endDate = addMonths(saleDate, warrantyMonths);
+  const isValid = isAfter(endDate, new Date());
+  
+  return {
+    valid: isValid,
+    message: isValid ? 'Còn BH' : 'Hết BH',
+    endDate,
+    startDate: saleDate,
+    months: warrantyMonths,
+  };
+}
 
 export default function StoreLandingPage() {
   const resolvedTenant = useTenantResolver();
   const { data: landingData, isLoading } = usePublicLandingSettings(resolvedTenant.subdomain);
   
-  const [searchImei, setSearchImei] = useState('');
-  const [submittedImei, setSubmittedImei] = useState('');
+  const [searchValue, setSearchValue] = useState('');
+  const [submittedValue, setSubmittedValue] = useState('');
   
   const tenantId = landingData?.tenant?.id || null;
-  const { data: warrantyData, isLoading: isSearching, isFetched } = useWarrantyLookup(submittedImei, tenantId);
+  const { data: warrantyResults, isLoading: isSearching, isFetched } = useWarrantyLookup(submittedValue, tenantId);
   
   const settings = landingData?.settings;
   const tenant = landingData?.tenant;
-  
-  // Tính toán trạng thái bảo hành
-  const warrantyStatus = useMemo(() => {
-    if (!warrantyData) return null;
-    
-    const saleDate = new Date(warrantyData.export_receipts?.export_date || warrantyData.created_at);
-    const warrantyMonths = parseInt(warrantyData.warranty || '0', 10);
-    
-    if (!warrantyMonths || warrantyMonths <= 0) {
-      return { valid: false, message: 'Không có bảo hành', endDate: null };
-    }
-    
-    const endDate = addMonths(saleDate, warrantyMonths);
-    const isValid = isAfter(endDate, new Date());
-    
-    return {
-      valid: isValid,
-      message: isValid ? 'Còn bảo hành' : 'Hết bảo hành',
-      endDate,
-      startDate: saleDate,
-      months: warrantyMonths,
-    };
-  }, [warrantyData]);
 
   const handleSearch = () => {
-    if (searchImei.trim()) {
-      setSubmittedImei(searchImei.trim());
+    if (searchValue.trim()) {
+      setSubmittedValue(searchValue.trim());
     }
   };
 
@@ -96,6 +102,7 @@ export default function StoreLandingPage() {
 
   const storeName = settings?.store_name || tenant.name;
   const primaryColor = settings?.primary_color || '#0f766e';
+  const warrantyHotline = (settings as any)?.warranty_hotline;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted">
@@ -152,21 +159,21 @@ export default function StoreLandingPage() {
                 Tra cứu bảo hành
               </CardTitle>
               <CardDescription>
-                Nhập số IMEI/Serial để kiểm tra thông tin bảo hành sản phẩm
+                Nhập số IMEI/Serial hoặc SĐT để kiểm tra thông tin bảo hành
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
                 <Input
-                  placeholder="Nhập IMEI hoặc Serial Number..."
-                  value={searchImei}
-                  onChange={(e) => setSearchImei(e.target.value)}
+                  placeholder="Nhập IMEI hoặc Số điện thoại..."
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
                   onKeyPress={handleKeyPress}
                   className="flex-1"
                 />
                 <Button 
                   onClick={handleSearch}
-                  disabled={!searchImei.trim() || isSearching}
+                  disabled={!searchValue.trim() || isSearching}
                   style={{ backgroundColor: primaryColor }}
                 >
                   {isSearching ? (
@@ -177,65 +184,106 @@ export default function StoreLandingPage() {
                 </Button>
               </div>
 
+              {/* Hotline bảo hành */}
+              {warrantyHotline && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+                  <Headphones className="h-5 w-5 text-muted-foreground" />
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Hotline bảo hành: </span>
+                    <a 
+                      href={`tel:${warrantyHotline}`}
+                      className="font-semibold hover:underline"
+                      style={{ color: primaryColor }}
+                    >
+                      {warrantyHotline}
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {/* Kết quả tra cứu */}
-              {submittedImei && isFetched && (
-                <div className="mt-4">
-                  {warrantyData ? (
-                    <div className="border rounded-lg p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold">{warrantyData.product_name}</h3>
-                        {warrantyStatus && (
-                          <Badge 
-                            variant={warrantyStatus.valid ? "default" : "destructive"}
-                            className="flex items-center gap-1"
-                          >
-                            {warrantyStatus.valid ? (
-                              <CheckCircle className="h-3 w-3" />
-                            ) : (
-                              <XCircle className="h-3 w-3" />
-                            )}
-                            {warrantyStatus.message}
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">IMEI/Serial:</span>
-                          <p className="font-medium">{warrantyData.imei}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Mã SP:</span>
-                          <p className="font-medium">{warrantyData.sku}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Ngày mua:</span>
-                          <p className="font-medium">
-                            {format(new Date(warrantyData.export_receipts?.export_date || warrantyData.created_at), 'dd/MM/yyyy', { locale: vi })}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Thời hạn BH:</span>
-                          <p className="font-medium">{warrantyData.warranty || 'Không có'}</p>
-                        </div>
-                        {warrantyStatus?.endDate && (
-                          <div className="col-span-2">
-                            <span className="text-muted-foreground">Bảo hành đến:</span>
-                            <p className="font-medium">
-                              {format(warrantyStatus.endDate, 'dd/MM/yyyy', { locale: vi })}
-                            </p>
+              {submittedValue && isFetched && (
+                <div className="mt-4 space-y-3">
+                  {warrantyResults && warrantyResults.length > 0 ? (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        Tìm thấy {warrantyResults.length} sản phẩm
+                      </p>
+                      {warrantyResults.map((item) => {
+                        const warrantyStatus = calculateWarrantyStatus(item);
+                        
+                        return (
+                          <div key={item.id} className="border rounded-lg p-4 space-y-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className="font-semibold">{item.product_name}</h3>
+                              {warrantyStatus && (
+                                <Badge 
+                                  variant={warrantyStatus.valid ? "default" : "destructive"}
+                                  className="flex items-center gap-1 shrink-0"
+                                >
+                                  {warrantyStatus.valid ? (
+                                    <CheckCircle className="h-3 w-3" />
+                                  ) : (
+                                    <XCircle className="h-3 w-3" />
+                                  )}
+                                  {warrantyStatus.message}
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                              {item.imei && (
+                                <div>
+                                  <span className="text-muted-foreground">IMEI/Serial:</span>
+                                  <p className="font-medium font-mono">{item.imei}</p>
+                                </div>
+                              )}
+                              <div>
+                                <span className="text-muted-foreground">Mã SP:</span>
+                                <p className="font-medium">{item.sku}</p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Ngày mua:</span>
+                                <p className="font-medium">
+                                  {format(new Date(item.export_date), 'dd/MM/yyyy', { locale: vi })}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Thời hạn BH:</span>
+                                <p className="font-medium">
+                                  {item.warranty ? `${item.warranty} tháng` : 'Không có'}
+                                </p>
+                              </div>
+                              {warrantyStatus?.endDate && (
+                                <div>
+                                  <span className="text-muted-foreground">BH đến:</span>
+                                  <p className="font-medium">
+                                    {format(warrantyStatus.endDate, 'dd/MM/yyyy', { locale: vi })}
+                                  </p>
+                                </div>
+                              )}
+                              {item.branch_name && (
+                                <div>
+                                  <span className="text-muted-foreground flex items-center gap-1">
+                                    <Building2 className="h-3 w-3" />
+                                    Chi nhánh:
+                                  </span>
+                                  <p className="font-medium">{item.branch_name}</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
+                        );
+                      })}
+                    </>
                   ) : (
                     <div className="text-center py-6 border rounded-lg">
                       <XCircle className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
                       <p className="text-muted-foreground">
-                        Không tìm thấy sản phẩm với IMEI: <strong>{submittedImei}</strong>
+                        Không tìm thấy sản phẩm với: <strong>{submittedValue}</strong>
                       </p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Vui lòng kiểm tra lại số IMEI hoặc liên hệ cửa hàng
+                        Vui lòng kiểm tra lại số IMEI/SĐT hoặc liên hệ cửa hàng
                       </p>
                     </div>
                   )}
@@ -271,7 +319,8 @@ export default function StoreLandingPage() {
                     <p className="font-medium">Điện thoại</p>
                     <a 
                       href={`tel:${settings.store_phone}`}
-                      className="text-primary hover:underline"
+                      className="hover:underline"
+                      style={{ color: primaryColor }}
                     >
                       {settings.store_phone}
                     </a>
@@ -285,7 +334,8 @@ export default function StoreLandingPage() {
                     <p className="font-medium">Email</p>
                     <a 
                       href={`mailto:${settings.store_email}`}
-                      className="text-primary hover:underline"
+                      className="hover:underline"
+                      style={{ color: primaryColor }}
                     >
                       {settings.store_email}
                     </a>
