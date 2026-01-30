@@ -131,8 +131,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   ): string => {
     const { width, height } = paper.dimensions;
     const isA4Sheet = paper.size.toLowerCase().includes('a4');
-    // Mẫu 7: tem cuộn 40x30mm cần xoay 90 độ để in đúng chiều
-    const isRotatedLabel = paper.id === '7';
+    // Mẫu 7: tem cuộn 55x30mm - không cần xoay vì khổ ngang phù hợp
+    const isRotatedLabel = false; // Tắt xoay cho mẫu 7
     
     // Generate all labels (repeat by quantity)
     const allLabels: ProductPriceEntry[] = [];
