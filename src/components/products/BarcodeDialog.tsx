@@ -150,16 +150,13 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const scale = printAdjustments?.scale ?? 1;
     const rotation = printAdjustments?.rotation ?? 0;
     
-    // Giấy cuộn ngang (55x30): width > height
-    // Máy in cuộn feed giấy theo chiều dọc → nội dung bị xoay 90 độ
-    // Cần xoay ngược -90deg để bù lại (khi user chọn "không xoay")
-    // Khi user chọn "Xoay 90°", thì giữ nguyên (đã xoay sẵn)
-    const isRollPaper = !isA4Sheet && width > height;
-    const needsCompensation = isRollPaper && rotation === 0;
+    // Máy in 365B với giấy cuộn 50x30mm: 
+    // Giữ nguyên kích thước gốc, không swap - máy in tự xử lý hướng giấy
+    const isRollPaper = !isA4Sheet && paper.labelCount === 1;
     
-    // Page size: swap cho giấy cuộn để match hướng feed của máy in
-    const pageWidth = isRollPaper ? height : width;
-    const pageHeight = isRollPaper ? width : height;
+    // Page size: giữ nguyên kích thước gốc của giấy
+    const pageWidth = width;
+    const pageHeight = height;
     
     // Generate all labels (repeat by quantity)
     const allLabels: ProductPriceEntry[] = [];
@@ -342,11 +339,17 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center;
             text-align: center;
             gap: 0.3mm;
-            /* Không xoay tự động - giữ nguyên hướng preview */
-            transform: scale(${scale});
+            /* Xoay theo lựa chọn của user */
+            transform: ${rotation === 90 ? 'rotate(90deg)' : ''} scale(${scale});
             transform-origin: center center;
-            width: ${width - 2}mm;
-            height: ${height - 2}mm;
+            /* Khi xoay 90deg, swap width/height */
+            ${rotation === 90 ? `
+              width: ${height - 2}mm;
+              height: ${width - 2}mm;
+            ` : `
+              width: ${width - 2}mm;
+              height: ${height - 2}mm;
+            `}
           }
           
           .store-name {
