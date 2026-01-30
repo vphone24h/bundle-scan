@@ -149,13 +149,16 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const scale = printAdjustments?.scale ?? 1;
     const rotation = printAdjustments?.rotation ?? 0;
     
-    // Giấy cuộn 50x30mm trên máy in 365B:
-    // - 50mm = chiều ngang tem (paper width của đầu in)
-    // - 30mm = chiều feed (giấy ra)
-    // @page size giữ nguyên: 50mm x 30mm
-    // KHÔNG swap, KHÔNG xoay - in đúng như layout tự nhiên
-    const pageWidth = width;   // 50mm
-    const pageHeight = height; // 30mm
+    // Tem cuộn (ví dụ 50x30) đôi khi bị driver ép in dọc (30x50) dù chọn Landscape.
+    // Giải pháp bền vững: "bù xoay" bằng cách hoán đổi @page size và xoay nội dung 90°.
+    // - Nếu người dùng đã chọn rotation thủ công thì tôn trọng.
+    // - Nếu không, tự động bật bù xoay cho tem cuộn ngang (width > height, không phải A4).
+    const shouldAutoCompensateRotation = !isA4Sheet && width > height;
+    const effectiveRotation: 0 | 90 = rotation !== 0 ? rotation : shouldAutoCompensateRotation ? 90 : 0;
+
+    // Dimension locking: khi xoay 90°, swap kích thước trang để khớp cách driver render.
+    const pageWidth = effectiveRotation === 90 ? height : width;
+    const pageHeight = effectiveRotation === 90 ? width : height;
     
     // Generate all labels (repeat by quantity)
     const allLabels: ProductPriceEntry[] = [];
@@ -317,11 +320,12 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center !important;
             text-align: center !important;
             gap: 0 !important;
-            /* KHÔNG xoay - in đúng layout tự nhiên */
-            transform: scale(${scale});
+            /* Bù xoay để tránh driver ép in dọc */
+            transform: rotate(${effectiveRotation}deg) scale(${scale});
             transform-origin: center center;
-            width: ${width - 4}mm;
-            height: ${height - 4}mm;
+            /* Khi xoay 90°, khung nội dung cần swap để fit trong trang đã swap */
+            width: ${effectiveRotation === 90 ? pageHeight - 4 : pageWidth - 4}mm;
+            height: ${effectiveRotation === 90 ? pageWidth - 4 : pageHeight - 4}mm;
             margin: 0 auto !important;
           }
           
