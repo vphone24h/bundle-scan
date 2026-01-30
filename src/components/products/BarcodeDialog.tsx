@@ -279,11 +279,13 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const barcodeHeight = Math.round(baseBarcodeHeight * scale);
     const barcodeWidth = baseBarcodeWidth * scale;
 
-    const labelHTML = allLabels.map((entry, idx) => {
-      // Same encoding logic: IMEI products use IMEI:PRICE, non-IMEI use N:NAME:PRICE
-      const codeValue = entry.imei 
-        ? `${entry.imei}:${entry.printPrice}`
-        : `N:${entry.name}:${entry.printPrice}`;
+     const labelHTML = allLabels.map((entry, idx) => {
+       // Encode format:
+       // - IMEI products: IMEI:PRICE (barcode CODE128)
+       // - Non-IMEI products: N:NAME:PRICE (QR) - hỗ trợ tiếng Việt
+       const codeValue = entry.imei
+         ? `${entry.imei}:${entry.printPrice}`
+         : `N:${entry.name}:${entry.printPrice}`;
       
       if (isJewelryLabel) {
         return `
@@ -297,7 +299,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         `;
       }
       
-      return `
+       return `
         <div class="label">
           <div class="label-content-wrapper">
             ${printSettings.showStoreName && printSettings.storeName ? 
@@ -307,7 +309,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             ${printSettings.showCustomDescription && printSettings.customDescription ? 
               `<div class="custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
             <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
-              <svg class="barcode" id="barcode-${idx}"></svg>
+               ${entry.imei
+                 ? `<svg class="barcode" id="barcode-${idx}"></svg>`
+                 : `<div class="qr-code" id="qrcode-${idx}" style="width:${qrSize}px;height:${qrSize}px;"></div>`}
             </div>
             <div class="code-text">${entry.imei || entry.sku}</div>
             ${printSettings.showPrice ? 
@@ -317,21 +321,39 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       `;
     }).join('');
 
-    const initScript = allLabels.map((entry, idx) => {
-      // Same encoding logic
-      const codeValue = entry.imei 
-        ? `${entry.imei}:${entry.printPrice}`
-        : `N:${entry.name}:${entry.printPrice}`;
-      return `
-        JsBarcode("#barcode-${idx}", "${codeValue}", {
-          format: "CODE128",
-          width: ${barcodeWidth},
-          height: ${barcodeHeight},
-          displayValue: false,
-          margin: 0
-        });
-      `;
-    }).join('\n');
+     const initScript = allLabels.map((entry, idx) => {
+       const codeValue = entry.imei
+         ? `${entry.imei}:${entry.printPrice}`
+         : `N:${entry.name}:${entry.printPrice}`;
+
+       const codeValueJs = JSON.stringify(codeValue);
+
+       if (entry.imei) {
+         return `
+           JsBarcode("#barcode-${idx}", ${codeValueJs}, {
+             format: "CODE128",
+             width: ${barcodeWidth},
+             height: ${barcodeHeight},
+             displayValue: false,
+             margin: 0
+           });
+         `;
+       }
+
+       return `
+         (function() {
+           var el = document.getElementById("qrcode-${idx}");
+           if (!el) return;
+           el.innerHTML = "";
+           new QRCode(el, {
+             text: ${codeValueJs},
+             width: ${qrSize},
+             height: ${qrSize},
+             correctLevel: QRCode.CorrectLevel.M
+           });
+         })();
+       `;
+     }).join('\n');
 
     return `
       <!DOCTYPE html>
@@ -339,7 +361,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       <head>
         <meta charset="UTF-8">
         <title>Xuất PDF mã vạch</title>
-        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+         <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+         <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
         <style>
           * {
             margin: 0 !important;
@@ -435,6 +458,18 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             align-items: center;
             justify-content: center;
           }
+
+           .qr-code {
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             flex-shrink: 0;
+           }
+
+           .qr-code img, .qr-code canvas {
+             width: 100% !important;
+             height: 100% !important;
+           }
           
           .barcode {
             max-width: 100%;
@@ -539,13 +574,14 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const barcodeHeight = Math.round(baseBarcodeHeight * scale);
     const barcodeWidth = baseBarcodeWidth * scale;
 
-    const labelHTML = allLabels.map((entry, idx) => {
-      // Encode format:
-      // - IMEI products: IMEI:PRICE (e.g., "353902103999926:24000000")
-      // - Non-IMEI products: N:NAME:PRICE (e.g., "N:iPhone 15:24000000") - prefix "N:" indicates non-IMEI
-      const codeValue = entry.imei 
-        ? `${entry.imei}:${entry.printPrice}`
-        : `N:${entry.name}:${entry.printPrice}`;
+     const labelHTML = allLabels.map((entry, idx) => {
+       // Encode format:
+       // - IMEI products: IMEI:PRICE (barcode CODE128)
+       // - Non-IMEI products: N:NAME:PRICE (QR) - hỗ trợ tiếng Việt
+       // NOTE: CODE128 không hỗ trợ Unicode (tiếng Việt) -> sẽ in trắng. Vì vậy non-IMEI dùng QR.
+       const codeValue = entry.imei
+         ? `${entry.imei}:${entry.printPrice}`
+         : `N:${entry.name}:${entry.printPrice}`;
       
       // For jewelry labels, only show barcode (too small for QR)
       if (isJewelryLabel) {
@@ -560,7 +596,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         `;
       }
       
-      // Template đơn giản - CHỈ BARCODE, không QR
+       // Template đơn giản:
+       // - IMEI: BARCODE
+       // - Non-IMEI: QR
       return `
         <div class="label" style="width: ${width}mm; height: ${height}mm;">
           <div class="label-content-wrapper">
@@ -571,7 +609,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             ${printSettings.showCustomDescription && printSettings.customDescription ? 
               `<div class="custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
             <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
-              <svg class="barcode" id="barcode-${idx}"></svg>
+               ${entry.imei
+                 ? `<svg class="barcode" id="barcode-${idx}"></svg>`
+                 : `<div class="qr-code" id="qrcode-${idx}" style="width:${qrSize}px;height:${qrSize}px;"></div>`}
             </div>
             <div class="code-text">${entry.imei || entry.sku}</div>
             ${printSettings.showPrice ? 
@@ -582,22 +622,40 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     }).join('');
 
     // Generate initialization script for both QR and Barcode
-    // CHỈ tạo Barcode, không tạo QR
     const initScript = allLabels.map((entry, idx) => {
-      // Same encoding logic as labelHTML
-      const codeValue = entry.imei 
-        ? `${entry.imei}:${entry.printPrice}`
-        : `N:${entry.name}:${entry.printPrice}`;
-      
-      return `
-        JsBarcode("#barcode-${idx}", "${codeValue}", {
-          format: "CODE128",
-          width: ${barcodeWidth},
-          height: ${barcodeHeight},
-          displayValue: false,
-          margin: 0
-        });
-      `;
+       const codeValue = entry.imei
+         ? `${entry.imei}:${entry.printPrice}`
+         : `N:${entry.name}:${entry.printPrice}`;
+
+       const codeValueJs = JSON.stringify(codeValue);
+
+       // IMEI -> barcode, Non-IMEI -> QR (hỗ trợ Unicode)
+       if (entry.imei) {
+         return `
+           JsBarcode("#barcode-${idx}", ${codeValueJs}, {
+             format: "CODE128",
+             width: ${barcodeWidth},
+             height: ${barcodeHeight},
+             displayValue: false,
+             margin: 0
+           });
+         `;
+       }
+
+       return `
+         (function() {
+           var el = document.getElementById("qrcode-${idx}");
+           if (!el) return;
+           // Clear to avoid duplicate render if browser re-runs scripts
+           el.innerHTML = "";
+           new QRCode(el, {
+             text: ${codeValueJs},
+             width: ${qrSize},
+             height: ${qrSize},
+             correctLevel: QRCode.CorrectLevel.M
+           });
+         })();
+       `;
     }).join('\n');
 
     return `
