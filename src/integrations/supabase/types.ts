@@ -2940,6 +2940,7 @@ export type Database = {
           banner_image_url: string | null
           banner_link_url: string | null
           created_at: string
+          facebook_url: string | null
           id: string
           is_enabled: boolean | null
           meta_description: string | null
@@ -2956,13 +2957,16 @@ export type Database = {
           store_phone: string | null
           support_group_url: string | null
           tenant_id: string
+          tiktok_url: string | null
           updated_at: string
           warranty_hotline: string | null
+          zalo_url: string | null
         }
         Insert: {
           banner_image_url?: string | null
           banner_link_url?: string | null
           created_at?: string
+          facebook_url?: string | null
           id?: string
           is_enabled?: boolean | null
           meta_description?: string | null
@@ -2979,13 +2983,16 @@ export type Database = {
           store_phone?: string | null
           support_group_url?: string | null
           tenant_id: string
+          tiktok_url?: string | null
           updated_at?: string
           warranty_hotline?: string | null
+          zalo_url?: string | null
         }
         Update: {
           banner_image_url?: string | null
           banner_link_url?: string | null
           created_at?: string
+          facebook_url?: string | null
           id?: string
           is_enabled?: boolean | null
           meta_description?: string | null
@@ -3002,8 +3009,10 @@ export type Database = {
           store_phone?: string | null
           support_group_url?: string | null
           tenant_id?: string
+          tiktok_url?: string | null
           updated_at?: string
           warranty_hotline?: string | null
+          zalo_url?: string | null
         }
         Relationships: [
           {
