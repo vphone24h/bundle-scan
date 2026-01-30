@@ -504,13 +504,17 @@ export function LandingPageSettings() {
                 <svg className="h-4 w-4 text-blue-500" viewBox="0 0 48 48" fill="currentColor">
                   <path d="M24 4C12.954 4 4 12.954 4 24s8.954 20 20 20 20-8.954 20-20S35.046 4 24 4zm9.375 28.125c-.833.833-2.5 1.667-4.167 1.667h-5.416c-1.667 0-3.334-.834-4.167-1.667l-5-5c-.833-.833-.833-2.5 0-3.333l7.5-7.5c.833-.834 2.5-.834 3.333 0l.834.833.833-.833c.834-.834 2.5-.834 3.334 0l7.5 7.5c.833.833.833 2.5 0 3.333l-4.584 5z"/>
                 </svg>
-                Zalo
+                Zalo (SĐT)
               </Label>
               <Input
                 value={formData.zalo_url || ''}
                 onChange={(e) => handleChange('zalo_url', e.target.value)}
-                placeholder="https://zalo.me/..."
+                placeholder="VD: 0971838929"
+                inputMode="tel"
               />
+              <p className="text-xs text-muted-foreground">
+                Chỉ cần nhập SĐT Zalo, khách nhấn vào sẽ tự mở Zalo chat
+              </p>
             </div>
             
             <div className="space-y-2">
