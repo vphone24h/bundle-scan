@@ -144,7 +144,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     printSettings: BarcodeSettings,
     printAdjustments?: PrintAdjustments
   ): string => {
-    const { width: origWidth, height: origHeight } = paper.dimensions;
+    const { width, height } = paper.dimensions;
     const isA4Sheet = paper.size.toLowerCase().includes('a4');
     // Sử dụng adjustments từ tham số, hoặc mặc định
     const scale = printAdjustments?.scale ?? 1;
@@ -152,10 +152,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     // Xoay nếu rotation = 90
     const isRotatedLabel = rotation === 90;
     
-    // Khi xoay 90 độ: swap width và height cho page size và label
-    // Điều này giúp nội dung ngang fit vào giấy in cuộn đứng
-    const width = isRotatedLabel ? origHeight : origWidth;
-    const height = isRotatedLabel ? origWidth : origHeight;
+    // Khi xoay 90 độ: dùng page orientation landscape
+    // Page size vẫn giữ nguyên, nhưng nội dung sẽ xoay
+    const pageWidth = isRotatedLabel ? height : width;
+    const pageHeight = isRotatedLabel ? width : height;
     
     // Generate all labels (repeat by quantity)
     const allLabels: ProductPriceEntry[] = [];
@@ -276,10 +276,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           
           @page {
             /*
-              NOTE: Với tem cuộn, ép kích thước đúng mm để trình duyệt/printer không tự dàn sang A4.
+              NOTE: Khi xoay, dùng page size đã swap để máy in nhận đúng hướng giấy.
               Với mẫu A4, giữ A4.
             */
-            size: ${isA4Sheet ? 'A4' : `${width}mm ${height}mm`};
+            size: ${isA4Sheet ? 'A4' : `${pageWidth}mm ${pageHeight}mm`};
             margin: 0;
           }
 
@@ -287,15 +287,15 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             margin: 0;
             padding: 0;
             /* Khóa khổ trang cho tem cuộn */
-            width: ${isA4Sheet ? 'auto' : `${width}mm`};
-            height: ${isA4Sheet ? 'auto' : `${height}mm`};
+            width: ${isA4Sheet ? 'auto' : `${pageWidth}mm`};
+            height: ${isA4Sheet ? 'auto' : `${pageHeight}mm`};
           }
           
           body {
             font-family: Arial, sans-serif;
             padding: 0;
             margin: 0;
-            width: ${isA4Sheet ? 'auto' : `${width}mm`};
+            width: ${isA4Sheet ? 'auto' : `${pageWidth}mm`};
           }
           
           .labels-container {
@@ -309,12 +309,12 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             gap: 0;
             padding: 0;
             margin: 0;
-            width: ${isA4Sheet ? 'auto' : `${width}mm`};
+            width: ${isA4Sheet ? 'auto' : `${pageWidth}mm`};
           }
           
           .label {
-            width: ${width}mm !important;
-            height: ${height}mm !important;
+            width: ${pageWidth}mm !important;
+            height: ${pageHeight}mm !important;
             border: none;
             padding: 0.5mm;
             display: flex;
@@ -333,9 +333,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center;
             text-align: center;
             gap: 0.3mm;
-            /* Khi đã swap width/height ở trên, không cần rotate CSS nữa */
             transform: scale(${scale});
             transform-origin: center center;
+            /* Nội dung luôn theo hướng gốc của giấy (55x30), page size đã swap nếu xoay */
             width: ${width - 2}mm;
             height: ${height - 2}mm;
           }
