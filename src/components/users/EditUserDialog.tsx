@@ -9,6 +9,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +32,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 import { UserRole } from '@/hooks/usePermissions';
 
 interface Branch {
@@ -177,6 +188,29 @@ export function EditUserDialog({
     },
   });
 
+  const deleteUser = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('No user selected');
+
+      const response = await supabase.functions.invoke('delete-user', {
+        body: { userId: user.user_id },
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
+      
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['users-with-roles'] });
+      toast.success(data?.message || 'Xóa người dùng thành công');
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      toast.error('Lỗi: ' + (error as Error).message);
+    },
+  });
+
   const handleSaveRole = () => {
     if (!user) return;
 
@@ -203,7 +237,11 @@ export function EditUserDialog({
     updateUserInfo.mutate();
   };
 
-  const isLoading = updateUserRole.isPending || updateUserInfo.isPending;
+  const handleDeleteUser = () => {
+    deleteUser.mutate();
+  };
+
+  const isLoading = updateUserRole.isPending || updateUserInfo.isPending || deleteUser.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -314,14 +352,43 @@ export function EditUserDialog({
                 />
               </div>
 
-              <DialogFooter className="pt-4">
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  Hủy
-                </Button>
-                <Button onClick={handleSaveInfo} disabled={isLoading}>
-                  {updateUserInfo.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Lưu thông tin
-                </Button>
+              <DialogFooter className="pt-4 flex-col sm:flex-row gap-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full sm:w-auto" disabled={isLoading}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Xóa
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Xác nhận xóa người dùng</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Bạn có chắc chắn muốn xóa tài khoản <strong>{user?.profiles?.display_name}</strong>? 
+                        Hành động này không thể hoàn tác.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Hủy</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleDeleteUser}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {deleteUser.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        Xóa người dùng
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-initial">
+                    Hủy
+                  </Button>
+                  <Button onClick={handleSaveInfo} disabled={isLoading} className="flex-1 sm:flex-initial">
+                    {updateUserInfo.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Lưu thông tin
+                  </Button>
+                </div>
               </DialogFooter>
             </TabsContent>
           )}
