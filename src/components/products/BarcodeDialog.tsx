@@ -62,7 +62,12 @@ interface BarcodeDialogProps {
   products: ProductForBarcode[];
 }
 
-type Step = 'price' | 'settings' | 'paper';
+type Step = 'price' | 'settings' | 'paper' | 'adjust';
+
+interface PrintAdjustments {
+  scale: number; // 0.5 to 1.5
+  rotation: 0 | 90; // 0 or 90 degrees
+}
 
 export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   const [step, setStep] = useState<Step>('price');
@@ -79,6 +84,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   });
   const [selectedPaper, setSelectedPaper] = useState<string | null>(null);
   const [previewPaper, setPreviewPaper] = useState<PaperTemplate | null>(null);
+  const [adjustments, setAdjustments] = useState<PrintAdjustments>({
+    scale: 1,
+    rotation: 0,
+  });
 
   // Initialize product entries when products change
   useEffect(() => {
@@ -104,8 +113,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const paper = mockPaperTemplates.find(p => p.id === selectedPaper);
     if (!paper) return;
 
-    // Create print content
-    const printContent = generatePrintContent(paper, productEntries, settings);
+    // Create print content with adjustments
+    const printContent = generatePrintContent(paper, productEntries, settings, adjustments);
     
     // Open print window
     const printWindow = window.open('', '_blank', 'width=800,height=600');
@@ -123,16 +132,25 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     onClose();
   };
 
+  // Get selected paper for adjustment step
+  const getSelectedPaperTemplate = () => {
+    return mockPaperTemplates.find(p => p.id === selectedPaper);
+  };
+
   // Generate print HTML content
   const generatePrintContent = (
     paper: PaperTemplate,
     entries: ProductPriceEntry[],
-    printSettings: BarcodeSettings
+    printSettings: BarcodeSettings,
+    printAdjustments?: PrintAdjustments
   ): string => {
     const { width, height } = paper.dimensions;
     const isA4Sheet = paper.size.toLowerCase().includes('a4');
-    // Mẫu 7: tem cuộn 55x30mm - cần xoay 90 độ và thu nhỏ nội dung
-    const isRotatedLabel = paper.id === '7';
+    // Sử dụng adjustments từ tham số, hoặc mặc định
+    const scale = printAdjustments?.scale ?? 1;
+    const rotation = printAdjustments?.rotation ?? 0;
+    // Xoay nếu rotation = 90
+    const isRotatedLabel = rotation === 90;
     
     // Generate all labels (repeat by quantity)
     const allLabels: ProductPriceEntry[] = [];
@@ -142,17 +160,21 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       }
     });
 
-    // Calculate QR/Barcode sizes based on label dimensions
+    // Calculate QR/Barcode sizes based on label dimensions and scale
     // Convert mm to approximate pixels (1mm ≈ 3.78px at 96dpi, but print uses ~2.8px)
     const isSmallLabel = height <= 22; // Giấy cuộn nhỏ
     const isJewelryLabel = height <= 10; // Tem trang sức
     const isLargeLabel = height >= 100; // Mẫu A4, Tomy
     
-    // QR size: proportional to label height
-    // Mẫu 7 xoay: sau khi xoay chiều cao thực tế là width (55mm), nhưng cần nhỏ gọn
-    const qrSize = isRotatedLabel ? 24 : isJewelryLabel ? 28 : isSmallLabel ? 40 : isLargeLabel ? 80 : 64;
-    const barcodeHeight = isRotatedLabel ? 14 : isJewelryLabel ? 12 : isSmallLabel ? 16 : 20;
-    const barcodeWidth = isRotatedLabel ? 0.6 : isJewelryLabel ? 0.8 : 1;
+    // Base QR size - will be scaled
+    const baseQrSize = isJewelryLabel ? 28 : isSmallLabel ? 40 : isLargeLabel ? 80 : 64;
+    const baseBarcodeHeight = isJewelryLabel ? 12 : isSmallLabel ? 16 : 20;
+    const baseBarcodeWidth = isJewelryLabel ? 0.8 : 1;
+    
+    // Apply scale to sizes
+    const qrSize = Math.round(baseQrSize * scale);
+    const barcodeHeight = Math.round(baseBarcodeHeight * scale);
+    const barcodeWidth = baseBarcodeWidth * scale;
 
     const labelHTML = allLabels.map((entry, idx) => {
       // Encode format: CODE:PRICE (e.g., "353902103999926:24000000")
@@ -333,9 +355,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center;
           }
           .label-content {
-            transform: rotate(-90deg);
+            transform: rotate(-90deg) scale(${scale});
             transform-origin: center center;
-            /* Sau khi xoay: chiều ngang thực tế = height gốc (30mm), chiều cao = width gốc (55mm) */
+            /* Sau khi xoay: chiều ngang thực tế = height gốc, chiều cao = width gốc */
             width: ${height - 2}mm;
             height: ${width - 4}mm;
             display: flex;
@@ -346,13 +368,13 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             gap: 0.3mm;
           }
           .store-name-small {
-            font-size: 6px;
+            font-size: ${Math.round(6 * scale)}px;
             font-weight: bold;
             color: #000;
             line-height: 1;
           }
           .product-name-small {
-            font-size: 5px;
+            font-size: ${Math.round(5 * scale)}px;
             color: #000;
             line-height: 1;
             word-break: break-word;
@@ -362,7 +384,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             white-space: nowrap;
           }
           .custom-description-small {
-            font-size: 5px;
+            font-size: ${Math.round(5 * scale)}px;
             color: #000;
             line-height: 1;
           }
@@ -374,12 +396,12 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             gap: 1mm;
           }
           .code-text-small {
-            font-size: 4px;
+            font-size: ${Math.round(4 * scale)}px;
             color: #333;
             line-height: 1;
           }
           .price-small {
-            font-size: 6px;
+            font-size: ${Math.round(6 * scale)}px;
             font-weight: bold;
             color: #000;
             line-height: 1;
@@ -387,7 +409,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           ` : ''}
           
           .store-name {
-            font-size: 8px;
+            font-size: ${Math.round(8 * scale)}px;
             font-weight: bold;
             color: #000;
             margin-bottom: 0.3mm;
@@ -395,7 +417,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           }
           
           .product-name {
-            font-size: 7px;
+            font-size: ${Math.round(7 * scale)}px;
             color: #000;
             margin-bottom: 0.3mm;
             line-height: 1.1;
@@ -403,7 +425,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           }
           
           .custom-description {
-            font-size: 7px;
+            font-size: ${Math.round(7 * scale)}px;
             color: #000;
             margin-bottom: 0.3mm;
             line-height: 1.1;
@@ -963,9 +985,12 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         <Button variant="outline" onClick={() => setStep('settings')}>
           Quay lại
         </Button>
-        <Button onClick={handlePrint} disabled={!selectedPaper}>
-          <Printer className="mr-2 h-4 w-4" />
-          In mã vạch ({totalLabels} nhãn)
+        <Button onClick={() => {
+          // Reset adjustments when entering adjust step
+          setAdjustments({ scale: 1, rotation: 0 });
+          setStep('adjust');
+        }} disabled={!selectedPaper}>
+          Tiếp tục
         </Button>
       </div>
 
@@ -1018,6 +1043,183 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     </div>
   );
 
+  // Render adjustment step - cho phép điều chỉnh kích thước và xoay
+  const renderAdjustment = () => {
+    const paper = getSelectedPaperTemplate();
+    if (!paper) return null;
+
+    const { width, height } = paper.dimensions;
+    const sampleEntry = productEntries[0];
+    
+    // Calculate preview dimensions (scaled for display)
+    const previewScale = 3; // 1mm = 3px for preview
+    const previewWidth = width * previewScale;
+    const previewHeight = height * previewScale;
+    
+    // Content dimensions based on adjustments
+    const contentScale = adjustments.scale;
+    const isRotated = adjustments.rotation === 90;
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setStep('paper')}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h3 className="font-semibold">Điều chỉnh nội dung in - {paper.name}</h3>
+        </div>
+
+        {/* Preview Area */}
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-sm text-muted-foreground">
+            Kéo thanh trượt để điều chỉnh kích thước, bấm xoay để xoay 90°
+          </p>
+          
+          {/* Paper Preview Container */}
+          <div 
+            className="relative border-2 border-dashed border-primary/50 bg-white rounded-lg overflow-hidden flex items-center justify-center"
+            style={{
+              width: `${previewWidth}px`,
+              height: `${previewHeight}px`,
+              minWidth: `${previewWidth}px`,
+              minHeight: `${previewHeight}px`,
+            }}
+          >
+            {/* Content Preview */}
+            <div 
+              className="flex flex-col items-center justify-center text-center transition-transform duration-200"
+              style={{
+                transform: `scale(${contentScale}) rotate(${adjustments.rotation}deg)`,
+                transformOrigin: 'center center',
+              }}
+            >
+              {settings.showStoreName && settings.storeName && (
+                <div className="text-[8px] font-bold text-black">{settings.storeName}</div>
+              )}
+              {settings.showProductName && sampleEntry && (
+                <div className="text-[6px] text-black truncate max-w-[60px]">{sampleEntry.name}</div>
+              )}
+              <div className="flex items-center gap-1 my-1">
+                <div className="w-6 h-6 bg-gray-800 rounded-sm flex items-center justify-center">
+                  <span className="text-white text-[4px]">QR</span>
+                </div>
+                <div className="w-10 h-4 bg-gray-800 rounded-sm flex items-center justify-center">
+                  <span className="text-white text-[3px]">|||||||</span>
+                </div>
+              </div>
+              {settings.showPrice && sampleEntry && (
+                <div className="text-[7px] font-bold text-black">
+                  {formatNumberWithSpaces(sampleEntry.printPrice)}{settings.priceWithVND ? ' VND' : ''}
+                </div>
+              )}
+            </div>
+
+            {/* Paper size indicator */}
+            <div className="absolute bottom-1 right-1 text-[8px] text-muted-foreground bg-white/80 px-1 rounded">
+              {width}x{height}mm
+            </div>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="space-y-4 max-w-md mx-auto">
+          {/* Scale slider */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Kích thước nội dung</Label>
+              <span className="text-sm text-muted-foreground">{Math.round(adjustments.scale * 100)}%</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Minus className="h-4 w-4 text-muted-foreground" />
+              <input
+                type="range"
+                min="0.3"
+                max="1.5"
+                step="0.05"
+                value={adjustments.scale}
+                onChange={(e) => setAdjustments({ ...adjustments, scale: parseFloat(e.target.value) })}
+                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+              />
+              <Plus className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </div>
+
+          {/* Rotation toggle */}
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">Xoay nội dung 90°</Label>
+            <Button
+              variant={adjustments.rotation === 90 ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setAdjustments({ 
+                ...adjustments, 
+                rotation: adjustments.rotation === 0 ? 90 : 0 
+              })}
+              className="gap-2"
+            >
+              <svg 
+                className="h-4 w-4" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2"
+              >
+                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                <path d="M21 3v5h-5" />
+              </svg>
+              {adjustments.rotation === 90 ? 'Đã xoay 90°' : 'Xoay 90°'}
+            </Button>
+          </div>
+
+          {/* Quick presets */}
+          <div className="flex gap-2 flex-wrap">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setAdjustments({ scale: 0.5, rotation: 0 })}
+            >
+              50%
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setAdjustments({ scale: 0.75, rotation: 0 })}
+            >
+              75%
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setAdjustments({ scale: 1, rotation: 0 })}
+            >
+              100%
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setAdjustments({ scale: 0.6, rotation: 90 })}
+            >
+              60% + Xoay
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4">
+          <Button variant="outline" onClick={() => setStep('paper')}>
+            Quay lại
+          </Button>
+          <Button onClick={handlePrint}>
+            <Printer className="mr-2 h-4 w-4" />
+            In mã vạch ({totalLabels} nhãn)
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   const renderStep = () => {
     switch (step) {
       case 'price':
@@ -1026,6 +1228,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         return renderSettings();
       case 'paper':
         return renderPaperSelection();
+      case 'adjust':
+        return renderAdjustment();
       default:
         return null;
     }
@@ -1035,6 +1239,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     price: 'Chỉnh giá in',
     settings: 'Tuỳ chọn nội dung',
     paper: 'Chọn loại giấy',
+    adjust: 'Điều chỉnh in',
   };
 
   return (
