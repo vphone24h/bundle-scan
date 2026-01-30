@@ -20,7 +20,9 @@ import {
   Headphones,
   Calendar,
   Package,
-  Clock
+  Clock,
+  Users,
+  ExternalLink
 } from 'lucide-react';
 import { format, addMonths, isAfter, differenceInDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -137,7 +139,8 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
 
   const storeName = settings?.store_name || tenant.name;
   const primaryColor = settings?.primary_color || '#0f766e';
-  const warrantyHotline = (settings as any)?.warranty_hotline;
+  const warrantyHotline = settings?.warranty_hotline;
+  const supportGroupUrl = settings?.support_group_url;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/50">
@@ -231,30 +234,58 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                 </Button>
               </div>
 
-              {/* Hotline - Mobile friendly */}
-              {warrantyHotline && (
-                <a 
-                  href={`tel:${warrantyHotline}`}
-                  className="flex items-center gap-2.5 p-3 rounded-xl bg-muted/60 active:bg-muted transition-colors"
-                >
-                  <div 
-                    className="p-2 rounded-full"
-                    style={{ backgroundColor: `${primaryColor}15` }}
+              {/* Hotline & Support Group - Mobile friendly */}
+              <div className="grid grid-cols-1 gap-2">
+                {warrantyHotline && (
+                  <a 
+                    href={`tel:${warrantyHotline}`}
+                    className="flex items-center gap-2.5 p-3 rounded-xl bg-muted/60 active:bg-muted transition-colors"
                   >
-                    <Headphones className="h-4 w-4" style={{ color: primaryColor }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground">Hotline bảo hành</p>
-                    <p 
-                      className="font-semibold text-sm"
-                      style={{ color: primaryColor }}
+                    <div 
+                      className="p-2 rounded-full"
+                      style={{ backgroundColor: `${primaryColor}15` }}
                     >
-                      {warrantyHotline}
-                    </p>
-                  </div>
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                </a>
-              )}
+                      <Headphones className="h-4 w-4" style={{ color: primaryColor }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground">Hotline bảo hành</p>
+                      <p 
+                        className="font-semibold text-sm"
+                        style={{ color: primaryColor }}
+                      >
+                        {warrantyHotline}
+                      </p>
+                    </div>
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                  </a>
+                )}
+                
+                {supportGroupUrl && (
+                  <a 
+                    href={supportGroupUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 active:bg-primary/15 transition-colors"
+                  >
+                    <div 
+                      className="p-2 rounded-full"
+                      style={{ backgroundColor: `${primaryColor}20` }}
+                    >
+                      <Users className="h-4 w-4" style={{ color: primaryColor }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground">Tham gia nhóm hỗ trợ</p>
+                      <p 
+                        className="font-semibold text-sm"
+                        style={{ color: primaryColor }}
+                      >
+                        Nhấn tại đây →
+                      </p>
+                    </div>
+                    <ExternalLink className="h-4 w-4" style={{ color: primaryColor }} />
+                  </a>
+                )}
+              </div>
 
               {/* Kết quả tra cứu - Mobile cards */}
               {submittedValue && isFetched && (

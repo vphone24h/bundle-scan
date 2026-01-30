@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 export function LandingPageSettings() {
@@ -38,6 +38,7 @@ export function LandingPageSettings() {
     meta_title: '',
     meta_description: '',
     warranty_hotline: '',
+    support_group_url: '',
   });
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export function LandingPageSettings() {
         meta_title: settings.meta_title || '',
         meta_description: settings.meta_description || '',
         warranty_hotline: settings.warranty_hotline || '',
+        support_group_url: (settings as any).support_group_url || '',
       });
     } else if (tenant) {
       setFormData(prev => ({
@@ -334,6 +336,21 @@ export function LandingPageSettings() {
                 />
                 <p className="text-xs text-muted-foreground">
                   Hiển thị trong kết quả tra cứu để khách hàng liên hệ bảo hành
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Link nhóm hỗ trợ
+                </Label>
+                <Input
+                  value={(formData as any).support_group_url || ''}
+                  onChange={(e) => handleChange('support_group_url' as any, e.target.value)}
+                  placeholder="VD: https://zalo.me/g/xxx hoặc link Facebook group"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Link nhóm Zalo/Facebook/Telegram để khách hàng tham gia nhận hỗ trợ
                 </p>
               </div>
             </>

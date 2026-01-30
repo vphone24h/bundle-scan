@@ -20,6 +20,7 @@ export interface TenantLandingSettings {
   meta_description: string | null;
   is_enabled: boolean;
   warranty_hotline: string | null;
+  support_group_url: string | null;
   created_at: string;
   updated_at: string;
 }
