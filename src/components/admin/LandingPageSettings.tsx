@@ -31,6 +31,7 @@ export function LandingPageSettings() {
     store_name: '',
     store_logo_url: '',
     store_address: '',
+    additional_addresses: [],
     store_phone: '',
     store_email: '',
     store_description: '',
@@ -57,6 +58,7 @@ export function LandingPageSettings() {
         store_name: settings.store_name || '',
         store_logo_url: settings.store_logo_url || '',
         store_address: settings.store_address || '',
+        additional_addresses: settings.additional_addresses || [],
         store_phone: settings.store_phone || '',
         store_email: settings.store_email || '',
         store_description: settings.store_description || '',
@@ -78,6 +80,26 @@ export function LandingPageSettings() {
       }));
     }
   }, [settings, tenant]);
+
+  const handleAddAddress = () => {
+    const current = formData.additional_addresses || [];
+    setFormData(prev => ({ ...prev, additional_addresses: [...current, ''] }));
+  };
+
+  const handleRemoveAddress = (index: number) => {
+    const current = formData.additional_addresses || [];
+    setFormData(prev => ({ 
+      ...prev, 
+      additional_addresses: current.filter((_, i) => i !== index) 
+    }));
+  };
+
+  const handleAddressChange = (index: number, value: string) => {
+    const current = formData.additional_addresses || [];
+    const updated = [...current];
+    updated[index] = value;
+    setFormData(prev => ({ ...prev, additional_addresses: updated }));
+  };
 
   const handleChange = (field: keyof TenantLandingSettings, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -279,7 +301,7 @@ export function LandingPageSettings() {
                 rows={2}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 sm:col-span-2">
               <div className="flex items-center justify-between">
                 <Label>Địa chỉ</Label>
                 <Button
@@ -287,7 +309,7 @@ export function LandingPageSettings() {
                   variant="link"
                   size="sm"
                   className="h-auto p-0 text-xs gap-1"
-                  onClick={() => window.location.href = '/branches'}
+                  onClick={handleAddAddress}
                 >
                   <Plus className="h-3 w-3" />
                   Thêm địa chỉ
@@ -296,11 +318,35 @@ export function LandingPageSettings() {
               <Input
                 value={formData.store_address}
                 onChange={(e) => handleChange('store_address', e.target.value)}
-                placeholder="Địa chỉ cửa hàng"
+                placeholder="Địa chỉ chính"
               />
-              <p className="text-xs text-muted-foreground">
-                Nếu bạn có nhiều chi nhánh, hãy nhấn "Thêm địa chỉ" để quản lý
-              </p>
+              
+              {/* Các địa chỉ bổ sung */}
+              {(formData.additional_addresses || []).map((addr, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    value={addr}
+                    onChange={(e) => handleAddressChange(index, e.target.value)}
+                    placeholder={`Địa chỉ ${index + 2}`}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 text-destructive hover:text-destructive"
+                    onClick={() => handleRemoveAddress(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              
+              {(formData.additional_addresses || []).length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Nếu bạn có nhiều chi nhánh, hãy nhấn "Thêm địa chỉ"
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Số điện thoại</Label>

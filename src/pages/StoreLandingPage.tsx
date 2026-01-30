@@ -526,7 +526,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                 </div>
               ) : (
                 <>
-                  {/* Hiển thị địa chỉ đơn nếu không có chi nhánh */}
+                  {/* Hiển thị địa chỉ chính */}
                   {settings?.store_address && (
                     <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/50">
                       <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
@@ -536,6 +536,19 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                       </div>
                     </div>
                   )}
+                  
+                  {/* Hiển thị các địa chỉ bổ sung */}
+                  {settings?.additional_addresses && settings.additional_addresses.length > 0 && 
+                    settings.additional_addresses.filter(addr => addr?.trim()).map((addr, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 rounded-xl bg-muted/50">
+                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-muted-foreground">Địa chỉ {index + 2}</p>
+                          <p className="text-sm font-medium">{addr}</p>
+                        </div>
+                      </div>
+                    ))
+                  }
                 </>
               )}
               
