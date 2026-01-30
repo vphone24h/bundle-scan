@@ -191,6 +191,22 @@ Deno.serve(async (req) => {
       console.error('Profile update error:', profileError)
     }
 
+    // Insert platform_user record for email lookup
+    const { error: platformUserError } = await supabaseAdmin
+      .from('platform_users')
+      .insert({
+        user_id: newUser.user.id,
+        email: email,
+        display_name: displayName,
+        tenant_id: callerTenantId,
+        is_active: true,
+      })
+
+    if (platformUserError) {
+      console.error('Platform user insert error:', platformUserError)
+      // Not critical, continue
+    }
+
     // Update the user_role with the specified role, branch and tenant_id
     const { error: roleUpdateError } = await supabaseAdmin
       .from('user_roles')
