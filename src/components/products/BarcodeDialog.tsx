@@ -240,54 +240,60 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           }
           
           @page {
-            size: ${paper.size.includes('A4') ? 'A4' : 'auto'};
+            size: ${paper.size.includes('A4') ? 'A4' : `${width}mm ${height}mm`};
             margin: 0;
           }
           
           body {
             font-family: Arial, sans-serif;
-            padding: 5mm;
+            padding: 0;
+            margin: 0;
           }
           
           .labels-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 2mm;
+            gap: 0;
+            padding: 0;
+            margin: 0;
           }
           
           .label {
-            border: 0.5px dashed #ccc;
+            width: ${width}mm !important;
+            height: ${height}mm !important;
+            border: none;
             padding: 1mm;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             text-align: center;
             page-break-inside: avoid;
-            overflow: hidden;
+            page-break-after: always;
+            overflow: visible;
           }
           
           .store-name {
-            font-size: 7px;
+            font-size: 8px;
             font-weight: bold;
-            color: #333;
-            margin-bottom: 0.5mm;
+            color: #000;
+            margin-bottom: 0.3mm;
+            line-height: 1;
           }
           
           .product-name {
-            font-size: 6px;
-            color: #333;
-            margin-bottom: 0.5mm;
-            max-height: 2em;
-            overflow: hidden;
+            font-size: 7px;
+            color: #000;
+            margin-bottom: 0.3mm;
             line-height: 1.1;
+            word-break: break-word;
           }
           
           .custom-description {
-            font-size: 6px;
-            color: #333;
-            margin-bottom: 0.5mm;
-            line-height: 1.2;
+            font-size: 7px;
+            color: #000;
+            margin-bottom: 0.3mm;
+            line-height: 1.1;
             white-space: pre-wrap;
           }
           
@@ -296,11 +302,12 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             flex-direction: row;
             align-items: center;
             justify-content: center;
-            gap: 2mm;
+            gap: 1mm;
+            flex-shrink: 0;
           }
           
           .codes-small {
-            gap: 1mm;
+            gap: 0.5mm;
           }
           
           .codes-container-inline {
@@ -314,6 +321,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
           }
           
           .qr-code img, .qr-code canvas {
@@ -324,22 +332,25 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           .barcode {
             max-width: 100%;
             height: auto;
+            flex-shrink: 0;
           }
           
           .code-text {
-            font-size: 5px;
+            font-size: 6px;
             font-family: monospace;
-            margin-top: 0.5mm;
+            margin-top: 0.3mm;
+            color: #000;
           }
           
           .price {
-            font-size: 9px;
+            font-size: 10px;
             font-weight: bold;
-            margin-top: 0.5mm;
+            margin-top: 0.3mm;
+            color: #000;
           }
           
           .price-inline {
-            font-size: 6px;
+            font-size: 7px;
             font-weight: bold;
             margin-left: 1mm;
           }
@@ -351,11 +362,20 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           }
           
           @media print {
-            body {
-              padding: 0;
+            html, body {
+              width: ${width}mm;
+              height: auto;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            .labels-container {
+              width: ${width}mm;
             }
             .label {
-              border: none;
+              border: none !important;
+              margin: 0 !important;
+              width: ${width}mm !important;
+              height: ${height}mm !important;
             }
           }
         </style>
