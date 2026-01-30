@@ -265,24 +265,18 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                     href={supportGroupUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2.5 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 active:bg-primary/15 transition-colors"
+                    className="flex items-center gap-2.5 p-3 rounded-xl bg-gradient-to-r from-red-50 to-red-100 border border-red-200 active:bg-red-100 transition-colors"
                   >
-                    <div 
-                      className="p-2 rounded-full"
-                      style={{ backgroundColor: `${primaryColor}20` }}
-                    >
-                      <Users className="h-4 w-4" style={{ color: primaryColor }} />
+                    <div className="p-2 rounded-full bg-red-100">
+                      <Users className="h-4 w-4 text-red-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-muted-foreground">Tham gia nhóm hỗ trợ</p>
-                      <p 
-                        className="font-semibold text-sm"
-                        style={{ color: primaryColor }}
-                      >
+                      <p className="text-xs text-red-600/80">Tham gia nhóm hỗ trợ</p>
+                      <p className="font-bold text-sm text-red-600">
                         Nhấn tại đây →
                       </p>
                     </div>
-                    <ExternalLink className="h-4 w-4" style={{ color: primaryColor }} />
+                    <ExternalLink className="h-4 w-4 text-red-600" />
                   </a>
                 )}
               </div>
