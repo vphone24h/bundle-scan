@@ -104,7 +104,8 @@ export default function ExportNewPage() {
 
   // Handle barcode scan (IMEI or SKU) - auto-add to cart if price encoded
   // Supports formats:
-  // - CODE:PRICE (new, e.g., "353902103999926:24000000") - auto add to cart
+  // - N:NAME:PRICE (non-IMEI products, e.g., "N:iPhone 15:24000000") - auto fill form
+  // - CODE:PRICE (IMEI products, e.g., "353902103999926:24000000") - auto add to cart
   // - CODE-P-PRICE (legacy) - auto add to cart
   // - CODE|PRICE (legacy) - auto add to cart
   // - CODE only (no price) - fill form for manual entry
@@ -114,9 +115,24 @@ export default function ExportNewPage() {
     // Parse barcode - check if it contains price info
     let searchCode = barcode.trim();
     let encodedPrice: number | null = null;
+    let isNonImeiBarcode = false;
+    let nonImeiProductName: string | null = null;
     
-    // Check for ":" delimiter first (new format - most compatible)
-    if (barcode.includes(':')) {
+    // Check for non-IMEI format: N:NAME:PRICE
+    if (barcode.startsWith('N:')) {
+      isNonImeiBarcode = true;
+      const parts = barcode.substring(2).split(':'); // Remove "N:" prefix
+      if (parts.length >= 2) {
+        // Last part is price, everything before is product name
+        const priceStr = parts[parts.length - 1];
+        nonImeiProductName = parts.slice(0, -1).join(':'); // Handle names with ":"
+        if (priceStr && !isNaN(parseInt(priceStr))) {
+          encodedPrice = parseInt(priceStr);
+        }
+      }
+    }
+    // Check for ":" delimiter (IMEI format - most compatible)
+    else if (barcode.includes(':')) {
       const parts = barcode.split(':');
       searchCode = parts[0];
       const priceStr = parts[1];
@@ -141,6 +157,46 @@ export default function ExportNewPage() {
       if (priceStr && !isNaN(parseInt(priceStr))) {
         encodedPrice = parseInt(priceStr);
       }
+    }
+
+    // Handle non-IMEI product barcode: auto-fill form with name and price
+    if (isNonImeiBarcode && nonImeiProductName && encodedPrice !== null && encodedPrice > 0) {
+      // Search for the product by name to get full details
+      const results = await searchProducts.mutateAsync(nonImeiProductName);
+      const matchedProduct = results?.find((p: any) => p.name === nonImeiProductName);
+      
+      if (matchedProduct) {
+        // Check if already in cart
+        if (cart.some(item => item.product_id === matchedProduct.id)) {
+          toast({
+            title: 'Đã có trong giỏ',
+            description: 'Sản phẩm này đã được thêm vào giỏ hàng',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        // Fill form for confirmation (don't auto-add)
+        setSelectedProduct(matchedProduct);
+        setSalePrice(encodedPrice.toString());
+        setItemQuantity(1);
+        setItemWarranty('');
+        setItemNote('');
+        setNameSearch('');
+        setProductSuggestions([]);
+        
+        toast({
+          title: 'Đã quét sản phẩm',
+          description: `${nonImeiProductName} - ${encodedPrice.toLocaleString('vi-VN')}đ. Nhấn "Thêm vào giỏ" để xác nhận.`,
+        });
+      } else {
+        toast({
+          title: 'Không tìm thấy',
+          description: `Sản phẩm "${nonImeiProductName}" không tồn tại trong kho`,
+          variant: 'destructive',
+        });
+      }
+      return;
     }
 
     const result = await checkProduct.mutateAsync(searchCode);
@@ -173,7 +229,7 @@ export default function ExportNewPage() {
       return;
     }
 
-    // If barcode has encoded price -> AUTO ADD TO CART
+    // If barcode has encoded price -> AUTO ADD TO CART (IMEI products only)
     if (encodedPrice !== null && encodedPrice > 0) {
       const newItem: CartItem = {
         tempId: Date.now().toString(),
