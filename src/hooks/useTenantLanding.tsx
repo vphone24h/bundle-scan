@@ -7,6 +7,7 @@ export interface TenantLandingSettings {
   store_name: string | null;
   store_logo_url: string | null;
   store_address: string | null;
+  additional_addresses: string[] | null;
   store_phone: string | null;
   store_email: string | null;
   store_description: string | null;

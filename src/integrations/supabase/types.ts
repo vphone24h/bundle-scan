@@ -2937,6 +2937,7 @@ export type Database = {
       }
       tenant_landing_settings: {
         Row: {
+          additional_addresses: string[] | null
           banner_image_url: string | null
           banner_link_url: string | null
           created_at: string
@@ -2964,6 +2965,7 @@ export type Database = {
           zalo_url: string | null
         }
         Insert: {
+          additional_addresses?: string[] | null
           banner_image_url?: string | null
           banner_link_url?: string | null
           created_at?: string
@@ -2991,6 +2993,7 @@ export type Database = {
           zalo_url?: string | null
         }
         Update: {
+          additional_addresses?: string[] | null
           banner_image_url?: string | null
           banner_link_url?: string | null
           created_at?: string
