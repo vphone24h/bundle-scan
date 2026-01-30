@@ -23,6 +23,17 @@ export interface TenantInfo {
 export function detectTenantFromHostname(): TenantInfo {
   const hostname = window.location.hostname;
   
+  // Check for ?store= query param (for testing/dev mode)
+  const params = new URLSearchParams(window.location.search);
+  const storeParam = params.get('store');
+  if (storeParam) {
+    return {
+      subdomain: storeParam.toLowerCase(),
+      isMainDomain: false,
+      hostname,
+    };
+  }
+  
   // Development mode (localhost)
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return {
