@@ -66,7 +66,8 @@ type Step = 'price' | 'settings' | 'paper' | 'adjust';
 
 interface PrintAdjustments {
   scale: number; // 0.5 to 1.5
-  rotation: 0 | 90; // 0 or 90 degrees
+  rotation: 0 | 90 | 270; // degrees
+  autoCompensateRotation: boolean; // tự bù xoay cho driver máy in nhiệt
 }
 
 export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
@@ -87,6 +88,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   const [adjustments, setAdjustments] = useState<PrintAdjustments>({
     scale: 1,
     rotation: 0,
+    autoCompensateRotation: true,
   });
 
   // Initialize product entries when products change
@@ -148,17 +150,24 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const isA4Sheet = paper.size.toLowerCase().includes('a4');
     const scale = printAdjustments?.scale ?? 1;
     const rotation = printAdjustments?.rotation ?? 0;
+    const autoCompensateRotation = printAdjustments?.autoCompensateRotation ?? true;
     
     // Tem cuộn (ví dụ 50x30) đôi khi bị driver ép in dọc (30x50) dù chọn Landscape.
     // Giải pháp bền vững: "bù xoay" bằng cách hoán đổi @page size và xoay nội dung 90°.
     // - Nếu người dùng đã chọn rotation thủ công thì tôn trọng.
     // - Nếu không, tự động bật bù xoay cho tem cuộn ngang (width > height, không phải A4).
     const shouldAutoCompensateRotation = !isA4Sheet && width > height;
-    const effectiveRotation: 0 | 90 = rotation !== 0 ? rotation : shouldAutoCompensateRotation ? 90 : 0;
+    const effectiveRotation: 0 | 90 | 270 =
+      rotation !== 0
+        ? rotation
+        : autoCompensateRotation && shouldAutoCompensateRotation
+          ? 270
+          : 0;
 
     // Dimension locking: khi xoay 90°, swap kích thước trang để khớp cách driver render.
-    const pageWidth = effectiveRotation === 90 ? height : width;
-    const pageHeight = effectiveRotation === 90 ? width : height;
+    const isRotated = effectiveRotation !== 0;
+    const pageWidth = isRotated ? height : width;
+    const pageHeight = isRotated ? width : height;
     
     // Generate all labels (repeat by quantity)
     const allLabels: ProductPriceEntry[] = [];
@@ -320,12 +329,12 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center !important;
             text-align: center !important;
             gap: 0 !important;
-            /* Bù xoay để tránh driver ép in dọc (xoay NGƯỢC chiều để đúng hướng giấy cuộn) */
-            transform: rotate(${effectiveRotation === 90 ? -90 : 0}deg) scale(${scale});
+            /* Bù xoay để tránh driver ép in dọc */
+            transform: rotate(${effectiveRotation === 270 ? -90 : effectiveRotation}deg) scale(${scale});
             transform-origin: center center;
             /* Khi xoay 90°, khung nội dung cần swap để fit trong trang đã swap */
-            width: ${effectiveRotation === 90 ? pageHeight - 4 : pageWidth - 4}mm;
-            height: ${effectiveRotation === 90 ? pageWidth - 4 : pageHeight - 4}mm;
+            width: ${isRotated ? pageHeight - 4 : pageWidth - 4}mm;
+            height: ${isRotated ? pageWidth - 4 : pageHeight - 4}mm;
             margin: 0 auto !important;
           }
           
@@ -915,7 +924,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         </Button>
         <Button onClick={() => {
           // Reset adjustments when entering adjust step
-          setAdjustments({ scale: 1, rotation: 0 });
+          setAdjustments({ scale: 1, rotation: 0, autoCompensateRotation: true });
           setStep('adjust');
         }} disabled={!selectedPaper}>
           Tiếp tục
@@ -986,7 +995,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     
     // Content dimensions based on adjustments
     const contentScale = adjustments.scale;
-    const isRotated = adjustments.rotation === 90;
+    const previewRotateDeg = adjustments.rotation === 270 ? -90 : adjustments.rotation;
 
     return (
       <div className="space-y-6">
@@ -1021,26 +1030,26 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             <div 
               className="flex flex-col items-center justify-center text-center transition-transform duration-200"
               style={{
-                transform: `${isRotated ? 'rotate(90deg)' : ''} scale(${contentScale})`,
+                transform: `rotate(${previewRotateDeg}deg) scale(${contentScale})`,
                 transformOrigin: 'center center',
               }}
             >
               {settings.showStoreName && settings.storeName && (
-                <div className="text-[8px] font-bold text-black">{settings.storeName}</div>
+                <div className="text-[8px] font-bold text-foreground">{settings.storeName}</div>
               )}
               {settings.showProductName && sampleEntry && (
-                <div className="text-[6px] text-black truncate max-w-[60px]">{sampleEntry.name}</div>
+                <div className="text-[6px] text-foreground truncate max-w-[60px]">{sampleEntry.name}</div>
               )}
               <div className="flex items-center gap-1 my-1">
-                <div className="w-6 h-6 bg-gray-800 rounded-sm flex items-center justify-center">
-                  <span className="text-white text-[4px]">QR</span>
+                <div className="w-6 h-6 bg-muted rounded-sm flex items-center justify-center border">
+                  <span className="text-muted-foreground text-[4px]">QR</span>
                 </div>
-                <div className="w-10 h-4 bg-gray-800 rounded-sm flex items-center justify-center">
-                  <span className="text-white text-[3px]">|||||||</span>
+                <div className="w-10 h-4 bg-muted rounded-sm flex items-center justify-center border">
+                  <span className="text-muted-foreground text-[3px]">|||||||</span>
                 </div>
               </div>
               {settings.showPrice && sampleEntry && (
-                <div className="text-[7px] font-bold text-black">
+                <div className="text-[7px] font-bold text-foreground">
                   {formatNumberWithSpaces(sampleEntry.printPrice)}{settings.priceWithVND ? ' VND' : ''}
                 </div>
               )}
@@ -1070,35 +1079,61 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
                 step="0.05"
                 value={adjustments.scale}
                 onChange={(e) => setAdjustments({ ...adjustments, scale: parseFloat(e.target.value) })}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
               />
               <Plus className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>
 
-          {/* Rotation toggle */}
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">Xoay nội dung 90°</Label>
-            <Button
-              variant={adjustments.rotation === 90 ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setAdjustments({ 
-                ...adjustments, 
-                rotation: adjustments.rotation === 0 ? 90 : 0 
-              })}
-              className="gap-2"
-            >
-              <svg 
-                className="h-4 w-4" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2"
+          {/* Rotation options */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Xoay nội dung</Label>
+              <span className="text-sm text-muted-foreground">{adjustments.rotation}°</span>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={adjustments.rotation === 0 ? 'default' : 'outline'}
+                onClick={() => setAdjustments({ ...adjustments, rotation: 0 })}
               >
-                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
-                <path d="M21 3v5h-5" />
-              </svg>
-              {adjustments.rotation === 90 ? 'Đã xoay 90°' : 'Xoay 90°'}
+                0°
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={adjustments.rotation === 90 ? 'default' : 'outline'}
+                onClick={() => setAdjustments({ ...adjustments, rotation: 90 })}
+              >
+                90°
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={adjustments.rotation === 270 ? 'default' : 'outline'}
+                onClick={() => setAdjustments({ ...adjustments, rotation: 270 })}
+              >
+                270°
+              </Button>
+            </div>
+          </div>
+
+          {/* Auto compensation (365B) */}
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium">Tự bù xoay (365B)</Label>
+            <Button
+              type="button"
+              size="sm"
+              variant={adjustments.autoCompensateRotation ? 'default' : 'outline'}
+              onClick={() =>
+                setAdjustments({
+                  ...adjustments,
+                  autoCompensateRotation: !adjustments.autoCompensateRotation,
+                })
+              }
+            >
+              {adjustments.autoCompensateRotation ? 'Bật' : 'Tắt'}
             </Button>
           </div>
 
@@ -1107,28 +1142,28 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => setAdjustments({ scale: 0.5, rotation: 0 })}
+              onClick={() => setAdjustments({ scale: 0.5, rotation: 0, autoCompensateRotation: true })}
             >
               50%
             </Button>
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => setAdjustments({ scale: 0.75, rotation: 0 })}
+              onClick={() => setAdjustments({ scale: 0.75, rotation: 0, autoCompensateRotation: true })}
             >
               75%
             </Button>
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => setAdjustments({ scale: 1, rotation: 0 })}
+              onClick={() => setAdjustments({ scale: 1, rotation: 0, autoCompensateRotation: true })}
             >
               100%
             </Button>
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => setAdjustments({ scale: 0.6, rotation: 90 })}
+              onClick={() => setAdjustments({ scale: 0.6, rotation: 270, autoCompensateRotation: true })}
             >
               60% + Xoay
             </Button>
