@@ -131,8 +131,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   ): string => {
     const { width, height } = paper.dimensions;
     const isA4Sheet = paper.size.toLowerCase().includes('a4');
-    // Mẫu 7: tem cuộn 55x30mm - không cần xoay vì khổ ngang phù hợp
-    const isRotatedLabel = false; // Tắt xoay cho mẫu 7
+    // Mẫu 7: tem cuộn 55x30mm - cần xoay 90 độ và thu nhỏ nội dung
+    const isRotatedLabel = paper.id === '7';
     
     // Generate all labels (repeat by quantity)
     const allLabels: ProductPriceEntry[] = [];
@@ -149,9 +149,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const isLargeLabel = height >= 100; // Mẫu A4, Tomy
     
     // QR size: proportional to label height
-    const qrSize = isJewelryLabel ? 28 : isSmallLabel ? 40 : isLargeLabel ? 80 : 64;
-    const barcodeHeight = isJewelryLabel ? 12 : isSmallLabel ? 16 : 20;
-    const barcodeWidth = isJewelryLabel ? 0.8 : 1;
+    // Mẫu 7 xoay: sau khi xoay chiều cao thực tế là width (55mm), nhưng cần nhỏ gọn
+    const qrSize = isRotatedLabel ? 24 : isJewelryLabel ? 28 : isSmallLabel ? 40 : isLargeLabel ? 80 : 64;
+    const barcodeHeight = isRotatedLabel ? 14 : isJewelryLabel ? 12 : isSmallLabel ? 16 : 20;
+    const barcodeWidth = isRotatedLabel ? 0.6 : isJewelryLabel ? 0.8 : 1;
 
     const labelHTML = allLabels.map((entry, idx) => {
       // Encode format: CODE:PRICE (e.g., "353902103999926:24000000")
@@ -171,24 +172,24 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         `;
       }
       
-      // Cho mẫu xoay (template 7), bọc nội dung trong .label-content
+      // Cho mẫu xoay (template 7), bọc nội dung trong .label-content với kích thước nhỏ hơn
       if (isRotatedLabel) {
         return `
-          <div class="label" style="width: ${width}mm; height: ${height}mm;">
+          <div class="label rotated-label" style="width: ${width}mm; height: ${height}mm;">
             <div class="label-content">
               ${printSettings.showStoreName && printSettings.storeName ? 
-                `<div class="store-name">${printSettings.storeName}</div>` : ''}
+                `<div class="store-name-small">${printSettings.storeName}</div>` : ''}
               ${printSettings.showProductName ? 
-                `<div class="product-name">${entry.name}</div>` : ''}
+                `<div class="product-name-small">${entry.name}</div>` : ''}
               ${printSettings.showCustomDescription && printSettings.customDescription ? 
-                `<div class="custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
-              <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
+                `<div class="custom-description-small">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
+              <div class="codes-container-rotated">
                 <div class="qr-code" id="qrcode-${idx}" data-value="${codeValue}" style="width: ${qrSize}px; height: ${qrSize}px;"></div>
                 <svg class="barcode" id="barcode-${idx}"></svg>
               </div>
-              <div class="code-text">${entry.imei || entry.sku}</div>
+              <div class="code-text-small">${entry.imei || entry.sku}</div>
               ${printSettings.showPrice ? 
-                `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
+                `<div class="price-small">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
             </div>
           </div>
         `;
@@ -326,16 +327,62 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           }
           
           ${isRotatedLabel ? `
+          .rotated-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
           .label-content {
             transform: rotate(-90deg);
             transform-origin: center center;
-            width: ${height}mm;
-            height: ${width}mm;
+            /* Sau khi xoay: chiều ngang thực tế = height gốc (30mm), chiều cao = width gốc (55mm) */
+            width: ${height - 2}mm;
+            height: ${width - 4}mm;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
+            gap: 0.3mm;
+          }
+          .store-name-small {
+            font-size: 6px;
+            font-weight: bold;
+            color: #000;
+            line-height: 1;
+          }
+          .product-name-small {
+            font-size: 5px;
+            color: #000;
+            line-height: 1;
+            word-break: break-word;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .custom-description-small {
+            font-size: 5px;
+            color: #000;
+            line-height: 1;
+          }
+          .codes-container-rotated {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 1mm;
+          }
+          .code-text-small {
+            font-size: 4px;
+            color: #333;
+            line-height: 1;
+          }
+          .price-small {
+            font-size: 6px;
+            font-weight: bold;
+            color: #000;
+            line-height: 1;
           }
           ` : ''}
           
