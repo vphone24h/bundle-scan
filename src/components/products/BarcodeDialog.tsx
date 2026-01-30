@@ -194,44 +194,24 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         `;
       }
       
-      // Cho mẫu xoay (template 7), bọc nội dung trong .label-content với kích thước nhỏ hơn
-      if (isRotatedLabel) {
-        return `
-          <div class="label rotated-label" style="width: ${width}mm; height: ${height}mm;">
-            <div class="label-content">
-              ${printSettings.showStoreName && printSettings.storeName ? 
-                `<div class="store-name-small">${printSettings.storeName}</div>` : ''}
-              ${printSettings.showProductName ? 
-                `<div class="product-name-small">${entry.name}</div>` : ''}
-              ${printSettings.showCustomDescription && printSettings.customDescription ? 
-                `<div class="custom-description-small">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
-              <div class="codes-container-rotated">
-                <div class="qr-code" id="qrcode-${idx}" data-value="${codeValue}" style="width: ${qrSize}px; height: ${qrSize}px;"></div>
-                <svg class="barcode" id="barcode-${idx}"></svg>
-              </div>
-              <div class="code-text-small">${entry.imei || entry.sku}</div>
-              ${printSettings.showPrice ? 
-                `<div class="price-small">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
-            </div>
-          </div>
-        `;
-      }
-      
+      // Tất cả các mẫu đều dùng chung template với transform từ adjustments
       return `
         <div class="label" style="width: ${width}mm; height: ${height}mm;">
-          ${printSettings.showStoreName && printSettings.storeName ? 
-            `<div class="store-name">${printSettings.storeName}</div>` : ''}
-          ${printSettings.showProductName ? 
-            `<div class="product-name">${entry.name}</div>` : ''}
-          ${printSettings.showCustomDescription && printSettings.customDescription ? 
-            `<div class="custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
-          <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
-            <div class="qr-code" id="qrcode-${idx}" data-value="${codeValue}" style="width: ${qrSize}px; height: ${qrSize}px;"></div>
-            <svg class="barcode" id="barcode-${idx}"></svg>
+          <div class="label-content-wrapper">
+            ${printSettings.showStoreName && printSettings.storeName ? 
+              `<div class="store-name">${printSettings.storeName}</div>` : ''}
+            ${printSettings.showProductName ? 
+              `<div class="product-name">${entry.name}</div>` : ''}
+            ${printSettings.showCustomDescription && printSettings.customDescription ? 
+              `<div class="custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
+            <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
+              <div class="qr-code" id="qrcode-${idx}" data-value="${codeValue}" style="width: ${qrSize}px; height: ${qrSize}px;"></div>
+              <svg class="barcode" id="barcode-${idx}"></svg>
+            </div>
+            <div class="code-text">${entry.imei || entry.sku}</div>
+            ${printSettings.showPrice ? 
+              `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
           </div>
-          <div class="code-text">${entry.imei || entry.sku}</div>
-          ${printSettings.showPrice ? 
-            `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
         </div>
       `;
     }).join('');
@@ -331,82 +311,35 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             width: ${width}mm !important;
             height: ${height}mm !important;
             border: none;
-            /* Giảm padding để tránh bị cắt nội dung ở tem nhỏ */
-            padding: 0.6mm;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            text-align: center;
-            page-break-inside: avoid;
-            /* Tem cuộn: mỗi tem 1 trang. A4: không ép mỗi tem 1 trang */
-            page-break-after: ${isA4Sheet ? 'auto' : 'always'};
-            overflow: hidden;
-            ${isRotatedLabel ? `
-              /* Xoay 90 độ cho tem cuộn 40x30mm */
-              position: relative;
-            ` : ''}
-          }
-          
-          ${isRotatedLabel ? `
-          .rotated-label {
+            padding: 0.5mm;
             display: flex;
             align-items: center;
             justify-content: center;
+            text-align: center;
+            page-break-inside: avoid;
+            page-break-after: ${isA4Sheet ? 'auto' : 'always'};
+            overflow: hidden;
           }
-          .label-content {
-            transform: rotate(-90deg) scale(${scale});
-            transform-origin: center center;
-            /* Sau khi xoay: chiều ngang thực tế = height gốc, chiều cao = width gốc */
-            width: ${height - 2}mm;
-            height: ${width - 4}mm;
+          
+          .label-content-wrapper {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
             gap: 0.3mm;
+            /* Áp dụng transform từ adjustments */
+            transform: scale(${scale}) ${isRotatedLabel ? 'rotate(-90deg)' : ''};
+            transform-origin: center center;
+            ${isRotatedLabel ? `
+              /* Khi xoay, đổi chiều width/height */
+              max-width: ${height - 2}mm;
+              max-height: ${width - 2}mm;
+            ` : `
+              max-width: ${width - 2}mm;
+              max-height: ${height - 2}mm;
+            `}
           }
-          .store-name-small {
-            font-size: ${Math.round(6 * scale)}px;
-            font-weight: bold;
-            color: #000;
-            line-height: 1;
-          }
-          .product-name-small {
-            font-size: ${Math.round(5 * scale)}px;
-            color: #000;
-            line-height: 1;
-            word-break: break-word;
-            max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-          .custom-description-small {
-            font-size: ${Math.round(5 * scale)}px;
-            color: #000;
-            line-height: 1;
-          }
-          .codes-container-rotated {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            gap: 1mm;
-          }
-          .code-text-small {
-            font-size: ${Math.round(4 * scale)}px;
-            color: #333;
-            line-height: 1;
-          }
-          .price-small {
-            font-size: ${Math.round(6 * scale)}px;
-            font-weight: bold;
-            color: #000;
-            line-height: 1;
-          }
-          ` : ''}
           
           .store-name {
             font-size: ${Math.round(8 * scale)}px;
@@ -471,14 +404,14 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           }
           
           .code-text {
-            font-size: 6px;
+            font-size: ${Math.round(6 * scale)}px;
             font-family: monospace;
             margin-top: 0.3mm;
             color: #000;
           }
           
           .price {
-            font-size: 10px;
+            font-size: ${Math.round(10 * scale)}px;
             font-weight: bold;
             margin-top: 0.3mm;
             color: #000;
