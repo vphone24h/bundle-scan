@@ -151,9 +151,9 @@ export const mockPaperTemplates: PaperTemplate[] = [
     id: '7',
     name: 'Giấy cuộn 40x30mm',
     description: 'Tem cuộn vuông, phù hợp máy in nhiệt Xprinter, KiotViet 365B',
-    size: '40 x 30 mm',
+    size: '30 x 40 mm',
     labelCount: 1,
-    dimensions: { width: 40, height: 30, unit: 'mm' },
+    dimensions: { width: 30, height: 40, unit: 'mm' },
     image: 'paper-template-7',
   },
 ];
