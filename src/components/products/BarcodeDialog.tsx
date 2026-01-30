@@ -280,7 +280,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const barcodeWidth = baseBarcodeWidth * scale;
 
     const labelHTML = allLabels.map((entry, idx) => {
-      const codeValue = `${entry.imei || entry.sku}:${entry.printPrice}`;
+      // Same encoding logic: IMEI products use IMEI:PRICE, non-IMEI use N:NAME:PRICE
+      const codeValue = entry.imei 
+        ? `${entry.imei}:${entry.printPrice}`
+        : `N:${entry.name}:${entry.printPrice}`;
       
       if (isJewelryLabel) {
         return `
@@ -315,7 +318,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     }).join('');
 
     const initScript = allLabels.map((entry, idx) => {
-      const codeValue = `${entry.imei || entry.sku}:${entry.printPrice}`;
+      // Same encoding logic
+      const codeValue = entry.imei 
+        ? `${entry.imei}:${entry.printPrice}`
+        : `N:${entry.name}:${entry.printPrice}`;
       return `
         JsBarcode("#barcode-${idx}", "${codeValue}", {
           format: "CODE128",
@@ -534,9 +540,12 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const barcodeWidth = baseBarcodeWidth * scale;
 
     const labelHTML = allLabels.map((entry, idx) => {
-      // Encode format: CODE:PRICE (e.g., "353902103999926:24000000")
-      // Using ":" as delimiter - simple and scanner-compatible
-      const codeValue = `${entry.imei || entry.sku}:${entry.printPrice}`;
+      // Encode format:
+      // - IMEI products: IMEI:PRICE (e.g., "353902103999926:24000000")
+      // - Non-IMEI products: N:NAME:PRICE (e.g., "N:iPhone 15:24000000") - prefix "N:" indicates non-IMEI
+      const codeValue = entry.imei 
+        ? `${entry.imei}:${entry.printPrice}`
+        : `N:${entry.name}:${entry.printPrice}`;
       
       // For jewelry labels, only show barcode (too small for QR)
       if (isJewelryLabel) {
@@ -575,7 +584,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     // Generate initialization script for both QR and Barcode
     // CHỈ tạo Barcode, không tạo QR
     const initScript = allLabels.map((entry, idx) => {
-      const codeValue = `${entry.imei || entry.sku}:${entry.printPrice}`;
+      // Same encoding logic as labelHTML
+      const codeValue = entry.imei 
+        ? `${entry.imei}:${entry.printPrice}`
+        : `N:${entry.name}:${entry.printPrice}`;
       
       return `
         JsBarcode("#barcode-${idx}", "${codeValue}", {
