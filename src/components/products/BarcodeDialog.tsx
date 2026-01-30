@@ -129,6 +129,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     printSettings: BarcodeSettings
   ): string => {
     const { width, height } = paper.dimensions;
+    const isA4Sheet = paper.size.toLowerCase().includes('a4');
     
     // Generate all labels (repeat by quantity)
     const allLabels: ProductPriceEntry[] = [];
@@ -240,37 +241,58 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           }
           
           @page {
-            size: ${paper.size.includes('A4') ? 'A4' : `${width}mm ${height}mm`};
+            /*
+              NOTE: Với tem cuộn, ép kích thước đúng mm để trình duyệt/printer không tự dàn sang A4.
+              Với mẫu A4, giữ A4.
+            */
+            size: ${isA4Sheet ? 'A4' : `${width}mm ${height}mm`};
             margin: 0;
+          }
+
+          html {
+            margin: 0;
+            padding: 0;
+            /* Khóa khổ trang cho tem cuộn */
+            width: ${isA4Sheet ? 'auto' : `${width}mm`};
+            height: ${isA4Sheet ? 'auto' : `${height}mm`};
           }
           
           body {
             font-family: Arial, sans-serif;
             padding: 0;
             margin: 0;
+            width: ${isA4Sheet ? 'auto' : `${width}mm`};
           }
           
           .labels-container {
+            /*
+              Tem cuộn: luôn 1 cột, không wrap (tránh "nhảy tum lum" / dàn 3 tem trên 1 tờ).
+              Mẫu A4: vẫn cho wrap như cũ.
+            */
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: ${isA4Sheet ? 'row' : 'column'};
+            flex-wrap: ${isA4Sheet ? 'wrap' : 'nowrap'};
             gap: 0;
             padding: 0;
             margin: 0;
+            width: ${isA4Sheet ? 'auto' : `${width}mm`};
           }
           
           .label {
             width: ${width}mm !important;
             height: ${height}mm !important;
             border: none;
-            padding: 1mm;
+            /* Giảm padding để tránh bị cắt nội dung ở tem nhỏ */
+            padding: 0.6mm;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
             text-align: center;
             page-break-inside: avoid;
-            page-break-after: always;
-            overflow: visible;
+            /* Tem cuộn: mỗi tem 1 trang. A4: không ép mỗi tem 1 trang */
+            page-break-after: ${isA4Sheet ? 'auto' : 'always'};
+            overflow: hidden;
           }
           
           .store-name {
@@ -363,13 +385,13 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           
           @media print {
             html, body {
-              width: ${width}mm;
-              height: auto;
+              width: ${isA4Sheet ? 'auto' : `${width}mm`};
+              height: ${isA4Sheet ? 'auto' : `${height}mm`};
               margin: 0 !important;
               padding: 0 !important;
             }
             .labels-container {
-              width: ${width}mm;
+              width: ${isA4Sheet ? 'auto' : `${width}mm`};
             }
             .label {
               border: none !important;
