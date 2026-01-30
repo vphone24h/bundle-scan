@@ -131,6 +131,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   ): string => {
     const { width, height } = paper.dimensions;
     const isA4Sheet = paper.size.toLowerCase().includes('a4');
+    // Mẫu 7: tem cuộn 40x30mm cần xoay 90 độ để in đúng chiều
+    const isRotatedLabel = paper.id === '7';
     
     // Generate all labels (repeat by quantity)
     const allLabels: ProductPriceEntry[] = [];
@@ -165,6 +167,29 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             </div>
             ${printSettings.showPrice ? 
               `<div class="price-inline">${formatNumberWithSpaces(entry.printPrice)}</div>` : ''}
+          </div>
+        `;
+      }
+      
+      // Cho mẫu xoay (template 7), bọc nội dung trong .label-content
+      if (isRotatedLabel) {
+        return `
+          <div class="label" style="width: ${width}mm; height: ${height}mm;">
+            <div class="label-content">
+              ${printSettings.showStoreName && printSettings.storeName ? 
+                `<div class="store-name">${printSettings.storeName}</div>` : ''}
+              ${printSettings.showProductName ? 
+                `<div class="product-name">${entry.name}</div>` : ''}
+              ${printSettings.showCustomDescription && printSettings.customDescription ? 
+                `<div class="custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
+              <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
+                <div class="qr-code" id="qrcode-${idx}" data-value="${codeValue}" style="width: ${qrSize}px; height: ${qrSize}px;"></div>
+                <svg class="barcode" id="barcode-${idx}"></svg>
+              </div>
+              <div class="code-text">${entry.imei || entry.sku}</div>
+              ${printSettings.showPrice ? 
+                `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
+            </div>
           </div>
         `;
       }
@@ -294,7 +319,25 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             /* Tem cuộn: mỗi tem 1 trang. A4: không ép mỗi tem 1 trang */
             page-break-after: ${isA4Sheet ? 'auto' : 'always'};
             overflow: hidden;
+            ${isRotatedLabel ? `
+              /* Xoay 90 độ cho tem cuộn 40x30mm */
+              position: relative;
+            ` : ''}
           }
+          
+          ${isRotatedLabel ? `
+          .label-content {
+            transform: rotate(-90deg);
+            transform-origin: center center;
+            width: ${height}mm;
+            height: ${width}mm;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+          }
+          ` : ''}
           
           .store-name {
             font-size: 8px;
