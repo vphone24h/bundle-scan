@@ -148,7 +148,20 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
       const isPhoneNumber = /^0\d{9,10}$/.test(searchValue.replace(/\s/g, ''));
       
       if (isPhoneNumber) {
-        // Tìm theo SĐT khách hàng - trả về tất cả sản phẩm đã mua
+        // Tìm theo SĐT khách hàng - Step 1: Tìm customer_id trong tenant
+        const { data: customers, error: customerError } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('tenant_id', tenantId)
+          .eq('phone', searchValue)
+          .limit(1);
+
+        if (customerError) throw customerError;
+        if (!customers || customers.length === 0) return [];
+
+        const customerId = customers[0].id;
+
+        // Step 2: Lấy các đơn hàng của customer này trong tenant
         const { data, error } = await supabase
           .from('export_receipt_items')
           .select(`
@@ -165,12 +178,12 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
               export_date,
               tenant_id,
               branch_id,
-              branches (name),
-              customers (phone)
+              customer_id,
+              branches (name)
             )
           `)
           .eq('export_receipts.tenant_id', tenantId)
-          .eq('export_receipts.customers.phone', searchValue)
+          .eq('export_receipts.customer_id', customerId)
           .eq('status', 'sold')
           .order('created_at', { ascending: false })
           .limit(20);
@@ -188,7 +201,7 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
           created_at: item.created_at,
           branch_name: item.export_receipts?.branches?.name || null,
           export_date: item.export_receipts?.export_date || item.created_at,
-          customer_phone: item.export_receipts?.customers?.phone || null,
+          customer_phone: searchValue,
         }));
       } else {
         // Tìm theo IMEI
