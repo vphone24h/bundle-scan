@@ -88,7 +88,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   const [adjustments, setAdjustments] = useState<PrintAdjustments>({
     scale: 1,
     rotation: 0,
-    autoCompensateRotation: true,
+    autoCompensateRotation: false,
   });
 
   // Initialize product entries when products change
@@ -150,7 +150,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const isA4Sheet = paper.size.toLowerCase().includes('a4');
     const scale = printAdjustments?.scale ?? 1;
     const rotation = printAdjustments?.rotation ?? 0;
-    const autoCompensateRotation = printAdjustments?.autoCompensateRotation ?? true;
+    const autoCompensateRotation = printAdjustments?.autoCompensateRotation ?? false;
     
     // Tem cuộn (ví dụ 50x30) đôi khi bị driver ép in dọc (30x50) dù chọn Landscape.
     // Giải pháp bền vững: "bù xoay" bằng cách hoán đổi @page size và xoay nội dung 90°.
