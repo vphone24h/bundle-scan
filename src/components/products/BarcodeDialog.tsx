@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -72,6 +73,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     showProductName: true,
     showStoreName: true,
     storeName: 'Kho Hàng VN',
+    showCustomDescription: false,
+    customDescription: '',
   });
   const [selectedPaper, setSelectedPaper] = useState<string | null>(null);
   const [previewPaper, setPreviewPaper] = useState<PaperTemplate | null>(null);
@@ -170,6 +173,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             `<div class="store-name">${printSettings.storeName}</div>` : ''}
           ${printSettings.showProductName ? 
             `<div class="product-name">${entry.name}</div>` : ''}
+          ${printSettings.showCustomDescription && printSettings.customDescription ? 
+            `<div class="custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
           <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
             <div class="qr-code" id="qrcode-${idx}" data-value="${codeValue}" style="width: ${qrSize}px; height: ${qrSize}px;"></div>
             <svg class="barcode" id="barcode-${idx}"></svg>
@@ -276,6 +281,14 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             max-height: 2em;
             overflow: hidden;
             line-height: 1.1;
+          }
+          
+          .custom-description {
+            font-size: 6px;
+            color: #333;
+            margin-bottom: 0.5mm;
+            line-height: 1.2;
+            white-space: pre-wrap;
           }
           
           .codes-container {
@@ -548,6 +561,13 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             </p>
           )}
 
+          {/* Custom description */}
+          {settings.showCustomDescription && settings.customDescription && (
+            <p className="text-[9px] text-foreground whitespace-pre-wrap w-full">
+              {settings.customDescription}
+            </p>
+          )}
+
           {/* Barcode placeholder */}
           <div className="w-full py-2">
             <div className="flex items-end justify-center gap-[1px] h-10">
@@ -690,6 +710,31 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
                   onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
                   placeholder="Tên cửa hàng"
                   className="max-w-xs"
+                />
+              </div>
+            )}
+
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="showCustomDescription"
+                checked={settings.showCustomDescription}
+                onCheckedChange={(checked) =>
+                  setSettings({ ...settings, showCustomDescription: checked as boolean })
+                }
+              />
+              <Label htmlFor="showCustomDescription" className="font-normal cursor-pointer">
+                Mô tả khác
+              </Label>
+            </div>
+
+            {settings.showCustomDescription && (
+              <div className="ml-7">
+                <Textarea
+                  value={settings.customDescription}
+                  onChange={(e) => setSettings({ ...settings, customDescription: e.target.value })}
+                  placeholder="Nhập mô tả tùy chỉnh..."
+                  className="max-w-xs min-h-[80px] resize-none"
+                  rows={3}
                 />
               </div>
             )}

@@ -91,6 +91,8 @@ export interface BarcodeSettings {
   showProductName: boolean;
   showStoreName: boolean;
   storeName?: string;
+  showCustomDescription: boolean;
+  customDescription?: string;
 }
 
 // Stats for dashboard
