@@ -173,8 +173,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     
     // Base QR size - will be scaled
     const baseQrSize = isJewelryLabel ? 28 : isSmallLabel ? 40 : isLargeLabel ? 80 : 64;
-    const baseBarcodeHeight = isJewelryLabel ? 12 : isSmallLabel ? 16 : 20;
-    const baseBarcodeWidth = isJewelryLabel ? 0.8 : 1;
+    const baseBarcodeHeight = isJewelryLabel ? 12 : isSmallLabel ? 14 : 18;
+    // Thu ngắn chiều ngang barcode (giảm từ 1 xuống 0.6)
+    const baseBarcodeWidth = isJewelryLabel ? 0.6 : 0.6;
     
     // Apply scale to sizes
     const qrSize = Math.round(baseQrSize * scale);
