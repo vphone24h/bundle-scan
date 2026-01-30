@@ -179,57 +179,6 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       </header>
 
       <main className="max-w-lg mx-auto px-3 py-4 space-y-4">
-        {/* Kênh thông tin - Social Media */}
-        {hasSocialLinks && (
-          <Card className="shadow-md">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-center gap-4">
-                <span className="text-sm text-muted-foreground">Kênh thông tin:</span>
-                <div className="flex items-center gap-3">
-                  {facebookUrl && (
-                    <a 
-                      href={facebookUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2.5 rounded-full bg-blue-100 hover:bg-blue-200 active:bg-blue-300 transition-colors"
-                    >
-                      <svg className="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                      </svg>
-                    </a>
-                  )}
-                  
-                  {zaloUrl && (
-                    <a 
-                      href={zaloUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2.5 rounded-full bg-blue-50 hover:bg-blue-100 active:bg-blue-200 transition-colors"
-                    >
-                      <svg className="h-5 w-5 text-blue-500" viewBox="0 0 48 48" fill="currentColor">
-                        <path d="M24 4C12.954 4 4 12.954 4 24s8.954 20 20 20 20-8.954 20-20S35.046 4 24 4zm9.375 28.125c-.833.833-2.5 1.667-4.167 1.667h-5.416c-1.667 0-3.334-.834-4.167-1.667l-5-5c-.833-.833-.833-2.5 0-3.333l7.5-7.5c.833-.834 2.5-.834 3.333 0l.834.833.833-.833c.834-.834 2.5-.834 3.334 0l7.5 7.5c.833.833.833 2.5 0 3.333l-4.584 5z"/>
-                      </svg>
-                    </a>
-                  )}
-                  
-                  {tiktokUrl && (
-                    <a 
-                      href={tiktokUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2.5 rounded-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors"
-                    >
-                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                      </svg>
-                    </a>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Banner - Mobile optimized */}
         {settings?.show_banner && settings?.banner_image_url && (
           <Card className="overflow-hidden shadow-md">
@@ -248,6 +197,60 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                 className="w-full h-auto object-cover"
               />
             )}
+          </Card>
+        )}
+
+        {/* Kênh thông tin - Social Media - Đặt sau banner, trước tra cứu bảo hành */}
+        {hasSocialLinks && (
+          <Card className="shadow-md">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                <span className="text-sm text-muted-foreground">Kênh thông tin:</span>
+                <div className="flex items-center gap-2">
+                  {facebookUrl && (
+                    <a 
+                      href={facebookUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 hover:bg-blue-200 active:bg-blue-300 transition-colors"
+                    >
+                      <svg className="h-4 w-4 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      </svg>
+                      <span className="text-sm font-medium text-blue-700">Facebook</span>
+                    </a>
+                  )}
+                  
+                  {zaloUrl && (
+                    <a 
+                      href={zaloUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 hover:bg-blue-100 active:bg-blue-200 transition-colors"
+                    >
+                      <svg className="h-4 w-4 text-blue-500" viewBox="0 0 48 48" fill="currentColor">
+                        <path d="M24 4C12.954 4 4 12.954 4 24s8.954 20 20 20 20-8.954 20-20S35.046 4 24 4zm9.375 28.125c-.833.833-2.5 1.667-4.167 1.667h-5.416c-1.667 0-3.334-.834-4.167-1.667l-5-5c-.833-.833-.833-2.5 0-3.333l7.5-7.5c.833-.834 2.5-.834 3.333 0l.834.833.833-.833c.834-.834 2.5-.834 3.334 0l7.5 7.5c.833.833.833 2.5 0 3.333l-4.584 5z"/>
+                      </svg>
+                      <span className="text-sm font-medium text-blue-600">Zalo</span>
+                    </a>
+                  )}
+                  
+                  {tiktokUrl && (
+                    <a 
+                      href={tiktokUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors"
+                    >
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                      </svg>
+                      <span className="text-sm font-medium text-gray-800">TikTok</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            </CardContent>
           </Card>
         )}
 
