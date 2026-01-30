@@ -150,15 +150,15 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const scale = printAdjustments?.scale ?? 1;
     const rotation = printAdjustments?.rotation ?? 0;
     
-    // Với giấy cuộn (không phải A4), máy in thường xoay output
-    // Nên cần xoay nội dung -90deg để bù lại (khi user chọn "không xoay")
-    // Khi user chọn "xoay 90", thì không cần xoay CSS (vì máy in đã xoay rồi)
-    const isRollPaper = !isA4Sheet && width > height; // Giấy cuộn ngang như 55x30
-    const needsCompensation = isRollPaper && rotation === 0; // Cần xoay để bù máy in
+    // Giấy cuộn ngang (55x30): width > height
+    // Giữ nguyên page size theo kích thước thực của giấy
+    // CHỈ xoay nội dung khi user chọn "Xoay 90°" trong adjustments
+    const isRollPaper = !isA4Sheet && width > height;
+    const shouldRotateContent = rotation === 90;
     
-    // Page size: với giấy cuộn, swap để khớp hướng vật lý của cuộn (30mm rộng x 55mm dài)
-    const pageWidth = isRollPaper ? height : width;
-    const pageHeight = isRollPaper ? width : height;
+    // Page size: giữ nguyên kích thước giấy thực tế
+    const pageWidth = width;
+    const pageHeight = height;
     
     // Generate all labels (repeat by quantity)
     const allLabels: ProductPriceEntry[] = [];
@@ -336,11 +336,11 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center;
             text-align: center;
             gap: 0.3mm;
-            /* Xoay -90deg để bù lại máy in cuộn (khi user không chọn xoay) */
-            transform: ${needsCompensation ? 'rotate(-90deg)' : ''} scale(${scale});
+            /* Xoay 90deg khi user chọn trong adjustments */
+            transform: ${shouldRotateContent ? 'rotate(90deg)' : ''} scale(${scale});
             transform-origin: center center;
-            /* Khi xoay -90deg, swap width/height của content */
-            ${needsCompensation ? `
+            /* Khi xoay 90deg, swap width/height của content */
+            ${shouldRotateContent ? `
               width: ${height - 2}mm;
               height: ${width - 2}mm;
             ` : `
