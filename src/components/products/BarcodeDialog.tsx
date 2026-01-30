@@ -76,15 +76,26 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   const [step, setStep] = useState<Step>('price');
   const [productEntries, setProductEntries] = useState<ProductPriceEntry[]>([]);
   const [bulkPrice, setBulkPrice] = useState<string>('');
-  const [settings, setSettings] = useState<BarcodeSettings>({
-    showPrice: true,
-    priceWithVND: true,
-    showProductName: true,
-    showStoreName: true,
-    storeName: 'Kho Hàng VN',
-    showCustomDescription: false,
-    customDescription: '',
+  const [settings, setSettings] = useState<BarcodeSettings>(() => {
+    // Load saved store name from localStorage
+    const savedStoreName = localStorage.getItem('barcode-store-name') || 'Kho Hàng VN';
+    return {
+      showPrice: true,
+      priceWithVND: true,
+      showProductName: true,
+      showStoreName: true,
+      storeName: savedStoreName,
+      showCustomDescription: false,
+      customDescription: '',
+    };
   });
+
+  // Save store name to localStorage when it changes
+  useEffect(() => {
+    if (settings.storeName) {
+      localStorage.setItem('barcode-store-name', settings.storeName);
+    }
+  }, [settings.storeName]);
   const [selectedPaper, setSelectedPaper] = useState<string | null>(null);
   const [previewPaper, setPreviewPaper] = useState<PaperTemplate | null>(null);
   const [adjustments, setAdjustments] = useState<PrintAdjustments>({
