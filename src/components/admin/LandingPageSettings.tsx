@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useTenantLandingSettings, useUpdateTenantLandingSettings, TenantLandingSettings } from '@/hooks/useTenantLanding';
+import { useState, useEffect, useRef } from 'react';
+import { useTenantLandingSettings, useUpdateTenantLandingSettings, TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,13 +8,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 export function LandingPageSettings() {
   const { data: tenant } = useCurrentTenant();
   const { data: settings, isLoading } = useTenantLandingSettings();
   const updateSettings = useUpdateTenantLandingSettings();
+
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   const [formData, setFormData] = useState<Partial<TenantLandingSettings>>({
     is_enabled: true,
@@ -32,6 +37,7 @@ export function LandingPageSettings() {
     primary_color: '#0f766e',
     meta_title: '',
     meta_description: '',
+    warranty_hotline: '',
   });
 
   useEffect(() => {
@@ -52,9 +58,9 @@ export function LandingPageSettings() {
         primary_color: settings.primary_color || '#0f766e',
         meta_title: settings.meta_title || '',
         meta_description: settings.meta_description || '',
+        warranty_hotline: settings.warranty_hotline || '',
       });
     } else if (tenant) {
-      // Default từ tenant info
       setFormData(prev => ({
         ...prev,
         store_name: tenant.name || '',
@@ -64,6 +70,48 @@ export function LandingPageSettings() {
 
   const handleChange = (field: keyof TenantLandingSettings, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !tenant?.id) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'Lỗi', description: 'Ảnh logo không được vượt quá 2MB', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const url = await uploadLandingAsset(file, tenant.id, 'logo');
+      handleChange('store_logo_url', url);
+      toast({ title: 'Đã upload logo' });
+    } catch (error) {
+      toast({ title: 'Lỗi', description: 'Không thể upload logo', variant: 'destructive' });
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !tenant?.id) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Lỗi', description: 'Ảnh banner không được vượt quá 5MB', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingBanner(true);
+    try {
+      const url = await uploadLandingAsset(file, tenant.id, 'banner');
+      handleChange('banner_image_url', url);
+      toast({ title: 'Đã upload banner' });
+    } catch (error) {
+      toast({ title: 'Lỗi', description: 'Không thể upload banner', variant: 'destructive' });
+    } finally {
+      setUploadingBanner(false);
+    }
   };
 
   const handleSave = async () => {
@@ -97,7 +145,7 @@ export function LandingPageSettings() {
       {/* Header với link landing page */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Globe className="h-5 w-5" />
@@ -164,14 +212,53 @@ export function LandingPageSettings() {
                 placeholder="Nhập tên cửa hàng"
               />
             </div>
+            
+            {/* Logo upload */}
             <div className="space-y-2">
-              <Label>URL Logo</Label>
-              <Input
-                value={formData.store_logo_url}
-                onChange={(e) => handleChange('store_logo_url', e.target.value)}
-                placeholder="https://..."
+              <Label>Logo cửa hàng</Label>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="hidden"
               />
+              <div className="flex items-center gap-2">
+                {formData.store_logo_url ? (
+                  <div className="relative">
+                    <img 
+                      src={formData.store_logo_url} 
+                      alt="Logo" 
+                      className="h-12 w-12 rounded-lg object-cover border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleChange('store_logo_url', '')}
+                      className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => logoInputRef.current?.click()}
+                  disabled={uploadingLogo}
+                  className="gap-1.5"
+                >
+                  {uploadingLogo ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  {formData.store_logo_url ? 'Đổi logo' : 'Upload logo'}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Tối đa 2MB, định dạng JPG/PNG</p>
             </div>
+
             <div className="space-y-2 sm:col-span-2">
               <Label>Mô tả ngắn</Label>
               <Textarea
@@ -218,12 +305,12 @@ export function LandingPageSettings() {
             Tra cứu bảo hành
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Cho phép tra cứu bảo hành</Label>
               <p className="text-sm text-muted-foreground">
-                Khách hàng có thể nhập IMEI để kiểm tra thông tin bảo hành
+                Khách hàng có thể nhập IMEI hoặc SĐT để kiểm tra bảo hành
               </p>
             </div>
             <Switch
@@ -231,6 +318,26 @@ export function LandingPageSettings() {
               onCheckedChange={(checked) => handleChange('show_warranty_lookup', checked)}
             />
           </div>
+          
+          {formData.show_warranty_lookup && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Hotline bảo hành
+                </Label>
+                <Input
+                  value={formData.warranty_hotline || ''}
+                  onChange={(e) => handleChange('warranty_hotline', e.target.value)}
+                  placeholder="VD: 1900 xxxx hoặc 0xxx xxx xxx"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Hiển thị trong kết quả tra cứu để khách hàng liên hệ bảo hành
+                </p>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -255,14 +362,50 @@ export function LandingPageSettings() {
             <>
               <Separator />
               <div className="space-y-4">
+                {/* Banner upload */}
                 <div className="space-y-2">
-                  <Label>URL hình ảnh banner</Label>
-                  <Input
-                    value={formData.banner_image_url}
-                    onChange={(e) => handleChange('banner_image_url', e.target.value)}
-                    placeholder="https://..."
+                  <Label>Hình ảnh banner</Label>
+                  <input
+                    ref={bannerInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBannerUpload}
+                    className="hidden"
                   />
+                  {formData.banner_image_url ? (
+                    <div className="relative">
+                      <img 
+                        src={formData.banner_image_url} 
+                        alt="Banner" 
+                        className="w-full max-h-48 rounded-lg object-cover border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleChange('banner_image_url', '')}
+                        className="absolute top-2 right-2 h-8 w-8 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => bannerInputRef.current?.click()}
+                    disabled={uploadingBanner}
+                    className="gap-1.5"
+                  >
+                    {uploadingBanner ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {formData.banner_image_url ? 'Đổi banner' : 'Upload banner'}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">Tối đa 5MB, khuyến nghị 1200x400px</p>
                 </div>
+                
                 <div className="space-y-2">
                   <Label>Link khi click banner (tuỳ chọn)</Label>
                   <Input

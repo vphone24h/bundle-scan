@@ -2956,6 +2956,7 @@ export type Database = {
           store_phone: string | null
           tenant_id: string
           updated_at: string
+          warranty_hotline: string | null
         }
         Insert: {
           banner_image_url?: string | null
@@ -2977,6 +2978,7 @@ export type Database = {
           store_phone?: string | null
           tenant_id: string
           updated_at?: string
+          warranty_hotline?: string | null
         }
         Update: {
           banner_image_url?: string | null
@@ -2998,6 +3000,7 @@ export type Database = {
           store_phone?: string | null
           tenant_id?: string
           updated_at?: string
+          warranty_hotline?: string | null
         }
         Relationships: [
           {
