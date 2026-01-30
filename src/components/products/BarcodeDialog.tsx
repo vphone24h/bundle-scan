@@ -137,6 +137,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   };
 
   // Export to PDF for manual printing later
+  // PDF giữ nguyên hướng ngang như mẫu in thực tế - KHÔNG xoay
   const handleExportPDF = async () => {
     if (!selectedPaper) return;
     
@@ -155,23 +156,13 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
 
       const { width, height } = paper.dimensions;
       
-      // Calculate effective rotation - same logic as generatePrintContent
-      const isA4Sheet = paper.size.toLowerCase().includes('a4');
-      const shouldAutoCompensateRotation = !isA4Sheet && width > height;
-      const effectiveRotation: 0 | 90 | 270 =
-        adjustments.rotation !== 0
-          ? adjustments.rotation
-          : adjustments.autoCompensateRotation && shouldAutoCompensateRotation
-            ? 270
-            : 0;
-      
-      // PDF page dimensions - match the @page size in generatePrintContent
-      const isRotated = effectiveRotation !== 0;
-      const pdfPageWidth = isRotated ? height : width;
-      const pdfPageHeight = isRotated ? width : height;
+      // PDF giữ nguyên kích thước gốc - KHÔNG xoay như khi in trực tiếp
+      // Ví dụ: 55x30mm -> PDF sẽ là 55x30mm (nằm ngang)
+      const pdfPageWidth = width;
+      const pdfPageHeight = height;
 
-      // Create print content with current adjustments
-      const printContent = generatePrintContent(paper, productEntries, settings, adjustments);
+      // Tạo nội dung PDF riêng - không áp dụng rotation compensation
+      const pdfContent = generatePdfContent(paper, productEntries, settings, adjustments.scale);
       
       // Create hidden iframe to render content with exact dimensions
       const iframe = document.createElement('iframe');
@@ -190,7 +181,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       }
       
       iframeDoc.open();
-      iframeDoc.write(printContent);
+      iframeDoc.write(pdfContent);
       iframeDoc.close();
 
       // Wait for scripts (JsBarcode) to load and execute
@@ -198,7 +189,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
 
       const labels = iframeDoc.querySelectorAll('.label');
       
-      // Create PDF with exact paper dimensions
+      // Create PDF with original paper dimensions (landscape for 55x30)
       const pdf = new jsPDF({
         orientation: pdfPageWidth > pdfPageHeight ? 'landscape' : 'portrait',
         unit: 'mm',
@@ -243,6 +234,230 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     }
   };
 
+  // Generate PDF content - giữ nguyên hướng ngang, không xoay
+  const generatePdfContent = (
+    paper: PaperTemplate,
+    entries: ProductPriceEntry[],
+    printSettings: BarcodeSettings,
+    scale: number
+  ): string => {
+    const { width, height } = paper.dimensions;
+    
+    // Generate all labels (repeat by quantity)
+    const allLabels: ProductPriceEntry[] = [];
+    entries.forEach(entry => {
+      for (let i = 0; i < entry.quantity; i++) {
+        allLabels.push(entry);
+      }
+    });
+
+    // Calculate sizes based on label dimensions
+    const isSmallLabel = height <= 22;
+    const isJewelryLabel = height <= 10;
+    const isLargeLabel = height >= 100;
+    
+    const baseQrSize = isJewelryLabel ? 28 : isSmallLabel ? 40 : isLargeLabel ? 80 : 64;
+    const baseBarcodeHeight = isJewelryLabel ? 12 : isSmallLabel ? 14 : 18;
+    const baseBarcodeWidth = 0.6;
+    
+    const qrSize = Math.round(baseQrSize * scale);
+    const barcodeHeight = Math.round(baseBarcodeHeight * scale);
+    const barcodeWidth = baseBarcodeWidth * scale;
+
+    const labelHTML = allLabels.map((entry, idx) => {
+      const codeValue = `${entry.imei || entry.sku}:${entry.printPrice}`;
+      
+      if (isJewelryLabel) {
+        return `
+          <div class="label jewelry-label">
+            <div class="codes-container-inline">
+              <svg class="barcode" id="barcode-${idx}"></svg>
+            </div>
+            ${printSettings.showPrice ? 
+              `<div class="price-inline">${formatNumberWithSpaces(entry.printPrice)}</div>` : ''}
+          </div>
+        `;
+      }
+      
+      return `
+        <div class="label">
+          <div class="label-content-wrapper">
+            ${printSettings.showStoreName && printSettings.storeName ? 
+              `<div class="store-name">${printSettings.storeName}</div>` : ''}
+            ${printSettings.showProductName ? 
+              `<div class="product-name">${entry.name}</div>` : ''}
+            ${printSettings.showCustomDescription && printSettings.customDescription ? 
+              `<div class="custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
+            <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
+              <svg class="barcode" id="barcode-${idx}"></svg>
+            </div>
+            <div class="code-text">${entry.imei || entry.sku}</div>
+            ${printSettings.showPrice ? 
+              `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const initScript = allLabels.map((entry, idx) => {
+      const codeValue = `${entry.imei || entry.sku}:${entry.printPrice}`;
+      return `
+        JsBarcode("#barcode-${idx}", "${codeValue}", {
+          format: "CODE128",
+          width: ${barcodeWidth},
+          height: ${barcodeHeight},
+          displayValue: false,
+          margin: 0
+        });
+      `;
+    }).join('\n');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Xuất PDF mã vạch</title>
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+        <style>
+          * {
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+          }
+          
+          @page {
+            size: ${width}mm ${height}mm;
+            margin: 0mm !important;
+          }
+          
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: ${width}mm;
+            font-family: Arial, sans-serif;
+            background: white;
+          }
+          
+          .labels-container {
+            display: block;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: ${width}mm;
+          }
+          
+          .label {
+            width: ${width}mm !important;
+            height: ${height}mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            page-break-after: always;
+            page-break-inside: avoid;
+            overflow: hidden !important;
+            background: white;
+          }
+          
+          .label-content-wrapper {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            gap: 0 !important;
+            transform: scale(${scale});
+            transform-origin: center center;
+            width: ${width - 4}mm;
+            height: ${height - 4}mm;
+          }
+          
+          .store-name {
+            font-size: ${Math.round(8 * scale)}px;
+            font-weight: bold;
+            color: #000;
+            line-height: 1.1;
+          }
+          
+          .product-name {
+            font-size: ${Math.round(7 * scale)}px;
+            color: #000;
+            line-height: 1.1;
+            word-break: break-word;
+          }
+          
+          .custom-description {
+            font-size: ${Math.round(7 * scale)}px;
+            color: #000;
+            line-height: 1.1;
+            white-space: pre-wrap;
+          }
+          
+          .codes-container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            flex-shrink: 0;
+          }
+          
+          .codes-small {
+            gap: 0;
+          }
+          
+          .codes-container-inline {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+          }
+          
+          .barcode {
+            max-width: 100%;
+            height: auto;
+            flex-shrink: 0;
+          }
+          
+          .code-text {
+            font-size: ${Math.round(6 * scale)}px;
+            font-family: monospace;
+            color: #000;
+          }
+          
+          .price {
+            font-size: ${Math.round(10 * scale)}px;
+            font-weight: bold;
+            color: #000;
+          }
+          
+          .price-inline {
+            font-size: 7px;
+            font-weight: bold;
+            margin-left: 1mm;
+          }
+          
+          .jewelry-label {
+            flex-direction: row;
+            padding: 0.5mm;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="labels-container">
+          ${labelHTML}
+        </div>
+        <script>
+          document.addEventListener('DOMContentLoaded', function() {
+            ${initScript}
+          });
+        </script>
+      </body>
+      </html>
+    `;
+  };
   // Get selected paper for adjustment step
   const getSelectedPaperTemplate = () => {
     return mockPaperTemplates.find(p => p.id === selectedPaper);
