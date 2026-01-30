@@ -2954,6 +2954,7 @@ export type Database = {
           store_logo_url: string | null
           store_name: string | null
           store_phone: string | null
+          support_group_url: string | null
           tenant_id: string
           updated_at: string
           warranty_hotline: string | null
@@ -2976,6 +2977,7 @@ export type Database = {
           store_logo_url?: string | null
           store_name?: string | null
           store_phone?: string | null
+          support_group_url?: string | null
           tenant_id: string
           updated_at?: string
           warranty_hotline?: string | null
@@ -2998,6 +3000,7 @@ export type Database = {
           store_logo_url?: string | null
           store_name?: string | null
           store_phone?: string | null
+          support_group_url?: string | null
           tenant_id?: string
           updated_at?: string
           warranty_hotline?: string | null
