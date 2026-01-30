@@ -28,6 +28,7 @@ import { useCurrentTenant } from '@/hooks/useTenant';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { RestoreSupplierNoteSection } from './RestoreSupplierNoteSection';
+import { UpdateImportDatesSection } from './UpdateImportDatesSection';
 
 export function DataManagementSection() {
   const { data: tenant, refetch: refetchTenant } = useCurrentTenant();
@@ -412,6 +413,9 @@ export function DataManagementSection() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Update import dates from old Excel */}
+        <UpdateImportDatesSection />
 
         {/* Restore supplier & note from old Excel */}
         <RestoreSupplierNoteSection />
