@@ -229,8 +229,17 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                       rel="noopener noreferrer"
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 hover:bg-blue-100 active:bg-blue-200 transition-colors"
                     >
-                      <svg className="h-4 w-4 text-blue-500" viewBox="0 0 48 48" fill="currentColor">
-                        <path d="M24 4C12.954 4 4 12.954 4 24s8.954 20 20 20 20-8.954 20-20S35.046 4 24 4zm9.375 28.125c-.833.833-2.5 1.667-4.167 1.667h-5.416c-1.667 0-3.334-.834-4.167-1.667l-5-5c-.833-.833-.833-2.5 0-3.333l7.5-7.5c.833-.834 2.5-.834 3.333 0l.834.833.833-.833c.834-.834 2.5-.834 3.334 0l7.5 7.5c.833.833.833 2.5 0 3.333l-4.584 5z"/>
+                      <svg className="h-5 w-5" viewBox="0 0 48 48" fill="none">
+                        <defs>
+                          <linearGradient id="zaloGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#0068FF"/>
+                            <stop offset="100%" stopColor="#0052CC"/>
+                          </linearGradient>
+                        </defs>
+                        <rect width="48" height="48" rx="12" fill="url(#zaloGradient)"/>
+                        <path d="M35.8 16.2H30.6L26 23.4V16.2H21.2V31.8H26V24.8L30.8 31.8H36.2L30 23.8L35.8 16.2Z" fill="white"/>
+                        <path d="M19.6 22.4C19.6 21.2 18.6 20.2 17.4 20.2H12.2V31.8H14.6V28.2H17.4C18.6 28.2 19.6 27.2 19.6 26V22.4ZM17 26H14.6V22.4H17V26Z" fill="white"/>
+                        <ellipse cx="24" cy="14" rx="2.5" ry="1.5" fill="white"/>
                       </svg>
                       <span className="text-sm font-medium text-blue-600">Zalo</span>
                     </a>
