@@ -337,17 +337,11 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center;
             text-align: center;
             gap: 0.3mm;
-            /* Xoay 90deg để bù lại máy in cuộn feed dọc */
-            transform: ${needsCompensation ? 'rotate(90deg)' : ''} scale(${scale});
+            /* Không xoay tự động - giữ nguyên hướng preview */
+            transform: scale(${scale});
             transform-origin: center center;
-            /* Khi xoay 90deg, swap width/height của content để fit */
-            ${needsCompensation ? `
-              width: ${height - 2}mm;
-              height: ${width - 2}mm;
-            ` : `
-              width: ${width - 2}mm;
-              height: ${height - 2}mm;
-            `}
+            width: ${width - 2}mm;
+            height: ${height - 2}mm;
           }
           
           .store-name {
