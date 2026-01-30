@@ -153,16 +153,35 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         import('html2canvas'),
       ]);
 
-      // Create print content
+      const { width, height } = paper.dimensions;
+      
+      // Calculate effective rotation - same logic as generatePrintContent
+      const isA4Sheet = paper.size.toLowerCase().includes('a4');
+      const shouldAutoCompensateRotation = !isA4Sheet && width > height;
+      const effectiveRotation: 0 | 90 | 270 =
+        adjustments.rotation !== 0
+          ? adjustments.rotation
+          : adjustments.autoCompensateRotation && shouldAutoCompensateRotation
+            ? 270
+            : 0;
+      
+      // PDF page dimensions - match the @page size in generatePrintContent
+      const isRotated = effectiveRotation !== 0;
+      const pdfPageWidth = isRotated ? height : width;
+      const pdfPageHeight = isRotated ? width : height;
+
+      // Create print content with current adjustments
       const printContent = generatePrintContent(paper, productEntries, settings, adjustments);
       
-      // Create hidden iframe to render content
+      // Create hidden iframe to render content with exact dimensions
       const iframe = document.createElement('iframe');
       iframe.style.position = 'absolute';
       iframe.style.left = '-9999px';
       iframe.style.top = '-9999px';
-      iframe.style.width = `${paper.dimensions.width * 4}px`;
-      iframe.style.height = `${paper.dimensions.height * 4}px`;
+      // Use mm to px conversion: 1mm ≈ 3.78px at 96dpi, use 4 for high res
+      const mmToPx = 4;
+      iframe.style.width = `${pdfPageWidth * mmToPx}px`;
+      iframe.style.height = `${pdfPageHeight * mmToPx}px`;
       document.body.appendChild(iframe);
       
       const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -174,54 +193,48 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       iframeDoc.write(printContent);
       iframeDoc.close();
 
-      // Wait for scripts to load and execute
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for scripts (JsBarcode) to load and execute
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       const labels = iframeDoc.querySelectorAll('.label');
-      const { width, height } = paper.dimensions;
       
-      // Determine orientation based on rotation
-      const effectiveRotation = adjustments.rotation !== 0 
-        ? adjustments.rotation 
-        : (adjustments.autoCompensateRotation && width > height ? 270 : 0);
-      const isRotated = effectiveRotation !== 0;
-      const pageWidth = isRotated ? height : width;
-      const pageHeight = isRotated ? width : height;
-      
-      // Create PDF with correct orientation
+      // Create PDF with exact paper dimensions
       const pdf = new jsPDF({
-        orientation: pageWidth > pageHeight ? 'landscape' : 'portrait',
+        orientation: pdfPageWidth > pdfPageHeight ? 'landscape' : 'portrait',
         unit: 'mm',
-        format: [pageWidth, pageHeight],
+        format: [pdfPageWidth, pdfPageHeight],
       });
 
       for (let i = 0; i < labels.length; i++) {
         const label = labels[i] as HTMLElement;
         
         if (i > 0) {
-          pdf.addPage([pageWidth, pageHeight], pageWidth > pageHeight ? 'landscape' : 'portrait');
+          pdf.addPage([pdfPageWidth, pdfPageHeight], pdfPageWidth > pdfPageHeight ? 'landscape' : 'portrait');
         }
 
-        // Capture label as canvas
+        // Capture label as canvas with high resolution
         const canvas = await html2canvas(label, {
-          scale: 4, // High resolution
+          scale: 4, // High resolution for crisp barcodes
           backgroundColor: '#ffffff',
           logging: false,
           useCORS: true,
+          width: pdfPageWidth * mmToPx,
+          height: pdfPageHeight * mmToPx,
         });
 
-        // Add to PDF
+        // Add to PDF - fill entire page
         const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfPageWidth, pdfPageHeight);
       }
 
-      // Save PDF
-      pdf.save(`Ma_Vach_${new Date().toISOString().slice(0, 10)}.pdf`);
+      // Save PDF with descriptive filename
+      const paperName = paper.name.replace(/[^a-zA-Z0-9]/g, '_');
+      pdf.save(`Ma_Vach_${paperName}_${new Date().toISOString().slice(0, 10)}.pdf`);
       
       // Cleanup
       document.body.removeChild(iframe);
       
-      toast.success(`Đã xuất ${labels.length} nhãn ra file PDF`);
+      toast.success(`Đã xuất ${labels.length} nhãn ra file PDF (${pdfPageWidth}x${pdfPageHeight}mm)`);
     } catch (error) {
       console.error('PDF export error:', error);
       toast.error('Lỗi khi xuất PDF. Vui lòng thử lại.');
