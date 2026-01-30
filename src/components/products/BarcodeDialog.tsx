@@ -16,8 +16,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Printer, ArrowLeft, Eye, Grid3X3, Barcode, DollarSign, Copy, Trash2, Plus, Minus, FileSpreadsheet } from 'lucide-react';
-import { exportToExcel, formatCurrencyForExcel } from '@/lib/exportExcel';
+import { Printer, ArrowLeft, Eye, Grid3X3, Barcode, DollarSign, Copy, Trash2, Plus, Minus, FileDown, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatNumberWithSpaces } from '@/lib/formatNumber';
 
@@ -91,6 +91,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     rotation: 0,
     autoCompensateRotation: true,
   });
+  const [isExporting, setIsExporting] = useState(false);
 
   // Initialize product entries when products change
   useEffect(() => {
@@ -135,48 +136,98 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     onClose();
   };
 
-  // Export to Excel for manual printing later
-  const handleExportExcel = () => {
-    // Generate all labels (repeat by quantity) 
-    const allLabels: Array<{
-      index: number;
-      code: string;
-      codeWithPrice: string;
-      name: string;
-      price: number;
-      storeName: string;
-      customDescription: string;
-    }> = [];
+  // Export to PDF for manual printing later
+  const handleExportPDF = async () => {
+    if (!selectedPaper) return;
     
-    let idx = 1;
-    productEntries.forEach(entry => {
-      for (let i = 0; i < entry.quantity; i++) {
-        allLabels.push({
-          index: idx++,
-          code: entry.imei || entry.sku,
-          codeWithPrice: `${entry.imei || entry.sku}:${entry.printPrice}`,
-          name: entry.name,
-          price: entry.printPrice,
-          storeName: settings.showStoreName ? (settings.storeName || '') : '',
-          customDescription: settings.showCustomDescription ? (settings.customDescription || '') : '',
-        });
-      }
-    });
+    const paper = mockPaperTemplates.find(p => p.id === selectedPaper);
+    if (!paper) return;
 
-    exportToExcel({
-      filename: `Ma_Vach_${new Date().toISOString().slice(0, 10)}`,
-      sheetName: 'Mã vạch',
-      columns: [
-        { header: 'STT', key: 'index', width: 6 },
-        { header: 'IMEI/SKU', key: 'code', width: 20 },
-        { header: 'Dữ liệu mã vạch (Code:Giá)', key: 'codeWithPrice', width: 30 },
-        { header: 'Tên sản phẩm', key: 'name', width: 35 },
-        { header: 'Giá in', key: 'price', width: 15, format: (v) => formatCurrencyForExcel(v) },
-        { header: 'Tên cửa hàng', key: 'storeName', width: 20 },
-        { header: 'Mô tả', key: 'customDescription', width: 25 },
-      ],
-      data: allLabels,
-    });
+    setIsExporting(true);
+    toast.info('Đang tạo file PDF...');
+
+    try {
+      // Dynamic import to reduce bundle size
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import('jspdf'),
+        import('html2canvas'),
+      ]);
+
+      // Create print content
+      const printContent = generatePrintContent(paper, productEntries, settings, adjustments);
+      
+      // Create hidden iframe to render content
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'absolute';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '-9999px';
+      iframe.style.width = `${paper.dimensions.width * 4}px`;
+      iframe.style.height = `${paper.dimensions.height * 4}px`;
+      document.body.appendChild(iframe);
+      
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        throw new Error('Cannot access iframe document');
+      }
+      
+      iframeDoc.open();
+      iframeDoc.write(printContent);
+      iframeDoc.close();
+
+      // Wait for scripts to load and execute
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const labels = iframeDoc.querySelectorAll('.label');
+      const { width, height } = paper.dimensions;
+      
+      // Determine orientation based on rotation
+      const effectiveRotation = adjustments.rotation !== 0 
+        ? adjustments.rotation 
+        : (adjustments.autoCompensateRotation && width > height ? 270 : 0);
+      const isRotated = effectiveRotation !== 0;
+      const pageWidth = isRotated ? height : width;
+      const pageHeight = isRotated ? width : height;
+      
+      // Create PDF with correct orientation
+      const pdf = new jsPDF({
+        orientation: pageWidth > pageHeight ? 'landscape' : 'portrait',
+        unit: 'mm',
+        format: [pageWidth, pageHeight],
+      });
+
+      for (let i = 0; i < labels.length; i++) {
+        const label = labels[i] as HTMLElement;
+        
+        if (i > 0) {
+          pdf.addPage([pageWidth, pageHeight], pageWidth > pageHeight ? 'landscape' : 'portrait');
+        }
+
+        // Capture label as canvas
+        const canvas = await html2canvas(label, {
+          scale: 4, // High resolution
+          backgroundColor: '#ffffff',
+          logging: false,
+          useCORS: true,
+        });
+
+        // Add to PDF
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
+      }
+
+      // Save PDF
+      pdf.save(`Ma_Vach_${new Date().toISOString().slice(0, 10)}.pdf`);
+      
+      // Cleanup
+      document.body.removeChild(iframe);
+      
+      toast.success(`Đã xuất ${labels.length} nhãn ra file PDF`);
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error('Lỗi khi xuất PDF. Vui lòng thử lại.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Get selected paper for adjustment step
@@ -1220,11 +1271,15 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           <Button variant="outline" onClick={() => setStep('paper')}>
             Quay lại
           </Button>
-          <Button variant="outline" onClick={handleExportExcel}>
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Xuất Excel
+          <Button variant="outline" onClick={handleExportPDF} disabled={isExporting}>
+            {isExporting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FileDown className="mr-2 h-4 w-4" />
+            )}
+            {isExporting ? 'Đang xuất...' : 'Xuất PDF'}
           </Button>
-          <Button onClick={handlePrint}>
+          <Button onClick={handlePrint} disabled={isExporting}>
             <Printer className="mr-2 h-4 w-4" />
             In mã vạch ({totalLabels} nhãn)
           </Button>
