@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings, TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2 } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 export function LandingPageSettings() {
@@ -279,14 +280,26 @@ export function LandingPageSettings() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Địa chỉ (hiển thị khi không bật "Hiển thị chi nhánh")</Label>
+              <div className="flex items-center justify-between">
+                <Label>Địa chỉ</Label>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs gap-1"
+                  onClick={() => window.location.href = '/branches'}
+                >
+                  <Plus className="h-3 w-3" />
+                  Thêm địa chỉ
+                </Button>
+              </div>
               <Input
                 value={formData.store_address}
                 onChange={(e) => handleChange('store_address', e.target.value)}
                 placeholder="Địa chỉ cửa hàng"
               />
               <p className="text-xs text-muted-foreground">
-                Hoặc bật "Hiển thị chi nhánh" bên dưới để hiển thị nhiều địa chỉ từ danh sách chi nhánh
+                Nếu bạn có nhiều chi nhánh, hãy nhấn "Thêm địa chỉ" để quản lý
               </p>
             </div>
             <div className="space-y-2">
