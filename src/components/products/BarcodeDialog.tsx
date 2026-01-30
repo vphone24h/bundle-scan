@@ -144,13 +144,18 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     printSettings: BarcodeSettings,
     printAdjustments?: PrintAdjustments
   ): string => {
-    const { width, height } = paper.dimensions;
+    const { width: origWidth, height: origHeight } = paper.dimensions;
     const isA4Sheet = paper.size.toLowerCase().includes('a4');
     // Sử dụng adjustments từ tham số, hoặc mặc định
     const scale = printAdjustments?.scale ?? 1;
     const rotation = printAdjustments?.rotation ?? 0;
     // Xoay nếu rotation = 90
     const isRotatedLabel = rotation === 90;
+    
+    // Khi xoay 90 độ: swap width và height cho page size và label
+    // Điều này giúp nội dung ngang fit vào giấy in cuộn đứng
+    const width = isRotatedLabel ? origHeight : origWidth;
+    const height = isRotatedLabel ? origWidth : origHeight;
     
     // Generate all labels (repeat by quantity)
     const allLabels: ProductPriceEntry[] = [];
@@ -328,17 +333,11 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center;
             text-align: center;
             gap: 0.3mm;
-            /* Áp dụng transform từ adjustments - dùng rotate(90deg) giống preview */
-            transform: ${isRotatedLabel ? 'rotate(90deg)' : ''} scale(${scale});
+            /* Khi đã swap width/height ở trên, không cần rotate CSS nữa */
+            transform: scale(${scale});
             transform-origin: center center;
-            ${isRotatedLabel ? `
-              /* Khi xoay 90 độ, nội dung sẽ nằm ngang trong tem dọc */
-              width: ${height - 2}mm;
-              height: ${width - 2}mm;
-            ` : `
-              width: ${width - 2}mm;
-              height: ${height - 2}mm;
-            `}
+            width: ${width - 2}mm;
+            height: ${height - 2}mm;
           }
           
           .store-name {
