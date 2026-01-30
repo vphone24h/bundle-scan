@@ -315,7 +315,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             align-items: center !important;
             justify-content: center !important;
             text-align: center !important;
-            gap: 0.5mm;
+            gap: 0 !important;
             /* KHÔNG xoay - in đúng layout tự nhiên */
             transform: scale(${scale});
             transform-origin: center center;
@@ -328,14 +328,16 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             font-size: ${Math.round(8 * scale)}px;
             font-weight: bold;
             color: #000;
-            margin-bottom: 0.3mm;
-            line-height: 1;
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 1.1;
           }
           
           .product-name {
             font-size: ${Math.round(7 * scale)}px;
             color: #000;
-            margin-bottom: 0.3mm;
+            margin: 0 !important;
+            padding: 0 !important;
             line-height: 1.1;
             word-break: break-word;
           }
@@ -343,7 +345,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           .custom-description {
             font-size: ${Math.round(7 * scale)}px;
             color: #000;
-            margin-bottom: 0.3mm;
+            margin: 0 !important;
+            padding: 0 !important;
             line-height: 1.1;
             white-space: pre-wrap;
           }
@@ -353,12 +356,14 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             flex-direction: row;
             align-items: center;
             justify-content: center;
-            gap: 1mm;
+            gap: 0;
+            margin: 0 !important;
+            padding: 0 !important;
             flex-shrink: 0;
           }
           
           .codes-small {
-            gap: 0.5mm;
+            gap: 0;
           }
           
           .codes-container-inline {
@@ -389,14 +394,16 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           .code-text {
             font-size: ${Math.round(6 * scale)}px;
             font-family: monospace;
-            margin-top: 0.3mm;
+            margin: 0 !important;
+            padding: 0 !important;
             color: #000;
           }
           
           .price {
             font-size: ${Math.round(10 * scale)}px;
             font-weight: bold;
-            margin-top: 0.3mm;
+            margin: 0 !important;
+            padding: 0 !important;
             color: #000;
           }
           
