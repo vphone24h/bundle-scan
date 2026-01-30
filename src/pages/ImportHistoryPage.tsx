@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2 } from 'lucide-react';
+import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2, Settings2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
@@ -45,6 +45,7 @@ import { EditImportReceiptDialog } from '@/components/import/EditImportReceiptDi
 import { ReturnImportReceiptDialog } from '@/components/import/ReturnImportReceiptDialog';
 import { EditProductDialog } from '@/components/import/EditProductDialog';
 import { DeleteProductDialog } from '@/components/products/DeleteProductDialog';
+import { AdjustQuantityDialog } from '@/components/products/AdjustQuantityDialog';
 import { usePermissions } from '@/hooks/usePermissions';
 
 export default function ImportHistoryPage() {
@@ -74,6 +75,7 @@ export default function ImportHistoryPage() {
   const [returnReceipt, setReturnReceipt] = useState<ImportReceipt | null>(null);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
+  const [adjustProduct, setAdjustProduct] = useState<Product | null>(null);
 
   // Calculate receipt return status
   const getReceiptReturnStatus = (receipt: ImportReceipt): 'completed' | 'cancelled' | 'full_return' => {
@@ -675,6 +677,18 @@ export default function ImportHistoryPage() {
                                 <RotateCcw className="mr-1 h-3 w-3" />
                                 Trả
                               </Button>
+                              {/* Adjust quantity - only for non-IMEI products and super_admin */}
+                              {!product.imei && permissions?.canAdjustProductQuantity && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => setAdjustProduct(product)}
+                                  className="h-7 w-7"
+                                  title="Điều chỉnh số lượng"
+                                >
+                                  <Settings2 className="h-3 w-3" />
+                                </Button>
+                              )}
                               {/* Delete button - only for IMEI products and super_admin */}
                               {product.imei && permissions?.canDeleteIMEIProducts && (
                                 <Button 
@@ -907,6 +921,18 @@ export default function ImportHistoryPage() {
         open={!!editProduct}
         onOpenChange={(open) => !open && setEditProduct(null)}
       />
+
+      {/* Adjust Quantity Dialog - only for non-IMEI products */}
+      {adjustProduct && !adjustProduct.imei && (
+        <AdjustQuantityDialog
+          open={!!adjustProduct}
+          onOpenChange={(open) => !open && setAdjustProduct(null)}
+          productId={adjustProduct.id}
+          productName={adjustProduct.name}
+          sku={adjustProduct.sku}
+          currentQuantity={adjustProduct.quantity}
+        />
+      )}
 
       {/* Delete Product Dialog - only for IMEI products */}
       {deleteProduct && deleteProduct.imei && (
