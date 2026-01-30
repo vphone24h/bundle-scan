@@ -33,3 +33,8 @@ export function useReportsGuideUrl() {
   const { data: configs } = useAppConfig();
   return configs?.find(c => c.config_key === 'reports_guide_url')?.config_value || null;
 }
+
+export function useBarcodePrintGuideUrl() {
+  const { data: configs } = useAppConfig();
+  return configs?.find(c => c.config_key === 'barcode_print_guide_url')?.config_value || null;
+}

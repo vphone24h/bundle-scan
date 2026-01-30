@@ -16,8 +16,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Printer, ArrowLeft, Eye, Grid3X3, Barcode, DollarSign, Copy, Trash2, Plus, Minus, FileDown, Loader2 } from 'lucide-react';
+import { Printer, ArrowLeft, Eye, Grid3X3, Barcode, DollarSign, Copy, Trash2, Plus, Minus, FileDown, Loader2, HelpCircle, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
+import { useBarcodePrintGuideUrl } from '@/hooks/useAppConfig';
 import { cn } from '@/lib/utils';
 import { formatNumberWithSpaces } from '@/lib/formatNumber';
 
@@ -92,6 +93,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     autoCompensateRotation: true,
   });
   const [isExporting, setIsExporting] = useState(false);
+  
+  // Lấy URL hướng dẫn in từ cấu hình admin
+  const barcodePrintGuideUrl = useBarcodePrintGuideUrl();
 
   // Initialize product entries when products change
   useEffect(() => {
@@ -1495,22 +1499,40 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4">
-          <Button variant="outline" onClick={() => setStep('paper')}>
-            Quay lại
-          </Button>
-          <Button variant="outline" onClick={handleExportPDF} disabled={isExporting}>
-            {isExporting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <FileDown className="mr-2 h-4 w-4" />
-            )}
-            {isExporting ? 'Đang xuất...' : 'Xuất PDF'}
-          </Button>
-          <Button onClick={handlePrint} disabled={isExporting}>
-            <Printer className="mr-2 h-4 w-4" />
-            In mã vạch ({totalLabels} nhãn)
-          </Button>
+        <div className="flex flex-col gap-3 pt-4">
+          {/* Link hướng dẫn in */}
+          {barcodePrintGuideUrl && (
+            <div className="flex justify-center">
+              <a
+                href={barcodePrintGuideUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+              >
+                <HelpCircle className="h-4 w-4" />
+                In rất khó, hướng dẫn
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          )}
+          
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setStep('paper')}>
+              Quay lại
+            </Button>
+            <Button variant="outline" onClick={handleExportPDF} disabled={isExporting}>
+              {isExporting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileDown className="mr-2 h-4 w-4" />
+              )}
+              {isExporting ? 'Đang xuất...' : 'Xuất PDF'}
+            </Button>
+            <Button onClick={handlePrint} disabled={isExporting}>
+              <Printer className="mr-2 h-4 w-4" />
+              In mã vạch ({totalLabels} nhãn)
+            </Button>
+          </div>
         </div>
       </div>
     );
