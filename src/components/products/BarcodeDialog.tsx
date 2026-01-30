@@ -279,34 +279,35 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           }
           
           @page {
-            /*
-              NOTE: Khi xoay, dùng page size đã swap để máy in nhận đúng hướng giấy.
-              Với mẫu A4, giữ A4.
-            */
             size: ${isA4Sheet ? 'A4' : `${pageWidth}mm ${pageHeight}mm`};
-            margin: 0;
+            margin: 0 !important;
+            padding: 0 !important;
           }
 
-          html {
-            margin: 0;
-            padding: 0;
-            /* Khóa khổ trang cho tem cuộn */
-            width: ${isA4Sheet ? 'auto' : `${pageWidth}mm`};
-            height: ${isA4Sheet ? 'auto' : `${pageHeight}mm`};
+          /* Ẩn header/footer trình duyệt khi in */
+          @page :first {
+            margin-top: 0 !important;
           }
-          
-          body {
-            font-family: Arial, sans-serif;
-            padding: 0;
-            margin: 0;
+
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
             width: ${isA4Sheet ? 'auto' : `${pageWidth}mm`};
+            height: ${isA4Sheet ? 'auto' : 'auto'};
+            font-family: Arial, sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          /* Ẩn các element không cần thiết khi in */
+          @media print {
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+            }
           }
           
           .labels-container {
-            /*
-              Tem cuộn: luôn 1 cột, không wrap (tránh "nhảy tum lum" / dàn 3 tem trên 1 tờ).
-              Mẫu A4: vẫn cho wrap như cũ.
-            */
             display: flex;
             flex-direction: ${isA4Sheet ? 'row' : 'column'};
             flex-wrap: ${isA4Sheet ? 'wrap' : 'nowrap'};
@@ -319,8 +320,12 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           .label {
             width: ${pageWidth}mm !important;
             height: ${pageHeight}mm !important;
+            min-height: ${pageHeight}mm !important;
+            max-height: ${pageHeight}mm !important;
             border: none;
-            padding: 0.5mm;
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
             display: flex;
             align-items: center;
             justify-content: center;
