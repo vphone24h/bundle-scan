@@ -328,16 +328,16 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center;
             text-align: center;
             gap: 0.3mm;
-            /* Áp dụng transform từ adjustments */
-            transform: scale(${scale}) ${isRotatedLabel ? 'rotate(-90deg)' : ''};
+            /* Áp dụng transform từ adjustments - dùng rotate(90deg) giống preview */
+            transform: ${isRotatedLabel ? 'rotate(90deg)' : ''} scale(${scale});
             transform-origin: center center;
             ${isRotatedLabel ? `
-              /* Khi xoay, đổi chiều width/height */
-              max-width: ${height - 2}mm;
-              max-height: ${width - 2}mm;
+              /* Khi xoay 90 độ, nội dung sẽ nằm ngang trong tem dọc */
+              width: ${height - 2}mm;
+              height: ${width - 2}mm;
             ` : `
-              max-width: ${width - 2}mm;
-              max-height: ${height - 2}mm;
+              width: ${width - 2}mm;
+              height: ${height - 2}mm;
             `}
           }
           
@@ -1022,11 +1022,11 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
               minHeight: `${previewHeight}px`,
             }}
           >
-            {/* Content Preview */}
+            {/* Content Preview - dùng cùng thứ tự transform như print */}
             <div 
               className="flex flex-col items-center justify-center text-center transition-transform duration-200"
               style={{
-                transform: `scale(${contentScale}) rotate(${adjustments.rotation}deg)`,
+                transform: `${isRotated ? 'rotate(90deg)' : ''} scale(${contentScale})`,
                 transformOrigin: 'center center',
               }}
             >
