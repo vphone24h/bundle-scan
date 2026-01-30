@@ -104,7 +104,7 @@ export default function ExportNewPage() {
 
   // Handle barcode scan (IMEI or SKU) - auto-add to cart if price encoded
   // Supports formats:
-  // - N:NAME:PRICE (non-IMEI products, e.g., "N:iPhone 15:24000000") - auto fill form
+  // - N:NAME:PRICE (non-IMEI products, e.g., "N:iPhone 15:24000000") - auto add to cart with qty=1
   // - CODE:PRICE (IMEI products, e.g., "353902103999926:24000000") - auto add to cart
   // - CODE-P-PRICE (legacy) - auto add to cart
   // - CODE|PRICE (legacy) - auto add to cart
@@ -159,36 +159,62 @@ export default function ExportNewPage() {
       }
     }
 
-    // Handle non-IMEI product barcode: auto-fill form with name and price
+    // Handle non-IMEI product barcode: AUTO ADD to cart with qty=1
     if (isNonImeiBarcode && nonImeiProductName && encodedPrice !== null && encodedPrice > 0) {
       // Search for the product by name to get full details
       const results = await searchProducts.mutateAsync(nonImeiProductName);
       const matchedProduct = results?.find((p: any) => p.name === nonImeiProductName);
       
       if (matchedProduct) {
-        // Check if already in cart
-        if (cart.some(item => item.product_id === matchedProduct.id)) {
+        // Check if already in cart - for non-IMEI, we can increase quantity
+        const existingItem = cart.find(item => item.product_id === matchedProduct.id && item.sale_price === encodedPrice);
+        
+        if (existingItem) {
+          // Increase quantity for same product with same price
+          setCart(prevCart => prevCart.map(item => 
+            item.tempId === existingItem.tempId 
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          ));
+          
           toast({
-            title: 'Đã có trong giỏ',
-            description: 'Sản phẩm này đã được thêm vào giỏ hàng',
-            variant: 'destructive',
+            title: 'Đã tăng số lượng',
+            description: `${nonImeiProductName} x${existingItem.quantity + 1}`,
           });
-          return;
+        } else {
+          // Add new item to cart with qty=1
+          const newItem: CartItem = {
+            tempId: Date.now().toString(),
+            product_id: matchedProduct.id,
+            product_name: matchedProduct.name,
+            sku: matchedProduct.sku,
+            imei: null,
+            category_id: matchedProduct.category_id,
+            categoryName: matchedProduct.categories?.name,
+            branch_id: matchedProduct.branch_id,
+            branchName: matchedProduct.branches?.name,
+            sale_price: encodedPrice,
+            note: null,
+            quantity: 1,
+            warranty: null,
+          };
+
+          setCart(prevCart => [...prevCart, newItem]);
+          
+          toast({
+            title: 'Đã thêm vào giỏ',
+            description: `${nonImeiProductName} - ${encodedPrice.toLocaleString('vi-VN')}đ`,
+          });
         }
         
-        // Fill form for confirmation (don't auto-add)
-        setSelectedProduct(matchedProduct);
-        setSalePrice(encodedPrice.toString());
+        // Clear form for next scan
+        setSelectedProduct(null);
+        setSalePrice('');
+        setItemNote('');
         setItemQuantity(1);
         setItemWarranty('');
-        setItemNote('');
         setNameSearch('');
         setProductSuggestions([]);
-        
-        toast({
-          title: 'Đã quét sản phẩm',
-          description: `${nonImeiProductName} - ${encodedPrice.toLocaleString('vi-VN')}đ. Nhấn "Thêm vào giỏ" để xác nhận.`,
-        });
       } else {
         toast({
           title: 'Không tìm thấy',
