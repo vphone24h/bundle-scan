@@ -16,7 +16,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Printer, ArrowLeft, Eye, Grid3X3, Barcode, DollarSign, Copy, Trash2, Plus, Minus } from 'lucide-react';
+import { Printer, ArrowLeft, Eye, Grid3X3, Barcode, DollarSign, Copy, Trash2, Plus, Minus, FileSpreadsheet } from 'lucide-react';
+import { exportToExcel, formatCurrencyForExcel } from '@/lib/exportExcel';
 import { cn } from '@/lib/utils';
 import { formatNumberWithSpaces } from '@/lib/formatNumber';
 
@@ -132,6 +133,50 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     }
     
     onClose();
+  };
+
+  // Export to Excel for manual printing later
+  const handleExportExcel = () => {
+    // Generate all labels (repeat by quantity) 
+    const allLabels: Array<{
+      index: number;
+      code: string;
+      codeWithPrice: string;
+      name: string;
+      price: number;
+      storeName: string;
+      customDescription: string;
+    }> = [];
+    
+    let idx = 1;
+    productEntries.forEach(entry => {
+      for (let i = 0; i < entry.quantity; i++) {
+        allLabels.push({
+          index: idx++,
+          code: entry.imei || entry.sku,
+          codeWithPrice: `${entry.imei || entry.sku}:${entry.printPrice}`,
+          name: entry.name,
+          price: entry.printPrice,
+          storeName: settings.showStoreName ? (settings.storeName || '') : '',
+          customDescription: settings.showCustomDescription ? (settings.customDescription || '') : '',
+        });
+      }
+    });
+
+    exportToExcel({
+      filename: `Ma_Vach_${new Date().toISOString().slice(0, 10)}`,
+      sheetName: 'Mã vạch',
+      columns: [
+        { header: 'STT', key: 'index', width: 6 },
+        { header: 'IMEI/SKU', key: 'code', width: 20 },
+        { header: 'Dữ liệu mã vạch (Code:Giá)', key: 'codeWithPrice', width: 30 },
+        { header: 'Tên sản phẩm', key: 'name', width: 35 },
+        { header: 'Giá in', key: 'price', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Tên cửa hàng', key: 'storeName', width: 20 },
+        { header: 'Mô tả', key: 'customDescription', width: 25 },
+      ],
+      data: allLabels,
+    });
   };
 
   // Get selected paper for adjustment step
@@ -1174,6 +1219,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         <div className="flex justify-end gap-3 pt-4">
           <Button variant="outline" onClick={() => setStep('paper')}>
             Quay lại
+          </Button>
+          <Button variant="outline" onClick={handleExportExcel}>
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Xuất Excel
           </Button>
           <Button onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
