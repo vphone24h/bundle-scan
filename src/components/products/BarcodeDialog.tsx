@@ -149,13 +149,16 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     // Sử dụng adjustments từ tham số, hoặc mặc định
     const scale = printAdjustments?.scale ?? 1;
     const rotation = printAdjustments?.rotation ?? 0;
-    // Xoay nếu rotation = 90
-    const isRotatedLabel = rotation === 90;
     
-    // Khi xoay 90 độ: dùng page orientation landscape
-    // Page size vẫn giữ nguyên, nhưng nội dung sẽ xoay
-    const pageWidth = isRotatedLabel ? height : width;
-    const pageHeight = isRotatedLabel ? width : height;
+    // Với giấy cuộn (không phải A4), máy in thường xoay output
+    // Nên cần xoay nội dung -90deg để bù lại (khi user chọn "không xoay")
+    // Khi user chọn "xoay 90", thì không cần xoay CSS (vì máy in đã xoay rồi)
+    const isRollPaper = !isA4Sheet && width > height; // Giấy cuộn ngang như 55x30
+    const needsCompensation = isRollPaper && rotation === 0; // Cần xoay để bù máy in
+    
+    // Page size: với giấy cuộn, swap để khớp hướng vật lý của cuộn (30mm rộng x 55mm dài)
+    const pageWidth = isRollPaper ? height : width;
+    const pageHeight = isRollPaper ? width : height;
     
     // Generate all labels (repeat by quantity)
     const allLabels: ProductPriceEntry[] = [];
@@ -333,11 +336,17 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center;
             text-align: center;
             gap: 0.3mm;
-            transform: scale(${scale});
+            /* Xoay -90deg để bù lại máy in cuộn (khi user không chọn xoay) */
+            transform: ${needsCompensation ? 'rotate(-90deg)' : ''} scale(${scale});
             transform-origin: center center;
-            /* Nội dung luôn theo hướng gốc của giấy (55x30), page size đã swap nếu xoay */
-            width: ${width - 2}mm;
-            height: ${height - 2}mm;
+            /* Khi xoay -90deg, swap width/height của content */
+            ${needsCompensation ? `
+              width: ${height - 2}mm;
+              height: ${width - 2}mm;
+            ` : `
+              width: ${width - 2}mm;
+              height: ${height - 2}mm;
+            `}
           }
           
           .store-name {
