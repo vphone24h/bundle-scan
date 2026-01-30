@@ -320,8 +320,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center !important;
             text-align: center !important;
             gap: 0 !important;
-            /* Bù xoay để tránh driver ép in dọc */
-            transform: rotate(${effectiveRotation}deg) scale(${scale});
+            /* Bù xoay để tránh driver ép in dọc (xoay NGƯỢC chiều để đúng hướng giấy cuộn) */
+            transform: rotate(${effectiveRotation === 90 ? -90 : 0}deg) scale(${scale});
             transform-origin: center center;
             /* Khi xoay 90°, khung nội dung cần swap để fit trong trang đã swap */
             width: ${effectiveRotation === 90 ? pageHeight - 4 : pageWidth - 4}mm;
