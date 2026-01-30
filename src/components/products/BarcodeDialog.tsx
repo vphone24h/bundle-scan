@@ -35,6 +35,7 @@ const paperTemplateImages: Record<string, string> = {
   'paper-template-4': paperTemplate4,
   'paper-template-5': paperTemplate5,
   'paper-template-6': paperTemplate6,
+  'paper-template-7': paperTemplate1, // Reuse template 1 image, mẫu cuộn tương tự
 };
 
 interface ProductForBarcode {
