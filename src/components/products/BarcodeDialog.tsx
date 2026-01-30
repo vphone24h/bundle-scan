@@ -149,14 +149,13 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const scale = printAdjustments?.scale ?? 1;
     const rotation = printAdjustments?.rotation ?? 0;
     
-    // Giấy cuộn ngang (50x30): width > height
-    // Máy in feed dọc → SWAP kích thước @page để máy in nhận dọc
-    // Rồi xoay nội dung 90deg để hiển thị ngang trên giấy dọc
-    const isHorizontalRoll = !isA4Sheet && width > height;
-    
-    // SWAP: máy in nhận 30x50 thay vì 50x30
-    const pageWidth = isHorizontalRoll ? height : width;
-    const pageHeight = isHorizontalRoll ? width : height;
+    // Giấy cuộn 50x30mm trên máy in 365B:
+    // - 50mm = chiều ngang tem (paper width của đầu in)
+    // - 30mm = chiều feed (giấy ra)
+    // @page size giữ nguyên: 50mm x 30mm
+    // KHÔNG swap, KHÔNG xoay - in đúng như layout tự nhiên
+    const pageWidth = width;   // 50mm
+    const pageHeight = height; // 30mm
     
     // Generate all labels (repeat by quantity)
     const allLabels: ProductPriceEntry[] = [];
@@ -340,17 +339,11 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center !important;
             text-align: center !important;
             gap: 0.5mm;
-            /* Giấy cuộn ngang: xoay 90deg để nội dung nằm ngang trên trang dọc */
-            transform: ${isHorizontalRoll ? 'rotate(90deg)' : ''} scale(${scale});
+            /* KHÔNG xoay - in đúng layout tự nhiên */
+            transform: scale(${scale});
             transform-origin: center center;
-            /* Khi xoay, swap kích thước content */
-            ${isHorizontalRoll ? `
-              width: ${height - 4}mm;
-              height: ${width - 4}mm;
-            ` : `
-              width: ${width - 4}mm;
-              height: ${height - 4}mm;
-            `}
+            width: ${width - 4}mm;
+            height: ${height - 4}mm;
             margin: 0 auto !important;
           }
           
