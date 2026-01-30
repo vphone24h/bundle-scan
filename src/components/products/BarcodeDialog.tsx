@@ -311,11 +311,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             width: ${pageWidth}mm !important;
             height: ${pageHeight}mm !important;
             margin: 0 !important;
-            padding: 1mm !important;
+            padding: 0 !important;
             box-sizing: border-box !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
+            position: relative !important;
             page-break-after: always;
             page-break-inside: avoid;
             overflow: hidden !important;
@@ -323,19 +321,22 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           }
           
           .label-content-wrapper {
+            /* Định vị tuyệt đối ở giữa */
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) rotate(${effectiveRotation === 270 ? -90 : effectiveRotation}deg) scale(${scale}) !important;
+            
             display: flex !important;
             flex-direction: column !important;
             align-items: center !important;
             justify-content: center !important;
             text-align: center !important;
             gap: 0 !important;
-            /* Bù xoay để tránh driver ép in dọc */
-            transform: rotate(${effectiveRotation === 270 ? -90 : effectiveRotation}deg) scale(${scale});
-            transform-origin: center center;
-            /* Khi xoay 90°, khung nội dung cần swap để fit trong trang đã swap */
-            width: ${isRotated ? pageHeight - 4 : pageWidth - 4}mm;
-            height: ${isRotated ? pageWidth - 4 : pageHeight - 4}mm;
-            margin: 0 auto !important;
+            
+            /* Kích thước = kích thước tem gốc (trước khi driver swap) */
+            width: ${width - 4}mm;
+            height: ${height - 4}mm;
           }
           
           .store-name {
