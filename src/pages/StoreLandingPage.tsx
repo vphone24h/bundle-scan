@@ -142,7 +142,11 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const warrantyHotline = settings?.warranty_hotline;
   const supportGroupUrl = settings?.support_group_url;
   const facebookUrl = settings?.facebook_url;
-  const zaloUrl = settings?.zalo_url;
+  const zaloPhone = settings?.zalo_url;
+  // Convert phone to Zalo URL: nếu chỉ là SĐT thì tạo link zalo.me, nếu là URL thì giữ nguyên
+  const zaloUrl = zaloPhone 
+    ? (zaloPhone.startsWith('http') ? zaloPhone : `https://zalo.me/${zaloPhone.replace(/\s/g, '')}`)
+    : null;
   const tiktokUrl = settings?.tiktok_url;
   const hasSocialLinks = facebookUrl || zaloUrl || tiktokUrl;
 
