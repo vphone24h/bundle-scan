@@ -59,6 +59,7 @@ export function PaymentConfigManagement() {
   const [userGuideUrl, setUserGuideUrl] = useState('');
   const [cashBookGuideUrl, setCashBookGuideUrl] = useState('');
   const [reportsGuideUrl, setReportsGuideUrl] = useState('');
+  const [barcodePrintGuideUrl, setBarcodePrintGuideUrl] = useState('');
   const [savingConfig, setSavingConfig] = useState(false);
 
   // Bank account dialog
@@ -105,6 +106,7 @@ export function PaymentConfigManagement() {
       const guideConfig = configs.find(c => c.config_key === 'user_guide_url');
       const cashBookGuideConfig = configs.find(c => c.config_key === 'cash_book_guide_url');
       const reportsGuideConfig = configs.find(c => c.config_key === 'reports_guide_url');
+      const barcodePrintGuideConfig = configs.find(c => c.config_key === 'barcode_print_guide_url');
       
       if (hotlineConfig?.config_value) setHotline(hotlineConfig.config_value);
       if (emailConfig?.config_value) setSupportEmail(emailConfig.config_value);
@@ -112,6 +114,7 @@ export function PaymentConfigManagement() {
       if (guideConfig?.config_value) setUserGuideUrl(guideConfig.config_value);
       if (cashBookGuideConfig?.config_value) setCashBookGuideUrl(cashBookGuideConfig.config_value);
       if (reportsGuideConfig?.config_value) setReportsGuideUrl(reportsGuideConfig.config_value);
+      if (barcodePrintGuideConfig?.config_value) setBarcodePrintGuideUrl(barcodePrintGuideConfig.config_value);
     }
   }, [configs]);
 
@@ -126,6 +129,7 @@ export function PaymentConfigManagement() {
         { config_key: 'user_guide_url', config_value: userGuideUrl },
         { config_key: 'cash_book_guide_url', config_value: cashBookGuideUrl },
         { config_key: 'reports_guide_url', config_value: reportsGuideUrl },
+        { config_key: 'barcode_print_guide_url', config_value: barcodePrintGuideUrl },
       ];
 
       for (const update of updates) {
@@ -312,6 +316,15 @@ export function PaymentConfigManagement() {
                 value={reportsGuideUrl}
                 onChange={(e) => setReportsGuideUrl(e.target.value)}
                 placeholder="https://example.com/bao-cao"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Link hướng dẫn (In mã vạch)</Label>
+              <Input
+                type="url"
+                value={barcodePrintGuideUrl}
+                onChange={(e) => setBarcodePrintGuideUrl(e.target.value)}
+                placeholder="https://example.com/in-ma-vach"
               />
             </div>
           </div>
