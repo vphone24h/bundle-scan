@@ -150,9 +150,14 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const scale = printAdjustments?.scale ?? 1;
     const rotation = printAdjustments?.rotation ?? 0;
     
-    // Máy in 365B với giấy cuộn 50x30mm: 
-    // Giữ nguyên kích thước gốc, không swap - máy in tự xử lý hướng giấy
-    const isRollPaper = !isA4Sheet && paper.labelCount === 1;
+    // Máy in 365B với giấy cuộn ngang (50x30mm): 
+    // Máy in feed giấy theo chiều dọc, nội dung bị xoay 90 độ
+    // Cần xoay ngược -90deg để bù lại khi user không chọn xoay
+    const isHorizontalRoll = !isA4Sheet && width > height;
+    
+    // Khi giấy cuộn ngang + user không xoay → tự động bù -90deg
+    // Khi user chọn xoay 90° → giữ nguyên (2 lần xoay = 0)
+    const autoRotate = isHorizontalRoll && rotation === 0;
     
     // Page size: giữ nguyên kích thước gốc của giấy
     const pageWidth = width;
@@ -339,11 +344,14 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center;
             text-align: center;
             gap: 0.3mm;
-            /* Xoay theo lựa chọn của user */
-            transform: ${rotation === 90 ? 'rotate(90deg)' : ''} scale(${scale});
+            /* 
+              Giấy cuộn ngang (50x30): tự động xoay -90deg để bù máy in
+              User chọn Xoay 90°: xoay 90deg (không áp dụng auto)
+            */
+            transform: ${autoRotate ? 'rotate(-90deg)' : (rotation === 90 ? 'rotate(90deg)' : '')} scale(${scale});
             transform-origin: center center;
-            /* Khi xoay 90deg, swap width/height */
-            ${rotation === 90 ? `
+            /* Khi xoay (auto hoặc manual), swap width/height */
+            ${autoRotate || rotation === 90 ? `
               width: ${height - 2}mm;
               height: ${width - 2}mm;
             ` : `
