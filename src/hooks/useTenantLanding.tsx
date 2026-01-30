@@ -15,6 +15,7 @@ export interface TenantLandingSettings {
   show_warranty_lookup: boolean;
   show_store_info: boolean;
   show_banner: boolean;
+  show_branches: boolean;
   primary_color: string;
   meta_title: string | null;
   meta_description: string | null;
@@ -26,6 +27,13 @@ export interface TenantLandingSettings {
   tiktok_url: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface BranchInfo {
+  id: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
 }
 
 export interface WarrantyResult {
@@ -86,11 +94,27 @@ export function usePublicLandingSettings(subdomain: string | null) {
         .maybeSingle();
 
       if (error) return null;
+
+      // Lấy danh sách chi nhánh nếu show_branches = true
+      let branches: BranchInfo[] = [];
+      const settings = data as unknown as TenantLandingSettings | null;
       
-      // Trả về kết hợp tenant info + settings
+      if (settings?.show_branches) {
+        const { data: branchesData } = await supabase
+          .from('branches')
+          .select('id, name, address, phone')
+          .eq('tenant_id', tenant.id)
+          .order('is_default', { ascending: false })
+          .order('name', { ascending: true });
+        
+        branches = (branchesData || []) as BranchInfo[];
+      }
+      
+      // Trả về kết hợp tenant info + settings + branches
       return {
         tenant,
-        settings: data as unknown as TenantLandingSettings | null,
+        settings,
+        branches,
       };
     },
     enabled: !!subdomain,

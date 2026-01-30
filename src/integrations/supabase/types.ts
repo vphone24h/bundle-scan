@@ -2947,6 +2947,7 @@ export type Database = {
           meta_title: string | null
           primary_color: string | null
           show_banner: boolean | null
+          show_branches: boolean
           show_store_info: boolean | null
           show_warranty_lookup: boolean | null
           store_address: string | null
@@ -2973,6 +2974,7 @@ export type Database = {
           meta_title?: string | null
           primary_color?: string | null
           show_banner?: boolean | null
+          show_branches?: boolean
           show_store_info?: boolean | null
           show_warranty_lookup?: boolean | null
           store_address?: string | null
@@ -2999,6 +3001,7 @@ export type Database = {
           meta_title?: string | null
           primary_color?: string | null
           show_banner?: boolean | null
+          show_branches?: boolean
           show_store_info?: boolean | null
           show_warranty_lookup?: boolean | null
           store_address?: string | null

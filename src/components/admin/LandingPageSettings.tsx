@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2 } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 export function LandingPageSettings() {
@@ -26,6 +26,7 @@ export function LandingPageSettings() {
     show_warranty_lookup: true,
     show_store_info: true,
     show_banner: false,
+    show_branches: true,
     store_name: '',
     store_logo_url: '',
     store_address: '',
@@ -51,6 +52,7 @@ export function LandingPageSettings() {
         show_warranty_lookup: settings.show_warranty_lookup,
         show_store_info: settings.show_store_info,
         show_banner: settings.show_banner,
+        show_branches: settings.show_branches ?? true,
         store_name: settings.store_name || '',
         store_logo_url: settings.store_logo_url || '',
         store_address: settings.store_address || '',
@@ -277,12 +279,15 @@ export function LandingPageSettings() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Địa chỉ</Label>
+              <Label>Địa chỉ (hiển thị khi không bật "Hiển thị chi nhánh")</Label>
               <Input
                 value={formData.store_address}
                 onChange={(e) => handleChange('store_address', e.target.value)}
                 placeholder="Địa chỉ cửa hàng"
               />
+              <p className="text-xs text-muted-foreground">
+                Hoặc bật "Hiển thị chi nhánh" bên dưới để hiển thị nhiều địa chỉ từ danh sách chi nhánh
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Số điện thoại</Label>
@@ -301,6 +306,25 @@ export function LandingPageSettings() {
                 placeholder="email@example.com"
               />
             </div>
+          </div>
+          
+          <Separator className="my-4" />
+          
+          {/* Hiển thị chi nhánh */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Hiển thị chi nhánh
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Hiển thị danh sách chi nhánh với địa chỉ trên landing page (lấy từ quản lý chi nhánh)
+              </p>
+            </div>
+            <Switch
+              checked={formData.show_branches}
+              onCheckedChange={(checked) => handleChange('show_branches', checked)}
+            />
           </div>
         </CardContent>
       </Card>
