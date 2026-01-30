@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { usePublicLandingSettings, useWarrantyLookup, WarrantyResult } from '@/hooks/useTenantLanding';
+import { usePublicLandingSettings, useWarrantyLookup, WarrantyResult, BranchInfo } from '@/hooks/useTenantLanding';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -149,6 +149,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     : null;
   const tiktokUrl = settings?.tiktok_url;
   const hasSocialLinks = facebookUrl || zaloUrl || tiktokUrl;
+  const branches: BranchInfo[] = landingData?.branches || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/50">
@@ -475,7 +476,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
         )}
 
         {/* Thông tin cửa hàng - Mobile optimized */}
-        {(settings?.show_store_info !== false) && (settings?.store_address || settings?.store_phone || settings?.store_email) && (
+        {(settings?.show_store_info !== false) && (settings?.store_address || settings?.store_phone || settings?.store_email || branches.length > 0) && (
           <Card className="shadow-md">
             <CardHeader className="pb-3 px-4 pt-4">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -489,14 +490,53 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 px-4 pb-4">
-              {settings?.store_address && (
-                <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/50">
-                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-muted-foreground">Địa chỉ</p>
-                    <p className="text-sm font-medium">{settings.store_address}</p>
-                  </div>
+              {/* Hiển thị danh sách chi nhánh nếu có */}
+              {branches.length > 0 ? (
+                <div className="space-y-2">
+                  {branches.map((branch) => (
+                    <div 
+                      key={branch.id}
+                      className="p-3 rounded-xl bg-muted/50 space-y-1.5"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 flex-shrink-0" style={{ color: primaryColor }} />
+                        <p className="font-medium text-sm">{branch.name}</p>
+                      </div>
+                      
+                      {branch.address && (
+                        <div className="flex items-start gap-2 pl-6">
+                          <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <p className="text-xs text-muted-foreground">{branch.address}</p>
+                        </div>
+                      )}
+                      
+                      {branch.phone && (
+                        <a 
+                          href={`tel:${branch.phone}`}
+                          className="flex items-center gap-2 pl-6 hover:text-primary transition-colors"
+                        >
+                          <Phone className="h-3.5 w-3.5 flex-shrink-0" style={{ color: primaryColor }} />
+                          <p className="text-xs font-medium" style={{ color: primaryColor }}>
+                            {branch.phone}
+                          </p>
+                        </a>
+                      )}
+                    </div>
+                  ))}
                 </div>
+              ) : (
+                <>
+                  {/* Hiển thị địa chỉ đơn nếu không có chi nhánh */}
+                  {settings?.store_address && (
+                    <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/50">
+                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-muted-foreground">Địa chỉ</p>
+                        <p className="text-sm font-medium">{settings.store_address}</p>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
               
               {settings?.store_phone && (
