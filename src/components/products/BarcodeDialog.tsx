@@ -150,16 +150,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const scale = printAdjustments?.scale ?? 1;
     const rotation = printAdjustments?.rotation ?? 0;
     
-    // Máy in 365B với giấy cuộn ngang (50x30mm): 
-    // Máy in feed giấy theo chiều dọc, nội dung bị xoay 90 độ
-    // Cần xoay ngược -90deg để bù lại khi user không chọn xoay
-    const isHorizontalRoll = !isA4Sheet && width > height;
-    
-    // Khi giấy cuộn ngang + user không xoay → tự động bù -90deg
-    // Khi user chọn xoay 90° → giữ nguyên (2 lần xoay = 0)
-    const autoRotate = isHorizontalRoll && rotation === 0;
-    
-    // Page size: giữ nguyên kích thước gốc của giấy
+    // Page size: giữ nguyên kích thước gốc của giấy  
+    // Không xoay tự động - in đúng như preview hiển thị
     const pageWidth = width;
     const pageHeight = height;
     
@@ -274,90 +266,83 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
         <style>
+          /* Reset hoàn toàn */
           * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-          
-          @page {
-            size: ${isA4Sheet ? 'A4' : `${pageWidth}mm ${pageHeight}mm`};
             margin: 0 !important;
             padding: 0 !important;
+            box-sizing: border-box !important;
           }
-
-          /* Ẩn header/footer trình duyệt khi in */
-          @page :first {
-            margin-top: 0 !important;
+          
+          /* Kích thước trang - QUAN TRỌNG cho máy in nhiệt */
+          @page {
+            size: ${pageWidth}mm ${pageHeight}mm;
+            margin: 0mm !important;
+            padding: 0mm !important;
+          }
+          
+          /* Ẩn header/footer trình duyệt hoàn toàn */
+          @media print {
+            @page {
+              margin: 0mm !important;
+            }
+            
+            html {
+              margin: 0mm !important;
+              padding: 0mm !important;
+            }
+            
+            body {
+              margin: 0mm !important;
+              padding: 0mm !important;
+            }
           }
 
           html, body {
             margin: 0 !important;
             padding: 0 !important;
-            width: ${isA4Sheet ? 'auto' : `${pageWidth}mm`};
-            height: ${isA4Sheet ? 'auto' : 'auto'};
+            width: ${pageWidth}mm;
+            height: auto;
             font-family: Arial, sans-serif;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
-          }
-
-          /* Ẩn các element không cần thiết khi in */
-          @media print {
-            html, body {
-              margin: 0 !important;
-              padding: 0 !important;
-            }
+            background: white;
           }
           
           .labels-container {
-            display: flex;
-            flex-direction: ${isA4Sheet ? 'row' : 'column'};
-            flex-wrap: ${isA4Sheet ? 'wrap' : 'nowrap'};
-            gap: 0;
-            padding: 0;
-            margin: 0;
-            width: ${isA4Sheet ? 'auto' : `${pageWidth}mm`};
+            display: block;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: ${pageWidth}mm;
           }
           
           .label {
             width: ${pageWidth}mm !important;
             height: ${pageHeight}mm !important;
-            min-height: ${pageHeight}mm !important;
-            max-height: ${pageHeight}mm !important;
-            border: none;
-            padding: 0;
-            margin: 0;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
+            margin: 0 !important;
+            padding: 1mm !important;
+            box-sizing: border-box !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            page-break-after: always;
             page-break-inside: avoid;
-            page-break-after: ${isA4Sheet ? 'auto' : 'always'};
-            overflow: hidden;
+            overflow: hidden !important;
+            background: white;
           }
           
           .label-content-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            gap: 0.3mm;
-            /* 
-              Giấy cuộn ngang (50x30): tự động xoay -90deg để bù máy in
-              User chọn Xoay 90°: xoay 90deg (không áp dụng auto)
-            */
-            transform: ${autoRotate ? 'rotate(-90deg)' : (rotation === 90 ? 'rotate(90deg)' : '')} scale(${scale});
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            gap: 0.5mm;
+            /* Không xoay - in đúng như preview */
+            transform: scale(${scale});
             transform-origin: center center;
-            /* Khi xoay (auto hoặc manual), swap width/height */
-            ${autoRotate || rotation === 90 ? `
-              width: ${height - 2}mm;
-              height: ${width - 2}mm;
-            ` : `
-              width: ${width - 2}mm;
-              height: ${height - 2}mm;
-            `}
+            width: ${width - 4}mm;
+            height: ${height - 4}mm;
+            margin: 0 auto !important;
           }
           
           .store-name {
