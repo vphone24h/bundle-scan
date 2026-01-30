@@ -146,14 +146,17 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   ): string => {
     const { width, height } = paper.dimensions;
     const isA4Sheet = paper.size.toLowerCase().includes('a4');
-    // Sử dụng adjustments từ tham số, hoặc mặc định
     const scale = printAdjustments?.scale ?? 1;
     const rotation = printAdjustments?.rotation ?? 0;
     
-    // Page size: giữ nguyên kích thước gốc của giấy  
-    // Không xoay tự động - in đúng như preview hiển thị
-    const pageWidth = width;
-    const pageHeight = height;
+    // Giấy cuộn ngang (50x30): width > height
+    // Máy in feed dọc → SWAP kích thước @page để máy in nhận dọc
+    // Rồi xoay nội dung 90deg để hiển thị ngang trên giấy dọc
+    const isHorizontalRoll = !isA4Sheet && width > height;
+    
+    // SWAP: máy in nhận 30x50 thay vì 50x30
+    const pageWidth = isHorizontalRoll ? height : width;
+    const pageHeight = isHorizontalRoll ? width : height;
     
     // Generate all labels (repeat by quantity)
     const allLabels: ProductPriceEntry[] = [];
@@ -337,11 +340,17 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center !important;
             text-align: center !important;
             gap: 0.5mm;
-            /* Không xoay - in đúng như preview */
-            transform: scale(${scale});
+            /* Giấy cuộn ngang: xoay 90deg để nội dung nằm ngang trên trang dọc */
+            transform: ${isHorizontalRoll ? 'rotate(90deg)' : ''} scale(${scale});
             transform-origin: center center;
-            width: ${width - 4}mm;
-            height: ${height - 4}mm;
+            /* Khi xoay, swap kích thước content */
+            ${isHorizontalRoll ? `
+              width: ${height - 4}mm;
+              height: ${width - 4}mm;
+            ` : `
+              width: ${width - 4}mm;
+              height: ${height - 4}mm;
+            `}
             margin: 0 auto !important;
           }
           
