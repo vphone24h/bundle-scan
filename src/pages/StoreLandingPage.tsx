@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { usePublicLandingSettings, useWarrantyLookup, WarrantyResult } from '@/hooks/useTenantLanding';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { Input } from '@/components/ui/input';
@@ -49,9 +50,19 @@ function calculateWarrantyStatus(item: WarrantyResult): WarrantyStatus | null {
   };
 }
 
-export default function StoreLandingPage() {
+interface StoreLandingPageProps {
+  storeIdFromSubdomain?: string | null;
+}
+
+export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingPageProps) {
+  // Priority: 1. Props (from subdomain) 2. URL params (/store/:storeId)
+  const { storeId: storeIdFromParams } = useParams<{ storeId: string }>();
   const resolvedTenant = useTenantResolver();
-  const { data: landingData, isLoading } = usePublicLandingSettings(resolvedTenant.subdomain);
+  
+  // Determine the store ID to use
+  const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain;
+  
+  const { data: landingData, isLoading } = usePublicLandingSettings(storeId);
   
   const [searchValue, setSearchValue] = useState('');
   const [submittedValue, setSubmittedValue] = useState('');
@@ -75,10 +86,27 @@ export default function StoreLandingPage() {
   };
 
   // Loading state
-  if (resolvedTenant.status === 'loading' || isLoading) {
+  if (isLoading || (!storeId && resolvedTenant.status === 'loading')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Không có store ID
+  if (!storeId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center">
+            <Store className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Cửa hàng không tồn tại</h2>
+            <p className="text-muted-foreground">
+              Vui lòng kiểm tra lại đường dẫn.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -92,7 +120,7 @@ export default function StoreLandingPage() {
             <Store className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h2 className="text-xl font-semibold mb-2">Không tìm thấy cửa hàng</h2>
             <p className="text-muted-foreground">
-              Cửa hàng này không tồn tại hoặc chưa được kích hoạt.
+              Cửa hàng "<strong>{storeId}</strong>" không tồn tại hoặc chưa được kích hoạt.
             </p>
           </CardContent>
         </Card>

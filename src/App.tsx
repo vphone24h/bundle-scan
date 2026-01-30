@@ -90,6 +90,9 @@ const App = () => (
           <Suspense fallback={<PageLoader />}>
             <SubdomainRouter landingPage={<StoreLandingPage />}>
               <Routes>
+                {/* Public store landing page - path-based */}
+                <Route path="/store/:storeId" element={<StoreLandingPage />} />
+                
                 {/* Public routes */}
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/admin" element={<PlatformAuthPage />} />
