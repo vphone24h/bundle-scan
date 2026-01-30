@@ -130,7 +130,7 @@ export function LandingPageSettings() {
     }
   };
 
-  const landingUrl = tenant?.subdomain ? `https://${tenant.subdomain}.vkho.vn` : null;
+  const landingUrl = tenant?.subdomain ? `/store/${tenant.subdomain}` : null;
 
   if (isLoading) {
     return (
