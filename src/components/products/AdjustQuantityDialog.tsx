@@ -98,14 +98,14 @@ export function AdjustQuantityDialog({
 
       if (updateError) throw updateError;
 
-      // Ghi log thao tác
+      // Ghi log thao tác với format rõ ràng
       await supabase.from('audit_logs').insert({
         tenant_id: tenantId,
         user_id: user?.id,
         action_type: 'ADJUST_QUANTITY',
         table_name: 'products',
         record_id: productId,
-        description: `Điều chỉnh số lượng sản phẩm: ${productName} (${sku})`,
+        description: `Điều chỉnh số lượng: ${productName} (${sku}) | ${oldQuantity} → ${newQuantity} (${quantityDiff > 0 ? '+' : ''}${quantityDiff}) | Lý do: ${reason.trim()}`,
         old_data: {
           quantity: oldQuantity,
           total_import_cost: product.total_import_cost,
@@ -114,6 +114,7 @@ export function AdjustQuantityDialog({
           quantity: newQuantity,
           total_import_cost: newTotalCost,
           reason: reason.trim(),
+          quantity_change: `${oldQuantity} → ${newQuantity}`,
           quantity_diff: quantityDiff,
         },
       });
@@ -121,9 +122,11 @@ export function AdjustQuantityDialog({
       return { oldQuantity, newQuantity, quantityDiff };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      // Invalidate all related queries to refresh data immediately
+      queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['all-products'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['inventory'], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'], refetchType: 'all' });
 
       toast({
         title: 'Điều chỉnh thành công',
