@@ -279,6 +279,27 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                     <ExternalLink className="h-4 w-4 text-red-600" />
                   </a>
                 )}
+                
+                {/* Thu cũ đổi mới - Promotion */}
+                {settings?.store_phone && (
+                  <a 
+                    href={`tel:${settings.store_phone}`}
+                    className="flex items-center gap-2.5 p-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 active:bg-amber-100 transition-colors"
+                  >
+                    <div className="p-2 rounded-full bg-gradient-to-br from-amber-400 to-orange-500">
+                      <Phone className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-amber-700">
+                        Thu cũ đổi mới - Lên đời
+                      </p>
+                      <p className="text-xs text-orange-600">
+                        Trợ giá siêu tốt • Gọi ngay →
+                      </p>
+                    </div>
+                    <Phone className="h-4 w-4 text-amber-600 animate-pulse" />
+                  </a>
+                )}
               </div>
 
               {/* Kết quả tra cứu - Mobile cards */}
