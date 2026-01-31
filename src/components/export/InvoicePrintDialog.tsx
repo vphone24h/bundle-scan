@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Printer, X } from 'lucide-react';
-import type { InvoiceTemplate } from '@/hooks/useInvoiceTemplates';
+import type { InvoiceTemplate, TextAlign } from '@/hooks/useInvoiceTemplates';
 
 interface InvoicePrintDialogProps {
   open: boolean;
@@ -16,6 +16,14 @@ interface InvoicePrintDialogProps {
   receipt: any;
   template: InvoiceTemplate | null | undefined;
 }
+
+const getAlignClass = (align: TextAlign | undefined) => {
+  switch (align) {
+    case 'center': return 'text-center';
+    case 'right': return 'text-right';
+    default: return 'text-left';
+  }
+};
 
 export function InvoicePrintDialog({
   open,
@@ -35,45 +43,56 @@ export function InvoicePrintDialog({
     if (!printWindow) return;
 
     const fontSize = template?.font_size === 'small' ? '12px' : template?.font_size === 'large' ? '16px' : '14px';
-    const textAlign = template?.text_align || 'left';
     const width = template?.paper_size === 'K80' ? '80mm' : '210mm';
+    const marginLeft = template?.margin_left ?? 0;
+    const marginRight = template?.margin_right ?? 0;
 
     printWindow.document.write(`
       <html>
         <head>
           <title>Hóa đơn ${receipt.code}</title>
           <style>
+            @page {
+              size: ${width} auto;
+              margin: 0;
+            }
             body {
               font-family: Arial, sans-serif;
               font-size: ${fontSize};
               width: ${width};
               margin: 0 auto;
-              padding: 10mm;
+              padding: 5mm ${marginRight}mm 5mm ${marginLeft}mm;
+              box-sizing: border-box;
             }
-            /* Tailwind utility classes for print */
+            /* Section alignment classes */
+            .section { margin-bottom: 8px; }
             .text-center { text-align: center !important; }
-            .text-left { text-align: left; }
-            .text-right { text-align: right; }
+            .text-left { text-align: left !important; }
+            .text-right { text-align: right !important; }
             .text-xl { font-size: 1.25rem; }
+            .text-lg { font-size: 1.125rem; }
             .text-sm { font-size: 0.875rem; }
             .text-xs { font-size: 0.75rem; }
             .font-bold { font-weight: bold; }
+            .mb-1 { margin-bottom: 0.25rem; }
             .mb-2 { margin-bottom: 0.5rem; }
             .mb-4 { margin-bottom: 1rem; }
-            .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+            .mt-2 { margin-top: 0.5rem; }
             .mt-4 { margin-top: 1rem; }
-            .mt-6 { margin-top: 1.5rem; }
             .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
             .space-y-1 > * + * { margin-top: 0.25rem; }
             .italic { font-style: italic; }
             .flex { display: flex; }
             .justify-between { justify-content: space-between; }
             .w-full { width: 100%; }
-            .border-b { border-bottom: 1px solid #e5e7eb; }
+            .border-b { border-bottom: 1px solid #333; }
             .border-dashed { border-style: dashed; }
-            table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-            th, td { padding: 5px; border-bottom: 1px dashed #ccc; text-align: left; }
+            .text-red { color: #dc2626; }
+            .text-gray { color: #666; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { padding: 4px 2px; border-bottom: 1px dashed #999; }
             th { font-weight: bold; }
+            .separator { border-top: 1px dashed #333; margin: 8px 0; }
             @media print {
               body { width: ${width}; }
             }
@@ -109,7 +128,17 @@ export function InvoicePrintDialog({
     show_debt: true,
     show_thank_you: true,
     thank_you_text: 'Cảm ơn quý khách!',
+    section1_align: 'center' as TextAlign,
+    section2_align: 'center' as TextAlign,
+    section3_align: 'left' as TextAlign,
+    section4_align: 'left' as TextAlign,
+    section5_align: 'left' as TextAlign,
   };
+
+  const s1Align = getAlignClass(settings.section1_align);
+  const s2Align = getAlignClass(settings.section2_align);
+  const s3Align = getAlignClass(settings.section3_align);
+  const s5Align = getAlignClass(settings.section5_align);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -127,44 +156,52 @@ export function InvoicePrintDialog({
           className="p-4 border rounded-lg bg-white text-black text-sm"
           style={{ fontFamily: 'Arial, sans-serif' }}
         >
-          {/* Store info */}
-          {settings.show_store_name && (
-            <div className="text-center mb-4">
+          {/* Section 1: Store info */}
+          <div className={`section ${s1Align}`}>
+            {settings.show_store_name && (
               <div className="text-xl font-bold">{settings.store_name || 'Cửa hàng'}</div>
-            </div>
-          )}
-          {settings.show_store_address && settings.store_address && (
-            <div className="text-center text-sm">{settings.store_address}</div>
-          )}
-          {settings.show_store_phone && settings.store_phone && (
-            <div className="text-center text-sm mb-2">ĐT: {settings.store_phone}</div>
-          )}
+            )}
+            {settings.show_store_address && settings.store_address && (
+              <div className="text-sm">{settings.store_address}</div>
+            )}
+            {settings.show_store_phone && settings.store_phone && (
+              <div className="text-sm">ĐT: {settings.store_phone}</div>
+            )}
+          </div>
 
-          {/* Receipt code */}
+          {/* Separator */}
+          <div className="separator"></div>
+
+          {/* Section 2: Invoice title */}
           {settings.show_receipt_code && (
-            <div className="text-center font-bold my-2">
-              HÓA ĐƠN BÁN HÀNG
-              <div className="text-sm">Mã: {receipt.code}</div>
+            <div className={`section ${s2Align}`}>
+              <div className="text-lg font-bold">HÓA ĐƠN BÁN HÀNG</div>
             </div>
           )}
 
-          {/* Date */}
-          {settings.show_sale_date && (
-            <div className="text-sm mb-2">
-              Ngày: {new Date(receipt.export_date || receipt.created_at || new Date()).toLocaleString('vi-VN')}
-            </div>
-          )}
+          {/* Section 3: Code, date, customer */}
+          <div className={`section ${s3Align}`}>
+            {settings.show_receipt_code && (
+              <div className="text-sm mb-1">Mã: {receipt.code}</div>
+            )}
+            {settings.show_sale_date && (
+              <div className="text-sm mb-1">
+                Ngày: {new Date(receipt.export_date || receipt.created_at || new Date()).toLocaleString('vi-VN')}
+              </div>
+            )}
+            {settings.show_customer_info && receipt.customer && (
+              <>
+                <div className="text-sm">KH: {receipt.customer.name}</div>
+                <div className="text-sm">SĐT: {receipt.customer.phone}</div>
+                {receipt.customer.address && <div className="text-sm">ĐC: {receipt.customer.address}</div>}
+              </>
+            )}
+          </div>
 
-          {/* Customer */}
-          {settings.show_customer_info && receipt.customer && (
-            <div className="mb-4 text-sm">
-              <div>Khách hàng: {receipt.customer.name}</div>
-              <div>SĐT: {receipt.customer.phone}</div>
-              {receipt.customer.address && <div>Địa chỉ: {receipt.customer.address}</div>}
-            </div>
-          )}
+          {/* Separator */}
+          <div className="separator"></div>
 
-          {/* Items */}
+          {/* Section 4: Items */}
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b">
@@ -177,9 +214,9 @@ export function InvoicePrintDialog({
                 <tr key={index} className="border-b border-dashed">
                   <td className="py-1">
                     {settings.show_product_name && <div>{item.product_name}</div>}
-                    {settings.show_sku && <div className="text-xs text-gray-500">SKU: {item.sku}</div>}
+                    {settings.show_sku && <div className="text-xs text-gray">SKU: {item.sku}</div>}
                     {settings.show_imei && item.imei && (
-                      <div className="text-xs text-gray-500">IMEI: {item.imei}</div>
+                      <div className="text-xs text-gray">IMEI: {item.imei}</div>
                     )}
                   </td>
                   {settings.show_sale_price && (
@@ -190,8 +227,11 @@ export function InvoicePrintDialog({
             </tbody>
           </table>
 
-          {/* Totals */}
-          <div className="mt-4 space-y-1 text-sm">
+          {/* Separator */}
+          <div className="separator"></div>
+
+          {/* Section 5: Totals */}
+          <div className={`section ${s5Align}`}>
             {settings.show_total && (
               <div className="flex justify-between font-bold">
                 <span>Tổng tiền:</span>
@@ -208,7 +248,7 @@ export function InvoicePrintDialog({
               </div>
             )}
             {settings.show_debt && (receipt.debt_amount > 0 || receipt.payments?.some((p: any) => p.payment_type === 'debt')) && (
-              <div className="flex justify-between text-destructive">
+              <div className="flex justify-between text-red">
                 <span>Công nợ:</span>
                 <span>{receipt.debt_amount?.toLocaleString('vi-VN') ||
                   receipt.payments?.filter((p: any) => p.payment_type === 'debt')
@@ -219,7 +259,7 @@ export function InvoicePrintDialog({
 
           {/* Thank you */}
           {settings.show_thank_you && (
-            <div className="mt-6 text-center italic">
+            <div className="mt-4 text-center italic">
               {settings.thank_you_text || 'Cảm ơn quý khách!'}
             </div>
           )}

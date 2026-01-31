@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,9 +31,12 @@ import {
   MessageSquare,
   Heart,
   Printer,
-  MoveHorizontal
+  MoveHorizontal,
+  AlignLeft,
+  AlignCenter,
+  AlignRight
 } from 'lucide-react';
-import { useDefaultInvoiceTemplate, useUpdateInvoiceTemplate, type InvoiceTemplate } from '@/hooks/useInvoiceTemplates';
+import { useDefaultInvoiceTemplate, useUpdateInvoiceTemplate, type InvoiceTemplate, type TextAlign } from '@/hooks/useInvoiceTemplates';
 
 interface SettingItemProps {
   icon: React.ReactNode;
@@ -62,14 +65,86 @@ function SettingItem({ icon, label, checked, onCheckedChange, children }: Settin
   );
 }
 
+interface AlignmentSelectProps {
+  value: TextAlign;
+  onChange: (value: TextAlign) => void;
+}
+
+function AlignmentSelect({ value, onChange }: AlignmentSelectProps) {
+  return (
+    <div className="flex gap-1">
+      <Button
+        type="button"
+        variant={value === 'left' ? 'default' : 'outline'}
+        size="sm"
+        className="h-8 w-8 p-0"
+        onClick={() => onChange('left')}
+      >
+        <AlignLeft className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant={value === 'center' ? 'default' : 'outline'}
+        size="sm"
+        className="h-8 w-8 p-0"
+        onClick={() => onChange('center')}
+      >
+        <AlignCenter className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant={value === 'right' ? 'default' : 'outline'}
+        size="sm"
+        className="h-8 w-8 p-0"
+        onClick={() => onChange('right')}
+      >
+        <AlignRight className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
+interface SectionCardProps {
+  title: string;
+  description: string;
+  align: TextAlign;
+  onAlignChange: (value: TextAlign) => void;
+  children: React.ReactNode;
+}
+
+function SectionCard({ title, description, align, onAlignChange, children }: SectionCardProps) {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <p className="text-xs text-muted-foreground">{description}</p>
+          </div>
+          <AlignmentSelect value={align} onChange={onAlignChange} />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
+
+const getAlignClass = (align: TextAlign | undefined) => {
+  switch (align) {
+    case 'center': return 'text-center';
+    case 'right': return 'text-right';
+    default: return 'text-left';
+  }
+};
+
 export default function InvoiceTemplatePage() {
   const { data: template, isLoading } = useDefaultInvoiceTemplate();
   const updateTemplate = useUpdateInvoiceTemplate();
 
-  // Local state
   const [settings, setSettings] = useState<Partial<InvoiceTemplate>>({});
 
-  // Merge template with local changes
   const currentSettings = { ...template, ...settings };
 
   const updateSetting = <K extends keyof InvoiceTemplate>(key: K, value: InvoiceTemplate[K]) => {
@@ -110,17 +185,23 @@ export default function InvoiceTemplatePage() {
     );
   }
 
+  const s1Align = (currentSettings.section1_align || 'center') as TextAlign;
+  const s2Align = (currentSettings.section2_align || 'center') as TextAlign;
+  const s3Align = (currentSettings.section3_align || 'left') as TextAlign;
+  const s4Align = (currentSettings.section4_align || 'left') as TextAlign;
+  const s5Align = (currentSettings.section5_align || 'left') as TextAlign;
+
   return (
     <MainLayout>
       <PageHeader
-        title="Thiết lập mẫu in hóa đơn"
-        description="Cấu hình nội dung và giao diện hóa đơn bán hàng"
+        title="Thiết lập mẫu in hóa đơn K80"
+        description="Cấu hình bố cục 5 phần với căn lề riêng cho mỗi phần"
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Settings */}
-        <div className="space-y-6">
-          {/* Paper size & font */}
+        <div className="space-y-4">
+          {/* General settings */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -140,7 +221,7 @@ export default function InvoiceTemplatePage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover">
-                      <SelectItem value="K80">K80 (Giấy cuộn nhiệt)</SelectItem>
+                      <SelectItem value="K80">K80 (80mm)</SelectItem>
                       <SelectItem value="A4">A4</SelectItem>
                     </SelectContent>
                   </Select>
@@ -162,29 +243,13 @@ export default function InvoiceTemplatePage() {
                   </Select>
                 </div>
               </div>
-              <div>
-                <Label>Căn lề</Label>
-                <Select
-                  value={currentSettings.text_align || 'left'}
-                  onValueChange={(v) => updateSetting('text_align', v as 'left' | 'center' | 'right')}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover">
-                    <SelectItem value="left">Trái</SelectItem>
-                    <SelectItem value="center">Giữa</SelectItem>
-                    <SelectItem value="right">Phải</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
-              <Separator className="my-4" />
+              <Separator />
 
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <MoveHorizontal className="h-4 w-4" />
-                  <span>Lề giấy (mm) - chỉnh để chữ không bị xuống dòng</span>
+                  <span>Lề giấy (mm)</span>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -212,160 +277,174 @@ export default function InvoiceTemplatePage() {
             </CardContent>
           </Card>
 
-          {/* Store info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Store className="h-5 w-5" />
-                Thông tin cửa hàng
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <SettingItem
-                icon={<Store className="h-4 w-4" />}
-                label="Tên cửa hàng"
-                checked={currentSettings.show_store_name ?? true}
-                onCheckedChange={(v) => updateSetting('show_store_name', v)}
-              >
-                <Input
-                  placeholder="Nhập tên cửa hàng"
-                  value={currentSettings.store_name || ''}
-                  onChange={(e) => updateSetting('store_name', e.target.value)}
-                />
-              </SettingItem>
-
-              <SettingItem
-                icon={<MapPin className="h-4 w-4" />}
-                label="Địa chỉ"
-                checked={currentSettings.show_store_address ?? true}
-                onCheckedChange={(v) => updateSetting('show_store_address', v)}
-              >
-                <Input
-                  placeholder="Nhập địa chỉ cửa hàng"
-                  value={currentSettings.store_address || ''}
-                  onChange={(e) => updateSetting('store_address', e.target.value)}
-                />
-              </SettingItem>
-
-              <SettingItem
-                icon={<Phone className="h-4 w-4" />}
-                label="Số điện thoại"
-                checked={currentSettings.show_store_phone ?? true}
-                onCheckedChange={(v) => updateSetting('show_store_phone', v)}
-              >
-                <Input
-                  placeholder="Nhập SĐT cửa hàng"
-                  value={currentSettings.store_phone || ''}
-                  onChange={(e) => updateSetting('store_phone', e.target.value)}
-                />
-              </SettingItem>
-            </CardContent>
-          </Card>
-
-          {/* Content settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Nội dung hiển thị
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <SettingItem
-                icon={<FileText className="h-4 w-4" />}
-                label="Mã phiếu xuất"
-                checked={currentSettings.show_receipt_code ?? true}
-                onCheckedChange={(v) => updateSetting('show_receipt_code', v)}
+          {/* Section 1: Store info */}
+          <SectionCard
+            title="Phần 1: Thông tin cửa hàng"
+            description="Tên, địa chỉ, số điện thoại"
+            align={s1Align}
+            onAlignChange={(v) => updateSetting('section1_align', v)}
+          >
+            <SettingItem
+              icon={<Store className="h-4 w-4" />}
+              label="Tên cửa hàng"
+              checked={currentSettings.show_store_name ?? true}
+              onCheckedChange={(v) => updateSetting('show_store_name', v)}
+            >
+              <Input
+                placeholder="Nhập tên cửa hàng"
+                value={currentSettings.store_name || ''}
+                onChange={(e) => updateSetting('store_name', e.target.value)}
               />
+            </SettingItem>
 
-              <SettingItem
-                icon={<Calendar className="h-4 w-4" />}
-                label="Ngày bán"
-                checked={currentSettings.show_sale_date ?? true}
-                onCheckedChange={(v) => updateSetting('show_sale_date', v)}
+            <SettingItem
+              icon={<MapPin className="h-4 w-4" />}
+              label="Địa chỉ"
+              checked={currentSettings.show_store_address ?? true}
+              onCheckedChange={(v) => updateSetting('show_store_address', v)}
+            >
+              <Input
+                placeholder="Nhập địa chỉ"
+                value={currentSettings.store_address || ''}
+                onChange={(e) => updateSetting('store_address', e.target.value)}
               />
+            </SettingItem>
 
-              <SettingItem
-                icon={<User className="h-4 w-4" />}
-                label="Thông tin khách hàng"
-                checked={currentSettings.show_customer_info ?? true}
-                onCheckedChange={(v) => updateSetting('show_customer_info', v)}
+            <SettingItem
+              icon={<Phone className="h-4 w-4" />}
+              label="Số điện thoại"
+              checked={currentSettings.show_store_phone ?? true}
+              onCheckedChange={(v) => updateSetting('show_store_phone', v)}
+            >
+              <Input
+                placeholder="Nhập SĐT"
+                value={currentSettings.store_phone || ''}
+                onChange={(e) => updateSetting('store_phone', e.target.value)}
               />
+            </SettingItem>
+          </SectionCard>
 
-              <Separator />
+          {/* Section 2: Invoice title */}
+          <SectionCard
+            title="Phần 2: Tiêu đề hóa đơn"
+            description="Tên hóa đơn bán hàng"
+            align={s2Align}
+            onAlignChange={(v) => updateSetting('section2_align', v)}
+          >
+            <SettingItem
+              icon={<FileText className="h-4 w-4" />}
+              label="Hiển thị tiêu đề"
+              checked={currentSettings.show_receipt_code ?? true}
+              onCheckedChange={(v) => updateSetting('show_receipt_code', v)}
+            />
+          </SectionCard>
 
-              <SettingItem
-                icon={<Package className="h-4 w-4" />}
-                label="Tên sản phẩm"
-                checked={currentSettings.show_product_name ?? true}
-                onCheckedChange={(v) => updateSetting('show_product_name', v)}
+          {/* Section 3: Details */}
+          <SectionCard
+            title="Phần 3: Thông tin đơn hàng"
+            description="Mã, ngày, khách hàng"
+            align={s3Align}
+            onAlignChange={(v) => updateSetting('section3_align', v)}
+          >
+            <SettingItem
+              icon={<Calendar className="h-4 w-4" />}
+              label="Ngày bán"
+              checked={currentSettings.show_sale_date ?? true}
+              onCheckedChange={(v) => updateSetting('show_sale_date', v)}
+            />
+
+            <SettingItem
+              icon={<User className="h-4 w-4" />}
+              label="Thông tin khách hàng"
+              checked={currentSettings.show_customer_info ?? true}
+              onCheckedChange={(v) => updateSetting('show_customer_info', v)}
+            />
+          </SectionCard>
+
+          {/* Section 4: Products */}
+          <SectionCard
+            title="Phần 4: Sản phẩm"
+            description="Danh sách sản phẩm đã bán"
+            align={s4Align}
+            onAlignChange={(v) => updateSetting('section4_align', v)}
+          >
+            <SettingItem
+              icon={<Package className="h-4 w-4" />}
+              label="Tên sản phẩm"
+              checked={currentSettings.show_product_name ?? true}
+              onCheckedChange={(v) => updateSetting('show_product_name', v)}
+            />
+
+            <SettingItem
+              icon={<Package className="h-4 w-4" />}
+              label="SKU"
+              checked={currentSettings.show_sku ?? true}
+              onCheckedChange={(v) => updateSetting('show_sku', v)}
+            />
+
+            <SettingItem
+              icon={<Package className="h-4 w-4" />}
+              label="IMEI"
+              checked={currentSettings.show_imei ?? true}
+              onCheckedChange={(v) => updateSetting('show_imei', v)}
+            />
+
+            <SettingItem
+              icon={<DollarSign className="h-4 w-4" />}
+              label="Giá bán"
+              checked={currentSettings.show_sale_price ?? true}
+              onCheckedChange={(v) => updateSetting('show_sale_price', v)}
+            />
+          </SectionCard>
+
+          {/* Section 5: Totals */}
+          <SectionCard
+            title="Phần 5: Thanh toán"
+            description="Tổng tiền, công nợ, lời cảm ơn"
+            align={s5Align}
+            onAlignChange={(v) => updateSetting('section5_align', v)}
+          >
+            <SettingItem
+              icon={<DollarSign className="h-4 w-4" />}
+              label="Tổng tiền"
+              checked={currentSettings.show_total ?? true}
+              onCheckedChange={(v) => updateSetting('show_total', v)}
+            />
+
+            <SettingItem
+              icon={<CreditCard className="h-4 w-4" />}
+              label="Đã thanh toán"
+              checked={currentSettings.show_paid_amount ?? true}
+              onCheckedChange={(v) => updateSetting('show_paid_amount', v)}
+            />
+
+            <SettingItem
+              icon={<CreditCard className="h-4 w-4" />}
+              label="Công nợ"
+              checked={currentSettings.show_debt ?? true}
+              onCheckedChange={(v) => updateSetting('show_debt', v)}
+            />
+
+            <SettingItem
+              icon={<MessageSquare className="h-4 w-4" />}
+              label="Ghi chú"
+              checked={currentSettings.show_note ?? true}
+              onCheckedChange={(v) => updateSetting('show_note', v)}
+            />
+
+            <SettingItem
+              icon={<Heart className="h-4 w-4" />}
+              label="Lời cảm ơn"
+              checked={currentSettings.show_thank_you ?? true}
+              onCheckedChange={(v) => updateSetting('show_thank_you', v)}
+            >
+              <Input
+                placeholder="Nhập lời cảm ơn"
+                value={currentSettings.thank_you_text || ''}
+                onChange={(e) => updateSetting('thank_you_text', e.target.value)}
               />
-
-              <SettingItem
-                icon={<Package className="h-4 w-4" />}
-                label="SKU"
-                checked={currentSettings.show_sku ?? true}
-                onCheckedChange={(v) => updateSetting('show_sku', v)}
-              />
-
-              <SettingItem
-                icon={<Package className="h-4 w-4" />}
-                label="IMEI"
-                checked={currentSettings.show_imei ?? true}
-                onCheckedChange={(v) => updateSetting('show_imei', v)}
-              />
-
-              <SettingItem
-                icon={<DollarSign className="h-4 w-4" />}
-                label="Giá bán"
-                checked={currentSettings.show_sale_price ?? true}
-                onCheckedChange={(v) => updateSetting('show_sale_price', v)}
-              />
-
-              <Separator />
-
-              <SettingItem
-                icon={<DollarSign className="h-4 w-4" />}
-                label="Tổng tiền"
-                checked={currentSettings.show_total ?? true}
-                onCheckedChange={(v) => updateSetting('show_total', v)}
-              />
-
-              <SettingItem
-                icon={<CreditCard className="h-4 w-4" />}
-                label="Đã thanh toán"
-                checked={currentSettings.show_paid_amount ?? true}
-                onCheckedChange={(v) => updateSetting('show_paid_amount', v)}
-              />
-
-              <SettingItem
-                icon={<CreditCard className="h-4 w-4" />}
-                label="Công nợ"
-                checked={currentSettings.show_debt ?? true}
-                onCheckedChange={(v) => updateSetting('show_debt', v)}
-              />
-
-              <SettingItem
-                icon={<MessageSquare className="h-4 w-4" />}
-                label="Ghi chú"
-                checked={currentSettings.show_note ?? true}
-                onCheckedChange={(v) => updateSetting('show_note', v)}
-              />
-
-              <SettingItem
-                icon={<Heart className="h-4 w-4" />}
-                label="Lời cảm ơn"
-                checked={currentSettings.show_thank_you ?? true}
-                onCheckedChange={(v) => updateSetting('show_thank_you', v)}
-              >
-                <Input
-                  placeholder="Nhập lời cảm ơn"
-                  value={currentSettings.thank_you_text || ''}
-                  onChange={(e) => updateSetting('thank_you_text', e.target.value)}
-                />
-              </SettingItem>
-            </CardContent>
-          </Card>
+            </SettingItem>
+          </SectionCard>
 
           {/* Save button */}
           <Button 
@@ -385,7 +464,7 @@ export default function InvoiceTemplatePage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Eye className="h-5 w-5" />
-                Xem trước
+                Xem trước mẫu K80
               </CardTitle>
               <Button 
                 variant="outline" 
@@ -406,7 +485,7 @@ export default function InvoiceTemplatePage() {
 
                   const marginLeft = currentSettings.margin_left ?? 0;
                   const marginRight = currentSettings.margin_right ?? 0;
-                  const paperWidth = currentSettings.paper_size === 'K80' ? '80mm' : '210mm';
+                  const fontSize = currentSettings.font_size === 'small' ? '12px' : currentSettings.font_size === 'large' ? '16px' : '14px';
                   
                   printWindow.document.write(`
                     <!DOCTYPE html>
@@ -415,23 +494,43 @@ export default function InvoiceTemplatePage() {
                       <title>In mẫu hóa đơn</title>
                       <style>
                         @page {
-                          size: ${paperWidth} auto;
+                          size: 80mm auto;
                           margin: 0;
                         }
                         body {
                           font-family: Arial, sans-serif;
+                          font-size: ${fontSize};
                           margin: 0;
                           padding: 5mm ${marginRight}mm 5mm ${marginLeft}mm;
-                          -webkit-print-color-adjust: exact;
-                          print-color-adjust: exact;
+                          width: 80mm;
+                          box-sizing: border-box;
                         }
-                        .invoice-content {
-                          width: 100%;
-                        }
+                        .section { margin-bottom: 8px; }
+                        .text-center { text-align: center !important; }
+                        .text-left { text-align: left !important; }
+                        .text-right { text-align: right !important; }
+                        .text-xl { font-size: 1.25rem; }
+                        .text-lg { font-size: 1.125rem; }
+                        .text-sm { font-size: 0.875rem; }
+                        .text-xs { font-size: 0.75rem; }
+                        .font-bold { font-weight: bold; }
+                        .mb-1 { margin-bottom: 0.25rem; }
+                        .mt-4 { margin-top: 1rem; }
+                        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+                        .italic { font-style: italic; }
+                        .flex { display: flex; }
+                        .justify-between { justify-content: space-between; }
+                        .w-full { width: 100%; }
+                        .text-red { color: #dc2626; }
+                        .text-gray { color: #666; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { padding: 4px 2px; border-bottom: 1px dashed #999; }
+                        th { font-weight: bold; }
+                        .separator { border-top: 1px dashed #333; margin: 8px 0; }
                       </style>
                     </head>
                     <body>
-                      <div class="invoice-content">${previewContent.innerHTML}</div>
+                      ${previewContent.innerHTML}
                       <script>
                         window.onload = function() {
                           window.print();
@@ -455,59 +554,64 @@ export default function InvoiceTemplatePage() {
                 style={{ 
                   fontFamily: 'Arial, sans-serif',
                   fontSize: currentSettings.font_size === 'small' ? '12px' : currentSettings.font_size === 'large' ? '16px' : '14px',
-                  textAlign: currentSettings.text_align || 'left',
-                  maxWidth: currentSettings.paper_size === 'K80' ? '80mm' : '100%',
+                  maxWidth: '80mm',
                   paddingLeft: `${(currentSettings.margin_left ?? 0)}mm`,
                   paddingRight: `${(currentSettings.margin_right ?? 0)}mm`,
                 }}
               >
-                {/* Store info */}
-                {currentSettings.show_store_name && (
-                  <div className="text-center mb-3">
+                {/* Section 1: Store info */}
+                <div className={`section ${getAlignClass(s1Align)}`}>
+                  {currentSettings.show_store_name && (
                     <div className="text-xl font-bold">{currentSettings.store_name || 'Tên cửa hàng'}</div>
-                    {currentSettings.show_store_address && (
-                      <div className="text-sm">{currentSettings.store_address || 'Địa chỉ cửa hàng'}</div>
-                    )}
-                    {currentSettings.show_store_phone && (
-                      <div className="text-sm">ĐT: {currentSettings.store_phone || '0123456789'}</div>
-                    )}
-                  </div>
-                )}
+                  )}
+                  {currentSettings.show_store_address && (
+                    <div className="text-sm">{currentSettings.store_address || 'Địa chỉ cửa hàng'}</div>
+                  )}
+                  {currentSettings.show_store_phone && (
+                    <div className="text-sm">ĐT: {currentSettings.store_phone || '0123456789'}</div>
+                  )}
+                </div>
 
-                {/* Receipt code */}
+                {/* Separator */}
+                <div className="separator" style={{ borderTop: '1px dashed #333', margin: '8px 0' }}></div>
+
+                {/* Section 2: Invoice title */}
                 {currentSettings.show_receipt_code && (
-                  <div className="text-center font-bold my-2">
-                    HÓA ĐƠN BÁN HÀNG
-                    <div className="text-sm">Mã: XH20260126143000</div>
+                  <div className={`section ${getAlignClass(s2Align)}`}>
+                    <div className="text-lg font-bold">HÓA ĐƠN BÁN HÀNG</div>
                   </div>
                 )}
 
-                {/* Date */}
-                {currentSettings.show_sale_date && (
-                  <div className="text-sm mb-2">
-                    Ngày: 26/01/2026 14:30
-                  </div>
-                )}
+                {/* Section 3: Details */}
+                <div className={`section ${getAlignClass(s3Align)}`}>
+                  {currentSettings.show_receipt_code && (
+                    <div className="text-sm mb-1">Mã: XH20260131143000</div>
+                  )}
+                  {currentSettings.show_sale_date && (
+                    <div className="text-sm mb-1">Ngày: 31/01/2026 14:30</div>
+                  )}
+                  {currentSettings.show_customer_info && (
+                    <>
+                      <div className="text-sm">KH: Nguyễn Văn A</div>
+                      <div className="text-sm">SĐT: 0987654321</div>
+                    </>
+                  )}
+                </div>
 
-                {/* Customer */}
-                {currentSettings.show_customer_info && (
-                  <div className="mb-3 text-sm">
-                    <div>Khách hàng: Nguyễn Văn A</div>
-                    <div>SĐT: 0987654321</div>
-                  </div>
-                )}
+                {/* Separator */}
+                <div className="separator" style={{ borderTop: '1px dashed #333', margin: '8px 0' }}></div>
 
-                {/* Items */}
-                <table className="w-full text-sm mb-3">
+                {/* Section 4: Items */}
+                <table className="w-full text-sm">
                   <thead>
-                    <tr style={{ borderBottom: '1px solid #000' }}>
-                      {currentSettings.show_product_name && <th className="py-1 text-left">SP</th>}
+                    <tr style={{ borderBottom: '1px solid #333' }}>
+                      {currentSettings.show_product_name && <th className="py-1" style={{ textAlign: s4Align }}>SP</th>}
                       {currentSettings.show_sale_price && <th className="py-1 text-right">Giá</th>}
                     </tr>
                   </thead>
                   <tbody>
                     <tr style={{ borderBottom: '1px dashed #999' }}>
-                      <td className="py-1">
+                      <td className="py-1" style={{ textAlign: s4Align }}>
                         {currentSettings.show_product_name && <div>iPhone 15 Pro Max 256GB</div>}
                         {currentSettings.show_sku && <div className="text-xs" style={{ color: '#666' }}>SKU: IP15PM256</div>}
                         {currentSettings.show_imei && <div className="text-xs" style={{ color: '#666' }}>IMEI: 123456789012345</div>}
@@ -519,8 +623,11 @@ export default function InvoiceTemplatePage() {
                   </tbody>
                 </table>
 
-                {/* Totals */}
-                <div className="space-y-1 text-sm">
+                {/* Separator */}
+                <div className="separator" style={{ borderTop: '1px dashed #333', margin: '8px 0' }}></div>
+
+                {/* Section 5: Totals */}
+                <div className={`section ${getAlignClass(s5Align)}`}>
                   {currentSettings.show_total && (
                     <div className="flex justify-between font-bold">
                       <span>Tổng tiền:</span>
@@ -543,7 +650,7 @@ export default function InvoiceTemplatePage() {
 
                 {/* Note */}
                 {currentSettings.show_note && (
-                  <div className="mt-3 text-sm" style={{ color: '#666' }}>
+                  <div className="mt-2 text-sm" style={{ color: '#666' }}>
                     Ghi chú: Khách hẹn thanh toán sau 7 ngày
                   </div>
                 )}

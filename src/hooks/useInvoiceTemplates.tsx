@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
+export type TextAlign = 'left' | 'center' | 'right';
+
 export interface InvoiceTemplate {
   id: string;
   name: string;
@@ -27,11 +29,17 @@ export interface InvoiceTemplate {
   show_thank_you: boolean;
   thank_you_text: string | null;
   font_size: 'small' | 'medium' | 'large';
-  text_align: 'left' | 'center' | 'right';
+  text_align: TextAlign;
   field_order: string[];
   is_default: boolean;
   margin_left: number;
   margin_right: number;
+  // Per-section alignment for K80
+  section1_align: TextAlign; // Store info
+  section2_align: TextAlign; // Invoice title
+  section3_align: TextAlign; // Code, date, customer
+  section4_align: TextAlign; // Products
+  section5_align: TextAlign; // Totals
   created_at: string;
   updated_at: string;
 }
