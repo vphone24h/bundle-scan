@@ -152,8 +152,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   };
 
   // Export to PDF for manual printing later
-  // Yêu cầu: PDF phải giống 100% với màn hình "Điều chỉnh in" (layout + spacing).
-  // Giải pháp: tái sử dụng generatePrintContent (cùng HTML/CSS), nhưng tắt bù xoay để giữ đúng khổ giấy gốc.
+  // PDF phải đồng bộ 100% với màn hình preview: cùng layout, cùng scale, KHÔNG xoay/swap kích thước.
   const handleExportPDF = async () => {
     if (!selectedPaper) return;
     
@@ -164,52 +163,41 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     toast.info('Đang tạo file PDF...');
 
     try {
-      // Dynamic import to reduce bundle size
       const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
         import('jspdf'),
         import('html2canvas'),
       ]);
 
       const { width, height } = paper.dimensions;
+      const scale = adjustments.scale ?? 1;
 
-      // PDF KHÔNG cần cơ chế bù xoay/hoán đổi khổ (đó là workaround cho driver máy in nhiệt).
-      // Nếu áp dụng vào PDF sẽ dễ bị lệch/thu nhỏ như ảnh bạn gửi.
-      // PDF giữ đúng khổ giấy gốc (vd 55x30) và chỉ áp dụng đúng scale/rotation mà bạn chỉnh.
+      // PDF giữ nguyên khổ giấy gốc (55x30), không swap
       const pdfPageWidth = width;
       const pdfPageHeight = height;
 
-      // Đồng bộ 100% layout với màn "Điều chỉnh in": dùng cùng template,
-      // nhưng tắt autoCompensateRotation để tránh swap kích thước trang trong PDF.
-      const pdfContent = generatePrintContent(paper, productEntries, settings, {
-        ...adjustments,
-        autoCompensateRotation: false,
-      });
+      // Tạo HTML riêng cho PDF - KHÔNG có rotation compensation
+      const pdfHtmlContent = generatePdfOnlyContent(paper, productEntries, settings, scale);
       
-      // Create hidden iframe to render content with exact dimensions
+      // Tạo iframe ẩn để render
       const iframe = document.createElement('iframe');
-      iframe.style.position = 'absolute';
-      iframe.style.left = '-9999px';
-      iframe.style.top = '-9999px';
-      // Set size in mm so browser layout matches print mm units exactly
+      iframe.style.cssText = 'position:absolute;left:-9999px;top:-9999px;border:none;';
       iframe.style.width = `${pdfPageWidth}mm`;
-      iframe.style.height = `${pdfPageHeight}mm`;
+      iframe.style.height = `${pdfPageHeight * 10}mm`; // Đủ cao cho nhiều label
       document.body.appendChild(iframe);
       
       const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) {
-        throw new Error('Cannot access iframe document');
-      }
+      if (!iframeDoc) throw new Error('Cannot access iframe document');
       
       iframeDoc.open();
-      iframeDoc.write(pdfContent);
+      iframeDoc.write(pdfHtmlContent);
       iframeDoc.close();
 
-      // Wait for scripts (JsBarcode) to load and execute
+      // Đợi JsBarcode render xong
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       const labels = iframeDoc.querySelectorAll('.label');
       
-      // Create PDF with the SAME page dimensions as print output
+      // Tạo PDF với đúng khổ giấy
       const pdf = new jsPDF({
         orientation: pdfPageWidth > pdfPageHeight ? 'landscape' : 'portrait',
         unit: 'mm',
@@ -223,28 +211,23 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           pdf.addPage([pdfPageWidth, pdfPageHeight], pdfPageWidth > pdfPageHeight ? 'landscape' : 'portrait');
         }
 
-        // Capture label as canvas with high resolution
-        // IMPORTANT: Don't force width/height (dpi mismatch causes layout drift on small labels like 55x30).
-        // Capture exactly as the browser laid it out, then upscale via `scale` for sharpness.
+        // Capture với scale cao để barcode sắc nét
         const canvas = await html2canvas(label, {
-          scale: 4, // High resolution for crisp barcodes
+          scale: 4,
           backgroundColor: '#ffffff',
           logging: false,
           useCORS: true,
         });
 
-        // Add to PDF - fill entire page
+        // Fill toàn bộ trang PDF
         const imgData = canvas.toDataURL('image/png');
         pdf.addImage(imgData, 'PNG', 0, 0, pdfPageWidth, pdfPageHeight);
       }
 
-      // Save PDF with descriptive filename
       const paperName = paper.name.replace(/[^a-zA-Z0-9]/g, '_');
       pdf.save(`Ma_Vach_${paperName}_${new Date().toISOString().slice(0, 10)}.pdf`);
       
-      // Cleanup
       document.body.removeChild(iframe);
-      
       toast.success(`Đã xuất ${labels.length} nhãn ra file PDF (${pdfPageWidth}x${pdfPageHeight}mm)`);
     } catch (error) {
       console.error('PDF export error:', error);
@@ -252,6 +235,190 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  // Tạo HTML riêng cho PDF - KHÔNG có rotation/swap, giữ nguyên khổ giấy gốc
+  const generatePdfOnlyContent = (
+    paper: PaperTemplate,
+    entries: ProductPriceEntry[],
+    printSettings: BarcodeSettings,
+    scale: number
+  ): string => {
+    const { width, height } = paper.dimensions;
+    
+    // Expand theo số lượng
+    const allLabels: ProductPriceEntry[] = [];
+    entries.forEach(entry => {
+      for (let i = 0; i < entry.quantity; i++) {
+        allLabels.push(entry);
+      }
+    });
+
+    const isSmallLabel = height <= 22;
+    const isJewelryLabel = height <= 10;
+    
+    const baseBarcodeHeight = isJewelryLabel ? 12 : isSmallLabel ? 14 : 18;
+    const baseBarcodeWidth = 0.6;
+    const barcodeHeight = Math.round(baseBarcodeHeight * scale);
+    const barcodeWidth = baseBarcodeWidth * scale;
+
+    const labelHTML = allLabels.map((entry, idx) => {
+      if (isJewelryLabel) {
+        return `
+          <div class="label">
+            <div class="label-content-wrapper">
+              <div class="codes-container-inline">
+                <svg class="barcode" id="barcode-${idx}"></svg>
+              </div>
+              ${printSettings.showPrice ? 
+                `<div class="price-inline">${formatNumberWithSpaces(entry.printPrice)}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }
+      
+      return `
+        <div class="label">
+          <div class="label-content-wrapper">
+            ${printSettings.showStoreName && printSettings.storeName ? 
+              `<div class="store-name">${printSettings.storeName}</div>` : ''}
+            ${printSettings.showProductName ? 
+              `<div class="product-name">${entry.name}</div>` : ''}
+            ${printSettings.showCustomDescription && printSettings.customDescription ? 
+              `<div class="custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
+            <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
+              <svg class="barcode" id="barcode-${idx}"></svg>
+            </div>
+            ${entry.imei ? `<div class="code-text">${entry.imei}</div>` : ''}
+            ${printSettings.showPrice ? 
+              `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const initScript = allLabels.map((entry, idx) => {
+      const rawValue = entry.imei ? `${entry.imei}:${entry.printPrice}` : (entry.sku || entry.productId);
+      const sanitizedValue = String(rawValue).replace(/[^\x20-\x7E]/g, '');
+      return `
+        JsBarcode("#barcode-${idx}", ${JSON.stringify(sanitizedValue)}, {
+          format: "CODE128",
+          width: ${barcodeWidth},
+          height: ${barcodeHeight},
+          displayValue: false,
+          margin: 0
+        });
+      `;
+    }).join('\n');
+
+    // CSS đơn giản cho PDF - KHÔNG xoay, KHÔNG swap kích thước
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>PDF Export</title>
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          html, body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: white;
+          }
+          
+          .label {
+            width: ${width}mm;
+            height: ${height}mm;
+            position: relative;
+            background: white;
+            overflow: hidden;
+            page-break-after: always;
+          }
+          
+          .label-content-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(${scale});
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 2px;
+            width: ${width - 4}mm;
+            max-height: ${height - 2}mm;
+          }
+          
+          .store-name {
+            font-size: ${Math.round(8 * scale)}px;
+            font-weight: bold;
+            color: #000;
+            line-height: 1.1;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          
+          .product-name {
+            font-size: ${Math.round(7 * scale)}px;
+            color: #000;
+            line-height: 1.1;
+            word-break: break-word;
+            max-width: 100%;
+            max-height: 2.2em;
+            overflow: hidden;
+          }
+          
+          .custom-description {
+            font-size: ${Math.round(7 * scale)}px;
+            color: #000;
+            line-height: 1.1;
+            white-space: pre-wrap;
+          }
+          
+          .codes-container, .codes-container-inline {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 2px 0;
+          }
+          
+          .barcode { display: block; }
+          
+          .code-text {
+            font-size: ${Math.round(6 * scale)}px;
+            color: #333;
+            line-height: 1;
+          }
+          
+          .price, .price-inline {
+            font-size: ${Math.round(10 * scale)}px;
+            font-weight: bold;
+            color: #000;
+            line-height: 1.1;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="labels-container">
+          ${labelHTML}
+        </div>
+        <script>
+          document.addEventListener('DOMContentLoaded', function() {
+            try {
+              ${initScript}
+            } catch(e) {
+              console.error('Barcode init error:', e);
+            }
+          });
+        </script>
+      </body>
+      </html>
+    `;
   };
 
   // Generate PDF content - giữ nguyên hướng ngang, không xoay
