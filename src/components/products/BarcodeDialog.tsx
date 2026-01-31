@@ -267,28 +267,22 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     });
 
     // Calculate sizes based on label dimensions
-    // NOTE: Tem phụ kiện (không IMEI) thường dùng khổ nhỏ như 55x30.
-    // Nếu QR quá lớn, tổng chiều cao nội dung sẽ vượt khung => chữ phía trên bị “cắt/đè”.
     const isSmallLabel = height <= 22;
-    const isMediumSmallLabel = height <= 35 && width <= 60; // ví dụ 55x30
     const isJewelryLabel = height <= 10;
-    const isLargeLabel = height >= 100;
     
-    const baseQrSize = isJewelryLabel ? 28 : isSmallLabel ? 40 : isMediumSmallLabel ? 46 : isLargeLabel ? 80 : 64;
     const baseBarcodeHeight = isJewelryLabel ? 12 : isSmallLabel ? 14 : 18;
     const baseBarcodeWidth = 0.6;
     
-    const qrSize = Math.round(baseQrSize * scale);
     const barcodeHeight = Math.round(baseBarcodeHeight * scale);
     const barcodeWidth = baseBarcodeWidth * scale;
 
      const labelHTML = allLabels.map((entry, idx) => {
-       // Encode format:
-       // - IMEI products: IMEI:PRICE (barcode CODE128)
-       // - Non-IMEI products: N:NAME:PRICE (QR) - hỗ trợ tiếng Việt
-       const codeValue = entry.imei
-         ? `${entry.imei}:${entry.printPrice}`
-         : `N:${entry.name}:${entry.printPrice}`;
+        // Encode format:
+        // - IMEI products: IMEI:PRICE (barcode CODE128)
+        // - Non-IMEI products (phụ kiện): dùng BARCODE dài (CODE128) theo SKU (tránh QR đè chữ)
+        const codeValue = entry.imei
+          ? `${entry.imei}:${entry.printPrice}`
+          : (entry.sku || entry.productId);
       
       if (isJewelryLabel) {
         return `
@@ -311,12 +305,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
               `<div class="product-name">${entry.name}</div>` : ''}
             ${printSettings.showCustomDescription && printSettings.customDescription ? 
               `<div class="custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
-            <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
-               ${entry.imei
-                 ? `<svg class="barcode" id="barcode-${idx}"></svg>`
-                 : `<img class="qr-code-img" src="https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(`N:${entry.name}:${entry.printPrice}`)}" alt="QR" style="width:${qrSize}px;height:${qrSize}px;" />`}
-            </div>
-            ${entry.imei ? `<div class="code-text">${entry.imei}</div>` : ''}
+             <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
+               <svg class="barcode" id="barcode-${idx}"></svg>
+             </div>
+             ${entry.imei ? `<div class="code-text">${entry.imei}</div>` : ''}
             ${printSettings.showPrice ? 
               `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
           </div>
@@ -324,13 +316,12 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       `;
     }).join('');
 
-     // Generate initialization script for Barcode only (QR uses API image)
+      // Generate initialization script for Barcode (IMEI + non-IMEI)
      const initScript = allLabels.map((entry, idx) => {
-       // Chỉ cần barcode cho IMEI products
-       if (!entry.imei) return '';
-
-       const codeValue = `${entry.imei}:${entry.printPrice}`;
-       const codeValueJs = JSON.stringify(codeValue);
+        const rawValue = entry.imei ? `${entry.imei}:${entry.printPrice}` : (entry.sku || entry.productId);
+        // CODE128 chỉ nên dùng ASCII; nếu sku có ký tự lạ -> loại bỏ để tránh in trắng.
+        const sanitizedValue = String(rawValue).replace(/[^\x20-\x7E]/g, '');
+        const codeValueJs = JSON.stringify(sanitizedValue);
 
        return `
          JsBarcode("#barcode-${idx}", ${codeValueJs}, {
@@ -454,22 +445,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             justify-content: center;
           }
 
-           .qr-code {
-             display: flex;
-             align-items: center;
-             justify-content: center;
-             flex-shrink: 0;
-           }
-
-           .qr-code img, .qr-code canvas {
-             width: 100% !important;
-             height: 100% !important;
-           }
-           
-           .qr-code-img {
-             display: block;
-             flex-shrink: 0;
-           }
+           /* QR styles removed: phụ kiện không IMEI chuyển sang barcode */
           
           .barcode {
             max-width: 100%;
@@ -578,29 +554,23 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     // Calculate QR/Barcode sizes based on label dimensions and scale
     // Convert mm to approximate pixels (1mm ≈ 3.78px at 96dpi, but print uses ~2.8px)
     const isSmallLabel = height <= 22; // Giấy cuộn nhỏ
-    const isMediumSmallLabel = height <= 35 && width <= 60; // ví dụ 55x30
     const isJewelryLabel = height <= 10; // Tem trang sức
-    const isLargeLabel = height >= 100; // Mẫu A4, Tomy
     
-    // Base QR size - will be scaled
-    const baseQrSize = isJewelryLabel ? 28 : isSmallLabel ? 40 : isMediumSmallLabel ? 46 : isLargeLabel ? 80 : 64;
     const baseBarcodeHeight = isJewelryLabel ? 12 : isSmallLabel ? 14 : 18;
     // Thu ngắn chiều ngang barcode (giảm từ 1 xuống 0.6)
     const baseBarcodeWidth = isJewelryLabel ? 0.6 : 0.6;
     
     // Apply scale to sizes
-    const qrSize = Math.round(baseQrSize * scale);
     const barcodeHeight = Math.round(baseBarcodeHeight * scale);
     const barcodeWidth = baseBarcodeWidth * scale;
 
      const labelHTML = allLabels.map((entry, idx) => {
-       // Encode format:
-       // - IMEI products: IMEI:PRICE (barcode CODE128)
-       // - Non-IMEI products: N:NAME:PRICE (QR) - hỗ trợ tiếng Việt
-       // NOTE: CODE128 không hỗ trợ Unicode (tiếng Việt) -> sẽ in trắng. Vì vậy non-IMEI dùng QR.
-       const codeValue = entry.imei
-         ? `${entry.imei}:${entry.printPrice}`
-         : `N:${entry.name}:${entry.printPrice}`;
+        // Encode format:
+        // - IMEI products: IMEI:PRICE (barcode CODE128)
+        // - Non-IMEI products (phụ kiện): BARCODE dài (CODE128) theo SKU (tránh QR đè chữ)
+        const codeValue = entry.imei
+          ? `${entry.imei}:${entry.printPrice}`
+          : (entry.sku || entry.productId);
       
       // For jewelry labels, only show barcode (too small for QR)
       if (isJewelryLabel) {
@@ -617,7 +587,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       
        // Template đơn giản:
        // - IMEI: BARCODE
-       // - Non-IMEI: QR
+       // - Non-IMEI (phụ kiện): BARCODE theo SKU
       return `
         <div class="label" style="width: ${width}mm; height: ${height}mm;">
           <div class="label-content-wrapper">
@@ -627,12 +597,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
               `<div class="product-name">${entry.name}</div>` : ''}
             ${printSettings.showCustomDescription && printSettings.customDescription ? 
               `<div class="custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
-            <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
-               ${entry.imei
-                 ? `<svg class="barcode" id="barcode-${idx}"></svg>`
-                 : `<img class="qr-code-img" src="https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(`N:${entry.name}:${entry.printPrice}`)}" alt="QR" style="width:${qrSize}px;height:${qrSize}px;" />`}
-            </div>
-            ${entry.imei ? `<div class="code-text">${entry.imei}</div>` : ''}
+             <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
+               <svg class="barcode" id="barcode-${idx}"></svg>
+             </div>
+             ${entry.imei ? `<div class="code-text">${entry.imei}</div>` : ''}
             ${printSettings.showPrice ? 
               `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
           </div>
@@ -640,13 +608,11 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       `;
     }).join('');
 
-    // Generate initialization script for Barcode only (QR uses API image)
-    const initScript = allLabels.map((entry, idx) => {
-       // Chỉ cần barcode cho IMEI products
-       if (!entry.imei) return '';
-
-       const codeValue = `${entry.imei}:${entry.printPrice}`;
-       const codeValueJs = JSON.stringify(codeValue);
+     // Generate initialization script for Barcode (IMEI + non-IMEI)
+     const initScript = allLabels.map((entry, idx) => {
+        const rawValue = entry.imei ? `${entry.imei}:${entry.printPrice}` : (entry.sku || entry.productId);
+        const sanitizedValue = String(rawValue).replace(/[^\x20-\x7E]/g, '');
+        const codeValueJs = JSON.stringify(sanitizedValue);
 
        return `
          JsBarcode("#barcode-${idx}", ${codeValueJs}, {
@@ -1100,42 +1066,26 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             </p>
           )}
 
-          {/* Barcode/QR placeholder - phân biệt theo IMEI */}
+           {/* Barcode placeholder (IMEI + phụ kiện không IMEI) */}
           <div className="w-full py-2">
-            {sampleProduct?.imei ? (
-              // IMEI product: show barcode
-              <div className="flex items-end justify-center gap-[1px] h-10">
-                {Array.from({ length: 40 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="bg-foreground"
-                    style={{
-                      width: i % 3 === 0 ? '2px' : '1px',
-                      height: `${20 + Math.random() * 20}px`,
-                    }}
-                  />
-                ))}
-              </div>
-            ) : (
-              // Non-IMEI product: show QR placeholder
-              <div className="flex items-center justify-center">
-                <div className="w-12 h-12 border-2 border-foreground rounded flex items-center justify-center">
-                  <div className="grid grid-cols-3 gap-0.5 w-8 h-8">
-                    {Array.from({ length: 9 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-2 h-2 ${[0, 2, 3, 5, 6, 8].includes(i) ? 'bg-foreground' : 'bg-transparent'}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-            {sampleProduct && (
-              <p className="text-[8px] text-muted-foreground mt-1 font-mono">
-                {sampleProduct.imei || sampleProduct.sku}
-              </p>
-            )}
+             <div className="flex items-end justify-center gap-[1px] h-10">
+               {Array.from({ length: 46 }).map((_, i) => (
+                 <div
+                   key={i}
+                   className="bg-foreground"
+                   style={{
+                     width: i % 4 === 0 ? '2px' : '1px',
+                     height: `${18 + Math.random() * 22}px`,
+                   }}
+                 />
+               ))}
+             </div>
+             {/* Chỉ hiển thị code-text cho IMEI (phụ kiện đã ẩn để tránh chồng chữ) */}
+             {sampleProduct?.imei && (
+               <p className="text-[8px] text-muted-foreground mt-1 font-mono">
+                 {sampleProduct.imei}
+               </p>
+             )}
           </div>
 
           {/* Price */}
