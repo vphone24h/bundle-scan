@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,7 +29,9 @@ import {
   DollarSign,
   CreditCard,
   MessageSquare,
-  Heart
+  Heart,
+  Printer,
+  MoveHorizontal
 } from 'lucide-react';
 import { useDefaultInvoiceTemplate, useUpdateInvoiceTemplate, type InvoiceTemplate } from '@/hooks/useInvoiceTemplates';
 
@@ -175,6 +177,37 @@ export default function InvoiceTemplatePage() {
                     <SelectItem value="right">Phải</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <Separator className="my-4" />
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MoveHorizontal className="h-4 w-4" />
+                  <span>Lề giấy (mm) - chỉnh để chữ không bị xuống dòng</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Lề trái</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={20}
+                      value={currentSettings.margin_left ?? 0}
+                      onChange={(e) => updateSetting('margin_left', parseInt(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Lề phải</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={20}
+                      value={currentSettings.margin_right ?? 0}
+                      onChange={(e) => updateSetting('margin_right', parseInt(e.target.value) || 0)}
+                    />
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -349,20 +382,83 @@ export default function InvoiceTemplatePage() {
         {/* Preview */}
         <div>
           <Card className="sticky top-4">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Eye className="h-5 w-5" />
                 Xem trước
               </CardTitle>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  const previewContent = document.getElementById('invoice-preview');
+                  if (!previewContent) return;
+                  
+                  const printWindow = window.open('', '_blank');
+                  if (!printWindow) {
+                    toast({
+                      title: 'Lỗi',
+                      description: 'Không thể mở cửa sổ in. Vui lòng cho phép popup.',
+                      variant: 'destructive',
+                    });
+                    return;
+                  }
+
+                  const marginLeft = currentSettings.margin_left ?? 0;
+                  const marginRight = currentSettings.margin_right ?? 0;
+                  const paperWidth = currentSettings.paper_size === 'K80' ? '80mm' : '210mm';
+                  
+                  printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                      <title>In mẫu hóa đơn</title>
+                      <style>
+                        @page {
+                          size: ${paperWidth} auto;
+                          margin: 0;
+                        }
+                        body {
+                          font-family: Arial, sans-serif;
+                          margin: 0;
+                          padding: 5mm ${marginRight}mm 5mm ${marginLeft}mm;
+                          -webkit-print-color-adjust: exact;
+                          print-color-adjust: exact;
+                        }
+                        .invoice-content {
+                          width: 100%;
+                        }
+                      </style>
+                    </head>
+                    <body>
+                      <div class="invoice-content">${previewContent.innerHTML}</div>
+                      <script>
+                        window.onload = function() {
+                          window.print();
+                          setTimeout(function() { window.close(); }, 500);
+                        };
+                      </script>
+                    </body>
+                    </html>
+                  `);
+                  printWindow.document.close();
+                }}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                In mẫu
+              </Button>
             </CardHeader>
             <CardContent>
               <div 
+                id="invoice-preview"
                 className="p-4 border rounded-lg bg-white text-black min-h-[400px]"
                 style={{ 
                   fontFamily: 'Arial, sans-serif',
                   fontSize: currentSettings.font_size === 'small' ? '12px' : currentSettings.font_size === 'large' ? '16px' : '14px',
                   textAlign: currentSettings.text_align || 'left',
                   maxWidth: currentSettings.paper_size === 'K80' ? '80mm' : '100%',
+                  paddingLeft: `${(currentSettings.margin_left ?? 0)}mm`,
+                  paddingRight: `${(currentSettings.margin_right ?? 0)}mm`,
                 }}
               >
                 {/* Store info */}
@@ -404,17 +500,17 @@ export default function InvoiceTemplatePage() {
                 {/* Items */}
                 <table className="w-full text-sm mb-3">
                   <thead>
-                    <tr className="border-b">
+                    <tr style={{ borderBottom: '1px solid #000' }}>
                       {currentSettings.show_product_name && <th className="py-1 text-left">SP</th>}
                       {currentSettings.show_sale_price && <th className="py-1 text-right">Giá</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b border-dashed">
+                    <tr style={{ borderBottom: '1px dashed #999' }}>
                       <td className="py-1">
                         {currentSettings.show_product_name && <div>iPhone 15 Pro Max 256GB</div>}
-                        {currentSettings.show_sku && <div className="text-xs text-gray-500">SKU: IP15PM256</div>}
-                        {currentSettings.show_imei && <div className="text-xs text-gray-500">IMEI: 123456789012345</div>}
+                        {currentSettings.show_sku && <div className="text-xs" style={{ color: '#666' }}>SKU: IP15PM256</div>}
+                        {currentSettings.show_imei && <div className="text-xs" style={{ color: '#666' }}>IMEI: 123456789012345</div>}
                       </td>
                       {currentSettings.show_sale_price && (
                         <td className="py-1 text-right">32,000,000đ</td>
@@ -438,7 +534,7 @@ export default function InvoiceTemplatePage() {
                     </div>
                   )}
                   {currentSettings.show_debt && (
-                    <div className="flex justify-between text-red-600">
+                    <div className="flex justify-between" style={{ color: '#dc2626' }}>
                       <span>Công nợ:</span>
                       <span>2,000,000đ</span>
                     </div>
@@ -447,7 +543,7 @@ export default function InvoiceTemplatePage() {
 
                 {/* Note */}
                 {currentSettings.show_note && (
-                  <div className="mt-3 text-sm text-gray-600">
+                  <div className="mt-3 text-sm" style={{ color: '#666' }}>
                     Ghi chú: Khách hẹn thanh toán sau 7 ngày
                   </div>
                 )}

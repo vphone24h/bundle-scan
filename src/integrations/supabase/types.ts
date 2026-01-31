@@ -1890,6 +1890,8 @@ export type Database = {
           font_size: string | null
           id: string
           is_default: boolean | null
+          margin_left: number | null
+          margin_right: number | null
           name: string
           paper_size: string
           show_customer_info: boolean | null
@@ -1922,6 +1924,8 @@ export type Database = {
           font_size?: string | null
           id?: string
           is_default?: boolean | null
+          margin_left?: number | null
+          margin_right?: number | null
           name?: string
           paper_size?: string
           show_customer_info?: boolean | null
@@ -1954,6 +1958,8 @@ export type Database = {
           font_size?: string | null
           id?: string
           is_default?: boolean | null
+          margin_left?: number | null
+          margin_right?: number | null
           name?: string
           paper_size?: string
           show_customer_info?: boolean | null
