@@ -313,7 +313,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
                  ? `<svg class="barcode" id="barcode-${idx}"></svg>`
                  : `<img class="qr-code-img" src="https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(`N:${entry.name}:${entry.printPrice}`)}" alt="QR" style="width:${qrSize}px;height:${qrSize}px;" />`}
             </div>
-            <div class="code-text">${entry.imei || entry.sku}</div>
+            ${entry.imei ? `<div class="code-text">${entry.imei}</div>` : ''}
             ${printSettings.showPrice ? 
               `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
           </div>
@@ -620,7 +620,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
                  ? `<svg class="barcode" id="barcode-${idx}"></svg>`
                  : `<img class="qr-code-img" src="https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(`N:${entry.name}:${entry.printPrice}`)}" alt="QR" style="width:${qrSize}px;height:${qrSize}px;" />`}
             </div>
-            <div class="code-text">${entry.imei || entry.sku}</div>
+            ${entry.imei ? `<div class="code-text">${entry.imei}</div>` : ''}
             ${printSettings.showPrice ? 
               `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
           </div>
