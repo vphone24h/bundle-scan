@@ -12,7 +12,6 @@ import { Loader2 } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 
-const REMEMBER_ME_KEY = 'auth_remember_me';
 const CURRENT_STORE_ID_KEY = 'current_store_id';
 
 export default function AuthPage() {
@@ -29,10 +28,6 @@ export default function AuthPage() {
   const [storeId, setStoreId] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(() => {
-    // Check if user previously selected "remember me"
-    return localStorage.getItem(REMEMBER_ME_KEY) === 'true';
-  });
   
   // Auto-fill store ID from subdomain
   useEffect(() => {
@@ -111,15 +106,12 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      // Save remember me preference
-      localStorage.setItem(REMEMBER_ME_KEY, rememberMe.toString());
-
       // Persist selected store id for main-domain mode so we can validate tenant-session consistency
       // (In subdomain mode, storeId is derived from hostname, but keeping this doesn't hurt.)
       localStorage.setItem(CURRENT_STORE_ID_KEY, storeId.toLowerCase().trim());
 
       // Sign in first (tenants table is protected by RLS when not authenticated)
-      const { error } = await signIn(loginEmail, loginPassword, rememberMe);
+      const { error } = await signIn(loginEmail, loginPassword);
       
       if (error) {
         toast({
@@ -320,20 +312,6 @@ export default function AuthPage() {
                 onChange={(e) => setLoginPassword(e.target.value)}
                 required
               />
-            </div>
-            {/* Remember me checkbox */}
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="remember-me" 
-                checked={rememberMe}
-                onCheckedChange={(checked) => setRememberMe(checked === true)}
-              />
-              <Label 
-                htmlFor="remember-me" 
-                className="text-sm font-normal cursor-pointer"
-              >
-                Duy trì đăng nhập
-              </Label>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
