@@ -1894,6 +1894,11 @@ export type Database = {
           margin_right: number | null
           name: string
           paper_size: string
+          section1_align: string | null
+          section2_align: string | null
+          section3_align: string | null
+          section4_align: string | null
+          section5_align: string | null
           show_customer_info: boolean | null
           show_debt: boolean | null
           show_imei: boolean | null
@@ -1928,6 +1933,11 @@ export type Database = {
           margin_right?: number | null
           name?: string
           paper_size?: string
+          section1_align?: string | null
+          section2_align?: string | null
+          section3_align?: string | null
+          section4_align?: string | null
+          section5_align?: string | null
           show_customer_info?: boolean | null
           show_debt?: boolean | null
           show_imei?: boolean | null
@@ -1962,6 +1972,11 @@ export type Database = {
           margin_right?: number | null
           name?: string
           paper_size?: string
+          section1_align?: string | null
+          section2_align?: string | null
+          section3_align?: string | null
+          section4_align?: string | null
+          section5_align?: string | null
           show_customer_info?: boolean | null
           show_debt?: boolean | null
           show_imei?: boolean | null
