@@ -46,20 +46,34 @@ export function InvoicePrintDialog({
             body {
               font-family: Arial, sans-serif;
               font-size: ${fontSize};
-              text-align: ${textAlign};
               width: ${width};
               margin: 0 auto;
               padding: 10mm;
             }
-            .header { margin-bottom: 10px; }
-            .store-name { font-size: 1.5em; font-weight: bold; }
-            .receipt-code { font-weight: bold; margin: 10px 0; }
+            /* Tailwind utility classes for print */
+            .text-center { text-align: center !important; }
+            .text-left { text-align: left; }
+            .text-right { text-align: right; }
+            .text-xl { font-size: 1.25rem; }
+            .text-sm { font-size: 0.875rem; }
+            .text-xs { font-size: 0.75rem; }
+            .font-bold { font-weight: bold; }
+            .mb-2 { margin-bottom: 0.5rem; }
+            .mb-4 { margin-bottom: 1rem; }
+            .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+            .mt-4 { margin-top: 1rem; }
+            .mt-6 { margin-top: 1.5rem; }
+            .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+            .space-y-1 > * + * { margin-top: 0.25rem; }
+            .italic { font-style: italic; }
+            .flex { display: flex; }
+            .justify-between { justify-content: space-between; }
+            .w-full { width: 100%; }
+            .border-b { border-bottom: 1px solid #e5e7eb; }
+            .border-dashed { border-style: dashed; }
             table { width: 100%; border-collapse: collapse; margin: 10px 0; }
             th, td { padding: 5px; border-bottom: 1px dashed #ccc; text-align: left; }
             th { font-weight: bold; }
-            .text-right { text-align: right; }
-            .total { font-weight: bold; font-size: 1.2em; }
-            .thank-you { margin-top: 20px; text-align: center; font-style: italic; }
             @media print {
               body { width: ${width}; }
             }
