@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 export function LandingPageSettings() {
@@ -173,6 +173,21 @@ export function LandingPageSettings() {
     );
   }
 
+  const fullLandingUrl = landingUrl 
+    ? `${window.location.origin}${landingUrl}` 
+    : null;
+
+  const handleCopyLink = () => {
+    if (fullLandingUrl) {
+      navigator.clipboard.writeText(fullLandingUrl);
+      toast({ title: 'Đã sao chép link!' });
+    }
+  };
+
+  const qrCodeUrl = fullLandingUrl 
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(fullLandingUrl)}` 
+    : null;
+
   return (
     <div className="space-y-6">
       {/* Header với link landing page */}
@@ -201,7 +216,58 @@ export function LandingPageSettings() {
             )}
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Link và QR Code */}
+          {fullLandingUrl && (
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* Link section */}
+                <div className="flex-1 space-y-2">
+                  <Label className="flex items-center gap-2 text-sm font-medium">
+                    <Share2 className="h-4 w-4" />
+                    Link Landing Page
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={fullLandingUrl}
+                      readOnly
+                      className="flex-1 bg-background text-sm"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleCopyLink}
+                      className="shrink-0"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Chia sẻ link này cho khách hàng để tra cứu bảo hành
+                  </p>
+                </div>
+                
+                {/* QR Code section */}
+                <div className="flex flex-col items-center gap-2">
+                  <Label className="flex items-center gap-2 text-sm font-medium">
+                    <QrCode className="h-4 w-4" />
+                    Mã QR
+                  </Label>
+                  {qrCodeUrl && (
+                    <div className="rounded-lg border bg-white p-2">
+                      <img 
+                        src={qrCodeUrl} 
+                        alt="QR Code" 
+                        className="h-24 w-24 sm:h-28 sm:w-28"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Bật Landing Page</Label>
