@@ -172,23 +172,18 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
 
       const { width, height } = paper.dimensions;
 
-      // Đồng bộ 100% với mẫu in: dùng cùng logic rotate/bù xoay + swap kích thước trang.
-      const isA4Sheet = paper.size.toLowerCase().includes('a4');
-      const rotation = adjustments.rotation ?? 0;
-      const autoCompensateRotation = adjustments.autoCompensateRotation ?? true;
-      const shouldAutoCompensateRotation = !isA4Sheet && width > height;
-      const effectiveRotation: 0 | 90 | 270 =
-        rotation !== 0
-          ? rotation
-          : autoCompensateRotation && shouldAutoCompensateRotation
-            ? 270
-            : 0;
-      const isRotated = effectiveRotation !== 0;
-      const pdfPageWidth = isRotated ? height : width;
-      const pdfPageHeight = isRotated ? width : height;
+      // PDF KHÔNG cần cơ chế bù xoay/hoán đổi khổ (đó là workaround cho driver máy in nhiệt).
+      // Nếu áp dụng vào PDF sẽ dễ bị lệch/thu nhỏ như ảnh bạn gửi.
+      // PDF giữ đúng khổ giấy gốc (vd 55x30) và chỉ áp dụng đúng scale/rotation mà bạn chỉnh.
+      const pdfPageWidth = width;
+      const pdfPageHeight = height;
 
-      // Tạo nội dung PDF bằng đúng template in (đồng bộ 100%).
-      const pdfContent = generatePrintContent(paper, productEntries, settings, adjustments);
+      // Đồng bộ 100% layout với màn "Điều chỉnh in": dùng cùng template,
+      // nhưng tắt autoCompensateRotation để tránh swap kích thước trang trong PDF.
+      const pdfContent = generatePrintContent(paper, productEntries, settings, {
+        ...adjustments,
+        autoCompensateRotation: false,
+      });
       
       // Create hidden iframe to render content with exact dimensions
       const iframe = document.createElement('iframe');
