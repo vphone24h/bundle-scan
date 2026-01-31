@@ -9,7 +9,6 @@ import {
   Users,
   Menu,
   X,
-  Warehouse,
   LogOut,
   User,
   BarChart3,
@@ -29,6 +28,7 @@ import {
   Megaphone,
   Globe,
 } from 'lucide-react';
+import vkhoLogo from '@/assets/vkho-logo.png';
 import { cn } from '@/lib/utils';
 import { prefetchRoute } from '@/lib/routePrefetch';
 import { Button } from '@/components/ui/button';
@@ -170,11 +170,9 @@ export function AppSidebar() {
     <>
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-6 border-b border-sidebar-border">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sidebar-primary">
-          <Warehouse className="h-6 w-6 text-sidebar-primary-foreground" />
-        </div>
+        <img src={vkhoLogo} alt="vkho.vn" className="h-10 w-10 object-contain rounded-lg" />
         <div className="flex flex-col">
-          <span className="text-lg font-bold text-sidebar-foreground">Kho Hàng</span>
+          <span className="text-lg font-bold text-sidebar-foreground">vkho.vn</span>
           <span className="text-xs text-sidebar-muted">Quản lý thông minh</span>
         </div>
       </div>
