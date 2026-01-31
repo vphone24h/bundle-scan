@@ -389,13 +389,13 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             background: white;
           }
           
-          .label-content-wrapper {
+           .label-content-wrapper {
             display: flex !important;
             flex-direction: column !important;
             align-items: center !important;
             justify-content: center !important;
             text-align: center !important;
-            gap: 0 !important;
+             gap: 2px !important;
             transform: scale(${scale});
             transform-origin: center center;
             width: ${width - 4}mm;
@@ -407,6 +407,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             font-weight: bold;
             color: #000;
             line-height: 1.1;
+             max-width: 100%;
+             overflow: hidden;
+             text-overflow: ellipsis;
+             white-space: nowrap;
           }
           
           .product-name {
@@ -414,6 +418,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             color: #000;
             line-height: 1.1;
             word-break: break-word;
+             max-width: 100%;
+             max-height: 2.2em;
+             overflow: hidden;
           }
           
           .custom-description {
@@ -429,6 +436,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             align-items: center;
             justify-content: center;
             gap: 0;
+             margin: 2px 0;
             flex-shrink: 0;
           }
           
@@ -717,7 +725,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             background: white;
           }
           
-          .label-content-wrapper {
+           .label-content-wrapper {
             /* Định vị tuyệt đối ở giữa */
             position: absolute !important;
             top: 50% !important;
@@ -729,7 +737,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             align-items: center !important;
             justify-content: center !important;
             text-align: center !important;
-            gap: 0 !important;
+             gap: 2px !important;
             
             /* Kích thước = kích thước tem gốc (trước khi driver swap) */
             width: ${width - 4}mm;
@@ -743,6 +751,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             margin: 0 !important;
             padding: 0 !important;
             line-height: 1.1;
+             max-width: 100%;
+             overflow: hidden;
+             text-overflow: ellipsis;
+             white-space: nowrap;
           }
           
           .product-name {
@@ -752,6 +764,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             padding: 0 !important;
             line-height: 1.1;
             word-break: break-word;
+             max-width: 100%;
+             max-height: 2.2em;
+             overflow: hidden;
           }
           
           .custom-description {
@@ -769,7 +784,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             align-items: center;
             justify-content: center;
             gap: 0;
-            margin: 0 !important;
+             margin: 2px 0 !important;
             padding: 0 !important;
             flex-shrink: 0;
           }
