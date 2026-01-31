@@ -267,11 +267,14 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     });
 
     // Calculate sizes based on label dimensions
+    // NOTE: Tem phụ kiện (không IMEI) thường dùng khổ nhỏ như 55x30.
+    // Nếu QR quá lớn, tổng chiều cao nội dung sẽ vượt khung => chữ phía trên bị “cắt/đè”.
     const isSmallLabel = height <= 22;
+    const isMediumSmallLabel = height <= 35 && width <= 60; // ví dụ 55x30
     const isJewelryLabel = height <= 10;
     const isLargeLabel = height >= 100;
     
-    const baseQrSize = isJewelryLabel ? 28 : isSmallLabel ? 40 : isLargeLabel ? 80 : 64;
+    const baseQrSize = isJewelryLabel ? 28 : isSmallLabel ? 40 : isMediumSmallLabel ? 46 : isLargeLabel ? 80 : 64;
     const baseBarcodeHeight = isJewelryLabel ? 12 : isSmallLabel ? 14 : 18;
     const baseBarcodeWidth = 0.6;
     
@@ -575,11 +578,12 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     // Calculate QR/Barcode sizes based on label dimensions and scale
     // Convert mm to approximate pixels (1mm ≈ 3.78px at 96dpi, but print uses ~2.8px)
     const isSmallLabel = height <= 22; // Giấy cuộn nhỏ
+    const isMediumSmallLabel = height <= 35 && width <= 60; // ví dụ 55x30
     const isJewelryLabel = height <= 10; // Tem trang sức
     const isLargeLabel = height >= 100; // Mẫu A4, Tomy
     
     // Base QR size - will be scaled
-    const baseQrSize = isJewelryLabel ? 28 : isSmallLabel ? 40 : isLargeLabel ? 80 : 64;
+    const baseQrSize = isJewelryLabel ? 28 : isSmallLabel ? 40 : isMediumSmallLabel ? 46 : isLargeLabel ? 80 : 64;
     const baseBarcodeHeight = isJewelryLabel ? 12 : isSmallLabel ? 14 : 18;
     // Thu ngắn chiều ngang barcode (giảm từ 1 xuống 0.6)
     const baseBarcodeWidth = isJewelryLabel ? 0.6 : 0.6;
