@@ -152,7 +152,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   };
 
   // Export to PDF for manual printing later
-  // PDF giữ nguyên hướng ngang như mẫu in thực tế - KHÔNG xoay
+  // Yêu cầu: PDF phải giống 100% với màn hình "Điều chỉnh in" (layout + spacing).
+  // Giải pháp: tái sử dụng generatePrintContent (cùng HTML/CSS), nhưng tắt bù xoay để giữ đúng khổ giấy gốc.
   const handleExportPDF = async () => {
     if (!selectedPaper) return;
     
@@ -170,24 +171,33 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       ]);
 
       const { width, height } = paper.dimensions;
-      
-      // PDF giữ nguyên kích thước gốc - KHÔNG xoay như khi in trực tiếp
-      // Ví dụ: 55x30mm -> PDF sẽ là 55x30mm (nằm ngang)
-      const pdfPageWidth = width;
-      const pdfPageHeight = height;
 
-      // Tạo nội dung PDF riêng - không áp dụng rotation compensation
-      const pdfContent = generatePdfContent(paper, productEntries, settings, adjustments.scale);
+      // Đồng bộ 100% với mẫu in: dùng cùng logic rotate/bù xoay + swap kích thước trang.
+      const isA4Sheet = paper.size.toLowerCase().includes('a4');
+      const rotation = adjustments.rotation ?? 0;
+      const autoCompensateRotation = adjustments.autoCompensateRotation ?? true;
+      const shouldAutoCompensateRotation = !isA4Sheet && width > height;
+      const effectiveRotation: 0 | 90 | 270 =
+        rotation !== 0
+          ? rotation
+          : autoCompensateRotation && shouldAutoCompensateRotation
+            ? 270
+            : 0;
+      const isRotated = effectiveRotation !== 0;
+      const pdfPageWidth = isRotated ? height : width;
+      const pdfPageHeight = isRotated ? width : height;
+
+      // Tạo nội dung PDF bằng đúng template in (đồng bộ 100%).
+      const pdfContent = generatePrintContent(paper, productEntries, settings, adjustments);
       
       // Create hidden iframe to render content with exact dimensions
       const iframe = document.createElement('iframe');
       iframe.style.position = 'absolute';
       iframe.style.left = '-9999px';
       iframe.style.top = '-9999px';
-      // Use mm to px conversion: 1mm ≈ 3.78px at 96dpi, use 4 for high res
-      const mmToPx = 4;
-      iframe.style.width = `${pdfPageWidth * mmToPx}px`;
-      iframe.style.height = `${pdfPageHeight * mmToPx}px`;
+      // Set size in mm so browser layout matches print mm units exactly
+      iframe.style.width = `${pdfPageWidth}mm`;
+      iframe.style.height = `${pdfPageHeight}mm`;
       document.body.appendChild(iframe);
       
       const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -204,7 +214,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
 
       const labels = iframeDoc.querySelectorAll('.label');
       
-      // Create PDF with original paper dimensions (landscape for 55x30)
+      // Create PDF with the SAME page dimensions as print output
       const pdf = new jsPDF({
         orientation: pdfPageWidth > pdfPageHeight ? 'landscape' : 'portrait',
         unit: 'mm',
@@ -219,13 +229,13 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         }
 
         // Capture label as canvas with high resolution
+        // IMPORTANT: Don't force width/height (dpi mismatch causes layout drift on small labels like 55x30).
+        // Capture exactly as the browser laid it out, then upscale via `scale` for sharpness.
         const canvas = await html2canvas(label, {
           scale: 4, // High resolution for crisp barcodes
           backgroundColor: '#ffffff',
           logging: false,
           useCORS: true,
-          width: pdfPageWidth * mmToPx,
-          height: pdfPageHeight * mmToPx,
         });
 
         // Add to PDF - fill entire page
