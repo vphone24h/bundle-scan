@@ -374,9 +374,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             margin: 0 !important;
             padding: 0 !important;
             box-sizing: border-box !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
+            position: relative !important;
             page-break-after: always;
             page-break-inside: avoid;
             overflow: hidden !important;
@@ -384,14 +382,19 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           }
           
            .label-content-wrapper {
+            /* Định vị tuyệt đối ở giữa - đồng bộ với mẫu in */
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) scale(${scale}) !important;
+            
             display: flex !important;
             flex-direction: column !important;
             align-items: center !important;
             justify-content: center !important;
             text-align: center !important;
-             gap: 2px !important;
-            transform: scale(${scale});
-            transform-origin: center center;
+            gap: 2px !important;
+            
             width: ${width - 4}mm;
             height: ${height - 4}mm;
           }
