@@ -311,7 +311,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
                ${entry.imei
                  ? `<svg class="barcode" id="barcode-${idx}"></svg>`
-                 : `<div class="qr-code" id="qrcode-${idx}" style="width:${qrSize}px;height:${qrSize}px;"></div>`}
+                 : `<img class="qr-code-img" src="https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(`N:${entry.name}:${entry.printPrice}`)}" alt="QR" style="width:${qrSize}px;height:${qrSize}px;" />`}
             </div>
             <div class="code-text">${entry.imei || entry.sku}</div>
             ${printSettings.showPrice ? 
@@ -321,39 +321,24 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       `;
     }).join('');
 
+     // Generate initialization script for Barcode only (QR uses API image)
      const initScript = allLabels.map((entry, idx) => {
-       const codeValue = entry.imei
-         ? `${entry.imei}:${entry.printPrice}`
-         : `N:${entry.name}:${entry.printPrice}`;
+       // Chỉ cần barcode cho IMEI products
+       if (!entry.imei) return '';
 
+       const codeValue = `${entry.imei}:${entry.printPrice}`;
        const codeValueJs = JSON.stringify(codeValue);
 
-       if (entry.imei) {
-         return `
-           JsBarcode("#barcode-${idx}", ${codeValueJs}, {
-             format: "CODE128",
-             width: ${barcodeWidth},
-             height: ${barcodeHeight},
-             displayValue: false,
-             margin: 0
-           });
-         `;
-       }
-
        return `
-         (function() {
-           var el = document.getElementById("qrcode-${idx}");
-           if (!el) return;
-           el.innerHTML = "";
-           new QRCode(el, {
-             text: ${codeValueJs},
-             width: ${qrSize},
-             height: ${qrSize},
-             correctLevel: QRCode.CorrectLevel.M
-           });
-         })();
+         JsBarcode("#barcode-${idx}", ${codeValueJs}, {
+           format: "CODE128",
+           width: ${barcodeWidth},
+           height: ${barcodeHeight},
+           displayValue: false,
+           margin: 0
+         });
        `;
-     }).join('\n');
+     }).filter(Boolean).join('\n');
 
     return `
       <!DOCTYPE html>
@@ -362,7 +347,6 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         <meta charset="UTF-8">
         <title>Xuất PDF mã vạch</title>
          <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-         <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
         <style>
           * {
             margin: 0 !important;
@@ -470,6 +454,11 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
              width: 100% !important;
              height: 100% !important;
            }
+           
+           .qr-code-img {
+             display: block;
+             flex-shrink: 0;
+           }
           
           .barcode {
             max-width: 100%;
@@ -506,24 +495,24 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           ${labelHTML}
         </div>
         <script>
-          // Chờ cả hai thư viện load xong
-          function waitForLibraries(callback) {
+          // Chờ JsBarcode load xong (QR dùng API image không cần JS)
+          function waitForBarcode(callback) {
             var checkCount = 0;
             var check = function() {
               checkCount++;
-              if (typeof JsBarcode !== 'undefined' && typeof QRCode !== 'undefined') {
+              if (typeof JsBarcode !== 'undefined') {
                 callback();
               } else if (checkCount < 50) {
                 setTimeout(check, 100);
               } else {
-                console.error('Không thể load thư viện JsBarcode hoặc QRCode');
+                console.error('Không thể load thư viện JsBarcode');
               }
             };
             check();
           }
           
           document.addEventListener('DOMContentLoaded', function() {
-            waitForLibraries(function() {
+            waitForBarcode(function() {
               ${initScript}
             });
           });
@@ -629,7 +618,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
                ${entry.imei
                  ? `<svg class="barcode" id="barcode-${idx}"></svg>`
-                 : `<div class="qr-code" id="qrcode-${idx}" style="width:${qrSize}px;height:${qrSize}px;"></div>`}
+                 : `<img class="qr-code-img" src="https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(`N:${entry.name}:${entry.printPrice}`)}" alt="QR" style="width:${qrSize}px;height:${qrSize}px;" />`}
             </div>
             <div class="code-text">${entry.imei || entry.sku}</div>
             ${printSettings.showPrice ? 
@@ -639,42 +628,24 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       `;
     }).join('');
 
-    // Generate initialization script for both QR and Barcode
+    // Generate initialization script for Barcode only (QR uses API image)
     const initScript = allLabels.map((entry, idx) => {
-       const codeValue = entry.imei
-         ? `${entry.imei}:${entry.printPrice}`
-         : `N:${entry.name}:${entry.printPrice}`;
+       // Chỉ cần barcode cho IMEI products
+       if (!entry.imei) return '';
 
+       const codeValue = `${entry.imei}:${entry.printPrice}`;
        const codeValueJs = JSON.stringify(codeValue);
 
-       // IMEI -> barcode, Non-IMEI -> QR (hỗ trợ Unicode)
-       if (entry.imei) {
-         return `
-           JsBarcode("#barcode-${idx}", ${codeValueJs}, {
-             format: "CODE128",
-             width: ${barcodeWidth},
-             height: ${barcodeHeight},
-             displayValue: false,
-             margin: 0
-           });
-         `;
-       }
-
        return `
-         (function() {
-           var el = document.getElementById("qrcode-${idx}");
-           if (!el) return;
-           // Clear to avoid duplicate render if browser re-runs scripts
-           el.innerHTML = "";
-           new QRCode(el, {
-             text: ${codeValueJs},
-             width: ${qrSize},
-             height: ${qrSize},
-             correctLevel: QRCode.CorrectLevel.M
-           });
-         })();
+         JsBarcode("#barcode-${idx}", ${codeValueJs}, {
+           format: "CODE128",
+           width: ${barcodeWidth},
+           height: ${barcodeHeight},
+           displayValue: false,
+           margin: 0
+         });
        `;
-    }).join('\n');
+    }).filter(Boolean).join('\n');
 
     return `
       <!DOCTYPE html>
@@ -683,7 +654,6 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         <meta charset="UTF-8">
         <title>In mã vạch</title>
         <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
         <style>
           /* Reset hoàn toàn */
           * {
@@ -827,6 +797,11 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             height: 100% !important;
           }
           
+          .qr-code-img {
+            display: block;
+            flex-shrink: 0;
+          }
+          
           .barcode {
             max-width: 100%;
             height: auto;
@@ -885,24 +860,24 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           ${labelHTML}
         </div>
         <script>
-          // Chờ cả hai thư viện load xong
-          function waitForLibraries(callback) {
+          // Chờ JsBarcode load xong (QR dùng API image không cần JS)
+          function waitForBarcode(callback) {
             var checkCount = 0;
             var check = function() {
               checkCount++;
-              if (typeof JsBarcode !== 'undefined' && typeof QRCode !== 'undefined') {
+              if (typeof JsBarcode !== 'undefined') {
                 callback();
               } else if (checkCount < 50) {
                 setTimeout(check, 100);
               } else {
-                console.error('Không thể load thư viện JsBarcode hoặc QRCode');
+                console.error('Không thể load thư viện JsBarcode');
               }
             };
             check();
           }
           
           document.addEventListener('DOMContentLoaded', function() {
-            waitForLibraries(function() {
+            waitForBarcode(function() {
               ${initScript}
             });
           });
