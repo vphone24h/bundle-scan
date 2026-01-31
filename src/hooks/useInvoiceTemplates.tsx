@@ -30,6 +30,8 @@ export interface InvoiceTemplate {
   text_align: 'left' | 'center' | 'right';
   field_order: string[];
   is_default: boolean;
+  margin_left: number;
+  margin_right: number;
   created_at: string;
   updated_at: string;
 }
