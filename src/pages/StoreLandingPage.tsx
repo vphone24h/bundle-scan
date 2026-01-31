@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
 import { usePublicLandingSettings, useWarrantyLookup, WarrantyResult, BranchInfo } from '@/hooks/useTenantLanding';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,85 @@ import {
 } from 'lucide-react';
 import { format, addMonths, isAfter, differenceInDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
+
+/**
+ * Hook để set dynamic PWA manifest cho landing page của từng cửa hàng
+ * Giúp khi "Thêm vào màn hình chính" sẽ giữ đúng URL của cửa hàng
+ */
+function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?: string | null) {
+  const location = useLocation();
+  
+  useEffect(() => {
+    if (!storeId) return;
+    
+    // Tạo dynamic manifest cho cửa hàng này
+    const manifest = {
+      name: storeName || `${storeId} - vkho.vn`,
+      short_name: storeId,
+      description: `Tra cứu bảo hành tại ${storeName || storeId}`,
+      start_url: window.location.href, // Giữ nguyên URL hiện tại
+      display: 'standalone',
+      orientation: 'portrait',
+      background_color: '#f8fafc',
+      theme_color: '#1e3a5f',
+      icons: [
+        {
+          src: logoUrl || '/icons/icon-192x192.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'maskable any'
+        },
+        {
+          src: logoUrl || '/icons/icon-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable any'
+        }
+      ]
+    };
+    
+    // Tạo blob URL cho manifest
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const manifestUrl = URL.createObjectURL(manifestBlob);
+    
+    // Tìm và xóa manifest cũ
+    const existingManifest = document.querySelector('link[rel="manifest"]');
+    if (existingManifest) {
+      existingManifest.remove();
+    }
+    
+    // Thêm manifest mới
+    const manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = manifestUrl;
+    document.head.appendChild(manifestLink);
+    
+    // Cập nhật meta tags cho PWA
+    let appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (!appleTitle) {
+      appleTitle = document.createElement('meta');
+      appleTitle.setAttribute('name', 'apple-mobile-web-app-title');
+      document.head.appendChild(appleTitle);
+    }
+    appleTitle.setAttribute('content', storeName || storeId);
+    
+    // Cập nhật apple-touch-icon nếu có logo
+    if (logoUrl) {
+      let appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]');
+      if (!appleTouchIcon) {
+        appleTouchIcon = document.createElement('link');
+        appleTouchIcon.setAttribute('rel', 'apple-touch-icon');
+        document.head.appendChild(appleTouchIcon);
+      }
+      appleTouchIcon.setAttribute('href', logoUrl);
+    }
+    
+    // Cleanup
+    return () => {
+      URL.revokeObjectURL(manifestUrl);
+    };
+  }, [storeId, storeName, logoUrl, location.pathname]);
+}
 
 interface WarrantyStatus {
   valid: boolean;
@@ -78,6 +157,10 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   
   const settings = landingData?.settings;
   const tenant = landingData?.tenant;
+
+  // Sử dụng dynamic manifest để khi "Thêm vào màn hình chính" giữ đúng URL cửa hàng
+  const storeName = settings?.store_name || tenant?.name || storeId || '';
+  useDynamicManifest(storeName, storeId, settings?.store_logo_url);
 
   const handleSearch = () => {
     if (searchValue.trim()) {
@@ -137,7 +220,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     );
   }
 
-  const storeName = settings?.store_name || tenant.name;
+  const displayStoreName = settings?.store_name || tenant.name;
   const primaryColor = settings?.primary_color || '#0f766e';
   const warrantyHotline = settings?.warranty_hotline;
   const supportGroupUrl = settings?.support_group_url;
@@ -162,7 +245,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
           {settings?.store_logo_url ? (
             <img 
               src={settings.store_logo_url} 
-              alt={storeName} 
+              alt={displayStoreName} 
               className="h-10 w-10 rounded-xl object-cover bg-white/20 flex-shrink-0"
             />
           ) : (
@@ -171,7 +254,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-bold truncate">{storeName}</h1>
+            <h1 className="text-lg font-bold truncate">{displayStoreName}</h1>
             {settings?.store_description && (
               <p className="text-white/80 text-xs truncate">{settings.store_description}</p>
             )}
@@ -606,7 +689,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       <footer className="py-4 px-4 mt-4 border-t bg-muted/30">
         <div className="max-w-lg mx-auto text-center">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} {storeName}
+            © {new Date().getFullYear()} {displayStoreName}
           </p>
           <p className="text-[10px] text-muted-foreground/70 mt-1">
             Powered by VKHO
