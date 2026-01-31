@@ -506,8 +506,26 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           ${labelHTML}
         </div>
         <script>
+          // Chờ cả hai thư viện load xong
+          function waitForLibraries(callback) {
+            var checkCount = 0;
+            var check = function() {
+              checkCount++;
+              if (typeof JsBarcode !== 'undefined' && typeof QRCode !== 'undefined') {
+                callback();
+              } else if (checkCount < 50) {
+                setTimeout(check, 100);
+              } else {
+                console.error('Không thể load thư viện JsBarcode hoặc QRCode');
+              }
+            };
+            check();
+          }
+          
           document.addEventListener('DOMContentLoaded', function() {
-            ${initScript}
+            waitForLibraries(function() {
+              ${initScript}
+            });
           });
         </script>
       </body>
@@ -867,8 +885,26 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           ${labelHTML}
         </div>
         <script>
+          // Chờ cả hai thư viện load xong
+          function waitForLibraries(callback) {
+            var checkCount = 0;
+            var check = function() {
+              checkCount++;
+              if (typeof JsBarcode !== 'undefined' && typeof QRCode !== 'undefined') {
+                callback();
+              } else if (checkCount < 50) {
+                setTimeout(check, 100);
+              } else {
+                console.error('Không thể load thư viện JsBarcode hoặc QRCode');
+              }
+            };
+            check();
+          }
+          
           document.addEventListener('DOMContentLoaded', function() {
-            ${initScript}
+            waitForLibraries(function() {
+              ${initScript}
+            });
           });
         </script>
       </body>
@@ -1070,21 +1106,37 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             </p>
           )}
 
-          {/* Barcode placeholder */}
+          {/* Barcode/QR placeholder - phân biệt theo IMEI */}
           <div className="w-full py-2">
-            <div className="flex items-end justify-center gap-[1px] h-10">
-              {/* Generate barcode-like lines */}
-              {Array.from({ length: 40 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-foreground"
-                  style={{
-                    width: i % 3 === 0 ? '2px' : '1px',
-                    height: `${20 + Math.random() * 20}px`,
-                  }}
-                />
-              ))}
-            </div>
+            {sampleProduct?.imei ? (
+              // IMEI product: show barcode
+              <div className="flex items-end justify-center gap-[1px] h-10">
+                {Array.from({ length: 40 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-foreground"
+                    style={{
+                      width: i % 3 === 0 ? '2px' : '1px',
+                      height: `${20 + Math.random() * 20}px`,
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              // Non-IMEI product: show QR placeholder
+              <div className="flex items-center justify-center">
+                <div className="w-12 h-12 border-2 border-foreground rounded flex items-center justify-center">
+                  <div className="grid grid-cols-3 gap-0.5 w-8 h-8">
+                    {Array.from({ length: 9 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-2 h-2 ${[0, 2, 3, 5, 6, 8].includes(i) ? 'bg-foreground' : 'bg-transparent'}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
             {sampleProduct && (
               <p className="text-[8px] text-muted-foreground mt-1 font-mono">
                 {sampleProduct.imei || sampleProduct.sku}
@@ -1451,12 +1503,17 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
                 <div className="text-[6px] text-foreground truncate max-w-[60px]">{sampleEntry.name}</div>
               )}
               <div className="flex items-center gap-1 my-1">
-                <div className="w-6 h-6 bg-muted rounded-sm flex items-center justify-center border">
-                  <span className="text-muted-foreground text-[4px]">QR</span>
-                </div>
-                <div className="w-10 h-4 bg-muted rounded-sm flex items-center justify-center border">
-                  <span className="text-muted-foreground text-[3px]">|||||||</span>
-                </div>
+                {sampleEntry?.imei ? (
+                  // IMEI: barcode
+                  <div className="w-10 h-4 bg-muted rounded-sm flex items-center justify-center border">
+                    <span className="text-muted-foreground text-[3px]">|||||||</span>
+                  </div>
+                ) : (
+                  // Non-IMEI: QR only
+                  <div className="w-6 h-6 bg-muted rounded-sm flex items-center justify-center border">
+                    <span className="text-muted-foreground text-[4px]">QR</span>
+                  </div>
+                )}
               </div>
               {settings.showPrice && sampleEntry && (
                 <div className="text-[7px] font-bold text-foreground">
