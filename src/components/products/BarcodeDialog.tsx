@@ -581,9 +581,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           : (entry.sku || entry.productId);
       
       // For jewelry labels, only show barcode (too small for QR)
+      // QUAN TRỌNG: Dùng pageWidth/pageHeight để khớp với CSS .label (đã swap khi rotate)
       if (isJewelryLabel) {
         return `
-          <div class="label jewelry-label" style="width: ${width}mm; height: ${height}mm;">
+          <div class="label jewelry-label">
             <div class="codes-container-inline">
               <svg class="barcode" id="barcode-${idx}"></svg>
             </div>
@@ -596,8 +597,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
        // Template đơn giản:
        // - IMEI: BARCODE
        // - Non-IMEI (phụ kiện): BARCODE theo SKU
+       // QUAN TRỌNG: Không set inline width/height - sử dụng CSS .label để đảm bảo nhất quán
       return `
-        <div class="label" style="width: ${width}mm; height: ${height}mm;">
+        <div class="label">
           <div class="label-content-wrapper">
             ${printSettings.showStoreName && printSettings.storeName ? 
               `<div class="store-name">${printSettings.storeName}</div>` : ''}
