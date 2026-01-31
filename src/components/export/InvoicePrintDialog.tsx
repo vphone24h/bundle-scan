@@ -117,13 +117,13 @@ export function InvoicePrintDialog({
           {settings.show_store_name && (
             <div className="text-center mb-4">
               <div className="text-xl font-bold">{settings.store_name || 'Cửa hàng'}</div>
-              {settings.show_store_address && settings.store_address && (
-                <div className="text-sm">{settings.store_address}</div>
-              )}
-              {settings.show_store_phone && settings.store_phone && (
-                <div className="text-sm">ĐT: {settings.store_phone}</div>
-              )}
             </div>
+          )}
+          {settings.show_store_address && settings.store_address && (
+            <div className="text-center text-sm">{settings.store_address}</div>
+          )}
+          {settings.show_store_phone && settings.store_phone && (
+            <div className="text-center text-sm mb-2">ĐT: {settings.store_phone}</div>
           )}
 
           {/* Receipt code */}
