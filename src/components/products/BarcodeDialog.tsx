@@ -237,7 +237,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     }
   };
 
-  // Tạo HTML riêng cho PDF - KHÔNG có rotation/swap, giữ nguyên khổ giấy gốc
+  // Tạo HTML riêng cho PDF - ĐỒNG BỘ 100% với template in trực tiếp
   const generatePdfOnlyContent = (
     paper: PaperTemplate,
     entries: ProductPriceEntry[],
@@ -257,8 +257,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const isSmallLabel = height <= 22;
     const isJewelryLabel = height <= 10;
     
-    const baseBarcodeHeight = isJewelryLabel ? 12 : isSmallLabel ? 14 : 18;
-    const baseBarcodeWidth = 0.6;
+    // Giảm chiều cao barcode để không che tên sản phẩm - ĐỒNG BỘ với print
+    const baseBarcodeHeight = isJewelryLabel ? 10 : isSmallLabel ? 12 : 14;
+    const baseBarcodeWidth = isJewelryLabel ? 0.5 : 0.5;
     const barcodeHeight = Math.round(baseBarcodeHeight * scale);
     const barcodeWidth = baseBarcodeWidth * scale;
 
@@ -311,7 +312,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       `;
     }).join('\n');
 
-    // CSS đơn giản cho PDF - KHÔNG xoay, KHÔNG swap kích thước
+    // CSS ĐỒNG BỘ với template in - giữ nguyên tỷ lệ, không xoay
     return `
       <!DOCTYPE html>
       <html>
@@ -320,10 +321,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         <title>PDF Export</title>
         <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
         <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
+          * { margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
           html, body {
-            margin: 0;
-            padding: 0;
+            margin: 0 !important;
+            padding: 0 !important;
             font-family: Arial, sans-serif;
             background: white;
           }
@@ -347,59 +348,66 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             align-items: center;
             justify-content: center;
             text-align: center;
-            gap: 2px;
-            width: ${width - 4}mm;
-            max-height: ${height - 2}mm;
+            gap: 1px;
+            width: ${width - 2}mm;
           }
           
           .store-name {
-            font-size: ${Math.round(8 * scale)}px;
+            font-size: ${Math.round(7 * scale)}px;
             font-weight: bold;
             color: #000;
-            line-height: 1.1;
+            line-height: 1;
             max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            flex-shrink: 0;
           }
           
           .product-name {
-            font-size: ${Math.round(7 * scale)}px;
+            font-size: ${Math.round(6 * scale)}px;
             color: #000;
-            line-height: 1.1;
+            line-height: 1;
             word-break: break-word;
             max-width: 100%;
-            max-height: 2.2em;
+            max-height: 1.2em;
             overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-shrink: 0;
           }
           
           .custom-description {
-            font-size: ${Math.round(7 * scale)}px;
+            font-size: ${Math.round(6 * scale)}px;
             color: #000;
-            line-height: 1.1;
+            line-height: 1;
             white-space: pre-wrap;
+            flex-shrink: 0;
           }
           
           .codes-container, .codes-container-inline {
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 2px 0;
+            margin: 1px 0 !important;
+            flex-shrink: 0;
           }
           
           .barcode { display: block; }
           
           .code-text {
-            font-size: ${Math.round(6 * scale)}px;
+            font-size: ${Math.round(5 * scale)}px;
             color: #333;
             line-height: 1;
+            flex-shrink: 0;
           }
           
           .price, .price-inline {
-            font-size: ${Math.round(10 * scale)}px;
+            font-size: ${Math.round(8 * scale)}px;
             font-weight: bold;
             color: #000;
-            line-height: 1.1;
+            line-height: 1;
+            flex-shrink: 0;
           }
         </style>
       </head>
@@ -726,14 +734,13 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       }
     });
 
-    // Calculate QR/Barcode sizes based on label dimensions and scale
-    // Convert mm to approximate pixels (1mm ≈ 3.78px at 96dpi, but print uses ~2.8px)
+    // Calculate Barcode sizes - ĐỒNG BỘ với PDF template
     const isSmallLabel = height <= 22; // Giấy cuộn nhỏ
     const isJewelryLabel = height <= 10; // Tem trang sức
     
-    const baseBarcodeHeight = isJewelryLabel ? 12 : isSmallLabel ? 14 : 18;
-    // Thu ngắn chiều ngang barcode (giảm từ 1 xuống 0.6)
-    const baseBarcodeWidth = isJewelryLabel ? 0.6 : 0.6;
+    // Giảm chiều cao barcode để không che tên sản phẩm - ĐỒNG BỘ với PDF
+    const baseBarcodeHeight = isJewelryLabel ? 10 : isSmallLabel ? 12 : 14;
+    const baseBarcodeWidth = isJewelryLabel ? 0.5 : 0.5;
     
     // Apply scale to sizes
     const barcodeHeight = Math.round(baseBarcodeHeight * scale);
