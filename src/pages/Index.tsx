@@ -1,20 +1,24 @@
+import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useDashboardStats, useTodaySoldProducts } from '@/hooks/useDashboardStats';
 import { useProducts } from '@/hooks/useProducts';
 import { useImportReceipts } from '@/hooks/useImportReceipts';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
-import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users } from 'lucide-react';
+import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const Index = () => {
+  const [productTab, setProductTab] = useState<'imported' | 'sold'>('imported');
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: receipts, isLoading: receiptsLoading } = useImportReceipts();
+  const { data: todaySoldProducts, isLoading: soldLoading } = useTodaySoldProducts();
   const userGuideUrl = useUserGuideUrl();
 
   const recentProducts = products?.slice(0, 5) || [];
@@ -104,42 +108,86 @@ const Index = () => {
 
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          {/* Recent Products */}
+          {/* Recent Products with Tabs */}
           <div className="bg-card border rounded-xl">
-            <div className="flex items-center justify-between p-3 sm:p-4 border-b">
-              <h3 className="text-sm sm:text-base font-semibold">Sản phẩm mới nhập</h3>
-              <Button variant="ghost" size="sm" asChild className="h-8 text-xs sm:text-sm">
-                <Link to="/products">Xem tất cả</Link>
-              </Button>
-            </div>
-            <div className="divide-y">
-              {recentProducts.length === 0 ? (
-                <div className="p-6 sm:p-8 text-center text-muted-foreground text-sm">
-                  Chưa có sản phẩm nào
+            <Tabs value={productTab} onValueChange={(v) => setProductTab(v as 'imported' | 'sold')}>
+              <div className="flex items-center justify-between p-3 sm:p-4 border-b">
+                <TabsList className="h-8 p-0.5">
+                  <TabsTrigger value="imported" className="text-xs sm:text-sm px-2 sm:px-3 h-7">
+                    Mới nhập
+                  </TabsTrigger>
+                  <TabsTrigger value="sold" className="text-xs sm:text-sm px-2 sm:px-3 h-7">
+                    Mới bán
+                  </TabsTrigger>
+                </TabsList>
+                <Button variant="ghost" size="sm" asChild className="h-8 text-xs sm:text-sm">
+                  <Link to={productTab === 'imported' ? '/products' : '/export/history'}>Xem tất cả</Link>
+                </Button>
+              </div>
+              
+              <TabsContent value="imported" className="m-0">
+                <div className="divide-y">
+                  {recentProducts.length === 0 ? (
+                    <div className="p-6 sm:p-8 text-center text-muted-foreground text-sm">
+                      Chưa có sản phẩm nào
+                    </div>
+                  ) : (
+                    recentProducts.map((product) => (
+                      <div key={product.id} className="flex items-center gap-3 p-3 sm:p-4">
+                        <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Package className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-xs sm:text-sm truncate">{product.name}</p>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{product.categories?.name || 'Không có danh mục'}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-medium text-xs sm:text-sm">{formatCurrency(Number(product.import_price))}</p>
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] sm:text-xs ${product.status === 'in_stock' ? 'status-in-stock' : 'status-sold'}`}
+                          >
+                            {product.status === 'in_stock' ? 'Tồn kho' : 'Đã bán'}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-              ) : (
-                recentProducts.map((product) => (
-                  <div key={product.id} className="flex items-center gap-3 p-3 sm:p-4">
-                    <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Package className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              </TabsContent>
+              
+              <TabsContent value="sold" className="m-0">
+                <div className="divide-y">
+                  {soldLoading ? (
+                    <div className="p-6 sm:p-8 text-center">
+                      <Loader2 className="h-5 w-5 animate-spin mx-auto text-primary" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-xs sm:text-sm truncate">{product.name}</p>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{product.categories?.name || 'Không có danh mục'}</p>
+                  ) : (todaySoldProducts?.length || 0) === 0 ? (
+                    <div className="p-6 sm:p-8 text-center text-muted-foreground text-sm">
+                      Chưa bán sản phẩm nào hôm nay
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="font-medium text-xs sm:text-sm">{formatCurrency(Number(product.import_price))}</p>
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] sm:text-xs ${product.status === 'in_stock' ? 'status-in-stock' : 'status-sold'}`}
-                      >
-                        {product.status === 'in_stock' ? 'Tồn kho' : 'Đã bán'}
-                      </Badge>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+                  ) : (
+                    todaySoldProducts?.slice(0, 5).map((item) => (
+                      <div key={item.id} className="flex items-center gap-3 p-3 sm:p-4">
+                        <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                          <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-xs sm:text-sm truncate">{item.product_name}</p>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{item.imei || item.sku}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-medium text-xs sm:text-sm text-emerald-600">{formatCurrency(Number(item.sale_price))}</p>
+                          <Badge variant="outline" className="text-[10px] sm:text-xs status-sold">
+                            Đã bán
+                          </Badge>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
 
           {/* Recent Imports */}
