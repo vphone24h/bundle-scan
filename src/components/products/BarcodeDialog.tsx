@@ -394,8 +394,9 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     }
   };
 
-  // Tạo HTML riêng cho Word - KHÔNG dùng flex/absolute, chỉ dùng block/table layout
-  // Để PDF/Word engine render đúng tất cả nội dung
+  // Tạo HTML riêng cho Word - TABLE LAYOUT CHUẨN
+  // KHÔNG dùng flex/absolute/position/transform - chỉ dùng table để html2canvas render đúng
+  // Word sẽ nhận ảnh capture từ html2canvas, không phải HTML trực tiếp
   const generateWordContent = (
     paper: PaperTemplate,
     entries: ProductPriceEntry[],
@@ -415,34 +416,26 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const isSmallLabel = height <= 22;
     const isJewelryLabel = height <= 10;
     
-    // Tăng font size và barcode size cho Word
-    const baseBarcodeHeight = isJewelryLabel ? 15 : isSmallLabel ? 18 : 22;
-    const baseBarcodeWidth = 0.8;
-    const barcodeHeight = Math.round(baseBarcodeHeight * scale);
-    const barcodeWidth = baseBarcodeWidth * scale;
-    
-    // Font sizes cho Word (pt) - tăng lên để rõ hơn
-    const fontScale = scale;
-    const storeNameSize = Math.round(10 * fontScale);
-    const productNameSize = Math.round(8 * fontScale);
-    const customDescSize = Math.round(7 * fontScale);
-    const codeTextSize = Math.round(6 * fontScale);
-    const priceSize = Math.round(11 * fontScale);
+    // Barcode sizes cho Word - tăng size để rõ nét khi capture
+    const barcodeHeight = isJewelryLabel ? 15 : isSmallLabel ? 20 : 28;
+    const barcodeWidth = 1.2;
 
     const labelHTML = allLabels.map((entry, idx) => {
       if (isJewelryLabel) {
         return `
           <div class="label">
             <table class="label-table">
-              <tr>
-                <td class="cell-center">
-                  <svg class="barcode" id="barcode-${idx}"></svg>
-                </td>
-              </tr>
-              ${printSettings.showPrice ? `
-              <tr>
-                <td class="cell-center price">${formatNumberWithSpaces(entry.printPrice)}</td>
-              </tr>` : ''}
+              <tbody>
+                <tr>
+                  <td class="cell-center barcode-cell">
+                    <svg class="barcode" id="barcode-${idx}"></svg>
+                  </td>
+                </tr>
+                ${printSettings.showPrice ? `
+                <tr>
+                  <td class="cell-center price">${formatNumberWithSpaces(entry.printPrice)}</td>
+                </tr>` : ''}
+              </tbody>
             </table>
           </div>
         `;
@@ -451,31 +444,33 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       return `
         <div class="label">
           <table class="label-table">
-            ${printSettings.showStoreName && printSettings.storeName ? `
-            <tr>
-              <td class="cell-center store-name">${printSettings.storeName}</td>
-            </tr>` : ''}
-            ${printSettings.showProductName ? `
-            <tr>
-              <td class="cell-center product-name">${entry.name}</td>
-            </tr>` : ''}
-            ${printSettings.showCustomDescription && printSettings.customDescription ? `
-            <tr>
-              <td class="cell-center custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</td>
-            </tr>` : ''}
-            <tr>
-              <td class="cell-center barcode-cell">
-                <svg class="barcode" id="barcode-${idx}"></svg>
-              </td>
-            </tr>
-            ${entry.imei ? `
-            <tr>
-              <td class="cell-center code-text">${entry.imei}</td>
-            </tr>` : ''}
-            ${printSettings.showPrice ? `
-            <tr>
-              <td class="cell-center price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</td>
-            </tr>` : ''}
+            <tbody>
+              ${printSettings.showStoreName && printSettings.storeName ? `
+              <tr>
+                <td class="cell-center store-name">${printSettings.storeName}</td>
+              </tr>` : ''}
+              ${printSettings.showProductName ? `
+              <tr>
+                <td class="cell-center product-name">${entry.name}</td>
+              </tr>` : ''}
+              ${printSettings.showCustomDescription && printSettings.customDescription ? `
+              <tr>
+                <td class="cell-center custom-desc">${printSettings.customDescription.replace(/\n/g, '<br/>')}</td>
+              </tr>` : ''}
+              <tr>
+                <td class="cell-center barcode-cell">
+                  <svg class="barcode" id="barcode-${idx}"></svg>
+                </td>
+              </tr>
+              ${entry.imei ? `
+              <tr>
+                <td class="cell-center code-text">${entry.imei}</td>
+              </tr>` : ''}
+              ${printSettings.showPrice ? `
+              <tr>
+                <td class="cell-center price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</td>
+              </tr>` : ''}
+            </tbody>
           </table>
         </div>
       `;
@@ -495,7 +490,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       `;
     }).join('\n');
 
-    // CSS với TABLE layout đơn giản - KHÔNG dùng flex/absolute/position
+    // CSS với TABLE layout - KHÔNG dùng flex/absolute/transform
+    // Đây là layout duy nhất đảm bảo html2canvas capture đúng 100%
     return `
       <!DOCTYPE html>
       <html>
@@ -508,7 +504,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           html, body {
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             background: white;
           }
           
@@ -518,6 +514,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             background: white;
             page-break-after: always;
             page-break-inside: avoid;
+            overflow: hidden;
           }
           
           .label-table {
@@ -530,49 +527,48 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           .cell-center {
             text-align: center;
             vertical-align: middle;
-            padding: 0.5mm;
+            padding: 0.5mm 1mm;
+            line-height: 1.2;
           }
           
           .store-name {
-            font-size: ${storeNameSize}pt;
+            font-size: ${Math.round(10 * scale)}pt;
             font-weight: bold;
             color: #000;
-            line-height: 1.2;
           }
           
           .product-name {
-            font-size: ${productNameSize}pt;
+            font-size: ${Math.round(8 * scale)}pt;
             color: #000;
-            line-height: 1.2;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
           }
           
-          .custom-description {
-            font-size: ${customDescSize}pt;
+          .custom-desc {
+            font-size: ${Math.round(7 * scale)}pt;
             color: #000;
-            line-height: 1.2;
           }
           
           .barcode-cell {
-            padding: 1mm 0;
+            padding: 1mm 2mm;
           }
           
           .barcode { 
             display: block;
             margin: 0 auto;
+            max-width: ${width - 6}mm;
           }
           
           .code-text {
-            font-size: ${codeTextSize}pt;
+            font-size: ${Math.round(6 * scale)}pt;
             color: #333;
-            font-family: monospace;
-            line-height: 1.2;
+            font-family: 'Courier New', monospace;
           }
           
           .price {
-            font-size: ${priceSize}pt;
+            font-size: ${Math.round(11 * scale)}pt;
             font-weight: bold;
             color: #000;
-            line-height: 1.2;
           }
         </style>
       </head>
@@ -1130,8 +1126,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     `;
   };
 
-  // Tạo HTML riêng cho PDF - KHÔNG dùng flex/absolute, chỉ dùng block/table layout
-  // Để PDF engine (html2canvas) render đúng tất cả nội dung
+  // Tạo HTML riêng cho PDF - TABLE LAYOUT CHUẨN 55x30mm
+  // KHÔNG dùng flex/absolute/position - chỉ dùng block/table để đảm bảo tương thích html2canvas
   const generatePdfOnlyContent = (
     paper: PaperTemplate,
     entries: ProductPriceEntry[],
@@ -1151,33 +1147,26 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const isSmallLabel = height <= 22;
     const isJewelryLabel = height <= 10;
     
-    // Barcode sizes
-    const baseBarcodeHeight = isJewelryLabel ? 10 : isSmallLabel ? 12 : 14;
-    const baseBarcodeWidth = isJewelryLabel ? 0.5 : 0.5;
-    const barcodeHeight = Math.round(baseBarcodeHeight * scale);
-    const barcodeWidth = baseBarcodeWidth * scale;
-    
-    // Font sizes (px) - scale theo yêu cầu
-    const storeNameSize = Math.round(7 * scale);
-    const productNameSize = Math.round(6 * scale);
-    const customDescSize = Math.round(6 * scale);
-    const codeTextSize = Math.round(5 * scale);
-    const priceSize = Math.round(8 * scale);
+    // Barcode sizes - fixed size để đảm bảo không lệch
+    const barcodeHeight = isJewelryLabel ? 12 : isSmallLabel ? 16 : 22;
+    const barcodeWidth = 1.0;
 
     const labelHTML = allLabels.map((entry, idx) => {
       if (isJewelryLabel) {
         return `
           <div class="label">
             <table class="label-table">
-              <tr>
-                <td class="cell-center">
-                  <svg class="barcode" id="barcode-${idx}"></svg>
-                </td>
-              </tr>
-              ${printSettings.showPrice ? `
-              <tr>
-                <td class="cell-center price">${formatNumberWithSpaces(entry.printPrice)}</td>
-              </tr>` : ''}
+              <tbody>
+                <tr>
+                  <td class="cell-center barcode-cell">
+                    <svg class="barcode" id="barcode-${idx}"></svg>
+                  </td>
+                </tr>
+                ${printSettings.showPrice ? `
+                <tr>
+                  <td class="cell-center price">${formatNumberWithSpaces(entry.printPrice)}</td>
+                </tr>` : ''}
+              </tbody>
             </table>
           </div>
         `;
@@ -1186,31 +1175,33 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       return `
         <div class="label">
           <table class="label-table">
-            ${printSettings.showStoreName && printSettings.storeName ? `
-            <tr>
-              <td class="cell-center store-name">${printSettings.storeName}</td>
-            </tr>` : ''}
-            ${printSettings.showProductName ? `
-            <tr>
-              <td class="cell-center product-name">${entry.name}</td>
-            </tr>` : ''}
-            ${printSettings.showCustomDescription && printSettings.customDescription ? `
-            <tr>
-              <td class="cell-center custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</td>
-            </tr>` : ''}
-            <tr>
-              <td class="cell-center barcode-cell">
-                <svg class="barcode" id="barcode-${idx}"></svg>
-              </td>
-            </tr>
-            ${entry.imei ? `
-            <tr>
-              <td class="cell-center code-text">${entry.imei}</td>
-            </tr>` : ''}
-            ${printSettings.showPrice ? `
-            <tr>
-              <td class="cell-center price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</td>
-            </tr>` : ''}
+            <tbody>
+              ${printSettings.showStoreName && printSettings.storeName ? `
+              <tr>
+                <td class="cell-center store-name">${printSettings.storeName}</td>
+              </tr>` : ''}
+              ${printSettings.showProductName ? `
+              <tr>
+                <td class="cell-center product-name">${entry.name}</td>
+              </tr>` : ''}
+              ${printSettings.showCustomDescription && printSettings.customDescription ? `
+              <tr>
+                <td class="cell-center custom-desc">${printSettings.customDescription.replace(/\n/g, '<br/>')}</td>
+              </tr>` : ''}
+              <tr>
+                <td class="cell-center barcode-cell">
+                  <svg class="barcode" id="barcode-${idx}"></svg>
+                </td>
+              </tr>
+              ${entry.imei ? `
+              <tr>
+                <td class="cell-center code-text">${entry.imei}</td>
+              </tr>` : ''}
+              ${printSettings.showPrice ? `
+              <tr>
+                <td class="cell-center price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</td>
+              </tr>` : ''}
+            </tbody>
           </table>
         </div>
       `;
@@ -1230,7 +1221,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       `;
     }).join('\n');
 
-    // CSS với TABLE layout đơn giản - KHÔNG dùng flex/absolute/position
+    // CSS với TABLE layout đơn giản - KHÔNG dùng flex/absolute/position/transform
+    // Đây là cách duy nhất đảm bảo html2canvas render đúng 100%
     return `
       <!DOCTYPE html>
       <html>
@@ -1243,7 +1235,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           html, body {
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             background: white;
           }
           
@@ -1253,6 +1245,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             background: white;
             page-break-after: always;
             page-break-inside: avoid;
+            overflow: hidden;
           }
           
           .label-table {
@@ -1265,48 +1258,48 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           .cell-center {
             text-align: center;
             vertical-align: middle;
-            padding: 0.3mm;
+            padding: 0.5mm 1mm;
+            line-height: 1.2;
           }
           
           .store-name {
-            font-size: ${storeNameSize}px;
+            font-size: ${Math.round(10 * scale)}pt;
             font-weight: bold;
             color: #000;
-            line-height: 1.1;
           }
           
           .product-name {
-            font-size: ${productNameSize}px;
+            font-size: ${Math.round(7 * scale)}pt;
             color: #000;
-            line-height: 1.1;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
           }
           
-          .custom-description {
-            font-size: ${customDescSize}px;
+          .custom-desc {
+            font-size: ${Math.round(6 * scale)}pt;
             color: #000;
-            line-height: 1.1;
           }
           
           .barcode-cell {
-            padding: 0.5mm 0;
+            padding: 1mm 2mm;
           }
           
           .barcode { 
             display: block;
             margin: 0 auto;
+            max-width: ${width - 6}mm;
           }
           
           .code-text {
-            font-size: ${codeTextSize}px;
+            font-size: ${Math.round(6 * scale)}pt;
             color: #333;
-            line-height: 1.1;
+            font-family: 'Courier New', monospace;
           }
           
           .price {
-            font-size: ${priceSize}px;
+            font-size: ${Math.round(11 * scale)}pt;
             font-weight: bold;
             color: #000;
-            line-height: 1.1;
           }
         </style>
       </head>
