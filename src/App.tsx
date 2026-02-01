@@ -41,6 +41,7 @@ const EInvoicePage = lazy(() => import("./pages/EInvoicePage"));
 const ApplicationsPage = lazy(() => import("./pages/ApplicationsPage"));
 const AdvertisementsAdminPage = lazy(() => import("./pages/AdvertisementsAdminPage"));
 const StoreLandingPage = lazy(() => import("./pages/StoreLandingPage"));
+const PublicLandingPage = lazy(() => import("./pages/PublicLandingPage"));
 const LandingPageAdminPage = lazy(() => import("./pages/LandingPageAdminPage"));
 const InstallAppPage = lazy(() => import("./pages/InstallAppPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -89,7 +90,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
-            <SubdomainRouter landingPage={<StoreLandingPage />}>
+            <SubdomainRouter landingPage={<StoreLandingPage />} publicLandingPage={<PublicLandingPage />}>
               <Routes>
                 {/* Public store landing page - path-based */}
                 <Route path="/store/:storeId" element={<StoreLandingPage />} />
