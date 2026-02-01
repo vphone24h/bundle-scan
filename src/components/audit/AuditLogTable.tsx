@@ -157,7 +157,11 @@ export function AuditLogTable({ logs, isLoading, profileMap, roleMap, branchMap 
                   const userRole = log.user_id ? roleMap.get(log.user_id) : null;
 
                   return (
-                    <TableRow key={log.id} className="group">
+                    <TableRow 
+                      key={log.id} 
+                      className="group cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => setSelectedLog(log)}
+                    >
                       <TableCell>
                         <div className="flex items-center gap-1 text-xs sm:text-sm">
                           <Clock className="h-3 w-3 text-muted-foreground hidden sm:block" />
@@ -223,14 +227,7 @@ export function AuditLogTable({ logs, isLoading, profileMap, roleMap, branchMap 
                         )}
                       </TableCell>
                       <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => setSelectedLog(log)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <Eye className="h-4 w-4 text-muted-foreground" />
                       </TableCell>
                     </TableRow>
                   );
