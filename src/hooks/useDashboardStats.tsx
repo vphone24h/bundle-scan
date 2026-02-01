@@ -232,3 +232,51 @@ export function useDashboardStats() {
     placeholderData: (previous) => previous,
   });
 }
+
+// Hook để lấy danh sách sản phẩm đã bán hôm nay
+export function useTodaySoldProducts() {
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+
+  return useQuery({
+    queryKey: ['today-sold-products', tenant?.id, branchId],
+    queryFn: async () => {
+      // Get today's date range
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+
+      // Get today's completed export receipts
+      let exportReceiptsQuery = supabase
+        .from('export_receipts')
+        .select('id')
+        .eq('status', 'completed')
+        .gte('export_date', todayStart.toISOString())
+        .lte('export_date', todayEnd.toISOString());
+
+      if (shouldFilter && branchId) {
+        exportReceiptsQuery = exportReceiptsQuery.eq('branch_id', branchId);
+      }
+
+      const { data: todayReceipts, error: receiptsError } = await exportReceiptsQuery;
+      if (receiptsError) throw receiptsError;
+
+      const receiptIds = todayReceipts?.map(r => r.id) || [];
+      if (receiptIds.length === 0) return [];
+
+      // Get sold items from today's receipts
+      const { data: soldItems, error: itemsError } = await supabase
+        .from('export_receipt_items')
+        .select('id, product_name, sku, imei, sale_price, created_at')
+        .in('receipt_id', receiptIds)
+        .order('created_at', { ascending: false });
+
+      if (itemsError) throw itemsError;
+      return soldItems || [];
+    },
+    enabled: !isTenantLoading && !branchLoading,
+    refetchOnWindowFocus: false,
+    placeholderData: (previous) => previous,
+  });
+}
