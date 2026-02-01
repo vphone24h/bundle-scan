@@ -4,16 +4,19 @@ type Identity = {
   productName?: unknown;
   sku?: unknown;
   imei?: unknown;
+  quantity?: unknown;
+  reason?: unknown;
 };
 
 function normalizeIdentity(data: Record<string, unknown> | null | undefined): Identity {
   if (!data) return {};
 
   return {
-    // Support multiple possible field names
     productName: data.name ?? data.product_name,
     sku: data.sku,
     imei: data.imei,
+    quantity: data.quantity,
+    reason: data.reason,
   };
 }
 
@@ -47,18 +50,24 @@ export function ProductIdentityCard({
   oldData,
   newData,
   showBeforeAfter,
+  actionType,
 }: {
   recordId?: string | null;
   oldData: Record<string, unknown> | null;
   newData: Record<string, unknown> | null;
   showBeforeAfter: boolean;
+  actionType?: string;
 }) {
   const oldIdentity = normalizeIdentity(oldData);
   const newIdentity = normalizeIdentity(newData);
   const currentIdentity = hasAnyIdentity(newIdentity) ? newIdentity : oldIdentity;
 
-  // If we have absolutely nothing to show besides recordId, still show the card
-  // because it answers “sản phẩm nào”.
+  // For quantity adjustment, calculate difference
+  const isQuantityAdjust = actionType === 'ADJUST_QUANTITY';
+  const oldQty = Number(oldIdentity.quantity) || 0;
+  const newQty = Number(newIdentity.quantity) || 0;
+  const qtyDiff = newQty - oldQty;
+
   const shouldShow = Boolean(recordId) || hasAnyIdentity(currentIdentity);
   if (!shouldShow) return null;
 
@@ -69,14 +78,54 @@ export function ProductIdentityCard({
         Sản phẩm được thao tác
       </h4>
 
-      {recordId && (
+      {recordId && !currentIdentity.productName && (
         <div className="text-xs text-muted-foreground mb-2">
-          ID: <span className="font-mono">{recordId}</span>
+          ID: <span className="font-mono break-all">{recordId}</span>
         </div>
       )}
 
-      {showBeforeAfter ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+      {/* Always show product name/sku/imei if available */}
+      {(currentIdentity.productName || currentIdentity.sku || currentIdentity.imei) && (
+        <div className="space-y-1 text-sm mb-3">
+          <IdentityRow label="Tên" value={currentIdentity.productName} />
+          <IdentityRow label="SKU" value={currentIdentity.sku} mono />
+          <IdentityRow label="IMEI" value={currentIdentity.imei} mono />
+        </div>
+      )}
+
+      {/* Show quantity adjustment details */}
+      {isQuantityAdjust && (
+        <div className="p-2 rounded bg-muted/40 space-y-2 text-sm">
+          <div className="font-medium text-amber-600 dark:text-amber-400">Điều chỉnh số lượng</div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="p-2 bg-destructive/10 rounded">
+              <div className="text-xs text-muted-foreground">Trước</div>
+              <div className="font-semibold">{oldQty}</div>
+            </div>
+            <div className="p-2 bg-primary/10 rounded">
+              <div className="text-xs text-muted-foreground">Sau</div>
+              <div className="font-semibold">{newQty}</div>
+            </div>
+            <div className={`p-2 rounded ${qtyDiff >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+              <div className="text-xs text-muted-foreground">Chênh lệch</div>
+              <div className={`font-semibold ${qtyDiff >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                {qtyDiff >= 0 ? '+' : ''}{qtyDiff}
+              </div>
+            </div>
+          </div>
+          {newIdentity.reason && (
+            <div className="text-sm">
+              <span className="text-muted-foreground">Lý do: </span>
+              <span className="font-medium">{String(newIdentity.reason)}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Show before/after for name/sku/imei changes */}
+      {showBeforeAfter && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mt-2">
+          <div className="text-xs font-medium text-muted-foreground mb-1 col-span-full">Thay đổi định danh:</div>
           <div className="p-2 rounded bg-muted/40">
             <div className="text-xs text-muted-foreground mb-1">Trước</div>
             <div className="space-y-1">
@@ -93,12 +142,6 @@ export function ProductIdentityCard({
               <IdentityRow label="IMEI" value={newIdentity.imei} mono />
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="space-y-1 text-sm">
-          <IdentityRow label="Tên" value={currentIdentity.productName} />
-          <IdentityRow label="SKU" value={currentIdentity.sku} mono />
-          <IdentityRow label="IMEI" value={currentIdentity.imei} mono />
         </div>
       )}
     </div>

@@ -226,7 +226,7 @@ export function AuditLogDetailDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <ScrollArea className="flex-1 overflow-y-auto max-h-[70vh] pr-2">
           <div className="space-y-4">
             {/* Header info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
@@ -284,6 +284,7 @@ export function AuditLogDetailDialog({
                 oldData={(log.old_data as Record<string, unknown> | null) ?? null}
                 newData={(log.new_data as Record<string, unknown> | null) ?? null}
                 showBeforeAfter={hasNameOrImeiChange}
+                actionType={log.action_type}
               />
             )}
 
