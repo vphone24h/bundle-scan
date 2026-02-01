@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { toast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 
@@ -231,9 +231,21 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
-      <Card className="w-full max-w-md shadow-xl">
+      <Card className="w-full max-w-md shadow-xl relative">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
+          {/* Nút quay về trang chủ - chỉ hiển thị khi ở main domain */}
+          {!isSubdomainMode && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="absolute left-4 top-4"
+              onClick={() => navigate('/')}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Trang chủ
+            </Button>
+          )}
+          <div className="flex justify-center mb-4 pt-6">
             <img 
               src={vkhoLogo} 
               alt="VKho Logo" 
