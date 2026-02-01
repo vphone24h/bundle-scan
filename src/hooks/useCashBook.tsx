@@ -159,6 +159,111 @@ export function useCreateCashBookEntry() {
   });
 }
 
+// Hook chuyển tiền giữa các nguồn với audit log
+export function useTransferFunds() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (transfer: {
+      fromSource: string;
+      toSource: string;
+      amount: number;
+      note?: string;
+      branchId?: string | null;
+      fromSourceName: string;
+      toSourceName: string;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
+      // Get user's branch_id for audit log
+      const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('branch_id')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      const noteText = transfer.note ? ` - ${transfer.note}` : '';
+      const formattedAmount = transfer.amount.toLocaleString('vi-VN');
+
+      // Tạo 2 giao dịch: CHI từ nguồn A và THU vào nguồn B
+      const [expenseResult, incomeResult] = await Promise.all([
+        // Chi từ nguồn gốc
+        supabase
+          .from('cash_book')
+          .insert([{
+            type: 'expense' as const,
+            category: 'Chuyển tiền nội bộ',
+            description: `Chuyển tiền: ${transfer.fromSourceName} → ${transfer.toSourceName}${noteText}`,
+            amount: transfer.amount,
+            payment_source: transfer.fromSource,
+            is_business_accounting: false,
+            branch_id: transfer.branchId || null,
+            note: `Chuyển ${formattedAmount}đ sang ${transfer.toSourceName}`,
+            created_by: user?.id,
+            tenant_id: tenantId,
+          }])
+          .select()
+          .single(),
+        // Thu vào nguồn đích
+        supabase
+          .from('cash_book')
+          .insert([{
+            type: 'income' as const,
+            category: 'Chuyển tiền nội bộ',
+            description: `Nhận tiền: ${transfer.fromSourceName} → ${transfer.toSourceName}${noteText}`,
+            amount: transfer.amount,
+            payment_source: transfer.toSource,
+            is_business_accounting: false,
+            branch_id: transfer.branchId || null,
+            note: `Nhận ${formattedAmount}đ từ ${transfer.fromSourceName}`,
+            created_by: user?.id,
+            tenant_id: tenantId,
+          }])
+          .select()
+          .single(),
+      ]);
+
+      if (expenseResult.error) throw expenseResult.error;
+      if (incomeResult.error) throw incomeResult.error;
+
+      // Ghi audit log cho việc chuyển tiền
+      await supabase.from('audit_logs').insert([{
+        tenant_id: tenantId,
+        user_id: user?.id,
+        action_type: 'TRANSFER_FUNDS',
+        table_name: 'cash_book',
+        branch_id: userRole?.branch_id || transfer.branchId || null,
+        old_data: {
+          from_source: transfer.fromSource,
+          from_source_name: transfer.fromSourceName,
+        },
+        new_data: {
+          to_source: transfer.toSource,
+          to_source_name: transfer.toSourceName,
+          amount: transfer.amount,
+          note: transfer.note || null,
+          expense_entry_id: expenseResult.data?.id,
+          income_entry_id: incomeResult.data?.id,
+        },
+        description: `Chuyển tiền nội bộ: ${formattedAmount}đ từ ${transfer.fromSourceName} sang ${transfer.toSourceName}${noteText}`,
+      }]);
+
+      return {
+        expenseEntry: expenseResult.data,
+        incomeEntry: incomeResult.data,
+      };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['report-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
+    },
+  });
+}
+
 export function useUpdateCashBookEntry() {
   const queryClient = useQueryClient();
 

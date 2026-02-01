@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useCreateCashBookEntry } from '@/hooks/useCashBook';
+import { useTransferFunds } from '@/hooks/useCashBook';
 import { formatCurrency } from '@/lib/mockData';
 
 interface TransferFundsDialogProps {
@@ -29,7 +29,7 @@ export function TransferFundsDialog({
   viewMode,
   selectedBranchId,
 }: TransferFundsDialogProps) {
-  const createEntry = useCreateCashBookEntry();
+  const transferFunds = useTransferFunds();
   
   const defaultBranch = branches?.find(b => b.is_default) || branches?.[0];
   
@@ -40,6 +40,10 @@ export function TransferFundsDialog({
     note: '',
     branchId: selectedBranchId || defaultBranch?.id || '',
   });
+
+  const getSourceName = (sourceId: string) => {
+    return paymentSources.find(s => s.id === sourceId)?.name || sourceId;
+  };
 
   const handleTransfer = async () => {
     const amount = parseFloat(formData.amount);
@@ -84,35 +88,17 @@ export function TransferFundsDialog({
     const branchId = viewMode === 'branch' ? selectedBranchId : formData.branchId;
     const fromName = getSourceName(formData.fromSource);
     const toName = getSourceName(formData.toSource);
-    const noteText = formData.note ? ` - ${formData.note}` : '';
 
     try {
-      // Tạo 2 giao dịch: CHI từ nguồn A và THU vào nguồn B
-      // Cả 2 đều là is_business_accounting = false vì không ảnh hưởng lợi nhuận
-      await Promise.all([
-        // Chi từ nguồn gốc
-        createEntry.mutateAsync({
-          type: 'expense',
-          category: 'Chuyển tiền nội bộ',
-          description: `Chuyển tiền: ${fromName} → ${toName}${noteText}`,
-          amount,
-          payment_source: formData.fromSource,
-          is_business_accounting: false,
-          branch_id: branchId || null,
-          note: `Chuyển ${formatCurrency(amount)} sang ${toName}`,
-        }),
-        // Thu vào nguồn đích
-        createEntry.mutateAsync({
-          type: 'income',
-          category: 'Chuyển tiền nội bộ',
-          description: `Nhận tiền: ${fromName} → ${toName}${noteText}`,
-          amount,
-          payment_source: formData.toSource,
-          is_business_accounting: false,
-          branch_id: branchId || null,
-          note: `Nhận ${formatCurrency(amount)} từ ${fromName}`,
-        }),
-      ]);
+      await transferFunds.mutateAsync({
+        fromSource: formData.fromSource,
+        toSource: formData.toSource,
+        amount,
+        note: formData.note || undefined,
+        branchId: branchId || null,
+        fromSourceName: fromName,
+        toSourceName: toName,
+      });
 
       toast({
         title: 'Chuyển tiền thành công',
@@ -135,10 +121,6 @@ export function TransferFundsDialog({
         variant: 'destructive',
       });
     }
-  };
-
-  const getSourceName = (sourceId: string) => {
-    return paymentSources.find(s => s.id === sourceId)?.name || sourceId;
   };
 
   const fromBalance = balanceBySource[formData.fromSource] || 0;
@@ -228,7 +210,7 @@ export function TransferFundsDialog({
                 </p>
                 <p>
                   <span className="text-muted-foreground">{getSourceName(formData.toSource)}:</span>{' '}
-                  <span className="text-green-600">{formatCurrency(toBalance)} → {formatCurrency(toBalance + transferAmount)}</span>
+                  <span className="text-green-600 dark:text-green-400">{formatCurrency(toBalance)} → {formatCurrency(toBalance + transferAmount)}</span>
                 </p>
               </div>
             )}
@@ -274,9 +256,9 @@ export function TransferFundsDialog({
           </Button>
           <Button 
             onClick={handleTransfer} 
-            disabled={createEntry.isPending}
+            disabled={transferFunds.isPending}
           >
-            {createEntry.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {transferFunds.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Xác nhận chuyển
           </Button>
         </DialogFooter>
