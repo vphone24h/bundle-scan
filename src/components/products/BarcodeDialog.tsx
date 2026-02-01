@@ -734,24 +734,115 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   };
 
   // Hàm IN TRỰC TIẾP chuẩn KiotViet - 55x30mm, không scale/rotation
-  const handlePrintKiotViet = () => {
-    // Tạo nội dung in với template KiotViet
-    const kiotVietHtml = generateKiotVietPrintContent(productEntries, settings);
-    
-    // Mở cửa sổ in
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    if (printWindow) {
-      printWindow.document.write(kiotVietHtml);
-      printWindow.document.close();
-      printWindow.focus();
-      
-      // Đợi barcode render xong rồi in
-      setTimeout(() => {
-        printWindow.print();
-      }, 800);
+  const handlePrintKiotViet = async () => {
+    // Expand theo số lượng để biết tổng tem cần in
+    const allLabels: ProductPriceEntry[] = [];
+    productEntries.forEach((entry) => {
+      for (let i = 0; i < entry.quantity; i++) allLabels.push(entry);
+    });
+
+    const totalLabels = allLabels.length;
+    if (totalLabels === 0) {
+      toast.error('Không có tem để in');
+      return;
     }
-    
-    toast.success(`Đang in ${totalLabels} nhãn chuẩn KiotViet (55x30mm)`);
+
+    // 1 tem thì in như bình thường
+    if (totalLabels === 1) {
+      const kiotVietHtml = generateKiotVietPrintContent([allLabels[0]], settings);
+      const printWindow = window.open('', '_blank', 'width=800,height=600');
+      if (printWindow) {
+        printWindow.document.write(kiotVietHtml);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+        }, 800);
+        toast.success('Đang in 1 tem chuẩn KiotViet (55x30mm)');
+      } else {
+        toast.error('Trình duyệt đang chặn popup in. Vui lòng cho phép popups.');
+      }
+      return;
+    }
+
+    // Nhiều tem: in theo kiểu KiotViet (mỗi lần in = 1 tem) để tránh lệch dần
+    // Lưu ý: trình duyệt sẽ hiện hộp thoại in nhiều lần (1 lần/tem).
+    toast.info(`In lần lượt ${totalLabels} tem (mỗi tem 1 lệnh in) để không bị lệch...`);
+
+    for (let i = 0; i < allLabels.length; i++) {
+      // Tạo iframe ẩn và in ngay trong iframe để không phụ thuộc page-break nhiều trang
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none;';
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc || !iframe.contentWindow) {
+        document.body.removeChild(iframe);
+        toast.error('Không thể khởi tạo chế độ in.');
+        return;
+      }
+
+      const html = generateKiotVietPrintContent([allLabels[i]], settings);
+      iframeDoc.open();
+      iframeDoc.write(html);
+      iframeDoc.close();
+
+      // Đợi barcode render xong + gọi print
+      await new Promise<void>((resolve) => {
+        const win = iframe.contentWindow!;
+
+        let done = false;
+        const cleanup = () => {
+          if (done) return;
+          done = true;
+          try {
+            document.body.removeChild(iframe);
+          } catch {
+            // ignore
+          }
+          resolve();
+        };
+
+        // Fallback nếu afterprint không bắn
+        const fallbackTimeout = window.setTimeout(cleanup, 3000);
+
+        // override cleanup để clear timeout
+        const cleanupWithTimeout = () => {
+          window.clearTimeout(fallbackTimeout);
+          // Cho driver kịp feed/commit trước khi in tem tiếp theo
+          setTimeout(cleanup, 150);
+        };
+
+        try {
+          win.addEventListener('afterprint', cleanupWithTimeout, { once: true });
+        } catch {
+          // ignore
+        }
+
+        // Poll cho đến khi barcode svg có rect
+        let attempts = 0;
+        const maxAttempts = 50;
+        const interval = window.setInterval(() => {
+          attempts++;
+          const barcodes = iframeDoc.querySelectorAll('.barcode');
+          const allRendered = barcodes.length > 0 && Array.from(barcodes).every((svg) => svg.querySelector('rect'));
+          if (allRendered || attempts >= maxAttempts) {
+            window.clearInterval(interval);
+            // buffer nhỏ để layout ổn định
+            setTimeout(() => {
+              try {
+                win.focus();
+                win.print();
+              } catch {
+                // ignore
+              }
+            }, 150);
+          }
+        }, 100);
+      });
+    }
+
+    toast.success('Đã gửi lệnh in lần lượt cho tất cả tem.');
   };
 
   // Template HTML in trực tiếp chuẩn KiotViet
