@@ -1886,6 +1886,7 @@ export type Database = {
       invoice_templates: {
         Row: {
           created_at: string
+          custom_description_text: string | null
           field_order: Json | null
           font_size: string | null
           id: string
@@ -1899,6 +1900,7 @@ export type Database = {
           section3_align: string | null
           section4_align: string | null
           section5_align: string | null
+          show_custom_description: boolean | null
           show_customer_info: boolean | null
           show_debt: boolean | null
           show_imei: boolean | null
@@ -1915,6 +1917,7 @@ export type Database = {
           show_store_phone: boolean | null
           show_thank_you: boolean | null
           show_total: boolean | null
+          show_warranty: boolean | null
           store_address: string | null
           store_name: string | null
           store_phone: string | null
@@ -1925,6 +1928,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_description_text?: string | null
           field_order?: Json | null
           font_size?: string | null
           id?: string
@@ -1938,6 +1942,7 @@ export type Database = {
           section3_align?: string | null
           section4_align?: string | null
           section5_align?: string | null
+          show_custom_description?: boolean | null
           show_customer_info?: boolean | null
           show_debt?: boolean | null
           show_imei?: boolean | null
@@ -1954,6 +1959,7 @@ export type Database = {
           show_store_phone?: boolean | null
           show_thank_you?: boolean | null
           show_total?: boolean | null
+          show_warranty?: boolean | null
           store_address?: string | null
           store_name?: string | null
           store_phone?: string | null
@@ -1964,6 +1970,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_description_text?: string | null
           field_order?: Json | null
           font_size?: string | null
           id?: string
@@ -1977,6 +1984,7 @@ export type Database = {
           section3_align?: string | null
           section4_align?: string | null
           section5_align?: string | null
+          show_custom_description?: boolean | null
           show_customer_info?: boolean | null
           show_debt?: boolean | null
           show_imei?: boolean | null
@@ -1993,6 +2001,7 @@ export type Database = {
           show_store_phone?: boolean | null
           show_thank_you?: boolean | null
           show_total?: boolean | null
+          show_warranty?: boolean | null
           store_address?: string | null
           store_name?: string | null
           store_phone?: string | null

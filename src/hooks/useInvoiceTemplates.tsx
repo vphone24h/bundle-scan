@@ -21,12 +21,15 @@ export interface InvoiceTemplate {
   show_product_name: boolean;
   show_sku: boolean;
   show_imei: boolean;
+  show_warranty: boolean;
   show_sale_price: boolean;
   show_total: boolean;
   show_paid_amount: boolean;
   show_debt: boolean;
   show_note: boolean;
   show_thank_you: boolean;
+  show_custom_description: boolean;
+  custom_description_text: string | null;
   thank_you_text: string | null;
   font_size: 'small' | 'medium' | 'large';
   text_align: TextAlign;

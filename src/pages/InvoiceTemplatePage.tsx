@@ -34,8 +34,11 @@ import {
   MoveHorizontal,
   AlignLeft,
   AlignCenter,
-  AlignRight
+  AlignRight,
+  Shield,
+  FileEdit
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { useDefaultInvoiceTemplate, useUpdateInvoiceTemplate, type InvoiceTemplate, type TextAlign } from '@/hooks/useInvoiceTemplates';
 
 interface SettingItemProps {
@@ -395,6 +398,13 @@ export default function InvoiceTemplatePage() {
               checked={currentSettings.show_sale_price ?? true}
               onCheckedChange={(v) => updateSetting('show_sale_price', v)}
             />
+
+            <SettingItem
+              icon={<Shield className="h-4 w-4" />}
+              label="Thời gian bảo hành"
+              checked={currentSettings.show_warranty ?? true}
+              onCheckedChange={(v) => updateSetting('show_warranty', v)}
+            />
           </SectionCard>
 
           {/* Section 5: Totals */}
@@ -442,6 +452,20 @@ export default function InvoiceTemplatePage() {
                 placeholder="Nhập lời cảm ơn"
                 value={currentSettings.thank_you_text || ''}
                 onChange={(e) => updateSetting('thank_you_text', e.target.value)}
+              />
+            </SettingItem>
+
+            <SettingItem
+              icon={<FileEdit className="h-4 w-4" />}
+              label="Mô tả khác"
+              checked={currentSettings.show_custom_description ?? false}
+              onCheckedChange={(v) => updateSetting('show_custom_description', v)}
+            >
+              <Textarea
+                placeholder="Nhập nội dung mô tả khác (ví dụ: chính sách đổi trả, lưu ý...)"
+                value={currentSettings.custom_description_text || ''}
+                onChange={(e) => updateSetting('custom_description_text', e.target.value)}
+                rows={3}
               />
             </SettingItem>
           </SectionCard>
@@ -615,6 +639,7 @@ export default function InvoiceTemplatePage() {
                         {currentSettings.show_product_name && <div>iPhone 15 Pro Max 256GB</div>}
                         {currentSettings.show_sku && <div className="text-xs" style={{ color: '#666' }}>SKU: IP15PM256</div>}
                         {currentSettings.show_imei && <div className="text-xs" style={{ color: '#666' }}>IMEI: 123456789012345</div>}
+                        {currentSettings.show_warranty && <div className="text-xs" style={{ color: '#0066cc' }}>BH: 12 tháng</div>}
                       </td>
                       {currentSettings.show_sale_price && (
                         <td className="py-1 text-right">32,000,000đ</td>
@@ -652,6 +677,13 @@ export default function InvoiceTemplatePage() {
                 {currentSettings.show_note && (
                   <div className="mt-2 text-sm" style={{ color: '#666' }}>
                     Ghi chú: Khách hẹn thanh toán sau 7 ngày
+                  </div>
+                )}
+
+                {/* Custom description */}
+                {currentSettings.show_custom_description && currentSettings.custom_description_text && (
+                  <div className="mt-2 text-sm" style={{ color: '#333', whiteSpace: 'pre-wrap' }}>
+                    {currentSettings.custom_description_text}
                   </div>
                 )}
 
