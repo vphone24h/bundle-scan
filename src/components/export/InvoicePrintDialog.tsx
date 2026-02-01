@@ -122,11 +122,14 @@ export function InvoicePrintDialog({
     show_product_name: true,
     show_sku: true,
     show_imei: true,
+    show_warranty: true,
     show_sale_price: true,
     show_total: true,
     show_paid_amount: true,
     show_debt: true,
     show_thank_you: true,
+    show_custom_description: false,
+    custom_description_text: '',
     thank_you_text: 'Cảm ơn quý khách!',
     section1_align: 'center' as TextAlign,
     section2_align: 'center' as TextAlign,
@@ -218,6 +221,9 @@ export function InvoicePrintDialog({
                     {settings.show_imei && item.imei && (
                       <div className="text-xs text-gray">IMEI: {item.imei}</div>
                     )}
+                    {settings.show_warranty && item.warranty && (
+                      <div className="text-xs" style={{ color: '#0066cc' }}>BH: {item.warranty}</div>
+                    )}
                   </td>
                   {settings.show_sale_price && (
                     <td className="py-1 text-right">{item.sale_price?.toLocaleString('vi-VN')}đ</td>
@@ -256,6 +262,13 @@ export function InvoicePrintDialog({
               </div>
             )}
           </div>
+
+          {/* Custom description */}
+          {settings.show_custom_description && settings.custom_description_text && (
+            <div className="mt-2 text-sm" style={{ whiteSpace: 'pre-wrap' }}>
+              {settings.custom_description_text}
+            </div>
+          )}
 
           {/* Thank you */}
           {settings.show_thank_you && (
