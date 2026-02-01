@@ -16,7 +16,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Printer, ArrowLeft, Eye, Grid3X3, Barcode, DollarSign, Copy, Trash2, Plus, Minus, FileDown, Loader2, HelpCircle, ExternalLink } from 'lucide-react';
+import { Printer, ArrowLeft, Eye, Grid3X3, Barcode, DollarSign, Copy, Trash2, Plus, Minus, FileDown, Loader2, HelpCircle, ExternalLink, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useBarcodePrintGuideUrl } from '@/hooks/useAppConfig';
 import { cn } from '@/lib/utils';
@@ -192,8 +192,25 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       iframeDoc.write(pdfHtmlContent);
       iframeDoc.close();
 
-      // Đợi JsBarcode render xong
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Đợi JsBarcode render xong - tăng thời gian và kiểm tra đã render
+      await new Promise<void>((resolve) => {
+        let attempts = 0;
+        const maxAttempts = 50;
+        const checkInterval = setInterval(() => {
+          attempts++;
+          const barcodes = iframeDoc.querySelectorAll('.barcode');
+          const allRendered = Array.from(barcodes).every(svg => {
+            const rect = svg.querySelector('rect');
+            return rect !== null;
+          });
+          
+          if (allRendered || attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            // Thêm thời gian buffer để đảm bảo tất cả nội dung đã render
+            setTimeout(resolve, 500);
+          }
+        }, 100);
+      });
 
       const labels = iframeDoc.querySelectorAll('.label');
       
@@ -217,6 +234,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           backgroundColor: '#ffffff',
           logging: false,
           useCORS: true,
+          allowTaint: true,
         });
 
         // Fill toàn bộ trang PDF
@@ -232,6 +250,131 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     } catch (error) {
       console.error('PDF export error:', error);
       toast.error('Lỗi khi xuất PDF. Vui lòng thử lại.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Export to Word với kích thước 55x30mm
+  const handleExportWord = async () => {
+    if (!selectedPaper) return;
+    
+    const paper = mockPaperTemplates.find(p => p.id === selectedPaper);
+    if (!paper) return;
+
+    setIsExporting(true);
+    toast.info('Đang tạo file Word...');
+
+    try {
+      const [{ Document, Packer, Paragraph, TextRun, ImageRun, PageOrientation, convertMillimetersToTwip }, { saveAs }, { default: html2canvas }] = await Promise.all([
+        import('docx'),
+        import('file-saver'),
+        import('html2canvas'),
+      ]);
+
+      const { width, height } = paper.dimensions;
+      const scale = adjustments.scale ?? 1;
+
+      // Tạo HTML để render nhãn thành hình ảnh
+      const pdfHtmlContent = generatePdfOnlyContent(paper, productEntries, settings, scale);
+      
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position:absolute;left:-9999px;top:-9999px;border:none;';
+      iframe.style.width = `${width}mm`;
+      iframe.style.height = `${height * 10}mm`;
+      document.body.appendChild(iframe);
+      
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) throw new Error('Cannot access iframe document');
+      
+      iframeDoc.open();
+      iframeDoc.write(pdfHtmlContent);
+      iframeDoc.close();
+
+      // Đợi JsBarcode render xong
+      await new Promise<void>((resolve) => {
+        let attempts = 0;
+        const maxAttempts = 50;
+        const checkInterval = setInterval(() => {
+          attempts++;
+          const barcodes = iframeDoc.querySelectorAll('.barcode');
+          const allRendered = Array.from(barcodes).every(svg => {
+            const rect = svg.querySelector('rect');
+            return rect !== null;
+          });
+          
+          if (allRendered || attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            setTimeout(resolve, 500);
+          }
+        }, 100);
+      });
+
+      const labels = iframeDoc.querySelectorAll('.label');
+      const sections: any[] = [];
+
+      for (let i = 0; i < labels.length; i++) {
+        const label = labels[i] as HTMLElement;
+
+        // Capture nhãn thành hình ảnh
+        const canvas = await html2canvas(label, {
+          scale: 4,
+          backgroundColor: '#ffffff',
+          logging: false,
+          useCORS: true,
+          allowTaint: true,
+        });
+
+        // Convert canvas to blob
+        const blob = await new Promise<Blob>((resolve) => {
+          canvas.toBlob((b) => resolve(b!), 'image/png', 1.0);
+        });
+        const arrayBuffer = await blob.arrayBuffer();
+
+        sections.push({
+          properties: {
+            page: {
+              size: {
+                width: convertMillimetersToTwip(width),
+                height: convertMillimetersToTwip(height),
+                orientation: width > height ? PageOrientation.LANDSCAPE : PageOrientation.PORTRAIT,
+              },
+              margin: {
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+              },
+            },
+          },
+          children: [
+            new Paragraph({
+              children: [
+                new ImageRun({
+                  data: arrayBuffer,
+                  transformation: {
+                    width: convertMillimetersToTwip(width) / 15, // Convert twip to points approx
+                    height: convertMillimetersToTwip(height) / 15,
+                  },
+                  type: 'png',
+                }),
+              ],
+            }),
+          ],
+        });
+      }
+
+      const doc = new Document({ sections });
+      const buffer = await Packer.toBlob(doc);
+
+      const paperName = paper.name.replace(/[^a-zA-Z0-9]/g, '_');
+      saveAs(buffer, `Ma_Vach_${paperName}_${new Date().toISOString().slice(0, 10)}.docx`);
+      
+      document.body.removeChild(iframe);
+      toast.success(`Đã xuất ${labels.length} nhãn ra file Word (${width}x${height}mm)`);
+    } catch (error) {
+      console.error('Word export error:', error);
+      toast.error('Lỗi khi xuất Word. Vui lòng thử lại.');
     } finally {
       setIsExporting(false);
     }
@@ -1782,9 +1925,17 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             </div>
           )}
           
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-wrap justify-end gap-3">
             <Button variant="outline" onClick={() => setStep('paper')}>
               Quay lại
+            </Button>
+            <Button variant="outline" onClick={handleExportWord} disabled={isExporting}>
+              {isExporting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="mr-2 h-4 w-4" />
+              )}
+              Xuất Word
             </Button>
             <Button variant="outline" onClick={handleExportPDF} disabled={isExporting}>
               {isExporting ? (
@@ -1792,11 +1943,11 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
               ) : (
                 <FileDown className="mr-2 h-4 w-4" />
               )}
-              {isExporting ? 'Đang xuất...' : 'Xuất PDF'}
+              Xuất PDF
             </Button>
             <Button onClick={handlePrint} disabled={isExporting}>
               <Printer className="mr-2 h-4 w-4" />
-              In mã vạch ({totalLabels} nhãn)
+              In ({totalLabels} nhãn)
             </Button>
           </div>
         </div>
