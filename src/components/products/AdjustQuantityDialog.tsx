@@ -107,10 +107,14 @@ export function AdjustQuantityDialog({
         record_id: productId,
         description: `Điều chỉnh số lượng: ${productName} (${sku}) | ${oldQuantity} → ${newQuantity} (${quantityDiff > 0 ? '+' : ''}${quantityDiff}) | Lý do: ${reason.trim()}`,
         old_data: {
+          name: productName,
+          sku: sku,
           quantity: oldQuantity,
           total_import_cost: product.total_import_cost,
         },
         new_data: {
+          name: productName,
+          sku: sku,
           quantity: newQuantity,
           total_import_cost: newTotalCost,
           reason: reason.trim(),
