@@ -261,7 +261,7 @@ export default function AuthPage() {
                   <Input
                     id="store-id"
                     type="text"
-                    placeholder="vphone"
+                    placeholder="vkho"
                     value={storeId}
                     onChange={(e) => setStoreId(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                     className="rounded-r-none border-r-0"

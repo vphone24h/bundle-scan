@@ -181,7 +181,7 @@ export default function RegisterPage() {
                 <Input
                   id="subdomain"
                   name="subdomain"
-                  placeholder="vphone"
+                  placeholder="vkho"
                   value={formData.subdomain}
                   onChange={handleChange}
                   className="flex-1 rounded-r-none border-r-0"
