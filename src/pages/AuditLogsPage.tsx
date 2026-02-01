@@ -10,6 +10,9 @@ import { useAuditLogs, AuditLogFilters, useAuditLogUsers } from '@/hooks/useAudi
 import { usePermissions } from '@/hooks/usePermissions';
 import { useBranches } from '@/hooks/useBranches';
 import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ShieldCheck, ChevronDown, ChevronUp, Eye, History, AlertTriangle, UserCheck } from 'lucide-react';
 
 const defaultFilters: AuditLogFilters = {
   search: '',
@@ -25,6 +28,7 @@ export default function AuditLogsPage() {
   const { data: branches } = useBranches();
   const { data: users } = useAuditLogUsers();
   const [filters, setFilters] = useState<AuditLogFilters>(defaultFilters);
+  const [isFeatureDescOpen, setIsFeatureDescOpen] = useState(false);
 
   const { data: logs, isLoading } = useAuditLogs(filters);
 
@@ -104,6 +108,87 @@ export default function AuditLogsPage() {
       />
 
       <div className="p-4 sm:p-6 space-y-4">
+        {/* Feature Description */}
+        <Collapsible open={isFeatureDescOpen} onOpenChange={setIsFeatureDescOpen}>
+          <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
+                <CardTitle className="flex items-center justify-between text-base">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-primary" />
+                    <span>Mục đích tính năng: Chống thất thoát & Giám sát nhân sự</span>
+                  </div>
+                  {isFeatureDescOpen ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 pb-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-background border">
+                    <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900">
+                      <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">Giám sát minh bạch</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Ghi lại mọi thao tác: nhập hàng, xuất hàng, sửa số lượng, thu chi...
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-background border">
+                    <div className="p-2 rounded-full bg-orange-100 dark:bg-orange-900">
+                      <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">Phát hiện bất thường</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Đánh dấu đỏ các thao tác nhạy cảm: xóa phiếu, sửa sổ quỹ, điều chỉnh tồn kho
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-background border">
+                    <div className="p-2 rounded-full bg-green-100 dark:bg-green-900">
+                      <History className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">Truy vết chi tiết</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        So sánh "Trước vs Sau" mỗi thay đổi - ai sửa gì, lúc nào, giá trị cũ/mới
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-background border">
+                    <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900">
+                      <UserCheck className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">Quy trách nhiệm</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Mỗi thao tác gắn với nhân viên cụ thể - không thể phủ nhận hoặc xóa log
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                  <p className="text-xs text-amber-800 dark:text-amber-200">
+                    <strong>💡 Lưu ý:</strong> Lịch sử thao tác không thể bị xóa hoặc chỉnh sửa. 
+                    Mọi hành động đều được lưu vĩnh viễn để đảm bảo tính minh bạch và ngăn ngừa gian lận.
+                  </p>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
         {/* Filters */}
         <AuditLogFiltersComponent 
           filters={filters} 
