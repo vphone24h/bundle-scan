@@ -107,7 +107,7 @@ export default function PublicLandingPage() {
           <div className="mx-auto max-w-4xl text-center">
             <Badge variant="secondary" className="mb-4 gap-1">
               <Zap className="h-3 w-3" />
-              Dùng thử miễn phí 30 ngày
+              Dùng thử miễn phí
             </Badge>
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl">
               Nền tảng quản lý kho
@@ -210,7 +210,7 @@ export default function PublicLandingPage() {
                     </div>
                     <div>
                       <p className="font-semibold text-foreground">Dùng thử miễn phí</p>
-                      <p className="text-sm text-muted-foreground">30 ngày đầy đủ tính năng</p>
+                      <p className="text-sm text-muted-foreground">Đầy đủ tính năng</p>
                     </div>
                   </div>
                   <ul className="space-y-3 mb-6">
@@ -251,7 +251,7 @@ export default function PublicLandingPage() {
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <Button size="lg" variant="secondary" className="gap-2" onClick={() => navigate('/register')}>
-                  Dùng thử miễn phí 30 ngày
+                  Dùng thử miễn phí
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
