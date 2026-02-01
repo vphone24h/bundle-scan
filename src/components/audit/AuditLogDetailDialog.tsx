@@ -33,6 +33,7 @@ const FIELD_LABELS: Record<string, string> = {
   note: 'Ghi chú',
   description: 'Mô tả',
   category: 'Danh mục',
+  category_id: 'Danh mục',
   type: 'Loại',
   payment_source: 'Nguồn tiền',
   user_role: 'Vai trò',
@@ -42,8 +43,8 @@ const FIELD_LABELS: Record<string, string> = {
   email: 'Email',
   product_name: 'Tên sản phẩm',
   customer_id: 'ID Khách hàng',
-  supplier_id: 'ID NCC',
-  branch_id: 'ID Chi nhánh',
+  supplier_id: 'Nhà cung cấp',
+  branch_id: 'Chi nhánh',
   created_at: 'Ngày tạo',
   updated_at: 'Ngày cập nhật',
   import_date: 'Ngày nhập',
@@ -52,6 +53,15 @@ const FIELD_LABELS: Record<string, string> = {
   transaction_date: 'Ngày giao dịch',
   balance_before: 'Số dư trước xóa',
   balance_after: 'Số dư sau xóa',
+  warranty: 'Bảo hành',
+  quantity: 'Số lượng',
+  old_quantity: 'SL cũ',
+  new_quantity: 'SL mới',
+  adjusted_quantity: 'SL điều chỉnh',
+  reason: 'Lý do',
+  supplier_name: 'Nhà cung cấp',
+  product_id: 'ID Sản phẩm',
+  tenant_id: 'ID Cửa hàng',
 };
 
 // Status translations
@@ -122,9 +132,14 @@ export function AuditLogDetailDialog({
   const actionInfo = ACTION_LABELS[log.action_type] || { label: log.action_type, color: 'bg-gray-500' };
   const userRole = log.user_id ? roleMap.get(log.user_id) : null;
 
+  // Check if this is an update-type action
+  const isUpdateAction = ['update', 'UPDATE', 'ADJUST_QUANTITY', 'RESTORE_PRODUCT_METADATA'].includes(log.action_type);
+  const isCreateAction = ['create', 'CREATE'].includes(log.action_type);
+  const isDeleteAction = ['delete', 'DELETE'].includes(log.action_type);
+
   // Get changes for update action
   const changes: { field: string; oldValue: unknown; newValue: unknown }[] = [];
-  if (log.action_type === 'update' && log.old_data && log.new_data) {
+  if (isUpdateAction && log.old_data && log.new_data) {
     const oldData = log.old_data as Record<string, unknown>;
     const newData = log.new_data as Record<string, unknown>;
     
@@ -137,7 +152,36 @@ export function AuditLogDetailDialog({
         });
       }
     }
+    
+    // Also check old_data keys that might not be in new_data
+    for (const key of Object.keys(oldData)) {
+      if (!(key in newData) && key !== 'updated_at' && key !== 'created_at') {
+        const alreadyAdded = changes.find(c => c.field === key);
+        if (!alreadyAdded) {
+          changes.push({
+            field: key,
+            oldValue: oldData[key],
+            newValue: newData[key],
+          });
+        }
+      }
+    }
   }
+
+  // Get action description based on action type
+  const getActionDescription = () => {
+    switch (log.action_type) {
+      case 'ADJUST_QUANTITY':
+        return 'Điều chỉnh số lượng sản phẩm trong kho';
+      case 'RESTORE_PRODUCT_METADATA':
+        return 'Phục hồi thông tin nhà cung cấp và ghi chú từ file Excel';
+      case 'UPDATE':
+      case 'update':
+        return 'Cập nhật thông tin';
+      default:
+        return log.description;
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -195,35 +239,41 @@ export function AuditLogDetailDialog({
             </div>
 
             {/* Description */}
-            {log.description && (
-              <div className="p-3 bg-muted/30 rounded-lg">
-                <span className="font-medium text-sm">Mô tả: </span>
-                <span className="text-sm">{log.description}</span>
-              </div>
-            )}
+            <div className="p-3 bg-muted/30 rounded-lg">
+              <span className="font-medium text-sm">Mô tả: </span>
+              <span className="text-sm">{getActionDescription()}</span>
+            </div>
 
-            {/* Changes for update */}
-            {log.action_type === 'update' && changes.length > 0 && (
+            {/* Changes for update-type actions */}
+            {isUpdateAction && changes.length > 0 && (
               <>
                 <Separator />
                 <div>
                   <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    Thay đổi
+                    Chi tiết thay đổi (Trước → Sau)
                   </h4>
                   <div className="space-y-2">
                     {changes.map(({ field, oldValue, newValue }) => (
-                      <div key={field} className="flex items-center gap-2 text-sm p-2 bg-muted/30 rounded">
-                        <span className="font-medium min-w-[120px]">
-                          {FIELD_LABELS[field] || field}:
-                        </span>
-                        <span className="text-muted-foreground line-through">
-                          {formatFieldValue(field, oldValue)}
-                        </span>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium text-foreground">
-                          {formatFieldValue(field, newValue)}
-                        </span>
+                      <div key={field} className="p-3 bg-muted/30 rounded border-l-4 border-amber-500">
+                        <div className="font-medium text-sm mb-2">
+                          {FIELD_LABELS[field] || field}
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
+                          <div className="flex-1 p-2 bg-red-500/10 rounded">
+                            <span className="text-xs text-muted-foreground block mb-1">Trước:</span>
+                            <span className="line-through text-muted-foreground">
+                              {formatFieldValue(field, oldValue)}
+                            </span>
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground hidden sm:block" />
+                          <div className="flex-1 p-2 bg-green-500/10 rounded">
+                            <span className="text-xs text-muted-foreground block mb-1">Sau:</span>
+                            <span className="font-medium text-foreground">
+                              {formatFieldValue(field, newValue)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -231,8 +281,30 @@ export function AuditLogDetailDialog({
               </>
             )}
 
+            {/* Show data snapshot if no changes detected but has data */}
+            {isUpdateAction && changes.length === 0 && (log.new_data || log.old_data) && (
+              <>
+                <Separator />
+                <div>
+                  <h4 className="font-medium text-sm mb-3">Dữ liệu sau thao tác</h4>
+                  <div className="space-y-1">
+                    {Object.entries((log.new_data || log.old_data) as Record<string, unknown>)
+                      .filter(([key]) => !['created_at', 'updated_at', 'id', 'tenant_id'].includes(key))
+                      .map(([key, value]) => (
+                        <div key={key} className="flex gap-2 text-sm">
+                          <span className="font-medium min-w-[120px] text-muted-foreground">
+                            {FIELD_LABELS[key] || key}:
+                          </span>
+                          <span>{formatFieldValue(key, value)}</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* New data for create */}
-            {log.action_type === 'create' && log.new_data && (
+            {isCreateAction && log.new_data && (
               <>
                 <Separator />
                 <div>
@@ -254,7 +326,7 @@ export function AuditLogDetailDialog({
             )}
 
             {/* Old data for delete */}
-            {log.action_type === 'delete' && log.old_data && (
+            {isDeleteAction && log.old_data && (
               <>
                 <Separator />
                 <div>
