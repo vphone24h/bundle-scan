@@ -930,6 +930,12 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             font-family: Arial, sans-serif;
             background: white;
           }
+
+          :root {
+            /* Lề an toàn để tránh driver/giấy ăn lề làm “mất góc” */
+            --safe: 0.8mm;
+            --content-scale: 0.97;
+          }
           
           .label {
             width: ${width}mm;
@@ -937,18 +943,20 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             position: relative;
             background: white;
             overflow: hidden;
+            padding: var(--safe);
           }
           
           .label-content {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%) scale(var(--content-scale));
+            transform-origin: center;
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            width: 52mm;
+            width: calc(${width}mm - (var(--safe) * 2));
             gap: 1px;
           }
           
@@ -981,7 +989,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           }
           
           .barcode {
-            max-width: 45mm;
+            max-width: calc(${width}mm - (var(--safe) * 2) - 2mm);
             height: auto;
           }
           
