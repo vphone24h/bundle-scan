@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Download, Package, ClipboardList, FileUp } from 'lucide-react';
+import { Download, Package, ClipboardList, FileUp, AlertTriangle } from 'lucide-react';
 import { differenceInDays, format } from 'date-fns';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { usePagination } from '@/hooks/usePagination';
@@ -240,6 +240,13 @@ export default function InventoryPage() {
       />
 
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        {/* Reminder banner */}
+        <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <p className="text-sm font-medium">
+            Nhớ xuất file ra Excel mỗi ngày để lưu trữ dữ liệu!
+          </p>
+        </div>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="inventory" className="gap-2">
