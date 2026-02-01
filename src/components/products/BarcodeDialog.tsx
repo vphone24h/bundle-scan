@@ -256,6 +256,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
   };
 
   // Export to Word với kích thước đúng (55x30mm = ngang x cao, landscape)
+  // Sử dụng thư viện docx chuẩn - tạo document trực tiếp, KHÔNG dùng HTML-to-image
   const handleExportWord = async () => {
     if (!selectedPaper) return;
     
@@ -266,7 +267,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     toast.info('Đang tạo file Word...');
 
     try {
-      const [{ Document, Packer, Paragraph, ImageRun, PageOrientation, convertMillimetersToTwip }, { saveAs }, { default: html2canvas }] = await Promise.all([
+      const [{ Document, Packer, Paragraph, ImageRun, PageOrientation, convertMillimetersToTwip, AlignmentType }, { saveAs }, { default: html2canvas }] = await Promise.all([
         import('docx'),
         import('file-saver'),
         import('html2canvas'),
@@ -275,74 +276,168 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       const { width, height } = paper.dimensions;
       const scale = adjustments.scale ?? 1;
 
-      // Tạo HTML để render nhãn thành hình ảnh - tăng font size để rõ hơn
-      const wordHtmlContent = generateWordContent(paper, productEntries, settings, scale);
-      
-      const iframe = document.createElement('iframe');
-      iframe.style.cssText = 'position:absolute;left:-9999px;top:-9999px;border:none;';
-      // Sử dụng kích thước pixel lớn hơn để capture rõ
-      iframe.style.width = `${width * 4}mm`;
-      iframe.style.height = `${height * 10 * 4}mm`;
-      document.body.appendChild(iframe);
-      
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) throw new Error('Cannot access iframe document');
-      
-      iframeDoc.open();
-      iframeDoc.write(wordHtmlContent);
-      iframeDoc.close();
-
-      // Đợi tất cả nội dung render xong - bao gồm cả JsBarcode và fonts
-      await new Promise<void>((resolve) => {
-        let attempts = 0;
-        const maxAttempts = 80;
-        const checkInterval = setInterval(() => {
-          attempts++;
-          const barcodes = iframeDoc.querySelectorAll('.barcode');
-          const allRendered = barcodes.length > 0 && Array.from(barcodes).every(svg => {
-            const rect = svg.querySelector('rect');
-            return rect !== null;
-          });
-          
-          if (allRendered || attempts >= maxAttempts) {
-            clearInterval(checkInterval);
-            // Buffer thêm thời gian để fonts và CSS load hoàn chỉnh
-            setTimeout(resolve, 800);
-          }
-        }, 100);
+      // Expand theo số lượng
+      const allLabels: ProductPriceEntry[] = [];
+      productEntries.forEach(entry => {
+        for (let i = 0; i < entry.quantity; i++) {
+          allLabels.push(entry);
+        }
       });
 
-      const labels = iframeDoc.querySelectorAll('.label');
-      const sections: any[] = [];
-
-      // Kích thước trang Word: 55mm x 30mm (landscape - width > height)
-      const pageWidthMm = width; // 55mm
-      const pageHeightMm = height; // 30mm
-      const isLandscape = pageWidthMm > pageHeightMm;
-
-      for (let i = 0; i < labels.length; i++) {
-        const label = labels[i] as HTMLElement;
-
-        // Capture nhãn thành hình ảnh với scale cao
-        const canvas = await html2canvas(label, {
-          scale: 6, // Tăng scale để ảnh sắc nét hơn
+      // Tạo HTML đơn giản chỉ để render barcode thành ảnh
+      const barcodeImages: { [key: number]: ArrayBuffer } = {};
+      
+      // Render từng barcode riêng lẻ để capture
+      for (let i = 0; i < allLabels.length; i++) {
+        const entry = allLabels[i];
+        const rawValue = entry.imei ? `${entry.imei}:${entry.printPrice}` : (entry.sku || entry.productId);
+        const sanitizedValue = String(rawValue).replace(/[^\x20-\x7E]/g, '');
+        
+        // Tạo container tạm để render barcode
+        const container = document.createElement('div');
+        container.style.cssText = 'position:absolute;left:-9999px;top:-9999px;background:#fff;padding:4px;';
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.id = `temp-barcode-${i}`;
+        container.appendChild(svg);
+        document.body.appendChild(container);
+        
+        // Import JsBarcode và render
+        const JsBarcode = (await import('jsbarcode')).default;
+        JsBarcode(svg, sanitizedValue, {
+          format: 'CODE128',
+          width: 1.5,
+          height: 35,
+          displayValue: false,
+          margin: 0,
+        });
+        
+        // Đợi render xong
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Capture barcode thành ảnh
+        const canvas = await html2canvas(container, {
+          scale: 4,
           backgroundColor: '#ffffff',
           logging: false,
-          useCORS: true,
-          allowTaint: true,
         });
-
-        // Convert canvas to blob
+        
         const blob = await new Promise<Blob>((resolve) => {
           canvas.toBlob((b) => resolve(b!), 'image/png', 1.0);
         });
-        const arrayBuffer = await blob.arrayBuffer();
+        barcodeImages[i] = await blob.arrayBuffer();
+        
+        document.body.removeChild(container);
+      }
 
-        // Tính kích thước ảnh trong EMUs (English Metric Units) 
-        // 1 inch = 914400 EMUs, 1 mm = 914400/25.4 = 36000 EMUs
-        const emuPerMm = 36000;
-        const imageWidthEmu = Math.round(pageWidthMm * emuPerMm);
-        const imageHeightEmu = Math.round(pageHeightMm * emuPerMm);
+      // Kích thước trang Word: 55mm x 30mm
+      const pageWidthMm = width;
+      const pageHeightMm = height;
+      const isLandscape = pageWidthMm > pageHeightMm;
+      
+      // Tính kích thước pixel cho barcode (DPI 96)
+      const dpi = 96;
+      const mmToPixel = dpi / 25.4;
+      const barcodeWidthPx = Math.round((pageWidthMm - 6) * mmToPixel); // Trừ margin 3mm mỗi bên
+      const barcodeHeightPx = Math.round(10 * mmToPixel); // 10mm cao
+
+      const sections: any[] = [];
+
+      for (let i = 0; i < allLabels.length; i++) {
+        const entry = allLabels[i];
+        const children: any[] = [];
+
+        // Tên cửa hàng
+        if (settings.showStoreName && settings.storeName) {
+          const { TextRun } = await import('docx');
+          children.push(
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 0, after: 40 },
+              children: [
+                new TextRun({
+                  text: settings.storeName,
+                  bold: true,
+                  size: 20, // 10pt
+                  font: 'Arial',
+                }),
+              ],
+            })
+          );
+        }
+
+        // Tên sản phẩm
+        if (settings.showProductName) {
+          const { TextRun } = await import('docx');
+          children.push(
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 0, after: 40 },
+              children: [
+                new TextRun({
+                  text: entry.name,
+                  size: 14, // 7pt
+                  font: 'Arial',
+                }),
+              ],
+            })
+          );
+        }
+
+        // Barcode image
+        children.push(
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 20, after: 20 },
+            children: [
+              new ImageRun({
+                data: barcodeImages[i],
+                transformation: {
+                  width: barcodeWidthPx,
+                  height: barcodeHeightPx,
+                },
+                type: 'png',
+              }),
+            ],
+          })
+        );
+
+        // Mã IMEI/SKU
+        if (entry.imei) {
+          const { TextRun } = await import('docx');
+          children.push(
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 0, after: 20 },
+              children: [
+                new TextRun({
+                  text: entry.imei,
+                  size: 12, // 6pt
+                  font: 'Courier New',
+                }),
+              ],
+            })
+          );
+        }
+
+        // Giá
+        if (settings.showPrice) {
+          const { TextRun } = await import('docx');
+          const priceText = `${formatNumberWithSpaces(entry.printPrice)}${settings.priceWithVND ? ' VND' : ''}`;
+          children.push(
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 0, after: 0 },
+              children: [
+                new TextRun({
+                  text: priceText,
+                  bold: true,
+                  size: 22, // 11pt
+                  font: 'Arial',
+                }),
+              ],
+            })
+          );
+        }
 
         sections.push({
           properties: {
@@ -353,28 +448,14 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
                 orientation: isLandscape ? PageOrientation.LANDSCAPE : PageOrientation.PORTRAIT,
               },
               margin: {
-                top: 0,
-                right: 0,
-                bottom: 0,
-                left: 0,
+                top: convertMillimetersToTwip(1),
+                right: convertMillimetersToTwip(1),
+                bottom: convertMillimetersToTwip(1),
+                left: convertMillimetersToTwip(1),
               },
             },
           },
-          children: [
-            new Paragraph({
-              spacing: { before: 0, after: 0 },
-              children: [
-                new ImageRun({
-                  data: arrayBuffer,
-                  transformation: {
-                    width: imageWidthEmu,
-                    height: imageHeightEmu,
-                  },
-                  type: 'png',
-                }),
-              ],
-            }),
-          ],
+          children,
         });
       }
 
@@ -384,8 +465,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       const paperName = paper.name.replace(/[^a-zA-Z0-9]/g, '_');
       saveAs(buffer, `Ma_Vach_${paperName}_${new Date().toISOString().slice(0, 10)}.docx`);
       
-      document.body.removeChild(iframe);
-      toast.success(`Đã xuất ${labels.length} nhãn ra file Word (${pageWidthMm}x${pageHeightMm}mm)`);
+      toast.success(`Đã xuất ${allLabels.length} nhãn ra file Word (${pageWidthMm}x${pageHeightMm}mm)`);
     } catch (error) {
       console.error('Word export error:', error);
       toast.error('Lỗi khi xuất Word. Vui lòng thử lại.');
