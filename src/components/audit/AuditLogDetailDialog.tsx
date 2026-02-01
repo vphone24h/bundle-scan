@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AuditLog, ACTION_LABELS, TABLE_LABELS } from '@/types/auditLog';
+import { ProductIdentityCard } from './ProductIdentityCard';
 
 interface AuditLogDetailDialogProps {
   log: AuditLog | null;
@@ -195,9 +196,10 @@ export function AuditLogDetailDialog({
   // Show product info for product-related tables AND actions
   const isProductRelated = log.table_name === 'products' || 
     ['ADJUST_QUANTITY', 'RESTORE_PRODUCT_METADATA', 'DELETE_PRODUCT'].includes(log.action_type);
-  
-  // Only show product info header if name/imei didn't change (to avoid confusion)
-  const productInfo = isProductRelated && !hasNameOrImeiChange ? getProductInfo() : null;
+
+  // Always show product identity card for product-related logs.
+  // If name/sku/imei changed, show a BEFORE/AFTER identity panel at the top.
+  const productInfo = isProductRelated ? getProductInfo() : null;
 
   // Get action description based on action type
   const getActionDescription = () => {
@@ -276,33 +278,13 @@ export function AuditLogDetailDialog({
             </div>
 
             {/* Product Info - Show which product was affected */}
-            {productInfo && (
-              <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
-                <h4 className="font-medium text-sm mb-2 flex items-center gap-2 text-primary">
-                  <FileText className="h-4 w-4" />
-                  Sản phẩm được thao tác
-                </h4>
-                <div className="space-y-1 text-sm">
-                  {productInfo.productName && (
-                    <div className="flex gap-2">
-                      <span className="text-muted-foreground min-w-[60px]">Tên:</span>
-                      <span className="font-medium">{String(productInfo.productName)}</span>
-                    </div>
-                  )}
-                  {productInfo.sku && (
-                    <div className="flex gap-2">
-                      <span className="text-muted-foreground min-w-[60px]">SKU:</span>
-                      <span className="font-mono text-xs bg-muted px-1 rounded">{String(productInfo.sku)}</span>
-                    </div>
-                  )}
-                  {productInfo.imei && (
-                    <div className="flex gap-2">
-                      <span className="text-muted-foreground min-w-[60px]">IMEI:</span>
-                      <span className="font-mono text-xs bg-muted px-1 rounded">{String(productInfo.imei)}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+            {isProductRelated && (
+              <ProductIdentityCard
+                recordId={log.record_id}
+                oldData={(log.old_data as Record<string, unknown> | null) ?? null}
+                newData={(log.new_data as Record<string, unknown> | null) ?? null}
+                showBeforeAfter={hasNameOrImeiChange}
+              />
             )}
 
             {/* Changes for update-type actions */}
