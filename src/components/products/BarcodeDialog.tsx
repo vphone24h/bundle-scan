@@ -394,7 +394,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     }
   };
 
-  // Tạo HTML riêng cho Word - với font size lớn hơn để đảm bảo rõ ràng
+  // Tạo HTML riêng cho Word - KHÔNG dùng flex/absolute, chỉ dùng block/table layout
+  // Để PDF/Word engine render đúng tất cả nội dung
   const generateWordContent = (
     paper: PaperTemplate,
     entries: ProductPriceEntry[],
@@ -419,38 +420,63 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const baseBarcodeWidth = 0.8;
     const barcodeHeight = Math.round(baseBarcodeHeight * scale);
     const barcodeWidth = baseBarcodeWidth * scale;
+    
+    // Font sizes cho Word (pt) - tăng lên để rõ hơn
+    const fontScale = scale;
+    const storeNameSize = Math.round(10 * fontScale);
+    const productNameSize = Math.round(8 * fontScale);
+    const customDescSize = Math.round(7 * fontScale);
+    const codeTextSize = Math.round(6 * fontScale);
+    const priceSize = Math.round(11 * fontScale);
 
     const labelHTML = allLabels.map((entry, idx) => {
       if (isJewelryLabel) {
         return `
           <div class="label">
-            <div class="label-content-wrapper">
-              <div class="codes-container-inline">
-                <svg class="barcode" id="barcode-${idx}"></svg>
-              </div>
-              ${printSettings.showPrice ? 
-                `<div class="price-inline">${formatNumberWithSpaces(entry.printPrice)}</div>` : ''}
-            </div>
+            <table class="label-table">
+              <tr>
+                <td class="cell-center">
+                  <svg class="barcode" id="barcode-${idx}"></svg>
+                </td>
+              </tr>
+              ${printSettings.showPrice ? `
+              <tr>
+                <td class="cell-center price">${formatNumberWithSpaces(entry.printPrice)}</td>
+              </tr>` : ''}
+            </table>
           </div>
         `;
       }
       
       return `
         <div class="label">
-          <div class="label-content-wrapper">
-            ${printSettings.showStoreName && printSettings.storeName ? 
-              `<div class="store-name">${printSettings.storeName}</div>` : ''}
-            ${printSettings.showProductName ? 
-              `<div class="product-name">${entry.name}</div>` : ''}
-            ${printSettings.showCustomDescription && printSettings.customDescription ? 
-              `<div class="custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
-            <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
-              <svg class="barcode" id="barcode-${idx}"></svg>
-            </div>
-            ${entry.imei ? `<div class="code-text">${entry.imei}</div>` : ''}
-            ${printSettings.showPrice ? 
-              `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
-          </div>
+          <table class="label-table">
+            ${printSettings.showStoreName && printSettings.storeName ? `
+            <tr>
+              <td class="cell-center store-name">${printSettings.storeName}</td>
+            </tr>` : ''}
+            ${printSettings.showProductName ? `
+            <tr>
+              <td class="cell-center product-name">${entry.name}</td>
+            </tr>` : ''}
+            ${printSettings.showCustomDescription && printSettings.customDescription ? `
+            <tr>
+              <td class="cell-center custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</td>
+            </tr>` : ''}
+            <tr>
+              <td class="cell-center barcode-cell">
+                <svg class="barcode" id="barcode-${idx}"></svg>
+              </td>
+            </tr>
+            ${entry.imei ? `
+            <tr>
+              <td class="cell-center code-text">${entry.imei}</td>
+            </tr>` : ''}
+            ${printSettings.showPrice ? `
+            <tr>
+              <td class="cell-center price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</td>
+            </tr>` : ''}
+          </table>
         </div>
       `;
     }).join('');
@@ -469,8 +495,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       `;
     }).join('\n');
 
-    // CSS với font size lớn hơn cho Word
-    const fontScale = 1.5; // Tăng 1.5 lần so với PDF
+    // CSS với TABLE layout đơn giản - KHÔNG dùng flex/absolute/position
     return `
       <!DOCTYPE html>
       <html>
@@ -479,10 +504,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         <title>Word Export</title>
         <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
         <style>
-          * { margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
           html, body {
-            margin: 0 !important;
-            padding: 0 !important;
+            margin: 0;
+            padding: 0;
             font-family: Arial, sans-serif;
             background: white;
           }
@@ -490,73 +515,64 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           .label {
             width: ${width}mm;
             height: ${height}mm;
-            position: relative;
             background: white;
-            overflow: hidden;
             page-break-after: always;
+            page-break-inside: avoid;
           }
           
-          .label-content-wrapper {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(${scale});
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+          .label-table {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+          }
+          
+          .cell-center {
             text-align: center;
-            gap: 2px;
-            width: ${width - 2}mm;
+            vertical-align: middle;
+            padding: 0.5mm;
           }
           
           .store-name {
-            font-size: ${Math.round(9 * scale * fontScale)}px;
+            font-size: ${storeNameSize}pt;
             font-weight: bold;
             color: #000;
-            line-height: 1.1;
-            max-width: 100%;
-            overflow: visible;
-            white-space: nowrap;
+            line-height: 1.2;
           }
           
           .product-name {
-            font-size: ${Math.round(8 * scale * fontScale)}px;
+            font-size: ${productNameSize}pt;
             color: #000;
-            line-height: 1.1;
-            word-break: break-word;
-            max-width: 100%;
-            overflow: visible;
-            white-space: nowrap;
+            line-height: 1.2;
           }
           
           .custom-description {
-            font-size: ${Math.round(7 * scale * fontScale)}px;
+            font-size: ${customDescSize}pt;
             color: #000;
-            line-height: 1.1;
-            white-space: pre-wrap;
+            line-height: 1.2;
           }
           
-          .codes-container, .codes-container-inline {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 2px 0 !important;
+          .barcode-cell {
+            padding: 1mm 0;
           }
           
-          .barcode { display: block; }
+          .barcode { 
+            display: block;
+            margin: 0 auto;
+          }
           
           .code-text {
-            font-size: ${Math.round(6 * scale * fontScale)}px;
+            font-size: ${codeTextSize}pt;
             color: #333;
-            line-height: 1.1;
+            font-family: monospace;
+            line-height: 1.2;
           }
           
-          .price, .price-inline {
-            font-size: ${Math.round(10 * scale * fontScale)}px;
+          .price {
+            font-size: ${priceSize}pt;
             font-weight: bold;
             color: #000;
-            line-height: 1.1;
+            line-height: 1.2;
           }
         </style>
       </head>
@@ -1114,7 +1130,8 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     `;
   };
 
-  // Tạo HTML riêng cho PDF - ĐỒNG BỘ 100% với template in trực tiếp
+  // Tạo HTML riêng cho PDF - KHÔNG dùng flex/absolute, chỉ dùng block/table layout
+  // Để PDF engine (html2canvas) render đúng tất cả nội dung
   const generatePdfOnlyContent = (
     paper: PaperTemplate,
     entries: ProductPriceEntry[],
@@ -1134,43 +1151,67 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     const isSmallLabel = height <= 22;
     const isJewelryLabel = height <= 10;
     
-    // Giảm chiều cao barcode để không che tên sản phẩm - ĐỒNG BỘ với print
+    // Barcode sizes
     const baseBarcodeHeight = isJewelryLabel ? 10 : isSmallLabel ? 12 : 14;
     const baseBarcodeWidth = isJewelryLabel ? 0.5 : 0.5;
     const barcodeHeight = Math.round(baseBarcodeHeight * scale);
     const barcodeWidth = baseBarcodeWidth * scale;
+    
+    // Font sizes (px) - scale theo yêu cầu
+    const storeNameSize = Math.round(7 * scale);
+    const productNameSize = Math.round(6 * scale);
+    const customDescSize = Math.round(6 * scale);
+    const codeTextSize = Math.round(5 * scale);
+    const priceSize = Math.round(8 * scale);
 
     const labelHTML = allLabels.map((entry, idx) => {
       if (isJewelryLabel) {
         return `
           <div class="label">
-            <div class="label-content-wrapper">
-              <div class="codes-container-inline">
-                <svg class="barcode" id="barcode-${idx}"></svg>
-              </div>
-              ${printSettings.showPrice ? 
-                `<div class="price-inline">${formatNumberWithSpaces(entry.printPrice)}</div>` : ''}
-            </div>
+            <table class="label-table">
+              <tr>
+                <td class="cell-center">
+                  <svg class="barcode" id="barcode-${idx}"></svg>
+                </td>
+              </tr>
+              ${printSettings.showPrice ? `
+              <tr>
+                <td class="cell-center price">${formatNumberWithSpaces(entry.printPrice)}</td>
+              </tr>` : ''}
+            </table>
           </div>
         `;
       }
       
       return `
         <div class="label">
-          <div class="label-content-wrapper">
-            ${printSettings.showStoreName && printSettings.storeName ? 
-              `<div class="store-name">${printSettings.storeName}</div>` : ''}
-            ${printSettings.showProductName ? 
-              `<div class="product-name">${entry.name}</div>` : ''}
-            ${printSettings.showCustomDescription && printSettings.customDescription ? 
-              `<div class="custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</div>` : ''}
-            <div class="codes-container ${isSmallLabel ? 'codes-small' : ''}">
-              <svg class="barcode" id="barcode-${idx}"></svg>
-            </div>
-            ${entry.imei ? `<div class="code-text">${entry.imei}</div>` : ''}
-            ${printSettings.showPrice ? 
-              `<div class="price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</div>` : ''}
-          </div>
+          <table class="label-table">
+            ${printSettings.showStoreName && printSettings.storeName ? `
+            <tr>
+              <td class="cell-center store-name">${printSettings.storeName}</td>
+            </tr>` : ''}
+            ${printSettings.showProductName ? `
+            <tr>
+              <td class="cell-center product-name">${entry.name}</td>
+            </tr>` : ''}
+            ${printSettings.showCustomDescription && printSettings.customDescription ? `
+            <tr>
+              <td class="cell-center custom-description">${printSettings.customDescription.replace(/\n/g, '<br/>')}</td>
+            </tr>` : ''}
+            <tr>
+              <td class="cell-center barcode-cell">
+                <svg class="barcode" id="barcode-${idx}"></svg>
+              </td>
+            </tr>
+            ${entry.imei ? `
+            <tr>
+              <td class="cell-center code-text">${entry.imei}</td>
+            </tr>` : ''}
+            ${printSettings.showPrice ? `
+            <tr>
+              <td class="cell-center price">${formatNumberWithSpaces(entry.printPrice)}${printSettings.priceWithVND ? ' VND' : ''}</td>
+            </tr>` : ''}
+          </table>
         </div>
       `;
     }).join('');
@@ -1189,7 +1230,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       `;
     }).join('\n');
 
-    // CSS ĐỒNG BỘ với template in - giữ nguyên tỷ lệ, không xoay
+    // CSS với TABLE layout đơn giản - KHÔNG dùng flex/absolute/position
     return `
       <!DOCTYPE html>
       <html>
@@ -1198,10 +1239,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         <title>PDF Export</title>
         <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
         <style>
-          * { margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
           html, body {
-            margin: 0 !important;
-            padding: 0 !important;
+            margin: 0;
+            padding: 0;
             font-family: Arial, sans-serif;
             background: white;
           }
@@ -1209,82 +1250,63 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           .label {
             width: ${width}mm;
             height: ${height}mm;
-            position: relative;
             background: white;
-            overflow: hidden;
             page-break-after: always;
+            page-break-inside: avoid;
           }
           
-          .label-content-wrapper {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(${scale});
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+          .label-table {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+          }
+          
+          .cell-center {
             text-align: center;
-            gap: 1px;
-            width: ${width - 2}mm;
+            vertical-align: middle;
+            padding: 0.3mm;
           }
           
           .store-name {
-            font-size: ${Math.round(7 * scale)}px;
+            font-size: ${storeNameSize}px;
             font-weight: bold;
             color: #000;
-            line-height: 1;
-            max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            flex-shrink: 0;
+            line-height: 1.1;
           }
           
           .product-name {
-            font-size: ${Math.round(6 * scale)}px;
+            font-size: ${productNameSize}px;
             color: #000;
-            line-height: 1;
-            word-break: break-word;
-            max-width: 100%;
-            max-height: 1.2em;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            flex-shrink: 0;
+            line-height: 1.1;
           }
           
           .custom-description {
-            font-size: ${Math.round(6 * scale)}px;
+            font-size: ${customDescSize}px;
             color: #000;
-            line-height: 1;
-            white-space: pre-wrap;
-            flex-shrink: 0;
+            line-height: 1.1;
           }
           
-          .codes-container, .codes-container-inline {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 1px 0 !important;
-            flex-shrink: 0;
+          .barcode-cell {
+            padding: 0.5mm 0;
           }
           
-          .barcode { display: block; }
+          .barcode { 
+            display: block;
+            margin: 0 auto;
+          }
           
           .code-text {
-            font-size: ${Math.round(5 * scale)}px;
+            font-size: ${codeTextSize}px;
             color: #333;
-            line-height: 1;
-            flex-shrink: 0;
+            line-height: 1.1;
           }
           
-          .price, .price-inline {
-            font-size: ${Math.round(8 * scale)}px;
+          .price {
+            font-size: ${priceSize}px;
             font-weight: bold;
             color: #000;
-            line-height: 1;
-            flex-shrink: 0;
+            line-height: 1.1;
           }
         </style>
       </head>
