@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2, Settings2 } from 'lucide-react';
+import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2, Settings2, AlertTriangle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
@@ -324,6 +324,14 @@ export default function ImportHistoryPage() {
       />
 
       <div className="p-6 lg:p-8 space-y-4">
+        {/* Reminder banner */}
+        <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <p className="text-sm font-medium">
+            Nhớ xuất file ra Excel mỗi ngày để lưu trữ dữ liệu!
+          </p>
+        </div>
+
         {/* Filters */}
         <Card>
           <CardContent className="pt-6">
