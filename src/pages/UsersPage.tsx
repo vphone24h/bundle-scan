@@ -14,7 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Shield, Edit2, UserPlus } from 'lucide-react';
+import { Shield, Edit2, UserPlus, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
 import { EditUserDialog } from '@/components/users/EditUserDialog';
@@ -54,6 +55,64 @@ const roleColors: Record<UserRole, string> = {
   cashier: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
 };
 
+const roleDescriptions: Record<UserRole, { title: string; permissions: string[] }> = {
+  super_admin: {
+    title: 'Quyền cao nhất - Quản trị toàn bộ hệ thống',
+    permissions: [
+      '✅ Xem tất cả chi nhánh',
+      '✅ Tạo/sửa/xóa tài khoản nhân viên',
+      '✅ Quản lý chi nhánh (tạo/sửa/xóa)',
+      '✅ Nhập hàng, xuất hàng',
+      '✅ Xem báo cáo, sổ quỹ, giá nhập',
+      '✅ Xem lịch sử thao tác (Audit Log)',
+      '✅ Quản lý sản phẩm, danh mục, NCC, khách hàng',
+      '✅ Điều chỉnh số lượng tồn kho',
+      '✅ Xóa sản phẩm có IMEI',
+    ],
+  },
+  branch_admin: {
+    title: 'Quản lý một chi nhánh được gán',
+    permissions: [
+      '✅ Quản lý nhân viên trong chi nhánh',
+      '✅ Nhập hàng, xuất hàng',
+      '✅ Xem báo cáo, sổ quỹ chi nhánh',
+      '✅ Xem giá nhập, lịch sử thao tác',
+      '✅ Quản lý sản phẩm, danh mục, NCC, khách hàng',
+      '❌ Không xem chi nhánh khác',
+      '❌ Không tạo tài khoản mới',
+      '❌ Không điều chỉnh số lượng tồn kho',
+      '❌ Không xóa sản phẩm có IMEI',
+    ],
+  },
+  staff: {
+    title: 'Nhân viên bán hàng / kỹ thuật',
+    permissions: [
+      '✅ Xem sản phẩm, tồn kho chi nhánh',
+      '✅ Xuất hàng (bán hàng)',
+      '✅ Thêm khách hàng khi bán',
+      '❌ Không nhập hàng',
+      '❌ Không xem báo cáo, sổ quỹ',
+      '❌ Không xem giá nhập',
+      '❌ Không quản lý sản phẩm, danh mục',
+      '❌ Không xem lịch sử thao tác',
+    ],
+  },
+  cashier: {
+    title: 'Thu ngân - Phụ trách tiền & bán hàng tại quầy',
+    permissions: [
+      '✅ Xuất hàng (bán hàng)',
+      '✅ Xem sổ quỹ, báo cáo bán hàng',
+      '✅ Thu chi tại quầy',
+      '✅ Thêm khách hàng khi bán',
+      '✅ Xem sản phẩm, tồn kho',
+      '❌ Không nhập hàng',
+      '❌ Không xem giá nhập',
+      '❌ Không quản lý sản phẩm, danh mục, NCC',
+      '❌ Không xem lịch sử thao tác',
+    ],
+  },
+};
+
 export default function UsersPage() {
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
@@ -61,6 +120,7 @@ export default function UsersPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
+  const [isRoleDescOpen, setIsRoleDescOpen] = useState(false);
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['users-with-roles', currentTenant?.id, permissions?.role, permissions?.branchId],
@@ -155,6 +215,56 @@ export default function UsersPage() {
         title="Quản lý người dùng" 
         description="Phân quyền và quản lý tài khoản nhân viên"
       />
+
+      {/* Role Description Section */}
+      <Collapsible open={isRoleDescOpen} onOpenChange={setIsRoleDescOpen} className="mb-4">
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardTitle className="flex items-center justify-between text-base">
+                <div className="flex items-center gap-2">
+                  <Info className="h-5 w-5 text-primary" />
+                  <span>Mô tả chức năng từng loại tài khoản</span>
+                </div>
+                {isRoleDescOpen ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </CardTitle>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              <div className="grid gap-4 md:grid-cols-2">
+                {(Object.entries(roleDescriptions) as [UserRole, typeof roleDescriptions[UserRole]][]).map(([role, desc]) => (
+                  <div 
+                    key={role} 
+                    className="border rounded-lg p-4 bg-card hover:shadow-sm transition-shadow"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className={roleColors[role]}>
+                        {roleLabels[role]}
+                      </Badge>
+                    </div>
+                    <p className="text-sm font-medium text-foreground mb-3">{desc.title}</p>
+                    <ul className="text-xs space-y-1">
+                      {desc.permissions.map((perm, idx) => (
+                        <li 
+                          key={idx} 
+                          className={perm.startsWith('✅') ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}
+                        >
+                          {perm}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
       <Card>
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
