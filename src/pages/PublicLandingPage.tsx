@@ -39,9 +39,9 @@ export default function PublicLandingPage() {
       description: 'Phân tích lợi nhuận chi tiết từng sản phẩm, từng giao dịch',
     },
     {
-      icon: Receipt,
-      title: 'Xuất hóa đơn điện tử',
-      description: 'Tích hợp xuất hóa đơn VAT tự động theo quy định',
+      icon: Shield,
+      title: 'An toàn & Bảo mật',
+      description: 'Nền tảng an toàn, bảo mật tuyệt đối cho dữ liệu của bạn',
     },
     {
       icon: Users,
@@ -71,7 +71,7 @@ export default function PublicLandingPage() {
     'Dễ dàng sử dụng, không cần đào tạo phức tạp',
     'Báo cáo lợi nhuận chi tiết, chính xác từng đồng',
     'Quản lý tồn kho theo IMEI/Serial Number',
-    'Tích hợp hóa đơn điện tử VAT',
+    'Nền tảng an toàn, bảo mật tuyệt đối',
     'Hỗ trợ nhiều chi nhánh trên cùng tài khoản',
     'Ứng dụng PWA - cài đặt như app native',
     'Sao lưu dữ liệu tự động, an toàn tuyệt đối',
