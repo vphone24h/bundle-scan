@@ -443,15 +443,19 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           properties: {
             page: {
               size: {
-                width: convertMillimetersToTwip(pageWidthMm),
-                height: convertMillimetersToTwip(pageHeightMm),
+                // Word/docx: để ra đúng khổ 55(w) x 30(h) khi LANDSCAPE,
+                // cần set size theo (height x width) + orientation LANDSCAPE.
+                // Ví dụ: 55x30 => set width=30, height=55, orientation=LANDSCAPE.
+                width: convertMillimetersToTwip(isLandscape ? pageHeightMm : pageWidthMm),
+                height: convertMillimetersToTwip(isLandscape ? pageWidthMm : pageHeightMm),
                 orientation: isLandscape ? PageOrientation.LANDSCAPE : PageOrientation.PORTRAIT,
               },
               margin: {
-                top: convertMillimetersToTwip(1),
-                right: convertMillimetersToTwip(1),
-                bottom: convertMillimetersToTwip(1),
-                left: convertMillimetersToTwip(1),
+                // Yêu cầu: margin 0
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
               },
             },
           },
