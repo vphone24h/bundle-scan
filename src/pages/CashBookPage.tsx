@@ -62,6 +62,7 @@ import {
   CreditCard,
   Settings,
   BookOpen,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isToday } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -70,6 +71,7 @@ import { useBranches } from '@/hooks/useBranches';
 import { useCashBookGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency } from '@/lib/mockData';
 import { cn } from '@/lib/utils';
+import { TransferFundsDialog } from '@/components/cashbook/TransferFundsDialog';
 
 const defaultPaymentSourceLabels: Record<string, string> = {
   cash: 'Tiền mặt',
@@ -111,6 +113,7 @@ export default function CashBookPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAdjustBalanceDialog, setShowAdjustBalanceDialog] = useState(false);
   const [showAddSourceDialog, setShowAddSourceDialog] = useState(false);
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [editingEntry, setEditingEntry] = useState<CashBookEntry | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
   const [newSourceName, setNewSourceName] = useState('');
@@ -584,6 +587,10 @@ export default function CashBookPage() {
             <Button onClick={() => handleOpenAdd('expense')} className="bg-destructive hover:bg-destructive/90">
               <TrendingDown className="h-4 w-4 mr-2" />
               Phiếu chi
+            </Button>
+            <Button variant="secondary" onClick={() => setShowTransferDialog(true)}>
+              <ArrowLeftRight className="h-4 w-4 mr-2" />
+              Chuyển tiền
             </Button>
           </div>
         }
@@ -1467,6 +1474,17 @@ export default function CashBookPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Transfer Funds Dialog */}
+      <TransferFundsDialog
+        open={showTransferDialog}
+        onOpenChange={setShowTransferDialog}
+        paymentSources={allPaymentSources.map(s => ({ id: s.id, name: s.name }))}
+        balanceBySource={balanceBySource}
+        branches={branches}
+        viewMode={viewMode}
+        selectedBranchId={selectedBranchId}
+      />
     </MainLayout>
   );
 }
