@@ -151,6 +151,7 @@ export function AuditLogTable({ logs, isLoading, profileMap, roleMap, branchMap 
               <TableBody>
                 {logs.map((log) => {
                   const actionInfo = ACTION_LABELS[log.action_type] || { label: log.action_type, color: 'bg-gray-500' };
+                  const isCritical = actionInfo.critical === true;
                   const actionGroup = getActionGroup(log.table_name);
                   const groupInfo = ACTION_GROUP_LABELS[actionGroup];
                   const changeSummary = getChangeSummary(log);
@@ -159,13 +160,19 @@ export function AuditLogTable({ logs, isLoading, profileMap, roleMap, branchMap 
                   return (
                     <TableRow 
                       key={log.id} 
-                      className="group cursor-pointer hover:bg-muted/50 transition-colors"
+                      className={`group cursor-pointer transition-colors ${
+                        isCritical 
+                          ? 'bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50' 
+                          : 'hover:bg-muted/50'
+                      }`}
                       onClick={() => setSelectedLog(log)}
                     >
                       <TableCell>
                         <div className="flex items-center gap-1 text-xs sm:text-sm">
                           <Clock className="h-3 w-3 text-muted-foreground hidden sm:block" />
-                          <span>{format(new Date(log.created_at), 'dd/MM/yy HH:mm', { locale: vi })}</span>
+                          <span className={isCritical ? 'font-medium text-red-700 dark:text-red-400' : ''}>
+                            {format(new Date(log.created_at), 'dd/MM/yy HH:mm', { locale: vi })}
+                          </span>
                         </div>
                         {/* Mobile: Show user below time */}
                         <div className="sm:hidden text-xs text-muted-foreground mt-1">
@@ -176,7 +183,7 @@ export function AuditLogTable({ logs, isLoading, profileMap, roleMap, branchMap 
                         <div className="flex flex-col">
                           <div className="flex items-center gap-1.5">
                             <User className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-sm font-medium">
+                            <span className={`text-sm font-medium ${isCritical ? 'text-red-700 dark:text-red-400' : ''}`}>
                               {log.user_id ? profileMap.get(log.user_id) || 'N/A' : 'Hệ thống'}
                             </span>
                           </div>
@@ -202,8 +209,10 @@ export function AuditLogTable({ logs, isLoading, profileMap, roleMap, branchMap 
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
-                          <Badge className={`${actionInfo.color} text-white text-xs w-fit`}>
-                            {actionInfo.label}
+                          <Badge className={`${actionInfo.color} text-white text-xs w-fit ${
+                            isCritical ? 'ring-2 ring-red-300 dark:ring-red-700 animate-pulse' : ''
+                          }`}>
+                            {isCritical && '⚠️ '}{actionInfo.label}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
                             {log.table_name ? TABLE_LABELS[log.table_name] || log.table_name : '-'}

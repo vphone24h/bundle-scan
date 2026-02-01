@@ -65,11 +65,11 @@ export const ACTION_GROUPS: Record<ActionGroup, { label: string; icon: string; t
 // Loại thao tác
 export type ActionType = 'create' | 'update' | 'delete' | 'view' | 'login' | 'logout' | 'print' | 'export' | 'adjust';
 
-export const ACTION_LABELS: Record<string, { label: string; color: string }> = {
+export const ACTION_LABELS: Record<string, { label: string; color: string; critical?: boolean }> = {
   // Thao tác cơ bản
   create: { label: 'Tạo mới', color: 'bg-green-500' },
   update: { label: 'Cập nhật', color: 'bg-blue-500' },
-  delete: { label: 'Xóa', color: 'bg-red-500' },
+  delete: { label: 'Xóa', color: 'bg-red-500', critical: true },
   view: { label: 'Xem', color: 'bg-gray-500' },
   login: { label: 'Đăng nhập', color: 'bg-purple-500' },
   logout: { label: 'Đăng xuất', color: 'bg-orange-500' },
@@ -82,7 +82,7 @@ export const ACTION_LABELS: Record<string, { label: string; color: string }> = {
   RESTORE_PRODUCT_METADATA: { label: 'Phục hồi NCC', color: 'bg-teal-500' },
   UPDATE: { label: 'Cập nhật', color: 'bg-blue-500' },
   CREATE: { label: 'Tạo mới', color: 'bg-green-500' },
-  DELETE: { label: 'Xóa', color: 'bg-red-500' },
+  DELETE: { label: 'Xóa', color: 'bg-red-500', critical: true },
   
   // Thao tác nhập/xuất
   IMPORT: { label: 'Nhập hàng', color: 'bg-emerald-500' },
@@ -93,6 +93,18 @@ export const ACTION_LABELS: Record<string, { label: string; color: string }> = {
   // Thao tác kiểm kho
   STOCK_COUNT: { label: 'Kiểm kho', color: 'bg-cyan-500' },
   BALANCE: { label: 'Cân bằng kho', color: 'bg-amber-500' },
+  
+  // ========== THAO TÁC QUAN TRỌNG (CRITICAL) ==========
+  // Xóa phiếu nhập/xuất
+  DELETE_IMPORT: { label: 'Xóa phiếu nhập', color: 'bg-red-600', critical: true },
+  DELETE_EXPORT: { label: 'Xóa phiếu xuất', color: 'bg-red-600', critical: true },
+  DELETE_IMPORT_RECEIPT: { label: 'Xóa phiếu nhập', color: 'bg-red-600', critical: true },
+  DELETE_EXPORT_RECEIPT: { label: 'Xóa phiếu xuất', color: 'bg-red-600', critical: true },
+  
+  // Sổ quỹ - xóa và chỉnh sửa
+  DELETE_CASH_BOOK: { label: 'Xóa sổ quỹ', color: 'bg-red-600', critical: true },
+  UPDATE_CASH_BOOK: { label: 'Sửa sổ quỹ', color: 'bg-orange-600', critical: true },
+  EDIT_CASH_BOOK: { label: 'Sửa sổ quỹ', color: 'bg-orange-600', critical: true },
 };
 
 // Tên bảng dữ liệu
