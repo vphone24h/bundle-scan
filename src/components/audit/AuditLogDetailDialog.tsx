@@ -63,6 +63,9 @@ const FIELD_LABELS: Record<string, string> = {
   supplier_name: 'Nhà cung cấp',
   product_id: 'ID Sản phẩm',
   tenant_id: 'ID Cửa hàng',
+  total_import_cost: 'Tổng giá vốn',
+  quantity_change: 'Biến động số lượng',
+  quantity_diff: 'Chênh lệch số lượng',
 };
 
 // Status translations
