@@ -174,10 +174,13 @@ export function useTenantResolver() {
 
   useEffect(() => {
     // Skip if already resolved and cached for this hostname
-    if (cachedResult && cacheHostname === hostname) {
-      if (tenant.status === 'loading') {
-        setTenant(cachedResult);
-      }
+    if (cachedResult && cacheHostname === hostname && tenant.status !== 'loading') {
+      return;
+    }
+
+    // If cached result exists and matches hostname, use it immediately
+    if (cachedResult && cacheHostname === hostname && tenant.status === 'loading') {
+      setTenant(cachedResult);
       return;
     }
 
@@ -192,7 +195,7 @@ export function useTenantResolver() {
     return () => {
       cancelled = true;
     };
-  }, [hostname, tenant.status]);
+  }, [hostname]);
   
   return tenant;
 }
