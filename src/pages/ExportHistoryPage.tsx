@@ -127,7 +127,7 @@ export default function ExportHistoryPage() {
   };
 
   // Filter items
-  const filteredItems = items?.filter((item) => {
+  const filteredItemsRaw = items?.filter((item) => {
     const matchesSearch =
       item.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -138,13 +138,46 @@ export default function ExportHistoryPage() {
     return matchesSearch;
   }) || [];
 
+  // Group non-IMEI items by: product_name + branch + receipt_id + sale_price
+  const groupedItems = useMemo(() => {
+    const grouped: Map<string, ExportReceiptItemDetail & { quantity: number; groupedIds: string[] }> = new Map();
+    
+    filteredItemsRaw.forEach((item) => {
+      // Only group items without IMEI
+      if (!item.imei) {
+        const groupKey = `${item.product_name}|${item.export_receipts?.branch_id || ''}|${item.receipt_id}|${item.sale_price}`;
+        
+        if (grouped.has(groupKey)) {
+          const existing = grouped.get(groupKey)!;
+          existing.quantity += 1;
+          existing.groupedIds.push(item.id);
+        } else {
+          grouped.set(groupKey, {
+            ...item,
+            quantity: 1,
+            groupedIds: [item.id],
+          });
+        }
+      } else {
+        // IMEI products are not grouped, keep as individual rows
+        grouped.set(item.id, {
+          ...item,
+          quantity: 1,
+          groupedIds: [item.id],
+        });
+      }
+    });
+    
+    return Array.from(grouped.values());
+  }, [filteredItemsRaw]);
+
   // Pagination for receipts tab
   const receiptsPagination = usePagination(filteredReceipts || [], { 
     storageKey: 'export-receipts'
   });
 
-  // Pagination for items tab
-  const itemsPagination = usePagination(filteredItems, { 
+  // Pagination for items tab - use grouped items
+  const itemsPagination = usePagination(groupedItems, { 
     storageKey: 'export-items'
   });
 
@@ -447,7 +480,7 @@ export default function ExportHistoryPage() {
                 <div className="text-center py-8 text-muted-foreground">
                   Đang tải...
                 </div>
-              ) : filteredItems?.length === 0 ? (
+              ) : groupedItems?.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Không có sản phẩm nào
                 </div>
@@ -469,10 +502,13 @@ export default function ExportHistoryPage() {
                   </TableHeader>
                   <TableBody>
                     {itemsPagination.paginatedData.map((item) => {
-                      const quantity = (item as any).quantity || 1;
+                      const groupedItem = item as ExportReceiptItemDetail & { quantity: number; groupedIds: string[] };
+                      const quantity = groupedItem.quantity || 1;
                       const totalPrice = item.sale_price * quantity;
+                      const isGrouped = quantity > 1 && !item.imei;
+                      
                       return (
-                        <TableRow key={item.id}>
+                        <TableRow key={groupedItem.groupedIds?.join('-') || item.id}>
                           <TableCell>
                             <div className="font-medium">{item.product_name}</div>
                             <div className="text-xs text-muted-foreground">
@@ -484,22 +520,30 @@ export default function ExportHistoryPage() {
                               </div>
                             )}
                           </TableCell>
-                          <TableCell className="text-center">{quantity}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          {item.sale_price.toLocaleString('vi-VN')}đ
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {totalPrice.toLocaleString('vi-VN')}đ
-                        </TableCell>
-                        <TableCell>
-                          {(item as any).warranty || '-'}
-                        </TableCell>
-                        <TableCell>
-                          <div>{item.export_receipts?.customers?.name || '-'}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {item.export_receipts?.customers?.phone}
-                          </div>
-                        </TableCell>
+                          <TableCell className="text-center">
+                            {isGrouped ? (
+                              <Badge variant="secondary" className="font-medium">
+                                {quantity}
+                              </Badge>
+                            ) : (
+                              quantity
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {item.sale_price.toLocaleString('vi-VN')}đ
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {totalPrice.toLocaleString('vi-VN')}đ
+                          </TableCell>
+                          <TableCell>
+                            {(item as any).warranty || '-'}
+                          </TableCell>
+                          <TableCell>
+                            <div>{item.export_receipts?.customers?.name || '-'}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {item.export_receipts?.customers?.phone}
+                            </div>
+                          </TableCell>
                           <TableCell>
                             {item.export_receipts?.export_date ? 
                               format(new Date(item.export_receipts.export_date), 'dd/MM/yyyy', { locale: vi }) : '-'}
@@ -513,27 +557,29 @@ export default function ExportHistoryPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setEditItem(item)}
-                                className="h-7 w-7"
-                                title="Sửa thông tin"
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleReturn(item)}
-                                disabled={item.status === 'returned' || returnProduct.isPending}
-                                title="Trả hàng"
-                              >
-                                <RotateCcw className="h-4 w-4 mr-1" />
-                                Trả
-                              </Button>
-                            </div>
+                            {!isGrouped && (
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setEditItem(item)}
+                                  className="h-7 w-7"
+                                  title="Sửa thông tin"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleReturn(item)}
+                                  disabled={item.status === 'returned' || returnProduct.isPending}
+                                  title="Trả hàng"
+                                >
+                                  <RotateCcw className="h-4 w-4 mr-1" />
+                                  Trả
+                                </Button>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
                       );
@@ -541,7 +587,7 @@ export default function ExportHistoryPage() {
                   </TableBody>
                 </Table>
               )}
-              {filteredItems.length > 0 && (
+              {groupedItems.length > 0 && (
                 <TablePagination
                   currentPage={itemsPagination.currentPage}
                   totalPages={itemsPagination.totalPages}
