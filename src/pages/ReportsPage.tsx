@@ -112,9 +112,9 @@ function StatCard({
 
 export default function ReportsPage() {
   const today = format(new Date(), 'yyyy-MM-dd');
-  const firstDayOfMonth = format(startOfMonth(new Date()), 'yyyy-MM-dd');
 
-  const [startDate, setStartDate] = useState(firstDayOfMonth);
+  // Default to "Today" filter
+  const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
   const [branchId, setBranchId] = useState('_all_');
   const [categoryId, setCategoryId] = useState('_all_');
