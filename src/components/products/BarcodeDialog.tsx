@@ -16,7 +16,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Printer, ArrowLeft, Eye, Grid3X3, Barcode, DollarSign, Copy, Trash2, Plus, Minus, FileDown, Loader2, HelpCircle, ExternalLink, FileText, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RotateCcw } from 'lucide-react';
+import { Printer, ArrowLeft, Eye, Grid3X3, Barcode, DollarSign, Copy, Trash2, Plus, Minus, FileDown, Loader2, HelpCircle, ExternalLink, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useBarcodePrintGuideUrl } from '@/hooks/useAppConfig';
 import { cn } from '@/lib/utils';
@@ -104,11 +104,6 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     autoCompensateRotation: true,
   });
   const [isExporting, setIsExporting] = useState(false);
-  
-  // KiotViet preview dialog states
-  const [showKiotVietPreview, setShowKiotVietPreview] = useState(false);
-  const [kiotVietPreviewIndex, setKiotVietPreviewIndex] = useState(0);
-  const [kiotVietLabels, setKiotVietLabels] = useState<ProductPriceEntry[]>([]);
   
   // Lấy URL hướng dẫn in từ cấu hình admin
   const barcodePrintGuideUrl = useBarcodePrintGuideUrl();
@@ -738,7 +733,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     `;
   };
 
-  // Hàm mở preview dialog KiotViet
+  // In chuẩn KiotViet (1 lần in = in toàn bộ tem)
   const handlePrintKiotViet = () => {
     // Expand theo số lượng để biết tổng tem cần in
     const allLabels: ProductPriceEntry[] = [];
@@ -751,17 +746,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       return;
     }
 
-    // Lưu labels và mở preview dialog
-    setKiotVietLabels(allLabels);
-    setKiotVietPreviewIndex(0);
-    setShowKiotVietPreview(true);
-  };
-
-  // Hàm in tất cả tem KiotViet từ preview dialog (1 lệnh in, nhiều trang)
-  const handlePrintAllKiotViet = () => {
-    if (kiotVietLabels.length === 0) return;
-
-    const kiotVietHtml = generateKiotVietPrintContent(kiotVietLabels, settings);
+    const kiotVietHtml = generateKiotVietPrintContent(allLabels, settings);
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (printWindow) {
       printWindow.document.write(kiotVietHtml);
@@ -770,8 +755,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       setTimeout(() => {
         printWindow.print();
       }, 800);
-      toast.success(`Đang in ${kiotVietLabels.length} tem chuẩn KiotViet (55x30mm)`);
-      setShowKiotVietPreview(false);
+      toast.success(`Đang in ${allLabels.length} tem chuẩn KiotViet (55x30mm)`);
     } else {
       toast.error('Trình duyệt đang chặn popup in. Vui lòng cho phép popups.');
     }
@@ -2572,120 +2556,6 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
             </DialogTitle>
           </DialogHeader>
           {renderStep()}
-        </DialogContent>
-      </Dialog>
-
-      {/* KiotViet Preview Dialog */}
-      <Dialog open={showKiotVietPreview} onOpenChange={setShowKiotVietPreview}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Printer className="h-5 w-5" />
-              In tem mã
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            {/* Navigation Controls */}
-            <div className="flex items-center justify-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setKiotVietPreviewIndex(0)}
-                disabled={kiotVietPreviewIndex === 0}
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setKiotVietPreviewIndex(Math.max(0, kiotVietPreviewIndex - 1))}
-                disabled={kiotVietPreviewIndex === 0}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              
-              <div className="flex items-center gap-2 px-3 py-1.5 border rounded-md bg-muted/50 min-w-[80px] justify-center">
-                <Input
-                  type="number"
-                  min={1}
-                  max={kiotVietLabels.length}
-                  value={kiotVietPreviewIndex + 1}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value) - 1;
-                    if (val >= 0 && val < kiotVietLabels.length) {
-                      setKiotVietPreviewIndex(val);
-                    }
-                  }}
-                  className="w-12 h-7 text-center p-1 border-0 bg-transparent"
-                />
-                <span className="text-sm text-muted-foreground">/ {kiotVietLabels.length}</span>
-              </div>
-              
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setKiotVietPreviewIndex(Math.min(kiotVietLabels.length - 1, kiotVietPreviewIndex + 1))}
-                disabled={kiotVietPreviewIndex >= kiotVietLabels.length - 1}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setKiotVietPreviewIndex(kiotVietLabels.length - 1)}
-                disabled={kiotVietPreviewIndex >= kiotVietLabels.length - 1}
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Label Preview */}
-            {kiotVietLabels[kiotVietPreviewIndex] && (
-              <div className="flex justify-center">
-                <div 
-                  className="border-2 border-dashed border-primary/30 bg-white rounded-lg flex items-center justify-center"
-                  style={{
-                    width: '165px', // 55mm * 3
-                    height: '90px', // 30mm * 3
-                  }}
-                >
-                  <div className="flex flex-col items-center justify-center text-center p-2 gap-0.5">
-                    {settings.showStoreName && settings.storeName && (
-                      <div className="text-[10px] font-bold text-foreground">{settings.storeName}</div>
-                    )}
-                    {settings.showProductName && (
-                      <div className="text-[7px] text-foreground truncate max-w-[140px]">
-                        {kiotVietLabels[kiotVietPreviewIndex].name}
-                      </div>
-                    )}
-                    <div className="w-[100px] h-[28px] bg-muted/50 rounded-sm flex items-center justify-center border my-1">
-                      <span className="text-muted-foreground text-[8px] tracking-widest">|||||||||||||||||||</span>
-                    </div>
-                    <div className="text-[6px] text-muted-foreground font-mono">
-                      {kiotVietLabels[kiotVietPreviewIndex].imei || kiotVietLabels[kiotVietPreviewIndex].sku}
-                    </div>
-                    {settings.showPrice && (
-                      <div className="text-[11px] font-bold text-foreground">
-                        {formatNumberWithSpaces(kiotVietLabels[kiotVietPreviewIndex].printPrice)} VND
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Print Button */}
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setShowKiotVietPreview(false)}>
-                Đóng
-              </Button>
-              <Button onClick={handlePrintAllKiotViet}>
-                <Printer className="mr-2 h-4 w-4" />
-                In ({kiotVietLabels.length} tem)
-              </Button>
-            </div>
-          </div>
         </DialogContent>
       </Dialog>
     </>
