@@ -168,6 +168,24 @@ export function AuditLogDetailDialog({
     }
   }
 
+  // Extract product info from old_data or new_data for product-related actions
+  const getProductInfo = () => {
+    const data = (log.new_data || log.old_data) as Record<string, unknown> | null;
+    if (!data) return null;
+    
+    // Common product identifier fields
+    const productName = data.name || data.product_name;
+    const sku = data.sku;
+    const imei = data.imei;
+    
+    if (productName || sku || imei) {
+      return { productName, sku, imei };
+    }
+    return null;
+  };
+
+  const productInfo = log.table_name === 'products' ? getProductInfo() : null;
+
   // Get action description based on action type
   const getActionDescription = () => {
     switch (log.action_type) {
@@ -243,6 +261,36 @@ export function AuditLogDetailDialog({
               <span className="font-medium text-sm">Mô tả: </span>
               <span className="text-sm">{getActionDescription()}</span>
             </div>
+
+            {/* Product Info - Show which product was affected */}
+            {productInfo && (
+              <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                <h4 className="font-medium text-sm mb-2 flex items-center gap-2 text-primary">
+                  <FileText className="h-4 w-4" />
+                  Sản phẩm được thao tác
+                </h4>
+                <div className="space-y-1 text-sm">
+                  {productInfo.productName && (
+                    <div className="flex gap-2">
+                      <span className="text-muted-foreground min-w-[60px]">Tên:</span>
+                      <span className="font-medium">{String(productInfo.productName)}</span>
+                    </div>
+                  )}
+                  {productInfo.sku && (
+                    <div className="flex gap-2">
+                      <span className="text-muted-foreground min-w-[60px]">SKU:</span>
+                      <span className="font-mono text-xs bg-muted px-1 rounded">{String(productInfo.sku)}</span>
+                    </div>
+                  )}
+                  {productInfo.imei && (
+                    <div className="flex gap-2">
+                      <span className="text-muted-foreground min-w-[60px]">IMEI:</span>
+                      <span className="font-mono text-xs bg-muted px-1 rounded">{String(productInfo.imei)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Changes for update-type actions */}
             {isUpdateAction && changes.length > 0 && (
