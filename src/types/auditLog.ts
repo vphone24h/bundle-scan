@@ -66,6 +66,7 @@ export const ACTION_GROUPS: Record<ActionGroup, { label: string; icon: string; t
 export type ActionType = 'create' | 'update' | 'delete' | 'view' | 'login' | 'logout' | 'print' | 'export' | 'adjust';
 
 export const ACTION_LABELS: Record<string, { label: string; color: string }> = {
+  // Thao tác cơ bản
   create: { label: 'Tạo mới', color: 'bg-green-500' },
   update: { label: 'Cập nhật', color: 'bg-blue-500' },
   delete: { label: 'Xóa', color: 'bg-red-500' },
@@ -75,6 +76,23 @@ export const ACTION_LABELS: Record<string, { label: string; color: string }> = {
   print: { label: 'In', color: 'bg-cyan-500' },
   export: { label: 'Xuất file', color: 'bg-indigo-500' },
   adjust: { label: 'Điều chỉnh', color: 'bg-yellow-600' },
+  
+  // Thao tác sản phẩm & kho
+  ADJUST_QUANTITY: { label: 'Điều chỉnh SL', color: 'bg-yellow-600' },
+  RESTORE_PRODUCT_METADATA: { label: 'Phục hồi NCC', color: 'bg-teal-500' },
+  UPDATE: { label: 'Cập nhật', color: 'bg-blue-500' },
+  CREATE: { label: 'Tạo mới', color: 'bg-green-500' },
+  DELETE: { label: 'Xóa', color: 'bg-red-500' },
+  
+  // Thao tác nhập/xuất
+  IMPORT: { label: 'Nhập hàng', color: 'bg-emerald-500' },
+  EXPORT: { label: 'Xuất hàng', color: 'bg-blue-500' },
+  RETURN: { label: 'Trả hàng', color: 'bg-orange-500' },
+  PAYMENT: { label: 'Thanh toán', color: 'bg-cyan-500' },
+  
+  // Thao tác kiểm kho
+  STOCK_COUNT: { label: 'Kiểm kho', color: 'bg-cyan-500' },
+  BALANCE: { label: 'Cân bằng kho', color: 'bg-amber-500' },
 };
 
 // Tên bảng dữ liệu
