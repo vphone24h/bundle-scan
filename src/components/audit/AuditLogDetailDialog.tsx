@@ -170,13 +170,18 @@ export function AuditLogDetailDialog({
 
   // Extract product info from old_data or new_data for product-related actions
   const getProductInfo = () => {
-    const data = (log.new_data || log.old_data) as Record<string, unknown> | null;
+    // Check both old_data and new_data
+    const newData = log.new_data as Record<string, unknown> | null;
+    const oldData = log.old_data as Record<string, unknown> | null;
+    
+    // Try to extract from new_data first, then fall back to old_data
+    const data = newData || oldData;
     if (!data) return null;
     
-    // Common product identifier fields
-    const productName = data.name || data.product_name;
-    const sku = data.sku;
-    const imei = data.imei;
+    // Common product identifier fields - check multiple possible field names
+    const productName = data.name || data.product_name || oldData?.name || oldData?.product_name;
+    const sku = data.sku || oldData?.sku;
+    const imei = data.imei || oldData?.imei;
     
     if (productName || sku || imei) {
       return { productName, sku, imei };
@@ -184,7 +189,10 @@ export function AuditLogDetailDialog({
     return null;
   };
 
-  const productInfo = log.table_name === 'products' ? getProductInfo() : null;
+  // Show product info for product-related tables AND actions
+  const isProductRelated = log.table_name === 'products' || 
+    ['ADJUST_QUANTITY', 'RESTORE_PRODUCT_METADATA', 'DELETE_PRODUCT'].includes(log.action_type);
+  const productInfo = isProductRelated ? getProductInfo() : null;
 
   // Get action description based on action type
   const getActionDescription = () => {
