@@ -189,10 +189,15 @@ export function AuditLogDetailDialog({
     return null;
   };
 
+  // Check if name/imei/sku were changed (if so, show them in changes section instead of product info)
+  const hasNameOrImeiChange = changes.some(c => ['name', 'imei', 'sku'].includes(c.field));
+
   // Show product info for product-related tables AND actions
   const isProductRelated = log.table_name === 'products' || 
     ['ADJUST_QUANTITY', 'RESTORE_PRODUCT_METADATA', 'DELETE_PRODUCT'].includes(log.action_type);
-  const productInfo = isProductRelated ? getProductInfo() : null;
+  
+  // Only show product info header if name/imei didn't change (to avoid confusion)
+  const productInfo = isProductRelated && !hasNameOrImeiChange ? getProductInfo() : null;
 
   // Get action description based on action type
   const getActionDescription = () => {
