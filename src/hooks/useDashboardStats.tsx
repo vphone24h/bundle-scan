@@ -9,9 +9,11 @@ export interface DashboardStats {
   soldProducts: number;
   totalImportValue: number;
   pendingDebt: number;
-  totalSuppliers: number;
-  totalCategories: number;
-  recentImports: number;
+  // Today stats
+  todayProfit: number;
+  todayRevenue: number;
+  todaySold: number;
+  todayImports: number;
 }
 
 export function useDashboardStats() {
@@ -31,9 +33,10 @@ export function useDashboardStats() {
           soldProducts: 0,
           totalImportValue: 0,
           pendingDebt: 0,
-          totalSuppliers: 0,
-          totalCategories: 0,
-          recentImports: 0,
+          todayProfit: 0,
+          todayRevenue: 0,
+          todaySold: 0,
+          todayImports: 0,
         } as DashboardStats;
       }
 
@@ -51,19 +54,84 @@ export function useDashboardStats() {
 
       if (productsError) throw productsError;
 
-      // Get suppliers count (no branch filter - global data)
-      const { count: suppliersCount, error: suppliersError } = await supabase
-        .from('suppliers')
-        .select('*', { count: 'exact', head: true });
+      // Get today's date range
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
 
-      if (suppliersError) throw suppliersError;
+      // Get today's export receipts (for revenue and sold count)
+      let exportReceiptsQuery = supabase
+        .from('export_receipts')
+        .select('total_amount, export_date, id')
+        .eq('status', 'completed')
+        .gte('export_date', todayStart.toISOString())
+        .lte('export_date', todayEnd.toISOString());
 
-      // Get categories count (no branch filter - global data)
-      const { count: categoriesCount, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*', { count: 'exact', head: true });
+      if (shouldFilter && branchId) {
+        exportReceiptsQuery = exportReceiptsQuery.eq('branch_id', branchId);
+      }
 
-      if (categoriesError) throw categoriesError;
+      const { data: todayExportReceipts, error: exportReceiptsError } = await exportReceiptsQuery;
+      if (exportReceiptsError) throw exportReceiptsError;
+
+      // Get today's export receipt items for profit calculation
+      const todayReceiptIds = todayExportReceipts?.map(r => r.id) || [];
+      let todaySoldItems: any[] = [];
+      
+      if (todayReceiptIds.length > 0) {
+        const { data: items, error: itemsError } = await supabase
+          .from('export_receipt_items')
+          .select('sale_price, product_id')
+          .in('receipt_id', todayReceiptIds);
+        
+        if (itemsError) throw itemsError;
+        todaySoldItems = items || [];
+      }
+
+      // Get import prices for sold items to calculate profit
+      const productIds = todaySoldItems.map(item => item.product_id).filter(Boolean);
+      let productImportPrices: Record<string, number> = {};
+      
+      if (productIds.length > 0) {
+        const { data: soldProducts, error: soldProductsError } = await supabase
+          .from('products')
+          .select('id, import_price')
+          .in('id', productIds);
+        
+        if (soldProductsError) throw soldProductsError;
+        productImportPrices = (soldProducts || []).reduce((acc, p) => {
+          acc[p.id] = Number(p.import_price);
+          return acc;
+        }, {} as Record<string, number>);
+      }
+
+      // Calculate today's profit
+      const todayProfit = todaySoldItems.reduce((sum, item) => {
+        const salePrice = Number(item.sale_price);
+        const importPrice = productImportPrices[item.product_id] || 0;
+        return sum + (salePrice - importPrice);
+      }, 0);
+
+      // Calculate today's revenue
+      const todayRevenue = todayExportReceipts?.reduce((sum, r) => sum + Number(r.total_amount), 0) || 0;
+
+      // Count today's sold items
+      const todaySold = todaySoldItems.length;
+
+      // Get today's imports count
+      let todayImportsQuery = supabase
+        .from('import_receipts')
+        .select('*', { count: 'exact', head: true })
+        .gte('import_date', todayStart.toISOString())
+        .lte('import_date', todayEnd.toISOString());
+
+      if (shouldFilter && branchId) {
+        todayImportsQuery = todayImportsQuery.eq('branch_id', branchId);
+      }
+
+      const { count: todayImportsCount, error: todayImportsError } = await todayImportsQuery;
+      if (todayImportsError) throw todayImportsError;
 
       // Get pending debt with branch filter
       let receiptsQuery = supabase
@@ -78,23 +146,6 @@ export function useDashboardStats() {
       const { data: receipts, error: receiptsError } = await receiptsQuery;
 
       if (receiptsError) throw receiptsError;
-
-      // Get recent imports (last 7 days) with branch filter
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      
-      let recentQuery = supabase
-        .from('import_receipts')
-        .select('*', { count: 'exact', head: true })
-        .gte('import_date', sevenDaysAgo.toISOString());
-
-      if (shouldFilter && branchId) {
-        recentQuery = recentQuery.eq('branch_id', branchId);
-      }
-
-      const { count: recentCount, error: recentError } = await recentQuery;
-
-      if (recentError) throw recentError;
 
       // Tính giá trị kho ĐÚNG như logic ở useInventory
       const inventoryMap = new Map<string, { stock: number; totalImportCost: number }>();
@@ -164,9 +215,10 @@ export function useDashboardStats() {
         soldProducts: products?.filter(p => p.status === 'sold').length || 0,
         totalImportValue,
         pendingDebt: receipts?.reduce((sum, r) => sum + Number(r.debt_amount), 0) || 0,
-        totalSuppliers: suppliersCount || 0,
-        totalCategories: categoriesCount || 0,
-        recentImports: recentCount || 0,
+        todayProfit,
+        todayRevenue,
+        todaySold,
+        todayImports: todayImportsCount || 0,
       };
 
       return stats;

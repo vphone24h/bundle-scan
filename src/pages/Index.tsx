@@ -85,20 +85,20 @@ const Index = () => {
         {/* Quick stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-card border rounded-lg p-3 sm:p-4 text-center">
-            <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats?.totalSuppliers || 0}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Nhà cung cấp</p>
+            <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats?.todayProfit || 0)}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Lợi nhuận hôm nay</p>
           </div>
           <div className="bg-card border rounded-lg p-3 sm:p-4 text-center">
-            <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats?.totalCategories || 0}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Danh mục</p>
+            <p className="text-2xl sm:text-3xl font-bold text-primary">{formatCurrency(stats?.todayRevenue || 0)}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Doanh thu hôm nay</p>
           </div>
           <div className="bg-card border rounded-lg p-3 sm:p-4 text-center">
-            <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats?.soldProducts || 0}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Đã bán</p>
+            <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats?.todaySold || 0}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Đã bán hôm nay</p>
           </div>
           <div className="bg-card border rounded-lg p-3 sm:p-4 text-center">
-            <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats?.recentImports || 0}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Nhập 7 ngày</p>
+            <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats?.todayImports || 0}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Nhập hôm nay</p>
           </div>
         </div>
 
