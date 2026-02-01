@@ -105,6 +105,7 @@ export const ACTION_LABELS: Record<string, { label: string; color: string; criti
   DELETE_CASH_BOOK: { label: 'Xóa sổ quỹ', color: 'bg-red-600', critical: true },
   UPDATE_CASH_BOOK: { label: 'Sửa sổ quỹ', color: 'bg-orange-600', critical: true },
   EDIT_CASH_BOOK: { label: 'Sửa sổ quỹ', color: 'bg-orange-600', critical: true },
+  TRANSFER_FUNDS: { label: 'Chuyển tiền nội bộ', color: 'bg-indigo-500' },
 };
 
 // Tên bảng dữ liệu
