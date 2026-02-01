@@ -115,7 +115,7 @@ export default function PublicLandingPage() {
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
               Báo cáo lợi nhuận chính xác <strong className="text-primary">100%</strong> từng sản phẩm. 
-              Quản lý tồn kho theo IMEI, mã vạch. Tích hợp hóa đơn điện tử VAT.
+              Quản lý tồn kho theo IMEI, mã vạch. Tích hợp landing page cá nhân, tra cứu bảo hành.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <Button size="lg" className="gap-2 text-base" onClick={() => navigate('/register')}>
