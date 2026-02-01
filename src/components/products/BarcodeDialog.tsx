@@ -733,7 +733,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
     `;
   };
 
-  // In chuẩn KiotViet (1 lần in = in toàn bộ tem)
+  // In chuẩn KiotViet: 1 job = 1 tem (gửi lệnh in riêng lẻ để tránh lệch)
   const handlePrintKiotViet = () => {
     // Expand theo số lượng để biết tổng tem cần in
     const allLabels: ProductPriceEntry[] = [];
@@ -746,19 +746,197 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       return;
     }
 
-    const kiotVietHtml = generateKiotVietPrintContent(allLabels, settings);
+    // Mở 1 cửa sổ duy nhất, in từng tem riêng lẻ như KiotViet
     const printWindow = window.open('', '_blank', 'width=800,height=600');
-    if (printWindow) {
-      printWindow.document.write(kiotVietHtml);
+    if (!printWindow) {
+      toast.error('Trình duyệt đang chặn popup in. Vui lòng cho phép popups.');
+      return;
+    }
+
+    toast.info(`Đang chuẩn bị in ${allLabels.length} tem...`);
+
+    // Hàm tạo HTML cho 1 tem duy nhất
+    const generateSingleLabelHtml = (entry: ProductPriceEntry, idx: number): string => {
+      return generateKiotVietSingleLabel(entry, settings, idx);
+    };
+
+    // In tuần tự từng tem (1 job = 1 tem)
+    let currentIndex = 0;
+    
+    const printNextLabel = () => {
+      if (currentIndex >= allLabels.length) {
+        // Hoàn thành
+        printWindow.close();
+        toast.success(`Đã gửi ${allLabels.length} lệnh in (1 tem/lệnh)`);
+        return;
+      }
+
+      const labelHtml = generateSingleLabelHtml(allLabels[currentIndex], currentIndex);
+      printWindow.document.open();
+      printWindow.document.write(labelHtml);
       printWindow.document.close();
-      printWindow.focus();
+
+      // Đợi barcode render xong rồi in
       setTimeout(() => {
         printWindow.print();
-      }, 800);
-      toast.success(`Đang in ${allLabels.length} tem chuẩn KiotViet (55x30mm)`);
-    } else {
-      toast.error('Trình duyệt đang chặn popup in. Vui lòng cho phép popups.');
-    }
+        currentIndex++;
+        // Đợi 1 chút để máy in xử lý xong rồi in tem tiếp
+        setTimeout(printNextLabel, 300);
+      }, 500);
+    };
+
+    printNextLabel();
+  };
+
+  // Tạo HTML cho 1 tem duy nhất (chuẩn KiotViet: 1 file = 1 tem)
+  const generateKiotVietSingleLabel = (
+    entry: ProductPriceEntry,
+    printSettings: BarcodeSettings,
+    idx: number
+  ): string => {
+    const width = 55;
+    const height = 30;
+    const safeMargin = 0.8; // mm
+    const contentScale = 0.97;
+
+    const barcodeValue = entry.imei || entry.sku || entry.productId;
+    const sanitizedValue = String(barcodeValue).replace(/[^\x20-\x7E]/g, '');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Tem ${idx + 1}</title>
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          
+          @page {
+            size: ${width}mm ${height}mm;
+            margin: 0;
+          }
+          
+          @media print {
+            html, body {
+              width: ${width}mm;
+              height: ${height}mm;
+              margin: 0;
+              padding: 0;
+            }
+          }
+          
+          html, body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: white;
+          }
+          
+          .label {
+            width: ${width}mm;
+            height: ${height}mm;
+            position: relative;
+            background: white;
+            overflow: hidden;
+            padding: ${safeMargin}mm;
+          }
+          
+          .label-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(${contentScale});
+            transform-origin: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            width: ${width - safeMargin * 2}mm;
+            gap: 1px;
+          }
+          
+          .store-name {
+            font-size: 10pt;
+            font-weight: bold;
+            color: #000;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            line-height: 1.2;
+          }
+          
+          .product-name {
+            font-size: 7pt;
+            color: #000;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            line-height: 1.2;
+          }
+          
+          .barcode-container {
+            margin: 2px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          
+          .barcode {
+            max-width: ${width - safeMargin * 2 - 2}mm;
+            height: auto;
+          }
+          
+          .code-text {
+            font-size: 6pt;
+            color: #333;
+            font-family: monospace;
+            line-height: 1.2;
+          }
+          
+          .price {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #000;
+            line-height: 1.2;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="label">
+          <div class="label-content">
+            ${printSettings.showStoreName && printSettings.storeName ? 
+              `<div class="store-name">${printSettings.storeName}</div>` : ''}
+            ${printSettings.showProductName ? 
+              `<div class="product-name">${entry.name}</div>` : ''}
+            <div class="barcode-container">
+              <svg class="barcode" id="barcode-single"></svg>
+            </div>
+            <div class="code-text">${entry.imei || entry.sku}</div>
+            ${printSettings.showPrice ? 
+              `<div class="price">${formatNumberWithSpaces(entry.printPrice)} VND</div>` : ''}
+          </div>
+        </div>
+        <script>
+          document.addEventListener('DOMContentLoaded', function() {
+            try {
+              JsBarcode("#barcode-single", ${JSON.stringify(sanitizedValue)}, {
+                format: "CODE128",
+                width: 1.2,
+                height: 28,
+                displayValue: false,
+                margin: 0
+              });
+            } catch(e) {
+              console.error('Barcode error:', e);
+            }
+          });
+        <\/script>
+      </body>
+      </html>
+    `;
   };
 
   // Template HTML in trực tiếp chuẩn KiotViet
