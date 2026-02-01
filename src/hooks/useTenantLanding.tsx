@@ -168,6 +168,7 @@ export function useUpdateTenantLandingSettings() {
 }
 
 // Hook tra cứu bảo hành công khai - hỗ trợ IMEI hoặc SĐT
+// Sử dụng RPC functions bảo mật, KHÔNG trả về thông tin nhạy cảm của khách hàng
 export function useWarrantyLookup(searchValue: string, tenantId: string | null) {
   return useQuery({
     queryKey: ['warranty-lookup', searchValue, tenantId],
@@ -177,49 +178,17 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
       const isPhoneNumber = /^0\d{9,10}$/.test(searchValue.replace(/\s/g, ''));
       
       if (isPhoneNumber) {
-        // Tìm theo SĐT khách hàng - Step 1: Tìm customer_id trong tenant
-        const { data: customers, error: customerError } = await supabase
-          .from('customers')
-          .select('id')
-          .eq('tenant_id', tenantId)
-          .eq('phone', searchValue)
-          .limit(1);
-
-        if (customerError) throw customerError;
-        if (!customers || customers.length === 0) return [];
-
-        const customerId = customers[0].id;
-
-        // Step 2: Lấy các đơn hàng của customer này trong tenant
+        // Sử dụng RPC function bảo mật để tra cứu theo SĐT
+        // Function này KHÔNG trả về SĐT khách hàng cho client
         const { data, error } = await supabase
-          .from('export_receipt_items')
-          .select(`
-            id,
-            imei,
-            product_name,
-            sku,
-            warranty,
-            sale_price,
-            created_at,
-            export_receipts!inner (
-              id,
-              code,
-              export_date,
-              tenant_id,
-              branch_id,
-              customer_id,
-              branches (name)
-            )
-          `)
-          .eq('export_receipts.tenant_id', tenantId)
-          .eq('export_receipts.customer_id', customerId)
-          .eq('status', 'sold')
-          .order('created_at', { ascending: false })
-          .limit(20);
+          .rpc('lookup_warranty_by_phone', {
+            _phone: searchValue,
+            _tenant_id: tenantId
+          });
 
         if (error) throw error;
         
-        // Map kết quả
+        // Map kết quả - KHÔNG bao gồm customer_phone
         return (data || []).map((item: any) => ({
           id: item.id,
           imei: item.imei,
@@ -228,37 +197,17 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
           warranty: item.warranty,
           sale_price: item.sale_price,
           created_at: item.created_at,
-          branch_name: item.export_receipts?.branches?.name || null,
-          export_date: item.export_receipts?.export_date || item.created_at,
-          customer_phone: searchValue,
+          branch_name: item.branch_name || null,
+          export_date: item.export_date || item.created_at,
+          customer_phone: null, // Không trả về SĐT để bảo mật
         }));
       } else {
-        // Tìm theo IMEI
+        // Sử dụng RPC function bảo mật để tra cứu theo IMEI
         const { data, error } = await supabase
-          .from('export_receipt_items')
-          .select(`
-            id,
-            imei,
-            product_name,
-            sku,
-            warranty,
-            sale_price,
-            created_at,
-            export_receipts!inner (
-              id,
-              code,
-              export_date,
-              tenant_id,
-              branch_id,
-              branches (name),
-              customers (phone)
-            )
-          `)
-          .eq('imei', searchValue)
-          .eq('export_receipts.tenant_id', tenantId)
-          .eq('status', 'sold')
-          .order('created_at', { ascending: false })
-          .limit(1);
+          .rpc('lookup_warranty_by_imei', {
+            _imei: searchValue,
+            _tenant_id: tenantId
+          });
 
         if (error) throw error;
         
@@ -270,9 +219,9 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
           warranty: item.warranty,
           sale_price: item.sale_price,
           created_at: item.created_at,
-          branch_name: item.export_receipts?.branches?.name || null,
-          export_date: item.export_receipts?.export_date || item.created_at,
-          customer_phone: item.export_receipts?.customers?.phone || null,
+          branch_name: item.branch_name || null,
+          export_date: item.export_date || item.created_at,
+          customer_phone: null, // Không trả về SĐT để bảo mật
         }));
       }
     },

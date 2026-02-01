@@ -3222,6 +3222,34 @@ export type Database = {
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_accessible: { Args: { _tenant_id: string }; Returns: boolean }
       is_tenant_admin: { Args: { _user_id: string }; Returns: boolean }
+      lookup_warranty_by_imei: {
+        Args: { _imei: string; _tenant_id: string }
+        Returns: {
+          branch_name: string
+          created_at: string
+          export_date: string
+          id: string
+          imei: string
+          product_name: string
+          sale_price: number
+          sku: string
+          warranty: string
+        }[]
+      }
+      lookup_warranty_by_phone: {
+        Args: { _phone: string; _tenant_id: string }
+        Returns: {
+          branch_name: string
+          created_at: string
+          export_date: string
+          id: string
+          imei: string
+          product_name: string
+          sale_price: number
+          sku: string
+          warranty: string
+        }[]
+      }
       resolve_tenant_by_domain: { Args: { _domain: string }; Returns: string }
       user_belongs_to_tenant: { Args: { _tenant_id: string }; Returns: boolean }
     }
