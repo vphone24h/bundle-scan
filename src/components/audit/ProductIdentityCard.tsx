@@ -1,4 +1,6 @@
-import { FileText } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 type Identity = {
   productName?: unknown;
@@ -60,7 +62,34 @@ export function ProductIdentityCard({
 }) {
   const oldIdentity = normalizeIdentity(oldData);
   const newIdentity = normalizeIdentity(newData);
-  const currentIdentity = hasAnyIdentity(newIdentity) ? newIdentity : oldIdentity;
+  const baseIdentity = hasAnyIdentity(newIdentity) ? newIdentity : oldIdentity;
+
+  // Fetch product info from DB if we have record_id but no name in the log data
+  const shouldFetchProduct = Boolean(recordId) && !baseIdentity.productName;
+  
+  const { data: fetchedProduct, isLoading } = useQuery({
+    queryKey: ['product-for-audit', recordId],
+    queryFn: async () => {
+      if (!recordId) return null;
+      const { data } = await supabase
+        .from('products')
+        .select('name, sku, imei')
+        .eq('id', recordId)
+        .maybeSingle();
+      return data;
+    },
+    enabled: shouldFetchProduct,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  // Merge fetched data with existing identity
+  const currentIdentity: Identity = {
+    productName: baseIdentity.productName || fetchedProduct?.name,
+    sku: baseIdentity.sku || fetchedProduct?.sku,
+    imei: baseIdentity.imei || fetchedProduct?.imei,
+    quantity: baseIdentity.quantity,
+    reason: baseIdentity.reason,
+  };
 
   // For quantity adjustment, calculate difference
   const isQuantityAdjust = actionType === 'ADJUST_QUANTITY';
@@ -78,18 +107,28 @@ export function ProductIdentityCard({
         Sản phẩm được thao tác
       </h4>
 
-      {recordId && !currentIdentity.productName && (
-        <div className="text-xs text-muted-foreground mb-2">
-          ID: <span className="font-mono break-all">{recordId}</span>
+      {/* Show loading state when fetching */}
+      {isLoading && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Đang tải thông tin sản phẩm...
         </div>
       )}
 
-      {/* Always show product name/sku/imei if available */}
+      {/* Show product name/sku/imei if available */}
       {(currentIdentity.productName || currentIdentity.sku || currentIdentity.imei) && (
         <div className="space-y-1 text-sm mb-3">
           <IdentityRow label="Tên" value={currentIdentity.productName} />
           <IdentityRow label="SKU" value={currentIdentity.sku} mono />
           <IdentityRow label="IMEI" value={currentIdentity.imei} mono />
+        </div>
+      )}
+
+      {/* Show ID if no name available */}
+      {!currentIdentity.productName && !isLoading && recordId && (
+        <div className="text-xs text-muted-foreground mb-2">
+          ID: <span className="font-mono break-all">{recordId}</span>
+          <span className="text-amber-600 dark:text-amber-400 ml-2">(Sản phẩm có thể đã bị xóa)</span>
         </div>
       )}
 
