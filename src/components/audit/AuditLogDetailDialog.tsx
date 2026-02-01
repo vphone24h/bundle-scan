@@ -218,7 +218,7 @@ export function AuditLogDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -229,7 +229,7 @@ export function AuditLogDetailDialog({
         <ScrollArea className="flex-1 pr-4">
           <div className="space-y-4">
             {/* Header info */}
-            <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="h-4 w-4 text-muted-foreground" />
@@ -239,7 +239,7 @@ export function AuditLogDetailDialog({
                 <div className="flex items-center gap-2 text-sm">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">Người thực hiện:</span>
-                  <span>{log.user_id ? profileMap.get(log.user_id) || 'N/A' : 'Hệ thống'}</span>
+                  <span className="break-words">{log.user_id ? profileMap.get(log.user_id) || 'N/A' : 'Hệ thống'}</span>
                 </div>
                 {userRole && (
                   <div className="flex items-center gap-2 text-sm ml-6">
@@ -256,7 +256,7 @@ export function AuditLogDetailDialog({
                 <div className="flex items-center gap-2 text-sm">
                   <Building2 className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">Chi nhánh:</span>
-                  <span>{log.branch_id ? branchMap.get(log.branch_id) || 'N/A' : 'Toàn hệ thống'}</span>
+                  <span className="break-words">{log.branch_id ? branchMap.get(log.branch_id) || 'N/A' : 'Toàn hệ thống'}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <span className="font-medium">Hành động:</span>
@@ -266,7 +266,7 @@ export function AuditLogDetailDialog({
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <span className="font-medium">Bảng dữ liệu:</span>
-                  <span>{log.table_name ? TABLE_LABELS[log.table_name] || log.table_name : '-'}</span>
+                  <span className="break-words">{log.table_name ? TABLE_LABELS[log.table_name] || log.table_name : '-'}</span>
                 </div>
               </div>
             </div>
@@ -305,14 +305,14 @@ export function AuditLogDetailDialog({
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
                           <div className="flex-1 p-2 bg-red-500/10 rounded">
                             <span className="text-xs text-muted-foreground block mb-1">Trước:</span>
-                            <span className="line-through text-muted-foreground">
+                            <span className="line-through text-muted-foreground break-all">
                               {formatFieldValue(field, oldValue)}
                             </span>
                           </div>
                           <ArrowRight className="h-4 w-4 text-muted-foreground hidden sm:block" />
                           <div className="flex-1 p-2 bg-green-500/10 rounded">
                             <span className="text-xs text-muted-foreground block mb-1">Sau:</span>
-                            <span className="font-medium text-foreground">
+                            <span className="font-medium text-foreground break-all">
                               {formatFieldValue(field, newValue)}
                             </span>
                           </div>

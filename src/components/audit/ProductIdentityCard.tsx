@@ -21,13 +21,23 @@ function hasAnyIdentity(i: Identity): boolean {
   return Boolean(i.productName ?? i.sku ?? i.imei);
 }
 
-function IdentityRow({ label, value }: { label: string; value: unknown }) {
+function IdentityRow({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: unknown;
+  mono?: boolean;
+}) {
   if (value === null || value === undefined || value === '') return null;
 
   return (
     <div className="flex gap-2">
       <span className="text-muted-foreground min-w-[60px]">{label}:</span>
-      <span className="font-medium break-words">{String(value)}</span>
+      <span className={mono ? 'font-mono text-xs break-all' : 'font-medium break-words'}>
+        {String(value)}
+      </span>
     </div>
   );
 }
@@ -71,24 +81,24 @@ export function ProductIdentityCard({
             <div className="text-xs text-muted-foreground mb-1">Trước</div>
             <div className="space-y-1">
               <IdentityRow label="Tên" value={oldIdentity.productName} />
-              <IdentityRow label="SKU" value={oldIdentity.sku} />
-              <IdentityRow label="IMEI" value={oldIdentity.imei} />
+              <IdentityRow label="SKU" value={oldIdentity.sku} mono />
+              <IdentityRow label="IMEI" value={oldIdentity.imei} mono />
             </div>
           </div>
           <div className="p-2 rounded bg-muted/40">
             <div className="text-xs text-muted-foreground mb-1">Sau</div>
             <div className="space-y-1">
               <IdentityRow label="Tên" value={newIdentity.productName} />
-              <IdentityRow label="SKU" value={newIdentity.sku} />
-              <IdentityRow label="IMEI" value={newIdentity.imei} />
+              <IdentityRow label="SKU" value={newIdentity.sku} mono />
+              <IdentityRow label="IMEI" value={newIdentity.imei} mono />
             </div>
           </div>
         </div>
       ) : (
         <div className="space-y-1 text-sm">
           <IdentityRow label="Tên" value={currentIdentity.productName} />
-          <IdentityRow label="SKU" value={currentIdentity.sku} />
-          <IdentityRow label="IMEI" value={currentIdentity.imei} />
+          <IdentityRow label="SKU" value={currentIdentity.sku} mono />
+          <IdentityRow label="IMEI" value={currentIdentity.imei} mono />
         </div>
       )}
     </div>
