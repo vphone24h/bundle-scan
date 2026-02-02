@@ -72,6 +72,8 @@ import { useCashBookGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency } from '@/lib/mockData';
 import { cn } from '@/lib/utils';
 import { TransferFundsDialog } from '@/components/cashbook/TransferFundsDialog';
+import { CashBookDetailDialog } from '@/components/cashbook/CashBookDetailDialog';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const defaultPaymentSourceLabels: Record<string, string> = {
   cash: 'Tiền mặt',
@@ -114,6 +116,8 @@ export default function CashBookPage() {
   const [showAdjustBalanceDialog, setShowAdjustBalanceDialog] = useState(false);
   const [showAddSourceDialog, setShowAddSourceDialog] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<CashBookEntry | null>(null);
   const [editingEntry, setEditingEntry] = useState<CashBookEntry | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
   const [newSourceName, setNewSourceName] = useState('');
@@ -176,6 +180,7 @@ export default function CashBookPage() {
   const createEntry = useCreateCashBookEntry();
   const updateEntry = useUpdateCashBookEntry();
   const deleteEntry = useDeleteCashBookEntry();
+  const isMobile = useIsMobile();
 
   // Get current categories based on form type
   const currentCategories = formData.type === 'expense' ? expenseCategories : incomeCategories;
@@ -881,7 +886,72 @@ export default function CashBookPage() {
               <div className="text-center py-8 text-muted-foreground">
                 {hasActiveFilters ? 'Không tìm thấy giao dịch phù hợp' : 'Chưa có giao dịch nào'}
               </div>
+            ) : isMobile ? (
+              /* Mobile Card View */
+              <div className="space-y-3">
+                {pagination.paginatedData.map((entry) => (
+                  <div 
+                    key={entry.id} 
+                    className="p-3 rounded-lg border bg-card cursor-pointer hover:bg-accent/50 transition-colors"
+                    onClick={() => {
+                      setSelectedEntry(entry);
+                      setShowDetailDialog(true);
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge className={cn(
+                            "text-[10px] px-1.5 py-0",
+                            entry.type === 'expense' 
+                              ? 'bg-destructive/10 text-destructive border-destructive/20' 
+                              : 'bg-green-100 text-green-700 border-green-200'
+                          )}>
+                            {entry.type === 'expense' ? 'Chi' : 'Thu'}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(entry.transaction_date), 'dd/MM HH:mm', { locale: vi })}
+                          </span>
+                        </div>
+                        <p className="font-medium text-sm line-clamp-2">{entry.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {entry.category} • {paymentSourceLabels[entry.payment_source] || entry.payment_source}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className={cn(
+                          "font-bold text-sm",
+                          entry.type === 'expense' ? 'text-destructive' : 'text-green-600'
+                        )}>
+                          {entry.type === 'expense' ? '-' : '+'}{formatCurrency(Number(entry.amount))}
+                        </p>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 mt-1">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-popover">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenEdit(entry); }}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Chỉnh sửa
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => { e.stopPropagation(); handleOpenDelete(entry); }}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Xóa
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (
+              /* Desktop Table View */
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -899,7 +969,14 @@ export default function CashBookPage() {
                   </TableHeader>
                   <TableBody>
                     {pagination.paginatedData.map((entry) => (
-                      <TableRow key={entry.id}>
+                      <TableRow 
+                        key={entry.id} 
+                        className="cursor-pointer hover:bg-accent/50"
+                        onClick={() => {
+                          setSelectedEntry(entry);
+                          setShowDetailDialog(true);
+                        }}
+                      >
                         <TableCell className="whitespace-nowrap">
                           {format(new Date(entry.transaction_date), 'dd/MM/yyyy HH:mm', { locale: vi })}
                         </TableCell>
@@ -935,18 +1012,18 @@ export default function CashBookPage() {
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-popover">
-                              <DropdownMenuItem onClick={() => handleOpenEdit(entry)}>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenEdit(entry); }}>
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Chỉnh sửa
                               </DropdownMenuItem>
                               <DropdownMenuItem 
-                                onClick={() => handleOpenDelete(entry)}
+                                onClick={(e) => { e.stopPropagation(); handleOpenDelete(entry); }}
                                 className="text-destructive focus:text-destructive"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -1484,6 +1561,14 @@ export default function CashBookPage() {
         branches={branches}
         viewMode={viewMode}
         selectedBranchId={selectedBranchId}
+      />
+
+      {/* Cash Book Detail Dialog */}
+      <CashBookDetailDialog
+        entry={selectedEntry}
+        open={showDetailDialog}
+        onOpenChange={setShowDetailDialog}
+        paymentSourceLabels={paymentSourceLabels}
       />
     </MainLayout>
   );
