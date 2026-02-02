@@ -59,6 +59,7 @@ import {
 import { useDefaultInvoiceTemplate } from '@/hooks/useInvoiceTemplates';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { EditExportItemDialog } from '@/components/export/EditExportItemDialog';
+import { ReceiptReturnDialog } from '@/components/returns/ReceiptReturnDialog';
 import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib/exportExcel';
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -93,6 +94,10 @@ export default function ExportHistoryPage() {
   
   // Edit item dialog
   const [editItem, setEditItem] = useState<ExportReceiptItemDetail | null>(null);
+  
+  // Return receipt dialog
+  const [showReturnDialog, setShowReturnDialog] = useState(false);
+  const [returnReceipt, setReturnReceipt] = useState<ExportReceipt | null>(null);
 
   // Hooks
   const { data: receipts, isLoading: receiptsLoading } = useExportReceipts();
@@ -202,7 +207,7 @@ export default function ExportHistoryPage() {
     setShowPrintDialog(true);
   };
 
-  // Handle return - Navigate to Returns page
+  // Handle return - Navigate to Returns page (for single item)
   const handleReturn = (item: ExportReceiptItemDetail) => {
     if (item.status === 'returned') {
       toast({
@@ -213,6 +218,12 @@ export default function ExportHistoryPage() {
       return;
     }
     navigate(`/returns?type=export&itemId=${item.id}`);
+  };
+  
+  // Handle return receipt - Open dialog for full receipt return
+  const handleReturnReceipt = (receipt: ExportReceipt) => {
+    setReturnReceipt(receipt);
+    setShowReturnDialog(true);
   };
 
   // Export to Excel
@@ -448,6 +459,15 @@ export default function ExportHistoryPage() {
                               title="In hóa đơn"
                             >
                               <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleReturnReceipt(receipt)}
+                              title="Trả hàng toàn bộ phiếu"
+                              disabled={receipt.status === 'full_return' || receipt.status === 'cancelled'}
+                            >
+                              <RotateCcw className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -739,6 +759,17 @@ export default function ExportHistoryPage() {
         item={editItem}
         open={!!editItem}
         onOpenChange={(open) => !open && setEditItem(null)}
+      />
+      
+      {/* Receipt Return Dialog */}
+      <ReceiptReturnDialog
+        open={showReturnDialog}
+        onOpenChange={setShowReturnDialog}
+        receipt={returnReceipt}
+        onSuccess={() => {
+          setShowReturnDialog(false);
+          setReturnReceipt(null);
+        }}
       />
     </MainLayout>
   );
