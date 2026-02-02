@@ -571,7 +571,7 @@ export default function CashBookPage() {
         title="Sổ quỹ"
         description="Quản lý dòng tiền thu chi"
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {cashBookGuideUrl && (
               <Button variant="secondary" size="sm" asChild className="hidden sm:inline-flex">
                 <a href={cashBookGuideUrl} target="_blank" rel="noopener noreferrer">
@@ -580,17 +580,17 @@ export default function CashBookPage() {
                 </a>
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => handleOpenAdd('income')} className="text-green-600 border-green-600 hover:bg-green-50">
-              <TrendingUp className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Phiếu thu</span>
+            <Button variant="outline" size="sm" onClick={() => handleOpenAdd('income')} className="text-green-600 border-green-600 hover:bg-green-50 text-xs sm:text-sm px-2 sm:px-3">
+              <TrendingUp className="h-4 w-4 mr-1 sm:mr-2" />
+              Thu
             </Button>
-            <Button size="sm" onClick={() => handleOpenAdd('expense')} className="bg-destructive hover:bg-destructive/90">
-              <TrendingDown className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Phiếu chi</span>
+            <Button size="sm" onClick={() => handleOpenAdd('expense')} className="bg-destructive hover:bg-destructive/90 text-xs sm:text-sm px-2 sm:px-3">
+              <TrendingDown className="h-4 w-4 mr-1 sm:mr-2" />
+              Chi
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => setShowTransferDialog(true)}>
-              <ArrowLeftRight className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Chuyển tiền</span>
+            <Button variant="secondary" size="sm" onClick={() => setShowTransferDialog(true)} className="text-xs sm:text-sm px-2 sm:px-3">
+              <ArrowLeftRight className="h-4 w-4 mr-1 sm:mr-2" />
+              Chuyển
             </Button>
           </div>
         }
