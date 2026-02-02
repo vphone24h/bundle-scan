@@ -78,7 +78,7 @@ export function CustomerSearchCombobox({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Search by phone (≥3 chars)
+  // Search by phone (≥3 chars) - auto-select if exact match
   useEffect(() => {
     if (customerPhone.length >= 3 && !selectedCustomer) {
       setIsSearchingPhone(true);
@@ -88,7 +88,23 @@ export function CustomerSearchCombobox({
           .select('*')
           .ilike('phone', `%${customerPhone}%`)
           .limit(5);
-        setPhoneSuggestions((data as Customer[]) || []);
+        
+        const customers = (data as Customer[]) || [];
+        
+        // Auto-select if exact phone match found
+        const exactMatch = customers.find(c => c.phone === customerPhone);
+        if (exactMatch) {
+          // Auto-fill all customer info from existing record
+          setCustomerName(exactMatch.name);
+          setCustomerAddress(exactMatch.address || '');
+          setCustomerEmail(exactMatch.email || '');
+          onSelect(exactMatch);
+          setShowPhoneDropdown(false);
+          setIsSearchingPhone(false);
+          return;
+        }
+        
+        setPhoneSuggestions(customers);
         setShowPhoneDropdown(true);
         setIsSearchingPhone(false);
       }, 300);
