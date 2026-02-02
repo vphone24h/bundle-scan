@@ -83,12 +83,12 @@ export function InventoryFiltersComponent({ filters, onFiltersChange }: Inventor
       {/* Search Bar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
+          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-primary" />
           <Input
             placeholder="Tìm theo tên, IMEI, SKU..."
             value={filters.search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-10 border-2 border-primary/30 bg-primary/5 focus-visible:ring-primary focus-visible:border-primary shadow-sm"
+            className="pl-10 h-11 text-base border-2 border-primary bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary shadow-md ring-2 ring-primary/20"
           />
         </div>
         <div className="flex gap-2">
