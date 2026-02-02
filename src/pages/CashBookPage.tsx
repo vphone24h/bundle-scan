@@ -66,7 +66,7 @@ import {
 } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isToday } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useCashBook, useCashBookCategories, useCreateCashBookEntry, useUpdateCashBookEntry, useDeleteCashBookEntry, type CashBookEntry } from '@/hooks/useCashBook';
+import { useCashBook, useCashBookCategories, useCreateCashBookEntry, useUpdateCashBookEntry, useDeleteCashBookEntry, useCreateCashBookCategory, type CashBookEntry } from '@/hooks/useCashBook';
 import { useBranches } from '@/hooks/useBranches';
 import { useCashBookGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency } from '@/lib/mockData';
@@ -155,7 +155,12 @@ export default function CashBookPage() {
   const [dateTo, setDateTo] = useState('');
   const [paymentSourceFilter, setPaymentSourceFilter] = useState('_all_');
   const [accountingFilter, setAccountingFilter] = useState('_all_');
+  const [categoryFilter, setCategoryFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Add category dialog
+  const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -180,7 +185,11 @@ export default function CashBookPage() {
   const createEntry = useCreateCashBookEntry();
   const updateEntry = useUpdateCashBookEntry();
   const deleteEntry = useDeleteCashBookEntry();
+  const createCategory = useCreateCashBookCategory();
   const isMobile = useIsMobile();
+  
+  // All categories for filter (both income and expense)
+  const { data: allCategories } = useCashBookCategories();
 
   // Get current categories based on form type
   const currentCategories = formData.type === 'expense' ? expenseCategories : incomeCategories;
@@ -221,10 +230,13 @@ export default function CashBookPage() {
       const matchesAccounting = accountingFilter === '_all_' || 
         (accountingFilter === 'yes' && entry.is_business_accounting) ||
         (accountingFilter === 'no' && !entry.is_business_accounting);
+      
+      // Category filter
+      const matchesCategory = categoryFilter === '_all_' || entry.category === categoryFilter;
 
-      return matchesType && matchesSearch && matchesDate && matchesPaymentSource && matchesAccounting;
+      return matchesType && matchesSearch && matchesDate && matchesPaymentSource && matchesAccounting && matchesCategory;
     });
-  }, [allEntries, typeFilter, searchTerm, dateFrom, dateTo, paymentSourceFilter, accountingFilter]);
+  }, [allEntries, typeFilter, searchTerm, dateFrom, dateTo, paymentSourceFilter, accountingFilter, categoryFilter]);
 
   // Pagination for transactions
   const pagination = usePagination(filteredEntries, { 
@@ -274,7 +286,7 @@ export default function CashBookPage() {
     };
   }, [allEntries]);
 
-  const hasActiveFilters = dateFrom || dateTo || paymentSourceFilter !== '_all_' || accountingFilter !== '_all_' || searchTerm;
+  const hasActiveFilters = dateFrom || dateTo || paymentSourceFilter !== '_all_' || accountingFilter !== '_all_' || categoryFilter !== '_all_' || searchTerm;
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -282,6 +294,42 @@ export default function CashBookPage() {
     setDateTo('');
     setPaymentSourceFilter('_all_');
     setAccountingFilter('_all_');
+    setCategoryFilter('_all_');
+  };
+  
+  // Handle add category
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast({
+        title: 'Thiếu thông tin',
+        description: 'Vui lòng nhập tên danh mục',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    try {
+      await createCategory.mutateAsync({
+        name: newCategoryName.trim(),
+        type: formData.type,
+      });
+      
+      // Auto-select the new category
+      setFormData({ ...formData, category: newCategoryName.trim() });
+      setNewCategoryName('');
+      setShowAddCategoryDialog(false);
+      
+      toast({
+        title: 'Đã thêm danh mục',
+        description: `Danh mục "${newCategoryName.trim()}" đã được thêm`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể thêm danh mục',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleOpenAdd = (type: 'expense' | 'income') => {
@@ -816,7 +864,7 @@ export default function CashBookPage() {
               </div>
 
               {showFilters && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pt-4 border-t">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 pt-4 border-t">
                   <div className="space-y-2">
                     <Label className="text-xs">Từ ngày</Label>
                     <Input
@@ -832,6 +880,20 @@ export default function CashBookPage() {
                       value={dateTo}
                       onChange={(e) => setDateTo(e.target.value)}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Danh mục</Label>
+                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="_all_">Tất cả danh mục</SelectItem>
+                        {allCategories?.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs">Nguồn tiền</Label>
@@ -1096,7 +1158,22 @@ export default function CashBookPage() {
             </div>
 
             <div>
-              <Label>Danh mục *</Label>
+              <div className="flex items-center justify-between">
+                <Label>Danh mục *</Label>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 px-2 text-xs"
+                  onClick={() => {
+                    setNewCategoryName('');
+                    setShowAddCategoryDialog(true);
+                  }}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Thêm
+                </Button>
+              </div>
               <Select
                 value={formData.category}
                 onValueChange={(v) => setFormData({ ...formData, category: v })}
@@ -1235,7 +1312,22 @@ export default function CashBookPage() {
 
           <div className="space-y-4">
             <div>
-              <Label>Danh mục *</Label>
+              <div className="flex items-center justify-between">
+                <Label>Danh mục *</Label>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 px-2 text-xs"
+                  onClick={() => {
+                    setNewCategoryName('');
+                    setShowAddCategoryDialog(true);
+                  }}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Thêm
+                </Button>
+              </div>
               <Select
                 value={formData.category}
                 onValueChange={(v) => setFormData({ ...formData, category: v })}
@@ -1570,6 +1662,44 @@ export default function CashBookPage() {
         onOpenChange={setShowDetailDialog}
         paymentSourceLabels={paymentSourceLabels}
       />
+
+      {/* Add Category Dialog */}
+      <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              Thêm danh mục {formData.type === 'expense' ? 'chi' : 'thu'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Tên danh mục *</Label>
+              <Input
+                placeholder="Nhập tên danh mục mới"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddCategory();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddCategoryDialog(false)}>
+              Hủy
+            </Button>
+            <Button 
+              onClick={handleAddCategory} 
+              disabled={createCategory.isPending || !newCategoryName.trim()}
+            >
+              {createCategory.isPending ? 'Đang thêm...' : 'Thêm'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

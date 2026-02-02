@@ -116,6 +116,30 @@ export function useCashBookCategories(type?: CashBookType) {
   });
 }
 
+export function useCreateCashBookCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (category: { name: string; type: CashBookType }) => {
+      const { data, error } = await supabase
+        .from('cash_book_categories')
+        .insert([{
+          name: category.name,
+          type: category.type,
+          is_default: false,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as CashBookCategory;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cash-book-categories'] });
+    },
+  });
+}
+
 export function useCreateCashBookEntry() {
   const queryClient = useQueryClient();
 
