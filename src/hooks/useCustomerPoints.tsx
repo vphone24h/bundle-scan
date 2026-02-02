@@ -73,20 +73,51 @@ export function usePointSettings() {
     // Keyed by user to prevent cross-tenant cache leakage
     queryKey: ['point-settings', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Get user's tenant_id first
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      
+      if (!tenantId) {
+        // Fallback to global settings
+        const { data, error } = await supabase
+          .from('point_settings')
+          .select('*')
+          .is('tenant_id', null)
+          .limit(1)
+          .maybeSingle();
+        if (error) throw error;
+        return data as PointSettings | null;
+      }
+      
+      // Try to get tenant-specific settings first
+      const { data: tenantSettings, error: tenantError } = await supabase
         .from('point_settings')
         .select('*')
+        .eq('tenant_id', tenantId)
         .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
-      return data as PointSettings | null;
+      if (tenantError) throw tenantError;
+      
+      if (tenantSettings) {
+        return tenantSettings as PointSettings;
+      }
+      
+      // Fallback to global settings if no tenant-specific settings
+      const { data: globalSettings, error: globalError } = await supabase
+        .from('point_settings')
+        .select('*')
+        .is('tenant_id', null)
+        .limit(1)
+        .maybeSingle();
+        
+      if (globalError) throw globalError;
+      return globalSettings as PointSettings | null;
     },
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000, // 5 phút - setting ít thay đổi
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true, // Refetch on mount to get latest data
   });
 }
 
@@ -100,15 +131,20 @@ export function useUpdatePointSettings() {
       // Get tenant_id
       const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
 
-      // Get existing settings for this tenant
+      if (!tenantId) {
+        throw new Error('Không xác định được cửa hàng');
+      }
+
+      // Get existing settings for THIS tenant specifically
       const { data: existing } = await supabase
         .from('point_settings')
         .select('id')
+        .eq('tenant_id', tenantId)
         .limit(1)
         .maybeSingle();
 
       if (existing) {
-        // Update existing - don't require returning single row
+        // Update existing tenant settings
         const { error } = await supabase
           .from('point_settings')
           .update({
