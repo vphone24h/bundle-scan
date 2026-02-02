@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,9 +38,13 @@ import {
   Shield,
   FileEdit,
   Star,
-  Bold
+  Bold,
+  ImagePlus,
+  X,
+  Loader2
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
 import { useDefaultInvoiceTemplate, useUpdateInvoiceTemplate, type InvoiceTemplate, type TextAlign } from '@/hooks/useInvoiceTemplates';
 
 interface SettingItemProps {
@@ -149,11 +153,76 @@ export default function InvoiceTemplatePage() {
   const updateTemplate = useUpdateInvoiceTemplate();
 
   const [settings, setSettings] = useState<Partial<InvoiceTemplate>>({});
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentSettings = { ...template, ...settings };
 
   const updateSetting = <K extends keyof InvoiceTemplate>(key: K, value: InvoiceTemplate[K]) => {
     setSettings({ ...settings, [key]: value });
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Lỗi',
+        description: 'Vui lòng chọn file ảnh',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: 'Lỗi',
+        description: 'Ảnh không được vượt quá 2MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${template?.id || 'temp'}-${Date.now()}.${fileExt}`;
+      const filePath = `custom-description/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('invoice-assets')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('invoice-assets')
+        .getPublicUrl(filePath);
+
+      updateSetting('custom_description_image_url', publicUrl);
+      toast({
+        title: 'Thành công',
+        description: 'Đã tải ảnh lên',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể tải ảnh lên',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    updateSetting('custom_description_image_url', null);
   };
 
   const handleSave = async () => {
@@ -477,6 +546,54 @@ export default function InvoiceTemplatePage() {
                   onChange={(e) => updateSetting('custom_description_text', e.target.value)}
                   rows={3}
                 />
+                
+                {/* Image upload */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Ảnh đính kèm</Label>
+                  {currentSettings.custom_description_image_url ? (
+                    <div className="relative inline-block">
+                      <img 
+                        src={currentSettings.custom_description_image_url} 
+                        alt="Custom description" 
+                        className="max-w-full h-auto max-h-24 rounded border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6"
+                        onClick={handleRemoveImage}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                      >
+                        {isUploading ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <ImagePlus className="h-4 w-4 mr-2" />
+                        )}
+                        {isUploading ? 'Đang tải...' : 'Tải ảnh lên'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
                     <Button
@@ -716,7 +833,7 @@ export default function InvoiceTemplatePage() {
                 )}
 
                 {/* Custom description */}
-                {currentSettings.show_custom_description && currentSettings.custom_description_text && (
+                {currentSettings.show_custom_description && (currentSettings.custom_description_text || currentSettings.custom_description_image_url) && (
                   <div 
                     className={`mt-2 text-sm ${getAlignClass((currentSettings.custom_description_align || 'center') as TextAlign)}`}
                     style={{ 
@@ -725,6 +842,13 @@ export default function InvoiceTemplatePage() {
                       fontWeight: currentSettings.custom_description_bold ? 'bold' : 'normal'
                     }}
                   >
+                    {currentSettings.custom_description_image_url && (
+                      <img 
+                        src={currentSettings.custom_description_image_url} 
+                        alt="Custom" 
+                        style={{ maxWidth: '100%', maxHeight: '60px', marginBottom: '4px' }}
+                      />
+                    )}
                     {currentSettings.custom_description_text}
                   </div>
                 )}
