@@ -114,10 +114,10 @@ export function usePointSettings() {
       return globalSettings as PointSettings | null;
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 phút - setting ít thay đổi
+    staleTime: 0, // Always consider data stale to get fresh data on refetch
     gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: true, // Refetch on mount to get latest data
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnMount: 'always', // Always refetch on mount
   });
 }
 
@@ -172,8 +172,13 @@ export function useUpdatePointSettings() {
         return data;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['point-settings'] });
+    onSuccess: (_, __, context) => {
+      // Invalidate with exact: false to match all queries starting with 'point-settings'
+      queryClient.invalidateQueries({ 
+        queryKey: ['point-settings'],
+        exact: false,
+        refetchType: 'all'
+      });
     },
   });
 }
