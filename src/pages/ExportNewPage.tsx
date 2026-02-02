@@ -420,6 +420,28 @@ export default function ExportNewPage() {
       return;
     }
 
+    // Validate all products are from the same branch
+    const branchIds = cart.map(item => item.branch_id).filter(Boolean);
+    const uniqueBranches = [...new Set(branchIds)];
+    if (uniqueBranches.length > 1) {
+      // Get branch names for error message
+      const branchNames = cart
+        .filter(item => item.branchName)
+        .reduce((acc, item) => {
+          if (item.branch_id && !acc.find(b => b.id === item.branch_id)) {
+            acc.push({ id: item.branch_id, name: item.branchName || 'N/A' });
+          }
+          return acc;
+        }, [] as { id: string; name: string }[]);
+      
+      toast({
+        title: 'Lỗi nhiều chi nhánh',
+        description: `Phiếu xuất không thể chứa sản phẩm từ nhiều chi nhánh khác nhau: ${branchNames.map(b => b.name).join(', ')}. Vui lòng xóa bớt sản phẩm để chỉ còn 1 chi nhánh.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!customerName.trim() || !customerPhone.trim()) {
       toast({
         title: 'Thiếu thông tin',
