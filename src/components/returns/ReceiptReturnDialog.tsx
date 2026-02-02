@@ -48,13 +48,15 @@ export function ReceiptReturnDialog({
   receipt,
   onSuccess,
 }: ReceiptReturnDialogProps) {
-  const [feeType, setFeeType] = useState<'none' | 'percentage' | 'fixed_amount'>('none');
+  // Require explicit user selection (no default)
+  const [feeType, setFeeType] = useState<'' | 'none' | 'percentage' | 'fixed_amount'>('');
   const [feePercentage, setFeePercentage] = useState<number>(0);
   const [feeAmount, setFeeAmount] = useState<number>(0);
   const [feeDisplayAmount, setFeeDisplayAmount] = useState<string>('');
   const [note, setNote] = useState('');
   const [isBusinessAccounting, setIsBusinessAccounting] = useState(true);
   const [payments, setPayments] = useState<PaymentLine[]>([]);
+  const [paymentsTouched, setPaymentsTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -69,6 +71,8 @@ export function ReceiptReturnDialog({
 
   // Calculate refund amount
   const calculateRefund = () => {
+    // No selection yet -> display as full refund, but submission will be blocked
+    if (feeType === '') return totalSalePrice;
     if (feeType === 'none') return totalSalePrice;
     if (feeType === 'percentage') return totalSalePrice * (1 - feePercentage / 100);
     return totalSalePrice - feeAmount;
@@ -77,24 +81,41 @@ export function ReceiptReturnDialog({
   const refundAmount = calculateRefund();
   const storeKeepAmount = totalSalePrice - refundAmount;
 
-  // Initialize payments when refund amount changes
+  // Initialize payments (no default source; amount can be auto-filled until user edits)
   useEffect(() => {
-    if (open) {
-      setPayments([
-        { id: '1', source: 'cash', amount: refundAmount, displayAmount: formatNumberWithSpaces(refundAmount) }
-      ]);
+    if (!open) return;
+
+    // First open / reset: ensure at least one line exists
+    if (payments.length === 0) {
+      setPayments([{ id: '1', source: '', amount: 0, displayAmount: '' }]);
+      return;
     }
-  }, [refundAmount, open]);
+
+    // If user hasn't touched payments yet, keep amount in sync with refund
+    if (!paymentsTouched && payments.length === 1) {
+      setPayments((prev) => {
+        if (prev.length !== 1) return prev;
+        return [
+          {
+            ...prev[0],
+            amount: refundAmount,
+            displayAmount: formatNumberWithSpaces(refundAmount),
+          },
+        ];
+      });
+    }
+  }, [refundAmount, open, payments.length, paymentsTouched]);
 
   // Reset state when dialog opens
   useEffect(() => {
     if (open) {
-      setFeeType('none');
+      setFeeType('');
       setFeePercentage(0);
       setFeeAmount(0);
       setFeeDisplayAmount('');
       setNote('');
       setIsBusinessAccounting(true);
+      setPaymentsTouched(false);
       setCurrentIndex(0);
     }
   }, [open]);
@@ -105,19 +126,22 @@ export function ReceiptReturnDialog({
   const remaining = refundAmount - totalPayment;
 
   const handleAddPayment = () => {
+    setPaymentsTouched(true);
     setPayments([
       ...payments,
-      { id: Date.now().toString(), source: 'cash', amount: 0, displayAmount: '' }
+      { id: Date.now().toString(), source: '', amount: 0, displayAmount: '' }
     ]);
   };
 
   const handleRemovePayment = (id: string) => {
     if (payments.length > 1) {
+      setPaymentsTouched(true);
       setPayments(payments.filter(p => p.id !== id));
     }
   };
 
   const handlePaymentChange = (id: string, field: 'source' | 'amount', value: string) => {
+    setPaymentsTouched(true);
     setPayments(payments.map(p => {
       if (p.id !== id) return p;
       if (field === 'source') {
@@ -137,7 +161,7 @@ export function ReceiptReturnDialog({
 
   // Calculate fee for each item proportionally
   const calculateItemFee = (itemSalePrice: number) => {
-    if (feeType === 'none') return { feeType: 'none' as const, feePercentage: 0, feeAmount: 0 };
+    if (feeType === '' || feeType === 'none') return { feeType: 'none' as const, feePercentage: 0, feeAmount: 0 };
     if (feeType === 'percentage') {
       return { feeType: 'percentage' as const, feePercentage, feeAmount: 0 };
     }
@@ -169,6 +193,53 @@ export function ReceiptReturnDialog({
   };
 
   const handleSubmit = async () => {
+    // Require explicit fee choice
+    if (feeType === '') {
+      toast({
+        title: 'Thiếu thông tin',
+        description: 'Vui lòng chọn hình thức trả hàng (100% / mất phí % / mất phí số tiền).',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate fee inputs
+    if (feeType === 'percentage') {
+      if (!Number.isFinite(feePercentage) || feePercentage <= 0 || feePercentage >= 100) {
+        toast({
+          title: 'Phí không hợp lệ',
+          description: 'Phí % phải > 0 và < 100.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    if (feeType === 'fixed_amount') {
+      if (!Number.isFinite(feeAmount) || feeAmount <= 0 || feeAmount >= totalSalePrice) {
+        toast({
+          title: 'Phí không hợp lệ',
+          description: 'Phí cố định phải > 0 và nhỏ hơn tổng giá bán.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    // Require payment lines
+    const validPayments = payments
+      .filter(p => p.amount > 0)
+      .filter(p => !!p.source);
+
+    if (validPayments.length === 0) {
+      toast({
+        title: 'Thiếu dòng tiền',
+        description: 'Vui lòng chọn dòng tiền hoàn cho khách và nhập số tiền.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (Math.abs(totalPayment - refundAmount) > 1) {
       toast({
         title: 'Số tiền không khớp',
@@ -195,7 +266,9 @@ export function ReceiptReturnDialog({
         setCurrentIndex(i);
         const item = returnableItems[i];
         const itemFee = calculateItemFee(item.sale_price);
-        const itemPayments = calculateItemPayments(item.sale_price, itemFee);
+        const itemPayments = calculateItemPayments(item.sale_price, itemFee)
+          .filter(p => p.amount > 0)
+          .filter(p => !!p.source);
 
         await createExportReturn.mutateAsync({
           item: {
@@ -321,7 +394,7 @@ export function ReceiptReturnDialog({
                 <CardContent className="py-2">
                   <RadioGroup value={feeType} onValueChange={(v) => setFeeType(v as any)} className="space-y-2">
                     <div className="flex items-center space-x-2 p-2 rounded border hover:bg-accent/50 cursor-pointer">
-                      <RadioGroupItem value="none" id="r-none" />
+                        <RadioGroupItem value="none" id="r-none" />
                       <Label htmlFor="r-none" className="flex-1 cursor-pointer text-sm">
                         Trả lại đúng số tiền đã bán (100%)
                       </Label>
@@ -329,7 +402,7 @@ export function ReceiptReturnDialog({
                     
                     <div className="p-2 rounded border hover:bg-accent/50">
                       <div className="flex items-center space-x-2 cursor-pointer">
-                        <RadioGroupItem value="percentage" id="r-percentage" />
+                         <RadioGroupItem value="percentage" id="r-percentage" />
                         <Label htmlFor="r-percentage" className="flex-1 cursor-pointer text-sm">
                           Trả hàng mất phí theo %
                         </Label>
@@ -354,7 +427,7 @@ export function ReceiptReturnDialog({
 
                     <div className="p-2 rounded border hover:bg-accent/50">
                       <div className="flex items-center space-x-2 cursor-pointer">
-                        <RadioGroupItem value="fixed_amount" id="r-fixed" />
+                         <RadioGroupItem value="fixed_amount" id="r-fixed" />
                         <Label htmlFor="r-fixed" className="flex-1 cursor-pointer text-sm">
                           Trả hàng mất phí cố định
                         </Label>
@@ -411,6 +484,9 @@ export function ReceiptReturnDialog({
                           onChange={(e) => handlePaymentChange(payment.id, 'source', e.target.value)}
                           className="flex-1 h-8 px-2 rounded-md border border-input bg-background text-sm"
                         >
+                          <option value="" disabled>
+                            Chọn nguồn tiền
+                          </option>
                           {PAYMENT_SOURCES.map(src => (
                             <option key={src.value} value={src.value}>{src.label}</option>
                           ))}
@@ -484,7 +560,12 @@ export function ReceiptReturnDialog({
           {!cannotReturn && returnableItems.length > 0 && (
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || Math.abs(remaining) > 1}
+              disabled={
+                isSubmitting ||
+                feeType === '' ||
+                Math.abs(remaining) > 1 ||
+                payments.filter(p => p.amount > 0 && !!p.source).length === 0
+              }
             >
               {isSubmitting ? (
                 <>
