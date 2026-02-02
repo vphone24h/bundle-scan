@@ -388,6 +388,7 @@ export function useCreateExportReceipt() {
       }
 
       // Create cash book entries for actual payments (not debt)
+      // Use branch_id from export receipt to link cash entry to same branch as products
       const cashBookEntries = payments
         .filter((p) => p.payment_type !== 'debt' && p.amount > 0)
         .map((p) => ({
@@ -399,6 +400,7 @@ export function useCreateExportReceipt() {
           is_business_accounting: false, // Không tính hạch toán - lợi nhuận đã tính từ giá bán - giá nhập
           reference_id: receipt.id,
           reference_type: 'export_receipt',
+          branch_id: effectiveBranchId, // Use same branch as export receipt (derived from products)
           created_by: user?.id,
           tenant_id: tenantId,
         }));
