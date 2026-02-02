@@ -571,26 +571,26 @@ export default function CashBookPage() {
         title="Sổ quỹ"
         description="Quản lý dòng tiền thu chi"
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {cashBookGuideUrl && (
-              <Button variant="secondary" size="sm" asChild>
+              <Button variant="secondary" size="sm" asChild className="hidden sm:inline-flex">
                 <a href={cashBookGuideUrl} target="_blank" rel="noopener noreferrer">
                   <BookOpen className="mr-2 h-4 w-4" />
                   Hướng dẫn
                 </a>
               </Button>
             )}
-            <Button variant="outline" onClick={() => handleOpenAdd('income')} className="text-green-600 border-green-600 hover:bg-green-50">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Phiếu thu
+            <Button variant="outline" size="sm" onClick={() => handleOpenAdd('income')} className="text-green-600 border-green-600 hover:bg-green-50">
+              <TrendingUp className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Phiếu thu</span>
             </Button>
-            <Button onClick={() => handleOpenAdd('expense')} className="bg-destructive hover:bg-destructive/90">
-              <TrendingDown className="h-4 w-4 mr-2" />
-              Phiếu chi
+            <Button size="sm" onClick={() => handleOpenAdd('expense')} className="bg-destructive hover:bg-destructive/90">
+              <TrendingDown className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Phiếu chi</span>
             </Button>
-            <Button variant="secondary" onClick={() => setShowTransferDialog(true)}>
-              <ArrowLeftRight className="h-4 w-4 mr-2" />
-              Chuyển tiền
+            <Button variant="secondary" size="sm" onClick={() => setShowTransferDialog(true)}>
+              <ArrowLeftRight className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Chuyển tiền</span>
             </Button>
           </div>
         }
