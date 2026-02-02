@@ -107,7 +107,7 @@ export default function CashBookPage() {
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
   
   // Transaction type filter
-  const [typeFilter, setTypeFilter] = useState<'all' | 'expense' | 'income'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'expense' | 'income' | 'transfer'>('all');
   
   // Dialog states
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -199,8 +199,19 @@ export default function CashBookPage() {
     if (!allEntries) return [];
     
     return allEntries.filter((entry) => {
+      // Check if entry is a transfer (category is "Chuyển tiền nội bộ")
+      const isTransfer = entry.category === 'Chuyển tiền nội bộ';
+      
       // Type filter
-      const matchesType = typeFilter === 'all' || entry.type === typeFilter;
+      let matchesType = true;
+      if (typeFilter === 'transfer') {
+        matchesType = isTransfer;
+      } else if (typeFilter === 'expense') {
+        matchesType = entry.type === 'expense' && !isTransfer;
+      } else if (typeFilter === 'income') {
+        matchesType = entry.type === 'income' && !isTransfer;
+      }
+      // typeFilter === 'all' matches everything
       
       // Search filter
       const matchesSearch =
@@ -835,7 +846,7 @@ export default function CashBookPage() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as 'all' | 'expense' | 'income')}>
+                <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as 'all' | 'expense' | 'income' | 'transfer')}>
                   <SelectTrigger className="w-36">
                     <SelectValue />
                   </SelectTrigger>
@@ -843,6 +854,7 @@ export default function CashBookPage() {
                     <SelectItem value="all">Tất cả</SelectItem>
                     <SelectItem value="expense">Phiếu chi</SelectItem>
                     <SelectItem value="income">Phiếu thu</SelectItem>
+                    <SelectItem value="transfer">Chuyển tiền</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button
@@ -963,14 +975,26 @@ export default function CashBookPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <Badge className={cn(
-                            "text-[10px] px-1.5 py-0",
-                            entry.type === 'expense' 
-                              ? 'bg-destructive/10 text-destructive border-destructive/20' 
-                              : 'bg-green-100 text-green-700 border-green-200'
-                          )}>
-                            {entry.type === 'expense' ? 'Chi' : 'Thu'}
-                          </Badge>
+                          {(() => {
+                            const isTransfer = entry.category === 'Chuyển tiền nội bộ';
+                            if (isTransfer) {
+                              return (
+                                <Badge className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 border-blue-200">
+                                  Chuyển
+                                </Badge>
+                              );
+                            }
+                            return (
+                              <Badge className={cn(
+                                "text-[10px] px-1.5 py-0",
+                                entry.type === 'expense' 
+                                  ? 'bg-destructive/10 text-destructive border-destructive/20' 
+                                  : 'bg-green-100 text-green-700 border-green-200'
+                              )}>
+                                {entry.type === 'expense' ? 'Chi' : 'Thu'}
+                              </Badge>
+                            );
+                          })()}
                           <span className="text-xs text-muted-foreground">
                             {format(new Date(entry.transaction_date), 'dd/MM HH:mm', { locale: vi })}
                           </span>
@@ -1043,13 +1067,25 @@ export default function CashBookPage() {
                           {format(new Date(entry.transaction_date), 'dd/MM/yyyy HH:mm', { locale: vi })}
                         </TableCell>
                         <TableCell>
-                          <Badge className={cn(
-                            entry.type === 'expense' 
-                              ? 'bg-destructive/10 text-destructive border-destructive/20' 
-                              : 'bg-green-100 text-green-700 border-green-200'
-                          )}>
-                            {entry.type === 'expense' ? 'Chi' : 'Thu'}
-                          </Badge>
+                          {(() => {
+                            const isTransfer = entry.category === 'Chuyển tiền nội bộ';
+                            if (isTransfer) {
+                              return (
+                                <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                                  Chuyển
+                                </Badge>
+                              );
+                            }
+                            return (
+                              <Badge className={cn(
+                                entry.type === 'expense' 
+                                  ? 'bg-destructive/10 text-destructive border-destructive/20' 
+                                  : 'bg-green-100 text-green-700 border-green-200'
+                              )}>
+                                {entry.type === 'expense' ? 'Chi' : 'Thu'}
+                              </Badge>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary">{entry.category}</Badge>
