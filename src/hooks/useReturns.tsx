@@ -589,6 +589,39 @@ export function useCreateExportReturn() {
 
       if (itemError) throw itemError;
 
+      // Update receipt status based on items returned
+      if (item.export_receipt_id) {
+        // Get all items in this receipt
+        const { data: allItems } = await supabase
+          .from('export_receipt_items')
+          .select('id, status')
+          .eq('receipt_id', item.export_receipt_id);
+
+        if (allItems) {
+          const totalItems = allItems.length;
+          // Count returned items (include the one we just updated)
+          const returnedCount = allItems.filter(
+            (i) => i.status === 'returned' || i.id === item.export_receipt_item_id
+          ).length;
+
+          let newReceiptStatus: string | null = null;
+          if (returnedCount >= totalItems) {
+            newReceiptStatus = 'full_return';
+          } else if (returnedCount > 0) {
+            newReceiptStatus = 'partial_return';
+          }
+
+          if (newReceiptStatus) {
+            const { error: receiptError } = await supabase
+              .from('export_receipts')
+              .update({ status: newReceiptStatus })
+              .eq('id', item.export_receipt_id);
+
+            if (receiptError) throw receiptError;
+          }
+        }
+      }
+
       // Ghi nhận tiền hoàn trả cho khách - KHÔNG tính vào hạch toán kinh doanh
       // (Chỉ là đảo dòng tiền, không phải hoạt động kinh doanh mới)
       for (const payment of payments) {
