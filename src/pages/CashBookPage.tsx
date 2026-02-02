@@ -1002,6 +1002,7 @@ export default function CashBookPage() {
                         <p className="font-medium text-sm line-clamp-2">{entry.description}</p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {entry.category} • {paymentSourceLabels[entry.payment_source] || entry.payment_source}
+                          {entry.branches?.name && ` • ${entry.branches.name}`}
                         </p>
                       </div>
                       <div className="text-right shrink-0">
