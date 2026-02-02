@@ -97,11 +97,16 @@ export function useUpsertCustomer() {
       email?: string | null;
       birthday?: string | null;
     }) => {
-      // First try to find existing customer by phone
+      // Get tenant_id first to ensure we're looking within the right tenant
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
+      // First try to find existing customer by phone within the same tenant
       const { data: existing } = await supabase
         .from('customers')
         .select('*')
         .eq('phone', customer.phone)
+        .eq('tenant_id', tenantId)
         .maybeSingle();
 
       if (existing) {
@@ -122,9 +127,6 @@ export function useUpsertCustomer() {
         return data as Customer;
       } else {
         // Create new customer
-        const tenantId = await getCurrentTenantId();
-        if (!tenantId) throw new Error('Không tìm thấy tenant');
-
         const { data, error } = await supabase
           .from('customers')
           .insert([{ ...customer, tenant_id: tenantId }])
