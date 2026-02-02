@@ -3243,6 +3243,18 @@ export type Database = {
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
       is_tenant_accessible: { Args: { _tenant_id: string }; Returns: boolean }
       is_tenant_admin: { Args: { _user_id: string }; Returns: boolean }
+      lookup_customer_points_public: {
+        Args: { _phone: string; _tenant_id: string }
+        Returns: {
+          current_points: number
+          is_points_enabled: boolean
+          membership_tier: string
+          point_value: number
+          redeem_points: number
+          total_points_earned: number
+          total_points_used: number
+        }[]
+      }
       lookup_warranty_by_imei: {
         Args: { _imei: string; _tenant_id: string }
         Returns: {
