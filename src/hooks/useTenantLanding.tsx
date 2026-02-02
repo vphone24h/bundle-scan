@@ -58,6 +58,8 @@ export interface CustomerPointsPublic {
   point_value: number;
   redeem_points: number;
   is_points_enabled: boolean;
+  max_redemption_enabled: boolean;
+  max_redemption_amount: number;
 }
 
 // Hook để lấy landing settings của tenant hiện tại (cho admin)

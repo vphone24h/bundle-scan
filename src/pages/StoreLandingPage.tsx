@@ -577,19 +577,41 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                             </span>
                           </div>
                           
-                          {customerPoints.redeem_points > 0 && customerPoints.point_value > 0 && (
-                            <div className="flex items-center gap-2 p-3 rounded-lg bg-green-100 border border-green-200">
-                              <Gift className="h-5 w-5 text-green-600 flex-shrink-0" />
-                              <div>
-                                <p className="text-sm font-medium text-green-800">
-                                  Lần mua hàng tiếp theo bạn được giảm:
-                                </p>
-                                <p className="text-lg font-bold text-green-600">
-                                  {formatNumber(Math.floor(customerPoints.current_points / customerPoints.redeem_points) * customerPoints.point_value)}đ
-                                </p>
+                          {customerPoints.redeem_points > 0 && customerPoints.point_value > 0 && (() => {
+                            // Calculate raw discount from points
+                            const rawDiscount = Math.floor(customerPoints.current_points / customerPoints.redeem_points) * customerPoints.point_value;
+                            
+                            // Check if max redemption limit is enabled and apply cap
+                            const hasMaxLimit = customerPoints.max_redemption_enabled && customerPoints.max_redemption_amount > 0;
+                            const finalDiscount = hasMaxLimit 
+                              ? Math.min(rawDiscount, customerPoints.max_redemption_amount) 
+                              : rawDiscount;
+                            const isCapped = hasMaxLimit && rawDiscount > customerPoints.max_redemption_amount;
+                            
+                            return (
+                              <div className="flex items-center gap-2 p-3 rounded-lg bg-green-100 border border-green-200">
+                                <Gift className="h-5 w-5 text-green-600 flex-shrink-0" />
+                                <div>
+                                  <p className="text-sm font-medium text-green-800">
+                                    Lần mua hàng tiếp theo bạn được giảm:
+                                  </p>
+                                  <p className="text-lg font-bold text-green-600">
+                                    {formatNumber(finalDiscount)}đ
+                                    {isCapped && (
+                                      <span className="text-xs font-normal text-amber-600 ml-1">
+                                        (tối đa)
+                                      </span>
+                                    )}
+                                  </p>
+                                  {isCapped && (
+                                    <p className="text-xs text-amber-600 mt-1">
+                                      Giới hạn giảm tối đa: {formatNumber(customerPoints.max_redemption_amount)}đ
+                                    </p>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            );
+                          })()}
                         </div>
                       )}
                     </>
