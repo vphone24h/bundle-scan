@@ -39,13 +39,22 @@ export function InvoicePrintDialog({
     const printContent = printRef.current;
     if (!printContent) return;
 
+    // Chrome often paginates receipts as A4 height when @page height is `auto`,
+    // causing a large blank gap on thermal printers. For K80, compute an explicit
+    // page height that matches the content.
+    const isK80 = template?.paper_size === 'K80';
+    const contentHeightPx = printContent.scrollHeight;
+    const pxToMm = (px: number) => (px * 25.4) / 96; // 96dpi
+    const computedPageHeightMm = Math.ceil(pxToMm(contentHeightPx) + 6); // +6mm safety
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
     const fontSize = template?.font_size === 'small' ? '12px' : template?.font_size === 'large' ? '16px' : '14px';
-    const width = template?.paper_size === 'K80' ? '80mm' : '210mm';
+    const width = isK80 ? '80mm' : '210mm';
     const marginLeft = template?.margin_left ?? 0;
     const marginRight = template?.margin_right ?? 0;
+    const pageSize = isK80 ? `${width} ${computedPageHeightMm}mm` : 'A4';
 
     printWindow.document.write(`
       <html>
@@ -54,7 +63,7 @@ export function InvoicePrintDialog({
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             @page {
-              size: ${width} auto;
+              size: ${pageSize};
               margin: 0 !important;
               padding: 0 !important;
             }
@@ -66,6 +75,8 @@ export function InvoicePrintDialog({
               padding: 2mm ${marginRight}mm 2mm ${marginLeft}mm;
               box-sizing: border-box;
             }
+            /* Ensure K80 content doesn't create extra blank page area */
+            body { overflow: hidden; }
             /* Section alignment classes */
             .section { margin-bottom: 8px; }
             .text-center { text-align: center !important; }
