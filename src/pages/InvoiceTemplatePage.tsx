@@ -541,7 +541,7 @@ export default function InvoiceTemplatePage() {
             >
               <div className="space-y-3">
                 <Textarea
-                  placeholder="Nhập nội dung mô tả khác (ví dụ: chính sách đổi trả, lưu ý...)"
+                  placeholder="Nhập nội dung mô tả khác. Ví dụ:&#10;- STK: 0123456789 - Ngân hàng ABC - Chủ TK: Nguyễn Văn A&#10;- Chính sách đổi trả, bảo hành..."
                   value={currentSettings.custom_description_text || ''}
                   onChange={(e) => updateSetting('custom_description_text', e.target.value)}
                   rows={3}
