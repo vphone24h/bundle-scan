@@ -1886,6 +1886,8 @@ export type Database = {
       invoice_templates: {
         Row: {
           created_at: string
+          custom_description_align: string | null
+          custom_description_bold: boolean | null
           custom_description_text: string | null
           field_order: Json | null
           font_size: string | null
@@ -1907,6 +1909,7 @@ export type Database = {
           show_logo: boolean | null
           show_note: boolean | null
           show_paid_amount: boolean | null
+          show_points_earned: boolean | null
           show_product_name: boolean | null
           show_receipt_code: boolean | null
           show_sale_date: boolean | null
@@ -1928,6 +1931,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_description_align?: string | null
+          custom_description_bold?: boolean | null
           custom_description_text?: string | null
           field_order?: Json | null
           font_size?: string | null
@@ -1949,6 +1954,7 @@ export type Database = {
           show_logo?: boolean | null
           show_note?: boolean | null
           show_paid_amount?: boolean | null
+          show_points_earned?: boolean | null
           show_product_name?: boolean | null
           show_receipt_code?: boolean | null
           show_sale_date?: boolean | null
@@ -1970,6 +1976,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_description_align?: string | null
+          custom_description_bold?: boolean | null
           custom_description_text?: string | null
           field_order?: Json | null
           font_size?: string | null
@@ -1991,6 +1999,7 @@ export type Database = {
           show_logo?: boolean | null
           show_note?: boolean | null
           show_paid_amount?: boolean | null
+          show_points_earned?: boolean | null
           show_product_name?: boolean | null
           show_receipt_code?: boolean | null
           show_sale_date?: boolean | null

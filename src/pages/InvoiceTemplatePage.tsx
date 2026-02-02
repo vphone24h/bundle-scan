@@ -36,7 +36,9 @@ import {
   AlignCenter,
   AlignRight,
   Shield,
-  FileEdit
+  FileEdit,
+  Star,
+  Bold
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useDefaultInvoiceTemplate, useUpdateInvoiceTemplate, type InvoiceTemplate, type TextAlign } from '@/hooks/useInvoiceTemplates';
@@ -436,6 +438,13 @@ export default function InvoiceTemplatePage() {
             />
 
             <SettingItem
+              icon={<Star className="h-4 w-4" />}
+              label="Điểm tích lũy"
+              checked={currentSettings.show_points_earned ?? false}
+              onCheckedChange={(v) => updateSetting('show_points_earned', v)}
+            />
+
+            <SettingItem
               icon={<MessageSquare className="h-4 w-4" />}
               label="Ghi chú"
               checked={currentSettings.show_note ?? true}
@@ -461,12 +470,32 @@ export default function InvoiceTemplatePage() {
               checked={currentSettings.show_custom_description ?? false}
               onCheckedChange={(v) => updateSetting('show_custom_description', v)}
             >
-              <Textarea
-                placeholder="Nhập nội dung mô tả khác (ví dụ: chính sách đổi trả, lưu ý...)"
-                value={currentSettings.custom_description_text || ''}
-                onChange={(e) => updateSetting('custom_description_text', e.target.value)}
-                rows={3}
-              />
+              <div className="space-y-3">
+                <Textarea
+                  placeholder="Nhập nội dung mô tả khác (ví dụ: chính sách đổi trả, lưu ý...)"
+                  value={currentSettings.custom_description_text || ''}
+                  onChange={(e) => updateSetting('custom_description_text', e.target.value)}
+                  rows={3}
+                />
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant={currentSettings.custom_description_bold ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => updateSetting('custom_description_bold', !currentSettings.custom_description_bold)}
+                    >
+                      <Bold className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs text-muted-foreground">In đậm</span>
+                  </div>
+                  <AlignmentSelect
+                    value={(currentSettings.custom_description_align || 'center') as TextAlign}
+                    onChange={(v) => updateSetting('custom_description_align', v)}
+                  />
+                </div>
+              </div>
             </SettingItem>
           </SectionCard>
 
@@ -671,6 +700,12 @@ export default function InvoiceTemplatePage() {
                       <span>2,000,000đ</span>
                     </div>
                   )}
+                  {currentSettings.show_points_earned && (
+                    <div className="flex justify-between" style={{ color: '#16a34a' }}>
+                      <span>Điểm tích lũy:</span>
+                      <span>+320 điểm</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Note */}
@@ -682,7 +717,14 @@ export default function InvoiceTemplatePage() {
 
                 {/* Custom description */}
                 {currentSettings.show_custom_description && currentSettings.custom_description_text && (
-                  <div className="mt-2 text-sm" style={{ color: '#333', whiteSpace: 'pre-wrap' }}>
+                  <div 
+                    className={`mt-2 text-sm ${getAlignClass((currentSettings.custom_description_align || 'center') as TextAlign)}`}
+                    style={{ 
+                      color: '#333', 
+                      whiteSpace: 'pre-wrap',
+                      fontWeight: currentSettings.custom_description_bold ? 'bold' : 'normal'
+                    }}
+                  >
                     {currentSettings.custom_description_text}
                   </div>
                 )}

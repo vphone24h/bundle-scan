@@ -127,9 +127,12 @@ export function InvoicePrintDialog({
     show_total: true,
     show_paid_amount: true,
     show_debt: true,
+    show_points_earned: false,
     show_thank_you: true,
     show_custom_description: false,
     custom_description_text: '',
+    custom_description_bold: false,
+    custom_description_align: 'center' as TextAlign,
     thank_you_text: 'Cảm ơn quý khách!',
     section1_align: 'center' as TextAlign,
     section2_align: 'center' as TextAlign,
@@ -261,11 +264,23 @@ export function InvoicePrintDialog({
                     .reduce((s: number, p: any) => s + p.amount, 0).toLocaleString('vi-VN')}đ</span>
               </div>
             )}
+            {settings.show_points_earned && receipt.points_earned > 0 && (
+              <div className="flex justify-between" style={{ color: '#16a34a' }}>
+                <span>Điểm tích lũy:</span>
+                <span>+{receipt.points_earned} điểm</span>
+              </div>
+            )}
           </div>
 
           {/* Custom description */}
           {settings.show_custom_description && settings.custom_description_text && (
-            <div className="mt-2 text-sm" style={{ whiteSpace: 'pre-wrap' }}>
+            <div 
+              className={`mt-2 text-sm ${getAlignClass(settings.custom_description_align)}`}
+              style={{ 
+                whiteSpace: 'pre-wrap',
+                fontWeight: settings.custom_description_bold ? 'bold' : 'normal'
+              }}
+            >
               {settings.custom_description_text}
             </div>
           )}
