@@ -133,6 +133,7 @@ export function InvoicePrintDialog({
     custom_description_text: '',
     custom_description_bold: false,
     custom_description_align: 'center' as TextAlign,
+    custom_description_image_url: null as string | null,
     thank_you_text: 'Cảm ơn quý khách!',
     section1_align: 'center' as TextAlign,
     section2_align: 'center' as TextAlign,
@@ -273,7 +274,7 @@ export function InvoicePrintDialog({
           </div>
 
           {/* Custom description */}
-          {settings.show_custom_description && settings.custom_description_text && (
+          {settings.show_custom_description && (settings.custom_description_text || settings.custom_description_image_url) && (
             <div 
               className={`mt-2 text-sm ${getAlignClass(settings.custom_description_align)}`}
               style={{ 
@@ -281,6 +282,13 @@ export function InvoicePrintDialog({
                 fontWeight: settings.custom_description_bold ? 'bold' : 'normal'
               }}
             >
+              {settings.custom_description_image_url && (
+                <img 
+                  src={settings.custom_description_image_url} 
+                  alt="Custom" 
+                  style={{ maxWidth: '100%', maxHeight: '60px', marginBottom: '4px' }}
+                />
+              )}
               {settings.custom_description_text}
             </div>
           )}

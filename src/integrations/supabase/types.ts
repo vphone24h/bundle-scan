@@ -1888,6 +1888,7 @@ export type Database = {
           created_at: string
           custom_description_align: string | null
           custom_description_bold: boolean | null
+          custom_description_image_url: string | null
           custom_description_text: string | null
           field_order: Json | null
           font_size: string | null
@@ -1933,6 +1934,7 @@ export type Database = {
           created_at?: string
           custom_description_align?: string | null
           custom_description_bold?: boolean | null
+          custom_description_image_url?: string | null
           custom_description_text?: string | null
           field_order?: Json | null
           font_size?: string | null
@@ -1978,6 +1980,7 @@ export type Database = {
           created_at?: string
           custom_description_align?: string | null
           custom_description_bold?: boolean | null
+          custom_description_image_url?: string | null
           custom_description_text?: string | null
           field_order?: Json | null
           font_size?: string | null
