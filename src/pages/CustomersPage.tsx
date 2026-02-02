@@ -28,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, Plus, MoreHorizontal, Eye, ShoppingCart, Wallet, Settings, Users, Merge } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Eye, ShoppingCart, Wallet, Settings, Users, Merge, Pencil } from 'lucide-react';
 import { useCustomersWithPoints, MEMBERSHIP_TIER_NAMES, MEMBERSHIP_TIER_COLORS } from '@/hooks/useCustomerPoints';
 import { useBranches } from '@/hooks/useBranches';
 import { formatNumber } from '@/lib/formatNumber';
@@ -50,6 +50,7 @@ export default function CustomersPage() {
   const [statusFilter, setStatusFilter] = useState('_all_');
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<typeof customers extends (infer T)[] ? T : never | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [showFormDialog, setShowFormDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
@@ -79,6 +80,18 @@ export default function CustomersPage() {
 
   const handleCollectDebt = (customerId: string) => {
     navigate(`/debt?customerId=${customerId}`);
+  };
+
+  const handleEditCustomer = (customer: NonNullable<typeof customers>[number]) => {
+    setEditingCustomer(customer);
+    setShowFormDialog(true);
+  };
+
+  const handleCloseFormDialog = (open: boolean) => {
+    setShowFormDialog(open);
+    if (!open) {
+      setEditingCustomer(null);
+    }
   };
 
   const getBranchName = (branchId: string | null) => {
@@ -310,6 +323,10 @@ export default function CustomersPage() {
                               <Eye className="h-4 w-4 mr-2" />
                               Xem chi tiết
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Sửa thông tin
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleSell(customer.id)}>
                               <ShoppingCart className="h-4 w-4 mr-2" />
                               Bán hàng
@@ -352,7 +369,8 @@ export default function CustomersPage() {
 
       <CustomerFormDialog
         open={showFormDialog}
-        onOpenChange={setShowFormDialog}
+        onOpenChange={handleCloseFormDialog}
+        customer={editingCustomer}
       />
 
       <PointSettingsDialog
