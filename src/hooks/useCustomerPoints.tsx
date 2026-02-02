@@ -128,57 +128,78 @@ export function useUpdatePointSettings() {
 
   return useMutation({
     mutationFn: async (settings: Partial<PointSettings>) => {
+      console.log('[useUpdatePointSettings] Starting update with settings:', settings);
+      
       // Get tenant_id
-      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      const { data: tenantId, error: tenantError } = await supabase.rpc('get_user_tenant_id_secure');
+      
+      console.log('[useUpdatePointSettings] tenantId:', tenantId, 'error:', tenantError);
 
       if (!tenantId) {
         throw new Error('Không xác định được cửa hàng');
       }
 
       // Get existing settings for THIS tenant specifically
-      const { data: existing } = await supabase
+      const { data: existing, error: existingError } = await supabase
         .from('point_settings')
         .select('id')
         .eq('tenant_id', tenantId)
         .limit(1)
         .maybeSingle();
 
+      console.log('[useUpdatePointSettings] existing:', existing, 'error:', existingError);
+
       if (existing) {
         // Update existing tenant settings
-        const { error } = await supabase
+        const updatePayload = {
+          ...settings,
+          updated_at: new Date().toISOString(),
+          updated_by: user?.id,
+        };
+        console.log('[useUpdatePointSettings] Updating with payload:', updatePayload);
+        
+        const { data: updateResult, error } = await supabase
           .from('point_settings')
-          .update({
-            ...settings,
-            updated_at: new Date().toISOString(),
-            updated_by: user?.id,
-          })
-          .eq('id', existing.id);
+          .update(updatePayload)
+          .eq('id', existing.id)
+          .select();
 
+        console.log('[useUpdatePointSettings] Update result:', updateResult, 'error:', error);
+        
         if (error) throw error;
         return { ...settings, id: existing.id };
       } else {
         // Insert new with tenant_id
+        const insertPayload = {
+          ...settings,
+          tenant_id: tenantId,
+          updated_by: user?.id,
+        };
+        console.log('[useUpdatePointSettings] Inserting with payload:', insertPayload);
+        
         const { data, error } = await supabase
           .from('point_settings')
-          .insert([{
-            ...settings,
-            tenant_id: tenantId,
-            updated_by: user?.id,
-          }])
+          .insert([insertPayload])
           .select()
           .single();
 
+        console.log('[useUpdatePointSettings] Insert result:', data, 'error:', error);
+        
         if (error) throw error;
         return data;
       }
     },
-    onSuccess: (_, __, context) => {
+    onSuccess: (result) => {
+      console.log('[useUpdatePointSettings] Success! Result:', result);
       // Invalidate with exact: false to match all queries starting with 'point-settings'
       queryClient.invalidateQueries({ 
         queryKey: ['point-settings'],
         exact: false,
         refetchType: 'all'
       });
+    },
+    onError: (error) => {
+      console.error('[useUpdatePointSettings] Error:', error);
     },
   });
 }
