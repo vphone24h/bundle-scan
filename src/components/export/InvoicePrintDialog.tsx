@@ -52,16 +52,18 @@ export function InvoicePrintDialog({
         <head>
           <title>Hóa đơn ${receipt.code}</title>
           <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
             @page {
               size: ${width} auto;
-              margin: 0;
+              margin: 0 !important;
+              padding: 0 !important;
             }
-            body {
+            html, body {
               font-family: Arial, sans-serif;
               font-size: ${fontSize};
               width: ${width};
-              margin: 0 auto;
-              padding: 5mm ${marginRight}mm 5mm ${marginLeft}mm;
+              margin: 0 !important;
+              padding: 2mm ${marginRight}mm 2mm ${marginLeft}mm;
               box-sizing: border-box;
             }
             /* Section alignment classes */
