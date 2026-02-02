@@ -30,6 +30,9 @@ export interface InvoiceTemplate {
   show_thank_you: boolean;
   show_custom_description: boolean;
   custom_description_text: string | null;
+  custom_description_bold: boolean;
+  custom_description_align: TextAlign;
+  show_points_earned: boolean;
   thank_you_text: string | null;
   font_size: 'small' | 'medium' | 'large';
   text_align: TextAlign;
