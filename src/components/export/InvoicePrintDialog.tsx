@@ -43,9 +43,9 @@ export function InvoicePrintDialog({
     // causing a large blank gap on thermal printers. For K80, compute an explicit
     // page height that matches the content.
     const isK80 = template?.paper_size === 'K80';
-    const contentHeightPx = printContent.scrollHeight;
-    const pxToMm = (px: number) => (px * 25.4) / 96; // 96dpi
-    const computedPageHeightMm = Math.ceil(pxToMm(contentHeightPx) + 6); // +6mm safety
+    // Use px-based height to avoid DPI/zoom conversion issues that can cause
+    // Chrome to fall back to A4 and add a large blank area on thermal prints.
+    const contentHeightPx = Math.ceil(printContent.scrollHeight + 24); // +24px safety
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -54,7 +54,9 @@ export function InvoicePrintDialog({
     const width = isK80 ? '80mm' : '210mm';
     const marginLeft = template?.margin_left ?? 0;
     const marginRight = template?.margin_right ?? 0;
-    const pageSize = isK80 ? `${width} ${computedPageHeightMm}mm` : 'A4';
+    // For K80 we set explicit page height in px (allowed by CSS @page).
+    // This reduces the chance Chrome prints as A4 height.
+    const pageSize = isK80 ? `${width} ${contentHeightPx}px` : 'A4';
 
     printWindow.document.write(`
       <html>
@@ -76,7 +78,7 @@ export function InvoicePrintDialog({
               box-sizing: border-box;
             }
             /* Ensure K80 content doesn't create extra blank page area */
-            body { overflow: hidden; }
+            ${isK80 ? `html, body { height: ${contentHeightPx}px !important; overflow: hidden; }` : ''}
             /* Section alignment classes */
             .section { margin-bottom: 8px; }
             .text-center { text-align: center !important; }
@@ -111,6 +113,7 @@ export function InvoicePrintDialog({
             @media print {
               body { width: ${width}; }
               thead { display: table-row-group; }
+              ${isK80 ? `html, body { height: ${contentHeightPx}px !important; }` : ''}
             }
           </style>
         </head>
@@ -120,9 +123,23 @@ export function InvoicePrintDialog({
       </html>
     `);
     printWindow.document.close();
+
+    // Wait a tick so styles/layout apply before printing. Also close after print
+    // to avoid Chrome cutting content or re-paginating.
+    const cleanup = () => {
+      try { printWindow.close(); } catch { /* noop */ }
+    };
+    printWindow.onafterprint = cleanup;
+
     printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+    setTimeout(() => {
+      try {
+        printWindow.print();
+      } finally {
+        // Some browsers don't fire onafterprint reliably
+        setTimeout(cleanup, 1000);
+      }
+    }, 50);
   };
 
   const settings = template || {
