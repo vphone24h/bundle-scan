@@ -89,12 +89,15 @@ export function InvoicePrintDialog({
             .border-dashed { border-style: dashed; }
             .text-red { color: #dc2626; }
             .text-gray { color: #666; }
-            table { width: 100%; border-collapse: collapse; }
+            table { width: 100%; border-collapse: collapse; page-break-inside: auto; }
             th, td { padding: 4px 2px; border-bottom: 1px dashed #999; }
             th { font-weight: bold; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            thead { display: table-row-group; } /* Prevent header repeat on page break */
             .separator { border-top: 1px dashed #333; margin: 8px 0; }
             @media print {
               body { width: ${width}; }
+              thead { display: table-row-group; }
             }
           </style>
         </head>
