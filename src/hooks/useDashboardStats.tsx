@@ -59,12 +59,24 @@ export function useDashboardStats() {
       todayStart.setHours(0, 0, 0, 0);
       const todayEnd = new Date();
       todayEnd.setHours(23, 59, 59, 999);
+      
+      const todayDateStr = todayStart.toISOString().split('T')[0];
 
       // Get today's export receipts (for revenue and sold count)
       let exportReceiptsQuery = supabase
         .from('export_receipts')
-        .select('total_amount, export_date, id')
-        .eq('status', 'completed')
+        .select(`
+          id,
+          total_amount,
+          export_date,
+          status,
+          export_receipt_items(
+            id,
+            sale_price,
+            status,
+            product_id
+          )
+        `)
         .gte('export_date', todayStart.toISOString())
         .lte('export_date', todayEnd.toISOString());
 
@@ -75,22 +87,27 @@ export function useDashboardStats() {
       const { data: todayExportReceipts, error: exportReceiptsError } = await exportReceiptsQuery;
       if (exportReceiptsError) throw exportReceiptsError;
 
-      // Get today's export receipt items for profit calculation
-      const todayReceiptIds = todayExportReceipts?.map(r => r.id) || [];
-      let todaySoldItems: any[] = [];
-      
-      if (todayReceiptIds.length > 0) {
-        const { data: items, error: itemsError } = await supabase
-          .from('export_receipt_items')
-          .select('sale_price, product_id')
-          .in('receipt_id', todayReceiptIds);
-        
-        if (itemsError) throw itemsError;
-        todaySoldItems = items || [];
+      // Get today's returns WITHOUT fee (to subtract profit)
+      let returnQuery = supabase
+        .from('export_returns')
+        .select('id, import_price, sale_price, product_id, fee_type')
+        .eq('fee_type', 'none')
+        .gte('return_date', todayStart.toISOString())
+        .lte('return_date', todayEnd.toISOString());
+
+      if (shouldFilter && branchId) {
+        returnQuery = returnQuery.eq('branch_id', branchId);
       }
 
+      const { data: todayReturns, error: returnError } = await returnQuery;
+      if (returnError) throw returnError;
+
       // Get import prices for sold items to calculate profit
-      const productIds = todaySoldItems.map(item => item.product_id).filter(Boolean);
+      const productIds = Array.from(new Set([
+        ...(todayExportReceipts?.flatMap(r => r.export_receipt_items?.map(i => i.product_id).filter(Boolean)) || []),
+        ...(todayReturns?.map(r => r.product_id).filter(Boolean) || []),
+      ]));
+      
       let productImportPrices: Record<string, number> = {};
       
       if (productIds.length > 0) {
@@ -106,18 +123,63 @@ export function useDashboardStats() {
         }, {} as Record<string, number>);
       }
 
-      // Calculate today's profit
-      const todayProfit = todaySoldItems.reduce((sum, item) => {
-        const salePrice = Number(item.sale_price);
-        const importPrice = productImportPrices[item.product_id] || 0;
-        return sum + (salePrice - importPrice);
-      }, 0);
+      // Calculate today's business profit from sales
+      let todayBusinessProfit = 0;
+      let todaySold = 0;
+      let todayRevenue = 0;
 
-      // Calculate today's revenue
-      const todayRevenue = todayExportReceipts?.reduce((sum, r) => sum + Number(r.total_amount), 0) || 0;
+      todayExportReceipts?.forEach(receipt => {
+        if (receipt.status !== 'cancelled') {
+          todayRevenue += Number(receipt.total_amount);
+          
+          receipt.export_receipt_items?.forEach(item => {
+            if (item.status === 'sold' || item.status === 'returned') {
+              const salePrice = Number(item.sale_price);
+              const importPrice = item.product_id ? (productImportPrices[item.product_id] || 0) : 0;
+              todayBusinessProfit += (salePrice - importPrice);
+              todaySold++;
+            }
+          });
+        }
+      });
 
-      // Count today's sold items
-      const todaySold = todaySoldItems.length;
+      // Subtract profit from returns without fee
+      todayReturns?.forEach(ret => {
+        const salePrice = Number(ret.sale_price);
+        const importPrice = ret.product_id ? (productImportPrices[ret.product_id] || 0) : 0;
+        const originalProfit = salePrice - importPrice;
+        todayBusinessProfit -= originalProfit;
+      });
+
+      // Get today's cash book entries (expenses and other income with is_business_accounting = true)
+      let cashBookQuery = supabase
+        .from('cash_book')
+        .select('type, amount')
+        .eq('is_business_accounting', true)
+        .gte('transaction_date', todayStart.toISOString())
+        .lte('transaction_date', todayEnd.toISOString());
+
+      if (shouldFilter && branchId) {
+        cashBookQuery = cashBookQuery.eq('branch_id', branchId);
+      }
+
+      const { data: cashBookEntries, error: cashBookError } = await cashBookQuery;
+      if (cashBookError) throw cashBookError;
+
+      let todayExpenses = 0;
+      let todayOtherIncome = 0;
+
+      cashBookEntries?.forEach(entry => {
+        const amount = Number(entry.amount);
+        if (entry.type === 'expense') {
+          todayExpenses += amount;
+        } else if (entry.type === 'income') {
+          todayOtherIncome += amount;
+        }
+      });
+
+      // Calculate NET PROFIT same as Reports: (Business Profit + Other Income) - Expenses
+      const todayProfit = (todayBusinessProfit + todayOtherIncome) - todayExpenses;
 
       // Get today's imports count
       let todayImportsQuery = supabase
