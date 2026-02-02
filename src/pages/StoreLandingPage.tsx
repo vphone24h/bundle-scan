@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import { usePublicLandingSettings, useWarrantyLookup, WarrantyResult, BranchInfo } from '@/hooks/useTenantLanding';
+import { usePublicLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo } from '@/hooks/useTenantLanding';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -22,10 +22,13 @@ import {
   Package,
   Clock,
   Users,
-  ExternalLink
+  ExternalLink,
+  Star,
+  Gift
 } from 'lucide-react';
 import { format, addMonths, isAfter, differenceInDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { formatNumber } from '@/lib/formatNumber';
 
 /**
  * Hook để set dynamic PWA manifest cho landing page của từng cửa hàng
@@ -154,6 +157,10 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   
   const tenantId = landingData?.tenant?.id || null;
   const { data: warrantyResults, isLoading: isSearching, isFetched } = useWarrantyLookup(submittedValue, tenantId);
+  
+  // Check if search is phone number for customer points lookup
+  const isPhoneSearch = /^0\d{9,10}$/.test(submittedValue.replace(/\s/g, ''));
+  const { data: customerPoints } = useCustomerPointsPublic(isPhoneSearch ? submittedValue : '', tenantId);
   
   const settings = landingData?.settings;
   const tenant = landingData?.tenant;
@@ -549,6 +556,42 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                           </div>
                         );
                       })}
+                      
+                      {/* Customer Points Display - Only show for phone search */}
+                      {isPhoneSearch && customerPoints && customerPoints.is_points_enabled && customerPoints.current_points > 0 && (
+                        <div className="border rounded-xl p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <div className="p-2 rounded-full bg-amber-100">
+                              <Star className="h-5 w-5 text-amber-600" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-amber-800">Điểm tích lũy của bạn</p>
+                              <p className="text-xs text-amber-600">Tổng điểm hiện có</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/80">
+                            <span className="text-sm text-amber-700">Điểm hiện tại:</span>
+                            <span className="text-xl font-bold text-amber-600">
+                              {formatNumber(customerPoints.current_points)} điểm
+                            </span>
+                          </div>
+                          
+                          {customerPoints.redeem_points > 0 && customerPoints.point_value > 0 && (
+                            <div className="flex items-center gap-2 p-3 rounded-lg bg-green-100 border border-green-200">
+                              <Gift className="h-5 w-5 text-green-600 flex-shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium text-green-800">
+                                  Lần mua hàng tiếp theo bạn được giảm:
+                                </p>
+                                <p className="text-lg font-bold text-green-600">
+                                  {formatNumber(Math.floor(customerPoints.current_points / customerPoints.redeem_points) * customerPoints.point_value)}đ
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div className="text-center py-8 border rounded-xl bg-muted/30">

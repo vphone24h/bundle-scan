@@ -50,6 +50,16 @@ export interface WarrantyResult {
   customer_phone: string | null;
 }
 
+export interface CustomerPointsPublic {
+  current_points: number;
+  total_points_earned: number;
+  total_points_used: number;
+  membership_tier: string;
+  point_value: number;
+  redeem_points: number;
+  is_points_enabled: boolean;
+}
+
 // Hook để lấy landing settings của tenant hiện tại (cho admin)
 export function useTenantLandingSettings() {
   return useQuery({
@@ -226,6 +236,33 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
       }
     },
     enabled: !!searchValue && !!tenantId && searchValue.length >= 5,
+  });
+}
+
+// Hook tra cứu điểm tích lũy công khai - chỉ theo SĐT
+export function useCustomerPointsPublic(phone: string, tenantId: string | null) {
+  return useQuery({
+    queryKey: ['customer-points-public', phone, tenantId],
+    queryFn: async (): Promise<CustomerPointsPublic | null> => {
+      if (!phone || !tenantId) return null;
+
+      const isPhoneNumber = /^0\d{9,10}$/.test(phone.replace(/\s/g, ''));
+      if (!isPhoneNumber) return null;
+
+      const { data, error } = await supabase
+        .rpc('lookup_customer_points_public', {
+          _phone: phone,
+          _tenant_id: tenantId
+        });
+
+      if (error) return null;
+      
+      if (data && data.length > 0) {
+        return data[0] as CustomerPointsPublic;
+      }
+      return null;
+    },
+    enabled: !!phone && !!tenantId && phone.length >= 10,
   });
 }
 
