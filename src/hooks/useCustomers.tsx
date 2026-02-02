@@ -110,23 +110,11 @@ export function useUpsertCustomer() {
         .maybeSingle();
 
       if (existing) {
-        // Update existing customer
-        const { data, error } = await supabase
-          .from('customers')
-          .update({
-            name: customer.name,
-            address: customer.address,
-            email: customer.email,
-            birthday: customer.birthday,
-          })
-          .eq('id', existing.id)
-          .select()
-          .single();
-
-        if (error) throw error;
-        return data as Customer;
+        // Return existing customer as-is (keep original name, just use for order)
+        // No update needed - the customer already exists
+        return existing as Customer;
       } else {
-        // Create new customer
+        // Create new customer only if not found
         const { data, error } = await supabase
           .from('customers')
           .insert([{ ...customer, tenant_id: tenantId }])
