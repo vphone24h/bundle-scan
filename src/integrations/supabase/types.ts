@@ -3248,6 +3248,8 @@ export type Database = {
         Returns: {
           current_points: number
           is_points_enabled: boolean
+          max_redemption_amount: number
+          max_redemption_enabled: boolean
           membership_tier: string
           point_value: number
           redeem_points: number
