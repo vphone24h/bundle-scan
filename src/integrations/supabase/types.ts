@@ -3209,7 +3209,56 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      advertisements_public: {
+        Row: {
+          ad_type: string | null
+          description: string | null
+          display_order: number | null
+          end_date: string | null
+          id: string | null
+          image_url: string | null
+          is_active: boolean | null
+          link_url: string | null
+          start_date: string | null
+          tenant_id: string | null
+          title: string | null
+        }
+        Insert: {
+          ad_type?: string | null
+          description?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string | null
+          start_date?: string | null
+          tenant_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          ad_type?: string | null
+          description?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string | null
+          start_date?: string | null
+          tenant_id?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advertisements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       belongs_to_tenant: {
