@@ -241,11 +241,16 @@ export default function InventoryPage() {
 
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Reminder banner */}
-        <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive">
-          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-          <p className="text-sm font-medium">
-            Nhớ xuất file ra Excel mỗi ngày để lưu trữ dữ liệu!
-          </p>
+        <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-sm font-medium">
+              Nhớ xuất file ra Excel mỗi ngày để lưu trữ dữ liệu!
+            </p>
+            <p className="text-xs opacity-80">
+              Dữ liệu được lưu trữ đám mây rất bảo mật, không thể mất được, nhưng hãy nhớ xuất ra Excel mỗi ngày để dễ khôi phục hơn nếu có rủi ro.
+            </p>
+          </div>
         </div>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
