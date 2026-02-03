@@ -754,9 +754,9 @@ export default function ImportHistoryPage() {
 
       {/* Receipt Detail Dialog */}
       <Dialog open={!!selectedReceiptId} onOpenChange={() => setSelectedReceiptId(null)}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Chi tiết phiếu nhập {receiptDetails?.receipt?.code}</DialogTitle>
+            <DialogTitle className="text-base sm:text-lg break-all">Chi tiết phiếu nhập {receiptDetails?.receipt?.code}</DialogTitle>
           </DialogHeader>
 
           {detailsLoading ? (
@@ -764,27 +764,28 @@ export default function ImportHistoryPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : receiptDetails?.receipt && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Info */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm bg-muted/30 rounded-lg p-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 text-sm bg-muted/30 rounded-lg p-3 sm:p-4">
                 <div>
                   <span className="text-muted-foreground block text-xs">Ngày nhập</span>
-                  <span className="font-medium">
+                  <span className="font-medium text-sm">
                     {formatDate(new Date(receiptDetails.receipt.import_date))}
                   </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground block text-xs">Nhà cung cấp</span>
-                  <span className="font-medium">{receiptDetails.receipt.suppliers?.name || '-'}</span>
+                  <span className="font-medium text-sm truncate block">{receiptDetails.receipt.suppliers?.name || '-'}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground block text-xs">Chi nhánh</span>
-                  <span className="font-medium">{receiptDetails.receipt.branches?.name || '-'}</span>
+                  <span className="font-medium text-sm truncate block">{receiptDetails.receipt.branches?.name || '-'}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground block text-xs">Trạng thái</span>
                   <Badge
                     className={cn(
+                      'text-xs mt-0.5',
                       receiptDetails.receipt.status === 'completed'
                         ? 'status-in-stock'
                         : 'bg-destructive/10 text-destructive'
@@ -795,12 +796,63 @@ export default function ImportHistoryPage() {
                 </div>
               </div>
 
-              {/* Products Table */}
+              {/* Products - Mobile Card View & Desktop Table */}
               <div>
-                <h4 className="font-semibold mb-3">
+                <h4 className="font-semibold mb-3 text-sm sm:text-base">
                   Danh sách sản phẩm ({receiptDetails.productImports?.length || 0} dòng)
                 </h4>
-                <div className="border rounded-lg overflow-hidden">
+                
+                {/* Mobile Card View */}
+                <div className="sm:hidden space-y-2">
+                  {receiptDetails.productImports?.map((item: any, index: number) => (
+                    <div key={item.id} className="p-3 border rounded-lg bg-card space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm flex items-center gap-2">
+                            <span className="bg-muted text-muted-foreground text-xs px-1.5 py-0.5 rounded flex-shrink-0">{index + 1}</span>
+                            <span className="truncate">{item.products?.name || 'N/A'}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1 font-mono">
+                            {item.products?.imei || item.products?.sku || '-'}
+                          </div>
+                          {item.products?.categories?.name && (
+                            <div className="text-xs text-muted-foreground">
+                              {item.products.categories.name}
+                            </div>
+                          )}
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'text-xs flex-shrink-0',
+                            item.products?.status === 'in_stock'
+                              ? 'border-success text-success'
+                              : item.products?.status === 'sold'
+                              ? 'border-primary text-primary'
+                              : item.products?.status === 'deleted'
+                              ? 'border-destructive text-destructive bg-destructive/10'
+                              : 'border-amber-500 text-amber-600'
+                          )}
+                        >
+                          {item.products?.status === 'in_stock'
+                            ? 'Tồn kho'
+                            : item.products?.status === 'sold'
+                            ? 'Đã bán'
+                            : item.products?.status === 'deleted'
+                            ? 'Đã xóa'
+                            : 'Đã trả'}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center text-sm pt-2 border-t">
+                        <span className="text-muted-foreground">SL: {item.quantity}</span>
+                        <span className="font-medium">{formatCurrency(Number(item.import_price) * item.quantity)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden sm:block border rounded-lg overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/50">
@@ -867,33 +919,33 @@ export default function ImportHistoryPage() {
               </div>
 
               {/* Payment Summary */}
-              <div className="rounded-lg bg-muted/50 p-4 space-y-3">
-                <h4 className="font-semibold">Thanh toán</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="text-sm">
+              <div className="rounded-lg bg-muted/50 p-3 sm:p-4 space-y-3">
+                <h4 className="font-semibold text-sm sm:text-base">Thanh toán</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+                  <div className="flex justify-between sm:block text-sm">
                     <span className="text-muted-foreground">Tổng tiền:</span>
-                    <span className="ml-2 font-bold text-lg">{formatCurrency(Number(receiptDetails.receipt.total_amount))}</span>
+                    <span className="sm:ml-2 font-bold sm:text-lg">{formatCurrency(Number(receiptDetails.receipt.total_amount))}</span>
                   </div>
-                  <div className="text-sm">
+                  <div className="flex justify-between sm:block text-sm">
                     <span className="text-muted-foreground">Đã thanh toán:</span>
-                    <span className="ml-2 text-success font-medium text-lg">
+                    <span className="sm:ml-2 text-success font-medium sm:text-lg">
                       {formatCurrency(Number(receiptDetails.receipt.paid_amount))}
                     </span>
                   </div>
                   {Number(receiptDetails.receipt.debt_amount) > 0 && (
-                    <div className="text-sm">
+                    <div className="flex justify-between sm:block text-sm">
                       <span className="text-muted-foreground">Còn nợ:</span>
-                      <span className="ml-2 text-destructive font-medium text-lg">
+                      <span className="sm:ml-2 text-destructive font-medium sm:text-lg">
                         {formatCurrency(Number(receiptDetails.receipt.debt_amount))}
                       </span>
                     </div>
                   )}
                 </div>
                 {receiptDetails.payments && receiptDetails.payments.length > 0 && (
-                  <div className="pt-3 border-t text-sm text-muted-foreground flex flex-wrap gap-3">
+                  <div className="pt-3 border-t text-sm text-muted-foreground flex flex-wrap gap-2 sm:gap-3">
                     <span>Hình thức:</span>
                     {receiptDetails.payments.map((p: any) => (
-                      <Badge key={p.id} variant="outline" className="font-normal">
+                      <Badge key={p.id} variant="outline" className="font-normal text-xs">
                         {p.payment_type === 'cash'
                           ? 'Tiền mặt'
                           : p.payment_type === 'bank_card'
@@ -909,8 +961,8 @@ export default function ImportHistoryPage() {
               </div>
 
               {receiptDetails.receipt.note && (
-                <div className="rounded-lg border p-4">
-                  <h4 className="font-semibold mb-2">Ghi chú</h4>
+                <div className="rounded-lg border p-3 sm:p-4">
+                  <h4 className="font-semibold mb-2 text-sm sm:text-base">Ghi chú</h4>
                   <p className="text-sm text-muted-foreground">{receiptDetails.receipt.note}</p>
                 </div>
               )}
