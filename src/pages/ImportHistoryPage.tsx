@@ -499,7 +499,12 @@ export default function ImportHistoryPage() {
                 <tbody>
                   {receiptsPagination.paginatedData.map((receipt) => (
                     <tr key={receipt.id}>
-                      <td className="font-mono font-medium text-primary">{receipt.code}</td>
+                      <td 
+                        className="font-mono font-medium text-primary cursor-pointer hover:underline"
+                        onClick={() => handleView(receipt)}
+                      >
+                        {receipt.code}
+                      </td>
                       <td>{formatDate(new Date(receipt.import_date))}</td>
                       <td className="text-right font-medium">{formatCurrency(Number(receipt.total_amount))}</td>
                       <td className="text-right text-success">{formatCurrency(Number(receipt.paid_amount))}</td>

@@ -412,7 +412,12 @@ export default function ExportHistoryPage() {
                   <TableBody>
                     {receiptsPagination.paginatedData.map((receipt) => (
                       <TableRow key={receipt.id}>
-                        <TableCell className="font-medium">{receipt.code}</TableCell>
+                        <TableCell 
+                          className="font-medium text-primary cursor-pointer hover:underline"
+                          onClick={() => handleViewDetail(receipt)}
+                        >
+                          {receipt.code}
+                        </TableCell>
                         <TableCell>
                           {format(new Date(receipt.export_date), 'dd/MM/yyyy HH:mm', { locale: vi })}
                         </TableCell>
