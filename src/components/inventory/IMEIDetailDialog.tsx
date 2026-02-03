@@ -67,6 +67,7 @@ export function IMEIDetailDialog({
                   <TableHead className="text-right">Giá nhập</TableHead>
                   <TableHead>Ngày nhập</TableHead>
                   <TableHead>Nhà cung cấp</TableHead>
+                  <TableHead>Ghi chú</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -91,6 +92,9 @@ export function IMEIDetailDialog({
                       })}
                     </TableCell>
                     <TableCell>{product.supplierName || '-'}</TableCell>
+                    <TableCell className="max-w-[200px] truncate" title={product.note || ''}>
+                      {product.note || '-'}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
