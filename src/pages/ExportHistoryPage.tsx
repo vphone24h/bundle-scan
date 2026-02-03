@@ -668,6 +668,7 @@ export default function ExportHistoryPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12 text-center">STT</TableHead>
                       <TableHead>Tên SP</TableHead>
                       <TableHead>IMEI/SKU</TableHead>
                       <TableHead className="text-center">SL</TableHead>
@@ -677,11 +678,12 @@ export default function ExportHistoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selectedReceipt.export_receipt_items?.map((item) => {
+                    {selectedReceipt.export_receipt_items?.map((item, index) => {
                       const quantity = (item as any).quantity || 1;
                       const totalPrice = item.sale_price * quantity;
                       return (
                         <TableRow key={item.id}>
+                          <TableCell className="text-center font-medium">{index + 1}</TableCell>
                           <TableCell>{item.product_name}</TableCell>
                           <TableCell>{item.imei || item.sku}</TableCell>
                           <TableCell className="text-center">{quantity}</TableCell>
