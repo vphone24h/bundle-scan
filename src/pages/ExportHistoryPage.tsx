@@ -631,24 +631,24 @@ export default function ExportHistoryPage() {
 
       {/* Detail Dialog */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Chi tiết phiếu xuất {selectedReceipt?.code}</DialogTitle>
+            <DialogTitle className="text-base sm:text-lg break-all">Chi tiết phiếu xuất {selectedReceipt?.code}</DialogTitle>
           </DialogHeader>
           
           {selectedReceipt && (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Receipt info */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-sm">
+                <div className="flex justify-between sm:block">
                   <span className="text-muted-foreground">Ngày bán:</span>
-                  <span className="ml-2 font-medium">
+                  <span className="sm:ml-2 font-medium">
                     {format(new Date(selectedReceipt.export_date), 'dd/MM/yyyy HH:mm', { locale: vi })}
                   </span>
                 </div>
-                <div>
+                <div className="flex justify-between sm:block">
                   <span className="text-muted-foreground">Trạng thái:</span>
-                  <Badge className="ml-2" variant={statusLabels[selectedReceipt.status]?.variant}>
+                  <Badge className="sm:ml-2" variant={statusLabels[selectedReceipt.status]?.variant}>
                     {statusLabels[selectedReceipt.status]?.label}
                   </Badge>
                 </div>
@@ -656,64 +656,98 @@ export default function ExportHistoryPage() {
 
               {/* Customer */}
               <div className="p-3 bg-muted rounded-lg">
-                <div className="font-medium mb-1">Khách hàng</div>
+                <div className="font-medium mb-1 text-sm">Khách hàng</div>
                 <div className="text-sm">
                   {selectedReceipt.customers?.name} - {selectedReceipt.customers?.phone}
                 </div>
                 {selectedReceipt.customers?.address && (
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs text-muted-foreground">
                     {selectedReceipt.customers.address}
                   </div>
                 )}
               </div>
 
-              {/* Items */}
+              {/* Items - Mobile Card View */}
               <div>
-                <div className="font-medium mb-2">Sản phẩm</div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12 text-center">STT</TableHead>
-                      <TableHead>Tên SP</TableHead>
-                      <TableHead>IMEI/SKU</TableHead>
-                      <TableHead className="text-center">SL</TableHead>
-                      <TableHead className="text-right">Đơn giá</TableHead>
-                      <TableHead className="text-right">Thành tiền</TableHead>
-                      <TableHead>TT</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedReceipt.export_receipt_items?.map((item, index) => {
-                      const quantity = (item as any).quantity || 1;
-                      const totalPrice = item.sale_price * quantity;
-                      return (
-                        <TableRow key={item.id}>
-                          <TableCell className="text-center font-medium">{index + 1}</TableCell>
-                          <TableCell>{item.product_name}</TableCell>
-                          <TableCell>{item.imei || item.sku}</TableCell>
-                          <TableCell className="text-center">{quantity}</TableCell>
-                          <TableCell className="text-right">
-                            {item.sale_price.toLocaleString('vi-VN')}đ
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {totalPrice.toLocaleString('vi-VN')}đ
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={item.status === 'sold' ? 'default' : 'secondary'} className="text-xs">
-                              {item.status === 'sold' ? 'Đã bán' : 'Đã trả'}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                <div className="font-medium mb-2 text-sm">Sản phẩm ({selectedReceipt.export_receipt_items?.length || 0})</div>
+                
+                {/* Mobile Card View */}
+                <div className="sm:hidden space-y-2">
+                  {selectedReceipt.export_receipt_items?.map((item, index) => {
+                    const quantity = (item as any).quantity || 1;
+                    const totalPrice = item.sale_price * quantity;
+                    return (
+                      <div key={item.id} className="p-3 border rounded-lg bg-card space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm flex items-center gap-2">
+                              <span className="bg-muted text-muted-foreground text-xs px-1.5 py-0.5 rounded">{index + 1}</span>
+                              <span className="truncate">{item.product_name}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1 font-mono">
+                              {item.imei || item.sku}
+                            </div>
+                          </div>
+                          <Badge variant={item.status === 'sold' ? 'default' : 'secondary'} className="text-xs flex-shrink-0">
+                            {item.status === 'sold' ? 'Đã bán' : 'Đã trả'}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center text-sm pt-2 border-t">
+                          <span className="text-muted-foreground">SL: {quantity}</span>
+                          <span className="font-medium">{totalPrice.toLocaleString('vi-VN')}đ</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12 text-center">STT</TableHead>
+                        <TableHead>Tên SP</TableHead>
+                        <TableHead>IMEI/SKU</TableHead>
+                        <TableHead className="text-center">SL</TableHead>
+                        <TableHead className="text-right">Đơn giá</TableHead>
+                        <TableHead className="text-right">Thành tiền</TableHead>
+                        <TableHead>TT</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedReceipt.export_receipt_items?.map((item, index) => {
+                        const quantity = (item as any).quantity || 1;
+                        const totalPrice = item.sale_price * quantity;
+                        return (
+                          <TableRow key={item.id}>
+                            <TableCell className="text-center font-medium">{index + 1}</TableCell>
+                            <TableCell>{item.product_name}</TableCell>
+                            <TableCell>{item.imei || item.sku}</TableCell>
+                            <TableCell className="text-center">{quantity}</TableCell>
+                            <TableCell className="text-right">
+                              {item.sale_price.toLocaleString('vi-VN')}đ
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {totalPrice.toLocaleString('vi-VN')}đ
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={item.status === 'sold' ? 'default' : 'secondary'} className="text-xs">
+                                {item.status === 'sold' ? 'Đã bán' : 'Đã trả'}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
 
               {/* Payment */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-3 bg-muted rounded-lg">
-                  <div className="font-medium mb-2">Thanh toán</div>
+                  <div className="font-medium mb-2 text-sm">Thanh toán</div>
                   {selectedReceipt.export_receipt_payments?.map((payment, idx) => (
                     <div key={idx} className="flex justify-between text-sm">
                       <span>{paymentLabels[payment.payment_type] || payment.payment_type}</span>
@@ -722,16 +756,16 @@ export default function ExportHistoryPage() {
                   ))}
                 </div>
                 <div className="p-3 bg-muted rounded-lg space-y-1">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span>Tổng tiền:</span>
                     <span className="font-bold">{selectedReceipt.total_amount.toLocaleString('vi-VN')}đ</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span>Đã thanh toán:</span>
                     <span>{selectedReceipt.paid_amount.toLocaleString('vi-VN')}đ</span>
                   </div>
                   {selectedReceipt.debt_amount > 0 && (
-                    <div className="flex justify-between text-destructive">
+                    <div className="flex justify-between text-destructive text-sm">
                       <span>Công nợ:</span>
                       <span>{selectedReceipt.debt_amount.toLocaleString('vi-VN')}đ</span>
                     </div>
@@ -741,11 +775,11 @@ export default function ExportHistoryPage() {
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDetailDialog(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowDetailDialog(false)} className="w-full sm:w-auto">
               Đóng
             </Button>
-            <Button onClick={() => selectedReceipt && handlePrint(selectedReceipt)}>
+            <Button onClick={() => selectedReceipt && handlePrint(selectedReceipt)} className="w-full sm:w-auto">
               <Printer className="h-4 w-4 mr-2" />
               In hóa đơn
             </Button>
