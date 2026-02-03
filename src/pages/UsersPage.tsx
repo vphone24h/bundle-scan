@@ -142,15 +142,20 @@ export default function UsersPage() {
         .or(`tenant_id.eq.${currentTenant.id},tenant_id.is.null`)
         .order('created_at', { ascending: false });
 
-      if (permissions?.role === 'branch_admin' && permissions.branchId) {
-        query = query.eq('branch_id', permissions.branchId);
-      }
-
       const { data: rolesData, error: rolesError } = await query;
 
       if (rolesError) throw rolesError;
 
-      const userIds = rolesData.map(r => r.user_id);
+      // Branch Admin: lọc bỏ Super Admin và chỉ hiển thị user cùng chi nhánh
+      let filteredRoles = rolesData || [];
+      if (permissions?.role === 'branch_admin') {
+        filteredRoles = filteredRoles.filter(r => 
+          r.user_role !== 'super_admin' && 
+          r.branch_id === permissions.branchId
+        );
+      }
+
+      const userIds = filteredRoles.map(r => r.user_id);
       if (userIds.length === 0) return [];
       
       // Fetch profiles
@@ -173,7 +178,7 @@ export default function UsersPage() {
       const profilesMap = new Map(profilesData.map(p => [p.user_id, p]));
       const platformUsersMap = new Map(platformUsersData.map(p => [p.user_id, p]));
 
-      return rolesData.map(role => ({
+      return filteredRoles.map(role => ({
         ...role,
         profiles: profilesMap.get(role.user_id) || null,
         platform_user: platformUsersMap.get(role.user_id) || null,
@@ -200,12 +205,11 @@ export default function UsersPage() {
   const isSuperAdmin = permissions?.role === 'super_admin';
   const isBranchAdmin = permissions?.role === 'branch_admin';
 
+  // Chỉ Super Admin mới có quyền chỉnh sửa tài khoản
   const canEditUser = (user: UserWithRole) => {
     if (user.user_role === 'super_admin') return false;
     if (isSuperAdmin) return true;
-    if (isBranchAdmin && user.branch_id === permissions.branchId && user.user_role !== 'branch_admin') {
-      return true;
-    }
+    // Branch Admin không được chỉnh sửa bất kỳ tài khoản nào
     return false;
   };
 
