@@ -344,7 +344,11 @@ export default function ImportNewPage() {
         actions={
           <div className="flex gap-2 flex-wrap">
             {userGuideUrl && (
-              <Button variant="secondary" asChild>
+              <Button 
+                variant="default" 
+                asChild 
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md animate-pulse hover:animate-none"
+              >
                 <a href={userGuideUrl} target="_blank" rel="noopener noreferrer">
                   <BookOpen className="mr-2 h-4 w-4" />
                   Hướng dẫn sử dụng

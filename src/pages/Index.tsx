@@ -49,7 +49,12 @@ const Index = () => {
               </div>
             )}
             {userGuideUrl && (
-              <Button variant="secondary" size="sm" asChild>
+              <Button 
+                variant="default" 
+                size="sm" 
+                asChild 
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md animate-pulse hover:animate-none"
+              >
                 <a href={userGuideUrl} target="_blank" rel="noopener noreferrer">
                   <BookOpen className="mr-2 h-4 w-4" />
                   Hướng dẫn sử dụng
