@@ -36,11 +36,11 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
   resolutionPromise = (async () => {
     const hostInfo = detectTenantFromHostname();
     
-    // Main domain - no tenant resolution needed
-    if (hostInfo.isMainDomain && !hostInfo.subdomain) {
+    // Main domain - no tenant resolution needed (FAST PATH - no API call)
+    if (hostInfo.isMainDomain) {
       const result: ResolvedTenant = {
         tenantId: null,
-        subdomain: null,
+        subdomain: hostInfo.subdomain, // Could be null or from ?store= param
         tenantName: null,
         status: 'main_domain',
         isMainDomain: true,

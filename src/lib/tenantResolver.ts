@@ -43,8 +43,12 @@ export function detectTenantFromHostname(): TenantInfo {
     };
   }
   
-  // Lovable preview domain
-  if (hostname.includes('lovable.app') || hostname.includes('lovable.dev')) {
+  // Lovable preview domain (all variations)
+  if (
+    hostname.includes('lovable.app') || 
+    hostname.includes('lovable.dev') ||
+    hostname.includes('lovableproject.com')
+  ) {
     return {
       subdomain: null,
       isMainDomain: true,
