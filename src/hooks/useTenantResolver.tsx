@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   detectTenantFromHostname, 
@@ -158,10 +158,36 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
 export function useTenantResolver() {
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
   
-  const [tenant, setTenant] = useState<ResolvedTenant>(() => {
-    // Return cached result if same hostname (sync check)
+  // OPTIMIZATION: Compute sync result immediately without useState setter
+  const syncResult = useMemo((): ResolvedTenant | null => {
+    // Return cached result immediately
     if (cachedResult && cacheHostname === hostname) {
       return cachedResult;
+    }
+    
+    // FAST PATH: Check domain synchronously without any API call
+    const hostInfo = detectTenantFromHostname();
+    if (hostInfo.isMainDomain) {
+      const result: ResolvedTenant = {
+        tenantId: null,
+        subdomain: hostInfo.subdomain,
+        tenantName: null,
+        status: 'main_domain',
+        isMainDomain: true,
+      };
+      // Cache immediately
+      cachedResult = result;
+      cacheHostname = hostname;
+      return result;
+    }
+    
+    return null;
+  }, [hostname]);
+
+  const [tenant, setTenant] = useState<ResolvedTenant>(() => {
+    // Use sync result if available (no loading state needed!)
+    if (syncResult) {
+      return syncResult;
     }
     return {
       tenantId: null,
@@ -173,14 +199,14 @@ export function useTenantResolver() {
   });
 
   useEffect(() => {
-    // Skip if already resolved and cached for this hostname
-    if (cachedResult && cacheHostname === hostname && tenant.status !== 'loading') {
+    // If sync result already resolved, skip async
+    if (syncResult && tenant.status !== 'loading') {
       return;
     }
-
-    // If cached result exists and matches hostname, use it immediately
-    if (cachedResult && cacheHostname === hostname && tenant.status === 'loading') {
-      setTenant(cachedResult);
+    
+    // Sync result available but state not updated yet
+    if (syncResult) {
+      setTenant(syncResult);
       return;
     }
 
@@ -195,7 +221,7 @@ export function useTenantResolver() {
     return () => {
       cancelled = true;
     };
-  }, [hostname]);
+  }, [hostname, syncResult]);
   
   return tenant;
 }
