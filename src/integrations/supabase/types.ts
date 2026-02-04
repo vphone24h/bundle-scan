@@ -1396,6 +1396,8 @@ export type Database = {
           tenant_id: string | null
           total_amount: number
           updated_at: string
+          vat_amount: number
+          vat_rate: number
         }
         Insert: {
           branch_id?: string | null
@@ -1415,6 +1417,8 @@ export type Database = {
           tenant_id?: string | null
           total_amount?: number
           updated_at?: string
+          vat_amount?: number
+          vat_rate?: number
         }
         Update: {
           branch_id?: string | null
@@ -1434,6 +1438,8 @@ export type Database = {
           tenant_id?: string | null
           total_amount?: number
           updated_at?: string
+          vat_amount?: number
+          vat_rate?: number
         }
         Relationships: [
           {
