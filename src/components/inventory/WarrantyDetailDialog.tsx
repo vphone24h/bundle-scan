@@ -63,9 +63,14 @@ export function WarrantyDetailDialog({
     await markDefective.mutateAsync({
       productId: defectiveDialog.id,
       paymentSource,
-      note: defectiveNote || `Hàng lỗi không sửa được - ${defectiveDialog.name}`,
+      note: defectiveNote || `Hàng lỗi không sửa được`,
       importPrice: defectiveDialog.importPrice,
       supplierId: defectiveDialog.supplierId,
+      productName: defectiveDialog.name,
+      sku: item.sku,
+      imei: defectiveDialog.imei,
+      supplierName: defectiveDialog.supplierName,
+      branchId: defectiveDialog.branchId,
     });
     
     setDefectiveDialog(null);
