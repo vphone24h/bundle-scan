@@ -71,6 +71,9 @@ export default function ImportHistoryPage() {
   
   const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
   const { data: receiptDetails, isLoading: detailsLoading } = useImportReceiptDetails(selectedReceiptId);
+  
+  // Track products marked for warranty (for instant UI update)
+  const [warrantyMarkedIds, setWarrantyMarkedIds] = useState<Set<string>>(new Set());
 
   // Dialog states for edit and return
   const [editReceipt, setEditReceipt] = useState<ImportReceipt | null>(null);
@@ -697,18 +700,27 @@ export default function ImportHistoryPage() {
                                 <RotateCcw className="mr-1 h-3 w-3" />
                                 Trả
                               </Button>
-                              {/* Warranty button */}
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => markWarranty.mutate(product.id)}
-                                disabled={markWarranty.isPending}
-                                className="h-7 text-xs gap-1"
-                                title="Chuyển sang bảo hành"
-                              >
-                                <Wrench className="h-3 w-3" />
-                                BH
-                              </Button>
+                              {/* Warranty button - show "Đã BH" if already marked */}
+                              {warrantyMarkedIds.has(product.id) ? (
+                                <span className="text-xs text-destructive opacity-60 font-medium">
+                                  Đã BH
+                                </span>
+                              ) : (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => {
+                                    setWarrantyMarkedIds(prev => new Set(prev).add(product.id));
+                                    markWarranty.mutate(product.id);
+                                  }}
+                                  disabled={markWarranty.isPending}
+                                  className="h-7 text-xs gap-1"
+                                  title="Chuyển sang bảo hành"
+                                >
+                                  <Wrench className="h-3 w-3" />
+                                  BH
+                                </Button>
+                              )}
                               {/* Adjust quantity - only for non-IMEI products and super_admin */}
                               {!product.imei && permissions?.canAdjustProductQuantity && (
                                 <Button 
@@ -735,12 +747,12 @@ export default function ImportHistoryPage() {
                               )}
                             </>
                           )}
-                          {product.status === 'warranty' && (
+                          {(product.status === 'warranty' || warrantyMarkedIds.has(product.id)) && product.status !== 'in_stock' && (
                             <span className="text-xs text-destructive opacity-60 font-medium">
                               Đã BH
                             </span>
                           )}
-                          {product.status !== 'in_stock' && product.status !== 'warranty' && (
+                          {product.status !== 'in_stock' && product.status !== 'warranty' && !warrantyMarkedIds.has(product.id) && (
                             <span className="text-xs text-muted-foreground">-</span>
                           )}
                         </div>
