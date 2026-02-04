@@ -24,22 +24,36 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
   const location = useLocation();
   
   const routerState = useMemo(() => {
-    // Đang loading → không quyết định
-    if (resolvedTenant.status === 'loading' || authLoading) {
+    // OPTIMIZATION: For main domains, skip loading state entirely
+    // as tenant resolution is synchronous
+    if (resolvedTenant.isMainDomain && resolvedTenant.status !== 'loading') {
+      // Auth still loading but on main domain - don't block, let children handle auth
+      if (authLoading) {
+        // Return app immediately - AuthPage and ProtectedRoute will handle auth loading
+        return 'app';
+      }
+      
+      if (user) return 'app';
+      
+      // Main domain + not logged in + at root
+      if (location.pathname === '/' && publicLandingPage) {
+        return 'public_landing';
+      }
+      return 'app';
+    }
+    
+    // For subdomains/custom domains, need to wait for tenant resolution
+    if (resolvedTenant.status === 'loading') {
+      return 'loading';
+    }
+    
+    // Auth loading on subdomain
+    if (authLoading) {
       return 'loading';
     }
     
     // Đã đăng nhập → luôn hiển thị app
     if (user) {
-      return 'app';
-    }
-    
-    // Main domain (vkho.vn, localhost, lovable.app)
-    if (resolvedTenant.isMainDomain) {
-      // Nếu đang ở path "/" và có trang public landing → hiển thị trang giới thiệu
-      if (location.pathname === '/' && publicLandingPage) {
-        return 'public_landing';
-      }
       return 'app';
     }
     
@@ -56,7 +70,7 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
     return 'app';
   }, [resolvedTenant, user, authLoading, location.pathname, publicLandingPage]);
 
-  // Loading state
+  // Loading state - only for subdomains, main domain resolves instantly
   if (routerState === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
