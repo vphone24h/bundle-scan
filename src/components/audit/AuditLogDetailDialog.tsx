@@ -66,6 +66,17 @@ const FIELD_LABELS: Record<string, string> = {
   total_import_cost: 'Tổng giá vốn',
   quantity_change: 'Biến động số lượng',
   quantity_diff: 'Chênh lệch số lượng',
+  // Trả hàng bán
+  fee_type: 'Loại phí',
+  fee_amount: 'Số tiền phí',
+  fee_percentage: 'Phần trăm phí',
+  refund_amount: 'Số tiền hoàn',
+  store_keep_amount: 'Số tiền cửa hàng giữ',
+  return_date: 'Ngày trả',
+  original_sale_date: 'Ngày bán gốc',
+  export_receipt_id: 'ID Phiếu xuất',
+  export_receipt_item_id: 'ID SP phiếu xuất',
+  new_import_receipt_id: 'ID Phiếu nhập mới',
 };
 
 // Status translations
