@@ -191,6 +191,7 @@ export function useRestoreFromWarranty() {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['warranty-inventory'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['all-products'] });
       toast({
         title: 'Đã khôi phục',
         description: 'Sản phẩm đã được chuyển lại về tồn kho',
@@ -201,6 +202,102 @@ export function useRestoreFromWarranty() {
       toast({
         title: 'Lỗi',
         description: 'Không thể khôi phục sản phẩm',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+// Hook to mark a product as defective and return to supplier
+export function useMarkDefectiveReturn() {
+  const queryClient = useQueryClient();
+  const { data: tenant } = useCurrentTenant();
+
+  return useMutation({
+    mutationFn: async ({
+      productId,
+      paymentSource,
+      note,
+      importPrice,
+      supplierId,
+    }: {
+      productId: string;
+      paymentSource: string;
+      note: string;
+      importPrice: number;
+      supplierId: string | null;
+    }) => {
+      // 1. Update product status to 'deleted' with note
+      const { error: productError } = await supabase
+        .from('products')
+        .update({ 
+          status: 'deleted' as any,
+          note: `[HÀNG LỖI] ${note}`,
+        })
+        .eq('id', productId);
+
+      if (productError) throw productError;
+
+      // 2. Create cash book entry for refund from supplier (Thu)
+      if (paymentSource !== 'debt_reduction' && tenant?.id) {
+        const { error: cashBookError } = await supabase
+          .from('cash_book')
+          .insert({
+            tenant_id: tenant.id,
+            type: 'income' as any,
+            category: 'Hoàn tiền hàng lỗi',
+            description: note,
+            amount: importPrice,
+            payment_source: paymentSource === 'cash' ? 'cash' : 'bank_card',
+            reference_type: 'defective_return',
+            reference_id: productId,
+            is_business_accounting: false, // Not counted in profit
+          });
+
+        if (cashBookError) throw cashBookError;
+      }
+
+      // 3. If debt reduction, update supplier debt (reduce what we owe)
+      if (paymentSource === 'debt_reduction' && supplierId) {
+        // Get current supplier debt
+        const { data: payments } = await supabase
+          .from('debt_payments')
+          .select('*')
+          .eq('entity_type', 'supplier')
+          .eq('entity_id', supplierId);
+
+        // Create a payment record to reduce debt
+        const { error: debtError } = await supabase
+          .from('debt_payments')
+          .insert({
+            tenant_id: tenant?.id,
+            entity_type: 'supplier',
+            entity_id: supplierId,
+            payment_type: 'payment',
+            amount: importPrice,
+            description: `Trừ công nợ - Hàng lỗi: ${note}`,
+          });
+
+        if (debtError) throw debtError;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['warranty-inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['all-products'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['debt-payments'] });
+      toast({
+        title: 'Đã xử lý hàng lỗi',
+        description: 'Sản phẩm đã được trả về NCC và ghi nhận dòng tiền',
+      });
+    },
+    onError: (error) => {
+      console.error('Error processing defective return:', error);
+      toast({
+        title: 'Lỗi',
+        description: 'Không thể xử lý hàng lỗi',
         variant: 'destructive',
       });
     },
