@@ -117,8 +117,17 @@ Deno.serve(async (req) => {
 
     if (createError) {
       console.error('Create user error:', createError)
+      // Translate Supabase Auth errors to Vietnamese
+      let errorMessage = createError.message
+      if (createError.message.includes('already been registered') || createError.message.includes('already exists')) {
+        errorMessage = 'Email này đã được sử dụng'
+      } else if (createError.message.includes('invalid email')) {
+        errorMessage = 'Định dạng email không hợp lệ'
+      } else if (createError.message.includes('password')) {
+        errorMessage = 'Mật khẩu phải có ít nhất 6 ký tự'
+      }
       return new Response(
-        JSON.stringify({ error: createError.message }),
+        JSON.stringify({ error: errorMessage }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

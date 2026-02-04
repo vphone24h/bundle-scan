@@ -76,8 +76,12 @@ export default function RegisterPage() {
         },
       });
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
+      if (error) {
+        // Extract error message from FunctionsHttpError
+        const errorBody = error.message;
+        throw new Error(errorBody || 'Có lỗi xảy ra, vui lòng thử lại');
+      }
+      if (data?.error) throw new Error(data.error);
 
       setTenantInfo({ subdomain: data.tenant.subdomain });
       setSuccess(true);
