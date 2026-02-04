@@ -44,6 +44,7 @@ import { ExportPaymentDialog } from '@/components/export/ExportPaymentDialog';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
 import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombobox';
+import { CustomerSourceSelect } from '@/components/customers/CustomerSourceSelect';
 import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/formatNumber';
 import { PriceInput } from '@/components/ui/price-input';
 import { cn } from '@/lib/utils';
@@ -54,6 +55,7 @@ interface SelectedCustomer {
   phone: string;
   address: string | null;
   email: string | null;
+  source: string | null;
   current_points: number;
   pending_points: number;
   total_spent: number;
@@ -94,6 +96,7 @@ export default function ExportNewPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [customerSource, setCustomerSource] = useState('');
   const [customerBirthday, setCustomerBirthday] = useState<Date | undefined>(undefined);
   const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer | null>(null);
 
@@ -482,6 +485,7 @@ export default function ExportNewPage() {
         address: customerAddress || null,
         email: customerEmail || null,
         birthday: customerBirthday ? format(customerBirthday, 'yyyy-MM-dd') : null,
+        source: customerSource || null,
       });
 
       // Get branch_id from first cart item
@@ -519,6 +523,7 @@ export default function ExportNewPage() {
       setCustomerPhone('');
       setCustomerAddress('');
       setCustomerEmail('');
+      setCustomerSource('');
       setCustomerBirthday(undefined);
       setSelectedCustomer(null);
       setTaxEnabled(false);
@@ -883,10 +888,12 @@ export default function ExportNewPage() {
                 customerPhone={customerPhone}
                 customerAddress={customerAddress}
                 customerEmail={customerEmail}
+                customerSource={customerSource}
                 setCustomerName={setCustomerName}
                 setCustomerPhone={setCustomerPhone}
                 setCustomerAddress={setCustomerAddress}
                 setCustomerEmail={setCustomerEmail}
+                setCustomerSource={setCustomerSource}
               />
 
               {/* Additional fields - always show */}
@@ -914,6 +921,11 @@ export default function ExportNewPage() {
                   onChange={(e) => setCustomerEmail(e.target.value)}
                 />
               </div>
+
+              <CustomerSourceSelect
+                value={customerSource}
+                onChange={setCustomerSource}
+              />
 
               <div>
                 <Label className="flex items-center gap-1">

@@ -824,6 +824,44 @@ export type Database = {
           },
         ]
       }
+      customer_sources: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          id: string
+          is_default: boolean | null
+          name: string
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_sources_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
@@ -839,6 +877,7 @@ export type Database = {
           pending_points: number
           phone: string
           preferred_branch_id: string | null
+          source: string | null
           status: Database["public"]["Enums"]["customer_status"]
           tenant_id: string | null
           total_points_earned: number
@@ -860,6 +899,7 @@ export type Database = {
           pending_points?: number
           phone: string
           preferred_branch_id?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["customer_status"]
           tenant_id?: string | null
           total_points_earned?: number
@@ -881,6 +921,7 @@ export type Database = {
           pending_points?: number
           phone?: string
           preferred_branch_id?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["customer_status"]
           tenant_id?: string | null
           total_points_earned?: number

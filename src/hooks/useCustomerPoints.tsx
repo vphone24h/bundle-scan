@@ -52,6 +52,7 @@ export interface CustomerWithPoints {
   email: string | null;
   address: string | null;
   note: string | null;
+  source: string | null;
   total_spent: number;
   current_points: number;
   pending_points: number;
@@ -277,7 +278,7 @@ export function useCustomersWithPoints(filters?: {
     queryFn: async () => {
       let query = supabase
         .from('customers')
-        .select('id, name, phone, email, address, note, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at')
+        .select('id, name, phone, email, address, note, source, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (filters?.search) {
