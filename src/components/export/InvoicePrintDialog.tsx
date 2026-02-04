@@ -275,6 +275,23 @@ export function InvoicePrintDialog({
 
           {/* Section 5: Totals */}
           <div className={`section ${s5Align}`}>
+            {/* Show subtotal when there's tax */}
+            {receipt.tax_amount > 0 && settings.show_total && (
+              <div className="flex justify-between text-sm">
+                <span>Tiền hàng:</span>
+                <span>
+                  {receipt.subtotal_amount?.toLocaleString('vi-VN') || 
+                    receipt.items?.reduce((s: number, i: any) => s + i.sale_price, 0).toLocaleString('vi-VN')}đ
+                </span>
+              </div>
+            )}
+            {/* Tax line */}
+            {receipt.tax_amount > 0 && (
+              <div className="flex justify-between text-sm" style={{ color: '#666' }}>
+                <span>Thuế VAT ({receipt.tax_rate}%):</span>
+                <span>{receipt.tax_amount?.toLocaleString('vi-VN')}đ</span>
+              </div>
+            )}
             {settings.show_total && (
               <div className="flex justify-between font-bold">
                 <span>Tổng tiền:</span>
