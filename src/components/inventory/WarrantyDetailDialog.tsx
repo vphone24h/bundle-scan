@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Wrench, Undo2, Package, AlertTriangle, X } from 'lucide-react';
+import { Wrench, Undo2, Package, AlertTriangle, X, Banknote, CreditCard, Wallet, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,23 @@ import { InventoryItem, ProductDetail } from '@/hooks/useInventory';
 import { useRestoreFromWarranty, useMarkDefectiveReturn } from '@/hooks/useWarrantyInventory';
 import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
 
+// Built-in payment sources (same as CashBook)
+const builtInPaymentSources = [
+  { id: 'cash', name: 'Tiền mặt', icon: Banknote, color: 'text-green-600' },
+  { id: 'bank_card', name: 'Thẻ ngân hàng', icon: CreditCard, color: 'text-blue-600' },
+  { id: 'e_wallet', name: 'Ví điện tử', icon: Wallet, color: 'text-purple-600' },
+];
+
+// Load custom payment sources from localStorage (same as CashBook)
+const getCustomPaymentSources = (): { id: string; name: string }[] => {
+  try {
+    const stored = localStorage.getItem('customPaymentSources');
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
 interface WarrantyDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -51,6 +68,15 @@ export function WarrantyDetailDialog({
   const [defectiveDialog, setDefectiveDialog] = useState<ProductDetail | null>(null);
   const [paymentSource, setPaymentSource] = useState<string>('');
   const [defectiveNote, setDefectiveNote] = useState('');
+  
+  // All payment sources (built-in + custom from localStorage)
+  const allPaymentSources = useMemo(() => {
+    const customSources = getCustomPaymentSources();
+    return [
+      ...builtInPaymentSources,
+      ...customSources.map(s => ({ id: s.id, name: s.name, icon: Wallet, color: 'text-gray-600' })),
+    ];
+  }, []);
 
   const handleRestore = async (productId: string) => {
     setRestoredIds(prev => new Set(prev).add(productId));
@@ -226,9 +252,23 @@ export function WarrantyDetailDialog({
                     <SelectValue placeholder="Chọn nguồn tiền nhận hoàn" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cash">Tiền mặt</SelectItem>
-                    <SelectItem value="bank_card">Chuyển khoản</SelectItem>
-                    <SelectItem value="debt_reduction">Trừ vào công nợ NCC</SelectItem>
+                    {allPaymentSources.map((source) => {
+                      const IconComponent = source.icon;
+                      return (
+                        <SelectItem key={source.id} value={source.id}>
+                          <div className="flex items-center gap-2">
+                            <IconComponent className={`h-4 w-4 ${source.color}`} />
+                            <span>{source.name}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                    <SelectItem value="debt_reduction">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-orange-600" />
+                        <span>Trừ vào công nợ NCC</span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
