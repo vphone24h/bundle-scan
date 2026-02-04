@@ -735,7 +735,12 @@ export default function ImportHistoryPage() {
                               )}
                             </>
                           )}
-                          {product.status !== 'in_stock' && (
+                          {product.status === 'warranty' && (
+                            <span className="text-xs text-destructive opacity-60 font-medium">
+                              Đã BH
+                            </span>
+                          )}
+                          {product.status !== 'in_stock' && product.status !== 'warranty' && (
                             <span className="text-xs text-muted-foreground">-</span>
                           )}
                         </div>
@@ -845,6 +850,8 @@ export default function ImportHistoryPage() {
                               ? 'border-primary text-primary'
                               : item.products?.status === 'deleted'
                               ? 'border-destructive text-destructive bg-destructive/10'
+                              : item.products?.status === 'warranty'
+                              ? 'border-warning text-warning bg-warning/10'
                               : 'border-amber-500 text-amber-600'
                           )}
                         >
@@ -854,6 +861,8 @@ export default function ImportHistoryPage() {
                             ? 'Đã bán'
                             : item.products?.status === 'deleted'
                             ? 'Đã xóa'
+                            : item.products?.status === 'warranty'
+                            ? 'Bảo hành'
                             : 'Đã trả'}
                         </Badge>
                       </div>
@@ -912,6 +921,8 @@ export default function ImportHistoryPage() {
                                     ? 'border-primary text-primary'
                                     : item.products?.status === 'deleted'
                                     ? 'border-destructive text-destructive bg-destructive/10'
+                                    : item.products?.status === 'warranty'
+                                    ? 'border-warning text-warning bg-warning/10'
                                     : 'border-amber-500 text-amber-600'
                                 )}
                               >
@@ -921,6 +932,8 @@ export default function ImportHistoryPage() {
                                   ? 'Đã bán'
                                   : item.products?.status === 'deleted'
                                   ? 'Đã xóa'
+                                  : item.products?.status === 'warranty'
+                                  ? 'Bảo hành'
                                   : 'Đã trả'}
                               </Badge>
                             </td>
