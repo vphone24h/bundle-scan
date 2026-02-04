@@ -27,6 +27,7 @@ export interface InvoiceTemplate {
   show_paid_amount: boolean;
   show_debt: boolean;
   show_note: boolean;
+  show_tax: boolean;
   show_thank_you: boolean;
   show_custom_description: boolean;
   custom_description_text: string | null;

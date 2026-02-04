@@ -1925,6 +1925,7 @@ export type Database = {
           show_store_address: boolean | null
           show_store_name: boolean | null
           show_store_phone: boolean | null
+          show_tax: boolean
           show_thank_you: boolean | null
           show_total: boolean | null
           show_warranty: boolean | null
@@ -1971,6 +1972,7 @@ export type Database = {
           show_store_address?: boolean | null
           show_store_name?: boolean | null
           show_store_phone?: boolean | null
+          show_tax?: boolean
           show_thank_you?: boolean | null
           show_total?: boolean | null
           show_warranty?: boolean | null
@@ -2017,6 +2019,7 @@ export type Database = {
           show_store_address?: boolean | null
           show_store_name?: boolean | null
           show_store_phone?: boolean | null
+          show_tax?: boolean
           show_thank_you?: boolean | null
           show_total?: boolean | null
           show_warranty?: boolean | null

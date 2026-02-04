@@ -161,6 +161,7 @@ export function InvoicePrintDialog({
     show_paid_amount: true,
     show_debt: true,
     show_points_earned: false,
+    show_tax: false,
     show_thank_you: true,
     show_custom_description: false,
     custom_description_text: '',
@@ -276,7 +277,7 @@ export function InvoicePrintDialog({
           {/* Section 5: Totals */}
           <div className={`section ${s5Align}`}>
             {/* Show subtotal when there's tax */}
-            {receipt.tax_amount > 0 && settings.show_total && (
+            {settings.show_tax && receipt.tax_amount > 0 && settings.show_total && (
               <div className="flex justify-between text-sm">
                 <span>Tiền hàng:</span>
                 <span>
@@ -286,7 +287,7 @@ export function InvoicePrintDialog({
               </div>
             )}
             {/* Tax line */}
-            {receipt.tax_amount > 0 && (
+            {settings.show_tax && receipt.tax_amount > 0 && (
               <div className="flex justify-between text-sm" style={{ color: '#666' }}>
                 <span>Thuế VAT ({receipt.tax_rate}%):</span>
                 <span>{receipt.tax_amount?.toLocaleString('vi-VN')}đ</span>
@@ -323,7 +324,7 @@ export function InvoicePrintDialog({
             )}
           </div>
 
-          {/* Custom description */}
+          {/* Custom description - NOW BEFORE Thank you */}
           {settings.show_custom_description && (settings.custom_description_text || settings.custom_description_image_url) && (
             <div 
               className={`mt-2 text-sm ${getAlignClass(settings.custom_description_align)}`}
@@ -343,7 +344,7 @@ export function InvoicePrintDialog({
             </div>
           )}
 
-          {/* Thank you */}
+          {/* Thank you - NOW AFTER Custom description */}
           {settings.show_thank_you && (
             <div className="mt-4 text-center italic">
               {settings.thank_you_text || 'Cảm ơn quý khách!'}
