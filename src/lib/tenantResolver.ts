@@ -56,6 +56,15 @@ export function detectTenantFromHostname(): TenantInfo {
     };
   }
   
+  // Check if it's the primary domain FIRST (before subdomain check)
+  if (hostname === PRIMARY_DOMAIN || hostname === `www.${PRIMARY_DOMAIN}`) {
+    return {
+      subdomain: null,
+      isMainDomain: true,
+      hostname,
+    };
+  }
+  
   // Check if it's the primary domain
   if (hostname === PRIMARY_DOMAIN || hostname === `www.${PRIMARY_DOMAIN}`) {
     return {

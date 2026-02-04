@@ -167,6 +167,8 @@ export function useTenantResolver() {
     
     // FAST PATH: Check domain synchronously without any API call
     const hostInfo = detectTenantFromHostname();
+    
+    // Main domain or no subdomain detected = instant resolve
     if (hostInfo.isMainDomain) {
       const result: ResolvedTenant = {
         tenantId: null,
