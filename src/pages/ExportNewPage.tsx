@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { 
   ShoppingCart, 
@@ -31,7 +32,8 @@ import {
   Banknote,
   ScanBarcode,
   CalendarIcon,
-  Cake
+  Cake,
+  Percent
 } from 'lucide-react';
 import { useCheckProductForSale, useSearchProductsByName, useCreateExportReceipt, type ExportReceiptItem, type ExportPayment } from '@/hooks/useExportReceipts';
 import { useUpsertCustomer } from '@/hooks/useCustomers';
@@ -81,6 +83,11 @@ export default function ExportNewPage() {
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
 
+  // Tax state
+  const [taxEnabled, setTaxEnabled] = useState(false);
+  const [taxRate, setTaxRate] = useState<number | null>(null);
+  const [customTaxRate, setCustomTaxRate] = useState('');
+
   // Customer info
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -101,6 +108,9 @@ export default function ExportNewPage() {
   const createReceipt = useCreateExportReceipt();
   const { data: invoiceTemplate } = useDefaultInvoiceTemplate();
   const { data: pointSettings } = usePointSettings();
+
+  // Calculate tax
+  const effectiveTaxRate = taxEnabled ? (taxRate !== null ? taxRate : parseFloat(customTaxRate) || 0) : 0;
 
   // Handle barcode scan (IMEI or SKU) - auto-add to cart if price encoded
   // Supports formats:
@@ -407,7 +417,9 @@ export default function ExportNewPage() {
   };
 
   // Calculate totals
-  const totalAmount = cart.reduce((sum, item) => sum + (item.sale_price * item.quantity), 0);
+  const subtotalAmount = cart.reduce((sum, item) => sum + (item.sale_price * item.quantity), 0);
+  const taxAmount = Math.round(subtotalAmount * effectiveTaxRate / 100);
+  const totalAmount = subtotalAmount + taxAmount;
 
   // Handle proceed to payment
   const handleProceedToPayment = () => {
@@ -484,6 +496,10 @@ export default function ExportNewPage() {
         customer,
         items: cart,
         payments,
+        // Tax info for invoice
+        subtotal_amount: subtotalAmount,
+        tax_rate: taxEnabled ? effectiveTaxRate : 0,
+        tax_amount: taxEnabled ? taxAmount : 0,
       });
       
       setShowPaymentDialog(false);
@@ -497,6 +513,9 @@ export default function ExportNewPage() {
       setCustomerEmail('');
       setCustomerBirthday(undefined);
       setSelectedCustomer(null);
+      setTaxEnabled(false);
+      setTaxRate(null);
+      setCustomTaxRate('');
 
       // Build success message with points info
       let successMessage = `Phiếu xuất ${receipt.code} đã được tạo`;
@@ -754,11 +773,83 @@ export default function ExportNewPage() {
               )}
 
               {cart.length > 0 && (
-                <div className="mt-4 pt-4 border-t flex justify-between items-center">
-                  <span className="font-medium">Tổng tiền:</span>
-                  <span className="text-xl font-bold text-primary">
-                    {totalAmount.toLocaleString('vi-VN')}đ
-                  </span>
+                <div className="mt-4 pt-4 border-t space-y-3">
+                  {/* Tax Section */}
+                  <div className="p-3 rounded-lg bg-muted/50 space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="enable-tax"
+                        checked={taxEnabled}
+                        onCheckedChange={(checked) => {
+                          setTaxEnabled(checked === true);
+                          if (!checked) {
+                            setTaxRate(null);
+                            setCustomTaxRate('');
+                          } else if (taxRate === null) {
+                            setTaxRate(10); // Default to 10%
+                          }
+                        }}
+                      />
+                      <Label htmlFor="enable-tax" className="flex items-center gap-2 cursor-pointer font-medium">
+                        <Percent className="h-4 w-4" />
+                        Tính thuế VAT
+                      </Label>
+                    </div>
+                    
+                    {taxEnabled && (
+                      <div className="flex flex-wrap gap-2 ml-6">
+                        {[1.5, 8, 10].map((rate) => (
+                          <Button
+                            key={rate}
+                            variant={taxRate === rate ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => {
+                              setTaxRate(rate);
+                              setCustomTaxRate('');
+                            }}
+                          >
+                            {rate}%
+                          </Button>
+                        ))}
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            placeholder="Khác"
+                            value={customTaxRate}
+                            onChange={(e) => {
+                              setCustomTaxRate(e.target.value);
+                              setTaxRate(null);
+                            }}
+                            className="w-20 h-8 text-sm"
+                            min={0}
+                            max={100}
+                            step={0.1}
+                          />
+                          <span className="text-sm text-muted-foreground">%</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Totals */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span>Tiền hàng:</span>
+                      <span className="font-medium">{subtotalAmount.toLocaleString('vi-VN')}đ</span>
+                    </div>
+                    {taxEnabled && effectiveTaxRate > 0 && (
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Thuế VAT ({effectiveTaxRate}%):</span>
+                        <span>{taxAmount.toLocaleString('vi-VN')}đ</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between pt-1 border-t">
+                      <span className="font-medium">Tổng tiền:</span>
+                      <span className="text-xl font-bold text-primary">
+                        {totalAmount.toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -872,8 +963,18 @@ export default function ExportNewPage() {
                   <span>Số lượng sản phẩm:</span>
                   <span className="font-medium">{cart.length}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Tổng tiền:</span>
+                <div className="flex justify-between text-sm">
+                  <span>Tiền hàng:</span>
+                  <span className="font-medium">{subtotalAmount.toLocaleString('vi-VN')}đ</span>
+                </div>
+                {taxEnabled && effectiveTaxRate > 0 && (
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Thuế VAT ({effectiveTaxRate}%):</span>
+                    <span>{taxAmount.toLocaleString('vi-VN')}đ</span>
+                  </div>
+                )}
+                <div className="flex justify-between pt-1 border-t">
+                  <span className="font-medium">Tổng thanh toán:</span>
                   <span className="text-xl font-bold text-primary">
                     {totalAmount.toLocaleString('vi-VN')}đ
                   </span>
