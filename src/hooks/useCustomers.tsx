@@ -15,6 +15,7 @@ export interface Customer {
   address: string | null;
   email: string | null;
   note: string | null;
+  source: string | null;
   tenant_id: string | null;
   created_at: string;
   updated_at: string;
@@ -28,7 +29,7 @@ export function useCustomers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('customers')
-        .select('id, name, phone, address, email, note, tenant_id, created_at, updated_at')
+        .select('id, name, phone, address, email, note, source, tenant_id, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -67,6 +68,7 @@ export function useCreateCustomer() {
       address?: string | null;
       email?: string | null;
       note?: string | null;
+      source?: string | null;
     }) => {
       const tenantId = await getCurrentTenantId();
       if (!tenantId) throw new Error('Không tìm thấy tenant');
@@ -96,6 +98,7 @@ export function useUpsertCustomer() {
       address?: string | null;
       email?: string | null;
       birthday?: string | null;
+      source?: string | null;
     }) => {
       // Get tenant_id first to ensure we're looking within the right tenant
       const tenantId = await getCurrentTenantId();

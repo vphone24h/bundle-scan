@@ -30,6 +30,7 @@ import { useCreateCustomer } from '@/hooks/useCustomers';
 import { useUpdateCustomer, CustomerWithPoints } from '@/hooks/useCustomerPoints';
 import { useBranches } from '@/hooks/useBranches';
 import { toast } from 'sonner';
+import { CustomerSourceSelect } from './CustomerSourceSelect';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Tên khách hàng là bắt buộc').max(100),
@@ -38,6 +39,7 @@ const formSchema = z.object({
   address: z.string().max(500).optional(),
   birthday: z.string().optional(),
   preferred_branch_id: z.string().optional(),
+  source: z.string().optional(),
   note: z.string().max(1000).optional(),
   status: z.enum(['active', 'inactive']).optional(),
 });
@@ -64,6 +66,7 @@ export function CustomerFormDialog({ open, onOpenChange, customer }: CustomerFor
       address: '',
       birthday: '',
       preferred_branch_id: '_none_',
+      source: '',
       note: '',
       status: 'active',
     },
@@ -78,6 +81,7 @@ export function CustomerFormDialog({ open, onOpenChange, customer }: CustomerFor
         address: customer.address || '',
         birthday: customer.birthday || '',
         preferred_branch_id: customer.preferred_branch_id || '_none_',
+        source: (customer as any).source || '',
         note: customer.note || '',
         status: customer.status,
       });
@@ -89,6 +93,7 @@ export function CustomerFormDialog({ open, onOpenChange, customer }: CustomerFor
         address: '',
         birthday: '',
         preferred_branch_id: '_none_',
+        source: '',
         note: '',
         status: 'active',
       });
@@ -106,6 +111,7 @@ export function CustomerFormDialog({ open, onOpenChange, customer }: CustomerFor
           address: data.address || null,
           birthday: data.birthday || null,
           preferred_branch_id: data.preferred_branch_id === '_none_' ? null : data.preferred_branch_id,
+          source: data.source || null,
           note: data.note || null,
           status: data.status,
         });
@@ -116,6 +122,7 @@ export function CustomerFormDialog({ open, onOpenChange, customer }: CustomerFor
           phone: data.phone,
           email: data.email || null,
           address: data.address || null,
+          source: data.source || null,
           note: data.note || null,
         });
         toast.success('Thêm khách hàng thành công');
@@ -172,6 +179,22 @@ export function CustomerFormDialog({ open, onOpenChange, customer }: CustomerFor
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="Nhập email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="source"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <CustomerSourceSelect
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

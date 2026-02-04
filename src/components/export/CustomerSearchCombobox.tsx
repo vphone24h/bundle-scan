@@ -13,6 +13,7 @@ interface Customer {
   phone: string;
   address: string | null;
   email: string | null;
+  source: string | null;
   current_points: number;
   pending_points: number;
   total_spent: number;
@@ -29,10 +30,12 @@ interface CustomerSearchComboboxProps {
   customerPhone: string;
   customerAddress: string;
   customerEmail: string;
+  customerSource?: string;
   setCustomerName: (v: string) => void;
   setCustomerPhone: (v: string) => void;
   setCustomerAddress: (v: string) => void;
   setCustomerEmail: (v: string) => void;
+  setCustomerSource?: (v: string) => void;
 }
 
 const TIER_CONFIG = {
@@ -49,10 +52,12 @@ export function CustomerSearchCombobox({
   customerPhone,
   customerAddress,
   customerEmail,
+  customerSource,
   setCustomerName,
   setCustomerPhone,
   setCustomerAddress,
   setCustomerEmail,
+  setCustomerSource,
 }: CustomerSearchComboboxProps) {
   const [phoneSuggestions, setPhoneSuggestions] = useState<Customer[]>([]);
   const [nameSuggestions, setNameSuggestions] = useState<Customer[]>([]);
@@ -98,6 +103,7 @@ export function CustomerSearchCombobox({
           setCustomerName(exactMatch.name);
           setCustomerAddress(exactMatch.address || '');
           setCustomerEmail(exactMatch.email || '');
+          setCustomerSource?.(exactMatch.source || '');
           onSelect(exactMatch);
           setShowPhoneDropdown(false);
           setIsSearchingPhone(false);
@@ -141,6 +147,7 @@ export function CustomerSearchCombobox({
     setCustomerPhone(customer.phone);
     setCustomerAddress(customer.address || '');
     setCustomerEmail(customer.email || '');
+    setCustomerSource?.(customer.source || '');
     onSelect(customer);
     setShowPhoneDropdown(false);
     setShowNameDropdown(false);
@@ -152,6 +159,7 @@ export function CustomerSearchCombobox({
     setCustomerPhone('');
     setCustomerAddress('');
     setCustomerEmail('');
+    setCustomerSource?.('');
   };
 
   const isNewCustomer = !selectedCustomer && (customerPhone.length >= 3 || customerName.length >= 1);

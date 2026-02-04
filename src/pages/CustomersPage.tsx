@@ -28,7 +28,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, Plus, MoreHorizontal, Eye, ShoppingCart, Wallet, Settings, Users, Merge, Pencil } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Eye, ShoppingCart, Wallet, Settings, Users, Merge, Pencil, UserPlus } from 'lucide-react';
+import { useCustomerSources } from '@/hooks/useCustomerSources';
 import { useCustomersWithPoints, MEMBERSHIP_TIER_NAMES, MEMBERSHIP_TIER_COLORS } from '@/hooks/useCustomerPoints';
 import { useBranches } from '@/hooks/useBranches';
 import { formatNumber } from '@/lib/formatNumber';
@@ -48,6 +49,7 @@ export default function CustomersPage() {
   const [branchFilter, setBranchFilter] = useState('_all_');
   const [tierFilter, setTierFilter] = useState('_all_');
   const [statusFilter, setStatusFilter] = useState('_all_');
+  const [sourceFilter, setSourceFilter] = useState('_all_');
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [editingCustomer, setEditingCustomer] = useState<typeof customers extends (infer T)[] ? T : never | null>(null);
@@ -64,9 +66,17 @@ export default function CustomersPage() {
   });
 
   const { data: branches } = useBranches();
+  const { data: customerSources } = useCustomerSources();
+  
+  // Filter by source client-side (since hook doesn't support it)
+  const filteredCustomers = customers?.filter(c => {
+    if (sourceFilter === '_all_') return true;
+    if (sourceFilter === '_none_') return !c.source;
+    return c.source === sourceFilter;
+  });
 
   // Pagination
-  const pagination = usePagination(customers || [], { storageKey: 'customers' });
+  const pagination = usePagination(filteredCustomers || [], { storageKey: 'customers' });
 
   const handleViewDetail = (customerId: string) => {
     setSelectedCustomerId(customerId);
@@ -100,10 +110,10 @@ export default function CustomersPage() {
   };
 
   // Summary stats
-  const totalCustomers = customers?.length || 0;
-  const customersWithPoints = customers?.filter(c => c.current_points > 0).length || 0;
-  const customersWithDebt = customers?.filter(c => c.total_spent > 0).length || 0; // Will update when debt is calculated
-  const vipCustomers = customers?.filter(c => c.membership_tier === 'vip').length || 0;
+  const totalCustomers = filteredCustomers?.length || 0;
+  const customersWithPoints = filteredCustomers?.filter(c => c.current_points > 0).length || 0;
+  const customersWithDebt = filteredCustomers?.filter(c => c.total_spent > 0).length || 0;
+  const vipCustomers = filteredCustomers?.filter(c => c.membership_tier === 'vip').length || 0;
 
   return (
     <MainLayout>
@@ -213,6 +223,20 @@ export default function CustomersPage() {
                 <SelectItem value="inactive">Ngừng</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <SelectTrigger className="w-full md:w-[150px]">
+                <SelectValue placeholder="Nguồn" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all_">Tất cả nguồn</SelectItem>
+                <SelectItem value="_none_">Chưa xác định</SelectItem>
+                {customerSources?.map((source) => (
+                  <SelectItem key={source.id} value={source.name}>
+                    {source.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <div className="flex gap-2">
               <Button onClick={() => setShowFormDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -243,6 +267,7 @@ export default function CustomersPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Khách hàng</TableHead>
+                  <TableHead className="hidden lg:table-cell">Nguồn</TableHead>
                   <TableHead className="hidden md:table-cell">Chi nhánh</TableHead>
                   <TableHead className="text-right">Tổng chi tiêu</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">Điểm</TableHead>
@@ -255,13 +280,13 @@ export default function CustomersPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={9} className="text-center py-8">
                       Đang tải...
                     </TableCell>
                   </TableRow>
-                ) : customers?.length === 0 ? (
+                ) : filteredCustomers?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       Chưa có khách hàng nào
                     </TableCell>
                   </TableRow>
@@ -281,6 +306,13 @@ export default function CustomersPage() {
                             )}
                           </div>
                         </div>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {customer.source ? (
+                          <Badge variant="outline">{customer.source}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         {getBranchName(customer.preferred_branch_id)}
