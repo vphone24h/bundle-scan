@@ -209,6 +209,8 @@ export function AuditLogDetailDialog({
 
   // Show product info for product-related tables AND actions
   const isProductRelated = log.table_name === 'products' || 
+    log.table_name === 'export_receipt_items' ||
+    log.table_name === 'import_receipt_items' ||
     ['ADJUST_QUANTITY', 'RESTORE_PRODUCT_METADATA', 'DELETE_PRODUCT'].includes(log.action_type);
 
   // Always show product identity card for product-related logs.
