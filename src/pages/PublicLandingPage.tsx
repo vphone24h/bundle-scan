@@ -117,16 +117,10 @@ export default function PublicLandingPage() {
               Báo cáo lợi nhuận chính xác <strong className="text-primary">100%</strong> từng sản phẩm. 
               Quản lý tồn kho theo IMEI, mã vạch. Tích hợp landing page cá nhân, tra cứu bảo hành.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <div className="mt-8 flex justify-center">
               <Button size="lg" className="gap-2 text-base" onClick={() => navigate('/register')}>
                 Bắt đầu miễn phí
                 <ArrowRight className="h-4 w-4" />
-              </Button>
-              <Button size="lg" variant="outline" className="gap-2 text-base" asChild>
-                <a href="tel:0396793883">
-                  <Phone className="h-4 w-4" />
-                  Hotline: 0396.793.883
-                </a>
               </Button>
             </div>
           </div>
