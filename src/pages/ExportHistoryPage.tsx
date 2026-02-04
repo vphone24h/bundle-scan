@@ -56,7 +56,7 @@ import {
   type ExportReceipt,
   type ExportReceiptItemDetail 
 } from '@/hooks/useExportReceipts';
-import { useDefaultInvoiceTemplate } from '@/hooks/useInvoiceTemplates';
+import { useInvoiceTemplateByBranch } from '@/hooks/useInvoiceTemplates';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { EditExportItemDialog } from '@/components/export/EditExportItemDialog';
 import { ReceiptReturnDialog } from '@/components/returns/ReceiptReturnDialog';
@@ -102,9 +102,13 @@ export default function ExportHistoryPage() {
   // Hooks
   const { data: receipts, isLoading: receiptsLoading } = useExportReceipts();
   const { data: items, isLoading: itemsLoading } = useExportReceiptItems();
-  const { data: template } = useDefaultInvoiceTemplate();
   const { data: branches } = useBranches();
   const returnProduct = useReturnProduct();
+  
+  // Get template based on the print receipt's branch
+  const printBranchId = printReceipt?.branch_id || null;
+  const { data: template } = useInvoiceTemplateByBranch(printBranchId);
+  const printBranch = printBranchId ? branches?.find(b => b.id === printBranchId) : null;
 
   // Filter receipts
   const filteredReceipts = receipts?.filter((receipt) => {
@@ -803,6 +807,7 @@ export default function ExportHistoryPage() {
         onOpenChange={setShowPrintDialog}
         receipt={printReceipt}
         template={template}
+        branchInfo={printBranch}
       />
 
       {/* Edit Item Dialog */}

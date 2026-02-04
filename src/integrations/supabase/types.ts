@@ -1891,6 +1891,7 @@ export type Database = {
       }
       invoice_templates: {
         Row: {
+          branch_id: string | null
           created_at: string
           custom_description_align: string | null
           custom_description_bold: boolean | null
@@ -1938,6 +1939,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          branch_id?: string | null
           created_at?: string
           custom_description_align?: string | null
           custom_description_bold?: boolean | null
@@ -1985,6 +1987,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          branch_id?: string | null
           created_at?: string
           custom_description_align?: string | null
           custom_description_bold?: boolean | null
@@ -2032,6 +2035,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "invoice_templates_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoice_templates_tenant_id_fkey"
             columns: ["tenant_id"]

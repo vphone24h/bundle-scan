@@ -37,7 +37,8 @@ import {
 } from 'lucide-react';
 import { useCheckProductForSale, useSearchProductsByName, useCreateExportReceipt, type ExportReceiptItem, type ExportPayment } from '@/hooks/useExportReceipts';
 import { useUpsertCustomer } from '@/hooks/useCustomers';
-import { useDefaultInvoiceTemplate } from '@/hooks/useInvoiceTemplates';
+import { useInvoiceTemplateByBranch } from '@/hooks/useInvoiceTemplates';
+import { useBranches } from '@/hooks/useBranches';
 import { usePointSettings } from '@/hooks/useCustomerPoints';
 import { ExportPaymentDialog } from '@/components/export/ExportPaymentDialog';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
@@ -106,8 +107,13 @@ export default function ExportNewPage() {
   const searchProducts = useSearchProductsByName();
   const upsertCustomer = useUpsertCustomer();
   const createReceipt = useCreateExportReceipt();
-  const { data: invoiceTemplate } = useDefaultInvoiceTemplate();
   const { data: pointSettings } = usePointSettings();
+  const { data: branches } = useBranches();
+  
+  // Get branch_id from first cart item for invoice template
+  const cartBranchId = cart.find(item => item.branch_id)?.branch_id || null;
+  const { data: invoiceTemplate } = useInvoiceTemplateByBranch(cartBranchId);
+  const cartBranch = cartBranchId ? branches?.find(b => b.id === cartBranchId) : null;
 
   // Calculate tax
   const effectiveTaxRate = taxEnabled ? (taxRate !== null ? taxRate : parseFloat(customTaxRate) || 0) : 0;
@@ -1023,6 +1029,7 @@ export default function ExportNewPage() {
         onOpenChange={setShowInvoiceDialog}
         receipt={createdReceipt}
         template={invoiceTemplate}
+        branchInfo={cartBranch}
       />
     </MainLayout>
   );

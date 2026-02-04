@@ -8,6 +8,7 @@ export interface InvoiceTemplate {
   id: string;
   name: string;
   paper_size: 'K80' | 'A4';
+  branch_id: string | null;
   show_logo: boolean;
   show_store_name: boolean;
   store_name: string | null;
@@ -70,16 +71,91 @@ export function useInvoiceTemplates() {
   });
 }
 
+// Get template for a specific branch, or fallback to global default
+export function useInvoiceTemplateByBranch(branchId: string | null) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['invoice-template-branch', user?.id, branchId],
+    queryFn: async () => {
+      // First try to get branch-specific template
+      if (branchId) {
+        const { data: branchTemplate, error: branchError } = await supabase
+          .from('invoice_templates')
+          .select('*')
+          .eq('branch_id', branchId)
+          .maybeSingle();
+
+        if (!branchError && branchTemplate) {
+          return branchTemplate as InvoiceTemplate;
+        }
+      }
+
+      // Fallback to global default template (no branch_id)
+      const { data, error } = await supabase
+        .from('invoice_templates')
+        .select('*')
+        .is('branch_id', null)
+        .eq('is_default', true)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      // If no template exists at all, create a global default
+      if (!data) {
+        const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+        
+        const { data: newTemplate, error: insertError } = await supabase
+          .from('invoice_templates')
+          .insert([{
+            name: 'Mẫu mặc định',
+            paper_size: 'K80',
+            is_default: true,
+            tenant_id: tenantId,
+            branch_id: null,
+            show_logo: true,
+            show_store_name: true,
+            show_store_address: true,
+            show_store_phone: true,
+            show_customer_info: true,
+            show_sale_date: true,
+            show_receipt_code: true,
+            show_product_name: true,
+            show_sku: true,
+            show_imei: true,
+            show_sale_price: true,
+            show_total: true,
+            show_paid_amount: true,
+            show_debt: true,
+            show_note: true,
+            show_thank_you: true,
+            thank_you_text: 'Cảm ơn quý khách!',
+            font_size: 'medium',
+            text_align: 'left',
+          }])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        return newTemplate as InvoiceTemplate;
+      }
+      
+      return data as InvoiceTemplate;
+    },
+    enabled: !!user?.id,
+  });
+}
+
 export function useDefaultInvoiceTemplate() {
   const { user } = useAuth();
   return useQuery({
     // Keyed by user to prevent cross-tenant cache leakage
     queryKey: ['invoice-template-default', user?.id],
     queryFn: async () => {
-      // Try to get existing default template
+      // Try to get existing default template (global, no branch)
       const { data, error } = await supabase
         .from('invoice_templates')
         .select('*')
+        .is('branch_id', null)
         .eq('is_default', true)
         .maybeSingle();
 
@@ -96,6 +172,7 @@ export function useDefaultInvoiceTemplate() {
             paper_size: 'K80',
             is_default: true,
             tenant_id: tenantId,
+            branch_id: null,
             show_logo: true,
             show_store_name: true,
             show_store_address: true,
@@ -148,6 +225,7 @@ export function useUpdateInvoiceTemplate() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoice-templates'] });
       queryClient.invalidateQueries({ queryKey: ['invoice-template-default'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-template-branch'] });
     },
   });
 }
@@ -168,6 +246,76 @@ export function useCreateInvoiceTemplate() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoice-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-template-branch'] });
+    },
+  });
+}
+
+// Create or get template for a specific branch
+export function useGetOrCreateBranchTemplate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ branchId, branchName, branchAddress, branchPhone }: { 
+      branchId: string; 
+      branchName: string;
+      branchAddress?: string | null;
+      branchPhone?: string | null;
+    }) => {
+      // Check if template exists for this branch
+      const { data: existing, error: checkError } = await supabase
+        .from('invoice_templates')
+        .select('*')
+        .eq('branch_id', branchId)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+      if (existing) return existing as InvoiceTemplate;
+
+      // Get tenant_id
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+
+      // Create new template for this branch with branch info
+      const { data: newTemplate, error: insertError } = await supabase
+        .from('invoice_templates')
+        .insert([{
+          name: `Mẫu ${branchName}`,
+          paper_size: 'K80',
+          is_default: false,
+          tenant_id: tenantId,
+          branch_id: branchId,
+          show_logo: true,
+          show_store_name: true,
+          store_name: branchName,
+          show_store_address: true,
+          store_address: branchAddress || null,
+          show_store_phone: true,
+          store_phone: branchPhone || null,
+          show_customer_info: true,
+          show_sale_date: true,
+          show_receipt_code: true,
+          show_product_name: true,
+          show_sku: true,
+          show_imei: true,
+          show_sale_price: true,
+          show_total: true,
+          show_paid_amount: true,
+          show_debt: true,
+          show_note: true,
+          show_thank_you: true,
+          thank_you_text: 'Cảm ơn quý khách!',
+          font_size: 'medium',
+          text_align: 'left',
+        }])
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      return newTemplate as InvoiceTemplate;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoice-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-template-branch'] });
     },
   });
 }

@@ -15,6 +15,11 @@ interface InvoicePrintDialogProps {
   onOpenChange: (open: boolean) => void;
   receipt: any;
   template: InvoiceTemplate | null | undefined;
+  branchInfo?: {
+    name: string;
+    address: string | null;
+    phone: string | null;
+  } | null;
 }
 
 const getAlignClass = (align: TextAlign | undefined) => {
@@ -30,10 +35,18 @@ export function InvoicePrintDialog({
   onOpenChange,
   receipt,
   template,
+  branchInfo,
 }: InvoicePrintDialogProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
   if (!receipt) return null;
+
+  // Determine store info: use template values, fall back to branch info
+  const storeInfo = {
+    name: template?.store_name || branchInfo?.name || 'Cửa hàng',
+    address: template?.store_address || branchInfo?.address || null,
+    phone: template?.store_phone || branchInfo?.phone || null,
+  };
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -197,16 +210,16 @@ export function InvoicePrintDialog({
           className="p-4 border rounded-lg bg-white text-black text-sm"
           style={{ fontFamily: 'Arial, sans-serif' }}
         >
-          {/* Section 1: Store info */}
+          {/* Section 1: Store info - use storeInfo which merges template + branch */}
           <div className={`section ${s1Align}`}>
             {settings.show_store_name && (
-              <div className="text-xl font-bold">{settings.store_name || 'Cửa hàng'}</div>
+              <div className="text-xl font-bold">{storeInfo.name}</div>
             )}
-            {settings.show_store_address && settings.store_address && (
-              <div className="text-sm">{settings.store_address}</div>
+            {settings.show_store_address && storeInfo.address && (
+              <div className="text-sm">{storeInfo.address}</div>
             )}
-            {settings.show_store_phone && settings.store_phone && (
-              <div className="text-sm">ĐT: {settings.store_phone}</div>
+            {settings.show_store_phone && storeInfo.phone && (
+              <div className="text-sm">ĐT: {storeInfo.phone}</div>
             )}
           </div>
 

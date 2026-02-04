@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,11 +41,20 @@ import {
   Bold,
   ImagePlus,
   X,
-  Loader2
+  Loader2,
+  Building2
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
-import { useDefaultInvoiceTemplate, useUpdateInvoiceTemplate, type InvoiceTemplate, type TextAlign } from '@/hooks/useInvoiceTemplates';
+import { 
+  useInvoiceTemplates, 
+  useUpdateInvoiceTemplate, 
+  useGetOrCreateBranchTemplate,
+  type InvoiceTemplate, 
+  type TextAlign 
+} from '@/hooks/useInvoiceTemplates';
+import { useBranches } from '@/hooks/useBranches';
+import { Badge } from '@/components/ui/badge';
 
 interface SettingItemProps {
   icon: React.ReactNode;
@@ -149,17 +158,89 @@ const getAlignClass = (align: TextAlign | undefined) => {
 };
 
 export default function InvoiceTemplatePage() {
-  const { data: template, isLoading } = useDefaultInvoiceTemplate();
+  const { data: branches, isLoading: branchesLoading } = useBranches();
+  const { data: allTemplates, isLoading: templatesLoading } = useInvoiceTemplates();
   const updateTemplate = useUpdateInvoiceTemplate();
+  const getOrCreateBranchTemplate = useGetOrCreateBranchTemplate();
 
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [settings, setSettings] = useState<Partial<InvoiceTemplate>>({});
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const currentSettings = { ...template, ...settings };
+  // Get current template based on selected branch
+  const currentTemplate = selectedBranchId
+    ? allTemplates?.find(t => t.branch_id === selectedBranchId)
+    : allTemplates?.find(t => t.branch_id === null && t.is_default);
+
+  const currentSettings = { ...currentTemplate, ...settings };
+
+  // Get selected branch info
+  const selectedBranch = branches?.find(b => b.id === selectedBranchId);
+
+  // Auto-select first branch if available
+  useEffect(() => {
+    if (branches && branches.length > 0 && !selectedBranchId) {
+      const defaultBranch = branches.find(b => b.is_default) || branches[0];
+      setSelectedBranchId(defaultBranch.id);
+    }
+  }, [branches, selectedBranchId]);
+
+  // Reset settings when branch changes
+  useEffect(() => {
+    setSettings({});
+  }, [selectedBranchId]);
+
+  // Handle branch change - create template if needed
+  const handleBranchChange = async (branchId: string) => {
+    setSelectedBranchId(branchId);
+    setSettings({});
+
+    const branch = branches?.find(b => b.id === branchId);
+    if (!branch) return;
+
+    // Check if template exists for this branch
+    const existingTemplate = allTemplates?.find(t => t.branch_id === branchId);
+    if (!existingTemplate) {
+      // Create new template for this branch
+      try {
+        await getOrCreateBranchTemplate.mutateAsync({
+          branchId: branch.id,
+          branchName: branch.name,
+          branchAddress: branch.address,
+          branchPhone: branch.phone,
+        });
+        toast({
+          title: 'Đã tạo mẫu in',
+          description: `Mẫu in cho chi nhánh "${branch.name}" đã được tạo tự động`,
+        });
+      } catch (error: any) {
+        toast({
+          title: 'Lỗi',
+          description: error.message || 'Không thể tạo mẫu in',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
 
   const updateSetting = <K extends keyof InvoiceTemplate>(key: K, value: InvoiceTemplate[K]) => {
     setSettings({ ...settings, [key]: value });
+  };
+
+  // Sync store info from branch
+  const handleSyncFromBranch = () => {
+    if (!selectedBranch) return;
+    setSettings({
+      ...settings,
+      store_name: selectedBranch.name,
+      store_address: selectedBranch.address || '',
+      store_phone: selectedBranch.phone || '',
+    });
+    toast({
+      title: 'Đã đồng bộ',
+      description: 'Thông tin cửa hàng đã được cập nhật từ chi nhánh',
+    });
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -189,7 +270,7 @@ export default function InvoiceTemplatePage() {
     setIsUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${template?.id || 'temp'}-${Date.now()}.${fileExt}`;
+      const fileName = `${currentTemplate?.id || 'temp'}-${Date.now()}.${fileExt}`;
       const filePath = `custom-description/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -226,11 +307,11 @@ export default function InvoiceTemplatePage() {
   };
 
   const handleSave = async () => {
-    if (!template?.id) return;
+    if (!currentTemplate?.id) return;
 
     try {
       await updateTemplate.mutateAsync({
-        id: template.id,
+        id: currentTemplate.id,
         ...settings,
       });
 
@@ -247,6 +328,8 @@ export default function InvoiceTemplatePage() {
       });
     }
   };
+
+  const isLoading = branchesLoading || templatesLoading;
 
   if (isLoading) {
     return (
@@ -268,13 +351,60 @@ export default function InvoiceTemplatePage() {
   return (
     <MainLayout>
       <PageHeader
-        title="Thiết lập mẫu in hóa đơn K80"
-        description="Cấu hình bố cục 5 phần với căn lề riêng cho mỗi phần"
+        title="Thiết lập mẫu in hóa đơn"
+        description="Mỗi chi nhánh có mẫu in riêng với địa chỉ khác nhau"
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Settings */}
         <div className="space-y-4">
+          {/* Branch selector */}
+          <Card className="border-primary/30 bg-primary/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Chọn chi nhánh
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <Select
+                  value={selectedBranchId || ''}
+                  onValueChange={handleBranchChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn chi nhánh..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {branches?.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        <div className="flex items-center gap-2">
+                          {branch.name}
+                          {branch.is_default && (
+                            <Badge variant="secondary" className="text-xs">Mặc định</Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {selectedBranch && (
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p><strong>Địa chỉ:</strong> {selectedBranch.address || 'Chưa có'}</p>
+                    <p><strong>SĐT:</strong> {selectedBranch.phone || 'Chưa có'}</p>
+                  </div>
+                )}
+
+                {currentTemplate?.branch_id && (
+                  <Badge variant="outline" className="text-xs">
+                    Mẫu riêng cho chi nhánh này
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* General settings */}
           <Card>
             <CardHeader>
@@ -354,10 +484,24 @@ export default function InvoiceTemplatePage() {
           {/* Section 1: Store info */}
           <SectionCard
             title="Phần 1: Thông tin cửa hàng"
-            description="Tên, địa chỉ, số điện thoại"
+            description="Tên, địa chỉ, số điện thoại (theo chi nhánh)"
             align={s1Align}
             onAlignChange={(v) => updateSetting('section1_align', v)}
           >
+            {/* Sync from branch button */}
+            {selectedBranch && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full mb-3"
+                onClick={handleSyncFromBranch}
+              >
+                <Building2 className="h-4 w-4 mr-2" />
+                Lấy thông tin từ chi nhánh "{selectedBranch.name}"
+              </Button>
+            )}
+
             <SettingItem
               icon={<Store className="h-4 w-4" />}
               label="Tên cửa hàng"
