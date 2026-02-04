@@ -284,14 +284,14 @@ export function AppSidebar() {
 
   return (
     <>
-      {/* Mobile toggle */}
+      {/* Mobile toggle - tăng kích thước và khoảng cách để dễ bấm hơn */}
       <Button
-        variant="ghost"
+        variant="outline"
         size="icon"
-        className="fixed top-3 left-3 z-50 lg:hidden h-9 w-9 sm:h-10 sm:w-10 bg-card/80 backdrop-blur-sm shadow-sm border"
+        className="fixed top-3 left-4 z-50 lg:hidden h-11 w-11 bg-card shadow-md border-2 safe-left"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
       >
-        {isMobileOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
+        {isMobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
       </Button>
 
       {/* Mobile overlay */}
