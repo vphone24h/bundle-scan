@@ -284,11 +284,15 @@ export function AppSidebar() {
 
   return (
     <>
-      {/* Mobile toggle - tăng kích thước và khoảng cách để dễ bấm hơn */}
+      {/* Mobile toggle - optimized for PWA standalone mode with safe-area */}
       <Button
         variant="outline"
         size="icon"
-        className="fixed top-3 left-4 z-50 lg:hidden h-11 w-11 bg-card shadow-md border-2 safe-left"
+        className="fixed z-50 lg:hidden h-12 w-12 bg-card shadow-lg border-2 touch-target"
+        style={{
+          top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))',
+          left: 'max(1rem, calc(env(safe-area-inset-left) + 0.5rem))',
+        }}
         onClick={() => setIsMobileOpen(!isMobileOpen)}
       >
         {isMobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}

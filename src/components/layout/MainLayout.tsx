@@ -9,7 +9,13 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="min-h-screen bg-background safe-x">
       <AppSidebar />
-      <main className="lg:pl-64 pt-14 sm:pt-16 lg:pt-0 safe-bottom">
+      {/* Main content - add extra top padding for PWA standalone mode to avoid menu button overlap */}
+      <main 
+        className="lg:pl-64 lg:pt-0 safe-bottom"
+        style={{
+          paddingTop: 'max(3.5rem, calc(env(safe-area-inset-top) + 4rem))',
+        }}
+      >
         <div className="min-h-screen">
           {children}
         </div>
