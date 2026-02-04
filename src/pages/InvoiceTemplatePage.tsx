@@ -521,17 +521,11 @@ export default function InvoiceTemplatePage() {
             />
 
             <SettingItem
-              icon={<Heart className="h-4 w-4" />}
-              label="Lời cảm ơn"
-              checked={currentSettings.show_thank_you ?? true}
-              onCheckedChange={(v) => updateSetting('show_thank_you', v)}
-            >
-              <Input
-                placeholder="Nhập lời cảm ơn"
-                value={currentSettings.thank_you_text || ''}
-                onChange={(e) => updateSetting('thank_you_text', e.target.value)}
-              />
-            </SettingItem>
+              icon={<DollarSign className="h-4 w-4" />}
+              label="Thuế VAT"
+              checked={currentSettings.show_tax ?? false}
+              onCheckedChange={(v) => updateSetting('show_tax', v)}
+            />
 
             <SettingItem
               icon={<FileEdit className="h-4 w-4" />}
@@ -613,6 +607,19 @@ export default function InvoiceTemplatePage() {
                   />
                 </div>
               </div>
+            </SettingItem>
+
+            <SettingItem
+              icon={<Heart className="h-4 w-4" />}
+              label="Lời cảm ơn"
+              checked={currentSettings.show_thank_you ?? true}
+              onCheckedChange={(v) => updateSetting('show_thank_you', v)}
+            >
+              <Input
+                placeholder="Nhập lời cảm ơn"
+                value={currentSettings.thank_you_text || ''}
+                onChange={(e) => updateSetting('thank_you_text', e.target.value)}
+              />
             </SettingItem>
           </SectionCard>
 
@@ -823,6 +830,12 @@ export default function InvoiceTemplatePage() {
                       <span>+320 điểm</span>
                     </div>
                   )}
+                  {currentSettings.show_tax && (
+                    <div className="flex justify-between" style={{ color: '#666' }}>
+                      <span>Thuế VAT (10%):</span>
+                      <span>3,200,000đ</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Note */}
@@ -832,7 +845,7 @@ export default function InvoiceTemplatePage() {
                   </div>
                 )}
 
-                {/* Custom description */}
+                {/* Custom description - NOW BEFORE Thank you */}
                 {currentSettings.show_custom_description && (currentSettings.custom_description_text || currentSettings.custom_description_image_url) && (
                   <div 
                     className={`mt-2 text-sm ${getAlignClass((currentSettings.custom_description_align || 'center') as TextAlign)}`}
@@ -853,7 +866,7 @@ export default function InvoiceTemplatePage() {
                   </div>
                 )}
 
-                {/* Thank you */}
+                {/* Thank you - NOW AFTER Custom description */}
                 {currentSettings.show_thank_you && (
                   <div className="mt-4 text-center italic">
                     {currentSettings.thank_you_text || 'Cảm ơn quý khách!'}
