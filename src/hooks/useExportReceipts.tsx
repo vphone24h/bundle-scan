@@ -39,6 +39,8 @@ export interface ExportReceipt {
   points_earned: number;
   points_redeemed: number;
   points_discount: number;
+  vat_rate: number;
+  vat_amount: number;
   status: string;
   note: string | null;
   created_by: string | null;
@@ -185,6 +187,8 @@ export function useCreateExportReceipt() {
       pointsRedeemed = 0,
       pointsDiscount = 0,
       branchId,
+      vatRate = 0,
+      vatAmount = 0,
     }: {
       customerId: string;
       items: ExportReceiptItem[];
@@ -193,6 +197,8 @@ export function useCreateExportReceipt() {
       pointsRedeemed?: number;
       pointsDiscount?: number;
       branchId?: string | null;
+      vatRate?: number;
+      vatAmount?: number;
     }) => {
       // Calculate total amount considering quantity
       const totalAmount = items.reduce((sum, item) => sum + (item.sale_price * (item.quantity || 1)), 0);
@@ -271,6 +277,8 @@ export function useCreateExportReceipt() {
             points_earned: pointsToEarn,
             points_redeemed: pointsRedeemed,
             points_discount: pointsDiscount,
+            vat_rate: vatRate,
+            vat_amount: vatAmount,
             note,
             created_by: user?.id,
             tenant_id: tenantId,

@@ -248,6 +248,8 @@ export default function ExportHistoryPage() {
         { header: 'SĐT', key: 'customer_phone', width: 15 },
         { header: 'Số SP', key: 'item_count', width: 8 },
         { header: 'Tổng tiền', key: 'total_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Thuế (%)', key: 'vat_rate', width: 10 },
+        { header: 'Tiền thuế', key: 'vat_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
         { header: 'Đã thanh toán', key: 'paid_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
         { header: 'Công nợ', key: 'debt_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
         { header: 'Trạng thái', key: 'status', width: 15, format: (v) => statusLabels[v]?.label || v },
@@ -261,6 +263,8 @@ export default function ExportHistoryPage() {
         customer_phone: r.customers?.phone || '',
         item_count: r.export_receipt_items?.length || 0,
         total_amount: r.total_amount,
+        vat_rate: r.vat_rate || 0,
+        vat_amount: r.vat_amount || 0,
         paid_amount: r.paid_amount,
         debt_amount: r.debt_amount,
         status: r.status,
@@ -403,6 +407,7 @@ export default function ExportHistoryPage() {
                       <TableHead className="hidden lg:table-cell">Chi nhánh</TableHead>
                       <TableHead className="text-center">Số SP</TableHead>
                       <TableHead className="text-right">Tổng tiền</TableHead>
+                      <TableHead className="text-center">Thuế</TableHead>
                       <TableHead className="text-right">Đã TT</TableHead>
                       <TableHead className="text-right">Công nợ</TableHead>
                       <TableHead>Trạng thái</TableHead>
@@ -435,6 +440,11 @@ export default function ExportHistoryPage() {
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {receipt.total_amount.toLocaleString('vi-VN')}đ
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="text-xs">
+                            {receipt.vat_rate || 0}%
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           {receipt.paid_amount.toLocaleString('vi-VN')}đ

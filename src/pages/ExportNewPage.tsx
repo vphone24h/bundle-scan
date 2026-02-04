@@ -481,7 +481,7 @@ export default function ExportNewPage() {
       // Get branch_id from first cart item
       const branchId = cart.find(item => item.branch_id)?.branch_id || null;
 
-      // Create export receipt with points and branch
+      // Create export receipt with points, branch and VAT
       const receipt = await createReceipt.mutateAsync({
         customerId: customer.id,
         items: cart.map(({ tempId, categoryName, branchName, ...item }) => item),
@@ -489,6 +489,8 @@ export default function ExportNewPage() {
         pointsRedeemed,
         pointsDiscount,
         branchId,
+        vatRate: effectiveTaxRate,
+        vatAmount: taxAmount,
       });
 
       setCreatedReceipt({
