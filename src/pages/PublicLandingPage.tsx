@@ -80,22 +80,23 @@ export default function PublicLandingPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <img src={vkhoLogo} alt="vkho.vn" className="h-10 w-10 rounded-lg" />
-            <div>
-              <span className="font-bold text-lg text-primary">vkho.vn</span>
-              <p className="text-[10px] text-muted-foreground -mt-1">Quản lý thông minh</p>
+      {/* Header - optimized for PWA standalone mode */}
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pt-[env(safe-area-inset-top)]">
+        <div className="container mx-auto flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <img src={vkhoLogo} alt="vkho.vn" className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg flex-shrink-0" />
+            <div className="min-w-0">
+              <span className="font-bold text-base sm:text-lg text-primary">vkho.vn</span>
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground -mt-1 truncate">Quản lý thông minh</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <Button variant="ghost" size="sm" className="text-xs sm:text-sm px-2 sm:px-3 h-8 sm:h-9" onClick={() => navigate('/auth')}>
               Đăng nhập
             </Button>
-            <Button size="sm" onClick={() => navigate('/register')}>
-              Dùng thử miễn phí
+            <Button size="sm" className="text-xs sm:text-sm px-2 sm:px-3 h-8 sm:h-9 whitespace-nowrap" onClick={() => navigate('/register')}>
+              <span className="hidden xs:inline">Dùng thử miễn phí</span>
+              <span className="xs:hidden">Đăng ký</span>
             </Button>
           </div>
         </div>

@@ -311,3 +311,49 @@
     display: none;
   }
 }
+
+/* PWA Standalone Mode - iOS/Android specific fixes */
+@media all and (display-mode: standalone) {
+  /* Ensure proper viewport handling in standalone mode */
+  html {
+    /* Prevent content from being hidden behind status bar */
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  body {
+    /* Full height in standalone mode */
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+  
+  /* Sticky headers need to account for safe area */
+  .sticky {
+    top: env(safe-area-inset-top);
+  }
+}
+
+/* iOS Safari PWA specific fixes */
+@supports (-webkit-touch-callout: none) {
+  /* Prevent iOS double-tap zoom */
+  button, a, input, select, textarea {
+    touch-action: manipulation;
+  }
+  
+  /* Fix iOS input zoom issue */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Ensure body fills viewport properly */
+html, body, #root {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}

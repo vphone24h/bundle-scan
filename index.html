@@ -60,6 +60,14 @@
       * {
         -webkit-tap-highlight-color: transparent;
       }
+      
+      /* PWA Standalone Mode - Critical CSS for iOS/Android */
+      @media all and (display-mode: standalone) {
+        body {
+          /* Add padding for status bar in standalone mode */
+          padding-top: env(safe-area-inset-top);
+        }
+      }
     </style>
   </head>
 
