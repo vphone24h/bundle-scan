@@ -220,14 +220,32 @@ export function useMarkDefectiveReturn() {
       note,
       importPrice,
       supplierId,
+      productName,
+      sku,
+      imei,
+      supplierName,
+      branchId,
     }: {
       productId: string;
       paymentSource: string;
       note: string;
       importPrice: number;
       supplierId: string | null;
+      productName: string;
+      sku: string;
+      imei: string | null;
+      supplierName: string | null;
+      branchId: string | null;
     }) => {
-      // 1. Update product status to 'deleted' with note
+      const paymentSourceLabel = 
+        paymentSource === 'cash' ? 'Tiền mặt' : 
+        paymentSource === 'bank_card' ? 'Chuyển khoản' : 
+        'Trừ công nợ NCC';
+
+      // 1. Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // 2. Update product status to 'deleted' with note
       const { error: productError } = await supabase
         .from('products')
         .update({ 
@@ -238,15 +256,59 @@ export function useMarkDefectiveReturn() {
 
       if (productError) throw productError;
 
-      // 2. Create cash book entry for refund from supplier (Thu)
+      // 3. Create audit log entry
+      if (tenant?.id) {
+        const { error: auditError } = await supabase
+          .from('audit_logs')
+          .insert({
+            tenant_id: tenant.id,
+            user_id: user?.id,
+            branch_id: branchId,
+            action_type: 'DEFECTIVE_RETURN',
+            table_name: 'products',
+            record_id: productId,
+            description: `Xử lý hàng lỗi: ${productName} (${sku})${imei ? ` - IMEI: ${imei}` : ''} | Giá nhập: ${importPrice.toLocaleString('vi-VN')}đ | NCC: ${supplierName || 'Không xác định'} | Nguồn tiền hoàn: ${paymentSourceLabel} | Lý do: ${note}`,
+            old_data: {
+              product_id: productId,
+              product_name: productName,
+              sku: sku,
+              imei: imei,
+              import_price: importPrice,
+              supplier_id: supplierId,
+              supplier_name: supplierName,
+              status: 'warranty',
+            },
+            new_data: {
+              product_id: productId,
+              product_name: productName,
+              sku: sku,
+              imei: imei,
+              import_price: importPrice,
+              supplier_id: supplierId,
+              supplier_name: supplierName,
+              status: 'deleted',
+              defective_reason: note,
+              payment_source: paymentSource,
+              payment_source_label: paymentSourceLabel,
+              refund_amount: importPrice,
+            },
+          });
+
+        if (auditError) {
+          console.error('Error creating audit log:', auditError);
+        }
+      }
+
+      // 4. Create cash book entry for refund from supplier (Thu)
       if (paymentSource !== 'debt_reduction' && tenant?.id) {
         const { error: cashBookError } = await supabase
           .from('cash_book')
           .insert({
             tenant_id: tenant.id,
+            branch_id: branchId,
             type: 'income' as any,
             category: 'Hoàn tiền hàng lỗi',
-            description: note,
+            description: `${productName}${imei ? ` (${imei})` : ''} - ${note}`,
             amount: importPrice,
             payment_source: paymentSource === 'cash' ? 'cash' : 'bank_card',
             reference_type: 'defective_return',
@@ -257,25 +319,19 @@ export function useMarkDefectiveReturn() {
         if (cashBookError) throw cashBookError;
       }
 
-      // 3. If debt reduction, update supplier debt (reduce what we owe)
-      if (paymentSource === 'debt_reduction' && supplierId) {
-        // Get current supplier debt
-        const { data: payments } = await supabase
-          .from('debt_payments')
-          .select('*')
-          .eq('entity_type', 'supplier')
-          .eq('entity_id', supplierId);
-
+      // 5. If debt reduction, update supplier debt (reduce what we owe)
+      if (paymentSource === 'debt_reduction' && supplierId && tenant?.id) {
         // Create a payment record to reduce debt
         const { error: debtError } = await supabase
           .from('debt_payments')
           .insert({
-            tenant_id: tenant?.id,
+            tenant_id: tenant.id,
+            branch_id: branchId,
             entity_type: 'supplier',
             entity_id: supplierId,
             payment_type: 'payment',
             amount: importPrice,
-            description: `Trừ công nợ - Hàng lỗi: ${note}`,
+            description: `Trừ công nợ - Hàng lỗi: ${productName}${imei ? ` (${imei})` : ''} - ${note}`,
           });
 
         if (debtError) throw debtError;
