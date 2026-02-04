@@ -3271,6 +3271,7 @@ export type Database = {
       }
       can_access_cash_book: { Args: { _user_id: string }; Returns: boolean }
       can_become_affiliate: { Args: { _tenant_id: string }; Returns: boolean }
+      delete_branch_safe: { Args: { _branch_id: string }; Returns: undefined }
       generate_affiliate_code: { Args: never; Returns: string }
       generate_domain_verification_token: { Args: never; Returns: string }
       get_current_tenant: { Args: never; Returns: string }

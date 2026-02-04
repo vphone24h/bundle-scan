@@ -124,7 +124,16 @@ export default function BranchesPage() {
       await deleteBranch.mutateAsync(deleteConfirmId);
       toast.success('Xóa chi nhánh thành công');
     } catch (error) {
-      toast.error('Có lỗi xảy ra khi xóa chi nhánh');
+      const message = String((error as any)?.message || (error as any)?.error_description || '');
+      if (message.includes('CANNOT_DELETE_DEFAULT_BRANCH')) {
+        toast.error('Không thể xóa chi nhánh mặc định');
+      } else if (message.includes('BRANCH_IN_USE')) {
+        toast.error('Chi nhánh đang được sử dụng (có sản phẩm/phiếu/giao dịch) nên không thể xóa');
+      } else if (message.includes('FORBIDDEN')) {
+        toast.error('Bạn không có quyền xóa chi nhánh');
+      } else {
+        toast.error('Có lỗi xảy ra khi xóa chi nhánh');
+      }
     }
     setDeleteConfirmId(null);
   };

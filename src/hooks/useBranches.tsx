@@ -115,11 +115,8 @@ export function useDeleteBranch() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('branches')
-        .delete()
-        .eq('id', id);
-
+      // Use backend function to provide clear errors and avoid FK constraint surprises
+      const { error } = await supabase.rpc('delete_branch_safe', { _branch_id: id });
       if (error) throw error;
     },
     onSuccess: () => {
