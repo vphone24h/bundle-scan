@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2, Settings2, AlertTriangle } from 'lucide-react';
+import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2, Settings2, AlertTriangle, Wrench } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
@@ -47,6 +47,7 @@ import { EditProductDialog } from '@/components/import/EditProductDialog';
 import { DeleteProductDialog } from '@/components/products/DeleteProductDialog';
 import { AdjustQuantityDialog } from '@/components/products/AdjustQuantityDialog';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useMarkProductWarranty } from '@/hooks/useWarrantyInventory';
 
 export default function ImportHistoryPage() {
   const navigate = useNavigate();
@@ -56,6 +57,7 @@ export default function ImportHistoryPage() {
   const { data: suppliers } = useSuppliers();
   const { data: branches } = useBranches();
   const { data: permissions } = usePermissions();
+  const markWarranty = useMarkProductWarranty();
   
   // Search & filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -694,6 +696,18 @@ export default function ImportHistoryPage() {
                               >
                                 <RotateCcw className="mr-1 h-3 w-3" />
                                 Trả
+                              </Button>
+                              {/* Warranty button */}
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => markWarranty.mutate(product.id)}
+                                disabled={markWarranty.isPending}
+                                className="h-7 text-xs gap-1"
+                                title="Chuyển sang bảo hành"
+                              >
+                                <Wrench className="h-3 w-3" />
+                                BH
                               </Button>
                               {/* Adjust quantity - only for non-IMEI products and super_admin */}
                               {!product.imei && permissions?.canAdjustProductQuantity && (

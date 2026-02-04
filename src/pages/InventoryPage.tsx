@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Download, Package, ClipboardList, FileUp, AlertTriangle } from 'lucide-react';
+import { Download, Package, ClipboardList, FileUp, AlertTriangle, Wrench } from 'lucide-react';
 import { differenceInDays, format } from 'date-fns';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { usePagination } from '@/hooks/usePagination';
@@ -12,6 +12,7 @@ import { InventoryFiltersComponent, InventoryFilters } from '@/components/invent
 import { InventoryTable } from '@/components/inventory/InventoryTable';
 import { InventoryStats } from '@/components/inventory/InventoryStats';
 import { StockCountTab } from '@/components/stockCount/StockCountTab';
+import { WarrantyTab } from '@/components/inventory/WarrantyTab';
 import { useToast } from '@/hooks/use-toast';
 import { exportToExcel, formatCurrencyForExcel } from '@/lib/exportExcel';
 
@@ -258,6 +259,10 @@ export default function InventoryPage() {
               <Package className="h-4 w-4" />
               Tồn kho
             </TabsTrigger>
+            <TabsTrigger value="warranty" className="gap-2">
+              <Wrench className="h-4 w-4" />
+              Hàng bảo hành
+            </TabsTrigger>
             <TabsTrigger value="stock-count" className="gap-2">
               <ClipboardList className="h-4 w-4" />
               Kiểm kho
@@ -286,6 +291,10 @@ export default function InventoryPage() {
                 onPageSizeChange={pagination.setPageSize}
               />
             )}
+          </TabsContent>
+
+          <TabsContent value="warranty">
+            <WarrantyTab />
           </TabsContent>
 
           <TabsContent value="stock-count">
