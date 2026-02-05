@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { ImportCart } from '@/components/import/ImportCart';
 import { PaymentDialog } from '@/components/import/PaymentDialog';
 import { ExcelImportDialog } from '@/components/import/ExcelImportDialog';
+import { ProductNamingTip } from '@/components/import/ProductNamingTip';
 import { useCategories, useCreateCategory } from '@/hooks/useCategories';
 import { useSuppliers, useCreateSupplier } from '@/hooks/useSuppliers';
 import { useProducts, useCheckIMEI } from '@/hooks/useProducts';
@@ -431,6 +432,9 @@ export default function ImportNewPage() {
 
             <div className="bg-card border rounded-xl p-6">
               <h3 className="font-semibold mb-4">Thông tin sản phẩm</h3>
+              
+              {/* Naming Tips */}
+              <ProductNamingTip />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Product Name */}
