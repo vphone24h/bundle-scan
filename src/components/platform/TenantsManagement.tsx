@@ -19,7 +19,8 @@ import {
   MoreHorizontal,
   Building2,
   Loader2,
-  FileText
+  FileText,
+  Package
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -42,6 +43,7 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { TenantProductsDialog } from './TenantProductsDialog';
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   trial: { label: 'Dùng thử', variant: 'secondary' },
@@ -61,6 +63,7 @@ export function TenantsManagement() {
   const [reason, setReason] = useState('');
   const [days, setDays] = useState('30');
   const [togglingEinvoice, setTogglingEinvoice] = useState<string | null>(null);
+  const [showProductsDialog, setShowProductsDialog] = useState(false);
 
   const filteredTenants = tenants?.filter(t => 
     t.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -176,7 +179,14 @@ export function TenantsManagement() {
                 const status = statusConfig[tenant.status];
                 
                 return (
-                  <TableRow key={tenant.id}>
+                  <TableRow 
+                    key={tenant.id} 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => {
+                      setSelectedTenant(tenant);
+                      setShowProductsDialog(true);
+                    }}
+                  >
                     <TableCell>
                       <p className="font-medium">{tenant.name}</p>
                     </TableCell>
@@ -215,7 +225,7 @@ export function TenantsManagement() {
                     <TableCell>
                       {format(new Date(tenant.created_at), 'dd/MM/yyyy', { locale: vi })}
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
@@ -223,6 +233,13 @@ export function TenantsManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedTenant(tenant);
+                            setShowProductsDialog(true);
+                          }}>
+                            <Package className="h-4 w-4 mr-2" />
+                            Xem sản phẩm
+                          </DropdownMenuItem>
                           {tenant.status !== 'locked' ? (
                             <DropdownMenuItem onClick={() => {
                               setSelectedTenant(tenant);
@@ -265,7 +282,14 @@ export function TenantsManagement() {
           const status = statusConfig[tenant.status];
           
           return (
-            <Card key={tenant.id}>
+            <Card 
+              key={tenant.id} 
+              className="cursor-pointer active:bg-muted/50"
+              onClick={() => {
+                setSelectedTenant(tenant);
+                setShowProductsDialog(true);
+              }}
+            >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
@@ -296,7 +320,7 @@ export function TenantsManagement() {
                       {remaining > 36500 ? 'Vĩnh viễn' : `${remaining} ngày`}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
                     <span className="text-muted-foreground flex items-center gap-1">
                       <FileText className="h-3 w-3" /> HĐĐT:
                     </span>
@@ -307,7 +331,19 @@ export function TenantsManagement() {
                     />
                   </div>
                 </div>
-                <div className="mt-3 flex gap-2">
+                <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => {
+                      setSelectedTenant(tenant);
+                      setShowProductsDialog(true);
+                    }}
+                  >
+                    <Package className="h-4 w-4 mr-2" />
+                    Sản phẩm
+                  </Button>
                   {tenant.status !== 'locked' ? (
                     <Button 
                       variant="outline" 
@@ -408,6 +444,14 @@ export function TenantsManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Products Dialog */}
+      <TenantProductsDialog
+        open={showProductsDialog}
+        onOpenChange={setShowProductsDialog}
+        tenantId={selectedTenant?.id || null}
+        tenantName={selectedTenant?.name || ''}
+      />
     </div>
   );
 }
