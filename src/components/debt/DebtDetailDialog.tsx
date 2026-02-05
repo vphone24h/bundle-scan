@@ -230,8 +230,8 @@ export function DebtDetailDialog({
                     <TableHeader>
                       <TableRow>
                         <TableHead>Ngày</TableHead>
+                        <TableHead>Nội dung</TableHead>
                         <TableHead className="text-right">Số tiền</TableHead>
-                        <TableHead className="hidden sm:table-cell">Nội dung</TableHead>
                         <TableHead className="hidden md:table-cell">Nguồn tiền</TableHead>
                         <TableHead className="hidden lg:table-cell">Nhân viên</TableHead>
                       </TableRow>
@@ -239,24 +239,24 @@ export function DebtDetailDialog({
                     <TableBody>
                       {paymentHistory.map((payment) => (
                         <TableRow key={payment.id}>
-                          <TableCell>
+                          <TableCell className="whitespace-nowrap">
                             {format(new Date(payment.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
                           </TableCell>
-                          <TableCell className="text-right">
-                            <span className={payment.payment_type === 'payment' ? 'text-green-600' : 'text-destructive'}>
-                              {payment.payment_type === 'payment' ? '-' : '+'}
-                              {formatNumber(payment.amount)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell">
+                          <TableCell>
                             <div>
-                              <p>{payment.description}</p>
+                              <p className="text-sm">{payment.description}</p>
                               {payment.payment_type === 'addition' && (
-                                <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700">
+                                <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 mt-1">
                                   Cộng thêm nợ
                                 </Badge>
                               )}
                             </div>
+                          </TableCell>
+                          <TableCell className="text-right whitespace-nowrap">
+                            <span className={payment.payment_type === 'payment' ? 'text-green-600' : 'text-destructive'}>
+                              {payment.payment_type === 'payment' ? '-' : '+'}
+                              {formatNumber(payment.amount)}
+                            </span>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             {payment.payment_source || '-'}
