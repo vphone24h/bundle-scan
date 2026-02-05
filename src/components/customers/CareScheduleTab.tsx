@@ -42,6 +42,7 @@
  import { toast } from 'sonner';
  import { usePagination } from '@/hooks/usePagination';
  import { TablePagination } from '@/components/ui/table-pagination';
+import { useIsMobile } from '@/hooks/use-mobile';
  
  const STATUS_CONFIG = {
    pending: { label: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800' },
@@ -166,44 +167,44 @@
    };
  
    return (
-     <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
        {/* Stats */}
-       <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
          <Card>
-           <CardContent className="pt-4">
-             <div className="flex items-center gap-3">
-               <div className="p-2 bg-yellow-100 rounded-lg">
-                 <Clock className="h-5 w-5 text-yellow-600" />
+          <CardContent className="pt-3 sm:pt-4 px-2 sm:px-4">
+            <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-yellow-100 rounded-lg">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
                </div>
-               <div>
-                 <p className="text-2xl font-bold">{todayCount}</p>
-                 <p className="text-xs text-muted-foreground">Hôm nay</p>
+              <div className="text-center sm:text-left">
+                <p className="text-lg sm:text-2xl font-bold">{todayCount}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Hôm nay</p>
                </div>
              </div>
            </CardContent>
          </Card>
          <Card>
-           <CardContent className="pt-4">
-             <div className="flex items-center gap-3">
-               <div className="p-2 bg-red-100 rounded-lg">
-                 <AlertTriangle className="h-5 w-5 text-red-600" />
+          <CardContent className="pt-3 sm:pt-4 px-2 sm:px-4">
+            <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-red-100 rounded-lg">
+                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
                </div>
-               <div>
-                 <p className="text-2xl font-bold">{overdueCount}</p>
-                 <p className="text-xs text-muted-foreground">Quá hạn</p>
+              <div className="text-center sm:text-left">
+                <p className="text-lg sm:text-2xl font-bold">{overdueCount}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Quá hạn</p>
                </div>
              </div>
            </CardContent>
          </Card>
          <Card>
-           <CardContent className="pt-4">
-             <div className="flex items-center gap-3">
-               <div className="p-2 bg-blue-100 rounded-lg">
-                 <Calendar className="h-5 w-5 text-blue-600" />
+          <CardContent className="pt-3 sm:pt-4 px-2 sm:px-4">
+            <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                </div>
-               <div>
-                 <p className="text-2xl font-bold">{upcomingCount}</p>
-                 <p className="text-xs text-muted-foreground">Sắp tới</p>
+              <div className="text-center sm:text-left">
+                <p className="text-lg sm:text-2xl font-bold">{upcomingCount}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Sắp tới</p>
                </div>
              </div>
            </CardContent>
@@ -212,11 +213,11 @@
  
        {/* Filters & Actions */}
        <Card>
-         <CardContent className="pt-4">
-           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-             <div className="flex gap-2 items-center">
+        <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-2 items-center justify-between">
                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                 <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[120px] sm:w-[150px] h-9 text-sm">
                    <SelectValue placeholder="Trạng thái" />
                  </SelectTrigger>
                  <SelectContent>
@@ -226,29 +227,81 @@
                    <SelectItem value="overdue">Quá hạn</SelectItem>
                  </SelectContent>
                </Select>
-               {customerId && customerName && (
-                 <Badge variant="secondary" className="text-sm">
-                   Khách: {customerName}
-                 </Badge>
-               )}
+              <Button size="sm" onClick={() => setShowCreateDialog(true)} disabled={!customerId} className="h-9">
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Tạo lịch</span>
+              </Button>
              </div>
-             <Button onClick={() => setShowCreateDialog(true)} disabled={!customerId}>
-               <Plus className="h-4 w-4 mr-2" />
-               Tạo lịch chăm sóc
-             </Button>
-           </div>
-           {!customerId && (
-             <p className="text-sm text-muted-foreground mt-2">
-               Chọn khách hàng từ tab "Danh sách" để tạo lịch chăm sóc
-             </p>
-           )}
+            {customerId && customerName && (
+              <Badge variant="secondary" className="text-xs w-fit">
+                Khách: {customerName}
+              </Badge>
+            )}
+            {!customerId && (
+              <p className="text-xs text-muted-foreground">
+                Chọn khách hàng từ tab "Danh sách" để tạo lịch
+              </p>
+            )}
+          </div>
          </CardContent>
        </Card>
  
        {/* Schedule List */}
        <Card>
          <CardContent className="p-0">
-           <Table>
+          {/* Mobile: Card View */}
+          <div className="sm:hidden divide-y">
+            {isLoading ? (
+              <p className="text-center py-8 text-sm text-muted-foreground">Đang tải...</p>
+            ) : pagination.paginatedData.length === 0 ? (
+              <p className="text-center py-8 text-sm text-muted-foreground">
+                Chưa có lịch chăm sóc nào
+              </p>
+            ) : (
+              pagination.paginatedData.map((schedule) => {
+                const statusConfig = STATUS_CONFIG[schedule.status as keyof typeof STATUS_CONFIG];
+                const isOverdue = schedule.status === 'pending' && isPast(new Date(schedule.scheduled_date)) && !isToday(new Date(schedule.scheduled_date));
+                
+                return (
+                  <div key={schedule.id} className="p-3 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-sm">{schedule.customer?.name || '-'}</p>
+                        <p className="text-xs text-muted-foreground">{schedule.customer?.phone}</p>
+                      </div>
+                      <Badge className={`text-xs ${isOverdue ? STATUS_CONFIG.overdue.color : statusConfig?.color}`}>
+                        {isOverdue ? STATUS_CONFIG.overdue.label : statusConfig?.label}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <Badge variant="outline" className="text-xs">{schedule.care_type_name}</Badge>
+                        <p className={`text-xs mt-1 ${isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                          {format(new Date(schedule.scheduled_date), 'dd/MM/yyyy', { locale: vi })}
+                          {schedule.scheduled_time && ` ${schedule.scheduled_time}`}
+                        </p>
+                      </div>
+                      {schedule.status === 'pending' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8"
+                          onClick={() => {
+                            setSelectedSchedule(schedule);
+                            setShowCompleteDialog(true);
+                          }}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+          {/* Desktop: Table View */}
+          <Table className="hidden sm:table">
              <TableHeader>
                <TableRow>
                  <TableHead>Khách hàng</TableHead>

@@ -116,106 +116,190 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
           {isLoading ? (
             <div className="py-8 text-center">Đang tải...</div>
           ) : customer ? (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Header - Customer Overview */}
               <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-bold">{customer.name}</h2>
-                        <Badge className={MEMBERSHIP_TIER_COLORS[customer.membership_tier]}>
+                <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h2 className="text-lg sm:text-2xl font-bold truncate">{customer.name}</h2>
+                          <Badge className={`${MEMBERSHIP_TIER_COLORS[customer.membership_tier]} text-xs`}>
                           <Star className="h-3 w-3 mr-1" />
                           {MEMBERSHIP_TIER_NAMES[customer.membership_tier]}
                         </Badge>
                       </div>
-                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Phone className="h-4 w-4" />
+                        <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Phone className="h-3 w-3 sm:h-4 sm:w-4" />
                           {customer.phone}
                         </span>
                         {customer.email && (
-                          <span className="flex items-center gap-1">
-                            <Mail className="h-4 w-4" />
-                            {customer.email}
-                          </span>
-                        )}
-                        {customer.address && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            {customer.address}
-                          </span>
-                        )}
-                        {customer.birthday && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            {format(new Date(customer.birthday), 'dd/MM/yyyy')}
+                            <span className="flex items-center gap-1 truncate max-w-[150px] sm:max-w-none">
+                              <Mail className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                              <span className="truncate">{customer.email}</span>
                           </span>
                         )}
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
-                      <Edit2 className="h-4 w-4 mr-2" />
-                      Sửa
-                    </Button>
+                      <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)} className="flex-shrink-0">
+                        <Edit2 className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Sửa</span>
+                      </Button>
                   </div>
 
-                  <Separator className="my-4" />
+                    <Separator />
 
-                  {/* Key Metrics */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-3 bg-background rounded-lg">
-                      <p className="text-2xl font-bold text-primary">
+                    {/* Key Metrics - 2x2 grid on mobile */}
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                      <div className="text-center p-2 sm:p-3 bg-background rounded-lg">
+                        <p className="text-lg sm:text-2xl font-bold text-primary break-all">
                         {formatNumber(customer.current_points)}
                       </p>
-                      <p className="text-xs text-muted-foreground">Điểm hiện tại</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Điểm hiện tại</p>
                       {customer.pending_points > 0 && (
-                        <p className="text-xs text-yellow-600">+{formatNumber(customer.pending_points)} treo</p>
+                          <p className="text-[10px] sm:text-xs text-yellow-600">+{formatNumber(customer.pending_points)} treo</p>
                       )}
                     </div>
-                    <div className="text-center p-3 bg-background rounded-lg">
-                      <p className="text-2xl font-bold">{formatNumber(customer.total_spent)}</p>
-                      <p className="text-xs text-muted-foreground">Tổng chi tiêu</p>
+                      <div className="text-center p-2 sm:p-3 bg-background rounded-lg">
+                        <p className="text-lg sm:text-2xl font-bold break-all">{formatNumber(customer.total_spent)}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Tổng chi tiêu</p>
                     </div>
-                    <div className="text-center p-3 bg-background rounded-lg">
-                      <p className="text-2xl font-bold text-green-600">
+                      <div className="text-center p-2 sm:p-3 bg-background rounded-lg">
+                        <p className="text-lg sm:text-2xl font-bold text-green-600 break-all">
                         {formatNumber(customer.total_points_earned)}
                       </p>
-                      <p className="text-xs text-muted-foreground">Tổng điểm tích</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Tổng điểm tích</p>
                     </div>
-                    <div className="text-center p-3 bg-background rounded-lg">
-                      <p className={`text-2xl font-bold ${remainingDebt > 0 ? 'text-red-600' : ''}`}>
+                      <div className="text-center p-2 sm:p-3 bg-background rounded-lg">
+                        <p className={`text-lg sm:text-2xl font-bold break-all ${remainingDebt > 0 ? 'text-red-600' : ''}`}>
                         {formatNumber(remainingDebt)}
                       </p>
-                      <p className="text-xs text-muted-foreground">Công nợ</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Công nợ</p>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
+              {/* CRM Assignment Section - Outside tabs, below points */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 sm:p-4 bg-muted/50 rounded-lg border">
+                <div className="space-y-1.5">
+                  <label className="text-xs sm:text-sm font-medium flex items-center gap-2">
+                    <UserCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    Nhân viên phụ trách
+                  </label>
+                  <Select
+                    value={customer.assigned_staff_id || '_none_'}
+                    onValueChange={(v) => handleAssignStaff(v === '_none_' ? null : v)}
+                    disabled={isAssigning}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Chọn nhân viên..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none_">Chưa phân công</SelectItem>
+                      {staffList?.map((staff) => (
+                        <SelectItem key={staff.user_id} value={staff.user_id}>
+                          {staff.display_name || 'Nhân viên'}
+                          {staff.user_role === 'super_admin' && ' (Admin)'}
+                          {staff.user_role === 'branch_admin' && ' (QL)'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs sm:text-sm font-medium">Trạng thái CRM</label>
+                  <Select
+                    value={customer.crm_status || 'new'}
+                    onValueChange={(v) => handleUpdateCRMStatus(v as CRMStatus)}
+                    disabled={isUpdatingStatus}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(CRM_STATUS_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               {/* Tabs */}
               <Tabs defaultValue="purchases" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="purchases">
-                    <ShoppingCart className="h-4 w-4 mr-2 hidden sm:inline" />
-                    Mua hàng
+                <TabsList className="grid w-full grid-cols-4 h-auto">
+                  <TabsTrigger value="purchases" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+                    <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Mua hàng</span>
                   </TabsTrigger>
-                  <TabsTrigger value="points">
-                    <Star className="h-4 w-4 mr-2 hidden sm:inline" />
-                    Điểm thưởng
+                  <TabsTrigger value="points" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+                    <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Điểm</span>
                   </TabsTrigger>
-                  <TabsTrigger value="debt">
-                    <Wallet className="h-4 w-4 mr-2 hidden sm:inline" />
-                    Công nợ
+                  <TabsTrigger value="debt" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+                    <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Công nợ</span>
                   </TabsTrigger>
-                  <TabsTrigger value="info">Thông tin</TabsTrigger>
+                  <TabsTrigger value="info" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+                    <span className="sm:hidden">Info</span>
+                    <span className="hidden sm:inline">Thông tin</span>
+                  </TabsTrigger>
                 </TabsList>
 
                 {/* Tab 1: Purchase History */}
-                <TabsContent value="purchases" className="mt-4">
+                <TabsContent value="purchases" className="mt-3">
                   <Card>
                     <CardContent className="p-0">
-                      <Table>
+                      {/* Mobile: Card view */}
+                      <div className="sm:hidden divide-y">
+                        {purchaseHistory?.length === 0 ? (
+                          <p className="text-center py-8 text-muted-foreground text-sm">
+                            Chưa có lịch sử mua hàng
+                          </p>
+                        ) : (
+                          purchaseHistory?.map((receipt) => (
+                            <div
+                              key={receipt.id}
+                              className="p-3 active:bg-muted/50"
+                              onClick={() => {
+                                setSelectedReceipt(receipt);
+                                setShowPurchaseDetail(true);
+                              }}
+                            >
+                              <div className="flex justify-between items-start mb-1">
+                                <div>
+                                  <p className="font-mono text-xs text-muted-foreground">{receipt.code}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {format(new Date(receipt.export_date), 'dd/MM/yyyy', { locale: vi })}
+                                  </p>
+                                </div>
+                                <Badge variant={receipt.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
+                                  {receipt.status === 'completed' ? 'Hoàn tất' : 'Đã hủy'}
+                                </Badge>
+                              </div>
+                              <div className="flex justify-between items-end">
+                                <p className="font-semibold">{formatNumber(receipt.total_amount)}</p>
+                                <div className="text-xs">
+                                  {receipt.points_earned > 0 && (
+                                    <span className="text-green-600">+{receipt.points_earned}</span>
+                                  )}
+                                  {receipt.points_redeemed > 0 && (
+                                    <span className="text-red-600 ml-1">-{receipt.points_redeemed}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      {/* Desktop: Table view */}
+                      <Table className="hidden sm:table">
                         <TableHeader>
                           <TableRow>
                             <TableHead>Ngày</TableHead>
@@ -302,37 +386,37 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                 </TabsContent>
 
                 {/* Tab 2: Points History */}
-                <TabsContent value="points" className="mt-4 space-y-4">
+                <TabsContent value="points" className="mt-3 space-y-3">
                   {/* Points Summary */}
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
                     <Card>
-                      <CardContent className="pt-4 text-center">
-                        <p className="text-xl font-bold text-green-600">
+                      <CardContent className="pt-3 sm:pt-4 text-center px-2">
+                        <p className="text-base sm:text-xl font-bold text-green-600 break-all">
                           {formatNumber(customer.total_points_earned)}
                         </p>
-                        <p className="text-xs text-muted-foreground">Tổng tích</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Tổng tích</p>
                       </CardContent>
                     </Card>
                     <Card>
-                      <CardContent className="pt-4 text-center">
-                        <p className="text-xl font-bold text-red-600">
+                      <CardContent className="pt-3 sm:pt-4 text-center px-2">
+                        <p className="text-base sm:text-xl font-bold text-red-600 break-all">
                           {formatNumber(customer.total_points_used)}
                         </p>
-                        <p className="text-xs text-muted-foreground">Đã dùng</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Đã dùng</p>
                       </CardContent>
                     </Card>
                     <Card>
-                      <CardContent className="pt-4 text-center">
-                        <p className="text-xl font-bold text-primary">
+                      <CardContent className="pt-3 sm:pt-4 text-center px-2">
+                        <p className="text-base sm:text-xl font-bold text-primary break-all">
                           {formatNumber(customer.current_points)}
                         </p>
-                        <p className="text-xs text-muted-foreground">Còn lại</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Còn lại</p>
                       </CardContent>
                     </Card>
                   </div>
 
                   <div className="flex justify-end">
-                    <Button variant="outline" onClick={() => setShowAdjustDialog(true)}>
+                    <Button variant="outline" size="sm" onClick={() => setShowAdjustDialog(true)}>
                       Điều chỉnh điểm
                     </Button>
                   </div>
@@ -496,90 +580,44 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                 </TabsContent>
 
                 {/* Tab 4: Other Info */}
-                <TabsContent value="info" className="mt-4">
+                <TabsContent value="info" className="mt-3">
                   <Card>
-                    <CardContent className="pt-6 space-y-6">
-                      {/* CRM Assignment Section */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg border">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium flex items-center gap-2">
-                            <UserCircle className="h-4 w-4" />
-                            Nhân viên phụ trách
-                          </label>
-                          <Select
-                            value={customer.assigned_staff_id || '_none_'}
-                            onValueChange={(v) => handleAssignStaff(v === '_none_' ? null : v)}
-                            disabled={isAssigning}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Chọn nhân viên..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="_none_">Chưa phân công</SelectItem>
-                              {staffList?.map((staff) => (
-                                <SelectItem key={staff.user_id} value={staff.user_id}>
-                                  {staff.display_name || 'Nhân viên'}
-                                  {staff.user_role === 'super_admin' && ' (Admin)'}
-                                  {staff.user_role === 'branch_admin' && ' (QL)'}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Trạng thái CRM</label>
-                          <Select
-                            value={customer.crm_status || 'new'}
-                            onValueChange={(v) => handleUpdateCRMStatus(v as CRMStatus)}
-                            disabled={isUpdatingStatus}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(CRM_STATUS_LABELS).map(([value, label]) => (
-                                <SelectItem key={value} value={value}>
-                                  {label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      <div className="grid grid-cols-2 gap-4">
+                    <CardContent className="pt-4 sm:pt-6 space-y-4 px-3 sm:px-6">
+                      <div className="grid grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                          <label className="text-sm text-muted-foreground">Ngày sinh</label>
-                          <p className="font-medium">
+                          <label className="text-xs sm:text-sm text-muted-foreground">Ngày sinh</label>
+                          <p className="font-medium text-sm sm:text-base">
                             {customer.birthday
                               ? format(new Date(customer.birthday), 'dd/MM/yyyy')
                               : 'Chưa cập nhật'}
                           </p>
                         </div>
                         <div>
-                          <label className="text-sm text-muted-foreground">Email</label>
-                          <p className="font-medium">{customer.email || 'Chưa cập nhật'}</p>
+                          <label className="text-xs sm:text-sm text-muted-foreground">Email</label>
+                          <p className="font-medium text-sm sm:text-base truncate">{customer.email || 'Chưa cập nhật'}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-xs sm:text-sm text-muted-foreground">Địa chỉ</label>
+                          <p className="font-medium text-sm sm:text-base">{customer.address || 'Chưa cập nhật'}</p>
                         </div>
                         <div>
-                          <label className="text-sm text-muted-foreground">Địa chỉ</label>
-                          <p className="font-medium">{customer.address || 'Chưa cập nhật'}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm text-muted-foreground">Trạng thái</label>
-                          <p className="font-medium">
+                          <label className="text-xs sm:text-sm text-muted-foreground">Trạng thái</label>
+                          <p className="font-medium text-sm sm:text-base">
                             {customer.status === 'active' ? 'Hoạt động' : 'Ngừng theo dõi'}
                           </p>
+                        </div>
+                        <div>
+                          <label className="text-xs sm:text-sm text-muted-foreground">Nguồn</label>
+                          <p className="font-medium text-sm sm:text-base">{customer.source || 'Không xác định'}</p>
                         </div>
                       </div>
                       {customer.note && (
                         <div>
-                          <label className="text-sm text-muted-foreground">Ghi chú</label>
-                          <p className="font-medium">{customer.note}</p>
+                          <label className="text-xs sm:text-sm text-muted-foreground">Ghi chú</label>
+                          <p className="font-medium text-sm sm:text-base">{customer.note}</p>
                         </div>
                       )}
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-xs sm:text-sm text-muted-foreground pt-2 border-t">
                         Khách hàng từ: {format(new Date(customer.created_at), 'dd/MM/yyyy', { locale: vi })}
                       </div>
                     </CardContent>
