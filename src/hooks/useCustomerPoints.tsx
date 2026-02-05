@@ -67,6 +67,12 @@ export interface CustomerWithPoints {
   updated_at: string;
 }
 
+export interface CustomerWithPointsCRM extends CustomerWithPoints {
+  crm_status: 'new' | 'caring' | 'purchased' | 'inactive';
+  assigned_staff_id: string | null;
+  last_care_date: string | null;
+}
+
 // Hook: Lấy cài đặt tích điểm
 export function usePointSettings() {
   const { user } = useAuth();
@@ -270,6 +276,8 @@ export function useCustomersWithPoints(filters?: {
   hasPoints?: boolean;
   hasDebt?: boolean;
   status?: string;
+  crmStatus?: string;
+  staffId?: string;
 }) {
   const { user } = useAuth();
   return useQuery({
@@ -278,7 +286,7 @@ export function useCustomersWithPoints(filters?: {
     queryFn: async () => {
       let query = supabase
         .from('customers')
-        .select('id, name, phone, email, address, note, source, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at')
+        .select('id, name, phone, email, address, note, source, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at, crm_status, assigned_staff_id, last_care_date')
         .order('created_at', { ascending: false });
 
       if (filters?.search) {
@@ -301,10 +309,18 @@ export function useCustomersWithPoints(filters?: {
         query = query.eq('status', filters.status as 'active' | 'inactive');
       }
 
+      if (filters?.crmStatus && filters.crmStatus !== '_all_') {
+        query = query.eq('crm_status', filters.crmStatus);
+      }
+
+      if (filters?.staffId && filters.staffId !== '_all_') {
+        query = query.eq('assigned_staff_id', filters.staffId);
+      }
+
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as CustomerWithPoints[];
+      return data as CustomerWithPointsCRM[];
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 2, // 2 phút

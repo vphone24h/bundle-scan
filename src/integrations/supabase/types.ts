@@ -613,6 +613,95 @@ export type Database = {
           },
         ]
       }
+      care_reminders: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          is_sent: boolean | null
+          reminder_type: string | null
+          schedule_id: string
+          scheduled_for: string
+          sent_at: string | null
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          is_sent?: boolean | null
+          reminder_type?: string | null
+          schedule_id: string
+          scheduled_for: string
+          sent_at?: string | null
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          is_sent?: boolean | null
+          reminder_type?: string | null
+          schedule_id?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_reminders_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "customer_care_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_reminders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_schedule_types: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          id: string
+          is_default: boolean | null
+          name: string
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_schedule_types_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_book: {
         Row: {
           amount: number
@@ -824,6 +913,187 @@ export type Database = {
           },
         ]
       }
+      customer_care_logs: {
+        Row: {
+          action_type: string
+          content: string
+          created_at: string
+          customer_id: string
+          id: string
+          result: string | null
+          schedule_id: string | null
+          staff_id: string
+          staff_name: string | null
+          tenant_id: string
+        }
+        Insert: {
+          action_type: string
+          content: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          result?: string | null
+          schedule_id?: string | null
+          staff_id: string
+          staff_name?: string | null
+          tenant_id: string
+        }
+        Update: {
+          action_type?: string
+          content?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          result?: string | null
+          schedule_id?: string | null
+          staff_id?: string
+          staff_name?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_care_logs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_care_logs_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "customer_care_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_care_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_care_schedules: {
+        Row: {
+          assigned_staff_id: string | null
+          care_type_id: string | null
+          care_type_name: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          id: string
+          note: string | null
+          reminder_days: number | null
+          reminder_sent: boolean | null
+          scheduled_date: string
+          scheduled_time: string | null
+          status: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_staff_id?: string | null
+          care_type_id?: string | null
+          care_type_name: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          id?: string
+          note?: string | null
+          reminder_days?: number | null
+          reminder_sent?: boolean | null
+          scheduled_date: string
+          scheduled_time?: string | null
+          status?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_staff_id?: string | null
+          care_type_id?: string | null
+          care_type_name?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+          note?: string | null
+          reminder_days?: number | null
+          reminder_sent?: boolean | null
+          scheduled_date?: string
+          scheduled_time?: string | null
+          status?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_care_schedules_care_type_id_fkey"
+            columns: ["care_type_id"]
+            isOneToOne: false
+            referencedRelation: "care_schedule_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_care_schedules_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_care_schedules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_contact_channels: {
+        Row: {
+          channel_type: string
+          channel_url: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          channel_type: string
+          channel_url?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          channel_type?: string
+          channel_url?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_contact_channels_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_sources: {
         Row: {
           created_at: string
@@ -862,14 +1132,97 @@ export type Database = {
           },
         ]
       }
+      customer_tag_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          customer_id: string
+          id: string
+          tag_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          customer_id: string
+          id?: string
+          tag_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          customer_id?: string
+          id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_tag_assignments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "customer_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_tags: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_tags_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
+          assigned_staff_id: string | null
           birthday: string | null
           created_at: string
+          crm_status: string | null
           current_points: number
           email: string | null
           id: string
+          last_care_date: string | null
           last_purchase_date: string | null
           membership_tier: Database["public"]["Enums"]["membership_tier"]
           name: string
@@ -887,11 +1240,14 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          assigned_staff_id?: string | null
           birthday?: string | null
           created_at?: string
+          crm_status?: string | null
           current_points?: number
           email?: string | null
           id?: string
+          last_care_date?: string | null
           last_purchase_date?: string | null
           membership_tier?: Database["public"]["Enums"]["membership_tier"]
           name: string
@@ -909,11 +1265,14 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          assigned_staff_id?: string | null
           birthday?: string | null
           created_at?: string
+          crm_status?: string | null
           current_points?: number
           email?: string | null
           id?: string
+          last_care_date?: string | null
           last_purchase_date?: string | null
           membership_tier?: Database["public"]["Enums"]["membership_tier"]
           name?: string

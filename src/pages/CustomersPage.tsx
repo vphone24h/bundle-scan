@@ -28,9 +28,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, Plus, MoreHorizontal, Eye, ShoppingCart, Wallet, Settings, Users, Merge, Pencil, UserPlus } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, Eye, ShoppingCart, Wallet, Settings, Users, Merge, Pencil, UserPlus, Calendar, Tag } from 'lucide-react';
 import { useCustomerSources } from '@/hooks/useCustomerSources';
 import { useCustomersWithPoints, MEMBERSHIP_TIER_NAMES, MEMBERSHIP_TIER_COLORS } from '@/hooks/useCustomerPoints';
+import { CRM_STATUS_LABELS, CRM_STATUS_COLORS, CRMStatus, useStaffList } from '@/hooks/useCRM';
 import { useBranches } from '@/hooks/useBranches';
 import { formatNumber } from '@/lib/formatNumber';
 import { format } from 'date-fns';
@@ -50,6 +51,8 @@ export default function CustomersPage() {
   const [tierFilter, setTierFilter] = useState('_all_');
   const [statusFilter, setStatusFilter] = useState('_all_');
   const [sourceFilter, setSourceFilter] = useState('_all_');
+  const [crmStatusFilter, setCrmStatusFilter] = useState('_all_');
+  const [staffFilter, setStaffFilter] = useState('_all_');
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [editingCustomer, setEditingCustomer] = useState<typeof customers extends (infer T)[] ? T : never | null>(null);
@@ -63,10 +66,13 @@ export default function CustomersPage() {
     branchId: branchFilter !== '_all_' ? branchFilter : undefined,
     tier: tierFilter !== '_all_' ? tierFilter : undefined,
     status: statusFilter !== '_all_' ? statusFilter : undefined,
+    crmStatus: crmStatusFilter !== '_all_' ? crmStatusFilter : undefined,
+    staffId: staffFilter !== '_all_' ? staffFilter : undefined,
   });
 
   const { data: branches } = useBranches();
   const { data: customerSources } = useCustomerSources();
+  const { data: staffList } = useStaffList();
   
   // Filter by source client-side (since hook doesn't support it)
   const filteredCustomers = customers?.filter(c => {
@@ -237,6 +243,30 @@ export default function CustomersPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={crmStatusFilter} onValueChange={setCrmStatusFilter}>
+              <SelectTrigger className="w-full md:w-[150px]">
+                <SelectValue placeholder="Trạng thái CRM" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all_">Tất cả CRM</SelectItem>
+                {Object.entries(CRM_STATUS_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={staffFilter} onValueChange={setStaffFilter}>
+              <SelectTrigger className="w-full md:w-[150px]">
+                <SelectValue placeholder="NV phụ trách" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all_">Tất cả NV</SelectItem>
+                {staffList?.map((staff) => (
+                  <SelectItem key={staff.user_id} value={staff.user_id}>
+                    {staff.display_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <div className="flex gap-2">
               <Button onClick={() => setShowFormDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -268,12 +298,10 @@ export default function CustomersPage() {
                 <TableRow>
                   <TableHead>Khách hàng</TableHead>
                   <TableHead className="hidden lg:table-cell">Nguồn</TableHead>
-                  <TableHead className="hidden md:table-cell">Chi nhánh</TableHead>
+                  <TableHead className="hidden md:table-cell">NV phụ trách</TableHead>
+                  <TableHead className="hidden lg:table-cell">Trạng thái CRM</TableHead>
                   <TableHead className="text-right">Tổng chi tiêu</TableHead>
-                  <TableHead className="text-right hidden sm:table-cell">Điểm</TableHead>
-                  <TableHead className="hidden md:table-cell">Hạng</TableHead>
-                  <TableHead className="hidden lg:table-cell">Mua gần nhất</TableHead>
-                  <TableHead className="hidden md:table-cell">Trạng thái</TableHead>
+                  <TableHead className="hidden lg:table-cell">Chăm sóc gần nhất</TableHead>
                   <TableHead className="w-[80px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -315,33 +343,22 @@ export default function CustomersPage() {
                         )}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {getBranchName(customer.preferred_branch_id)}
+                        {staffList?.find(s => s.user_id === customer.assigned_staff_id)?.display_name || (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <Badge className={CRM_STATUS_COLORS[customer.crm_status as CRMStatus || 'new']} variant="secondary">
+                          {CRM_STATUS_LABELS[customer.crm_status as CRMStatus || 'new']}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         {formatNumber(customer.total_spent)}
                       </TableCell>
-                      <TableCell className="text-right hidden sm:table-cell">
-                        <span className="text-primary font-medium">{formatNumber(customer.current_points)}</span>
-                        {customer.pending_points > 0 && (
-                          <span className="text-xs text-muted-foreground ml-1">
-                            (+{formatNumber(customer.pending_points)} treo)
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <Badge className={MEMBERSHIP_TIER_COLORS[customer.membership_tier]} variant="secondary">
-                          {MEMBERSHIP_TIER_NAMES[customer.membership_tier]}
-                        </Badge>
-                      </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        {customer.last_purchase_date
-                          ? format(new Date(customer.last_purchase_date), 'dd/MM/yyyy', { locale: vi })
+                        {customer.last_care_date
+                          ? format(new Date(customer.last_care_date), 'dd/MM/yyyy', { locale: vi })
                           : '-'}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
-                          {customer.status === 'active' ? 'Hoạt động' : 'Ngừng'}
-                        </Badge>
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
@@ -366,6 +383,10 @@ export default function CustomersPage() {
                             <DropdownMenuItem onClick={() => handleCollectDebt(customer.id)}>
                               <Wallet className="h-4 w-4 mr-2" />
                               Thu nợ
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate(`/crm/care?customerId=${customer.id}`)}>
+                              <Calendar className="h-4 w-4 mr-2" />
+                              Lịch chăm sóc
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
