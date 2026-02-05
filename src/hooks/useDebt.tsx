@@ -363,8 +363,10 @@ export function useCreateDebtPayment() {
     mutationFn: async (payment: {
       entity_type: 'customer' | 'supplier';
       entity_id: string;
+      entity_name: string;
       payment_type: 'payment' | 'addition';
       amount: number;
+      remaining_amount: number; // Current remaining debt before this payment
       payment_source?: string;
       description: string;
       branch_id?: string | null;
@@ -374,11 +376,24 @@ export function useCreateDebtPayment() {
       // Get current tenant_id
       const tenantId = await getCurrentTenantId();
       if (!tenantId) throw new Error('Không tìm thấy tenant');
+      
+      // Calculate new remaining amount
+      const oldDebt = payment.remaining_amount;
+      const newDebt = payment.payment_type === 'payment' 
+        ? oldDebt - payment.amount 
+        : oldDebt + payment.amount;
+      
       // Insert debt payment
       const { data, error } = await supabase
         .from('debt_payments')
         .insert([{
-          ...payment,
+          entity_type: payment.entity_type,
+          entity_id: payment.entity_id,
+          payment_type: payment.payment_type,
+          amount: payment.amount,
+          payment_source: payment.payment_source,
+          description: payment.description,
+          branch_id: payment.branch_id,
           created_by: user?.id,
           tenant_id: tenantId,
         }])
@@ -408,25 +423,34 @@ export function useCreateDebtPayment() {
         }]);
       }
 
-      // Audit log
+      // Audit log with before/after debt info
       const actionDesc = payment.entity_type === 'customer' 
-        ? (payment.payment_type === 'payment' ? 'Khách trả nợ' : 'Cộng nợ khách')
-        : (payment.payment_type === 'payment' ? 'Trả nợ NCC' : 'Cộng nợ NCC');
+        ? (payment.payment_type === 'payment' ? 'Thu nợ khách hàng' : 'Cộng nợ khách hàng')
+        : (payment.payment_type === 'payment' ? 'Trả nợ nhà cung cấp' : 'Cộng nợ nhà cung cấp');
+      
+      const entityLabel = payment.entity_type === 'customer' ? 'Khách hàng' : 'Nhà cung cấp';
       
       await supabase.from('audit_logs').insert([{
         user_id: user?.id,
-        action_type: 'create',
+        action_type: payment.payment_type === 'payment' ? 'update' : 'create',
         table_name: 'debt_payments',
         record_id: data.id,
         branch_id: payment.branch_id || null,
+        tenant_id: tenantId,
+        old_data: {
+          entity_type: payment.entity_type,
+          entity_name: payment.entity_name,
+          remaining_amount: oldDebt,
+        },
         new_data: {
           entity_type: payment.entity_type,
-          entity_id: payment.entity_id,
+          entity_name: payment.entity_name,
           payment_type: payment.payment_type,
           amount: payment.amount,
           payment_source: payment.payment_source,
+          remaining_amount: newDebt,
         },
-        description: `${actionDesc}: ${payment.amount.toLocaleString('vi-VN')}đ - ${payment.description}`,
+        description: `${actionDesc}: ${payment.entity_name} | Số tiền: ${payment.amount.toLocaleString('vi-VN')}đ | Nợ trước: ${oldDebt.toLocaleString('vi-VN')}đ → Nợ sau: ${Math.max(0, newDebt).toLocaleString('vi-VN')}đ | ${payment.description}`,
       }]);
 
       return data;
@@ -436,6 +460,7 @@ export function useCreateDebtPayment() {
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
       queryClient.invalidateQueries({ queryKey: ['debt-payment-history', variables.entity_type, variables.entity_id] });
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
     },
   });
 }

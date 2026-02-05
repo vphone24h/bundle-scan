@@ -235,6 +235,7 @@ export function CustomerDebtTable({ showSettled }: CustomerDebtTableProps) {
             entityType="customer"
             entityId={selectedDebt.entity_id}
             entityName={selectedDebt.entity_name}
+            remainingAmount={selectedDebt.remaining_amount}
             branchId={selectedDebt.branch_id}
           />
         </>

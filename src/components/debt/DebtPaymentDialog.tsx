@@ -112,18 +112,22 @@ export function DebtPaymentDialog({
 
     try {
       // Create payment for each source
+      let currentRemaining = remainingAmount;
       for (const ps of paymentSources) {
         const amount = parseFormattedNumber(ps.amount);
         if (amount > 0) {
           await createPayment.mutateAsync({
             entity_type: entityType,
             entity_id: entityId,
+            entity_name: entityName,
             payment_type: 'payment',
             amount,
+            remaining_amount: currentRemaining,
             payment_source: PAYMENT_SOURCES.find(s => s.value === ps.source)?.label || ps.source,
             description: description || defaultDescription,
             branch_id: branchId,
           });
+          currentRemaining -= amount;
         }
       }
 
