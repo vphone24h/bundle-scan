@@ -135,22 +135,29 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
   const handleExport = () => {
     if (!data?.items.length) return;
 
-    const exportData: any[] = data.items.map((item, index) => ({
-      stt: index + 1,
-      productName: item.productName,
-      sku: item.sku,
-      imei: item.imei || '',
-      customerName: item.customerName || 'Khách lẻ',
-      branchName: item.branchName,
-      importPrice: item.importPrice,
-      salePrice: item.salePrice,
-      quantity: item.quantity,
-      profit: item.profit,
-      margin: item.salePrice > 0 ? ((item.profit / item.salePrice) * 100).toFixed(1) + '%' : '0%',
-      saleDate: item.saleDate,
-      status: item.status === 'sold' ? 'Đã bán' : 'Trả hàng',
-      receiptCode: item.receiptCode,
-    }));
+    const exportData: any[] = data.items.map((item, index) => {
+      const isReturn = item.status === 'returned';
+      const customerDisplay = item.customerName 
+        ? (isReturn ? `${item.customerName} - Trả hàng` : item.customerName)
+        : (isReturn ? 'Khách lẻ - Trả hàng' : 'Khách lẻ');
+      
+      return {
+        stt: index + 1,
+        productName: item.productName,
+        sku: item.sku,
+        imei: item.imei || '',
+        customerName: customerDisplay,
+        branchName: item.branchName,
+        importPrice: item.importPrice,
+        salePrice: item.salePrice,
+        quantity: item.quantity,
+        profit: item.profit,
+        margin: item.salePrice > 0 ? ((item.profit / item.salePrice) * 100).toFixed(1) + '%' : '0%',
+        saleDate: item.saleDate,
+        status: item.status === 'sold' ? 'Đã bán' : 'Trả hàng',
+        receiptCode: item.receiptCode,
+      };
+    });
 
     // Add totals row
     exportData.push({
@@ -395,7 +402,10 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
                         {/* Customer */}
                         <TableCell>
                           <div>
-                            <p className="font-medium">{item.customerName || 'Khách lẻ'}</p>
+                            <p className="font-medium">
+                              {item.customerName || 'Khách lẻ'}
+                              {isReturn && <span className="text-destructive"> - Trả hàng</span>}
+                            </p>
                             {item.customerName && (
                               <p className="text-xs text-muted-foreground">N/A</p>
                             )}
