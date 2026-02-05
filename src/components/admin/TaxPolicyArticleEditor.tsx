@@ -16,7 +16,8 @@
    List,
    FileText,
    Trash2,
-   Maximize2
+  Maximize2,
+  Link as LinkIcon
  } from 'lucide-react';
  import { supabase } from '@/integrations/supabase/client';
  import { toast } from 'sonner';
@@ -38,6 +39,10 @@
    const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
    const [imageWidth, setImageWidth] = useState('100');
    const [showImagePopover, setShowImagePopover] = useState(false);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [selectedText, setSelectedText] = useState('');
+  const [savedRange, setSavedRange] = useState<Range | null>(null);
  
    useEffect(() => {
      if (article) {
@@ -75,6 +80,28 @@
      return () => editor.removeEventListener('click', handleImageClick);
    }, []);
  
+  // Handle right-click context menu for link insertion
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const handleContextMenu = (e: MouseEvent) => {
+      const selection = window.getSelection();
+      if (selection && selection.toString().trim()) {
+        e.preventDefault();
+        // Save the selection
+        const range = selection.getRangeAt(0);
+        setSavedRange(range.cloneRange());
+        setSelectedText(selection.toString());
+        setLinkUrl('');
+        setShowLinkDialog(true);
+      }
+    };
+
+    editor.addEventListener('contextmenu', handleContextMenu);
+    return () => editor.removeEventListener('contextmenu', handleContextMenu);
+  }, []);
+
    const handleImageResize = (width: string) => {
      if (selectedImage) {
        selectedImage.style.width = `${width}%`;
@@ -92,6 +119,93 @@
      }
    };
  
+  const handleInsertLink = () => {
+    if (!linkUrl.trim()) {
+      toast.error('Vui lòng nhập URL');
+      return;
+    }
+
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    // Ensure URL has protocol
+    let finalUrl = linkUrl.trim();
+    if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+      finalUrl = 'https://' + finalUrl;
+    }
+
+    if (savedRange) {
+      // Restore selection
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(savedRange);
+        
+        // Create link element
+        const link = document.createElement('a');
+        link.href = finalUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.className = 'text-primary underline hover:text-primary/80';
+        link.textContent = selectedText || finalUrl;
+        
+        // Replace selection with link
+        savedRange.deleteContents();
+        savedRange.insertNode(link);
+        
+        // Move cursor after link
+        const newRange = document.createRange();
+        newRange.setStartAfter(link);
+        newRange.setEndAfter(link);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      }
+    } else {
+      // No selection, insert link at cursor or end
+      editor.focus();
+      const link = document.createElement('a');
+      link.href = finalUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.className = 'text-primary underline hover:text-primary/80';
+      link.textContent = finalUrl;
+      
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        if (editor.contains(range.commonAncestorContainer)) {
+          range.insertNode(link);
+          range.setStartAfter(link);
+          range.setEndAfter(link);
+        } else {
+          editor.appendChild(link);
+        }
+      } else {
+        editor.appendChild(link);
+      }
+    }
+
+    setShowLinkDialog(false);
+    setLinkUrl('');
+    setSelectedText('');
+    setSavedRange(null);
+    toast.success('Đã chèn link thành công');
+  };
+
+  const openLinkDialog = () => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim()) {
+      const range = selection.getRangeAt(0);
+      setSavedRange(range.cloneRange());
+      setSelectedText(selection.toString());
+    } else {
+      setSavedRange(null);
+      setSelectedText('');
+    }
+    setLinkUrl('');
+    setShowLinkDialog(true);
+  };
+
    const handleSave = () => {
      const htmlContent = editorRef.current?.innerHTML || '';
      updateArticle.mutate({ title, content: htmlContent });
@@ -263,6 +377,18 @@
              
              <div className="w-px h-6 bg-border mx-1" />
              
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={openLinkDialog}
+              className="h-8 px-2 gap-1"
+              title="Chèn link (hoặc chọn text và nhấn chuột phải)"
+            >
+              <LinkIcon className="h-4 w-4" />
+              <span className="text-xs hidden sm:inline">Link</span>
+            </Button>
+            
              <label className="cursor-pointer">
                <Button
                  type="button"
@@ -364,6 +490,82 @@
            </div>
          )}
  
+        {/* Link insertion dialog */}
+        {showLinkDialog && (
+          <div className="p-3 border rounded-lg bg-muted/50 space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <LinkIcon className="h-4 w-4" />
+                Chèn liên kết
+              </Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowLinkDialog(false);
+                  setLinkUrl('');
+                  setSelectedText('');
+                  setSavedRange(null);
+                }}
+                className="h-6 w-6 p-0 text-muted-foreground"
+              >
+                ✕
+              </Button>
+            </div>
+            
+            {selectedText && (
+              <div className="text-sm text-muted-foreground">
+                Text đã chọn: <span className="font-medium text-foreground">"{selectedText}"</span>
+              </div>
+            )}
+            
+            <div className="flex items-center gap-2">
+              <Label className="text-xs w-12">URL:</Label>
+              <Input
+                type="url"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://example.com"
+                className="flex-1 h-8 text-sm"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleInsertLink();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowLinkDialog(false);
+                  setLinkUrl('');
+                  setSelectedText('');
+                  setSavedRange(null);
+                }}
+                className="flex-1 h-8"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleInsertLink}
+                className="flex-1 h-8 gap-1"
+              >
+                <LinkIcon className="h-3 w-3" />
+                Chèn link
+              </Button>
+            </div>
+          </div>
+        )}
+
          <div className="flex justify-end pt-2">
            <Button onClick={handleSave} disabled={updateArticle.isPending}>
              {updateArticle.isPending ? (
