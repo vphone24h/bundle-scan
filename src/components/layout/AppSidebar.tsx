@@ -29,6 +29,7 @@ import {
   Globe,
   Download,
   HeartHandshake,
+  Bell,
 } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Badge } from '@/components/ui/badge';
+import { NotificationBell } from '@/components/crm/NotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -106,8 +108,10 @@ const allNavItems: NavItem[] = [
     icon: HeartHandshake,
     permission: 'canViewProducts',
     children: [
+      { title: 'Dashboard', href: '/crm' },
       { title: 'Lịch chăm sóc', href: '/crm/care' },
       { title: 'Nhật ký', href: '/crm/timeline' },
+      { title: 'Báo cáo', href: '/crm/reports' },
     ],
   },
   { title: 'Công nợ', href: '/debt', icon: Receipt, permission: 'canViewCashBook' },
@@ -187,6 +191,9 @@ export function AppSidebar() {
         <div className="flex flex-col">
           <span className="text-lg font-bold text-sidebar-foreground">vkho.vn</span>
           <span className="text-xs text-sidebar-muted">Quản lý thông minh</span>
+        </div>
+        <div className="ml-auto">
+          <NotificationBell />
         </div>
       </div>
 

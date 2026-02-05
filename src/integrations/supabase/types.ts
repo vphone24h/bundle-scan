@@ -615,7 +615,9 @@ export type Database = {
       }
       care_reminders: {
         Row: {
+          app_notification_sent: boolean | null
           created_at: string
+          email_scheduled: boolean | null
           id: string
           is_read: boolean | null
           is_sent: boolean | null
@@ -627,7 +629,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          app_notification_sent?: boolean | null
           created_at?: string
+          email_scheduled?: boolean | null
           id?: string
           is_read?: boolean | null
           is_sent?: boolean | null
@@ -639,7 +643,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          app_notification_sent?: boolean | null
           created_at?: string
+          email_scheduled?: boolean | null
           id?: string
           is_read?: boolean | null
           is_sent?: boolean | null
@@ -862,6 +868,62 @@ export type Database = {
           },
           {
             foreignKeyName: "categories_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_notifications: {
+        Row: {
+          created_at: string
+          email_sent_at: string | null
+          id: string
+          is_email_sent: boolean | null
+          is_read: boolean | null
+          message: string
+          notification_type: string
+          read_at: string | null
+          reference_id: string | null
+          reference_type: string | null
+          tenant_id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_sent_at?: string | null
+          id?: string
+          is_email_sent?: boolean | null
+          is_read?: boolean | null
+          message: string
+          notification_type: string
+          read_at?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          tenant_id: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_sent_at?: string | null
+          id?: string
+          is_email_sent?: boolean | null
+          is_read?: boolean | null
+          message?: string
+          notification_type?: string
+          read_at?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          tenant_id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_notifications_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1671,6 +1733,65 @@ export type Database = {
           },
           {
             foreignKeyName: "einvoices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_queue: {
+        Row: {
+          body_html: string
+          body_text: string | null
+          created_at: string
+          email_type: string
+          error_message: string | null
+          id: string
+          recipient_email: string
+          recipient_user_id: string | null
+          retry_count: number | null
+          scheduled_for: string | null
+          sent_at: string | null
+          status: string | null
+          subject: string
+          tenant_id: string
+        }
+        Insert: {
+          body_html: string
+          body_text?: string | null
+          created_at?: string
+          email_type: string
+          error_message?: string | null
+          id?: string
+          recipient_email: string
+          recipient_user_id?: string | null
+          retry_count?: number | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject: string
+          tenant_id: string
+        }
+        Update: {
+          body_html?: string
+          body_text?: string | null
+          created_at?: string
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          recipient_email?: string
+          recipient_user_id?: string | null
+          retry_count?: number | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_queue_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -3063,6 +3184,106 @@ export type Database = {
           },
         ]
       }
+      staff_kpi_settings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          kpi_type: string
+          period_type: string
+          target_value: number
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          kpi_type: string
+          period_type?: string
+          target_value?: number
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          kpi_type?: string
+          period_type?: string
+          target_value?: number
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_kpi_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_performance_snapshots: {
+        Row: {
+          conversion_rate: number | null
+          created_at: string
+          id: string
+          kpi_achievement_percentage: number | null
+          period_end: string
+          period_start: string
+          tenant_id: string
+          total_customers: number | null
+          total_leads: number | null
+          total_orders: number | null
+          total_revenue: number | null
+          user_id: string
+        }
+        Insert: {
+          conversion_rate?: number | null
+          created_at?: string
+          id?: string
+          kpi_achievement_percentage?: number | null
+          period_end: string
+          period_start: string
+          tenant_id: string
+          total_customers?: number | null
+          total_leads?: number | null
+          total_orders?: number | null
+          total_revenue?: number | null
+          user_id: string
+        }
+        Update: {
+          conversion_rate?: number | null
+          created_at?: string
+          id?: string
+          kpi_achievement_percentage?: number | null
+          period_end?: string
+          period_start?: string
+          tenant_id?: string
+          total_customers?: number | null
+          total_leads?: number | null
+          total_orders?: number | null
+          total_revenue?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_performance_snapshots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_count_items: {
         Row: {
           actual_quantity: number
@@ -3693,10 +3914,26 @@ export type Database = {
       }
       can_access_cash_book: { Args: { _user_id: string }; Returns: boolean }
       can_become_affiliate: { Args: { _tenant_id: string }; Returns: boolean }
+      create_care_reminder_notifications: { Args: never; Returns: undefined }
       delete_branch_safe: { Args: { _branch_id: string }; Returns: undefined }
       generate_affiliate_code: { Args: never; Returns: string }
       generate_domain_verification_token: { Args: never; Returns: string }
       get_current_tenant: { Args: never; Returns: string }
+      get_staff_kpi_stats: {
+        Args: {
+          p_end_date: string
+          p_start_date: string
+          p_tenant_id: string
+          p_user_id: string
+        }
+        Returns: {
+          conversion_rate: number
+          new_customers: number
+          total_customers: number
+          total_orders: number
+          total_revenue: number
+        }[]
+      }
       get_user_branch: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
@@ -3758,6 +3995,7 @@ export type Database = {
         }[]
       }
       resolve_tenant_by_domain: { Args: { _domain: string }; Returns: string }
+      update_overdue_care_schedules: { Args: never; Returns: undefined }
       user_belongs_to_tenant: { Args: { _tenant_id: string }; Returns: boolean }
     }
     Enums: {
