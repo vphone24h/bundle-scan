@@ -109,24 +109,30 @@
    };
  
    return (
-     <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
        {/* Filters */}
        <Card>
-         <CardContent className="pt-4">
-           <div className="flex flex-col lg:flex-row gap-3">
-             <div className="relative flex-1">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                <Input
                  placeholder="Tìm theo tên, SĐT..."
                  value={search}
                  onChange={(e) => setSearch(e.target.value)}
-                 className="pl-9"
+                  className="pl-9 h-9 text-sm"
                />
              </div>
-             <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => setShowFormDialog(true)} className="h-9 px-3">
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Thêm</span>
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2 overflow-x-auto">
                <Select value={branchFilter} onValueChange={setBranchFilter}>
-                 <SelectTrigger className="w-[140px]">
-                   <SelectValue placeholder="Chi nhánh" />
+                <SelectTrigger className="w-[100px] sm:w-[140px] h-9 text-xs sm:text-sm">
+                  <SelectValue placeholder="CN" />
                  </SelectTrigger>
                  <SelectContent>
                    <SelectItem value="_all_">Tất cả CN</SelectItem>
@@ -136,7 +142,7 @@
                  </SelectContent>
                </Select>
                <Select value={tierFilter} onValueChange={setTierFilter}>
-                 <SelectTrigger className="w-[120px]">
+                <SelectTrigger className="w-[90px] sm:w-[120px] h-9 text-xs sm:text-sm">
                    <SelectValue placeholder="Hạng" />
                  </SelectTrigger>
                  <SelectContent>
@@ -148,8 +154,8 @@
                  </SelectContent>
                </Select>
                <Select value={crmStatusFilter} onValueChange={setCrmStatusFilter}>
-                 <SelectTrigger className="w-[140px]">
-                   <SelectValue placeholder="Trạng thái CRM" />
+                <SelectTrigger className="w-[100px] sm:w-[140px] h-9 text-xs sm:text-sm">
+                  <SelectValue placeholder="CRM" />
                  </SelectTrigger>
                  <SelectContent>
                    <SelectItem value="_all_">Tất cả CRM</SelectItem>
@@ -159,8 +165,8 @@
                  </SelectContent>
                </Select>
                <Select value={staffFilter} onValueChange={setStaffFilter}>
-                 <SelectTrigger className="w-[140px]">
-                   <SelectValue placeholder="NV phụ trách" />
+                <SelectTrigger className="w-[100px] sm:w-[140px] h-9 text-xs sm:text-sm">
+                  <SelectValue placeholder="NV" />
                  </SelectTrigger>
                  <SelectContent>
                    <SelectItem value="_all_">Tất cả NV</SelectItem>
@@ -169,18 +175,12 @@
                    ))}
                  </SelectContent>
                </Select>
-             </div>
-             <div className="flex gap-2">
-               <Button onClick={() => setShowFormDialog(true)}>
-                 <Plus className="h-4 w-4 mr-2" />
-                 Thêm mới
-               </Button>
                {permissions?.role === 'super_admin' && (
                  <>
-                   <Button variant="outline" size="icon" onClick={() => setShowMergeDialog(true)}>
+                  <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setShowMergeDialog(true)}>
                      <Merge className="h-4 w-4" />
                    </Button>
-                   <Button variant="outline" size="icon" onClick={() => setShowSettingsDialog(true)}>
+                  <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setShowSettingsDialog(true)}>
                      <Settings className="h-4 w-4" />
                    </Button>
                  </>
@@ -193,8 +193,41 @@
        {/* Customer Table */}
        <Card>
          <CardContent className="p-0">
-           <div className="overflow-x-auto">
-             <Table>
+          {/* Mobile: Card View */}
+          <div className="sm:hidden divide-y">
+            {isLoading ? (
+              <p className="text-center py-8 text-sm text-muted-foreground">Đang tải...</p>
+            ) : filteredCustomers?.length === 0 ? (
+              <p className="text-center py-8 text-sm text-muted-foreground">Chưa có khách hàng</p>
+            ) : (
+              pagination.paginatedData.map((customer) => (
+                <div
+                  key={customer.id}
+                  className="p-3 active:bg-muted/50"
+                  onClick={() => handleViewDetail(customer.id)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-sm">{customer.name}</p>
+                      <p className="text-xs text-muted-foreground">{customer.phone}</p>
+                    </div>
+                    <Badge className={`${MEMBERSHIP_TIER_COLORS[customer.membership_tier]} text-xs`}>
+                      {MEMBERSHIP_TIER_NAMES[customer.membership_tier]}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <Badge className={`${CRM_STATUS_COLORS[customer.crm_status as CRMStatus || 'new']} text-xs`}>
+                      {CRM_STATUS_LABELS[customer.crm_status as CRMStatus || 'new']}
+                    </Badge>
+                    <p className="text-sm font-semibold">{formatNumber(customer.total_spent)}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          {/* Desktop: Table View */}
+          <div className="hidden sm:block overflow-x-auto">
+            <Table>
                <TableHeader>
                  <TableRow>
                    <TableHead>Khách hàng</TableHead>

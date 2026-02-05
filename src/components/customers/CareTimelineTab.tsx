@@ -84,7 +84,7 @@
    if (!customerId) {
      return (
        <Card>
-         <CardContent className="py-12 text-center text-muted-foreground">
+        <CardContent className="py-8 sm:py-12 text-center text-muted-foreground text-sm">
            Chọn khách hàng từ tab "Danh sách" để xem nhật ký chăm sóc
          </CardContent>
        </Card>
@@ -92,19 +92,19 @@
    }
  
    return (
-     <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
        {/* Customer Info */}
        <Card>
-         <CardContent className="pt-4">
-           <div className="flex items-center justify-between">
-             <div>
-               <h3 className="font-semibold text-lg">{customerName}</h3>
-               <p className="text-muted-foreground">{customerPhone}</p>
-               {customerEmail && <p className="text-sm text-muted-foreground">{customerEmail}</p>}
+        <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <h3 className="font-semibold text-base sm:text-lg truncate">{customerName}</h3>
+              <p className="text-sm text-muted-foreground">{customerPhone}</p>
+              {customerEmail && <p className="text-xs text-muted-foreground truncate">{customerEmail}</p>}
              </div>
-             <Button onClick={() => setShowAddDialog(true)}>
-               <Plus className="h-4 w-4 mr-2" />
-               Thêm ghi chú
+            <Button size="sm" onClick={() => setShowAddDialog(true)} className="flex-shrink-0">
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Thêm ghi chú</span>
              </Button>
            </div>
          </CardContent>
@@ -113,41 +113,41 @@
        {/* Timeline */}
        <Card>
          <CardHeader>
-           <CardTitle className="text-base">Lịch sử chăm sóc</CardTitle>
+          <CardTitle className="text-sm sm:text-base">Lịch sử chăm sóc</CardTitle>
          </CardHeader>
-         <CardContent>
+        <CardContent className="px-3 sm:px-6">
            {isLoading ? (
-             <p className="text-center py-8 text-muted-foreground">Đang tải...</p>
+            <p className="text-center py-8 text-muted-foreground text-sm">Đang tải...</p>
            ) : logs?.length === 0 ? (
-             <p className="text-center py-8 text-muted-foreground">Chưa có lịch sử chăm sóc nào</p>
+            <p className="text-center py-8 text-muted-foreground text-sm">Chưa có lịch sử chăm sóc nào</p>
            ) : (
              <div className="relative">
-               <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-border" />
-               <div className="space-y-6">
+              <div className="absolute left-4 sm:left-5 top-0 bottom-0 w-0.5 bg-border" />
+              <div className="space-y-4 sm:space-y-6">
                  {logs?.map((log) => {
                    const config = getActionConfig(log.action_type);
                    const Icon = config.icon;
  
                    return (
-                     <div key={log.id} className="relative pl-12">
-                       <div className={`absolute left-2 w-7 h-7 rounded-full flex items-center justify-center ${config.color}`}>
-                         <Icon className="h-3.5 w-3.5" />
+                    <div key={log.id} className="relative pl-10 sm:pl-12">
+                      <div className={`absolute left-1 sm:left-2 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center ${config.color}`}>
+                        <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                        </div>
-                       <div className="bg-muted/50 rounded-lg p-3">
-                         <div className="flex items-center justify-between mb-1">
-                           <Badge variant="outline" className="text-xs">{config.label}</Badge>
-                           <span className="text-xs text-muted-foreground">
+                      <div className="bg-muted/50 rounded-lg p-2.5 sm:p-3">
+                        <div className="flex items-start sm:items-center justify-between gap-2 mb-1">
+                          <Badge variant="outline" className="text-[10px] sm:text-xs">{config.label}</Badge>
+                          <span className="text-[10px] sm:text-xs text-muted-foreground text-right">
                              {format(new Date(log.created_at), 'HH:mm - dd/MM/yyyy', { locale: vi })}
                            </span>
                          </div>
-                         <p className="text-sm">{log.content}</p>
+                        <p className="text-xs sm:text-sm">{log.content}</p>
                          {log.result && (
-                           <p className="text-sm text-muted-foreground mt-1">
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                              <span className="font-medium">Kết quả:</span> {log.result}
                            </p>
                          )}
                          {log.staff_name && (
-                           <p className="text-xs text-muted-foreground mt-2">NV: {log.staff_name}</p>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">NV: {log.staff_name}</p>
                          )}
                        </div>
                      </div>
