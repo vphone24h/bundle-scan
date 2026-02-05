@@ -21,7 +21,8 @@ import {
   ChevronRight,
   Star,
   Zap,
-  Globe
+  Globe,
+  FileText
 } from 'lucide-react';
 
 export default function PublicLandingPage() {
@@ -118,10 +119,19 @@ export default function PublicLandingPage() {
               Báo cáo lợi nhuận chính xác <strong className="text-primary">100%</strong> từng sản phẩm. 
               Quản lý tồn kho theo IMEI, mã vạch. Tích hợp landing page cá nhân, tra cứu bảo hành.
             </p>
-            <div className="mt-8 flex justify-center">
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button size="lg" className="gap-2 text-base" onClick={() => navigate('/register')}>
                 Bắt đầu miễn phí
                 <ArrowRight className="h-4 w-4" />
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="gap-2 text-base border-primary/50 hover:bg-primary/10"
+                onClick={() => navigate('/tax-policy')}
+              >
+                <FileText className="h-4 w-4" />
+                Mẫu kê khai thuế & Mức thuế ngành
               </Button>
             </div>
           </div>
