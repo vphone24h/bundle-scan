@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Warehouse, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
+import vkhoLogo from '@/assets/vkho-logo.png';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -156,9 +157,11 @@ export default function RegisterPage() {
             Quay lại
           </Button>
           <div className="flex justify-center mb-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary">
-              <Warehouse className="h-8 w-8 text-primary-foreground" />
-            </div>
+            <img 
+              src={vkhoLogo} 
+              alt="VKho Logo" 
+              className="h-14 w-14 object-contain"
+            />
           </div>
           <CardTitle className="text-2xl">Đăng ký doanh nghiệp</CardTitle>
           <CardDescription>
