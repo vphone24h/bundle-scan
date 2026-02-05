@@ -1,6 +1,5 @@
  import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
  import { supabase } from '@/integrations/supabase/client';
- import { usePlatformUser } from '@/hooks/useTenant';
  import { toast } from 'sonner';
  
  interface TaxPolicyArticle {
@@ -13,42 +12,34 @@
    updated_at: string;
  }
  
+ // Hook for tenants to read the global platform article
  export function useTaxPolicyArticle() {
-   const { data: platformUser } = usePlatformUser();
-   const tenantId = platformUser?.tenant_id;
- 
    return useQuery({
-     queryKey: ['tax-policy-article', tenantId],
+     queryKey: ['tax-policy-article-global'],
      queryFn: async () => {
-       if (!tenantId) return null;
-       
        const { data, error } = await supabase
          .from('tax_policy_articles')
          .select('*')
-         .eq('tenant_id', tenantId)
+         .is('tenant_id', null)
          .maybeSingle();
        
        if (error) throw error;
        return data as TaxPolicyArticle | null;
      },
-     enabled: !!tenantId,
    });
  }
  
+ // Hook for platform admin to update global article
  export function useUpdateTaxPolicyArticle() {
    const queryClient = useQueryClient();
-   const { data: platformUser } = usePlatformUser();
-   const tenantId = platformUser?.tenant_id;
  
    return useMutation({
      mutationFn: async ({ title, content }: { title: string; content: string }) => {
-       if (!tenantId) throw new Error('Không tìm thấy tenant');
- 
-       // Check if article exists
+       // Check if global article exists
        const { data: existing } = await supabase
          .from('tax_policy_articles')
          .select('id')
-         .eq('tenant_id', tenantId)
+         .is('tenant_id', null)
          .maybeSingle();
  
        if (existing) {
@@ -59,15 +50,15 @@
            .eq('id', existing.id);
          if (error) throw error;
        } else {
-         // Create new
+         // Create new global article (tenant_id = null)
          const { error } = await supabase
            .from('tax_policy_articles')
-           .insert({ tenant_id: tenantId, title, content, is_published: true });
+           .insert({ tenant_id: null, title, content, is_published: true });
          if (error) throw error;
        }
      },
      onSuccess: () => {
-       queryClient.invalidateQueries({ queryKey: ['tax-policy-article'] });
+       queryClient.invalidateQueries({ queryKey: ['tax-policy-article-global'] });
        toast.success('Đã lưu bài viết thành công');
      },
      onError: (error) => {
