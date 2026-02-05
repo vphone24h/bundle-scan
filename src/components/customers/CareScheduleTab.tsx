@@ -393,7 +393,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
  
        {/* Create Dialog */}
        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-         <DialogContent className="max-w-md">
+         <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
            <DialogHeader>
              <DialogTitle>Tạo lịch chăm sóc</DialogTitle>
            </DialogHeader>
