@@ -44,6 +44,8 @@ const StoreLandingPage = lazy(() => import("./pages/StoreLandingPage"));
 const PublicLandingPage = lazy(() => import("./pages/PublicLandingPage"));
 const LandingPageAdminPage = lazy(() => import("./pages/LandingPageAdminPage"));
 const InstallAppPage = lazy(() => import("./pages/InstallAppPage"));
+const CRMCarePage = lazy(() => import("./pages/CRMCarePage"));
+const CRMTimelinePage = lazy(() => import("./pages/CRMTimelinePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -131,6 +133,8 @@ const App = () => (
                 <Route path="/advertisements" element={<GuardedRoute><AdvertisementsAdminPage /></GuardedRoute>} />
                 <Route path="/landing-settings" element={<GuardedRoute><LandingPageAdminPage /></GuardedRoute>} />
                 <Route path="/install-app" element={<GuardedRoute><InstallAppPage /></GuardedRoute>} />
+                <Route path="/crm/care" element={<GuardedRoute><CRMCarePage /></GuardedRoute>} />
+                <Route path="/crm/timeline" element={<GuardedRoute><CRMTimelinePage /></GuardedRoute>} />
                 
                 {/* Platform Admin route - also guarded */}
                 <Route path="/platform-admin" element={<GuardedRoute><PlatformAdminPage /></GuardedRoute>} />
