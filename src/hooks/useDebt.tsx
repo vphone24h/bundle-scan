@@ -79,6 +79,19 @@ export function useCustomerDebts(showSettled: boolean = false) {
         .eq('entity_type', 'customer');
       if (paymentsError) throw paymentsError;
 
+      // Get unique customer IDs from payments that might not be in receipts
+      const paymentCustomerIds = [...new Set(payments?.map(p => p.entity_id) || [])];
+      
+      // Fetch customer details for these IDs
+      let customersFromPayments: { id: string; name: string; phone: string }[] = [];
+      if (paymentCustomerIds.length > 0) {
+        const { data: customerData } = await supabase
+          .from('customers')
+          .select('id, name, phone')
+          .in('id', paymentCustomerIds);
+        customersFromPayments = customerData || [];
+      }
+
       // Group by customer
       const customerMap = new Map<string, DebtSummary>();
 
@@ -109,7 +122,7 @@ export function useCustomerDebts(showSettled: boolean = false) {
         }
       });
 
-      // Add payments and additions
+      // Add payments and additions - also handle customers with only debt_payments (no receipts)
       payments?.forEach(payment => {
         const existing = customerMap.get(payment.entity_id);
         if (existing) {
@@ -117,6 +130,34 @@ export function useCustomerDebts(showSettled: boolean = false) {
             existing.paid_amount += Number(payment.amount);
           } else if (payment.payment_type === 'addition') {
             existing.total_amount += Number(payment.amount);
+          }
+        } else if (payment.payment_type === 'addition') {
+          // Customer only has debt_payments (no export receipts with debt)
+          const customer = customersFromPayments.find(c => c.id === payment.entity_id);
+          if (customer) {
+            customerMap.set(payment.entity_id, {
+              entity_id: payment.entity_id,
+              entity_name: customer.name,
+              entity_phone: customer.phone,
+              branch_id: payment.branch_id,
+              branch_name: null,
+              total_amount: Number(payment.amount),
+              paid_amount: 0,
+              remaining_amount: 0,
+              first_debt_date: payment.created_at,
+              days_overdue: 0,
+            });
+          }
+        }
+      });
+
+      // Second pass for payments on customers that were added from additions
+      payments?.forEach(payment => {
+        if (payment.payment_type === 'payment') {
+          const existing = customerMap.get(payment.entity_id);
+          // Check if this customer was added from additions and needs payment update
+          if (existing && !receipts?.some(r => r.customer_id === payment.entity_id)) {
+            existing.paid_amount += Number(payment.amount);
           }
         }
       });
@@ -185,6 +226,19 @@ export function useSupplierDebts(showSettled: boolean = false) {
         .eq('entity_type', 'supplier');
       if (paymentsError) throw paymentsError;
 
+      // Get unique supplier IDs from payments that might not be in receipts
+      const paymentSupplierIds = [...new Set(payments?.map(p => p.entity_id) || [])];
+      
+      // Fetch supplier details for these IDs
+      let suppliersFromPayments: { id: string; name: string; phone: string | null }[] = [];
+      if (paymentSupplierIds.length > 0) {
+        const { data: supplierData } = await supabase
+          .from('suppliers')
+          .select('id, name, phone')
+          .in('id', paymentSupplierIds);
+        suppliersFromPayments = supplierData || [];
+      }
+
       // Group by supplier
       const supplierMap = new Map<string, DebtSummary>();
 
@@ -215,7 +269,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
         }
       });
 
-      // Add payments and additions
+      // Add payments and additions - also handle suppliers with only debt_payments (no receipts)
       payments?.forEach(payment => {
         const existing = supplierMap.get(payment.entity_id);
         if (existing) {
@@ -223,6 +277,34 @@ export function useSupplierDebts(showSettled: boolean = false) {
             existing.paid_amount += Number(payment.amount);
           } else if (payment.payment_type === 'addition') {
             existing.total_amount += Number(payment.amount);
+          }
+        } else if (payment.payment_type === 'addition') {
+          // Supplier only has debt_payments (no import receipts with debt)
+          const supplier = suppliersFromPayments.find(s => s.id === payment.entity_id);
+          if (supplier) {
+            supplierMap.set(payment.entity_id, {
+              entity_id: payment.entity_id,
+              entity_name: supplier.name,
+              entity_phone: supplier.phone,
+              branch_id: payment.branch_id,
+              branch_name: null,
+              total_amount: Number(payment.amount),
+              paid_amount: 0,
+              remaining_amount: 0,
+              first_debt_date: payment.created_at,
+              days_overdue: 0,
+            });
+          }
+        }
+      });
+
+      // Second pass for payments on suppliers that were added from additions
+      payments?.forEach(payment => {
+        if (payment.payment_type === 'payment') {
+          const existing = supplierMap.get(payment.entity_id);
+          // Check if this supplier was added from additions and needs payment update
+          if (existing && !receipts?.some(r => r.supplier_id === payment.entity_id)) {
+            existing.paid_amount += Number(payment.amount);
           }
         }
       });
