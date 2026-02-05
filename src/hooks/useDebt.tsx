@@ -437,7 +437,7 @@ export function useDebtPaymentHistory(entityType: 'customer' | 'supplier', entit
   });
 }
 
-// Hook to create debt payment
+// Hook to create debt payment with FIFO allocation
 export function useCreateDebtPayment() {
   const queryClient = useQueryClient();
 
@@ -483,6 +483,77 @@ export function useCreateDebtPayment() {
         .single();
 
       if (error) throw error;
+
+      // FIFO allocation: Apply payment to oldest unpaid receipts first
+      if (payment.payment_type === 'payment') {
+        let remainingPayment = payment.amount;
+        
+        if (payment.entity_type === 'customer') {
+          // Get unpaid export receipts for this customer, ordered by date (oldest first)
+          const { data: receipts } = await supabase
+            .from('export_receipts')
+            .select('id, code, debt_amount, paid_amount, total_amount')
+            .eq('customer_id', payment.entity_id)
+            .eq('status', 'completed')
+            .gt('debt_amount', 0)
+            .order('export_date', { ascending: true });
+          
+          if (receipts) {
+            for (const receipt of receipts) {
+              if (remainingPayment <= 0) break;
+              
+              const debtAmount = Number(receipt.debt_amount);
+              const payForThisReceipt = Math.min(remainingPayment, debtAmount);
+              
+              const newPaidAmount = Number(receipt.paid_amount) + payForThisReceipt;
+              const newDebtAmount = debtAmount - payForThisReceipt;
+              
+              // Update receipt with new paid/debt amounts
+              await supabase
+                .from('export_receipts')
+                .update({
+                  paid_amount: newPaidAmount,
+                  debt_amount: newDebtAmount,
+                })
+                .eq('id', receipt.id);
+              
+              remainingPayment -= payForThisReceipt;
+            }
+          }
+        } else {
+          // Get unpaid import receipts for this supplier, ordered by date (oldest first)
+          const { data: receipts } = await supabase
+            .from('import_receipts')
+            .select('id, code, debt_amount, paid_amount, total_amount')
+            .eq('supplier_id', payment.entity_id)
+            .eq('status', 'completed')
+            .gt('debt_amount', 0)
+            .order('import_date', { ascending: true });
+          
+          if (receipts) {
+            for (const receipt of receipts) {
+              if (remainingPayment <= 0) break;
+              
+              const debtAmount = Number(receipt.debt_amount);
+              const payForThisReceipt = Math.min(remainingPayment, debtAmount);
+              
+              const newPaidAmount = Number(receipt.paid_amount) + payForThisReceipt;
+              const newDebtAmount = debtAmount - payForThisReceipt;
+              
+              // Update receipt with new paid/debt amounts
+              await supabase
+                .from('import_receipts')
+                .update({
+                  paid_amount: newPaidAmount,
+                  debt_amount: newDebtAmount,
+                })
+                .eq('id', receipt.id);
+              
+              remainingPayment -= payForThisReceipt;
+            }
+          }
+        }
+      }
 
       // If it's a payment (not addition), also create cash book entry
       // Note: is_business_accounting = false because this is just cash flow from debt collection/payment
@@ -540,9 +611,12 @@ export function useCreateDebtPayment() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
       queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['debt-detail', variables.entity_type, variables.entity_id] });
       queryClient.invalidateQueries({ queryKey: ['debt-payment-history', variables.entity_type, variables.entity_id] });
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['export-receipts'] });
     },
   });
 }
