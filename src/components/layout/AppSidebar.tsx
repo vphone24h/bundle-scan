@@ -30,6 +30,7 @@ import {
   Download,
   HeartHandshake,
   Bell,
+   Percent,
 } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { cn } from '@/lib/utils';
@@ -97,6 +98,7 @@ const allNavItems: NavItem[] = [
       { title: 'Lịch sử xuất', href: '/export/history' },
       { title: 'Mẫu in hóa đơn', href: '/export/template', permission: 'canManageInvoiceTemplates' },
       { title: 'Hoá đơn điện tử', href: '/einvoice', permission: 'canManageInvoiceTemplates' },
+       { title: 'Mức Thuế 2026', href: '/export/tax-policy' },
     ],
   },
   { title: 'Trả hàng', href: '/returns', icon: RotateCcw, permission: 'canImportProducts' },
