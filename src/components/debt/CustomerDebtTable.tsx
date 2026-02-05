@@ -20,10 +20,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Eye, Wallet, Plus, Printer, MoreHorizontal } from 'lucide-react';
+import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus } from 'lucide-react';
 import { DebtDetailDialog } from './DebtDetailDialog';
 import { DebtPaymentDialog } from './DebtPaymentDialog';
 import { DebtAdditionDialog } from './DebtAdditionDialog';
+import { CreateDebtDialog } from './CreateDebtDialog';
 
 interface CustomerDebtTableProps {
   showSettled: boolean;
@@ -35,6 +36,7 @@ export function CustomerDebtTable({ showSettled }: CustomerDebtTableProps) {
   const [showDetail, setShowDetail] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showAddition, setShowAddition] = useState(false);
+  const [showCreateDebt, setShowCreateDebt] = useState(false);
 
   // Pagination
   const pagination = usePagination(debts || [], { storageKey: 'customer-debt' });
@@ -71,14 +73,33 @@ export function CustomerDebtTable({ showSettled }: CustomerDebtTableProps) {
 
   if (!debts || debts.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        Không có công nợ khách hàng
+      <div className="space-y-4">
+        <div className="flex justify-end">
+          <Button onClick={() => setShowCreateDebt(true)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Thêm công nợ
+          </Button>
+        </div>
+        <div className="text-center py-12 text-muted-foreground">
+          Không có công nợ khách hàng
+        </div>
+        <CreateDebtDialog
+          open={showCreateDebt}
+          onOpenChange={setShowCreateDebt}
+          entityType="customer"
+        />
       </div>
     );
   }
 
   return (
     <>
+      <div className="flex justify-end mb-4">
+        <Button onClick={() => setShowCreateDebt(true)}>
+          <UserPlus className="mr-2 h-4 w-4" />
+          Thêm công nợ
+        </Button>
+      </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -218,6 +239,11 @@ export function CustomerDebtTable({ showSettled }: CustomerDebtTableProps) {
           />
         </>
       )}
+      <CreateDebtDialog
+        open={showCreateDebt}
+        onOpenChange={setShowCreateDebt}
+        entityType="customer"
+      />
     </>
   );
 }
