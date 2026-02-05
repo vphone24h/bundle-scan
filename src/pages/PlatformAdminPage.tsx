@@ -10,9 +10,10 @@ import { PaymentHistoryTable } from '@/components/platform/PaymentHistoryTable';
 import { PlatformStats } from '@/components/platform/PlatformStats';
 import { AffiliateManagement } from '@/components/platform/AffiliateManagement';
 import { PlatformAdvertisementsManagement } from '@/components/platform/PlatformAdvertisementsManagement';
+ import { TaxPolicyArticleEditor } from '@/components/admin/TaxPolicyArticleEditor';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate } from 'react-router-dom';
-import { Loader2, Users, Megaphone } from 'lucide-react';
+ import { Loader2, Users, Megaphone, FileText } from 'lucide-react';
 
 export default function PlatformAdminPage() {
   const { data: platformUser, isLoading } = usePlatformUser();
@@ -55,6 +56,10 @@ export default function PlatformAdminPage() {
               <span className="hidden sm:inline">Quảng cáo</span>
             </TabsTrigger>
             <TabsTrigger value="config" className="text-xs sm:text-sm px-2 sm:px-3">Cấu hình</TabsTrigger>
+             <TabsTrigger value="tax-article" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
+               <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+               <span className="hidden sm:inline">Thuế 2026</span>
+             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
@@ -88,6 +93,10 @@ export default function PlatformAdminPage() {
           <TabsContent value="config" className="mt-6">
             <PaymentConfigManagement />
           </TabsContent>
+ 
+           <TabsContent value="tax-article" className="mt-6">
+             <TaxPolicyArticleEditor />
+           </TabsContent>
         </Tabs>
       </div>
     </MainLayout>

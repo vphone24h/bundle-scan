@@ -18,15 +18,12 @@
    FileText
  } from 'lucide-react';
  import { supabase } from '@/integrations/supabase/client';
- import { usePlatformUser } from '@/hooks/useTenant';
  import { toast } from 'sonner';
  import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
  
  export function TaxPolicyArticleEditor() {
    const { data: article, isLoading } = useTaxPolicyArticle();
    const updateArticle = useUpdateTaxPolicyArticle();
-   const { data: platformUser } = usePlatformUser();
-   const tenantId = platformUser?.tenant_id;
    
    const [title, setTitle] = useState('Mức Thuế 2026');
    const [content, setContent] = useState('');
@@ -59,12 +56,12 @@
  
    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
      const file = e.target.files?.[0];
-     if (!file || !tenantId) return;
+     if (!file) return;
  
      setUploading(true);
      try {
        const fileExt = file.name.split('.').pop();
-       const fileName = `${tenantId}/tax-policy/${Date.now()}.${fileExt}`;
+       const fileName = `platform/tax-policy/${Date.now()}.${fileExt}`;
        
        const { error: uploadError } = await supabase.storage
          .from('tenant-assets')

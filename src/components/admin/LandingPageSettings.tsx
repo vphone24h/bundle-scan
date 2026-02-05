@@ -11,7 +11,6 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
- import { TaxPolicyArticleEditor } from './TaxPolicyArticleEditor';
 
 export function LandingPageSettings() {
   const { data: tenant } = useCurrentTenant();
@@ -684,9 +683,6 @@ export function LandingPageSettings() {
         </CardContent>
       </Card>
 
-       {/* Bài viết Mức Thuế 2026 */}
-       <TaxPolicyArticleEditor />
- 
       {/* Nút lưu */}
       <div className="flex justify-end">
         <Button
