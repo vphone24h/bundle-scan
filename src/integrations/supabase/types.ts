@@ -2484,6 +2484,7 @@ export type Database = {
           tenant_id: string | null
           total_import_cost: number
           updated_at: string
+          warranty_note: string | null
         }
         Insert: {
           branch_id?: string | null
@@ -2503,6 +2504,7 @@ export type Database = {
           tenant_id?: string | null
           total_import_cost?: number
           updated_at?: string
+          warranty_note?: string | null
         }
         Update: {
           branch_id?: string | null
@@ -2522,6 +2524,7 @@ export type Database = {
           tenant_id?: string | null
           total_import_cost?: number
           updated_at?: string
+          warranty_note?: string | null
         }
         Relationships: [
           {

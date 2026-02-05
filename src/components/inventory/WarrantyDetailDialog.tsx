@@ -31,6 +31,11 @@ import { InventoryItem, ProductDetail } from '@/hooks/useInventory';
 import { useRestoreFromWarranty, useMarkDefectiveReturn } from '@/hooks/useWarrantyInventory';
 import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
 
+// Extended product detail with warranty note
+interface WarrantyProductDetail extends ProductDetail {
+  warrantyNote?: string | null;
+}
+
 // Built-in payment sources (same as CashBook)
 const builtInPaymentSources = [
   { id: 'cash', name: 'Tiền mặt', icon: Banknote, color: 'text-green-600' },
@@ -51,7 +56,7 @@ const getCustomPaymentSources = (): { id: string; name: string }[] => {
 interface WarrantyDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  item: InventoryItem;
+  item: InventoryItem & { products: WarrantyProductDetail[] };
 }
 
 export function WarrantyDetailDialog({
@@ -152,6 +157,7 @@ export function WarrantyDetailDialog({
                     <TableHead className="text-right">Giá nhập</TableHead>
                     <TableHead>Ngày nhập</TableHead>
                     <TableHead>Nhà cung cấp</TableHead>
+                    <TableHead>Ghi chú BH</TableHead>
                     <TableHead>Ghi chú</TableHead>
                     <TableHead className="text-right">Thao tác</TableHead>
                   </TableRow>
@@ -170,6 +176,15 @@ export function WarrantyDetailDialog({
                         {format(new Date(product.importDate), 'dd/MM/yyyy', { locale: vi })}
                       </TableCell>
                       <TableCell>{product.supplierName || '-'}</TableCell>
+                    <TableCell>
+                      {(product as WarrantyProductDetail).warrantyNote ? (
+                        <span className="text-destructive font-medium text-sm">
+                          {(product as WarrantyProductDetail).warrantyNote}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
                       <TableCell className="max-w-[150px] truncate" title={product.note || ''}>
                         {product.note || '-'}
                       </TableCell>
