@@ -67,17 +67,20 @@
        const target = e.target as HTMLElement;
        if (target.tagName === 'IMG') {
          e.preventDefault();
+        e.stopPropagation();
          const img = target as HTMLImageElement;
          setSelectedImage(img);
          // Get current width as percentage or px
          const currentWidth = img.style.width || '100%';
          setImageWidth(currentWidth.replace('%', '').replace('px', ''));
          setShowImagePopover(true);
+        setShowLinkDialog(false); // Close link dialog if open
        }
      };
  
-     editor.addEventListener('click', handleImageClick);
-     return () => editor.removeEventListener('click', handleImageClick);
+    // Use mousedown for better detection before focus changes
+    editor.addEventListener('mousedown', handleImageClick);
+    return () => editor.removeEventListener('mousedown', handleImageClick);
    }, []);
  
   // Handle right-click context menu for link insertion
@@ -422,17 +425,22 @@
              ref={editorRef}
              contentEditable
              className="min-h-[300px] p-4 border border-t-0 rounded-b-md bg-background focus:outline-none focus:ring-2 focus:ring-ring
-                 [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-2 [&_img]:cursor-pointer [&_img:hover]:ring-2 [&_img:hover]:ring-primary"
+              [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-2 [&_img]:cursor-pointer [&_img:hover]:ring-2 [&_img:hover]:ring-primary [&_img]:select-none"
              dangerouslySetInnerHTML={{ __html: content }}
-             onBlur={() => {
-               // Optional: auto-save on blur
+          onClick={(e) => {
+            // Handle click outside of images to deselect
+            const target = e.target as HTMLElement;
+            if (target.tagName !== 'IMG' && showImagePopover) {
+              setShowImagePopover(false);
+              setSelectedImage(null);
+            }
              }}
            />
          </div>
  
          {/* Image resize popover */}
          {showImagePopover && selectedImage && (
-           <div className="p-3 border rounded-lg bg-muted/50 space-y-3">
+          <div className="p-3 border rounded-lg bg-accent/50 border-primary/20 space-y-3">
              <div className="flex items-center justify-between">
                <Label className="text-sm font-medium flex items-center gap-2">
                  <Maximize2 className="h-4 w-4" />
@@ -442,12 +450,19 @@
                  type="button"
                  variant="ghost"
                  size="sm"
-                 onClick={() => setShowImagePopover(false)}
+                onClick={() => {
+                  setShowImagePopover(false);
+                  setSelectedImage(null);
+                }}
                  className="h-6 w-6 p-0 text-muted-foreground"
                >
                  ✕
                </Button>
              </div>
+            
+            <div className="text-xs text-muted-foreground bg-background/50 p-2 rounded">
+              💡 Click vào ảnh trong editor để chọn và chỉnh kích thước
+            </div>
              
              <div className="flex items-center gap-2">
                <Label className="text-xs w-16">Chiều rộng:</Label>
