@@ -344,7 +344,7 @@ export function useCustomerDetail(customerId: string | null) {
         .single();
 
       if (error) throw error;
-      return data as CustomerWithPoints;
+      return data as CustomerWithPointsCRM;
     },
     enabled: !!customerId,
   });
