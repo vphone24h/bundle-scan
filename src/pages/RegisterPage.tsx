@@ -273,6 +273,17 @@ export default function RegisterPage() {
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Đăng ký ngay
             </Button>
+
+            <div className="text-center">
+              <Button 
+                type="button"
+                variant="link" 
+                className="text-muted-foreground"
+                onClick={() => navigate('/auth')}
+              >
+                Đã có tài khoản? Đăng nhập
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
