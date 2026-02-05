@@ -22,6 +22,7 @@ interface DebtAdditionDialogProps {
   entityType: 'customer' | 'supplier';
   entityId: string;
   entityName: string;
+  remainingAmount: number;
   branchId: string | null;
 }
 
@@ -31,6 +32,7 @@ export function DebtAdditionDialog({
   entityType,
   entityId,
   entityName,
+  remainingAmount,
   branchId,
 }: DebtAdditionDialogProps) {
   const [amount, setAmount] = useState('');
@@ -54,8 +56,10 @@ export function DebtAdditionDialog({
       await createPayment.mutateAsync({
         entity_type: entityType,
         entity_id: entityId,
+        entity_name: entityName,
         payment_type: 'addition',
         amount: numAmount,
+        remaining_amount: remainingAmount,
         description: reason,
         branch_id: branchId,
       });
