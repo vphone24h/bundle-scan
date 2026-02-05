@@ -3,7 +3,6 @@
  import { Button } from '@/components/ui/button';
  import { Input } from '@/components/ui/input';
  import { Label } from '@/components/ui/label';
- import { Textarea } from '@/components/ui/textarea';
  import { useTaxPolicyArticle, useUpdateTaxPolicyArticle } from '@/hooks/useTaxPolicyArticle';
  import { 
    Save, 
@@ -15,11 +14,18 @@
    Bold,
    Italic,
    List,
-   FileText
+   FileText,
+   Trash2,
+   Maximize2
  } from 'lucide-react';
  import { supabase } from '@/integrations/supabase/client';
  import { toast } from 'sonner';
  import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+ import {
+   Popover,
+   PopoverContent,
+   PopoverTrigger,
+ } from '@/components/ui/popover';
  
  export function TaxPolicyArticleEditor() {
    const { data: article, isLoading } = useTaxPolicyArticle();
@@ -29,6 +35,9 @@
    const [content, setContent] = useState('');
    const [uploading, setUploading] = useState(false);
    const editorRef = useRef<HTMLDivElement>(null);
+   const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null);
+   const [imageWidth, setImageWidth] = useState('100');
+   const [showImagePopover, setShowImagePopover] = useState(false);
  
    useEffect(() => {
      if (article) {
@@ -43,6 +52,45 @@
        editorRef.current.innerHTML = content;
      }
    }, [content]);
+ 
+   // Handle image click in editor
+   useEffect(() => {
+     const editor = editorRef.current;
+     if (!editor) return;
+ 
+     const handleImageClick = (e: MouseEvent) => {
+       const target = e.target as HTMLElement;
+       if (target.tagName === 'IMG') {
+         e.preventDefault();
+         const img = target as HTMLImageElement;
+         setSelectedImage(img);
+         // Get current width as percentage or px
+         const currentWidth = img.style.width || '100%';
+         setImageWidth(currentWidth.replace('%', '').replace('px', ''));
+         setShowImagePopover(true);
+       }
+     };
+ 
+     editor.addEventListener('click', handleImageClick);
+     return () => editor.removeEventListener('click', handleImageClick);
+   }, []);
+ 
+   const handleImageResize = (width: string) => {
+     if (selectedImage) {
+       selectedImage.style.width = `${width}%`;
+       selectedImage.style.height = 'auto';
+       setImageWidth(width);
+     }
+   };
+ 
+   const handleDeleteImage = () => {
+     if (selectedImage) {
+       selectedImage.remove();
+       setSelectedImage(null);
+       setShowImagePopover(false);
+       toast.success('Đã xóa ảnh');
+     }
+   };
  
    const handleSave = () => {
      const htmlContent = editorRef.current?.innerHTML || '';
@@ -248,13 +296,73 @@
              ref={editorRef}
              contentEditable
              className="min-h-[300px] p-4 border border-t-0 rounded-b-md bg-background focus:outline-none focus:ring-2 focus:ring-ring
-               [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-2"
+                 [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-2 [&_img]:cursor-pointer [&_img:hover]:ring-2 [&_img:hover]:ring-primary"
              dangerouslySetInnerHTML={{ __html: content }}
              onBlur={() => {
                // Optional: auto-save on blur
              }}
            />
          </div>
+ 
+         {/* Image resize popover */}
+         {showImagePopover && selectedImage && (
+           <div className="p-3 border rounded-lg bg-muted/50 space-y-3">
+             <div className="flex items-center justify-between">
+               <Label className="text-sm font-medium flex items-center gap-2">
+                 <Maximize2 className="h-4 w-4" />
+                 Chỉnh kích thước ảnh
+               </Label>
+               <Button
+                 type="button"
+                 variant="ghost"
+                 size="sm"
+                 onClick={() => setShowImagePopover(false)}
+                 className="h-6 w-6 p-0 text-muted-foreground"
+               >
+                 ✕
+               </Button>
+             </div>
+             
+             <div className="flex items-center gap-2">
+               <Label className="text-xs w-16">Chiều rộng:</Label>
+               <Input
+                 type="number"
+                 value={imageWidth}
+                 onChange={(e) => handleImageResize(e.target.value)}
+                 className="w-20 h-8 text-sm"
+                 min="10"
+                 max="100"
+               />
+               <span className="text-sm text-muted-foreground">%</span>
+             </div>
+ 
+             <div className="flex gap-1 flex-wrap">
+               {['25', '50', '75', '100'].map((size) => (
+                 <Button
+                   key={size}
+                   type="button"
+                   variant={imageWidth === size ? 'default' : 'outline'}
+                   size="sm"
+                   onClick={() => handleImageResize(size)}
+                   className="h-7 px-2 text-xs"
+                 >
+                   {size}%
+                 </Button>
+               ))}
+             </div>
+ 
+             <Button
+               type="button"
+               variant="destructive"
+               size="sm"
+               onClick={handleDeleteImage}
+               className="w-full h-8 gap-1"
+             >
+               <Trash2 className="h-3 w-3" />
+               Xóa ảnh
+             </Button>
+           </div>
+         )}
  
          <div className="flex justify-end pt-2">
            <Button onClick={handleSave} disabled={updateArticle.isPending}>
