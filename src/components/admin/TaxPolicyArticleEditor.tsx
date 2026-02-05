@@ -54,6 +54,43 @@
      editorRef.current?.focus();
    };
  
+   const insertImageAtCursor = (imageUrl: string) => {
+     const editor = editorRef.current;
+     if (!editor) return;
+ 
+     // Focus the editor first
+     editor.focus();
+ 
+     // Create image element
+     const img = document.createElement('img');
+     img.src = imageUrl;
+     img.style.maxWidth = '100%';
+     img.style.height = 'auto';
+     img.style.borderRadius = '8px';
+     img.style.margin = '8px 0';
+     img.style.display = 'block';
+ 
+     // Get selection
+     const selection = window.getSelection();
+     if (selection && selection.rangeCount > 0) {
+       const range = selection.getRangeAt(0);
+       // Check if selection is within editor
+       if (editor.contains(range.commonAncestorContainer)) {
+         range.deleteContents();
+         range.insertNode(img);
+         // Move cursor after image
+         range.setStartAfter(img);
+         range.setEndAfter(img);
+         selection.removeAllRanges();
+         selection.addRange(range);
+         return;
+       }
+     }
+ 
+     // Fallback: append to end of editor
+     editor.appendChild(img);
+   };
+ 
    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
      const file = e.target.files?.[0];
      if (!file) return;
@@ -73,8 +110,8 @@
          .from('tenant-assets')
          .getPublicUrl(fileName);
  
-       // Insert image at cursor position
-       execCommand('insertImage', urlData.publicUrl);
+       // Insert image at cursor position using direct DOM manipulation
+       insertImageAtCursor(urlData.publicUrl);
        toast.success('Đã tải ảnh lên thành công');
      } catch (error: any) {
        toast.error('Lỗi tải ảnh: ' + error.message);
