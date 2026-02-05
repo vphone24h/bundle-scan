@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,6 +42,7 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
   const [payments, setPayments] = useState<PaymentLine[]>([]);
 
   const createExportReturn = useCreateExportReturn();
+  const isSubmittingRef = useRef(false);
 
   // Calculate refund amount
   const calculateRefund = () => {
@@ -106,6 +107,11 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
   };
 
   const handleSubmit = async () => {
+    // Prevent double submit
+    if (isSubmittingRef.current || createExportReturn.isPending) {
+      return;
+    }
+    
     if (Math.abs(totalPayment - refundAmount) > 1) {
       toast({
         title: 'Số tiền không khớp',
@@ -114,6 +120,8 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
       });
       return;
     }
+
+    isSubmittingRef.current = true;
 
     try {
       await createExportReturn.mutateAsync({
@@ -154,6 +162,8 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
         description: error.message || 'Không thể hoàn tất trả hàng',
         variant: 'destructive',
       });
+    } finally {
+      isSubmittingRef.current = false;
     }
   };
 
