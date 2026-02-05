@@ -1,0 +1,333 @@
+ import { useState } from 'react';
+ import { Card, CardContent } from '@/components/ui/card';
+ import { usePagination } from '@/hooks/usePagination';
+ import { TablePagination } from '@/components/ui/table-pagination';
+ import { Input } from '@/components/ui/input';
+ import { Button } from '@/components/ui/button';
+ import { Badge } from '@/components/ui/badge';
+ import {
+   Table,
+   TableBody,
+   TableCell,
+   TableHead,
+   TableHeader,
+   TableRow,
+ } from '@/components/ui/table';
+ import {
+   Select,
+   SelectContent,
+   SelectItem,
+   SelectTrigger,
+   SelectValue,
+ } from '@/components/ui/select';
+ import {
+   DropdownMenu,
+   DropdownMenuContent,
+   DropdownMenuItem,
+   DropdownMenuTrigger,
+ } from '@/components/ui/dropdown-menu';
+ import { Search, Plus, MoreHorizontal, Eye, ShoppingCart, Wallet, Merge, Pencil, Calendar, Settings } from 'lucide-react';
+ import { useCustomerSources } from '@/hooks/useCustomerSources';
+ import { useCustomersWithPoints, MEMBERSHIP_TIER_NAMES, MEMBERSHIP_TIER_COLORS } from '@/hooks/useCustomerPoints';
+ import { CRM_STATUS_LABELS, CRM_STATUS_COLORS, CRMStatus, useStaffList } from '@/hooks/useCRM';
+ import { useBranches } from '@/hooks/useBranches';
+ import { formatNumber } from '@/lib/formatNumber';
+ import { format } from 'date-fns';
+ import { vi } from 'date-fns/locale';
+ import { CustomerDetailDialog } from '@/components/customers/CustomerDetailDialog';
+ import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog';
+ import { PointSettingsDialog } from '@/components/customers/PointSettingsDialog';
+ import { CustomerMergeDialog } from '@/components/customers/CustomerMergeDialog';
+ import { useNavigate } from 'react-router-dom';
+ import { usePermissions } from '@/hooks/usePermissions';
+ 
+ interface CustomerListTabProps {
+   onViewCare: (customerId: string) => void;
+   onViewTimeline: (customerId: string) => void;
+ }
+ 
+ export function CustomerListTab({ onViewCare, onViewTimeline }: CustomerListTabProps) {
+   const navigate = useNavigate();
+   const { data: permissions } = usePermissions();
+   const [search, setSearch] = useState('');
+   const [branchFilter, setBranchFilter] = useState('_all_');
+   const [tierFilter, setTierFilter] = useState('_all_');
+   const [statusFilter, setStatusFilter] = useState('_all_');
+   const [sourceFilter, setSourceFilter] = useState('_all_');
+   const [crmStatusFilter, setCrmStatusFilter] = useState('_all_');
+   const [staffFilter, setStaffFilter] = useState('_all_');
+ 
+   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+   const [editingCustomer, setEditingCustomer] = useState<any>(null);
+   const [showDetailDialog, setShowDetailDialog] = useState(false);
+   const [showFormDialog, setShowFormDialog] = useState(false);
+   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+   const [showMergeDialog, setShowMergeDialog] = useState(false);
+ 
+   const { data: customers, isLoading } = useCustomersWithPoints({
+     search: search || undefined,
+     branchId: branchFilter !== '_all_' ? branchFilter : undefined,
+     tier: tierFilter !== '_all_' ? tierFilter : undefined,
+     status: statusFilter !== '_all_' ? statusFilter : undefined,
+     crmStatus: crmStatusFilter !== '_all_' ? crmStatusFilter : undefined,
+     staffId: staffFilter !== '_all_' ? staffFilter : undefined,
+   });
+ 
+   const { data: branches } = useBranches();
+   const { data: customerSources } = useCustomerSources();
+   const { data: staffList } = useStaffList();
+   
+   const filteredCustomers = customers?.filter(c => {
+     if (sourceFilter === '_all_') return true;
+     if (sourceFilter === '_none_') return !c.source;
+     return c.source === sourceFilter;
+   });
+ 
+   const pagination = usePagination(filteredCustomers || [], { storageKey: 'customers' });
+ 
+   const handleViewDetail = (customerId: string) => {
+     setSelectedCustomerId(customerId);
+     setShowDetailDialog(true);
+   };
+ 
+   const handleSell = (customerId: string) => {
+     navigate(`/export/new?customerId=${customerId}`);
+   };
+ 
+   const handleCollectDebt = (customerId: string) => {
+     navigate(`/debt?customerId=${customerId}`);
+   };
+ 
+   const handleEditCustomer = (customer: any) => {
+     setEditingCustomer(customer);
+     setShowFormDialog(true);
+   };
+ 
+   const handleCloseFormDialog = (open: boolean) => {
+     setShowFormDialog(open);
+     if (!open) setEditingCustomer(null);
+   };
+ 
+   return (
+     <div className="space-y-4">
+       {/* Filters */}
+       <Card>
+         <CardContent className="pt-4">
+           <div className="flex flex-col lg:flex-row gap-3">
+             <div className="relative flex-1">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+               <Input
+                 placeholder="Tìm theo tên, SĐT..."
+                 value={search}
+                 onChange={(e) => setSearch(e.target.value)}
+                 className="pl-9"
+               />
+             </div>
+             <div className="flex flex-wrap gap-2">
+               <Select value={branchFilter} onValueChange={setBranchFilter}>
+                 <SelectTrigger className="w-[140px]">
+                   <SelectValue placeholder="Chi nhánh" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="_all_">Tất cả CN</SelectItem>
+                   {branches?.map((branch) => (
+                     <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+               <Select value={tierFilter} onValueChange={setTierFilter}>
+                 <SelectTrigger className="w-[120px]">
+                   <SelectValue placeholder="Hạng" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="_all_">Tất cả</SelectItem>
+                   <SelectItem value="regular">Thường</SelectItem>
+                   <SelectItem value="silver">Bạc</SelectItem>
+                   <SelectItem value="gold">Vàng</SelectItem>
+                   <SelectItem value="vip">VIP</SelectItem>
+                 </SelectContent>
+               </Select>
+               <Select value={crmStatusFilter} onValueChange={setCrmStatusFilter}>
+                 <SelectTrigger className="w-[140px]">
+                   <SelectValue placeholder="Trạng thái CRM" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="_all_">Tất cả CRM</SelectItem>
+                   {Object.entries(CRM_STATUS_LABELS).map(([value, label]) => (
+                     <SelectItem key={value} value={value}>{label}</SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+               <Select value={staffFilter} onValueChange={setStaffFilter}>
+                 <SelectTrigger className="w-[140px]">
+                   <SelectValue placeholder="NV phụ trách" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="_all_">Tất cả NV</SelectItem>
+                   {staffList?.map((staff) => (
+                     <SelectItem key={staff.user_id} value={staff.user_id}>{staff.display_name}</SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+             </div>
+             <div className="flex gap-2">
+               <Button onClick={() => setShowFormDialog(true)}>
+                 <Plus className="h-4 w-4 mr-2" />
+                 Thêm mới
+               </Button>
+               {permissions?.role === 'super_admin' && (
+                 <>
+                   <Button variant="outline" size="icon" onClick={() => setShowMergeDialog(true)}>
+                     <Merge className="h-4 w-4" />
+                   </Button>
+                   <Button variant="outline" size="icon" onClick={() => setShowSettingsDialog(true)}>
+                     <Settings className="h-4 w-4" />
+                   </Button>
+                 </>
+               )}
+             </div>
+           </div>
+         </CardContent>
+       </Card>
+ 
+       {/* Customer Table */}
+       <Card>
+         <CardContent className="p-0">
+           <div className="overflow-x-auto">
+             <Table>
+               <TableHeader>
+                 <TableRow>
+                   <TableHead>Khách hàng</TableHead>
+                   <TableHead className="hidden md:table-cell">Nguồn</TableHead>
+                   <TableHead className="hidden lg:table-cell">NV phụ trách</TableHead>
+                   <TableHead className="hidden lg:table-cell">Trạng thái CRM</TableHead>
+                   <TableHead className="text-right">Chi tiêu</TableHead>
+                   <TableHead className="hidden xl:table-cell">Chăm sóc gần nhất</TableHead>
+                   <TableHead className="w-[60px]"></TableHead>
+                 </TableRow>
+               </TableHeader>
+               <TableBody>
+                 {isLoading ? (
+                   <TableRow>
+                     <TableCell colSpan={7} className="text-center py-8">Đang tải...</TableCell>
+                   </TableRow>
+                 ) : filteredCustomers?.length === 0 ? (
+                   <TableRow>
+                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                       Chưa có khách hàng nào
+                     </TableCell>
+                   </TableRow>
+                 ) : (
+                   pagination.paginatedData.map((customer) => (
+                     <TableRow 
+                       key={customer.id} 
+                       className="cursor-pointer hover:bg-muted/50" 
+                       onClick={() => handleViewDetail(customer.id)}
+                     >
+                       <TableCell>
+                         <div>
+                           <p className="font-medium">{customer.name}</p>
+                           <p className="text-sm text-muted-foreground">{customer.phone}</p>
+                           <div className="flex gap-1 mt-1 lg:hidden">
+                             <Badge className={MEMBERSHIP_TIER_COLORS[customer.membership_tier]} variant="secondary">
+                               {MEMBERSHIP_TIER_NAMES[customer.membership_tier]}
+                             </Badge>
+                           </div>
+                         </div>
+                       </TableCell>
+                       <TableCell className="hidden md:table-cell">
+                         {customer.source ? (
+                           <Badge variant="outline" className="text-xs">{customer.source}</Badge>
+                         ) : <span className="text-muted-foreground text-sm">-</span>}
+                       </TableCell>
+                       <TableCell className="hidden lg:table-cell">
+                         {staffList?.find(s => s.user_id === customer.assigned_staff_id)?.display_name || (
+                           <span className="text-muted-foreground text-sm">-</span>
+                         )}
+                       </TableCell>
+                       <TableCell className="hidden lg:table-cell">
+                         <Badge className={CRM_STATUS_COLORS[customer.crm_status as CRMStatus || 'new']} variant="secondary">
+                           {CRM_STATUS_LABELS[customer.crm_status as CRMStatus || 'new']}
+                         </Badge>
+                       </TableCell>
+                       <TableCell className="text-right font-medium">
+                         {formatNumber(customer.total_spent)}
+                       </TableCell>
+                       <TableCell className="hidden xl:table-cell">
+                         {customer.last_care_date
+                           ? format(new Date(customer.last_care_date), 'dd/MM/yyyy', { locale: vi })
+                           : '-'}
+                       </TableCell>
+                       <TableCell onClick={(e) => e.stopPropagation()}>
+                         <DropdownMenu>
+                           <DropdownMenuTrigger asChild>
+                             <Button variant="ghost" size="icon">
+                               <MoreHorizontal className="h-4 w-4" />
+                             </Button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent align="end">
+                             <DropdownMenuItem onClick={() => handleViewDetail(customer.id)}>
+                               <Eye className="h-4 w-4 mr-2" />Xem chi tiết
+                             </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
+                               <Pencil className="h-4 w-4 mr-2" />Sửa thông tin
+                             </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => handleSell(customer.id)}>
+                               <ShoppingCart className="h-4 w-4 mr-2" />Bán hàng
+                             </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => handleCollectDebt(customer.id)}>
+                               <Wallet className="h-4 w-4 mr-2" />Thu nợ
+                             </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => onViewCare(customer.id)}>
+                               <Calendar className="h-4 w-4 mr-2" />Lịch chăm sóc
+                             </DropdownMenuItem>
+                           </DropdownMenuContent>
+                         </DropdownMenu>
+                       </TableCell>
+                     </TableRow>
+                   ))
+                 )}
+               </TableBody>
+             </Table>
+           </div>
+           
+           {(filteredCustomers?.length || 0) > 0 && (
+             <TablePagination
+               currentPage={pagination.currentPage}
+               totalPages={pagination.totalPages}
+               pageSize={pagination.pageSize}
+               totalItems={pagination.totalItems}
+               startIndex={pagination.startIndex}
+               endIndex={pagination.endIndex}
+               onPageChange={pagination.setPage}
+               onPageSizeChange={pagination.setPageSize}
+             />
+           )}
+         </CardContent>
+       </Card>
+ 
+       {/* Dialogs */}
+       <CustomerDetailDialog
+         customerId={selectedCustomerId}
+         open={showDetailDialog}
+         onOpenChange={setShowDetailDialog}
+       />
+ 
+       <CustomerFormDialog
+         open={showFormDialog}
+         onOpenChange={handleCloseFormDialog}
+         customer={editingCustomer}
+       />
+ 
+       <PointSettingsDialog
+         open={showSettingsDialog}
+         onOpenChange={setShowSettingsDialog}
+       />
+ 
+       <CustomerMergeDialog
+         open={showMergeDialog}
+         onOpenChange={setShowMergeDialog}
+       />
+     </div>
+   );
+ }
