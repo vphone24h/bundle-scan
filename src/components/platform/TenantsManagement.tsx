@@ -161,6 +161,7 @@ export function TenantsManagement() {
                 <TableHead>Doanh nghiệp</TableHead>
                 <TableHead>Store ID</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>SĐT</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead>Gói dịch vụ</TableHead>
                 <TableHead>HĐĐT</TableHead>
@@ -186,6 +187,9 @@ export function TenantsManagement() {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">{tenant.email || '-'}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">{tenant.phone || '-'}</span>
                     </TableCell>
                     <TableCell>
                       <Badge variant={status.variant}>{status.label}</Badge>
@@ -281,6 +285,10 @@ export function TenantsManagement() {
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Email:</span>
                     <span>{tenant.email || '-'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">SĐT:</span>
+                    <span>{tenant.phone || '-'}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Còn lại:</span>
