@@ -373,7 +373,14 @@ export function useSubscriptionHistory(tenantId?: string) {
     queryFn: async () => {
       let query = supabase
         .from('subscription_history')
-        .select('*')
+        .select(`
+          *,
+          tenants:tenant_id (
+            name,
+            email,
+            phone
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (tenantId) {

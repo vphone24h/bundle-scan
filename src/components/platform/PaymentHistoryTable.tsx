@@ -36,6 +36,7 @@ export function PaymentHistoryTable() {
             <TableHeader>
               <TableRow>
                 <TableHead>Thời gian</TableHead>
+                <TableHead>Cửa hàng</TableHead>
                 <TableHead>Hành động</TableHead>
                 <TableHead>Thay đổi</TableHead>
                 <TableHead>Ghi chú</TableHead>
@@ -44,18 +45,27 @@ export function PaymentHistoryTable() {
             <TableBody>
               {history?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     Chưa có lịch sử
                   </TableCell>
                 </TableRow>
               )}
               {history?.map((record) => {
                 const actionConfig = actionLabels[record.action] || { label: record.action, variant: 'outline' as const };
+                const tenant = record.tenants as { name: string; email: string | null; phone: string | null } | null;
                 
                 return (
                   <TableRow key={record.id}>
                     <TableCell>
                       {format(new Date(record.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm space-y-0.5">
+                        <p className="font-medium">{tenant?.name || 'N/A'}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {[tenant?.email, tenant?.phone].filter(Boolean).join(' • ') || '-'}
+                        </p>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={actionConfig.variant}>{actionConfig.label}</Badge>
@@ -103,15 +113,24 @@ export function PaymentHistoryTable() {
         )}
         {history?.map((record) => {
           const actionConfig = actionLabels[record.action] || { label: record.action, variant: 'outline' as const };
+          const tenant = record.tenants as { name: string; email: string | null; phone: string | null } | null;
           
           return (
             <Card key={record.id}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-2">
-                  <Badge variant={actionConfig.variant}>{actionConfig.label}</Badge>
+                  <div>
+                    <p className="font-medium text-sm">{tenant?.name || 'N/A'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {[tenant?.email, tenant?.phone].filter(Boolean).join(' • ') || '-'}
+                    </p>
+                  </div>
                   <span className="text-xs text-muted-foreground">
                     {format(new Date(record.created_at), 'dd/MM HH:mm', { locale: vi })}
                   </span>
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant={actionConfig.variant}>{actionConfig.label}</Badge>
                 </div>
                 <div className="text-sm space-y-1">
                   {record.days_added && (
