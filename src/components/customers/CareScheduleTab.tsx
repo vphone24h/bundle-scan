@@ -42,7 +42,7 @@
  import { toast } from 'sonner';
  import { usePagination } from '@/hooks/usePagination';
  import { TablePagination } from '@/components/ui/table-pagination';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { CustomerMultiSelect } from '@/components/crm/CustomerMultiSelect';
  
  const STATUS_CONFIG = {
    pending: { label: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800' },
@@ -52,16 +52,17 @@ import { useIsMobile } from '@/hooks/use-mobile';
  };
  
  interface CareScheduleTabProps {
-   customerId: string | null;
-   customerName?: string;
+  customerId?: string | null;
+  customerName?: string;
  }
  
- export function CareScheduleTab({ customerId, customerName }: CareScheduleTabProps) {
+export function CareScheduleTab({ customerId: initialCustomerId, customerName: initialCustomerName }: CareScheduleTabProps) {
    const [statusFilter, setStatusFilter] = useState('pending');
    const [showCreateDialog, setShowCreateDialog] = useState(false);
    const [showCompleteDialog, setShowCompleteDialog] = useState(false);
    const [selectedSchedule, setSelectedSchedule] = useState<CareSchedule | null>(null);
    const [completeResult, setCompleteResult] = useState('');
+  const [selectedCustomers, setSelectedCustomers] = useState<{ id: string; name: string; phone: string }[]>([]);
  
    const [formData, setFormData] = useState({
      careTypeId: '',
@@ -75,7 +76,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
    const [newTypeName, setNewTypeName] = useState('');
  
    const { data: schedules, isLoading } = useCareSchedules({
-     customerId: customerId || undefined,
+    customerId: initialCustomerId || undefined,
      status: statusFilter !== '_all_' ? statusFilter : undefined,
    });
    const { data: careTypes } = useCareScheduleTypes();
@@ -95,9 +96,19 @@ import { useIsMobile } from '@/hooks/use-mobile';
      setFormData(prev => ({ ...prev, scheduledDate: format(addDays(new Date(), days), 'yyyy-MM-dd') }));
    };
  
+  const handleOpenCreateDialog = () => {
+    // Pre-select customer if coming from customer detail
+    if (initialCustomerId && initialCustomerName) {
+      setSelectedCustomers([{ id: initialCustomerId, name: initialCustomerName, phone: '' }]);
+    } else {
+      setSelectedCustomers([]);
+    }
+    setShowCreateDialog(true);
+  };
+
    const handleCreateSchedule = async () => {
-     if (!customerId) {
-       toast.error('Vui lòng chọn khách hàng từ tab Danh sách');
+    if (selectedCustomers.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một khách hàng');
        return;
      }
      if (!formData.careTypeName) {
@@ -107,7 +118,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
  
      try {
        await createSchedule.mutateAsync({
-         customerId,
+        customerIds: selectedCustomers.map(c => c.id),
          careTypeId: formData.careTypeId || undefined,
          careTypeName: formData.careTypeName,
          scheduledDate: formData.scheduledDate,
@@ -116,8 +127,9 @@ import { useIsMobile } from '@/hooks/use-mobile';
          assignedStaffId: formData.assignedStaffId || undefined,
          reminderDays: formData.reminderDays,
        });
-       toast.success('Đã tạo lịch chăm sóc');
+      toast.success(`Đã tạo lịch cho ${selectedCustomers.length} khách hàng`);
        setShowCreateDialog(false);
+      setSelectedCustomers([]);
        setFormData({
          careTypeId: '',
          careTypeName: '',
@@ -227,20 +239,15 @@ import { useIsMobile } from '@/hooks/use-mobile';
                    <SelectItem value="overdue">Quá hạn</SelectItem>
                  </SelectContent>
                </Select>
-              <Button size="sm" onClick={() => setShowCreateDialog(true)} disabled={!customerId} className="h-9">
+              <Button size="sm" onClick={handleOpenCreateDialog} className="h-9">
                 <Plus className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Tạo lịch</span>
               </Button>
              </div>
-            {customerId && customerName && (
+            {initialCustomerId && initialCustomerName && (
               <Badge variant="secondary" className="text-xs w-fit">
-                Khách: {customerName}
+                Khách: {initialCustomerName}
               </Badge>
-            )}
-            {!customerId && (
-              <p className="text-xs text-muted-foreground">
-                Chọn khách hàng từ tab "Danh sách" để tạo lịch
-              </p>
             )}
           </div>
          </CardContent>
@@ -398,6 +405,15 @@ import { useIsMobile } from '@/hooks/use-mobile';
              <DialogTitle>Tạo lịch chăm sóc</DialogTitle>
            </DialogHeader>
            <div className="space-y-4">
+            {/* Customer Selection */}
+            <div className="space-y-2">
+              <Label>Khách hàng *</Label>
+              <CustomerMultiSelect
+                selectedCustomers={selectedCustomers}
+                onSelectionChange={setSelectedCustomers}
+              />
+            </div>
+
              <div className="space-y-2">
                <Label>Loại chăm sóc *</Label>
                <Select value={formData.careTypeId} onValueChange={handleSelectType}>

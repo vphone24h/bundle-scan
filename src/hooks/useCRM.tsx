@@ -366,7 +366,7 @@
  
    return useMutation({
      mutationFn: async (schedule: {
-       customerId: string;
+       customerIds: string[];
        careTypeId?: string;
        careTypeName: string;
        scheduledDate: string;
@@ -378,22 +378,24 @@
        const tenantId = await getCurrentTenantId();
        if (!tenantId) throw new Error('Không tìm thấy tenant');
  
+       // Create schedules for all selected customers
+       const schedulesToInsert = schedule.customerIds.map(customerId => ({
+         tenant_id: tenantId,
+         customer_id: customerId,
+         care_type_id: schedule.careTypeId || null,
+         care_type_name: schedule.careTypeName,
+         scheduled_date: schedule.scheduledDate,
+         scheduled_time: schedule.scheduledTime || null,
+         note: schedule.note || null,
+         assigned_staff_id: schedule.assignedStaffId || null,
+         reminder_days: schedule.reminderDays || 0,
+         created_by: user?.id,
+       }));
+
        const { data, error } = await supabase
          .from('customer_care_schedules')
-         .insert([{
-           tenant_id: tenantId,
-           customer_id: schedule.customerId,
-           care_type_id: schedule.careTypeId || null,
-           care_type_name: schedule.careTypeName,
-           scheduled_date: schedule.scheduledDate,
-           scheduled_time: schedule.scheduledTime || null,
-           note: schedule.note || null,
-           assigned_staff_id: schedule.assignedStaffId || null,
-           reminder_days: schedule.reminderDays || 0,
-           created_by: user?.id,
-         }])
-         .select()
-         .single();
+         .insert(schedulesToInsert)
+         .select();
  
        if (error) throw error;
        return data;
