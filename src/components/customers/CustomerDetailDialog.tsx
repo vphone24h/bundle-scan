@@ -19,6 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Phone, MapPin, Mail, Calendar, Edit2, ShoppingCart, Wallet, Star, Eye } from 'lucide-react';
+import { UserCircle } from 'lucide-react';
 import {
   useCustomerDetail,
   usePointTransactions,
@@ -34,6 +35,16 @@ import { vi } from 'date-fns/locale';
 import { CustomerFormDialog } from './CustomerFormDialog';
 import { PointAdjustDialog } from './PointAdjustDialog';
 import { CustomerPurchaseDetailDialog } from './CustomerPurchaseDetailDialog';
+import { StaffAssignSelect } from '@/components/crm/StaffAssignSelect';
+import { useAssignStaffToCustomer, useStaffList, CRM_STATUS_LABELS, CRM_STATUS_COLORS, CRMStatus, useUpdateCustomerCRMStatus } from '@/hooks/useCRM';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { toast } from 'sonner';
 
 interface CustomerDetailDialogProps {
   customerId: string | null;
@@ -46,12 +57,46 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
   const [showAdjustDialog, setShowAdjustDialog] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const [showPurchaseDetail, setShowPurchaseDetail] = useState(false);
+  const { mutate: assignStaff, isPending: isAssigning } = useAssignStaffToCustomer();
+  const { mutate: updateCRMStatus, isPending: isUpdatingStatus } = useUpdateCustomerCRMStatus();
+  const { data: staffList } = useStaffList();
 
   const { data: customer, isLoading } = useCustomerDetail(customerId);
   const { data: pointTransactions } = usePointTransactions(customerId);
   const { data: purchaseHistory } = useCustomerPurchaseHistory(customerId);
   const { data: debtDetail } = useDebtDetail('customer', customerId);
   const { data: debtPayments } = useDebtPaymentHistory('customer', customerId);
+
+
+  const handleAssignStaff = (staffId: string | null) => {
+    if (!customerId) return;
+    assignStaff(
+      { customerId, staffId },
+      {
+        onSuccess: () => {
+          toast.success('Đã cập nhật nhân viên phụ trách');
+        },
+        onError: () => {
+          toast.error('Lỗi khi cập nhật nhân viên');
+        },
+      }
+    );
+  };
+
+  const handleUpdateCRMStatus = (status: CRMStatus) => {
+    if (!customerId) return;
+    updateCRMStatus(
+      { customerId, status },
+      {
+        onSuccess: () => {
+          toast.success('Đã cập nhật trạng thái CRM');
+        },
+        onError: () => {
+          toast.error('Lỗi khi cập nhật trạng thái');
+        },
+      }
+    );
+  };
 
   if (!customer && !isLoading) return null;
 
@@ -453,7 +498,57 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                 {/* Tab 4: Other Info */}
                 <TabsContent value="info" className="mt-4">
                   <Card>
-                    <CardContent className="pt-6 space-y-4">
+                    <CardContent className="pt-6 space-y-6">
+                      {/* CRM Assignment Section */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg border">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium flex items-center gap-2">
+                            <UserCircle className="h-4 w-4" />
+                            Nhân viên phụ trách
+                          </label>
+                          <Select
+                            value={customer.assigned_staff_id || '_none_'}
+                            onValueChange={(v) => handleAssignStaff(v === '_none_' ? null : v)}
+                            disabled={isAssigning}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Chọn nhân viên..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_none_">Chưa phân công</SelectItem>
+                              {staffList?.map((staff) => (
+                                <SelectItem key={staff.user_id} value={staff.user_id}>
+                                  {staff.display_name || 'Nhân viên'}
+                                  {staff.user_role === 'super_admin' && ' (Admin)'}
+                                  {staff.user_role === 'branch_admin' && ' (QL)'}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Trạng thái CRM</label>
+                          <Select
+                            value={customer.crm_status || 'new'}
+                            onValueChange={(v) => handleUpdateCRMStatus(v as CRMStatus)}
+                            disabled={isUpdatingStatus}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(CRM_STATUS_LABELS).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                  {label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <Separator />
+
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="text-sm text-muted-foreground">Ngày sinh</label>
