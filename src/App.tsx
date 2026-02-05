@@ -44,6 +44,7 @@ const StoreLandingPage = lazy(() => import("./pages/StoreLandingPage"));
 const PublicLandingPage = lazy(() => import("./pages/PublicLandingPage"));
 const LandingPageAdminPage = lazy(() => import("./pages/LandingPageAdminPage"));
 const InstallAppPage = lazy(() => import("./pages/InstallAppPage"));
+ const TaxPolicyPage = lazy(() => import("./pages/TaxPolicyPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -127,6 +128,7 @@ const App = () => (
                 <Route path="/customers" element={<GuardedRoute><CustomersPage /></GuardedRoute>} />
                 <Route path="/affiliate" element={<GuardedRoute><AffiliatePage /></GuardedRoute>} />
                 <Route path="/einvoice" element={<GuardedRoute><EInvoicePage /></GuardedRoute>} />
+                 <Route path="/export/tax-policy" element={<GuardedRoute><TaxPolicyPage /></GuardedRoute>} />
                 <Route path="/applications" element={<GuardedRoute><ApplicationsPage /></GuardedRoute>} />
                 <Route path="/advertisements" element={<GuardedRoute><AdvertisementsAdminPage /></GuardedRoute>} />
                 <Route path="/landing-settings" element={<GuardedRoute><LandingPageAdminPage /></GuardedRoute>} />
