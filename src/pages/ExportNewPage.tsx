@@ -1031,6 +1031,9 @@ export default function ExportNewPage() {
           is_enabled: pointSettings.is_enabled,
           redeem_points: pointSettings.redeem_points,
           redeem_value: pointSettings.redeem_value,
+          use_max_amount_limit: pointSettings.use_max_amount_limit,
+          max_redeem_amount: pointSettings.max_redeem_amount,
+          use_percentage_limit: pointSettings.use_percentage_limit,
           max_redeem_percentage: pointSettings.max_redeem_percentage,
         } : null}
       />

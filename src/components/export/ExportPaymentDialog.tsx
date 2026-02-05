@@ -26,6 +26,9 @@ interface PointSettings {
   is_enabled: boolean;
   redeem_points: number;
   redeem_value: number;
+  use_max_amount_limit: boolean;
+  max_redeem_amount: number | null;
+  use_percentage_limit: boolean;
   max_redeem_percentage: number;
 }
 
@@ -75,11 +78,25 @@ export function ExportPaymentDialog({
   const [pointsToRedeem, setPointsToRedeem] = useState('');
 
   // Calculate max points that can be redeemed
-  const maxRedeemByPercentage = pointSettings?.max_redeem_percentage 
-    ? Math.floor(totalAmount * pointSettings.max_redeem_percentage / 100 / (pointSettings.redeem_value / pointSettings.redeem_points))
+  // First, calculate max discount by percentage
+  const maxDiscountByPercentage = (pointSettings?.use_percentage_limit && pointSettings?.max_redeem_percentage)
+    ? Math.floor(totalAmount * pointSettings.max_redeem_percentage / 100)
+    : totalAmount;
+  
+  // Second, calculate max discount by amount limit
+  const maxDiscountByAmount = (pointSettings?.use_max_amount_limit && pointSettings?.max_redeem_amount)
+    ? pointSettings.max_redeem_amount
+    : totalAmount;
+  
+  // Take the lower limit (if both are enabled, use the smaller one)
+  const maxDiscountAllowed = Math.min(maxDiscountByPercentage, maxDiscountByAmount, totalAmount);
+  
+  // Convert max discount to max points
+  const maxRedeemByLimit = pointSettings 
+    ? Math.floor(maxDiscountAllowed / (pointSettings.redeem_value / pointSettings.redeem_points))
     : 0;
   const maxRedeemByBalance = customerPoints?.current_points || 0;
-  const maxPointsCanRedeem = Math.min(maxRedeemByPercentage, maxRedeemByBalance);
+  const maxPointsCanRedeem = Math.min(maxRedeemByLimit, maxRedeemByBalance);
 
   // Calculate discount from points
   const pointsValue = pointSettings ? 
@@ -257,7 +274,13 @@ export function ExportPaymentDialog({
                     <br />
                     Quy đổi: {pointSettings?.redeem_points} điểm = {formatNumber(pointSettings?.redeem_value || 0)}đ
                     <br />
-                    Giới hạn: Tối đa {pointSettings?.max_redeem_percentage}% giá trị đơn hàng
+                    Giới hạn: {pointSettings?.use_max_amount_limit && pointSettings?.max_redeem_amount && (
+                      <>Tối đa {formatNumber(pointSettings.max_redeem_amount)}đ</>
+                    )}
+                    {pointSettings?.use_max_amount_limit && pointSettings?.use_percentage_limit && ' hoặc '}
+                    {pointSettings?.use_percentage_limit && (
+                      <>Tối đa {pointSettings?.max_redeem_percentage}% giá trị đơn hàng</>
+                    )}
                   </div>
                   {actualPointsUsed > 0 && (
                     <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded text-sm text-green-700 dark:text-green-300">
