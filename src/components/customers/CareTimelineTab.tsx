@@ -1,11 +1,10 @@
  import { useState } from 'react';
- import { MainLayout } from '@/components/layout/MainLayout';
- import { PageHeader } from '@/components/layout/PageHeader';
  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
  import { Button } from '@/components/ui/button';
  import { Badge } from '@/components/ui/badge';
  import { Textarea } from '@/components/ui/textarea';
  import { Input } from '@/components/ui/input';
+ import { Label } from '@/components/ui/label';
  import {
    Select,
    SelectContent,
@@ -20,15 +19,11 @@
    DialogTitle,
    DialogFooter,
  } from '@/components/ui/dialog';
- import { useCareLogs, useCreateCareLog, CareLog } from '@/hooks/useCRM';
- import { useCustomerDetail } from '@/hooks/useCustomerPoints';
- import { useSearchParams } from 'react-router-dom';
+ import { useCareLogs, useCreateCareLog } from '@/hooks/useCRM';
  import { format } from 'date-fns';
  import { vi } from 'date-fns/locale';
  import { Plus, Phone, MessageCircle, Calendar, FileText, CheckCircle, Mail } from 'lucide-react';
  import { toast } from 'sonner';
- import { Label } from '@/components/ui/label';
- import { useAuth } from '@/hooks/useAuth';
  
  const ACTION_TYPES = [
    { value: 'call', label: 'Cuộc gọi', icon: Phone, color: 'bg-blue-100 text-blue-800' },
@@ -39,11 +34,14 @@
    { value: 'task_completed', label: 'Hoàn thành', icon: CheckCircle, color: 'bg-emerald-100 text-emerald-800' },
  ];
  
- export default function CRMTimelinePage() {
-   const [searchParams] = useSearchParams();
-   const customerId = searchParams.get('customerId');
-   const { user } = useAuth();
+ interface CareTimelineTabProps {
+   customerId: string | null;
+   customerName?: string;
+   customerPhone?: string;
+   customerEmail?: string;
+ }
  
+ export function CareTimelineTab({ customerId, customerName, customerPhone, customerEmail }: CareTimelineTabProps) {
    const [showAddDialog, setShowAddDialog] = useState(false);
    const [formData, setFormData] = useState({
      actionType: 'call',
@@ -52,12 +50,11 @@
    });
  
    const { data: logs, isLoading } = useCareLogs(customerId);
-   const { data: customer } = useCustomerDetail(customerId);
    const createLog = useCreateCareLog();
  
    const handleAddLog = async () => {
      if (!customerId) {
-       toast.error('Không tìm thấy khách hàng');
+       toast.error('Vui lòng chọn khách hàng từ tab Danh sách');
        return;
      }
      if (!formData.content.trim()) {
@@ -81,36 +78,29 @@
    };
  
    const getActionConfig = (actionType: string) => {
-     return ACTION_TYPES.find(a => a.value === actionType) || ACTION_TYPES[4]; // default to 'note'
+     return ACTION_TYPES.find(a => a.value === actionType) || ACTION_TYPES[4];
    };
  
    if (!customerId) {
      return (
-       <MainLayout>
-         <PageHeader title="Nhật ký chăm sóc" />
-         <Card>
-           <CardContent className="py-12 text-center text-muted-foreground">
-             Vui lòng chọn khách hàng từ trang Quản lý khách hàng
-           </CardContent>
-         </Card>
-       </MainLayout>
+       <Card>
+         <CardContent className="py-12 text-center text-muted-foreground">
+           Chọn khách hàng từ tab "Danh sách" để xem nhật ký chăm sóc
+         </CardContent>
+       </Card>
      );
    }
  
    return (
-     <MainLayout>
-       <PageHeader title={`Nhật ký - ${customer?.name || 'Khách hàng'}`} />
- 
+     <div className="space-y-4">
        {/* Customer Info */}
-       <Card className="mb-6">
+       <Card>
          <CardContent className="pt-4">
            <div className="flex items-center justify-between">
              <div>
-               <h3 className="font-semibold text-lg">{customer?.name}</h3>
-               <p className="text-muted-foreground">{customer?.phone}</p>
-               {customer?.email && (
-                 <p className="text-sm text-muted-foreground">{customer.email}</p>
-               )}
+               <h3 className="font-semibold text-lg">{customerName}</h3>
+               <p className="text-muted-foreground">{customerPhone}</p>
+               {customerEmail && <p className="text-sm text-muted-foreground">{customerEmail}</p>}
              </div>
              <Button onClick={() => setShowAddDialog(true)}>
                <Plus className="h-4 w-4 mr-2" />
@@ -129,14 +119,10 @@
            {isLoading ? (
              <p className="text-center py-8 text-muted-foreground">Đang tải...</p>
            ) : logs?.length === 0 ? (
-             <p className="text-center py-8 text-muted-foreground">
-               Chưa có lịch sử chăm sóc nào
-             </p>
+             <p className="text-center py-8 text-muted-foreground">Chưa có lịch sử chăm sóc nào</p>
            ) : (
              <div className="relative">
-               {/* Timeline line */}
                <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-border" />
- 
                <div className="space-y-6">
                  {logs?.map((log) => {
                    const config = getActionConfig(log.action_type);
@@ -144,17 +130,12 @@
  
                    return (
                      <div key={log.id} className="relative pl-12">
-                       {/* Icon */}
                        <div className={`absolute left-2 w-7 h-7 rounded-full flex items-center justify-center ${config.color}`}>
                          <Icon className="h-3.5 w-3.5" />
                        </div>
- 
-                       {/* Content */}
                        <div className="bg-muted/50 rounded-lg p-3">
                          <div className="flex items-center justify-between mb-1">
-                           <Badge variant="outline" className="text-xs">
-                             {config.label}
-                           </Badge>
+                           <Badge variant="outline" className="text-xs">{config.label}</Badge>
                            <span className="text-xs text-muted-foreground">
                              {format(new Date(log.created_at), 'HH:mm - dd/MM/yyyy', { locale: vi })}
                            </span>
@@ -166,9 +147,7 @@
                            </p>
                          )}
                          {log.staff_name && (
-                           <p className="text-xs text-muted-foreground mt-2">
-                             NV: {log.staff_name}
-                           </p>
+                           <p className="text-xs text-muted-foreground mt-2">NV: {log.staff_name}</p>
                          )}
                        </div>
                      </div>
@@ -189,13 +168,8 @@
            <div className="space-y-4">
              <div className="space-y-2">
                <Label>Loại hoạt động</Label>
-               <Select
-                 value={formData.actionType}
-                 onValueChange={(v) => setFormData(prev => ({ ...prev, actionType: v }))}
-               >
-                 <SelectTrigger>
-                   <SelectValue />
-                 </SelectTrigger>
+               <Select value={formData.actionType} onValueChange={(v) => setFormData(prev => ({ ...prev, actionType: v }))}>
+                 <SelectTrigger><SelectValue /></SelectTrigger>
                  <SelectContent>
                    {ACTION_TYPES.filter(t => t.value !== 'task_completed').map((type) => (
                      <SelectItem key={type.value} value={type.value}>
@@ -230,12 +204,10 @@
            </div>
            <DialogFooter>
              <Button variant="outline" onClick={() => setShowAddDialog(false)}>Hủy</Button>
-             <Button onClick={handleAddLog} disabled={createLog.isPending}>
-               Thêm
-             </Button>
+             <Button onClick={handleAddLog} disabled={createLog.isPending}>Thêm</Button>
            </DialogFooter>
          </DialogContent>
        </Dialog>
-     </MainLayout>
+     </div>
    );
  }
