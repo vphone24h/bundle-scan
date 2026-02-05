@@ -70,6 +70,7 @@ import { useCashBook, useCashBookCategories, useCreateCashBookEntry, useUpdateCa
 import { useBranches } from '@/hooks/useBranches';
 import { useCashBookGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency } from '@/lib/mockData';
+import { formatNumberWithSpaces, parseFormattedNumber } from '@/lib/formatNumber';
 import { cn } from '@/lib/utils';
 import { TransferFundsDialog } from '@/components/cashbook/TransferFundsDialog';
 import { CashBookDetailDialog } from '@/components/cashbook/CashBookDetailDialog';
@@ -363,7 +364,7 @@ export default function CashBookPage() {
       type: entry.type,
       category: entry.category,
       description: entry.description,
-      payments: [{ source: entry.payment_source, amount: String(entry.amount) }],
+      payments: [{ source: entry.payment_source, amount: formatNumberWithSpaces(entry.amount) }],
       is_business_accounting: entry.is_business_accounting ?? true,
       branch_id: entry.branch_id || '',
       note: entry.note || '',
@@ -468,11 +469,17 @@ export default function CashBookPage() {
 
   const updatePayment = (index: number, field: 'source' | 'amount', value: string) => {
     const newPayments = [...formData.payments];
-    newPayments[index][field] = value;
+    if (field === 'amount') {
+      // Parse the input and format with spaces
+      const numValue = parseFormattedNumber(value);
+      newPayments[index][field] = numValue > 0 ? formatNumberWithSpaces(numValue) : '';
+    } else {
+      newPayments[index][field] = value;
+    }
     setFormData({ ...formData, payments: newPayments });
   };
 
-  const totalPaymentAmount = formData.payments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+  const totalPaymentAmount = formData.payments.reduce((sum, p) => sum + parseFormattedNumber(p.amount), 0);
 
   const handleSubmit = async () => {
     if (!formData.category || !formData.description || totalPaymentAmount <= 0) {
@@ -1261,11 +1268,10 @@ export default function CashBookPage() {
                     </SelectContent>
                   </Select>
                   <Input
-                    type="number"
                     placeholder="Số tiền"
                     value={payment.amount}
                     onChange={(e) => updatePayment(index, 'amount', e.target.value)}
-                    className="flex-1"
+                    className="flex-1 text-right"
                   />
                   {formData.payments.length > 1 && (
                     <Button type="button" variant="ghost" size="icon" onClick={() => removePaymentSource(index)}>
@@ -1405,11 +1411,10 @@ export default function CashBookPage() {
                 </SelectContent>
               </Select>
               <Input
-                type="number"
                 placeholder="Số tiền"
                 value={formData.payments[0]?.amount || ''}
                 onChange={(e) => updatePayment(0, 'amount', e.target.value)}
-                className="flex-1"
+                className="flex-1 text-right"
               />
             </div>
 
