@@ -48,6 +48,7 @@ import { DeleteProductDialog } from '@/components/products/DeleteProductDialog';
 import { AdjustQuantityDialog } from '@/components/products/AdjustQuantityDialog';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useMarkProductWarranty } from '@/hooks/useWarrantyInventory';
+import { WarrantyNoteDialog } from '@/components/import/WarrantyNoteDialog';
 
 export default function ImportHistoryPage() {
   const navigate = useNavigate();
@@ -74,6 +75,9 @@ export default function ImportHistoryPage() {
   
   // Track products marked for warranty (for instant UI update)
   const [warrantyMarkedIds, setWarrantyMarkedIds] = useState<Set<string>>(new Set());
+  
+  // Warranty note dialog state
+  const [warrantyProduct, setWarrantyProduct] = useState<Product | null>(null);
 
   // Dialog states for edit and return
   const [editReceipt, setEditReceipt] = useState<ImportReceipt | null>(null);
@@ -207,6 +211,31 @@ export default function ImportHistoryPage() {
       return;
     }
     navigate(`/returns?type=import&productId=${product.id}`);
+  };
+
+  const handleWarrantyConfirm = (note: string) => {
+    if (!warrantyProduct) return;
+    
+    setWarrantyMarkedIds(prev => new Set(prev).add(warrantyProduct.id));
+    markWarranty.mutate({ 
+      productId: warrantyProduct.id, 
+      warrantyNote: note 
+    }, {
+      onSuccess: () => {
+        setWarrantyProduct(null);
+        // Navigate to warranty tab
+        navigate('/inventory?tab=warranty');
+      },
+      onError: () => {
+        // Remove from marked IDs if failed
+        setWarrantyMarkedIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(warrantyProduct.id);
+          return newSet;
+        });
+        setWarrantyProduct(null);
+      }
+    });
   };
 
   const clearFilters = () => {
@@ -709,10 +738,7 @@ export default function ImportHistoryPage() {
                                 <Button 
                                   variant="outline" 
                                   size="sm"
-                                  onClick={() => {
-                                    setWarrantyMarkedIds(prev => new Set(prev).add(product.id));
-                                    markWarranty.mutate(product.id);
-                                  }}
+                                  onClick={() => setWarrantyProduct(product)}
                                   disabled={markWarranty.isPending}
                                   className="h-7 text-xs gap-1"
                                   title="Chuyển sang bảo hành"
@@ -1054,6 +1080,15 @@ export default function ImportHistoryPage() {
           imei={deleteProduct.imei}
         />
       )}
+
+      {/* Warranty Note Dialog */}
+      <WarrantyNoteDialog
+        open={!!warrantyProduct}
+        onOpenChange={(open) => !open && setWarrantyProduct(null)}
+        onConfirm={handleWarrantyConfirm}
+        productName={warrantyProduct?.name}
+        isLoading={markWarranty.isPending}
+      />
     </MainLayout>
   );
 }

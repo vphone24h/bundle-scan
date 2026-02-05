@@ -5,6 +5,11 @@ import { useBranchFilter } from './useBranchFilter';
 import { InventoryItem, ProductDetail } from './useInventory';
 import { toast } from '@/hooks/use-toast';
 
+// Extended ProductDetail with warranty note
+export interface WarrantyProductDetail extends ProductDetail {
+  warrantyNote: string | null;
+}
+
 // Process products into inventory items for warranty view
 function processProductsToWarrantyInventory(products: any[]): InventoryItem[] {
   const inventoryMap = new Map<string, InventoryItem>();
@@ -21,7 +26,7 @@ function processProductsToWarrantyInventory(products: any[]): InventoryItem[] {
     const key = `${product.name}|${product.sku}|${product.branch_id || 'no-branch'}`;
     const existing = inventoryMap.get(key);
 
-    const productDetail: ProductDetail = {
+    const productDetail: ProductDetail & { warrantyNote: string | null } = {
       id: product.id,
       name: product.name,
       sku: product.sku,
@@ -36,6 +41,7 @@ function processProductsToWarrantyInventory(products: any[]): InventoryItem[] {
       quantity: product.quantity || 1,
       totalImportCost: product.total_import_cost || product.import_price,
       note: product.note || null,
+      warrantyNote: product.warranty_note || null,
     };
 
     if (existing) {
@@ -116,7 +122,7 @@ export function useWarrantyInventory() {
         .select(`
           id, name, sku, imei, import_price, import_date, 
           supplier_id, branch_id, category_id, status, 
-          quantity, total_import_cost, note,
+          quantity, total_import_cost, note, warranty_note,
           categories(name),
           suppliers(name),
           branches(name)
@@ -145,10 +151,13 @@ export function useMarkProductWarranty() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (productId: string) => {
+    mutationFn: async ({ productId, warrantyNote }: { productId: string; warrantyNote: string }) => {
       const { error } = await supabase
         .from('products')
-        .update({ status: 'warranty' as any })
+        .update({ 
+          status: 'warranty' as any,
+          warranty_note: warrantyNote || null,
+        })
         .eq('id', productId);
 
       if (error) throw error;
