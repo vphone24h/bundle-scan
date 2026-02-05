@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { formatNumberWithSpaces, parseFormattedNumber, formatCurrencyWithSpaces } from '@/lib/formatNumber';
 import { Plus, Trash2, Loader2, RotateCcw, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -317,8 +317,8 @@ export function ReceiptReturnDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <RotateCcw className="h-5 w-5" />
             Trả hàng - Phiếu {receipt.code}
@@ -342,8 +342,8 @@ export function ReceiptReturnDialog({
             <p className="text-sm mt-1">Tất cả sản phẩm trong phiếu đã được trả trước đó</p>
           </div>
         ) : (
-          <ScrollArea className="flex-1 pr-4">
-            <div className="space-y-4">
+          <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6">
+            <div className="space-y-4 pb-4">
               {/* Items to return */}
               <Card>
                 <CardHeader className="py-3">
@@ -550,7 +550,7 @@ export function ReceiptReturnDialog({
                 </CardContent>
               </Card>
             </div>
-          </ScrollArea>
+          </div>
         )}
 
         <DialogFooter className="pt-4 border-t">
