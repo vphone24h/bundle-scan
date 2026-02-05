@@ -4,12 +4,23 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import { CustomerDebtTable } from '@/components/debt/CustomerDebtTable';
 import { SupplierDebtTable } from '@/components/debt/SupplierDebtTable';
-import { Users, Truck } from 'lucide-react';
+import { useCustomerDebts, useSupplierDebts } from '@/hooks/useDebt';
+import { formatNumber } from '@/lib/formatNumber';
+import { Users, Truck, TrendingUp, TrendingDown } from 'lucide-react';
 
 export default function DebtPage() {
   const [showSettled, setShowSettled] = useState(false);
+  
+  // Fetch debt data for summary
+  const { data: customerDebts } = useCustomerDebts(false);
+  const { data: supplierDebts } = useSupplierDebts(false);
+  
+  // Calculate totals
+  const totalCustomerDebt = customerDebts?.reduce((sum, d) => sum + d.remaining_amount, 0) || 0;
+  const totalSupplierDebt = supplierDebts?.reduce((sum, d) => sum + d.remaining_amount, 0) || 0;
 
   return (
     <MainLayout>
@@ -19,6 +30,37 @@ export default function DebtPage() {
       />
 
       <div className="space-y-4">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="border-green-200 bg-green-50/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                </div>
+                <span className="text-sm text-muted-foreground">Khách nợ mình</span>
+              </div>
+              <p className="text-lg sm:text-xl font-bold text-green-600">
+                {formatNumber(totalCustomerDebt)}đ
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-red-200 bg-red-50/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
+                  <TrendingDown className="h-4 w-4 text-red-600" />
+                </div>
+                <span className="text-sm text-muted-foreground">Mình nợ NCC</span>
+              </div>
+              <p className="text-lg sm:text-xl font-bold text-destructive">
+                {formatNumber(totalSupplierDebt)}đ
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Filter */}
         <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-lg">
           <Checkbox
