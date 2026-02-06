@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,11 +30,12 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { Users, DollarSign, Target, Award, Loader2, Download } from 'lucide-react';
+import { Users, DollarSign, Target, Award, Loader2, Download, ArrowUpDown } from 'lucide-react';
 import { format, startOfMonth, subDays, startOfWeek, subMonths } from 'date-fns';
-import { useStaffWithKPI } from '@/hooks/useStaffKPI';
+import { useStaffWithKPI, type StaffWithKPI } from '@/hooks/useStaffKPI';
 import { formatCurrency } from '@/lib/mockData';
-import { exportToExcel, formatCurrencyForExcel } from '@/lib/exportExcel';
+import { exportToExcel } from '@/lib/exportExcel';
+import { StaffDetailDialog } from './StaffDetailDialog';
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Quản lý',
@@ -50,14 +51,49 @@ const timePresets = [
   { label: 'Tất cả', value: 'all_time' },
 ];
 
+type SortMode = 'revenue' | 'orders' | 'performance' | 'kpi_lowest';
+
+const sortOptions: { label: string; value: SortMode }[] = [
+  { label: 'Doanh thu cao nhất', value: 'revenue' },
+  { label: 'Nhiều đơn nhất', value: 'orders' },
+  { label: 'Hiệu suất cao nhất', value: 'performance' },
+  { label: 'KPI thấp nhất', value: 'kpi_lowest' },
+];
+
+function sortStaff(list: StaffWithKPI[], mode: SortMode): StaffWithKPI[] {
+  return [...list].sort((a, b) => {
+    switch (mode) {
+      case 'revenue':
+        return (b.stats?.total_revenue || 0) - (a.stats?.total_revenue || 0);
+      case 'orders':
+        return (b.stats?.total_orders || 0) - (a.stats?.total_orders || 0);
+      case 'performance':
+        return (b.stats?.conversion_rate || 0) - (a.stats?.conversion_rate || 0);
+      case 'kpi_lowest':
+        // Staff without KPI at bottom, then ascending by achievement
+        if (!a.kpi_setting && !b.kpi_setting) return 0;
+        if (!a.kpi_setting) return 1;
+        if (!b.kpi_setting) return -1;
+        return a.achievement_percentage - b.achievement_percentage;
+      default:
+        return 0;
+    }
+  });
+}
+
 export function StaffReport() {
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [sortMode, setSortMode] = useState<SortMode>('revenue');
+  const [selectedStaff, setSelectedStaff] = useState<StaffWithKPI | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const start = new Date(startDate);
   const end = new Date(endDate);
 
   const { data: staffWithKPI = [], isLoading } = useStaffWithKPI(start, end);
+
+  const sortedStaff = useMemo(() => sortStaff(staffWithKPI, sortMode), [staffWithKPI, sortMode]);
 
   const handleTimePreset = (preset: string) => {
     const now = new Date();
@@ -74,13 +110,17 @@ export function StaffReport() {
     setEndDate(format(e, 'yyyy-MM-dd'));
   };
 
+  const handleStaffClick = (staff: StaffWithKPI) => {
+    setSelectedStaff(staff);
+    setDetailOpen(true);
+  };
+
   const totalRevenue = staffWithKPI.reduce((sum, s) => sum + (s.stats?.total_revenue || 0), 0);
   const totalOrders = staffWithKPI.reduce((sum, s) => sum + (s.stats?.total_orders || 0), 0);
-  const avgAchievement = staffWithKPI.length > 0 ? staffWithKPI.reduce((sum, s) => sum + s.achievement_percentage, 0) / staffWithKPI.length : 0;
-  const topPerformer = staffWithKPI[0];
+  const topPerformer = sortedStaff[0];
 
   // Chart data
-  const chartData = staffWithKPI
+  const chartData = sortedStaff
     .filter(s => s.stats && (s.stats.total_revenue > 0 || s.stats.total_orders > 0))
     .map(s => ({
       name: s.display_name.length > 12 ? s.display_name.slice(0, 12) + '...' : s.display_name,
@@ -89,7 +129,7 @@ export function StaffReport() {
     }));
 
   const handleExportExcel = () => {
-    if (!staffWithKPI.length) return;
+    if (!sortedStaff.length) return;
     exportToExcel({
       filename: `BC_Nhan_vien_${startDate}_${endDate}`,
       sheetName: 'Nhân viên',
@@ -104,7 +144,7 @@ export function StaffReport() {
         { header: 'KH mới', key: 'newCustomers', width: 10, isNumeric: true },
         { header: 'KPI (%)', key: 'kpiPercent', width: 10 },
       ],
-      data: staffWithKPI.map((s, idx) => ({
+      data: sortedStaff.map((s, idx) => ({
         stt: idx + 1,
         display_name: s.display_name,
         roleLabel: ROLE_LABELS[s.user_role] || s.user_role,
@@ -134,7 +174,7 @@ export function StaffReport() {
               ))}
             </div>
             <div className="flex-1" />
-            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!staffWithKPI.length}>
+            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!sortedStaff.length}>
               <Download className="h-4 w-4 mr-1" />
               Xuất Excel
             </Button>
@@ -142,6 +182,28 @@ export function StaffReport() {
               <div><Label>Từ ngày</Label><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" /></div>
               <div><Label>Đến ngày</Label><Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" /></div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sort Options */}
+      <Card>
+        <CardContent className="pt-4 pb-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <ArrowUpDown className="h-4 w-4" />
+              Sắp xếp:
+            </div>
+            {sortOptions.map((opt) => (
+              <Button
+                key={opt.value}
+                variant={sortMode === opt.value ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSortMode(opt.value)}
+              >
+                {opt.label}
+              </Button>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -207,9 +269,10 @@ export function StaffReport() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Chi tiết nhân viên</CardTitle>
+          <p className="text-xs text-muted-foreground">Click vào hàng để xem chi tiết đơn hàng, lịch sử làm việc và KPI</p>
         </CardHeader>
         <CardContent className="p-0">
-          {staffWithKPI.length === 0 ? (
+          {sortedStaff.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">Chưa có dữ liệu</div>
           ) : (
             <div className="overflow-auto">
@@ -226,8 +289,12 @@ export function StaffReport() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {staffWithKPI.map((staff, idx) => (
-                    <TableRow key={staff.user_id}>
+                  {sortedStaff.map((staff, idx) => (
+                    <TableRow
+                      key={staff.user_id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleStaffClick(staff)}
+                    >
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {idx === 0 && <span className="text-lg">🥇</span>}
@@ -278,6 +345,15 @@ export function StaffReport() {
           )}
         </CardContent>
       </Card>
+
+      {/* Staff Detail Dialog */}
+      <StaffDetailDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        staff={selectedStaff}
+        startDate={startDate}
+        endDate={endDate}
+      />
     </div>
   );
 }
