@@ -50,7 +50,7 @@ export function ProductSalesStockReport() {
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(today);
   const [branchId, setBranchId] = useState('_all_');
-  const [sort, setSort] = useState<'best' | 'worst' | 'stock_high' | 'stock_low' | 'profit'>('best');
+  const [sort, setSort] = useState<'best' | 'worst' | 'stock_high' | 'stock_low' | 'profit' | 'category'>('best');
   const [search, setSearch] = useState('');
 
   const { data: branches } = useBranches();
@@ -155,6 +155,7 @@ export function ProductSalesStockReport() {
                   <SelectItem value="profit">Lợi nhuận cao</SelectItem>
                   <SelectItem value="stock_high">Tồn kho nhiều</SelectItem>
                   <SelectItem value="stock_low">Tồn kho ít</SelectItem>
+                  <SelectItem value="category">Theo danh mục</SelectItem>
                 </SelectContent>
               </Select>
             </div>
