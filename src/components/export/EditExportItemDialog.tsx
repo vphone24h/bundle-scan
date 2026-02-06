@@ -155,6 +155,7 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p><strong>Tên, SKU, IMEI, Thư mục</strong> thuộc thông tin nhập hàng, không thể sửa tại đây.</p>
                   <p><strong>Giá bán</strong> không thể sửa. Nếu sai giá, hãy điều chỉnh dòng tiền trong <strong>Sổ quỹ</strong> hoặc thực hiện <strong>Trả hàng</strong> rồi xuất lại.</p>
+                  <p>Nếu <strong>tên khách hàng</strong> hoặc <strong>SĐT</strong> sai, hãy sửa lại trong tab <strong>Khách hàng</strong>.</p>
                 </div>
               </div>
             </div>
