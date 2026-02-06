@@ -111,8 +111,11 @@ export const ACTION_LABELS: Record<string, { label: string; color: string; criti
   EDIT_CASH_BOOK: { label: 'Sửa sổ quỹ', color: 'bg-orange-600', critical: true },
   TRANSFER_FUNDS: { label: 'Chuyển tiền nội bộ', color: 'bg-indigo-500' },
   
-  // Ngưng test / xóa dữ liệu
+  // Ngưng test / xóa dữ liệu / chế độ test
   DELETE_ALL_WAREHOUSE_DATA: { label: 'Ngưng Test', color: 'bg-gray-600', critical: true },
+  ENABLE_TEST_MODE: { label: 'Bật chế độ Test', color: 'bg-yellow-500' },
+  DISABLE_TEST_MODE: { label: 'Tắt chế độ Test', color: 'bg-gray-500' },
+  SHOW_ALL_DATA: { label: 'Hiện dữ liệu', color: 'bg-teal-500' },
 };
 
 // Tên bảng dữ liệu
