@@ -87,7 +87,8 @@ export const ACTION_LABELS: Record<string, { label: string; color: string; criti
   // Thao tác nhập/xuất
   IMPORT: { label: 'Nhập hàng', color: 'bg-emerald-500' },
   EXPORT: { label: 'Xuất hàng', color: 'bg-blue-500' },
-  RETURN: { label: 'Trả hàng', color: 'bg-red-500' },
+  RETURN: { label: 'Trả hàng bán', color: 'bg-red-500' },
+  IMPORT_RETURN: { label: 'Trả hàng nhập', color: 'bg-orange-500' },
   PAYMENT: { label: 'Thanh toán', color: 'bg-cyan-500' },
   
   // Thao tác kiểm kho

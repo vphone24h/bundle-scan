@@ -756,7 +756,7 @@ export function useReturnImportReceipt() {
       // Audit log
       await supabase.from('audit_logs').insert([{
         user_id: user.id,
-        action_type: 'create',
+        action_type: 'IMPORT_RETURN',
         table_name: 'import_returns',
         record_id: returnIds[0] || null,
         branch_id: receipt.branch_id,
