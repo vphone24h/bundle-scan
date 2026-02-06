@@ -514,14 +514,15 @@ export function useUpdateImportReceipt() {
 
       // Cập nhật nhà cung cấp nếu có thay đổi
       if (newSupplierId !== undefined) {
-        // Handle empty string or null - both should set supplier_id to null
-        const supplierIdToSet = newSupplierId && newSupplierId.length > 0 ? newSupplierId : null;
-        
+        // Normalize value coming from UI/Select (can be null/''/'undefined')
+        const normalized =
+          newSupplierId === 'undefined' || newSupplierId === '' ? null : newSupplierId;
+
         const { error: receiptError } = await supabase
           .from('import_receipts')
-          .update({ supplier_id: supplierIdToSet })
+          .update({ supplier_id: normalized })
           .eq('id', receiptId);
-        
+
         if (receiptError) throw receiptError;
       }
 

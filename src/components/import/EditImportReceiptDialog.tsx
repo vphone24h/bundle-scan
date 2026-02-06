@@ -34,13 +34,13 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
   const { data: details, isLoading: detailsLoading } = useImportReceiptDetails(receipt?.id || null);
   const updateReceipt = useUpdateImportReceipt();
 
-  const [supplierId, setSupplierId] = useState<string>('');
+  const [supplierId, setSupplierId] = useState<string>('_none_');
   const [productEdits, setProductEdits] = useState<ProductEdit[]>([]);
 
   // Load data when dialog opens
   useEffect(() => {
     if (receipt && details?.productImports) {
-      setSupplierId(receipt.supplier_id || '');
+      setSupplierId(receipt.supplier_id ?? '_none_');
       setProductEdits(
         details.productImports.map((item: any) => ({
           productId: item.product_id,
@@ -86,9 +86,9 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
 
     try {
       // Only pass supplierId if it's a valid UUID (not empty string)
-      const validSupplierId = supplierId && supplierId.length > 0 ? supplierId : null;
+      const validSupplierId = supplierId === '_none_' ? null : supplierId;
       const originalSupplierId = receipt.supplier_id || null;
-      
+
       await updateReceipt.mutateAsync({
         receiptId: receipt.id,
         productUpdates,
@@ -133,6 +133,7 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
                   <SelectValue placeholder="Chọn nhà cung cấp" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
+                  <SelectItem value="_none_">Không có</SelectItem>
                   {suppliers?.map((sup) => (
                     <SelectItem key={sup.id} value={sup.id}>
                       {sup.name}
