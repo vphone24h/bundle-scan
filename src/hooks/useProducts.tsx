@@ -192,3 +192,38 @@ export function useCheckIMEI() {
     },
   });
 }
+
+// Hook để kiểm tra nhiều IMEI cùng lúc (batch check) - tối ưu cho nhập Excel
+export function useBatchCheckIMEI() {
+  return useMutation({
+    mutationFn: async (imeis: string[]): Promise<Set<string>> => {
+      if (imeis.length === 0) return new Set();
+      
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
+      // Chia thành các batch nhỏ để tránh query quá lớn (Supabase giới hạn)
+      const BATCH_SIZE = 100;
+      const existingIMEIs = new Set<string>();
+      
+      for (let i = 0; i < imeis.length; i += BATCH_SIZE) {
+        const batch = imeis.slice(i, i + BATCH_SIZE);
+        
+        const { data, error } = await supabase
+          .from('products')
+          .select('imei')
+          .in('imei', batch)
+          .eq('tenant_id', tenantId)
+          .in('status', ['in_stock', 'sold', 'returned']);
+
+        if (error) throw error;
+        
+        data?.forEach(item => {
+          if (item.imei) existingIMEIs.add(item.imei);
+        });
+      }
+      
+      return existingIMEIs;
+    },
+  });
+}

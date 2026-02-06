@@ -25,6 +25,7 @@ interface ExcelImportDialogProps {
   branches?: { id: string; name: string }[];
   onImport: (items: ImportReceiptItem[], supplierName?: string, branchName?: string) => void;
   checkIMEI: (imei: string) => Promise<any>;
+  batchCheckIMEI?: (imeis: string[]) => Promise<Set<string>>;
 }
 
 interface ParsedRow {
@@ -51,10 +52,12 @@ export function ExcelImportDialog({
   branches = [],
   onImport,
   checkIMEI,
+  batchCheckIMEI,
 }: ExcelImportDialogProps) {
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [validationProgress, setValidationProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,35 +144,88 @@ export function ExcelImportDialog({
 
       setParsedRows(parsed);
 
-      // Validate IMEIs against database
-      setIsValidating(true);
+      // Validate IMEIs against database using batch check for better performance
       const imeiRows = parsed.filter(row => row.imei);
-      const checkedIMEIs = new Set<string>();
-      
-      for (const row of imeiRows) {
-        if (row.imei) {
-          // Check for duplicates in the same file
-          if (checkedIMEIs.has(row.imei)) {
-            row.isValid = false;
-            row.errors.push(`IMEI "${row.imei}" bị trùng trong file`);
-          } else {
-            checkedIMEIs.add(row.imei);
-            
-            // Check against database
-            try {
-              const existing = await checkIMEI(row.imei);
-              if (existing) {
-                row.isValid = false;
-                row.errors.push(`IMEI "${row.imei}" đã tồn tại trong kho`);
-              }
-            } catch (error) {
-              console.error('Error checking IMEI:', error);
+      if (imeiRows.length > 0) {
+        setIsValidating(true);
+        setValidationProgress(0);
+        
+        // Check for duplicates within the file first
+        const checkedIMEIs = new Set<string>();
+        const duplicateInFile = new Set<string>();
+        
+        imeiRows.forEach(row => {
+          if (row.imei) {
+            if (checkedIMEIs.has(row.imei)) {
+              duplicateInFile.add(row.imei);
+            } else {
+              checkedIMEIs.add(row.imei);
             }
           }
+        });
+        
+        // Mark duplicates within file
+        imeiRows.forEach(row => {
+          if (row.imei && duplicateInFile.has(row.imei)) {
+            row.isValid = false;
+            row.errors.push(`IMEI "${row.imei}" bị trùng trong file`);
+          }
+        });
+        
+        setValidationProgress(30);
+        
+        // Get unique IMEIs to check against database
+        const uniqueIMEIs = Array.from(checkedIMEIs);
+        
+        try {
+          let existingIMEIs: Set<string>;
+          
+          // Use batch check if available (much faster for large files)
+          if (batchCheckIMEI) {
+            existingIMEIs = await batchCheckIMEI(uniqueIMEIs);
+          } else {
+            // Fallback to individual checks (slower but still works)
+            existingIMEIs = new Set<string>();
+            const CONCURRENT_LIMIT = 10;
+            
+            for (let i = 0; i < uniqueIMEIs.length; i += CONCURRENT_LIMIT) {
+              const batch = uniqueIMEIs.slice(i, i + CONCURRENT_LIMIT);
+              const results = await Promise.all(
+                batch.map(async (imei) => {
+                  const existing = await checkIMEI(imei);
+                  return existing ? imei : null;
+                })
+              );
+              results.forEach(imei => {
+                if (imei) existingIMEIs.add(imei);
+              });
+              setValidationProgress(30 + Math.round((i / uniqueIMEIs.length) * 60));
+            }
+          }
+          
+          setValidationProgress(90);
+          
+          // Mark existing IMEIs as invalid
+          imeiRows.forEach(row => {
+            if (row.imei && existingIMEIs.has(row.imei) && !row.errors.some(e => e.includes('bị trùng trong file'))) {
+              row.isValid = false;
+              row.errors.push(`IMEI "${row.imei}" đã tồn tại trong kho`);
+            }
+          });
+          
+        } catch (error) {
+          console.error('Error batch checking IMEIs:', error);
+          toast({
+            title: 'Lỗi kiểm tra IMEI',
+            description: 'Không thể kiểm tra IMEI trùng. Vui lòng thử lại.',
+            variant: 'destructive',
+          });
         }
+        
+        setValidationProgress(100);
+        setIsValidating(false);
+        setParsedRows([...parsed]); // Force re-render
       }
-      setIsValidating(false);
-      setParsedRows([...parsed]); // Force re-render
 
     } catch (error) {
       console.error('Error parsing Excel:', error);
@@ -261,9 +317,19 @@ export function ExcelImportDialog({
           )}
 
           {isValidating && (
-            <div className="flex items-center justify-center py-4 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Đang kiểm tra IMEI trùng...
+            <div className="flex flex-col items-center justify-center py-4 text-muted-foreground gap-2">
+              <div className="flex items-center">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Đang kiểm tra IMEI trùng... {validationProgress > 0 && `(${validationProgress}%)`}
+              </div>
+              {validationProgress > 0 && (
+                <div className="w-full max-w-xs bg-muted rounded-full h-2">
+                  <div 
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${validationProgress}%` }}
+                  />
+                </div>
+              )}
             </div>
           )}
 

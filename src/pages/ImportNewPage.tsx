@@ -7,7 +7,7 @@ import { ExcelImportDialog } from '@/components/import/ExcelImportDialog';
 import { ProductNamingTip } from '@/components/import/ProductNamingTip';
 import { useCategories, useCreateCategory } from '@/hooks/useCategories';
 import { useSuppliers, useCreateSupplier } from '@/hooks/useSuppliers';
-import { useProducts, useCheckIMEI } from '@/hooks/useProducts';
+import { useProducts, useCheckIMEI, useBatchCheckIMEI } from '@/hooks/useProducts';
 import { useCreateImportReceipt } from '@/hooks/useImportReceipts';
 import { useBranches } from '@/hooks/useBranches';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
@@ -47,6 +47,7 @@ export default function ImportNewPage() {
   const createSupplier = useCreateSupplier();
   const createImportReceipt = useCreateImportReceipt();
   const checkIMEI = useCheckIMEI();
+  const batchCheckIMEI = useBatchCheckIMEI();
 
   // Branch state - default to first branch
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
@@ -606,6 +607,13 @@ export default function ImportNewPage() {
             return await checkIMEI.mutateAsync(imei);
           } catch {
             return null;
+          }
+        }}
+        batchCheckIMEI={async (imeis: string[]) => {
+          try {
+            return await batchCheckIMEI.mutateAsync(imeis);
+          } catch {
+            return new Set();
           }
         }}
       />
