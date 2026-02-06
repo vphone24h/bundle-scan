@@ -69,7 +69,7 @@ export function useProductReport(filters?: {
       // Get current stock
       let stockQuery = supabase
         .from('products')
-        .select('name, sku, quantity, import_price, branch_id, category_id, branches(name), categories(name)')
+        .select('name, sku, quantity, import_price, total_import_cost, branch_id, category_id, branches(name), categories(name)')
         .eq('status', 'in_stock');
 
       if (effectiveBranchId) {
@@ -106,11 +106,16 @@ export function useProductReport(filters?: {
         productMap[key].totalProfit += (salePrice - importPrice);
       });
 
-      // Add stock info
+      // Add stock info - use total_import_cost for accurate valuation
       const stockMap: Record<string, number> = {};
+      const stockValueMap: Record<string, number> = {};
       stockItems?.forEach(item => {
         const key = `${item.name}||${item.sku}||${item.branch_id || ''}`;
-        stockMap[key] = (stockMap[key] || 0) + (item.quantity || 1);
+        const qty = item.quantity || 1;
+        stockMap[key] = (stockMap[key] || 0) + qty;
+        // Use total_import_cost (accurate for averaged prices) or fallback to import_price * qty
+        const itemCost = Number(item.total_import_cost || item.import_price) || 0;
+        stockValueMap[key] = (stockValueMap[key] || 0) + itemCost;
 
         // Also ensure products with stock but no sales appear
         if (!productMap[key]) {
@@ -123,8 +128,8 @@ export function useProductReport(filters?: {
             quantitySold: 0,
             totalRevenue: 0,
             totalProfit: 0,
-            currentStock: item.quantity || 1,
-            importPrice: Number(item.import_price),
+            currentStock: qty,
+            importPrice: qty > 0 ? itemCost / qty : Number(item.import_price),
           };
         }
       });
@@ -132,6 +137,10 @@ export function useProductReport(filters?: {
       Object.keys(productMap).forEach(key => {
         if (stockMap[key]) {
           productMap[key].currentStock = stockMap[key];
+          // Update importPrice to weighted average from actual stock data
+          if (stockValueMap[key] && stockMap[key] > 0) {
+            productMap[key].importPrice = stockValueMap[key] / stockMap[key];
+          }
         }
       });
 
@@ -147,12 +156,16 @@ export function useProductReport(filters?: {
         default: items.sort((a, b) => b.quantitySold - a.quantitySold); break;
       }
 
+      // Calculate totalStockValue from actual stock values (not currentStock * importPrice)
+      // to match inventory page's calculation
+      const totalStockValue = Object.values(stockValueMap).reduce((sum, val) => sum + val, 0);
+
       const summary = {
         totalProducts: items.length,
         totalSold: items.reduce((s, i) => s + i.quantitySold, 0),
         totalRevenue: items.reduce((s, i) => s + i.totalRevenue, 0),
         totalProfit: items.reduce((s, i) => s + i.totalProfit, 0),
-        totalStockValue: items.reduce((s, i) => s + (i.currentStock * i.importPrice), 0),
+        totalStockValue,
       };
 
       return { items, summary };
