@@ -42,6 +42,7 @@ const timePresets = [
   { label: 'Tuần này', value: 'this_week' },
   { label: 'Tháng này', value: 'this_month' },
   { label: 'Tháng trước', value: 'last_month' },
+  { label: 'Tất cả', value: 'all_time' },
 ];
 
 export function SupplierReturnReport() {
@@ -77,6 +78,7 @@ export function SupplierReturnReport() {
       case 'this_week': start = startOfWeek(now, { weekStartsOn: 1 }); break;
       case 'this_month': start = startOfMonth(now); break;
       case 'last_month': start = startOfMonth(subMonths(now, 1)); end = subDays(startOfMonth(now), 1); break;
+      case 'all_time': start = new Date('2020-01-01'); break;
       default: return;
     }
     setStartDate(format(start, 'yyyy-MM-dd'));
