@@ -97,7 +97,7 @@ export function AuditLogFiltersComponent({ filters, onFiltersChange }: AuditLogF
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Tìm theo IMEI, tên sản phẩm, mã phiếu, nội dung..."
+            placeholder="Tìm theo mã thao tác, IMEI, tên sản phẩm, mã phiếu, nội dung..."
             value={filters.search}
             onChange={(e) => updateFilter('search', e.target.value)}
             className="pl-9"

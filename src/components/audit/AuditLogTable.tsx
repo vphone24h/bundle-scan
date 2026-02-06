@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Clock, User, Eye, Building2, ArrowRight } from 'lucide-react';
+import { Clock, User, Eye, Building2, ArrowRight, Copy } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { AuditLog, ACTION_LABELS, TABLE_LABELS, ACTION_GROUPS, ActionGroup } fro
 import { usePermissions } from '@/hooks/usePermissions';
 import { AuditLogDetailDialog } from './AuditLogDetailDialog';
 import { History } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AuditLogTableProps {
   logs: AuditLog[];
@@ -138,15 +139,16 @@ export function AuditLogTable({ logs, isLoading, profileMap, roleMap, branchMap 
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="whitespace-nowrap min-w-[120px]">Thời gian</TableHead>
-                  <TableHead className="whitespace-nowrap hidden sm:table-cell min-w-[140px]">Nhân viên</TableHead>
-                  <TableHead className="whitespace-nowrap hidden lg:table-cell">Chi nhánh</TableHead>
-                  <TableHead className="whitespace-nowrap hidden md:table-cell">Nhóm</TableHead>
-                  <TableHead className="whitespace-nowrap">Hành động</TableHead>
-                  <TableHead className="whitespace-nowrap hidden lg:table-cell">Đối tượng</TableHead>
-                  <TableHead className="whitespace-nowrap hidden xl:table-cell">Chi tiết</TableHead>
-                  <TableHead className="w-[60px]"></TableHead>
-                </TableRow>
+                   <TableHead className="whitespace-nowrap min-w-[80px]">Mã TT</TableHead>
+                   <TableHead className="whitespace-nowrap min-w-[120px]">Thời gian</TableHead>
+                   <TableHead className="whitespace-nowrap hidden sm:table-cell min-w-[140px]">Nhân viên</TableHead>
+                   <TableHead className="whitespace-nowrap hidden lg:table-cell">Chi nhánh</TableHead>
+                   <TableHead className="whitespace-nowrap hidden md:table-cell">Nhóm</TableHead>
+                   <TableHead className="whitespace-nowrap">Hành động</TableHead>
+                   <TableHead className="whitespace-nowrap hidden lg:table-cell">Đối tượng</TableHead>
+                   <TableHead className="whitespace-nowrap hidden xl:table-cell">Chi tiết</TableHead>
+                   <TableHead className="w-[60px]"></TableHead>
+                 </TableRow>
               </TableHeader>
               <TableBody>
                 {logs.map((log) => {
@@ -167,6 +169,23 @@ export function AuditLogTable({ logs, isLoading, profileMap, roleMap, branchMap 
                       }`}
                       onClick={() => setSelectedLog(log)}
                     >
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <span className="font-mono text-[10px] sm:text-xs text-muted-foreground">
+                            #{log.id.slice(0, 8).toUpperCase()}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(log.id);
+                              toast.success('Đã sao chép mã thao tác');
+                            }}
+                            className="p-0.5 hover:bg-muted rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Copy className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 text-xs sm:text-sm">
                           <Clock className="h-3 w-3 text-muted-foreground hidden sm:block" />
