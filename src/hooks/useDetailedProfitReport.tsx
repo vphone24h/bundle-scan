@@ -41,8 +41,20 @@ export function useDetailedProfitReport(filters?: {
         };
       }
 
-      const startDate = filters?.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
-      const endDate = filters?.endDate || new Date().toISOString().split('T')[0];
+      // Use local timezone for date filtering (same as Dashboard)
+      const getLocalDateString = (date: Date) => {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      };
+      
+      const now = new Date();
+      const startDate = filters?.startDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const endDate = filters?.endDate || getLocalDateString(now);
+      
+      // Create proper local timezone boundaries for queries
+      const startDateTime = new Date(startDate + 'T00:00:00');
+      const endDateTime = new Date(endDate + 'T23:59:59.999');
+      const startISO = startDateTime.toISOString();
+      const endISO = endDateTime.toISOString();
 
       // 1. Lấy dữ liệu bán hàng từ export_receipt_items
       let soldQuery = supabase
@@ -70,8 +82,8 @@ export function useDetailedProfitReport(filters?: {
         `)
         .in('status', ['sold', 'returned'])
         .neq('export_receipts.status', 'cancelled')
-        .gte('export_receipts.export_date', startDate)
-        .lte('export_receipts.export_date', endDate + 'T23:59:59');
+        .gte('export_receipts.export_date', startISO)
+        .lte('export_receipts.export_date', endISO);
 
       if (filters?.branchId) {
         soldQuery = soldQuery.eq('export_receipts.branch_id', filters.branchId);
@@ -108,8 +120,8 @@ export function useDetailedProfitReport(filters?: {
           customers(name)
         `)
         .eq('fee_type', 'none')
-        .gte('return_date', startDate)
-        .lte('return_date', endDate + 'T23:59:59');
+        .gte('return_date', startISO)
+        .lte('return_date', endISO);
 
       if (filters?.branchId) {
         returnQuery = returnQuery.eq('branch_id', filters.branchId);
