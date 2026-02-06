@@ -119,6 +119,7 @@ export const ACTION_LABELS: Record<string, { label: string; color: string; criti
   
   // Chuyển hàng giữa chi nhánh
   TRANSFER_STOCK: { label: 'Chuyển hàng', color: 'bg-violet-500' },
+  RECEIVE_STOCK: { label: 'Nhận hàng', color: 'bg-teal-500' },
   APPROVE_TRANSFER: { label: 'Duyệt chuyển hàng', color: 'bg-green-500' },
   REJECT_TRANSFER: { label: 'Từ chối chuyển', color: 'bg-red-500' },
 };
