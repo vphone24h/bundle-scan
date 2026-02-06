@@ -47,7 +47,7 @@ export function useStaffExportReceipts(userId: string | null, startDate: string,
 
       const { data, error } = await supabase
         .from('export_receipts')
-        .select('id, receipt_code, export_date, total_amount, status, customer_id, customers(name)')
+        .select('id, code, export_date, total_amount, status, customer_id, customers(name)')
         .eq('tenant_id', tenantId)
         .eq('created_by', userId)
         .eq('status', 'completed')
@@ -60,7 +60,7 @@ export function useStaffExportReceipts(userId: string | null, startDate: string,
 
       return (data || []).map((r: any) => ({
         id: r.id,
-        receipt_code: r.receipt_code,
+        receipt_code: r.code,
         export_date: r.export_date,
         total_amount: r.total_amount,
         status: r.status,
