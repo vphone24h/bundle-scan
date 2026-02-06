@@ -278,21 +278,48 @@ export default function ImportNewPage() {
     });
   };
 
-  const handleExcelImport = (items: ImportReceiptItem[], supplierName?: string, branchName?: string) => {
+  const handleExcelImport = async (items: ImportReceiptItem[], supplierName?: string, branchName?: string, newSupplierNames?: string[]) => {
+    // Auto-create new suppliers first
+    if (newSupplierNames && newSupplierNames.length > 0) {
+      try {
+        for (const name of newSupplierNames) {
+          await createSupplier.mutateAsync({ name });
+        }
+        toast({
+          title: 'Đã tạo nhà cung cấp mới',
+          description: `Tự động tạo ${newSupplierNames.length} NCC: ${newSupplierNames.join(', ')}`,
+        });
+      } catch (error: any) {
+        console.error('Error creating suppliers:', error);
+        toast({
+          title: 'Lỗi tạo NCC',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    }
+    
     setCart(prev => [...prev, ...items]);
     
     // Auto-select supplier from Excel if not already selected
-    if (supplierName && !selectedSupplierId && suppliers) {
-      const matchedSupplier = suppliers.find(
-        s => s.name.toLowerCase() === supplierName.toLowerCase()
-      );
-      if (matchedSupplier) {
-        setSelectedSupplierId(matchedSupplier.id);
-        toast({
-          title: 'Đã chọn nhà cung cấp từ Excel',
-          description: matchedSupplier.name,
-        });
-      }
+    // Need to re-fetch suppliers after creation, so we wait for the query to update
+    if (supplierName && !selectedSupplierId) {
+      // Set a timeout to allow the suppliers query to update
+      setTimeout(() => {
+        const updatedSuppliers = suppliers;
+        if (updatedSuppliers) {
+          const matchedSupplier = updatedSuppliers.find(
+            s => s.name.toLowerCase() === supplierName.toLowerCase()
+          );
+          if (matchedSupplier) {
+            setSelectedSupplierId(matchedSupplier.id);
+            toast({
+              title: 'Đã chọn nhà cung cấp từ Excel',
+              description: matchedSupplier.name,
+            });
+          }
+        }
+      }, 500);
     }
     
     // Auto-select branch from Excel if provided

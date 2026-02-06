@@ -23,7 +23,7 @@ interface ExcelImportDialogProps {
   categories: { id: string; name: string }[];
   suppliers?: { id: string; name: string }[];
   branches?: { id: string; name: string }[];
-  onImport: (items: ImportReceiptItem[], supplierName?: string, branchName?: string) => void;
+  onImport: (items: ImportReceiptItem[], supplierName?: string, branchName?: string, newSupplierNames?: string[]) => void;
   checkIMEI: (imei: string) => Promise<any>;
   batchCheckIMEI?: (imeis: string[]) => Promise<Set<string>>;
 }
@@ -105,15 +105,7 @@ export function ExcelImportDialog({
           errors.push(`Thư mục "${categoryName}" không tồn tại`);
         }
 
-        // Validate supplier if provided
-        if (supplierName && suppliers.length > 0) {
-          const matchedSupplier = suppliers.find(
-            (s) => s.name.toLowerCase() === supplierName.toLowerCase()
-          );
-          if (!matchedSupplier) {
-            errors.push(`NCC "${supplierName}" không tồn tại`);
-          }
-        }
+        // Note: Supplier validation removed - new suppliers will be auto-created during import
 
         // Validate branch if provided
         if (branchName && branches.length > 0) {
@@ -268,10 +260,18 @@ export function ExcelImportDialog({
     const firstSupplier = validRows.find(r => r.supplierName)?.supplierName;
     const firstBranch = validRows.find(r => r.branchName)?.branchName;
     
-    onImport(items, firstSupplier, firstBranch);
+    // Collect unique supplier names that don't exist in the system
+    const existingSupplierNames = new Set(suppliers?.map(s => s.name.toLowerCase()) || []);
+    const newSupplierNames = [...new Set(
+      validRows
+        .filter(r => r.supplierName && !existingSupplierNames.has(r.supplierName.toLowerCase()))
+        .map(r => r.supplierName!)
+    )];
+    
+    onImport(items, firstSupplier, firstBranch, newSupplierNames);
     toast({
       title: 'Nhập dữ liệu thành công',
-      description: `Đã thêm ${items.length} sản phẩm vào giỏ nhập hàng`,
+      description: `Đã thêm ${items.length} sản phẩm vào giỏ nhập hàng${newSupplierNames.length > 0 ? `. Sẽ tự tạo ${newSupplierNames.length} NCC mới.` : ''}`,
     });
     onOpenChange(false);
     setParsedRows([]);
