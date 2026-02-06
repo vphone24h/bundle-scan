@@ -419,16 +419,16 @@ export function SupplierDetailDialog({ supplier, open, onOpenChange }: SupplierD
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader className="pb-2">
+        <DrawerContent className="max-h-[85vh] flex flex-col">
+          <DrawerHeader className="pb-2 shrink-0">
             <DrawerTitle className="flex items-center gap-2 text-base">
               <Package className="h-4 w-4 text-primary" />
               {supplier.name}
             </DrawerTitle>
           </DrawerHeader>
-          <ScrollArea className="flex-1 px-4 pb-6 max-h-[calc(90vh-80px)]">
+          <div className="flex-1 overflow-y-auto px-4 pb-6">
             {content}
-          </ScrollArea>
+          </div>
         </DrawerContent>
       </Drawer>
     );
