@@ -512,11 +512,14 @@ export function useUpdateImportReceipt() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Cập nhật nhà cung cấp nếu có
+      // Cập nhật nhà cung cấp nếu có thay đổi
       if (newSupplierId !== undefined) {
+        // Handle empty string or null - both should set supplier_id to null
+        const supplierIdToSet = newSupplierId && newSupplierId.length > 0 ? newSupplierId : null;
+        
         const { error: receiptError } = await supabase
           .from('import_receipts')
-          .update({ supplier_id: newSupplierId })
+          .update({ supplier_id: supplierIdToSet })
           .eq('id', receiptId);
         
         if (receiptError) throw receiptError;
@@ -616,10 +619,19 @@ export function useUpdateImportReceipt() {
 
       return { success: true };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['import-receipts'] });
-      queryClient.invalidateQueries({ queryKey: ['import-receipt'] });
+    onSuccess: async () => {
+      // Use refetchType: 'all' to ensure immediate data update
+      await queryClient.invalidateQueries({ 
+        queryKey: ['import-receipts'],
+        refetchType: 'all'
+      });
+      await queryClient.invalidateQueries({ 
+        queryKey: ['import-receipt'],
+        refetchType: 'all'
+      });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['all-products'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
     },

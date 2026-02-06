@@ -85,10 +85,14 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
     }));
 
     try {
+      // Only pass supplierId if it's a valid UUID (not empty string)
+      const validSupplierId = supplierId && supplierId.length > 0 ? supplierId : null;
+      const originalSupplierId = receipt.supplier_id || null;
+      
       await updateReceipt.mutateAsync({
         receiptId: receipt.id,
         productUpdates,
-        newSupplierId: supplierId !== receipt.supplier_id ? supplierId : undefined,
+        newSupplierId: validSupplierId !== originalSupplierId ? validSupplierId : undefined,
       });
 
       toast({
