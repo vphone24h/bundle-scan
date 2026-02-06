@@ -72,8 +72,20 @@ export function useReportStats(filters?: {
         } as ReportStats;
       }
 
-      const startDate = filters?.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
-      const endDate = filters?.endDate || new Date().toISOString().split('T')[0];
+      // Use local timezone for date filtering (same as Dashboard)
+      const getLocalDateString = (date: Date) => {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      };
+      
+      const now = new Date();
+      const startDate = filters?.startDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const endDate = filters?.endDate || getLocalDateString(now);
+      
+      // Create proper local timezone boundaries for queries
+      const startDateTime = new Date(startDate + 'T00:00:00');
+      const endDateTime = new Date(endDate + 'T23:59:59.999');
+      const startISO = startDateTime.toISOString();
+      const endISO = endDateTime.toISOString();
 
       // 1. Lấy dữ liệu phiếu xuất và sản phẩm đã bán (CHỈ status = 'sold')
       let exportQuery = supabase
@@ -97,8 +109,8 @@ export function useReportStats(filters?: {
             amount
           )
         `)
-        .gte('export_date', startDate)
-        .lte('export_date', endDate + 'T23:59:59');
+        .gte('export_date', startISO)
+        .lte('export_date', endISO);
 
       // Apply branch filter (priority: UI filter > user's assigned branch)
       if (effectiveBranchId) {
@@ -121,8 +133,8 @@ export function useReportStats(filters?: {
           fee_type
         `)
         .eq('fee_type', 'none')
-        .gte('return_date', startDate)
-        .lte('return_date', endDate + 'T23:59:59');
+        .gte('return_date', startISO)
+        .lte('return_date', endISO);
 
       if (effectiveBranchId) {
         returnQuery = returnQuery.eq('branch_id', effectiveBranchId);
@@ -157,8 +169,8 @@ export function useReportStats(filters?: {
         .from('cash_book')
         .select('*')
         .eq('is_business_accounting', true)
-        .gte('transaction_date', startDate)
-        .lte('transaction_date', endDate + 'T23:59:59');
+        .gte('transaction_date', startISO)
+        .lte('transaction_date', endISO);
 
       if (effectiveBranchId) {
         cashBookQuery = cashBookQuery.eq('branch_id', effectiveBranchId);
@@ -295,8 +307,20 @@ export function useReportChartData(filters?: {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as { date: string; revenue: number; profit: number; count: number }[];
 
-      const startDate = filters?.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
-      const endDate = filters?.endDate || new Date().toISOString().split('T')[0];
+      // Use local timezone for date filtering (same as Dashboard)
+      const getLocalDateString = (date: Date) => {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      };
+      
+      const now = new Date();
+      const startDate = filters?.startDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const endDate = filters?.endDate || getLocalDateString(now);
+      
+      // Create proper local timezone boundaries for queries
+      const startDateTime = new Date(startDate + 'T00:00:00');
+      const endDateTime = new Date(endDate + 'T23:59:59.999');
+      const startISO = startDateTime.toISOString();
+      const endISO = endDateTime.toISOString();
 
       let query = supabase
         .from('export_receipts')
@@ -307,8 +331,8 @@ export function useReportChartData(filters?: {
           status,
           export_receipt_items(sale_price, status, product_id)
         `)
-        .gte('export_date', startDate)
-        .lte('export_date', endDate + 'T23:59:59')
+        .gte('export_date', startISO)
+        .lte('export_date', endISO)
         .neq('status', 'cancelled');
 
       if (effectiveBranchId) {
@@ -323,8 +347,8 @@ export function useReportChartData(filters?: {
         .from('export_returns')
         .select('id, sale_price, import_price, return_date, branch_id, fee_type, product_id')
         .eq('fee_type', 'none')
-        .gte('return_date', startDate)
-        .lte('return_date', endDate + 'T23:59:59');
+        .gte('return_date', startISO)
+        .lte('return_date', endISO);
 
       if (effectiveBranchId) {
         returnQuery = returnQuery.eq('branch_id', effectiveBranchId);
