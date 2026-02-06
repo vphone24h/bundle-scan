@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Clock, User, Building2, FileText, ArrowRight, AlertTriangle } from 'lucide-react';
+import { Clock, User, Building2, FileText, ArrowRight, AlertTriangle, Package } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -276,6 +276,41 @@ export function AuditLogDetailDialog({
   // If name/sku/imei changed, show a BEFORE/AFTER identity panel at the top.
   const productInfo = isProductRelated ? getProductInfo() : null;
 
+  // Check if this is a transfer-related action
+  const isTransferAction = ['TRANSFER_STOCK', 'RECEIVE_STOCK', 'APPROVE_TRANSFER', 'REJECT_TRANSFER'].includes(log.action_type);
+
+  // Parse transfer description to extract header and product list
+  const parseTransferDescription = (desc: string | null) => {
+    if (!desc) return { header: '', products: [] };
+    
+    // Pattern: "Header: N SP ... : Product1 (IMEI: xxx), Product2 (IMEI: yyy)"
+    // Split at the product list part
+    const colonParts = desc.split(': ');
+    if (colonParts.length < 2) return { header: desc, products: [] };
+    
+    // Find where the product list starts by looking for product patterns
+    // The header is everything before the last colon-separated product list
+    const fullText = desc;
+    
+    // Try to find the pattern "N SP từ/→ ..." then product list after the last ":"
+    const productListMatch = fullText.match(/^(.+?:\s*\d+\s*SP[^:]+):\s*(.+)$/s);
+    if (productListMatch) {
+      const header = productListMatch[1];
+      const productStr = productListMatch[2];
+      
+      // Split products by "), " pattern (each product ends with closing paren)
+      const products = productStr
+        .split(/\),\s*/)
+        .map(p => p.trim())
+        .filter(Boolean)
+        .map(p => p.endsWith(')') ? p : p + ')');
+      
+      return { header, products };
+    }
+    
+    return { header: desc, products: [] };
+  };
+
   // Get action description based on action type
   const getActionDescription = () => {
     switch (log.action_type) {
@@ -346,11 +381,55 @@ export function AuditLogDetailDialog({
               </div>
             </div>
 
-            {/* Description */}
-            <div className="p-3 bg-muted/30 rounded-lg">
-              <span className="font-medium text-sm">Mô tả: </span>
-              <span className="text-sm">{getActionDescription()}</span>
-            </div>
+            {/* Description - special layout for transfer actions */}
+            {isTransferAction ? (() => {
+              const { header, products } = parseTransferDescription(log.description);
+              return (
+                <div className="p-3 bg-muted/30 rounded-lg space-y-3">
+                  <div>
+                    <span className="font-medium text-sm">Mô tả: </span>
+                    <span className="text-sm">{header}</span>
+                  </div>
+                  {products.length > 0 && (
+                    <div className="space-y-1.5">
+                      <span className="font-medium text-xs text-muted-foreground">Chi tiết sản phẩm:</span>
+                      <div className="max-h-[200px] overflow-y-auto space-y-1 pr-1">
+                        {products.map((product, idx) => {
+                          // Parse product: "Name (IMEI: xxx)" or "Name xQuantity"
+                          const imeiMatch = product.match(/^(.+?)\s*\(IMEI:\s*(.+?)\)$/);
+                          const qtyMatch = product.match(/^(.+?)\s*x(\d+)$/);
+                          
+                          return (
+                            <div key={idx} className="flex items-center gap-2 p-2 bg-background rounded border text-sm">
+                              <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-xs text-muted-foreground font-mono shrink-0">{idx + 1}.</span>
+                              {imeiMatch ? (
+                                <div className="flex flex-col min-w-0">
+                                  <span className="font-medium truncate">{imeiMatch[1].trim()}</span>
+                                  <span className="text-xs text-muted-foreground font-mono">IMEI: {imeiMatch[2]}</span>
+                                </div>
+                              ) : qtyMatch ? (
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="font-medium truncate">{qtyMatch[1].trim()}</span>
+                                  <Badge variant="secondary" className="text-xs shrink-0">x{qtyMatch[2]}</Badge>
+                                </div>
+                              ) : (
+                                <span className="font-medium truncate">{product}</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })() : (
+              <div className="p-3 bg-muted/30 rounded-lg">
+                <span className="font-medium text-sm">Mô tả: </span>
+                <span className="text-sm">{getActionDescription()}</span>
+              </div>
+            )}
 
             {/* Product Info - Show which product was affected */}
             {isProductRelated && (
