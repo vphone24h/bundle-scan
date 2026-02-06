@@ -38,7 +38,7 @@ export const ACTION_GROUPS: Record<ActionGroup, { label: string; icon: string; t
   import: {
     label: 'Nhập hàng',
     icon: 'Download',
-    tables: ['import_receipts', 'products', 'import_returns', 'receipt_payments'],
+    tables: ['import_receipts', 'products', 'import_returns', 'receipt_payments', 'stock_transfer_requests'],
   },
   export: {
     label: 'Xuất hàng',
@@ -119,6 +119,8 @@ export const ACTION_LABELS: Record<string, { label: string; color: string; criti
   
   // Chuyển hàng giữa chi nhánh
   TRANSFER_STOCK: { label: 'Chuyển hàng', color: 'bg-violet-500' },
+  APPROVE_TRANSFER: { label: 'Duyệt chuyển hàng', color: 'bg-green-500' },
+  REJECT_TRANSFER: { label: 'Từ chối chuyển', color: 'bg-red-500' },
 };
 
 // Tên bảng dữ liệu
@@ -145,6 +147,8 @@ export const TABLE_LABELS: Record<string, string> = {
   debt_payments: 'Thanh toán công nợ',
   stock_counts: 'Phiếu kiểm kho',
   stock_count_items: 'Chi tiết kiểm kho',
+  stock_transfer_requests: 'Chuyển hàng',
+  stock_transfer_items: 'Chi tiết chuyển hàng',
 };
 
 // Time filter options

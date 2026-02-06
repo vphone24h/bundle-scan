@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -19,7 +20,8 @@ import {
 } from '@/components/ui/select';
 import { ArrowRight, Loader2, Package } from 'lucide-react';
 import { useBranches, Branch } from '@/hooks/useBranches';
-import { useTransferStock } from '@/hooks/useTransferStock';
+import { useCreateStockTransfer } from '@/hooks/useStockTransfers';
+import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/mockData';
 import type { Product } from '@/hooks/useProducts';
@@ -42,8 +44,12 @@ export function TransferStockDialog({
   onSuccess,
 }: TransferStockDialogProps) {
   const { data: branches } = useBranches();
-  const transferStock = useTransferStock();
+  const { data: permissions } = usePermissions();
+  const createTransfer = useCreateStockTransfer();
   const [toBranchId, setToBranchId] = useState('');
+  const [note, setNote] = useState('');
+
+  const isSuperAdmin = permissions?.role === 'super_admin';
 
   // Filter out the source branch
   const availableBranches = useMemo(() => {
@@ -68,30 +74,29 @@ export function TransferStockDialog({
       return;
     }
 
-    transferStock.mutate(
+    createTransfer.mutate(
       {
         productIds: selectedProducts.map((p) => p.id),
         fromBranchId,
         toBranchId,
         fromBranchName,
         toBranchName,
+        note: note.trim() || undefined,
+        isAutoApprove: isSuperAdmin,
       },
       {
         onSuccess: (data) => {
-          toast({
-            title: 'Chuyển hàng thành công',
-            description: `Đã chuyển ${data.count} sản phẩm từ "${fromBranchName}" sang "${toBranchName}"`,
-          });
+          const msg = data.status === 'approved'
+            ? `Đã chuyển ${data.count} sản phẩm từ "${fromBranchName}" sang "${toBranchName}"`
+            : `Đã tạo phiếu chuyển ${data.count} sản phẩm. Chờ chi nhánh "${toBranchName}" duyệt.`;
+          toast({ title: data.status === 'approved' ? 'Chuyển hàng thành công' : 'Tạo phiếu thành công', description: msg });
           setToBranchId('');
+          setNote('');
           onOpenChange(false);
           onSuccess();
         },
         onError: (error: any) => {
-          toast({
-            title: 'Lỗi chuyển hàng',
-            description: error.message,
-            variant: 'destructive',
-          });
+          toast({ title: 'Lỗi chuyển hàng', description: error.message, variant: 'destructive' });
         },
       }
     );
@@ -106,7 +111,10 @@ export function TransferStockDialog({
             Chuyển hàng giữa chi nhánh
           </DialogTitle>
           <DialogDescription>
-            Chuyển {selectedProducts.length} sản phẩm đã chọn sang chi nhánh khác
+            {isSuperAdmin
+              ? `Chuyển ${selectedProducts.length} sản phẩm (tự động duyệt)`
+              : `Tạo phiếu chuyển ${selectedProducts.length} sản phẩm – cần chi nhánh nhận duyệt`
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -134,6 +142,24 @@ export function TransferStockDialog({
               </Select>
             </div>
           </div>
+
+          {/* Note */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Ghi chú (không bắt buộc)</Label>
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Lý do chuyển hàng..."
+              rows={2}
+            />
+          </div>
+
+          {/* Approval info */}
+          {!isSuperAdmin && (
+            <div className="p-2.5 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-xs text-yellow-800 dark:text-yellow-300">
+              ⚠️ Phiếu chuyển hàng sẽ cần admin chi nhánh nhận duyệt trước khi sản phẩm được chuyển.
+            </div>
+          )}
 
           {/* Products summary */}
           <div>
@@ -179,17 +205,17 @@ export function TransferStockDialog({
           </Button>
           <Button
             onClick={handleTransfer}
-            disabled={!toBranchId || transferStock.isPending}
+            disabled={!toBranchId || createTransfer.isPending}
           >
-            {transferStock.isPending ? (
+            {createTransfer.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Đang chuyển...
+                Đang xử lý...
               </>
             ) : (
               <>
                 <ArrowRight className="mr-2 h-4 w-4" />
-                Xác nhận chuyển hàng
+                {isSuperAdmin ? 'Xác nhận chuyển hàng' : 'Tạo phiếu chuyển hàng'}
               </>
             )}
           </Button>
