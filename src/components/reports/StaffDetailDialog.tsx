@@ -53,49 +53,53 @@ export function StaffDetailDialog({ open, onOpenChange, staff, startDate, endDat
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto overscroll-contain w-[95vw] md:w-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <span>{staff.display_name}</span>
-            <Badge variant="secondary">{ROLE_LABELS[staff.user_role] || staff.user_role}</Badge>
-            {staff.branch_name && <Badge variant="outline">{staff.branch_name}</Badge>}
+          <DialogTitle className="flex flex-wrap items-center gap-2 text-base md:text-lg">
+            <span className="truncate max-w-[180px] md:max-w-none">{staff.display_name}</span>
+            <Badge variant="secondary" className="text-[10px] md:text-xs">
+              {ROLE_LABELS[staff.user_role] || staff.user_role}
+            </Badge>
+            {staff.branch_name && (
+              <Badge variant="outline" className="text-[10px] md:text-xs">{staff.branch_name}</Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
 
-        {/* KPI Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* KPI Summary - 2x2 on mobile */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
           <Card>
-            <CardContent className="p-3">
+            <CardContent className="p-2.5 md:p-3">
               <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-green-600" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Doanh thu</p>
-                  <p className="font-bold text-sm">{formatCurrency(stats?.total_revenue || 0)}</p>
+                <DollarSign className="h-3.5 w-3.5 md:h-4 md:w-4 text-green-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] md:text-xs text-muted-foreground">Doanh thu</p>
+                  <p className="font-bold text-xs md:text-sm truncate">{formatCurrency(stats?.total_revenue || 0)}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-3">
+            <CardContent className="p-2.5 md:p-3">
               <div className="flex items-center gap-2">
-                <ShoppingCart className="h-4 w-4 text-blue-600" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Đơn hàng</p>
-                  <p className="font-bold text-sm">{stats?.total_orders || 0}</p>
+                <ShoppingCart className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] md:text-xs text-muted-foreground">Đơn hàng</p>
+                  <p className="font-bold text-xs md:text-sm">{stats?.total_orders || 0}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-3">
+            <CardContent className="p-2.5 md:p-3">
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-purple-600" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Khách hàng</p>
-                  <p className="font-bold text-sm">
+                <Users className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] md:text-xs text-muted-foreground">Khách hàng</p>
+                  <p className="font-bold text-xs md:text-sm">
                     {stats?.total_customers || 0}
                     {(stats?.new_customers || 0) > 0 && (
-                      <span className="text-xs text-green-600 ml-1">(+{stats?.new_customers})</span>
+                      <span className="text-[10px] text-green-600 ml-0.5">(+{stats?.new_customers})</span>
                     )}
                   </p>
                 </div>
@@ -103,12 +107,12 @@ export function StaffDetailDialog({ open, onOpenChange, staff, startDate, endDat
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-3">
+            <CardContent className="p-2.5 md:p-3">
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-amber-600" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Tỉ lệ hoàn thành</p>
-                  <p className="font-bold text-sm">{stats?.conversion_rate || 0}%</p>
+                <TrendingUp className="h-3.5 w-3.5 md:h-4 md:w-4 text-amber-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] md:text-xs text-muted-foreground">Hoàn thành</p>
+                  <p className="font-bold text-xs md:text-sm">{stats?.conversion_rate || 0}%</p>
                 </div>
               </div>
             </CardContent>
@@ -118,20 +122,20 @@ export function StaffDetailDialog({ open, onOpenChange, staff, startDate, endDat
         {/* KPI Detail */}
         {kpi && (
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-primary" />
-                  <span className="font-medium text-sm">Chi tiết KPI</span>
+                  <Target className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
+                  <span className="font-medium text-xs md:text-sm">Chi tiết KPI</span>
                 </div>
-                <Badge variant={staff.achievement_percentage >= 100 ? 'default' : 'secondary'}>
+                <Badge variant={staff.achievement_percentage >= 100 ? 'default' : 'secondary'} className="text-[10px] md:text-xs">
                   {staff.achievement_percentage.toFixed(1)}%
                 </Badge>
               </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-2 md:gap-4 text-xs md:text-sm">
                 <div>
-                  <span className="text-muted-foreground">Loại KPI:</span>{' '}
-                  <span className="font-medium">{kpi.kpi_type === 'revenue' ? 'Doanh thu' : 'Số đơn hàng'}</span>
+                  <span className="text-muted-foreground">Loại:</span>{' '}
+                  <span className="font-medium">{kpi.kpi_type === 'revenue' ? 'Doanh thu' : 'Đơn hàng'}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Chu kỳ:</span>{' '}
@@ -160,123 +164,182 @@ export function StaffDetailDialog({ open, onOpenChange, staff, startDate, endDat
         )}
 
         {/* Tabs */}
-        <Tabs defaultValue="orders" className="mt-2">
-          <TabsList className="w-full">
-            <TabsTrigger value="orders" className="flex-1">
-              <ShoppingCart className="h-4 w-4 mr-1" />
-              Đơn đã bán ({receipts.length})
+        <Tabs defaultValue="orders" className="mt-1 md:mt-2">
+          <TabsList className="w-full h-auto flex-wrap">
+            <TabsTrigger value="orders" className="flex-1 text-xs md:text-sm py-1.5 gap-1">
+              <ShoppingCart className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Đơn bán</span>
+              <span className="sm:hidden">Đơn</span>
+              <span className="text-[10px]">({receipts.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="care" className="flex-1">
-              <Users className="h-4 w-4 mr-1" />
-              Chăm sóc KH ({careLogs.length})
+            <TabsTrigger value="care" className="flex-1 text-xs md:text-sm py-1.5 gap-1">
+              <Users className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Chăm sóc</span>
+              <span className="sm:hidden">CSKH</span>
+              <span className="text-[10px]">({careLogs.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="activity" className="flex-1">
-              <History className="h-4 w-4 mr-1" />
-              Lịch sử ({activities.length})
+            <TabsTrigger value="activity" className="flex-1 text-xs md:text-sm py-1.5 gap-1">
+              <History className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Lịch sử</span>
+              <span className="sm:hidden">LS</span>
+              <span className="text-[10px]">({activities.length})</span>
             </TabsTrigger>
           </TabsList>
 
-          {/* Orders Tab */}
+          {/* Orders Tab - card layout on mobile */}
           <TabsContent value="orders">
             {loadingReceipts ? (
-              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+              <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
             ) : receipts.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-sm">Không có đơn hàng trong khoảng thời gian này</div>
+              <div className="text-center py-6 text-muted-foreground text-xs md:text-sm">Không có đơn hàng</div>
             ) : (
-              <div className="overflow-auto max-h-[300px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead className="font-semibold">Mã phiếu</TableHead>
-                      <TableHead className="font-semibold">Ngày</TableHead>
-                      <TableHead className="font-semibold">Khách hàng</TableHead>
-                      <TableHead className="font-semibold text-right">Tổng tiền</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {receipts.map((r) => (
-                      <TableRow key={r.id}>
-                        <TableCell className="font-mono text-xs">{r.receipt_code}</TableCell>
-                        <TableCell className="text-sm">{format(new Date(r.export_date), 'dd/MM/yyyy')}</TableCell>
-                        <TableCell className="text-sm">{r.customer_name || 'Khách lẻ'}</TableCell>
-                        <TableCell className="text-right font-medium">{formatCurrency(r.total_amount)}</TableCell>
+              <>
+                {/* Mobile: card list */}
+                <div className="md:hidden space-y-2 max-h-[40vh] overflow-y-auto overscroll-contain">
+                  {receipts.map((r) => (
+                    <div key={r.id} className="border rounded-lg p-3 text-xs">
+                      <div className="flex justify-between items-start mb-1.5">
+                        <span className="font-mono text-muted-foreground">{r.receipt_code}</span>
+                        <span className="font-bold">{formatCurrency(r.total_amount)}</span>
+                      </div>
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>{r.customer_name || 'Khách lẻ'}</span>
+                        <span>{format(new Date(r.export_date), 'dd/MM/yyyy')}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop: table */}
+                <div className="hidden md:block overflow-auto max-h-[300px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/30">
+                        <TableHead className="font-semibold">Mã phiếu</TableHead>
+                        <TableHead className="font-semibold">Ngày</TableHead>
+                        <TableHead className="font-semibold">Khách hàng</TableHead>
+                        <TableHead className="font-semibold text-right">Tổng tiền</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {receipts.map((r) => (
+                        <TableRow key={r.id}>
+                          <TableCell className="font-mono text-xs">{r.receipt_code}</TableCell>
+                          <TableCell className="text-sm">{format(new Date(r.export_date), 'dd/MM/yyyy')}</TableCell>
+                          <TableCell className="text-sm">{r.customer_name || 'Khách lẻ'}</TableCell>
+                          <TableCell className="text-right font-medium">{formatCurrency(r.total_amount)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </TabsContent>
 
           {/* Care Logs Tab */}
           <TabsContent value="care">
             {loadingCare ? (
-              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+              <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
             ) : careLogs.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-sm">Không có lịch sử chăm sóc</div>
+              <div className="text-center py-6 text-muted-foreground text-xs md:text-sm">Không có lịch sử chăm sóc</div>
             ) : (
-              <div className="overflow-auto max-h-[300px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead className="font-semibold">Thời gian</TableHead>
-                      <TableHead className="font-semibold">Loại</TableHead>
-                      <TableHead className="font-semibold">Khách hàng</TableHead>
-                      <TableHead className="font-semibold">Nội dung</TableHead>
-                      <TableHead className="font-semibold">Kết quả</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {careLogs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell className="text-xs">{format(new Date(log.created_at), 'dd/MM HH:mm')}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {ACTION_LABELS[log.action_type] || log.action_type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">{log.customer_name || '-'}</TableCell>
-                        <TableCell className="text-sm max-w-[200px] truncate">{log.content}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{log.result || '-'}</TableCell>
+              <>
+                {/* Mobile: card list */}
+                <div className="md:hidden space-y-2 max-h-[40vh] overflow-y-auto overscroll-contain">
+                  {careLogs.map((log) => (
+                    <div key={log.id} className="border rounded-lg p-3 text-xs">
+                      <div className="flex justify-between items-center mb-1.5">
+                        <Badge variant="outline" className="text-[10px]">
+                          {ACTION_LABELS[log.action_type] || log.action_type}
+                        </Badge>
+                        <span className="text-muted-foreground">{format(new Date(log.created_at), 'dd/MM HH:mm')}</span>
+                      </div>
+                      <p className="font-medium mb-0.5">{log.customer_name || '-'}</p>
+                      <p className="text-muted-foreground line-clamp-2">{log.content}</p>
+                      {log.result && <p className="text-primary mt-1 text-[10px]">KQ: {log.result}</p>}
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop: table */}
+                <div className="hidden md:block overflow-auto max-h-[300px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/30">
+                        <TableHead className="font-semibold">Thời gian</TableHead>
+                        <TableHead className="font-semibold">Loại</TableHead>
+                        <TableHead className="font-semibold">Khách hàng</TableHead>
+                        <TableHead className="font-semibold">Nội dung</TableHead>
+                        <TableHead className="font-semibold">Kết quả</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {careLogs.map((log) => (
+                        <TableRow key={log.id}>
+                          <TableCell className="text-xs">{format(new Date(log.created_at), 'dd/MM HH:mm')}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {ACTION_LABELS[log.action_type] || log.action_type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">{log.customer_name || '-'}</TableCell>
+                          <TableCell className="text-sm max-w-[200px] truncate">{log.content}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{log.result || '-'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </TabsContent>
 
           {/* Activity Tab */}
           <TabsContent value="activity">
             {loadingActivity ? (
-              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+              <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
             ) : activities.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-sm">Không có lịch sử hoạt động</div>
+              <div className="text-center py-6 text-muted-foreground text-xs md:text-sm">Không có lịch sử</div>
             ) : (
-              <div className="overflow-auto max-h-[300px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead className="font-semibold">Thời gian</TableHead>
-                      <TableHead className="font-semibold">Hành động</TableHead>
-                      <TableHead className="font-semibold">Bảng</TableHead>
-                      <TableHead className="font-semibold">Mô tả</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {activities.map((act) => (
-                      <TableRow key={act.id}>
-                        <TableCell className="text-xs">{format(new Date(act.created_at), 'dd/MM HH:mm')}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">{act.action_type}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{act.table_name || '-'}</TableCell>
-                        <TableCell className="text-sm max-w-[250px] truncate">{act.description || '-'}</TableCell>
+              <>
+                {/* Mobile: card list */}
+                <div className="md:hidden space-y-2 max-h-[40vh] overflow-y-auto overscroll-contain">
+                  {activities.map((act) => (
+                    <div key={act.id} className="border rounded-lg p-3 text-xs">
+                      <div className="flex justify-between items-center mb-1">
+                        <Badge variant="outline" className="text-[10px]">{act.action_type}</Badge>
+                        <span className="text-muted-foreground">{format(new Date(act.created_at), 'dd/MM HH:mm')}</span>
+                      </div>
+                      {act.table_name && <p className="text-muted-foreground text-[10px] mb-0.5">{act.table_name}</p>}
+                      <p className="line-clamp-2">{act.description || '-'}</p>
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop: table */}
+                <div className="hidden md:block overflow-auto max-h-[300px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/30">
+                        <TableHead className="font-semibold">Thời gian</TableHead>
+                        <TableHead className="font-semibold">Hành động</TableHead>
+                        <TableHead className="font-semibold">Bảng</TableHead>
+                        <TableHead className="font-semibold">Mô tả</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {activities.map((act) => (
+                        <TableRow key={act.id}>
+                          <TableCell className="text-xs">{format(new Date(act.created_at), 'dd/MM HH:mm')}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">{act.action_type}</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{act.table_name || '-'}</TableCell>
+                          <TableCell className="text-sm max-w-[250px] truncate">{act.description || '-'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </TabsContent>
         </Tabs>

@@ -6,13 +6,6 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Table,
   TableBody,
   TableCell,
@@ -30,12 +23,13 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { Users, DollarSign, Target, Award, Loader2, Download, ArrowUpDown } from 'lucide-react';
+import { Users, DollarSign, Target, Award, Loader2, Download, ArrowUpDown, ChevronRight } from 'lucide-react';
 import { format, startOfMonth, subDays, startOfWeek, subMonths } from 'date-fns';
 import { useStaffWithKPI, type StaffWithKPI } from '@/hooks/useStaffKPI';
 import { formatCurrency } from '@/lib/mockData';
 import { exportToExcel } from '@/lib/exportExcel';
 import { StaffDetailDialog } from './StaffDetailDialog';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Quản lý',
@@ -70,7 +64,6 @@ function sortStaff(list: StaffWithKPI[], mode: SortMode): StaffWithKPI[] {
       case 'performance':
         return (b.stats?.conversion_rate || 0) - (a.stats?.conversion_rate || 0);
       case 'kpi_lowest':
-        // Staff without KPI at bottom, then ascending by achievement
         if (!a.kpi_setting && !b.kpi_setting) return 0;
         if (!a.kpi_setting) return 1;
         if (!b.kpi_setting) return -1;
@@ -79,6 +72,68 @@ function sortStaff(list: StaffWithKPI[], mode: SortMode): StaffWithKPI[] {
         return 0;
     }
   });
+}
+
+// Mobile staff card component
+function StaffCard({ staff, rank, onClick }: { staff: StaffWithKPI; rank: number; onClick: () => void }) {
+  const medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : null;
+  return (
+    <Card className="cursor-pointer active:scale-[0.98] transition-transform" onClick={onClick}>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 min-w-0">
+            {medal && <span className="text-lg flex-shrink-0">{medal}</span>}
+            <div className="min-w-0">
+              <p className="font-medium truncate">{staff.display_name}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                  {ROLE_LABELS[staff.user_role] || staff.user_role}
+                </Badge>
+                {staff.branch_name && (
+                  <span className="text-[10px] text-muted-foreground">{staff.branch_name}</span>
+                )}
+              </div>
+            </div>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="bg-muted/40 rounded-lg p-2">
+            <p className="text-[10px] text-muted-foreground">Doanh thu</p>
+            <p className="font-bold text-xs">{formatCurrency(staff.stats?.total_revenue || 0)}</p>
+          </div>
+          <div className="bg-muted/40 rounded-lg p-2">
+            <p className="text-[10px] text-muted-foreground">Đơn hàng</p>
+            <p className="font-bold text-xs">{staff.stats?.total_orders || 0}</p>
+          </div>
+          <div className="bg-muted/40 rounded-lg p-2">
+            <p className="text-[10px] text-muted-foreground">Khách hàng</p>
+            <p className="font-bold text-xs">
+              {staff.stats?.total_customers || 0}
+              {(staff.stats?.new_customers || 0) > 0 && (
+                <span className="text-green-600 ml-0.5">(+{staff.stats?.new_customers})</span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        {staff.kpi_setting && (
+          <div className="mt-3">
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-muted-foreground">
+                KPI {staff.kpi_setting.kpi_type === 'revenue' ? 'Doanh thu' : 'Đơn hàng'}
+              </span>
+              <span className={staff.achievement_percentage >= 100 ? 'text-green-600 font-semibold' : 'text-amber-600 font-medium'}>
+                {staff.achievement_percentage.toFixed(0)}%
+              </span>
+            </div>
+            <Progress value={Math.min(staff.achievement_percentage, 100)} className="h-2" />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export function StaffReport() {
@@ -92,7 +147,6 @@ export function StaffReport() {
   const end = new Date(endDate);
 
   const { data: staffWithKPI = [], isLoading } = useStaffWithKPI(start, end);
-
   const sortedStaff = useMemo(() => sortStaff(staffWithKPI, sortMode), [staffWithKPI, sortMode]);
 
   const handleTimePreset = (preset: string) => {
@@ -119,7 +173,6 @@ export function StaffReport() {
   const totalOrders = staffWithKPI.reduce((sum, s) => sum + (s.stats?.total_orders || 0), 0);
   const topPerformer = sortedStaff[0];
 
-  // Chart data
   const chartData = sortedStaff
     .filter(s => s.stats && (s.stats.total_revenue > 0 || s.stats.total_orders > 0))
     .map(s => ({
@@ -163,82 +216,116 @@ export function StaffReport() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Filters */}
+    <div className="space-y-4 md:space-y-6">
+      {/* Filters - mobile optimized */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="flex flex-wrap gap-2">
+        <CardContent className="pt-4 md:pt-6 pb-4">
+          {/* Time presets - horizontal scroll on mobile */}
+          <ScrollArea className="w-full">
+            <div className="flex gap-2 pb-2">
               {timePresets.map((p) => (
-                <Button key={p.value} variant="outline" size="sm" onClick={() => handleTimePreset(p.value)}>{p.label}</Button>
+                <Button key={p.value} variant="outline" size="sm" className="flex-shrink-0 text-xs" onClick={() => handleTimePreset(p.value)}>
+                  {p.label}
+                </Button>
+              ))}
+              <Button variant="outline" size="sm" className="flex-shrink-0 text-xs" onClick={handleExportExcel} disabled={!sortedStaff.length}>
+                <Download className="h-3.5 w-3.5 mr-1" />
+                Excel
+              </Button>
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+          {/* Date inputs */}
+          <div className="flex gap-2 mt-3">
+            <div className="flex-1">
+              <Label className="text-xs">Từ ngày</Label>
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="text-sm h-9" />
+            </div>
+            <div className="flex-1">
+              <Label className="text-xs">Đến ngày</Label>
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="text-sm h-9" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Sort Options - horizontal scroll on mobile */}
+      <Card>
+        <CardContent className="py-3 px-3">
+          <ScrollArea className="w-full">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground flex-shrink-0">
+                <ArrowUpDown className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Sắp xếp:</span>
+              </div>
+              {sortOptions.map((opt) => (
+                <Button
+                  key={opt.value}
+                  variant={sortMode === opt.value ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-shrink-0 text-xs h-8"
+                  onClick={() => setSortMode(opt.value)}
+                >
+                  {opt.label}
+                </Button>
               ))}
             </div>
-            <div className="flex-1" />
-            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!sortedStaff.length}>
-              <Download className="h-4 w-4 mr-1" />
-              Xuất Excel
-            </Button>
-            <div className="flex gap-2 items-end">
-              <div><Label>Từ ngày</Label><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" /></div>
-              <div><Label>Đến ngày</Label><Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" /></div>
-            </div>
-          </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
         </CardContent>
       </Card>
 
-      {/* Sort Options */}
-      <Card>
-        <CardContent className="pt-4 pb-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <ArrowUpDown className="h-4 w-4" />
-              Sắp xếp:
-            </div>
-            {sortOptions.map((opt) => (
-              <Button
-                key={opt.value}
-                variant={sortMode === opt.value ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setSortMode(opt.value)}
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Summary Cards - 2x2 grid on mobile */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center"><Users className="h-5 w-5 text-primary" /></div>
-              <div><p className="text-sm text-muted-foreground">Nhân viên</p><p className="text-2xl font-bold">{staffWithKPI.length}</p></div>
+          <CardContent className="p-3 md:pt-6 md:p-6">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Users className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] md:text-sm text-muted-foreground">Nhân viên</p>
+                <p className="text-lg md:text-2xl font-bold">{staffWithKPI.length}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center"><DollarSign className="h-5 w-5 text-green-600" /></div>
-              <div><p className="text-sm text-muted-foreground">Tổng doanh thu</p><p className="text-xl font-bold">{formatCurrency(totalRevenue)}</p></div>
+          <CardContent className="p-3 md:pt-6 md:p-6">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                <DollarSign className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] md:text-sm text-muted-foreground">Doanh thu</p>
+                <p className="text-sm md:text-xl font-bold truncate">{formatCurrency(totalRevenue)}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center"><Target className="h-5 w-5 text-blue-600" /></div>
-              <div><p className="text-sm text-muted-foreground">Tổng đơn hàng</p><p className="text-2xl font-bold">{totalOrders}</p></div>
+          <CardContent className="p-3 md:pt-6 md:p-6">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <Target className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] md:text-sm text-muted-foreground">Đơn hàng</p>
+                <p className="text-lg md:text-2xl font-bold">{totalOrders}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center"><Award className="h-5 w-5 text-amber-600" /></div>
-              <div><p className="text-sm text-muted-foreground">Top 1</p><p className="text-lg font-bold truncate max-w-[120px]">{topPerformer?.display_name || '-'}</p></div>
+          <CardContent className="p-3 md:pt-6 md:p-6">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <Award className="h-4 w-4 md:h-5 md:w-5 text-amber-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] md:text-sm text-muted-foreground">Top 1</p>
+                <p className="text-sm md:text-lg font-bold truncate">{topPerformer?.display_name || '-'}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -247,101 +334,110 @@ export function StaffReport() {
       {/* Chart */}
       {chartData.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-lg">So sánh hiệu suất nhân viên</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+          <CardHeader className="pb-2 md:pb-4">
+            <CardTitle className="text-sm md:text-lg">So sánh hiệu suất</CardTitle>
+          </CardHeader>
+          <CardContent className="px-2 md:px-6">
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis yAxisId="left" tickFormatter={(v) => `${(v / 1000000).toFixed(0)}tr`} />
-                <YAxis yAxisId="right" orientation="right" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                <YAxis yAxisId="left" tickFormatter={(v) => `${(v / 1000000).toFixed(0)}tr`} tick={{ fontSize: 10 }} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} />
                 <Tooltip formatter={(value: number, name: string) => [name === 'Đơn hàng' ? value : formatCurrency(value), name]} />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar yAxisId="left" dataKey="revenue" name="Doanh thu" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                <Bar yAxisId="right" dataKey="orders" name="Đơn hàng" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="right" dataKey="orders" name="Đơn hàng" fill="hsl(var(--chart-4, 45 93% 47%))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       )}
 
-      {/* Table */}
+      {/* Staff List - card on mobile, table on desktop */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Chi tiết nhân viên</CardTitle>
-          <p className="text-xs text-muted-foreground">Click vào hàng để xem chi tiết đơn hàng, lịch sử làm việc và KPI</p>
+        <CardHeader className="pb-2 md:pb-3">
+          <CardTitle className="text-sm md:text-base">Chi tiết nhân viên</CardTitle>
+          <p className="text-[10px] md:text-xs text-muted-foreground">Nhấn vào để xem chi tiết đơn hàng, lịch sử và KPI</p>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-3 md:p-0">
           {sortedStaff.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">Chưa có dữ liệu</div>
+            <div className="text-center py-12 text-muted-foreground text-sm">Chưa có dữ liệu</div>
           ) : (
-            <div className="overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/30">
-                    <TableHead className="font-semibold min-w-[180px]">Nhân viên</TableHead>
-                    <TableHead className="font-semibold text-center">Vai trò</TableHead>
-                    <TableHead className="font-semibold text-center">Chi nhánh</TableHead>
-                    <TableHead className="font-semibold text-right">Doanh thu</TableHead>
-                    <TableHead className="font-semibold text-center">Đơn hàng</TableHead>
-                    <TableHead className="font-semibold text-center">Khách hàng</TableHead>
-                    <TableHead className="font-semibold min-w-[150px]">KPI</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedStaff.map((staff, idx) => (
-                    <TableRow
-                      key={staff.user_id}
-                      className="cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => handleStaffClick(staff)}
-                    >
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {idx === 0 && <span className="text-lg">🥇</span>}
-                          {idx === 1 && <span className="text-lg">🥈</span>}
-                          {idx === 2 && <span className="text-lg">🥉</span>}
-                          <p className="font-medium">{staff.display_name}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="secondary">{ROLE_LABELS[staff.user_role] || staff.user_role}</Badge>
-                      </TableCell>
-                      <TableCell className="text-center text-sm">{staff.branch_name || 'Tất cả'}</TableCell>
-                      <TableCell className="text-right font-medium">{formatCurrency(staff.stats?.total_revenue || 0)}</TableCell>
-                      <TableCell className="text-center">{staff.stats?.total_orders || 0}</TableCell>
-                      <TableCell className="text-center">
-                        <div>
-                          <span>{staff.stats?.total_customers || 0}</span>
-                          {(staff.stats?.new_customers || 0) > 0 && (
-                            <span className="text-xs text-green-600 ml-1">(+{staff.stats?.new_customers})</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {staff.kpi_setting ? (
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-muted-foreground">
-                                {staff.kpi_setting.kpi_type === 'revenue' ? 'DT' : 'Đơn'}
-                              </span>
-                              <span className={staff.achievement_percentage >= 100 ? 'text-green-600 font-medium' : 'text-amber-600'}>
-                                {staff.achievement_percentage.toFixed(0)}%
-                              </span>
-                            </div>
-                            <Progress
-                              value={Math.min(staff.achievement_percentage, 100)}
-                              className="h-2"
-                            />
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Chưa đặt KPI</span>
-                        )}
-                      </TableCell>
+            <>
+              {/* Mobile: Card layout with scroll */}
+              <div className="md:hidden space-y-3 max-h-[60vh] overflow-y-auto overscroll-contain pb-2">
+                {sortedStaff.map((staff, idx) => (
+                  <StaffCard key={staff.user_id} staff={staff} rank={idx} onClick={() => handleStaffClick(staff)} />
+                ))}
+              </div>
+
+              {/* Desktop: Table layout */}
+              <div className="hidden md:block overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead className="font-semibold min-w-[180px]">Nhân viên</TableHead>
+                      <TableHead className="font-semibold text-center">Vai trò</TableHead>
+                      <TableHead className="font-semibold text-center">Chi nhánh</TableHead>
+                      <TableHead className="font-semibold text-right">Doanh thu</TableHead>
+                      <TableHead className="font-semibold text-center">Đơn hàng</TableHead>
+                      <TableHead className="font-semibold text-center">Khách hàng</TableHead>
+                      <TableHead className="font-semibold min-w-[150px]">KPI</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedStaff.map((staff, idx) => (
+                      <TableRow
+                        key={staff.user_id}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleStaffClick(staff)}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {idx === 0 && <span className="text-lg">🥇</span>}
+                            {idx === 1 && <span className="text-lg">🥈</span>}
+                            {idx === 2 && <span className="text-lg">🥉</span>}
+                            <p className="font-medium">{staff.display_name}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary">{ROLE_LABELS[staff.user_role] || staff.user_role}</Badge>
+                        </TableCell>
+                        <TableCell className="text-center text-sm">{staff.branch_name || 'Tất cả'}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(staff.stats?.total_revenue || 0)}</TableCell>
+                        <TableCell className="text-center">{staff.stats?.total_orders || 0}</TableCell>
+                        <TableCell className="text-center">
+                          <div>
+                            <span>{staff.stats?.total_customers || 0}</span>
+                            {(staff.stats?.new_customers || 0) > 0 && (
+                              <span className="text-xs text-green-600 ml-1">(+{staff.stats?.new_customers})</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {staff.kpi_setting ? (
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">
+                                  {staff.kpi_setting.kpi_type === 'revenue' ? 'DT' : 'Đơn'}
+                                </span>
+                                <span className={staff.achievement_percentage >= 100 ? 'text-green-600 font-medium' : 'text-amber-600'}>
+                                  {staff.achievement_percentage.toFixed(0)}%
+                                </span>
+                              </div>
+                              <Progress value={Math.min(staff.achievement_percentage, 100)} className="h-2" />
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Chưa đặt KPI</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
