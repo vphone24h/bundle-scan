@@ -74,6 +74,10 @@ export default function AuditLogsPage() {
 
     const searchLower = filters.search.toLowerCase();
     return logs.filter(log => {
+      // Search by audit log ID (mã thao tác)
+      if (log.id.toLowerCase().includes(searchLower)) return true;
+      if (log.id.slice(0, 8).toUpperCase().includes(filters.search.toUpperCase())) return true;
+
       // Search in description
       if (log.description?.toLowerCase().includes(searchLower)) return true;
       

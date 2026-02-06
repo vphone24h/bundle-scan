@@ -31,6 +31,7 @@ export interface StaffActivity {
   action_type: string;
   description: string | null;
   table_name: string | null;
+  record_id: string | null;
   created_at: string;
 }
 
@@ -118,7 +119,7 @@ export function useStaffActivity(userId: string | null, startDate: string, endDa
 
       const { data, error } = await supabase
         .from('audit_logs')
-        .select('id, action_type, description, table_name, created_at')
+        .select('id, action_type, description, table_name, record_id, created_at')
         .eq('tenant_id', tenantId)
         .eq('user_id', userId)
         .gte('created_at', startDate)
@@ -133,6 +134,7 @@ export function useStaffActivity(userId: string | null, startDate: string, endDa
         action_type: r.action_type,
         description: r.description,
         table_name: r.table_name,
+        record_id: r.record_id,
         created_at: r.created_at,
       })) as StaffActivity[];
     },

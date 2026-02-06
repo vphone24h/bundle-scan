@@ -6,10 +6,12 @@ import { Progress } from '@/components/ui/progress';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Loader2, ShoppingCart, History, Target, DollarSign, Users, TrendingUp } from 'lucide-react';
+import { Loader2, ShoppingCart, History, Target, DollarSign, Users, TrendingUp, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/mockData';
 import { useStaffExportReceipts, useStaffCareLogs, useStaffActivity } from '@/hooks/useStaffDetail';
+import { ACTION_LABELS, TABLE_LABELS } from '@/types/auditLog';
+import { toast } from 'sonner';
 import type { StaffWithKPI } from '@/hooks/useStaffKPI';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -19,7 +21,7 @@ const ROLE_LABELS: Record<string, string> = {
   cashier: 'Thu ngân',
 };
 
-const ACTION_LABELS: Record<string, string> = {
+const CARE_ACTION_LABELS: Record<string, string> = {
   call: 'Gọi điện',
   message: 'Nhắn tin',
   email: 'Email',
@@ -250,7 +252,7 @@ export function StaffDetailDialog({ open, onOpenChange, staff, startDate, endDat
                     <div key={log.id} className="border rounded-lg p-3 text-xs">
                       <div className="flex justify-between items-center mb-1.5">
                         <Badge variant="outline" className="text-[10px]">
-                          {ACTION_LABELS[log.action_type] || log.action_type}
+                          {CARE_ACTION_LABELS[log.action_type] || log.action_type}
                         </Badge>
                         <span className="text-muted-foreground">{format(new Date(log.created_at), 'dd/MM HH:mm')}</span>
                       </div>
@@ -278,7 +280,7 @@ export function StaffDetailDialog({ open, onOpenChange, staff, startDate, endDat
                           <TableCell className="text-xs">{format(new Date(log.created_at), 'dd/MM HH:mm')}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-xs">
-                              {ACTION_LABELS[log.action_type] || log.action_type}
+                              {CARE_ACTION_LABELS[log.action_type] || log.action_type}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-sm">{log.customer_name || '-'}</TableCell>
@@ -303,39 +305,86 @@ export function StaffDetailDialog({ open, onOpenChange, staff, startDate, endDat
               <>
                 {/* Mobile: card list */}
                 <div className="md:hidden space-y-2 max-h-[40vh] overflow-y-auto overscroll-contain">
-                  {activities.map((act) => (
-                    <div key={act.id} className="border rounded-lg p-3 text-xs">
-                      <div className="flex justify-between items-center mb-1">
-                        <Badge variant="outline" className="text-[10px]">{act.action_type}</Badge>
-                        <span className="text-muted-foreground">{format(new Date(act.created_at), 'dd/MM HH:mm')}</span>
+                  {activities.map((act) => {
+                    const actionInfo = ACTION_LABELS[act.action_type] || { label: act.action_type, color: 'bg-gray-500' };
+                    const shortCode = act.id.slice(0, 8).toUpperCase();
+                    return (
+                      <div key={act.id} className="border rounded-lg p-3 text-xs">
+                        <div className="flex justify-between items-center mb-1">
+                          <Badge className={`${actionInfo.color} text-white text-[10px]`}>
+                            {actionInfo.label}
+                          </Badge>
+                          <span className="text-muted-foreground">{format(new Date(act.created_at), 'dd/MM HH:mm')}</span>
+                        </div>
+                        <div className="flex items-center gap-1 mb-1">
+                          <span className="font-mono text-[10px] text-muted-foreground">#{shortCode}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(act.id);
+                              toast.success('Đã sao chép mã thao tác');
+                            }}
+                            className="p-0.5 hover:bg-muted rounded"
+                          >
+                            <Copy className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                        </div>
+                        {act.table_name && (
+                          <p className="text-muted-foreground text-[10px] mb-0.5">
+                            {TABLE_LABELS[act.table_name] || act.table_name}
+                          </p>
+                        )}
+                        <p className="line-clamp-2">{act.description || '-'}</p>
                       </div>
-                      {act.table_name && <p className="text-muted-foreground text-[10px] mb-0.5">{act.table_name}</p>}
-                      <p className="line-clamp-2">{act.description || '-'}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 {/* Desktop: table */}
                 <div className="hidden md:block overflow-auto max-h-[300px]">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/30">
+                        <TableHead className="font-semibold">Mã</TableHead>
                         <TableHead className="font-semibold">Thời gian</TableHead>
                         <TableHead className="font-semibold">Hành động</TableHead>
-                        <TableHead className="font-semibold">Bảng</TableHead>
+                        <TableHead className="font-semibold">Nghiệp vụ</TableHead>
                         <TableHead className="font-semibold">Mô tả</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {activities.map((act) => (
-                        <TableRow key={act.id}>
-                          <TableCell className="text-xs">{format(new Date(act.created_at), 'dd/MM HH:mm')}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">{act.action_type}</Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{act.table_name || '-'}</TableCell>
-                          <TableCell className="text-sm max-w-[250px] truncate">{act.description || '-'}</TableCell>
-                        </TableRow>
-                      ))}
+                      {activities.map((act) => {
+                        const actionInfo = ACTION_LABELS[act.action_type] || { label: act.action_type, color: 'bg-gray-500' };
+                        const shortCode = act.id.slice(0, 8).toUpperCase();
+                        return (
+                          <TableRow key={act.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <span className="font-mono text-xs text-muted-foreground">#{shortCode}</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(act.id);
+                                    toast.success('Đã sao chép mã thao tác');
+                                  }}
+                                  className="p-0.5 hover:bg-muted rounded"
+                                >
+                                  <Copy className="h-3 w-3 text-muted-foreground" />
+                                </button>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-xs">{format(new Date(act.created_at), 'dd/MM HH:mm')}</TableCell>
+                            <TableCell>
+                              <Badge className={`${actionInfo.color} text-white text-xs`}>
+                                {actionInfo.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {act.table_name ? TABLE_LABELS[act.table_name] || act.table_name : '-'}
+                            </TableCell>
+                            <TableCell className="text-sm max-w-[250px] truncate">{act.description || '-'}</TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
