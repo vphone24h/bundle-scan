@@ -43,11 +43,12 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
       setSupplierId(receipt.supplier_id ?? '_none_');
       setProductEdits(
         details.productImports.map((item: any) => ({
-          productId: item.product_id,
-          name: item.products?.name || '',
-          sku: item.products?.sku || '',
-          imei: item.products?.imei || null,
-          category_id: item.products?.category_id || null,
+          // productImports can come from different sources (products vs product_imports)
+          productId: item.product_id ?? item.id ?? item.products?.id,
+          name: item.products?.name || item.name || '',
+          sku: item.products?.sku || item.sku || '',
+          imei: item.products?.imei || item.imei || null,
+          category_id: item.products?.category_id ?? item.category_id ?? null,
           import_price: Number(item.import_price),
           originalPrice: Number(item.import_price),
           displayPrice: formatNumberWithSpaces(Number(item.import_price)),
