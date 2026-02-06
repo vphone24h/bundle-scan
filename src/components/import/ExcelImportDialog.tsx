@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import {
   Dialog,
@@ -23,7 +23,7 @@ interface ExcelImportDialogProps {
   categories: { id: string; name: string }[];
   suppliers?: { id: string; name: string }[];
   branches?: { id: string; name: string }[];
-  onImport: (items: ImportReceiptItem[], supplierName?: string, branchName?: string, newSupplierNames?: string[]) => void;
+  onImportMultiple: (groups: { items: ImportReceiptItem[]; supplierName: string; branchName?: string; isNewSupplier: boolean }[]) => void;
   checkIMEI: (imei: string) => Promise<any>;
   batchCheckIMEI?: (imeis: string[]) => Promise<Set<string>>;
 }
@@ -44,13 +44,21 @@ interface ParsedRow {
   errors: string[];
 }
 
+interface SupplierGroup {
+  supplierName: string;
+  isNewSupplier: boolean;
+  rows: ParsedRow[];
+  validCount: number;
+  totalAmount: number;
+}
+
 export function ExcelImportDialog({
   open,
   onOpenChange,
   categories,
   suppliers = [],
   branches = [],
-  onImport,
+  onImportMultiple,
   checkIMEI,
   batchCheckIMEI,
 }: ExcelImportDialogProps) {
@@ -231,6 +239,30 @@ export function ExcelImportDialog({
     }
   };
 
+  // Group rows by supplier
+  const supplierGroups = useMemo((): SupplierGroup[] => {
+    const validRows = parsedRows.filter((row) => row.isValid);
+    const existingSupplierNames = new Set(suppliers?.map(s => s.name.toLowerCase()) || []);
+    
+    // Group by supplier name
+    const groupMap = new Map<string, ParsedRow[]>();
+    validRows.forEach(row => {
+      const key = row.supplierName || 'Không có NCC';
+      if (!groupMap.has(key)) {
+        groupMap.set(key, []);
+      }
+      groupMap.get(key)!.push(row);
+    });
+    
+    return Array.from(groupMap.entries()).map(([supplierName, rows]) => ({
+      supplierName,
+      isNewSupplier: supplierName !== 'Không có NCC' && !existingSupplierNames.has(supplierName.toLowerCase()),
+      rows,
+      validCount: rows.length,
+      totalAmount: rows.reduce((sum, r) => sum + r.importPrice * r.quantity, 0),
+    }));
+  }, [parsedRows, suppliers]);
+
   const handleImport = () => {
     const validRows = parsedRows.filter((row) => row.isValid);
     if (validRows.length === 0) {
@@ -242,36 +274,38 @@ export function ExcelImportDialog({
       return;
     }
 
-    const items: ImportReceiptItem[] = validRows.map((row, index) => ({
-      id: String(Date.now() + index),
-      productName: row.productName,
-      sku: row.sku,
-      imei: row.imei,
-      categoryId: row.categoryId || '',
-      categoryName: row.categoryName,
-      importPrice: row.importPrice,
-      quantity: row.quantity,
-      supplierId: '',
-      supplierName: row.supplierName || '',
-      note: row.note,
-    }));
-
-    // Extract first supplier/branch for the receipt
-    const firstSupplier = validRows.find(r => r.supplierName)?.supplierName;
-    const firstBranch = validRows.find(r => r.branchName)?.branchName;
+    // Group items by supplier for multiple receipts
+    const groups = supplierGroups.map(group => {
+      const items: ImportReceiptItem[] = group.rows.map((row, index) => ({
+        id: String(Date.now() + index + Math.random()),
+        productName: row.productName,
+        sku: row.sku,
+        imei: row.imei,
+        categoryId: row.categoryId || '',
+        categoryName: row.categoryName,
+        importPrice: row.importPrice,
+        quantity: row.quantity,
+        supplierId: '',
+        supplierName: group.supplierName,
+        note: row.note,
+      }));
+      
+      const firstBranch = group.rows.find(r => r.branchName)?.branchName;
+      
+      return {
+        items,
+        supplierName: group.supplierName,
+        branchName: firstBranch,
+        isNewSupplier: group.isNewSupplier,
+      };
+    });
     
-    // Collect unique supplier names that don't exist in the system
-    const existingSupplierNames = new Set(suppliers?.map(s => s.name.toLowerCase()) || []);
-    const newSupplierNames = [...new Set(
-      validRows
-        .filter(r => r.supplierName && !existingSupplierNames.has(r.supplierName.toLowerCase()))
-        .map(r => r.supplierName!)
-    )];
+    onImportMultiple(groups);
     
-    onImport(items, firstSupplier, firstBranch, newSupplierNames);
+    const newSupplierCount = groups.filter(g => g.isNewSupplier).length;
     toast({
       title: 'Nhập dữ liệu thành công',
-      description: `Đã thêm ${items.length} sản phẩm vào giỏ nhập hàng${newSupplierNames.length > 0 ? `. Sẽ tự tạo ${newSupplierNames.length} NCC mới.` : ''}`,
+      description: `Sẽ tạo ${groups.length} phiếu nhập với ${validRows.length} sản phẩm${newSupplierCount > 0 ? `. Tự động tạo ${newSupplierCount} NCC mới.` : ''}`,
     });
     onOpenChange(false);
     setParsedRows([]);
@@ -335,7 +369,7 @@ export function ExcelImportDialog({
 
           {parsedRows.length > 0 && !isLoading && (
             <>
-              <div className="flex gap-4 text-sm">
+              <div className="flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-1 text-success">
                   <CheckCircle2 className="h-4 w-4" />
                   <span>Hợp lệ: {validCount}</span>
@@ -344,9 +378,37 @@ export function ExcelImportDialog({
                   <AlertCircle className="h-4 w-4" />
                   <span>Lỗi: {invalidCount}</span>
                 </div>
+                {supplierGroups.length > 1 && (
+                  <div className="flex items-center gap-1 text-primary font-medium">
+                    <FileSpreadsheet className="h-4 w-4" />
+                    <span>Sẽ tạo {supplierGroups.length} phiếu nhập (theo NCC)</span>
+                  </div>
+                )}
               </div>
 
-              <ScrollArea className="h-[300px] border rounded-lg">
+              {/* Supplier Groups Preview */}
+              {supplierGroups.length > 1 && (
+                <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                  <p className="text-sm font-medium">Phân nhóm theo nhà cung cấp:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {supplierGroups.map((group, idx) => (
+                      <div key={idx} className="bg-card border rounded p-2 text-sm">
+                        <div className="font-medium flex items-center gap-2">
+                          {group.supplierName}
+                          {group.isNewSupplier && (
+                            <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">Mới</span>
+                          )}
+                        </div>
+                        <div className="text-muted-foreground text-xs">
+                          {group.validCount} SP • {formatCurrencyWithSpaces(group.totalAmount)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <ScrollArea className="h-[250px] border rounded-lg">
                 <table className="w-full text-sm">
                   <thead className="bg-muted sticky top-0">
                     <tr>
@@ -407,7 +469,10 @@ export function ExcelImportDialog({
             disabled={validCount === 0 || isLoading || isValidating}
           >
             <Upload className="mr-2 h-4 w-4" />
-            Thêm {validCount} sản phẩm vào giỏ
+            {supplierGroups.length > 1 
+              ? `Tạo ${supplierGroups.length} phiếu (${validCount} SP)`
+              : `Thêm ${validCount} sản phẩm vào giỏ`
+            }
           </Button>
         </DialogFooter>
       </DialogContent>

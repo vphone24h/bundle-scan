@@ -11,6 +11,7 @@ import { useProducts, useCheckIMEI, useBatchCheckIMEI } from '@/hooks/useProduct
 import { useCreateImportReceipt } from '@/hooks/useImportReceipts';
 import { useBranches } from '@/hooks/useBranches';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
+import { supabase } from '@/integrations/supabase/client';
 import { ImportReceiptItem, PaymentSource } from '@/types/warehouse';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -278,9 +279,12 @@ export default function ImportNewPage() {
     });
   };
 
-  const handleExcelImport = async (items: ImportReceiptItem[], supplierName?: string, branchName?: string, newSupplierNames?: string[]) => {
+  const handleExcelImportMultiple = async (groups: { items: ImportReceiptItem[]; supplierName: string; branchName?: string; isNewSupplier: boolean }[]) => {
+    // Collect new supplier names
+    const newSupplierNames = groups.filter(g => g.isNewSupplier).map(g => g.supplierName);
+    
     // Auto-create new suppliers first
-    if (newSupplierNames && newSupplierNames.length > 0) {
+    if (newSupplierNames.length > 0) {
       try {
         for (const name of newSupplierNames) {
           await createSupplier.mutateAsync({ name });
@@ -296,44 +300,115 @@ export default function ImportNewPage() {
           description: error.message,
           variant: 'destructive',
         });
+        return;
       }
     }
     
-    setCart(prev => [...prev, ...items]);
-    
-    // Auto-select supplier from Excel if not already selected
-    // Need to re-fetch suppliers after creation, so we wait for the query to update
-    if (supplierName && !selectedSupplierId) {
-      // Set a timeout to allow the suppliers query to update
-      setTimeout(() => {
-        const updatedSuppliers = suppliers;
-        if (updatedSuppliers) {
-          const matchedSupplier = updatedSuppliers.find(
-            s => s.name.toLowerCase() === supplierName.toLowerCase()
+    // If only one group, add to cart normally
+    if (groups.length === 1) {
+      setCart(prev => [...prev, ...groups[0].items]);
+      
+      // Auto-select supplier
+      if (groups[0].supplierName && groups[0].supplierName !== 'Không có NCC') {
+        setTimeout(() => {
+          const matchedSupplier = suppliers?.find(
+            s => s.name.toLowerCase() === groups[0].supplierName.toLowerCase()
           );
           if (matchedSupplier) {
             setSelectedSupplierId(matchedSupplier.id);
-            toast({
-              title: 'Đã chọn nhà cung cấp từ Excel',
-              description: matchedSupplier.name,
-            });
           }
+        }, 500);
+      }
+      
+      // Auto-select branch
+      if (groups[0].branchName && branches) {
+        const matchedBranch = branches.find(
+          b => b.name.toLowerCase() === groups[0].branchName!.toLowerCase()
+        );
+        if (matchedBranch) {
+          setSelectedBranchId(matchedBranch.id);
         }
-      }, 500);
+      }
+      return;
     }
     
-    // Auto-select branch from Excel if provided
-    if (branchName && branches) {
-      const matchedBranch = branches.find(
-        b => b.name.toLowerCase() === branchName.toLowerCase()
-      );
-      if (matchedBranch) {
-        setSelectedBranchId(matchedBranch.id);
-        toast({
-          title: 'Đã chọn chi nhánh từ Excel',
-          description: matchedBranch.name,
+    // Multiple groups - create receipts directly
+    setIsSubmitting(true);
+    let successCount = 0;
+    let failCount = 0;
+    
+    // Wait for suppliers to be available after creation
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    for (const group of groups) {
+      try {
+        // Find supplier ID (either existing or newly created)
+        let supplierId: string | null = null;
+        if (group.supplierName && group.supplierName !== 'Không có NCC') {
+          // Re-query suppliers to get fresh data
+          const { data: freshSuppliers } = await supabase
+            .from('suppliers')
+            .select('id, name')
+            .ilike('name', group.supplierName);
+          
+          const matchedSupplier = freshSuppliers?.find(
+            s => s.name.toLowerCase() === group.supplierName.toLowerCase()
+          );
+          supplierId = matchedSupplier?.id || null;
+        }
+        
+        // Find branch ID
+        let branchId = selectedBranchId;
+        if (group.branchName && branches) {
+          const matchedBranch = branches.find(
+            b => b.name.toLowerCase() === group.branchName!.toLowerCase()
+          );
+          if (matchedBranch) {
+            branchId = matchedBranch.id;
+          }
+        }
+        
+        // Create receipt with all items paid in full
+        await createImportReceipt.mutateAsync({
+          products: group.items.map(item => ({
+            name: item.productName,
+            sku: item.sku,
+            imei: item.imei || null,
+            category_id: item.categoryId || null,
+            import_price: item.importPrice,
+            quantity: item.quantity,
+            supplier_id: supplierId,
+            note: item.note || null,
+          })),
+          payments: [{
+            type: 'cash',
+            amount: group.items.reduce((sum, item) => sum + item.importPrice * item.quantity, 0),
+          }],
+          supplierId,
+          branchId: branchId || null,
         });
+        
+        successCount++;
+      } catch (error: any) {
+        console.error(`Error creating receipt for ${group.supplierName}:`, error);
+        failCount++;
       }
+    }
+    
+    setIsSubmitting(false);
+    
+    if (successCount > 0) {
+      toast({
+        title: 'Nhập hàng thành công!',
+        description: `Đã tạo ${successCount} phiếu nhập${failCount > 0 ? `, ${failCount} phiếu lỗi` : ''}`,
+      });
+      navigate('/import/history');
+    } else {
+      toast({
+        title: 'Lỗi nhập hàng',
+        description: 'Không thể tạo phiếu nhập. Vui lòng thử lại.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -628,7 +703,7 @@ export default function ImportNewPage() {
         categories={categories?.map(c => ({ id: c.id, name: c.name })) || []}
         suppliers={suppliers?.map(s => ({ id: s.id, name: s.name })) || []}
         branches={branches?.map(b => ({ id: b.id, name: b.name })) || []}
-        onImport={handleExcelImport}
+        onImportMultiple={handleExcelImportMultiple}
         checkIMEI={async (imei: string) => {
           try {
             return await checkIMEI.mutateAsync(imei);
