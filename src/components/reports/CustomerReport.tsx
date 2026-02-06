@@ -28,11 +28,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { Users, ShoppingCart, CreditCard, UserPlus, Loader2, Search } from 'lucide-react';
+import { Users, ShoppingCart, CreditCard, UserPlus, Loader2, Search, Download } from 'lucide-react';
 import { format, startOfMonth, subDays, startOfWeek, subMonths } from 'date-fns';
 import { useCustomerReport } from '@/hooks/useCustomerReport';
 import { useBranches } from '@/hooks/useBranches';
 import { formatCurrency } from '@/lib/mockData';
+import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib/exportExcel';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
 
@@ -96,6 +97,30 @@ export function CustomerReport() {
     orders: i.orderCount,
   }));
 
+  const handleExportExcel = () => {
+    if (!filteredItems.length) return;
+    exportToExcel({
+      filename: `BC_Khach_hang_${startDate}_${endDate}`,
+      sheetName: 'Khách hàng',
+      columns: [
+        { header: 'STT', key: 'stt', width: 6, isNumeric: true },
+        { header: 'Khách hàng', key: 'customerName', width: 25 },
+        { header: 'SĐT', key: 'phone', width: 15 },
+        { header: 'Hạng', key: 'tierLabel', width: 14 },
+        { header: 'Đơn hàng', key: 'orderCount', width: 10, isNumeric: true },
+        { header: 'Tổng mua', key: 'totalSpent', width: 18, isNumeric: true },
+        { header: 'Công nợ', key: 'debtAmount', width: 18, isNumeric: true },
+        { header: 'Điểm', key: 'currentPoints', width: 10, isNumeric: true },
+        { header: 'Mua gần nhất', key: 'lastPurchaseDate', width: 14, format: (v) => v ? formatDateForExcel(v) : '' },
+      ],
+      data: filteredItems.map((item, idx) => ({
+        ...item,
+        stt: idx + 1,
+        tierLabel: TIER_LABELS[item.membershipTier] || item.membershipTier,
+      })),
+    });
+  };
+
   if (isLoading) {
     return <div className="min-h-[400px] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
@@ -112,6 +137,10 @@ export function CustomerReport() {
               ))}
             </div>
             <div className="flex-1" />
+            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!filteredItems.length}>
+              <Download className="h-4 w-4 mr-1" />
+              Xuất Excel
+            </Button>
             <div className="flex gap-2 items-end">
               <div><Label>Từ ngày</Label><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" /></div>
               <div><Label>Đến ngày</Label><Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" /></div>
