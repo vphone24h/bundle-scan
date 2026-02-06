@@ -20,7 +20,7 @@ export function useProductReport(filters?: {
   startDate?: string;
   endDate?: string;
   branchId?: string;
-  sort?: 'best' | 'worst' | 'stock_high' | 'stock_low' | 'profit';
+  sort?: 'best' | 'worst' | 'stock_high' | 'stock_low' | 'profit' | 'revenue';
 }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
@@ -152,6 +152,7 @@ export function useProductReport(filters?: {
         case 'stock_high': items.sort((a, b) => b.currentStock - a.currentStock); break;
         case 'stock_low': items.sort((a, b) => a.currentStock - b.currentStock); break;
         case 'profit': items.sort((a, b) => b.totalProfit - a.totalProfit); break;
+        case 'revenue': items.sort((a, b) => b.totalRevenue - a.totalRevenue); break;
         case 'best':
         default: items.sort((a, b) => b.quantitySold - a.quantitySold); break;
       }
