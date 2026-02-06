@@ -289,39 +289,40 @@ export default function ImportHistoryPage() {
     toast({ title: 'Xuất Excel thành công', description: `Đã xuất ${filteredReceipts.length} phiếu nhập` });
   };
 
-  // Export to Excel - Products
+  // Export to Excel - Products (matching import template format for consistency)
   const handleExportProducts = () => {
     if (filteredProducts.length === 0) {
       toast({ title: 'Không có dữ liệu', description: 'Không có sản phẩm nào để xuất', variant: 'destructive' });
       return;
     }
 
+    // Column order matches import template: IMEI | Tên SP | SKU | Giá nhập | Ngày nhập | NCC | Chi nhánh | Thư mục | SL | Ghi chú | Trạng thái
     exportToExcel({
       filename: `San_pham_nhap_${format(new Date(), 'ddMMyyyy')}`,
-      sheetName: 'Sản phẩm nhập',
+      sheetName: 'Nhập hàng',
       columns: [
-        { header: 'STT', key: 'stt', width: 6 },
-        { header: 'Tên sản phẩm', key: 'name', width: 35 },
-        { header: 'SKU', key: 'sku', width: 18 },
         { header: 'IMEI', key: 'imei', width: 18 },
-        { header: 'Danh mục', key: 'category_name', width: 18 },
+        { header: 'Tên sản phẩm', key: 'name', width: 35 },
+        { header: 'SKU', key: 'sku', width: 35 },
         { header: 'Giá nhập', key: 'import_price', width: 15, format: (v) => formatCurrencyForExcel(v) },
         { header: 'Ngày nhập', key: 'import_date', width: 12, format: (v) => formatDateForExcel(v) },
-        { header: 'Nhà cung cấp', key: 'supplier_name', width: 20 },
-        { header: 'Chi nhánh', key: 'branch_name', width: 18 },
-        { header: 'Ghi chú', key: 'note', width: 25 },
-        { header: 'Trạng thái', key: 'status', width: 12, format: (v) => v === 'in_stock' ? 'Tồn kho' : v === 'sold' ? 'Đã bán' : 'Đã trả' },
+        { header: 'Nhà cung cấp', key: 'supplier_name', width: 18 },
+        { header: 'Chi nhánh', key: 'branch_name', width: 15 },
+        { header: 'Thư mục', key: 'category_name', width: 15 },
+        { header: 'Số lượng', key: 'quantity', width: 10 },
+        { header: 'Ghi chú', key: 'note', width: 30 },
+        { header: 'Trạng thái', key: 'status', width: 12, format: (v) => v === 'in_stock' ? 'Tồn kho' : v === 'sold' ? 'Đã bán' : v === 'returned' ? 'Đã trả NCC' : v === 'deleted' ? 'Đã xóa' : v },
       ],
-      data: filteredProducts.map((p, index) => ({
-        stt: index + 1,
+      data: filteredProducts.map((p) => ({
+        imei: p.imei || '',
         name: p.name,
         sku: p.sku,
-        imei: p.imei || '',
-        category_name: p.categories?.name || '',
         import_price: p.import_price,
         import_date: p.import_date,
         supplier_name: p.suppliers?.name || '',
         branch_name: p.branches?.name || '',
+        category_name: p.categories?.name || '',
+        quantity: p.quantity || 1,
         note: p.note || '',
         status: p.status,
       })),
