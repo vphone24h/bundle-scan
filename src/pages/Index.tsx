@@ -79,7 +79,7 @@ const Index = () => {
             icon={<TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />}
           />
           <StatCard
-            title="Tổng giá trị nhập"
+            title="Giá trị kho"
             value={formatCurrency(stats?.totalImportValue || 0)}
             icon={<Wallet className="h-5 w-5 sm:h-6 sm:w-6" />}
           />
