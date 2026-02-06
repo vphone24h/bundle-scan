@@ -60,7 +60,7 @@ import { useInvoiceTemplateByBranch } from '@/hooks/useInvoiceTemplates';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { EditExportItemDialog } from '@/components/export/EditExportItemDialog';
 import { ReceiptReturnDialog } from '@/components/returns/ReceiptReturnDialog';
-import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib/exportExcel';
+import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   completed: { label: 'Hoàn tất', variant: 'default' },
@@ -245,17 +245,17 @@ export default function ExportHistoryPage() {
       filename: `Lich_su_xuat_hang_${format(new Date(), 'ddMMyyyy')}`,
       sheetName: 'Lịch sử xuất hàng',
       columns: [
-        { header: 'STT', key: 'stt', width: 6 },
+        { header: 'STT', key: 'stt', width: 6, isNumeric: true },
         { header: 'Mã phiếu', key: 'code', width: 18 },
         { header: 'Ngày xuất', key: 'export_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
         { header: 'Khách hàng', key: 'customer_name', width: 25 },
         { header: 'SĐT', key: 'customer_phone', width: 15 },
-        { header: 'Số SP', key: 'item_count', width: 8 },
-        { header: 'Tổng tiền', key: 'total_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
-        { header: 'Thuế (%)', key: 'vat_rate', width: 10 },
-        { header: 'Tiền thuế', key: 'vat_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
-        { header: 'Đã thanh toán', key: 'paid_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
-        { header: 'Công nợ', key: 'debt_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Số SP', key: 'item_count', width: 8, isNumeric: true },
+        { header: 'Tổng tiền', key: 'total_amount', width: 15, isNumeric: true },
+        { header: 'Thuế (%)', key: 'vat_rate', width: 10, isNumeric: true },
+        { header: 'Tiền thuế', key: 'vat_amount', width: 15, isNumeric: true },
+        { header: 'Đã thanh toán', key: 'paid_amount', width: 15, isNumeric: true },
+        { header: 'Công nợ', key: 'debt_amount', width: 15, isNumeric: true },
         { header: 'Trạng thái', key: 'status', width: 15, format: (v) => statusLabels[v]?.label || v },
         { header: 'Chi nhánh', key: 'branch_name', width: 20 },
       ],

@@ -28,7 +28,7 @@ import { useDetailedProfitReport } from '@/hooks/useDetailedProfitReport';
 import { useBranches } from '@/hooks/useBranches';
 import { useCategories } from '@/hooks/useCategories';
 import { formatCurrency } from '@/lib/mockData';
-import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib/exportExcel';
+import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
 import { startOfMonth, subDays, startOfWeek, subWeeks, subMonths, endOfWeek, endOfMonth } from 'date-fns';
 
 const timePresets = [
@@ -181,16 +181,16 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
       filename: `Bao_cao_loi_nhuan_${startDate}_${endDate}`,
       sheetName: 'Lợi nhuận chi tiết',
       columns: [
-        { header: 'STT', key: 'stt', width: 6 },
+        { header: 'STT', key: 'stt', width: 6, isNumeric: true },
         { header: 'Sản phẩm', key: 'productName', width: 35 },
         { header: 'SKU', key: 'sku', width: 15 },
         { header: 'IMEI', key: 'imei', width: 18 },
         { header: 'Khách hàng', key: 'customerName', width: 20 },
         { header: 'Chi nhánh', key: 'branchName', width: 18 },
-        { header: 'Giá nhập', key: 'importPrice', width: 15, format: (v) => formatCurrencyForExcel(v) },
-        { header: 'Giá bán', key: 'salePrice', width: 15, format: (v) => formatCurrencyForExcel(v) },
-        { header: 'Số lượng', key: 'quantity', width: 10 },
-        { header: 'Lợi nhuận', key: 'profit', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Giá nhập', key: 'importPrice', width: 15, isNumeric: true },
+        { header: 'Giá bán', key: 'salePrice', width: 15, isNumeric: true },
+        { header: 'Số lượng', key: 'quantity', width: 10, isNumeric: true },
+        { header: 'Lợi nhuận', key: 'profit', width: 15, isNumeric: true },
         { header: 'Margin %', key: 'margin', width: 12 },
         { header: 'Ngày bán', key: 'saleDate', width: 18, format: (v) => v ? formatDateForExcel(v, 'dd/MM/yyyy HH:mm') : '' },
         { header: 'Trạng thái', key: 'status', width: 12 },

@@ -4,7 +4,9 @@ interface ExportColumn {
   header: string;
   key: string;
   width?: number;
-  format?: (value: any, row?: any) => string;
+  format?: (value: any, row?: any) => string | number;
+  // If true, the value will be kept as number for Excel calculations
+  isNumeric?: boolean;
 }
 
 interface ExportOptions {
@@ -25,6 +27,12 @@ export function exportToExcel({ filename, sheetName = 'Data', columns, data }: E
   const rows = data.map(row => 
     columns.map(col => {
       const value = row[col.key];
+      
+      // If column is marked as numeric, keep as number for Excel calculations
+      if (col.isNumeric && typeof value === 'number') {
+        return value;
+      }
+      
       if (col.format) {
         return col.format(value, row);
       }
@@ -50,9 +58,17 @@ export function exportToExcel({ filename, sheetName = 'Data', columns, data }: E
 }
 
 /**
- * Format currency value for Excel
+ * Format currency value for Excel - returns NUMBER for calculations
  */
-export function formatCurrencyForExcel(value: number): string {
+export function formatCurrencyForExcel(value: number): number {
+  return value || 0;
+}
+
+/**
+ * Format currency value as display string (with thousand separators)
+ * Use this only when you want the display format, not for calculations
+ */
+export function formatCurrencyDisplayForExcel(value: number): string {
   return value?.toLocaleString('vi-VN') || '0';
 }
 
