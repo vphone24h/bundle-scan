@@ -319,8 +319,8 @@ export function ExcelImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5" />
             Nhập hàng từ Excel
@@ -330,7 +330,7 @@ export function ExcelImportDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 flex-1 overflow-y-auto min-h-0">
           <div className="form-field">
             <Label htmlFor="excelFile">Chọn file Excel (.xlsx, .xls)</Label>
             <Input
@@ -460,7 +460,7 @@ export function ExcelImportDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0 border-t pt-4 mt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Huỷ
           </Button>
