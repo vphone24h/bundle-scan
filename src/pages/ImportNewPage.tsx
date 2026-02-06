@@ -10,7 +10,7 @@ import { useSuppliers, useCreateSupplier } from '@/hooks/useSuppliers';
 import { useProducts, useCheckIMEI, useBatchCheckIMEI } from '@/hooks/useProducts';
 import { useCreateImportReceipt } from '@/hooks/useImportReceipts';
 import { useBranches } from '@/hooks/useBranches';
-import { useUserGuideUrl } from '@/hooks/useAppConfig';
+import { useImportGuideUrl } from '@/hooks/useAppConfig';
 import { supabase } from '@/integrations/supabase/client';
 import { ImportReceiptItem, PaymentSource } from '@/types/warehouse';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,7 @@ export default function ImportNewPage() {
   const { data: suppliers } = useSuppliers();
   const { data: products } = useProducts();
   const { data: branches } = useBranches();
-  const userGuideUrl = useUserGuideUrl();
+  const importGuideUrl = useImportGuideUrl();
   const createCategory = useCreateCategory();
   const createSupplier = useCreateSupplier();
   const createImportReceipt = useCreateImportReceipt();
@@ -447,13 +447,13 @@ export default function ImportNewPage() {
         description="Nhập hàng thủ công hoặc từ file Excel"
         actions={
           <div className="flex gap-2 flex-wrap">
-            {userGuideUrl && (
+            {importGuideUrl && (
               <Button 
                 variant="default" 
                 asChild 
                 className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md animate-pulse hover:animate-none"
               >
-                <a href={userGuideUrl} target="_blank" rel="noopener noreferrer">
+                <a href={importGuideUrl} target="_blank" rel="noopener noreferrer">
                   <BookOpen className="mr-2 h-4 w-4" />
                   Hướng dẫn sử dụng
                 </a>

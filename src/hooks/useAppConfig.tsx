@@ -38,3 +38,8 @@ export function useBarcodePrintGuideUrl() {
   const { data: configs } = useAppConfig();
   return configs?.find(c => c.config_key === 'barcode_print_guide_url')?.config_value || null;
 }
+
+export function useImportGuideUrl() {
+  const { data: configs } = useAppConfig();
+  return configs?.find(c => c.config_key === 'import_guide_url')?.config_value || null;
+}
