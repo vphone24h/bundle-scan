@@ -54,7 +54,7 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
           action_type: 'UPDATE',
           table_name: 'export_receipt_items',
           record_id: itemId,
-          description: `Chỉnh sửa bảo hành sản phẩm đã bán: ${item?.product_name}`,
+          description: `Thay đổi thời gian bảo hành: ${item?.product_name}`,
           old_data: oldData,
           new_data: updates,
         });
