@@ -20,6 +20,7 @@ export interface InventoryFilters {
   productType: 'all' | 'with_imei' | 'without_imei';
   stockStatus: 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
   oldStockDays: number | null;
+  stockSort: 'none' | 'stock_high' | 'stock_low';
 }
 
 interface InventoryFiltersProps {
@@ -60,6 +61,10 @@ export function InventoryFiltersComponent({ filters, onFiltersChange }: Inventor
     onFiltersChange({ ...filters, oldStockDays: value === '_none_' ? null : parseInt(value) });
   };
 
+  const handleStockSortChange = (value: string) => {
+    onFiltersChange({ ...filters, stockSort: value as InventoryFilters['stockSort'] });
+  };
+
   const clearFilters = () => {
     onFiltersChange({
       search: '',
@@ -68,6 +73,7 @@ export function InventoryFiltersComponent({ filters, onFiltersChange }: Inventor
       productType: 'all',
       stockStatus: 'all',
       oldStockDays: null,
+      stockSort: 'none',
     });
   };
 
@@ -76,7 +82,8 @@ export function InventoryFiltersComponent({ filters, onFiltersChange }: Inventor
     filters.branchId ||
     filters.productType !== 'all' ||
     filters.stockStatus !== 'all' ||
-    filters.oldStockDays !== null;
+    filters.oldStockDays !== null ||
+    filters.stockSort !== 'none';
 
   return (
     <div className="space-y-4">
@@ -201,6 +208,21 @@ export function InventoryFiltersComponent({ filters, onFiltersChange }: Inventor
                 <SelectItem value="30">Trên 30 ngày</SelectItem>
                 <SelectItem value="60">Trên 60 ngày</SelectItem>
                 <SelectItem value="90">Trên 90 ngày</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Stock Quantity Sort */}
+          <div>
+            <label className="mb-2 block text-sm font-medium">Tồn kho theo số lượng</label>
+            <Select value={filters.stockSort} onValueChange={handleStockSortChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Không sắp xếp" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover">
+                <SelectItem value="none">Không sắp xếp</SelectItem>
+                <SelectItem value="stock_high">Tồn kho nhiều nhất</SelectItem>
+                <SelectItem value="stock_low">Tồn kho ít nhất</SelectItem>
               </SelectContent>
             </Select>
           </div>

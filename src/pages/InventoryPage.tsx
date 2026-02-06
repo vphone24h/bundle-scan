@@ -29,13 +29,14 @@ export default function InventoryPage() {
     productType: 'all',
     stockStatus: 'all',
     oldStockDays: null,
+    stockSort: 'none',
   });
 
   // Filter inventory based on filters
   const filteredInventory = useMemo(() => {
-    if (!inventory) return [];
+    if (!inventory) return [] as InventoryItem[];
 
-    return inventory.filter((item) => {
+    const filtered = inventory.filter((item) => {
       // Search filter
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
@@ -80,6 +81,15 @@ export default function InventoryPage() {
 
       return true;
     });
+
+    // Apply stock sort
+    if (filters.stockSort === 'stock_high') {
+      filtered.sort((a, b) => b.stock - a.stock);
+    } else if (filters.stockSort === 'stock_low') {
+      filtered.sort((a, b) => a.stock - b.stock);
+    }
+
+    return filtered;
   }, [inventory, filters]);
 
   // Pagination
