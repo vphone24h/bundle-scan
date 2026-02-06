@@ -2,7 +2,13 @@ import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   BookOpen,
   DollarSign,
@@ -31,6 +37,7 @@ export default function ReportsPage() {
   const reportsGuideUrl = useReportsGuideUrl();
 
   const activeReport = reportTabs.find(t => t.id === activeTab);
+  const ActiveIcon = activeReport?.icon || DollarSign;
 
   return (
     <MainLayout>
@@ -50,29 +57,28 @@ export default function ReportsPage() {
       />
 
       <div className="p-6 space-y-6">
-        {/* Report Navigation Tabs */}
-        <div className="flex flex-wrap gap-2">
-          {reportTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <Button
-                key={tab.id}
-                variant={isActive ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'gap-2 transition-all',
-                  isActive && 'shadow-md'
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{tab.label}</span>
-                <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
-              </Button>
-            );
-          })}
-        </div>
+        {/* Report Selector Dropdown */}
+        <Select value={activeTab} onValueChange={setActiveTab}>
+          <SelectTrigger className="w-full sm:w-72">
+            <div className="flex items-center gap-2">
+              <ActiveIcon className="h-4 w-4" />
+              <SelectValue />
+            </div>
+          </SelectTrigger>
+          <SelectContent className="bg-popover">
+            {reportTabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <SelectItem key={tab.id} value={tab.id}>
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4" />
+                    <span>{tab.label}</span>
+                  </div>
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
 
         {/* Report Content */}
         {activeTab === 'revenue' && <RevenueProfitReport />}
