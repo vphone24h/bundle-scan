@@ -329,7 +329,7 @@ export function useCreateImportReturn() {
       // Audit log
       await supabase.from('audit_logs').insert([{
         user_id: user.id,
-        action_type: 'create',
+        action_type: 'IMPORT_RETURN',
         table_name: 'import_returns',
         record_id: returnData.id,
         branch_id: product.branch_id || null,
