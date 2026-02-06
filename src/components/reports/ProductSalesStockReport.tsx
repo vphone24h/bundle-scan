@@ -32,6 +32,7 @@ import { Package, TrendingUp, Archive, DollarSign, Loader2, Search, Download } f
 import { format, startOfMonth, subDays, startOfWeek, subMonths } from 'date-fns';
 import { useProductReport } from '@/hooks/useProductReport';
 import { useBranches } from '@/hooks/useBranches';
+import { useCategories } from '@/hooks/useCategories';
 import { formatCurrency } from '@/lib/mockData';
 import { exportToExcel, formatCurrencyForExcel } from '@/lib/exportExcel';
 import { usePagination } from '@/hooks/usePagination';
@@ -50,10 +51,12 @@ export function ProductSalesStockReport() {
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(today);
   const [branchId, setBranchId] = useState('_all_');
-  const [sort, setSort] = useState<'best' | 'worst' | 'stock_high' | 'stock_low' | 'profit' | 'category'>('best');
+  const [sort, setSort] = useState<'best' | 'worst' | 'stock_high' | 'stock_low' | 'profit'>('best');
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('_all_');
 
   const { data: branches } = useBranches();
+  const { data: categories } = useCategories();
 
   const { data, isLoading } = useProductReport({
     startDate,
@@ -62,9 +65,11 @@ export function ProductSalesStockReport() {
     sort,
   });
 
-  const filteredItems = (data?.items || []).filter(item =>
-    !search || item.productName.toLowerCase().includes(search.toLowerCase()) || item.sku.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredItems = (data?.items || []).filter(item => {
+    if (search && !item.productName.toLowerCase().includes(search.toLowerCase()) && !item.sku.toLowerCase().includes(search.toLowerCase())) return false;
+    if (categoryFilter !== '_all_' && item.categoryName !== categoryFilter) return false;
+    return true;
+  });
 
   const pagination = usePagination(filteredItems, { storageKey: 'product-report' });
 
@@ -146,6 +151,18 @@ export function ProductSalesStockReport() {
               </Select>
             </div>
             <div>
+              <Label>Danh mục</Label>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="_all_">Tất cả</SelectItem>
+                  {Array.from(new Set((data?.items || []).map(i => i.categoryName))).sort((a, b) => a.localeCompare(b, 'vi')).map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label>Sắp xếp</Label>
               <Select value={sort} onValueChange={(v) => setSort(v as any)}>
                 <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
@@ -155,7 +172,6 @@ export function ProductSalesStockReport() {
                   <SelectItem value="profit">Lợi nhuận cao</SelectItem>
                   <SelectItem value="stock_high">Tồn kho nhiều</SelectItem>
                   <SelectItem value="stock_low">Tồn kho ít</SelectItem>
-                  <SelectItem value="category">Theo danh mục</SelectItem>
                 </SelectContent>
               </Select>
             </div>
