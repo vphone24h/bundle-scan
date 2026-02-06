@@ -271,12 +271,15 @@ export function useCreateStockTransfer() {
         if (updateError) throw updateError;
       }
 
-      // Audit log
+      // Audit logs - create separate entries for sender and receiver branches
       const productSummary = products.map(p =>
         p.imei ? `${p.name} (IMEI: ${p.imei})` : `${p.name} x${p.quantity}`
       ).join(', ');
 
-      await supabase.from('audit_logs').insert([{
+      const auditLogs: any[] = [];
+
+      // Log for sender branch (Chi nhánh A): "Chuyển hàng"
+      auditLogs.push({
         user_id: user.id,
         action_type: 'TRANSFER_STOCK',
         table_name: 'stock_transfer_requests',
@@ -289,9 +292,31 @@ export function useCreateStockTransfer() {
           status,
           product_count: products.length,
         },
-        description: `${isAutoApprove ? 'Chuyển hàng (tự duyệt)' : 'Tạo phiếu chuyển hàng'}: ${products.length} SP từ "${fromBranchName}" → "${toBranchName}": ${productSummary.substring(0, 200)}`,
+        description: `Chuyển hàng${isAutoApprove ? ' (tự duyệt)' : ''}: ${products.length} SP → "${toBranchName}": ${productSummary.substring(0, 300)}`,
         tenant_id: tenantId,
-      }]);
+      });
+
+      // If auto-approved (super admin), also create receiver log immediately
+      if (isAutoApprove) {
+        auditLogs.push({
+          user_id: user.id,
+          action_type: 'RECEIVE_STOCK',
+          table_name: 'stock_transfer_requests',
+          record_id: request.id,
+          branch_id: toBranchId,
+          old_data: { from_branch_id: fromBranchId, from_branch_name: fromBranchName },
+          new_data: {
+            to_branch_id: toBranchId,
+            to_branch_name: toBranchName,
+            status: 'approved',
+            product_count: products.length,
+          },
+          description: `Nhận hàng (tự duyệt): ${products.length} SP từ "${fromBranchName}": ${productSummary.substring(0, 300)}`,
+          tenant_id: tenantId,
+        });
+      }
+
+      await supabase.from('audit_logs').insert(auditLogs);
 
       return { count: products.length, status };
     },
@@ -357,7 +382,7 @@ export function useApproveTransfer() {
 
       if (statusError) throw statusError;
 
-      // Get branch names for audit log
+      // Get branch names & product details for audit log
       const { data: branches } = await supabase
         .from('branches')
         .select('id, name')
@@ -366,16 +391,34 @@ export function useApproveTransfer() {
       const fromName = branches?.find((b: any) => b.id === request.from_branch_id)?.name || '';
       const toName = branches?.find((b: any) => b.id === request.to_branch_id)?.name || '';
 
-      await supabase.from('audit_logs').insert([{
-        user_id: user.id,
-        action_type: 'TRANSFER_STOCK',
-        table_name: 'stock_transfer_requests',
-        record_id: requestId,
-        branch_id: request.to_branch_id,
-        new_data: { status: 'approved', product_count: productIds.length },
-        description: `Duyệt phiếu chuyển hàng: ${productIds.length} SP từ "${fromName}" → "${toName}"`,
-        tenant_id: tenantId,
-      }]);
+      const productSummary = (items || []).map((i: any) =>
+        i.imei ? `${i.product_name} (IMEI: ${i.imei})` : `${i.product_name} x${i.quantity}`
+      ).join(', ');
+
+      // Create receiver log for branch B: "Nhận hàng"
+      await supabase.from('audit_logs').insert([
+        {
+          user_id: user.id,
+          action_type: 'RECEIVE_STOCK',
+          table_name: 'stock_transfer_requests',
+          record_id: requestId,
+          branch_id: request.to_branch_id,
+          old_data: { from_branch_id: request.from_branch_id, from_branch_name: fromName },
+          new_data: { status: 'approved', product_count: productIds.length },
+          description: `Nhận hàng: ${productIds.length} SP từ "${fromName}": ${productSummary.substring(0, 300)}`,
+          tenant_id: tenantId,
+        },
+        {
+          user_id: user.id,
+          action_type: 'APPROVE_TRANSFER',
+          table_name: 'stock_transfer_requests',
+          record_id: requestId,
+          branch_id: request.from_branch_id,
+          new_data: { status: 'approved', product_count: productIds.length },
+          description: `Duyệt phiếu chuyển hàng: ${productIds.length} SP từ "${fromName}" → "${toName}"`,
+          tenant_id: tenantId,
+        },
+      ]);
 
       return { count: productIds.length };
     },
@@ -422,16 +465,32 @@ export function useRejectTransfer() {
 
       if (error) throw error;
 
-      await supabase.from('audit_logs').insert([{
-        user_id: user.id,
-        action_type: 'TRANSFER_STOCK',
-        table_name: 'stock_transfer_requests',
-        record_id: requestId,
-        branch_id: request.to_branch_id,
-        new_data: { status: 'rejected', reason },
-        description: `Từ chối phiếu chuyển hàng từ "${(request as any).from_branch?.name}" → "${(request as any).to_branch?.name}"${reason ? `: ${reason}` : ''}`,
-        tenant_id: tenantId,
-      }]);
+      const fromBranchName = (request as any).from_branch?.name || '';
+      const toBranchName = (request as any).to_branch?.name || '';
+
+      // Create reject log for both branches
+      await supabase.from('audit_logs').insert([
+        {
+          user_id: user.id,
+          action_type: 'REJECT_TRANSFER',
+          table_name: 'stock_transfer_requests',
+          record_id: requestId,
+          branch_id: request.from_branch_id,
+          new_data: { status: 'rejected', reason },
+          description: `Từ chối phiếu chuyển hàng: từ "${fromBranchName}" → "${toBranchName}"${reason ? `: ${reason}` : ''}`,
+          tenant_id: tenantId,
+        },
+        {
+          user_id: user.id,
+          action_type: 'REJECT_TRANSFER',
+          table_name: 'stock_transfer_requests',
+          record_id: requestId,
+          branch_id: request.to_branch_id,
+          new_data: { status: 'rejected', reason },
+          description: `Từ chối nhận hàng: từ "${fromBranchName}" → "${toBranchName}"${reason ? `: ${reason}` : ''}`,
+          tenant_id: tenantId,
+        },
+      ]);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stock-transfer-requests'] });
