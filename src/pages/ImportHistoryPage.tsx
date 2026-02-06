@@ -39,7 +39,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
-import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib/exportExcel';
+import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
 import type { Product } from '@/hooks/useProducts';
 import { EditImportReceiptDialog } from '@/components/import/EditImportReceiptDialog';
 import { ReturnImportReceiptDialog } from '@/components/import/ReturnImportReceiptDialog';
@@ -261,12 +261,12 @@ export default function ImportHistoryPage() {
       filename: `Phieu_nhap_hang_${format(new Date(), 'ddMMyyyy')}`,
       sheetName: 'Phiếu nhập hàng',
       columns: [
-        { header: 'STT', key: 'stt', width: 6 },
+        { header: 'STT', key: 'stt', width: 6, isNumeric: true },
         { header: 'Mã phiếu', key: 'code', width: 18 },
         { header: 'Ngày nhập', key: 'import_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
-        { header: 'Tổng tiền', key: 'total_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
-        { header: 'Đã thanh toán', key: 'paid_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
-        { header: 'Còn nợ', key: 'debt_amount', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Tổng tiền', key: 'total_amount', width: 15, isNumeric: true },
+        { header: 'Đã thanh toán', key: 'paid_amount', width: 15, isNumeric: true },
+        { header: 'Còn nợ', key: 'debt_amount', width: 15, isNumeric: true },
         { header: 'Nhà cung cấp', key: 'supplier_name', width: 25 },
         { header: 'Chi nhánh', key: 'branch_name', width: 20 },
         { header: 'Ghi chú', key: 'note', width: 30 },
@@ -304,12 +304,12 @@ export default function ImportHistoryPage() {
         { header: 'IMEI', key: 'imei', width: 18 },
         { header: 'Tên sản phẩm', key: 'name', width: 35 },
         { header: 'SKU', key: 'sku', width: 35 },
-        { header: 'Giá nhập', key: 'import_price', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Giá nhập', key: 'import_price', width: 15, isNumeric: true },
         { header: 'Ngày nhập', key: 'import_date', width: 12, format: (v) => formatDateForExcel(v) },
         { header: 'Nhà cung cấp', key: 'supplier_name', width: 18 },
         { header: 'Chi nhánh', key: 'branch_name', width: 15 },
         { header: 'Thư mục', key: 'category_name', width: 15 },
-        { header: 'Số lượng', key: 'quantity', width: 10 },
+        { header: 'Số lượng', key: 'quantity', width: 10, isNumeric: true },
         { header: 'Ghi chú', key: 'note', width: 30 },
         { header: 'Trạng thái', key: 'status', width: 12, format: (v) => v === 'in_stock' ? 'Tồn kho' : v === 'sold' ? 'Đã bán' : v === 'returned' ? 'Đã trả NCC' : v === 'deleted' ? 'Đã xóa' : v },
       ],

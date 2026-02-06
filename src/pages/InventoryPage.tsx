@@ -14,7 +14,7 @@ import { InventoryStats } from '@/components/inventory/InventoryStats';
 import { StockCountTab } from '@/components/stockCount/StockCountTab';
 import { WarrantyTab } from '@/components/inventory/WarrantyTab';
 import { useToast } from '@/hooks/use-toast';
-import { exportToExcel, formatCurrencyForExcel } from '@/lib/exportExcel';
+import { exportToExcel } from '@/lib/exportExcel';
 
 export default function InventoryPage() {
   const { toast } = useToast();
@@ -118,17 +118,17 @@ export default function InventoryPage() {
       filename: `Ton_kho_${format(new Date(), 'ddMMyyyy')}`,
       sheetName: 'Tồn kho',
       columns: [
-        { header: 'STT', key: 'stt', width: 6 },
+        { header: 'STT', key: 'stt', width: 6, isNumeric: true },
         { header: 'Tên sản phẩm', key: 'productName', width: 35 },
         { header: 'SKU', key: 'sku', width: 18 },
         { header: 'Chi nhánh', key: 'branchName', width: 20 },
         { header: 'Danh mục', key: 'categoryName', width: 18 },
         { header: 'Loại', key: 'type', width: 12 },
-        { header: 'Tổng nhập', key: 'totalImported', width: 12 },
-        { header: 'Đã bán', key: 'totalSold', width: 10 },
-        { header: 'Tồn kho', key: 'stock', width: 10 },
-        { header: 'Giá nhập TB', key: 'avgImportPrice', width: 15, format: (v) => formatCurrencyForExcel(v) },
-        { header: 'Giá trị tồn', key: 'stockValue', width: 18, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Tổng nhập', key: 'totalImported', width: 12, isNumeric: true },
+        { header: 'Đã bán', key: 'totalSold', width: 10, isNumeric: true },
+        { header: 'Tồn kho', key: 'stock', width: 10, isNumeric: true },
+        { header: 'Giá nhập TB', key: 'avgImportPrice', width: 15, isNumeric: true },
+        { header: 'Giá trị tồn', key: 'stockValue', width: 18, isNumeric: true },
       ],
       data: filteredInventory.map((item, index) => ({
         stt: index + 1,

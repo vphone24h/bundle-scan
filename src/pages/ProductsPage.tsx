@@ -26,7 +26,7 @@ import { Search, Barcode, Loader2, Filter, X, Download } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/mockData';
-import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib/exportExcel';
+import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
 
 // Map Product to the format expected by ProductTable
 function mapProductForTable(product: Product) {
@@ -158,12 +158,12 @@ export default function ProductsPage() {
       filename: `San_pham_${format(new Date(), 'ddMMyyyy')}`,
       sheetName: 'Sản phẩm',
       columns: [
-        { header: 'STT', key: 'stt', width: 6 },
+        { header: 'STT', key: 'stt', width: 6, isNumeric: true },
         { header: 'Tên sản phẩm', key: 'name', width: 35 },
         { header: 'SKU', key: 'sku', width: 18 },
         { header: 'IMEI', key: 'imei', width: 18 },
         { header: 'Danh mục', key: 'categoryName', width: 18 },
-        { header: 'Giá nhập', key: 'importPrice', width: 15, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Giá nhập', key: 'importPrice', width: 15, isNumeric: true },
         { header: 'Ngày nhập', key: 'importDate', width: 12, format: (v) => formatDateForExcel(v) },
         { header: 'Nhà cung cấp', key: 'supplierName', width: 20 },
         { header: 'Chi nhánh', key: 'branchName', width: 18 },

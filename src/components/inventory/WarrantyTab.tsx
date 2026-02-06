@@ -9,7 +9,7 @@ import { InventoryFiltersComponent, InventoryFilters } from './InventoryFilters'
 import { WarrantyTable } from './WarrantyTable';
 import { InventoryStats } from './InventoryStats';
 import { useToast } from '@/hooks/use-toast';
-import { exportToExcel, formatCurrencyForExcel } from '@/lib/exportExcel';
+import { exportToExcel } from '@/lib/exportExcel';
 
 export function WarrantyTab() {
   const { toast } = useToast();
@@ -93,15 +93,15 @@ export function WarrantyTab() {
       filename: `Hang_bao_hanh_${format(new Date(), 'ddMMyyyy')}`,
       sheetName: 'Hàng bảo hành',
       columns: [
-        { header: 'STT', key: 'stt', width: 6 },
+        { header: 'STT', key: 'stt', width: 6, isNumeric: true },
         { header: 'Tên sản phẩm', key: 'productName', width: 35 },
         { header: 'SKU', key: 'sku', width: 18 },
         { header: 'Chi nhánh', key: 'branchName', width: 20 },
         { header: 'Danh mục', key: 'categoryName', width: 18 },
         { header: 'Loại', key: 'type', width: 12 },
-        { header: 'Số lượng BH', key: 'stock', width: 12 },
-        { header: 'Giá nhập TB', key: 'avgImportPrice', width: 15, format: (v) => formatCurrencyForExcel(v) },
-        { header: 'Giá trị', key: 'stockValue', width: 18, format: (v) => formatCurrencyForExcel(v) },
+        { header: 'Số lượng BH', key: 'stock', width: 12, isNumeric: true },
+        { header: 'Giá nhập TB', key: 'avgImportPrice', width: 15, isNumeric: true },
+        { header: 'Giá trị', key: 'stockValue', width: 18, isNumeric: true },
       ],
       data: filteredInventory.map((item, index) => ({
         stt: index + 1,

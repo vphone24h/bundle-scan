@@ -42,7 +42,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { exportToExcel, formatCurrencyForExcel, formatDateForExcel } from '@/lib/exportExcel';
+import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
 import {
   Plus,
   Wallet,
@@ -608,12 +608,12 @@ export default function CashBookPage() {
       filename: `So_quy_${format(new Date(), 'ddMMyyyy')}`,
       sheetName: 'Sổ quỹ',
       columns: [
-        { header: 'STT', key: 'stt', width: 6 },
+        { header: 'STT', key: 'stt', width: 6, isNumeric: true },
         { header: 'Ngày', key: 'transaction_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
         { header: 'Loại', key: 'type', width: 8, format: (v) => v === 'expense' ? 'Chi' : 'Thu' },
         { header: 'Danh mục', key: 'category', width: 20 },
         { header: 'Mô tả', key: 'description', width: 35 },
-        { header: 'Số tiền', key: 'amount', width: 15, format: (v, row) => formatCurrencyForExcel(row.type === 'expense' ? -Number(v) : Number(v)) },
+        { header: 'Số tiền', key: 'signed_amount', width: 15, isNumeric: true },
         { header: 'Nguồn tiền', key: 'payment_source', width: 15, format: (v) => paymentSourceLabels[v] || v },
         { header: 'Chi nhánh', key: 'branch_name', width: 20 },
         { header: 'Hạch toán KD', key: 'is_business_accounting', width: 12, format: (v) => v ? 'Có' : 'Không' },
@@ -625,7 +625,7 @@ export default function CashBookPage() {
         type: e.type,
         category: e.category,
         description: e.description,
-        amount: e.amount,
+        signed_amount: e.type === 'expense' ? -Number(e.amount) : Number(e.amount),
         payment_source: e.payment_source,
         branch_name: e.branches?.name || '',
         is_business_accounting: e.is_business_accounting,
