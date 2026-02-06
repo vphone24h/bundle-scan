@@ -22,6 +22,7 @@ export function WarrantyTab() {
     productType: 'all',
     stockStatus: 'all',
     oldStockDays: null,
+    stockSort: 'none',
   });
 
   // Filter warranty inventory based on filters
