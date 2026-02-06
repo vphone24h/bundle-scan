@@ -22,8 +22,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Pencil, Trash2, Phone, MapPin, Search, Loader2 } from 'lucide-react';
+import { Plus, MoreHorizontal, Pencil, Trash2, Phone, MapPin, Search, Loader2, Eye } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { SupplierDetailDialog } from '@/components/suppliers/SupplierDetailDialog';
 
 export default function SuppliersPage() {
   const { data: suppliers, isLoading } = useSuppliers();
@@ -33,6 +34,7 @@ export default function SuppliersPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editSupplier, setEditSupplier] = useState<Supplier | null>(null);
+  const [detailSupplier, setDetailSupplier] = useState<Supplier | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [form, setForm] = useState({
     name: '',
@@ -144,7 +146,11 @@ export default function SuppliersPage() {
         {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {pagination.paginatedData.map((supplier) => (
-            <div key={supplier.id} className="bg-card border rounded-xl p-4 hover:shadow-md transition-shadow">
+            <div 
+              key={supplier.id} 
+              className="bg-card border rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => setDetailSupplier(supplier)}
+            >
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-semibold">{supplier.name}</h3>
@@ -154,17 +160,26 @@ export default function SuppliersPage() {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-popover">
-                    <DropdownMenuItem onClick={() => handleEdit(supplier)}>
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDetailSupplier(supplier); }}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      Xem chi tiết
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(supplier); }}>
                       <Pencil className="mr-2 h-4 w-4" />
                       Chỉnh sửa
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => handleDelete(supplier)}
+                      onClick={(e) => { e.stopPropagation(); handleDelete(supplier); }}
                       className="text-destructive"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
@@ -286,6 +301,13 @@ export default function SuppliersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Supplier Detail Dialog */}
+      <SupplierDetailDialog
+        supplier={detailSupplier}
+        open={!!detailSupplier}
+        onOpenChange={(open) => !open && setDetailSupplier(null)}
+      />
     </MainLayout>
   );
 }
