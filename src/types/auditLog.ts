@@ -96,6 +96,9 @@ export const ACTION_LABELS: Record<string, { label: string; color: string; criti
   BALANCE: { label: 'Cân bằng kho', color: 'bg-amber-500' },
   
   // ========== THAO TÁC QUAN TRỌNG (CRITICAL) ==========
+  // Xóa sản phẩm
+  DELETE_IMEI_PRODUCT: { label: 'Xóa sản phẩm', color: 'bg-red-600', critical: true },
+  
   // Xóa phiếu nhập/xuất
   DELETE_IMPORT: { label: 'Xóa phiếu nhập', color: 'bg-red-600', critical: true },
   DELETE_EXPORT: { label: 'Xóa phiếu xuất', color: 'bg-red-600', critical: true },
@@ -107,6 +110,9 @@ export const ACTION_LABELS: Record<string, { label: string; color: string; criti
   UPDATE_CASH_BOOK: { label: 'Sửa sổ quỹ', color: 'bg-orange-600', critical: true },
   EDIT_CASH_BOOK: { label: 'Sửa sổ quỹ', color: 'bg-orange-600', critical: true },
   TRANSFER_FUNDS: { label: 'Chuyển tiền nội bộ', color: 'bg-indigo-500' },
+  
+  // Ngưng test / xóa dữ liệu
+  DELETE_ALL_WAREHOUSE_DATA: { label: 'Ngưng Test', color: 'bg-gray-600', critical: true },
 };
 
 // Tên bảng dữ liệu
