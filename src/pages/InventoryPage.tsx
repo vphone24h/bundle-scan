@@ -89,9 +89,11 @@ export default function InventoryPage() {
 
   // Calculate filtered stats including total value
   const filteredStats = useMemo(() => {
-    // Tính tổng giá trị kho = sum(stock * avgImportPrice) cho mỗi item
+    // Tính tổng giá trị kho = tổng totalImportCost của tất cả item (đồng bộ với Dashboard)
+    // Đối với sản phẩm có IMEI: totalImportCost = tổng import_price của các SP in_stock
+    // Đối với sản phẩm không IMEI: totalImportCost = tổng total_import_cost của các SP in_stock
     const totalValue = filteredInventory.reduce((sum, item) => {
-      return sum + (item.stock * item.avgImportPrice);
+      return sum + item.totalImportCost;
     }, 0);
 
     return {

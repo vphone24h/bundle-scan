@@ -14,33 +14,31 @@ export function ImportInventorySummary({ products, isFiltered = false }: ImportI
     // Tổng tất cả sản phẩm đã nhập (bao gồm đã bán, còn hàng, đã trả)
     const allProducts = products || [];
     
+    // Helper function để tính giá trị chính xác
+    const getProductValue = (p: Product) => {
+      // Sử dụng total_import_cost nếu có, nếu không thì dùng import_price * quantity
+      return Number(p.total_import_cost || (Number(p.import_price) * (p.quantity || 1)));
+    };
+    
     // Tổng giá trị kho hàng nhập (tất cả sản phẩm)
-    const totalImportValue = allProducts.reduce((sum, p) => {
-      return sum + (Number(p.import_price) * (p.quantity || 1));
-    }, 0);
+    const totalImportValue = allProducts.reduce((sum, p) => sum + getProductValue(p), 0);
     
     // Tổng số lượng sản phẩm
     const totalQuantity = allProducts.reduce((sum, p) => sum + (p.quantity || 1), 0);
     
     // Sản phẩm còn tồn kho (in_stock)
     const inStockProducts = allProducts.filter(p => p.status === 'in_stock');
-    const inStockValue = inStockProducts.reduce((sum, p) => {
-      return sum + (Number(p.import_price) * (p.quantity || 1));
-    }, 0);
+    const inStockValue = inStockProducts.reduce((sum, p) => sum + getProductValue(p), 0);
     const inStockQuantity = inStockProducts.reduce((sum, p) => sum + (p.quantity || 1), 0);
     
     // Sản phẩm đã bán (sold)
     const soldProducts = allProducts.filter(p => p.status === 'sold');
-    const soldValue = soldProducts.reduce((sum, p) => {
-      return sum + (Number(p.import_price) * (p.quantity || 1));
-    }, 0);
+    const soldValue = soldProducts.reduce((sum, p) => sum + getProductValue(p), 0);
     const soldQuantity = soldProducts.reduce((sum, p) => sum + (p.quantity || 1), 0);
     
     // Sản phẩm đã trả NCC (returned)
     const returnedProducts = allProducts.filter(p => p.status === 'returned');
-    const returnedValue = returnedProducts.reduce((sum, p) => {
-      return sum + (Number(p.import_price) * (p.quantity || 1));
-    }, 0);
+    const returnedValue = returnedProducts.reduce((sum, p) => sum + getProductValue(p), 0);
     const returnedQuantity = returnedProducts.reduce((sum, p) => sum + (p.quantity || 1), 0);
 
     return {

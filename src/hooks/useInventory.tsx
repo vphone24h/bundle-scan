@@ -105,12 +105,19 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
     if (existing) {
       if (product.imei) {
         existing.totalImported += 1;
-        if (product.status === 'sold') existing.totalSold += 1;
+        if (product.status === 'sold') {
+          existing.totalSold += 1;
+        } else if (product.status === 'in_stock') {
+          // Chỉ cộng totalImportCost cho sản phẩm in_stock
+          existing.totalImportCost += Number(product.import_price);
+        }
         existing.stock = existing.totalImported - existing.totalSold;
         existing.products.push(productDetail);
         existing.hasImei = true;
-        existing.totalImportCost += Number(product.import_price);
-        existing.avgImportPrice = existing.totalImportCost / existing.totalImported;
+        // avgImportPrice = giá trị kho / số lượng tồn
+        existing.avgImportPrice = existing.stock > 0 
+          ? existing.totalImportCost / existing.stock 
+          : 0;
       } else {
         const quantity = product.quantity || 1;
         const totalCost = Number(product.total_import_cost || product.import_price);
@@ -119,7 +126,7 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
           existing.totalImported += quantity;
           existing.stock += quantity;
           existing.totalImportCost += totalCost;
-          existing.avgImportPrice = existing.totalImportCost / existing.totalImported;
+          existing.avgImportPrice = existing.stock > 0 ? existing.totalImportCost / existing.stock : 0;
           existing.products.push(productDetail);
         } else if (product.status === 'sold') {
           existing.totalSold += quantity;
@@ -127,6 +134,8 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
       }
     } else {
       if (product.imei) {
+        // Chỉ khởi tạo totalImportCost nếu in_stock
+        const isInStock = product.status === 'in_stock';
         inventoryMap.set(key, {
           productId: product.id,
           productName: product.name,
@@ -138,15 +147,16 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
           hasImei: true,
           totalImported: 1,
           totalSold: product.status === 'sold' ? 1 : 0,
-          stock: product.status === 'sold' ? 0 : 1,
-          avgImportPrice: Number(product.import_price),
-          totalImportCost: Number(product.import_price),
+          stock: isInStock ? 1 : 0,
+          avgImportPrice: isInStock ? Number(product.import_price) : 0,
+          totalImportCost: isInStock ? Number(product.import_price) : 0,
           products: [productDetail],
         });
       } else {
         const quantity = product.quantity || 1;
         const totalCost = Number(product.total_import_cost || product.import_price);
-        const stockQty = product.status === 'in_stock' ? quantity : 0;
+        const isInStock = product.status === 'in_stock';
+        const stockQty = isInStock ? quantity : 0;
         const soldQty = product.status === 'sold' ? quantity : 0;
         
         inventoryMap.set(key, {
@@ -161,9 +171,9 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
           totalImported: quantity,
           totalSold: soldQty,
           stock: stockQty,
-          avgImportPrice: Number(product.import_price),
-          totalImportCost: totalCost,
-          products: product.status === 'in_stock' ? [productDetail] : [],
+          avgImportPrice: isInStock ? Number(product.import_price) : 0,
+          totalImportCost: isInStock ? totalCost : 0,
+          products: isInStock ? [productDetail] : [],
         });
       }
     }
