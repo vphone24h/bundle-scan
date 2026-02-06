@@ -214,8 +214,16 @@ export function AuditLogTable({ logs, isLoading, profileMap, roleMap, branchMap 
                           }`}>
                             {isCritical && '⚠️ '}{actionInfo.label}
                           </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {log.description || (log.table_name ? TABLE_LABELS[log.table_name] || log.table_name : '-')}
+                          <span className="text-xs text-muted-foreground line-clamp-2">
+                            {(() => {
+                              const desc = log.description || (log.table_name ? TABLE_LABELS[log.table_name] || log.table_name : '-');
+                              // For transfer actions, only show the header part (before product details)
+                              if (['TRANSFER_STOCK', 'RECEIVE_STOCK', 'APPROVE_TRANSFER', 'REJECT_TRANSFER'].includes(log.action_type)) {
+                                const match = desc.match(/^(.+?:\s*\d+\s*SP[^:]+):/);
+                                return match ? match[1] : desc;
+                              }
+                              return desc;
+                            })()}
                           </span>
                         </div>
                       </TableCell>
