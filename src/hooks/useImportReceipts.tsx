@@ -220,134 +220,213 @@ export function useCreateImportReceipt() {
         if (paymentsError) throw paymentsError;
       }
 
-      // Process products - LOGIC MỚI CHO SẢN PHẨM KHÔNG IMEI
-      for (const p of products) {
-        if (p.imei) {
-          // SẢN PHẨM CÓ IMEI: Kiểm tra trùng IMEI trong phạm vi TENANT hiện tại
-          // Chỉ chặn nếu IMEI đã tồn tại trong cùng kho (tenant) với status: in_stock, sold, returned
-          const { data: existingIMEI } = await supabase
-            .from('products')
-            .select('id, name, sku, status')
-            .eq('imei', p.imei)
-            .eq('tenant_id', tenantId) // Chỉ kiểm tra trong tenant hiện tại
-            .in('status', ['in_stock', 'sold', 'returned'])
-            .maybeSingle();
+      // =========== OPTIMIZED BATCH PROCESSING ===========
+      // Separate IMEI and non-IMEI products
+      const imeiProducts = products.filter(p => p.imei);
+      const nonImeiProducts = products.filter(p => !p.imei);
 
-          if (existingIMEI) {
-            const statusText = existingIMEI.status === 'in_stock' ? 'tồn kho' : 
-                               existingIMEI.status === 'sold' ? 'đã bán' : 'đã trả hàng';
-            throw new Error(`IMEI "${p.imei}" đã tồn tại trong kho (${existingIMEI.name} - ${existingIMEI.sku}, trạng thái: ${statusText}). Vui lòng kiểm tra lịch sử nhập/bán/trả hàng.`);
+      // =========== PHASE 1: Batch validate all IMEIs at once ===========
+      if (imeiProducts.length > 0) {
+        const imeis = imeiProducts.map(p => p.imei!);
+        
+        // Single query to check all IMEIs at once
+        const { data: existingIMEIs } = await supabase
+          .from('products')
+          .select('imei, name, sku, status')
+          .in('imei', imeis)
+          .eq('tenant_id', tenantId)
+          .in('status', ['in_stock', 'sold', 'returned']);
+
+        if (existingIMEIs && existingIMEIs.length > 0) {
+          const existing = existingIMEIs[0];
+          const statusText = existing.status === 'in_stock' ? 'tồn kho' : 
+                             existing.status === 'sold' ? 'đã bán' : 'đã trả hàng';
+          throw new Error(`IMEI "${existing.imei}" đã tồn tại trong kho (${existing.name} - ${existing.sku}, trạng thái: ${statusText}). Vui lòng kiểm tra lịch sử nhập/bán/trả hàng.`);
+        }
+      }
+
+      // =========== PHASE 2: Batch check existing non-IMEI products ===========
+      const nonImeiExistingMap = new Map<string, { id: string; quantity: number; total_import_cost: number }>();
+      
+      if (nonImeiProducts.length > 0) {
+        // Create unique keys for lookup
+        const uniqueNonImeiKeys = [...new Set(nonImeiProducts.map(p => `${p.name}|||${p.sku}`))];
+        
+        // Query all potential existing products at once
+        const { data: existingNonImei } = await supabase
+          .from('products')
+          .select('id, name, sku, quantity, total_import_cost')
+          .eq('branch_id', branchId || '')
+          .eq('status', 'in_stock')
+          .is('imei', null)
+          .eq('tenant_id', tenantId);
+
+        if (existingNonImei) {
+          existingNonImei.forEach(p => {
+            nonImeiExistingMap.set(`${p.name}|||${p.sku}`, {
+              id: p.id,
+              quantity: p.quantity,
+              total_import_cost: Number(p.total_import_cost) || 0,
+            });
+          });
+        }
+      }
+
+      // =========== PHASE 3: Prepare batch data ===========
+      const newProducts: any[] = [];
+      const updateOperations: { id: string; updates: any }[] = [];
+      const productImportsToCreate: any[] = [];
+
+      // Process IMEI products (always new)
+      for (const p of imeiProducts) {
+        newProducts.push({
+          name: p.name,
+          sku: p.sku,
+          imei: p.imei,
+          category_id: p.category_id,
+          import_price: p.import_price,
+          quantity: 1,
+          total_import_cost: p.import_price,
+          supplier_id: supplierId,
+          import_receipt_id: receipt.id,
+          branch_id: branchId || null,
+          tenant_id: tenantId,
+          note: p.note,
+        });
+      }
+
+      // Process non-IMEI products
+      const processedNonImeiKeys = new Map<string, { quantity: number; totalCost: number }>();
+      
+      for (const p of nonImeiProducts) {
+        const key = `${p.name}|||${p.sku}`;
+        const existing = nonImeiExistingMap.get(key);
+        
+        if (existing) {
+          // Accumulate updates for existing products
+          if (!processedNonImeiKeys.has(key)) {
+            processedNonImeiKeys.set(key, {
+              quantity: existing.quantity,
+              totalCost: existing.total_import_cost,
+            });
           }
-
-          // Tạo bản ghi riêng lẻ (quantity luôn = 1)
-          const { data: newProduct, error: productError } = await supabase
-            .from('products')
-            .insert([{
-              name: p.name,
-              sku: p.sku,
-              imei: p.imei,
-              category_id: p.category_id,
-              import_price: p.import_price,
-              quantity: 1,
-              total_import_cost: p.import_price,
-              supplier_id: supplierId,
-              import_receipt_id: receipt.id,
-              branch_id: branchId || null,
-              tenant_id: tenantId,
-              note: p.note,
-            }])
-            .select()
-            .single();
-
-          if (productError) throw productError;
-
-          // Tạo bản ghi lịch sử nhập hàng
-          await supabase.from('product_imports').insert([{
-            product_id: newProduct.id,
-            import_receipt_id: receipt.id,
-            quantity: 1,
+          
+          const accumulated = processedNonImeiKeys.get(key)!;
+          accumulated.quantity += p.quantity;
+          accumulated.totalCost += p.import_price * p.quantity;
+          
+          // Will create import history record
+          productImportsToCreate.push({
+            existingProductId: existing.id,
+            quantity: p.quantity,
             import_price: p.import_price,
             supplier_id: supplierId,
             note: p.note,
             created_by: user.id,
-          }]);
-
+          });
         } else {
-          // SẢN PHẨM KHÔNG IMEI: Tìm sản phẩm có cùng name + sku + branch + in_stock
-          const { data: existingProduct } = await supabase
-            .from('products')
-            .select('id, quantity, import_price, total_import_cost')
-            .eq('name', p.name)
-            .eq('sku', p.sku)
-            .eq('branch_id', branchId || '')
-            .eq('status', 'in_stock')
-            .is('imei', null)
-            .maybeSingle();
-
-          if (existingProduct) {
-            // CẬP NHẬT SẢN PHẨM ĐÃ TỒN TẠI
-            const newQuantity = existingProduct.quantity + p.quantity;
-            const newTotalCost = existingProduct.total_import_cost + (p.import_price * p.quantity);
-            const newAvgPrice = newTotalCost / newQuantity;
-
-            await supabase
-              .from('products')
-              .update({
-                quantity: newQuantity,
-                total_import_cost: newTotalCost,
-                import_price: newAvgPrice, // Cập nhật giá nhập TB
-                import_receipt_id: receipt.id, // Cập nhật phiếu nhập gần nhất
-              })
-              .eq('id', existingProduct.id);
-
-            // Tạo bản ghi lịch sử nhập hàng
-            await supabase.from('product_imports').insert([{
-              product_id: existingProduct.id,
-              import_receipt_id: receipt.id,
-              quantity: p.quantity,
-              import_price: p.import_price,
-              supplier_id: supplierId,
-              note: p.note,
-              created_by: user.id,
-            }]);
-
-          } else {
-            // TẠO SẢN PHẨM MỚI với quantity
-            const totalCost = p.import_price * p.quantity;
-            
-            const { data: newProduct, error: productError } = await supabase
-              .from('products')
-              .insert([{
-                name: p.name,
-                sku: p.sku,
-                imei: null,
-                category_id: p.category_id,
-                import_price: p.import_price,
-                quantity: p.quantity,
-                total_import_cost: totalCost,
-                supplier_id: supplierId,
-                import_receipt_id: receipt.id,
-                branch_id: branchId || null,
-                tenant_id: tenantId,
-                note: p.note,
-              }])
-              .select()
-              .single();
-
-            if (productError) throw productError;
-
-            // Tạo bản ghi lịch sử nhập hàng
-            await supabase.from('product_imports').insert([{
-              product_id: newProduct.id,
-              import_receipt_id: receipt.id,
-              quantity: p.quantity,
-              import_price: p.import_price,
-              supplier_id: supplierId,
-              note: p.note,
-              created_by: user.id,
-            }]);
-          }
+          // New product
+          const totalCost = p.import_price * p.quantity;
+          newProducts.push({
+            name: p.name,
+            sku: p.sku,
+            imei: null,
+            category_id: p.category_id,
+            import_price: p.import_price,
+            quantity: p.quantity,
+            total_import_cost: totalCost,
+            supplier_id: supplierId,
+            import_receipt_id: receipt.id,
+            branch_id: branchId || null,
+            tenant_id: tenantId,
+            note: p.note,
+          });
+          
+          // Mark as processed to avoid creating duplicates
+          nonImeiExistingMap.set(key, {
+            id: 'pending', // Will be filled after insert
+            quantity: p.quantity,
+            total_import_cost: totalCost,
+          });
         }
+      }
+
+      // =========== PHASE 4: Execute batch operations ===========
+      
+      // 4a: Batch insert new products
+      let insertedProducts: any[] = [];
+      if (newProducts.length > 0) {
+        const { data: inserted, error: insertError } = await supabase
+          .from('products')
+          .insert(newProducts)
+          .select('id, name, sku, imei, import_price, quantity');
+
+        if (insertError) throw insertError;
+        insertedProducts = inserted || [];
+      }
+
+      // 4b: Batch update existing non-IMEI products
+      for (const [key, accumulated] of processedNonImeiKeys) {
+        const existing = nonImeiExistingMap.get(key);
+        if (existing && existing.id !== 'pending') {
+          const newAvgPrice = accumulated.totalCost / accumulated.quantity;
+          
+          await supabase
+            .from('products')
+            .update({
+              quantity: accumulated.quantity,
+              total_import_cost: accumulated.totalCost,
+              import_price: newAvgPrice,
+              import_receipt_id: receipt.id,
+            })
+            .eq('id', existing.id);
+        }
+      }
+
+      // 4c: Create product_imports records in batch
+      const allProductImports: any[] = [];
+      
+      // For newly inserted products
+      for (const inserted of insertedProducts) {
+        const originalProduct = products.find(p => 
+          p.name === inserted.name && 
+          p.sku === inserted.sku && 
+          (p.imei === inserted.imei || (!p.imei && !inserted.imei))
+        );
+        
+        if (originalProduct) {
+          allProductImports.push({
+            product_id: inserted.id,
+            import_receipt_id: receipt.id,
+            quantity: inserted.quantity,
+            import_price: inserted.import_price,
+            supplier_id: supplierId,
+            note: originalProduct.note,
+            created_by: user.id,
+          });
+        }
+      }
+      
+      // For existing products that were updated
+      for (const importRecord of productImportsToCreate) {
+        allProductImports.push({
+          product_id: importRecord.existingProductId,
+          import_receipt_id: receipt.id,
+          quantity: importRecord.quantity,
+          import_price: importRecord.import_price,
+          supplier_id: importRecord.supplier_id,
+          note: importRecord.note,
+          created_by: importRecord.created_by,
+        });
+      }
+
+      // Batch insert all product_imports
+      if (allProductImports.length > 0) {
+        const { error: importsError } = await supabase
+          .from('product_imports')
+          .insert(allProductImports);
+        
+        if (importsError) console.error('Error creating product_imports:', importsError);
       }
 
       // Create cash book entries for actual payments (not debt)
