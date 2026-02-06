@@ -215,7 +215,7 @@ export function AuditLogTable({ logs, isLoading, profileMap, roleMap, branchMap 
                             {isCritical && '⚠️ '}{actionInfo.label}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
-                            {log.table_name ? TABLE_LABELS[log.table_name] || log.table_name : '-'}
+                            {log.description || (log.table_name ? TABLE_LABELS[log.table_name] || log.table_name : '-')}
                           </span>
                         </div>
                       </TableCell>
