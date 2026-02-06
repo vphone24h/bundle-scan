@@ -116,6 +116,9 @@ export const ACTION_LABELS: Record<string, { label: string; color: string; criti
   ENABLE_TEST_MODE: { label: 'Bật chế độ Test', color: 'bg-yellow-500' },
   DISABLE_TEST_MODE: { label: 'Tắt chế độ Test', color: 'bg-gray-500' },
   SHOW_ALL_DATA: { label: 'Hiện dữ liệu', color: 'bg-teal-500' },
+  
+  // Chuyển hàng giữa chi nhánh
+  TRANSFER_STOCK: { label: 'Chuyển hàng', color: 'bg-violet-500' },
 };
 
 // Tên bảng dữ liệu

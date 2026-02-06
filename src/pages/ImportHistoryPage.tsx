@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2, Settings2, AlertTriangle, Wrench } from 'lucide-react';
+import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2, Settings2, AlertTriangle, Wrench, ArrowRightLeft, CheckSquare, Square } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
@@ -50,6 +50,8 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useMarkProductWarranty } from '@/hooks/useWarrantyInventory';
 import { WarrantyNoteDialog } from '@/components/import/WarrantyNoteDialog';
 import { ImportInventorySummary } from '@/components/import/ImportInventorySummary';
+import { TransferStockDialog } from '@/components/import/TransferStockDialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function ImportHistoryPage() {
   const navigate = useNavigate();
@@ -86,6 +88,10 @@ export default function ImportHistoryPage() {
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [adjustProduct, setAdjustProduct] = useState<Product | null>(null);
+
+  // Multi-select for stock transfer
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
 
   // Calculate receipt return status
   const getReceiptReturnStatus = (receipt: ImportReceipt): 'completed' | 'cancelled' | 'full_return' => {
@@ -250,6 +256,80 @@ export default function ImportHistoryPage() {
   };
 
   const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_';
+
+  // Multi-select helpers for stock transfer
+  const toggleProductSelect = (productId: string) => {
+    setSelectedProductIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  };
+
+  const inStockProducts = useMemo(() => 
+    filteredProducts.filter(p => p.status === 'in_stock'),
+    [filteredProducts]
+  );
+
+  const selectableOnPage = useMemo(() => 
+    productsPagination.paginatedData.filter((p: Product) => p.status === 'in_stock'),
+    [productsPagination.paginatedData]
+  );
+
+  const allPageSelected = selectableOnPage.length > 0 && selectableOnPage.every((p: Product) => selectedProductIds.has(p.id));
+
+  const toggleSelectAllOnPage = () => {
+    if (allPageSelected) {
+      setSelectedProductIds(prev => {
+        const newSet = new Set(prev);
+        selectableOnPage.forEach((p: Product) => newSet.delete(p.id));
+        return newSet;
+      });
+    } else {
+      setSelectedProductIds(prev => {
+        const newSet = new Set(prev);
+        selectableOnPage.forEach((p: Product) => newSet.add(p.id));
+        return newSet;
+      });
+    }
+  };
+
+  // Get selected products and validate they are from the same branch
+  const selectedProducts = useMemo(() => {
+    return filteredProducts.filter(p => selectedProductIds.has(p.id) && p.status === 'in_stock');
+  }, [filteredProducts, selectedProductIds]);
+
+  const selectedBranchId = useMemo(() => {
+    if (selectedProducts.length === 0) return null;
+    const branchIds = new Set(selectedProducts.map(p => p.branch_id));
+    if (branchIds.size > 1) return 'mixed';
+    return selectedProducts[0].branch_id;
+  }, [selectedProducts]);
+
+  const selectedBranchName = useMemo(() => {
+    if (!selectedBranchId || selectedBranchId === 'mixed') return '';
+    return selectedProducts[0]?.branches?.name || '';
+  }, [selectedProducts, selectedBranchId]);
+
+  const handleOpenTransfer = () => {
+    if (selectedProducts.length === 0) {
+      toast({ title: 'Chưa chọn sản phẩm', description: 'Vui lòng chọn ít nhất 1 sản phẩm tồn kho để chuyển', variant: 'destructive' });
+      return;
+    }
+    if (selectedBranchId === 'mixed') {
+      toast({ title: 'Không thể chuyển', description: 'Các sản phẩm chọn phải cùng một chi nhánh. Vui lòng bỏ chọn sản phẩm khác chi nhánh.', variant: 'destructive' });
+      return;
+    }
+    if (!selectedBranchId) {
+      toast({ title: 'Lỗi', description: 'Sản phẩm chưa được gán chi nhánh', variant: 'destructive' });
+      return;
+    }
+    setShowTransferDialog(true);
+  };
 
   // Export to Excel - Receipts
   const handleExportReceipts = () => {
@@ -635,7 +715,40 @@ export default function ImportHistoryPage() {
               isFiltered={Boolean(hasActiveFilters) || searchTerm.length > 0}
             />
 
-            <div className="flex justify-end mb-4">
+            {/* Transfer bar + Export */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2 flex-wrap">
+                {selectedProductIds.size > 0 && (
+                  <>
+                    <Badge variant="secondary" className="gap-1">
+                      <CheckSquare className="h-3.5 w-3.5" />
+                      Đã chọn: {selectedProducts.length}
+                    </Badge>
+                    {selectedBranchId === 'mixed' && (
+                      <Badge variant="destructive" className="text-xs">
+                        Khác chi nhánh!
+                      </Badge>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={handleOpenTransfer}
+                      disabled={selectedBranchId === 'mixed' || selectedProducts.length === 0}
+                      className="gap-1.5"
+                    >
+                      <ArrowRightLeft className="h-3.5 w-3.5" />
+                      Chuyển hàng
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedProductIds(new Set())}
+                      className="text-xs"
+                    >
+                      Bỏ chọn tất cả
+                    </Button>
+                  </>
+                )}
+              </div>
               <Button variant="outline" onClick={handleExportProducts}>
                 <Download className="mr-2 h-4 w-4" />
                 Xuất Excel ({filteredProducts.length})
@@ -645,6 +758,13 @@ export default function ImportHistoryPage() {
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th className="w-10">
+                      <Checkbox
+                        checked={allPageSelected}
+                        onCheckedChange={toggleSelectAllOnPage}
+                        aria-label="Chọn tất cả trên trang"
+                      />
+                    </th>
                     <th>Tên sản phẩm</th>
                     <th>SKU</th>
                     <th>IMEI</th>
@@ -662,7 +782,18 @@ export default function ImportHistoryPage() {
                 </thead>
                 <tbody>
                   {productsPagination.paginatedData.map((product) => (
-                    <tr key={product.id}>
+                    <tr key={product.id} className={cn(selectedProductIds.has(product.id) && 'bg-primary/5')}>
+                      <td>
+                        {product.status === 'in_stock' ? (
+                          <Checkbox
+                            checked={selectedProductIds.has(product.id)}
+                            onCheckedChange={() => toggleProductSelect(product.id)}
+                            aria-label={`Chọn ${product.name}`}
+                          />
+                        ) : (
+                          <span className="block w-4" />
+                        )}
+                      </td>
                       <td className="font-medium">{product.name}</td>
                       <td className="text-muted-foreground">{product.sku}</td>
                       <td className="font-mono text-sm">{product.imei || '-'}</td>
@@ -1097,6 +1228,18 @@ export default function ImportHistoryPage() {
         productName={warrantyProduct?.name}
         isLoading={markWarranty.isPending}
       />
+
+      {/* Transfer Stock Dialog */}
+      {showTransferDialog && selectedBranchId && selectedBranchId !== 'mixed' && (
+        <TransferStockDialog
+          open={showTransferDialog}
+          onOpenChange={setShowTransferDialog}
+          selectedProducts={selectedProducts}
+          fromBranchId={selectedBranchId}
+          fromBranchName={selectedBranchName}
+          onSuccess={() => setSelectedProductIds(new Set())}
+        />
+      )}
     </MainLayout>
   );
 }
