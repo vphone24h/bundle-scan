@@ -30,10 +30,11 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { Users, DollarSign, Target, Award, Loader2 } from 'lucide-react';
+import { Users, DollarSign, Target, Award, Loader2, Download } from 'lucide-react';
 import { format, startOfMonth, subDays, startOfWeek, subMonths } from 'date-fns';
 import { useStaffWithKPI } from '@/hooks/useStaffKPI';
 import { formatCurrency } from '@/lib/mockData';
+import { exportToExcel, formatCurrencyForExcel } from '@/lib/exportExcel';
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Quản lý',
@@ -85,6 +86,36 @@ export function StaffReport() {
       orders: s.stats?.total_orders || 0,
     }));
 
+  const handleExportExcel = () => {
+    if (!staffWithKPI.length) return;
+    exportToExcel({
+      filename: `BC_Nhan_vien_${startDate}_${endDate}`,
+      sheetName: 'Nhân viên',
+      columns: [
+        { header: 'STT', key: 'stt', width: 6, isNumeric: true },
+        { header: 'Nhân viên', key: 'display_name', width: 25 },
+        { header: 'Vai trò', key: 'roleLabel', width: 16 },
+        { header: 'Chi nhánh', key: 'branch_name', width: 18 },
+        { header: 'Doanh thu', key: 'revenue', width: 18, isNumeric: true },
+        { header: 'Đơn hàng', key: 'orders', width: 10, isNumeric: true },
+        { header: 'Khách hàng', key: 'customers', width: 12, isNumeric: true },
+        { header: 'KH mới', key: 'newCustomers', width: 10, isNumeric: true },
+        { header: 'KPI (%)', key: 'kpiPercent', width: 10 },
+      ],
+      data: staffWithKPI.map((s, idx) => ({
+        stt: idx + 1,
+        display_name: s.display_name,
+        roleLabel: ROLE_LABELS[s.user_role] || s.user_role,
+        branch_name: s.branch_name || 'Tất cả',
+        revenue: s.stats?.total_revenue || 0,
+        orders: s.stats?.total_orders || 0,
+        customers: s.stats?.total_customers || 0,
+        newCustomers: s.stats?.new_customers || 0,
+        kpiPercent: s.kpi_setting ? s.achievement_percentage.toFixed(1) + '%' : 'Chưa đặt',
+      })),
+    });
+  };
+
   if (isLoading) {
     return <div className="min-h-[400px] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
@@ -101,6 +132,10 @@ export function StaffReport() {
               ))}
             </div>
             <div className="flex-1" />
+            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!staffWithKPI.length}>
+              <Download className="h-4 w-4 mr-1" />
+              Xuất Excel
+            </Button>
             <div className="flex gap-2 items-end">
               <div><Label>Từ ngày</Label><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" /></div>
               <div><Label>Đến ngày</Label><Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" /></div>

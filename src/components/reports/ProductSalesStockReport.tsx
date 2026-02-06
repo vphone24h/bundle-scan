@@ -28,11 +28,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { Package, TrendingUp, Archive, DollarSign, Loader2, Search } from 'lucide-react';
+import { Package, TrendingUp, Archive, DollarSign, Loader2, Search, Download } from 'lucide-react';
 import { format, startOfMonth, subDays, startOfWeek, subMonths } from 'date-fns';
 import { useProductReport } from '@/hooks/useProductReport';
 import { useBranches } from '@/hooks/useBranches';
 import { formatCurrency } from '@/lib/mockData';
+import { exportToExcel, formatCurrencyForExcel } from '@/lib/exportExcel';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
 
@@ -88,6 +89,26 @@ export function ProductSalesStockReport() {
     profit: i.totalProfit,
   }));
 
+  const handleExportExcel = () => {
+    if (!filteredItems.length) return;
+    exportToExcel({
+      filename: `BC_Hang_hoa_Ban_hang_${startDate}_${endDate}`,
+      sheetName: 'Bán hàng & Tồn kho',
+      columns: [
+        { header: 'STT', key: 'stt', width: 6, isNumeric: true },
+        { header: 'Sản phẩm', key: 'productName', width: 35 },
+        { header: 'SKU', key: 'sku', width: 15 },
+        { header: 'Danh mục', key: 'categoryName', width: 20 },
+        { header: 'Chi nhánh', key: 'branchName', width: 18 },
+        { header: 'SL bán', key: 'quantitySold', width: 10, isNumeric: true },
+        { header: 'Doanh thu', key: 'totalRevenue', width: 18, isNumeric: true },
+        { header: 'Lợi nhuận', key: 'totalProfit', width: 18, isNumeric: true },
+        { header: 'Tồn kho', key: 'currentStock', width: 10, isNumeric: true },
+      ],
+      data: filteredItems.map((item, idx) => ({ ...item, stt: idx + 1 })),
+    });
+  };
+
   if (isLoading) {
     return <div className="min-h-[400px] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
@@ -97,13 +118,17 @@ export function ProductSalesStockReport() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-4 items-end">
+           <div className="flex flex-wrap gap-4 items-end">
             <div className="flex flex-wrap gap-2">
               {timePresets.map((p) => (
                 <Button key={p.value} variant="outline" size="sm" onClick={() => handleTimePreset(p.value)}>{p.label}</Button>
               ))}
             </div>
             <div className="flex-1" />
+            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!filteredItems.length}>
+              <Download className="h-4 w-4 mr-1" />
+              Xuất Excel
+            </Button>
             <div className="flex gap-2 items-end">
               <div><Label>Từ ngày</Label><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" /></div>
               <div><Label>Đến ngày</Label><Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" /></div>

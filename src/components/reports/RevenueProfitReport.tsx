@@ -43,6 +43,7 @@ import {
   Wallet,
   Calculator,
   Loader2,
+  Download,
 } from 'lucide-react';
 import { format, subDays, startOfWeek, startOfMonth, subMonths, subWeeks } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -50,6 +51,7 @@ import { useReportStats, useReportChartData } from '@/hooks/useReportStats';
 import { useBranches } from '@/hooks/useBranches';
 import { useCategories } from '@/hooks/useCategories';
 import { formatCurrency } from '@/lib/mockData';
+import { exportToExcel, formatCurrencyForExcel } from '@/lib/exportExcel';
 
 const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -150,6 +152,39 @@ export function RevenueProfitReport() {
     setEndDate(format(end, 'yyyy-MM-dd'));
   };
 
+  const handleExportExcel = () => {
+    if (!stats) return;
+    const exportData = [
+      { label: '1. Tổng doanh thu bán hàng', value: stats.totalSalesRevenue, note: `${stats.productsSold} SP đã bán` },
+      { label: '2. Doanh thu trả hàng', value: stats.totalReturnRevenue, note: `${stats.productsReturned} SP trả` },
+      { label: '3. Doanh thu thuần', value: stats.netRevenue, note: '= DT bán - DT trả' },
+      { label: '3.1 Lợi nhuận kinh doanh', value: stats.businessProfit, note: 'Σ(Giá bán - Giá nhập)' },
+      { label: '4. Chi phí', value: stats.totalExpenses, note: 'Từ sổ quỹ' },
+      { label: '5. Thu nhập khác', value: stats.otherIncome, note: '' },
+      { label: '6. LỢI NHUẬN THUẦN', value: stats.netProfit, note: '= (LN KD + Thu nhập khác) - Chi phí' },
+    ];
+    // Category data
+    const categoryData = stats.profitByCategory.map((cat, idx) => ({
+      stt: idx + 1,
+      categoryName: cat.categoryName,
+      count: cat.count,
+      revenue: cat.revenue,
+      profit: cat.profit,
+      margin: cat.revenue > 0 ? ((cat.profit / cat.revenue) * 100).toFixed(1) + '%' : '0%',
+    }));
+
+    exportToExcel({
+      filename: `BC_Doanh_thu_Loi_nhuan_${startDate}_${endDate}`,
+      sheetName: 'Tổng hợp',
+      columns: [
+        { header: 'Chỉ tiêu', key: 'label', width: 35 },
+        { header: 'Giá trị', key: 'value', width: 20, isNumeric: true },
+        { header: 'Ghi chú', key: 'note', width: 30 },
+      ],
+      data: exportData,
+    });
+  };
+
   const paymentPieData = stats ? [
     { name: 'Tiền mặt', value: stats.paymentsBySource.cash },
     { name: 'Thẻ NH', value: stats.paymentsBySource.bank_card },
@@ -189,6 +224,10 @@ export function RevenueProfitReport() {
               ))}
             </div>
             <div className="flex-1" />
+            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!stats}>
+              <Download className="h-4 w-4 mr-1" />
+              Xuất Excel
+            </Button>
             <div className="flex gap-2 items-end">
               <div>
                 <Label>Từ ngày</Label>
