@@ -39,6 +39,9 @@ export interface StockTransferItem {
   imei: string | null;
   quantity: number;
   import_price: number;
+  supplier_id: string | null;
+  supplier_name: string | null;
+  note: string | null;
   created_at: string;
 }
 
@@ -183,10 +186,10 @@ export function useCreateStockTransfer() {
       const tenantId = await getCurrentTenantId();
       if (!tenantId) throw new Error('Không tìm thấy tenant');
 
-      // Fetch products
+      // Fetch products with supplier info
       const { data: products, error: fetchError } = await supabase
         .from('products')
-        .select('id, name, sku, imei, branch_id, status, quantity, import_price')
+        .select('id, name, sku, imei, branch_id, status, quantity, import_price, supplier_id, note')
         .in('id', productIds)
         .eq('tenant_id', tenantId);
 
@@ -226,7 +229,18 @@ export function useCreateStockTransfer() {
 
       if (reqError) throw reqError;
 
-      // Insert items
+      // Fetch supplier names for snapshot
+      const supplierIds = [...new Set(products.map(p => p.supplier_id).filter(Boolean))] as string[];
+      let supplierMap: Record<string, string> = {};
+      if (supplierIds.length > 0) {
+        const { data: suppliers } = await supabase
+          .from('suppliers')
+          .select('id, name')
+          .in('id', supplierIds);
+        (suppliers || []).forEach((s: any) => { supplierMap[s.id] = s.name; });
+      }
+
+      // Insert items with supplier & note info
       const items = products.map(p => ({
         transfer_request_id: request.id,
         product_id: p.id,
@@ -235,6 +249,9 @@ export function useCreateStockTransfer() {
         imei: p.imei || null,
         quantity: p.quantity,
         import_price: Number(p.import_price),
+        supplier_id: p.supplier_id || null,
+        supplier_name: p.supplier_id ? (supplierMap[p.supplier_id] || null) : null,
+        note: p.note || null,
       }));
 
       const { error: itemsError } = await supabase

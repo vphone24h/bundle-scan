@@ -3464,10 +3464,13 @@ export type Database = {
           id: string
           imei: string | null
           import_price: number
+          note: string | null
           product_id: string
           product_name: string
           quantity: number
           sku: string
+          supplier_id: string | null
+          supplier_name: string | null
           transfer_request_id: string
         }
         Insert: {
@@ -3475,10 +3478,13 @@ export type Database = {
           id?: string
           imei?: string | null
           import_price?: number
+          note?: string | null
           product_id: string
           product_name: string
           quantity?: number
           sku: string
+          supplier_id?: string | null
+          supplier_name?: string | null
           transfer_request_id: string
         }
         Update: {
@@ -3486,10 +3492,13 @@ export type Database = {
           id?: string
           imei?: string | null
           import_price?: number
+          note?: string | null
           product_id?: string
           product_name?: string
           quantity?: number
           sku?: string
+          supplier_id?: string | null
+          supplier_name?: string | null
           transfer_request_id?: string
         }
         Relationships: [
@@ -3498,6 +3507,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfer_items_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
           {

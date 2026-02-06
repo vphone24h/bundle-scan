@@ -346,7 +346,13 @@ export default function StockTransferPage() {
                         <div className="text-xs text-muted-foreground pl-7 space-y-0.5">
                           <div>SKU: {item.sku}</div>
                           {item.imei && <div className="font-mono">IMEI: {item.imei}</div>}
-                          <div className="flex gap-4">
+                          {item.supplier_name && (
+                            <div>NCC: <span className="text-foreground font-medium">{item.supplier_name}</span></div>
+                          )}
+                          {item.note && (
+                            <div className="italic">Ghi chú: {item.note}</div>
+                          )}
+                          <div className="flex gap-4 flex-wrap">
                             <span>SL: {item.quantity}</span>
                             <span>Giá nhập: {formatCurrency(item.import_price)}</span>
                             <span className="font-medium text-foreground">
