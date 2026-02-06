@@ -7,6 +7,10 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AuditLog, ACTION_LABELS, TABLE_LABELS } from '@/types/auditLog';
 import { ProductIdentityCard } from './ProductIdentityCard';
+import { useSuppliers } from '@/hooks/useSuppliers';
+import { useCategories } from '@/hooks/useCategories';
+import { useCustomers } from '@/hooks/useCustomers';
+import { useMemo } from 'react';
 
 interface AuditLogDetailDialogProps {
   log: AuditLog | null;
@@ -142,6 +146,61 @@ export function AuditLogDetailDialog({
   roleMap,
   branchMap,
 }: AuditLogDetailDialogProps) {
+  // Hooks must be called before any early returns
+  const { data: suppliers } = useSuppliers();
+  const { data: categories } = useCategories();
+  const { data: customers } = useCustomers();
+  
+  // Build lookup maps for entities
+  const supplierMap = useMemo(() => {
+    const map = new Map<string, string>();
+    suppliers?.forEach(s => map.set(s.id, s.name));
+    return map;
+  }, [suppliers]);
+  
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+    categories?.forEach(c => map.set(c.id, c.name));
+    return map;
+  }, [categories]);
+  
+  const customerMap = useMemo(() => {
+    const map = new Map<string, string>();
+    customers?.forEach(c => map.set(c.id, `${c.name} (${c.phone})`));
+    return map;
+  }, [customers]);
+
+  // Helper to resolve entity IDs to names
+  const resolveEntityId = (key: string, value: unknown): string | null => {
+    if (!value || typeof value !== 'string') return null;
+    
+    if (key === 'supplier_id') {
+      return supplierMap.get(value) || null;
+    }
+    if (key === 'category_id') {
+      return categoryMap.get(value) || null;
+    }
+    if (key === 'customer_id') {
+      return customerMap.get(value) || null;
+    }
+    if (key === 'branch_id') {
+      return branchMap.get(value) || null;
+    }
+    return null;
+  };
+
+  // Format field value with entity resolution
+  const formatFieldValueWithLookup = (key: string, value: unknown): string => {
+    // First try to resolve entity IDs
+    const resolvedName = resolveEntityId(key, value);
+    if (resolvedName) {
+      return resolvedName;
+    }
+    
+    // Fall back to generic formatting
+    return formatFieldValue(key, value);
+  };
+
   if (!log) return null;
 
   const actionInfo = ACTION_LABELS[log.action_type] || { label: log.action_type, color: 'bg-gray-500' };
@@ -310,27 +369,27 @@ export function AuditLogDetailDialog({
                 <Separator />
                 <div>
                   <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    <AlertTriangle className="h-4 w-4 text-warning" />
                     Chi tiết thay đổi (Trước → Sau)
                   </h4>
                   <div className="space-y-2">
                     {changes.map(({ field, oldValue, newValue }) => (
-                      <div key={field} className="p-3 bg-muted/30 rounded border-l-4 border-amber-500">
+                      <div key={field} className="p-3 bg-muted/30 rounded border-l-4 border-warning">
                         <div className="font-medium text-sm mb-2">
                           {FIELD_LABELS[field] || field}
                         </div>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
-                          <div className="flex-1 p-2 bg-red-500/10 rounded">
+                          <div className="flex-1 p-2 bg-destructive/10 rounded">
                             <span className="text-xs text-muted-foreground block mb-1">Trước:</span>
                             <span className="line-through text-muted-foreground break-all">
-                              {formatFieldValue(field, oldValue)}
+                              {formatFieldValueWithLookup(field, oldValue)}
                             </span>
                           </div>
                           <ArrowRight className="h-4 w-4 text-muted-foreground hidden sm:block" />
-                          <div className="flex-1 p-2 bg-green-500/10 rounded">
+                          <div className="flex-1 p-2 bg-success/10 rounded">
                             <span className="text-xs text-muted-foreground block mb-1">Sau:</span>
                             <span className="font-medium text-foreground break-all">
-                              {formatFieldValue(field, newValue)}
+                              {formatFieldValueWithLookup(field, newValue)}
                             </span>
                           </div>
                         </div>
@@ -355,7 +414,7 @@ export function AuditLogDetailDialog({
                           <span className="font-medium min-w-[120px] text-muted-foreground">
                             {FIELD_LABELS[key] || key}:
                           </span>
-                          <span>{formatFieldValue(key, value)}</span>
+                          <span>{formatFieldValueWithLookup(key, value)}</span>
                         </div>
                       ))}
                   </div>
@@ -377,7 +436,7 @@ export function AuditLogDetailDialog({
                           <span className="font-medium min-w-[120px] text-muted-foreground">
                             {FIELD_LABELS[key] || key}:
                           </span>
-                          <span>{formatFieldValue(key, value)}</span>
+                          <span>{formatFieldValueWithLookup(key, value)}</span>
                         </div>
                       ))}
                   </div>
@@ -425,7 +484,7 @@ export function AuditLogDetailDialog({
                           <span className="font-medium min-w-[120px] text-muted-foreground">
                             {FIELD_LABELS[key] || key}:
                           </span>
-                          <span className="text-muted-foreground">{formatFieldValue(key, value)}</span>
+                          <span className="text-muted-foreground">{formatFieldValueWithLookup(key, value)}</span>
                         </div>
                       ))}
                   </div>
