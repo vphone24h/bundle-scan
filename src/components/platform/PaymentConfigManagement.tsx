@@ -361,12 +361,11 @@ export function PaymentConfigManagement() {
             </h3>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
-                <Label>Link Zalo</Label>
+                <Label>SĐT Zalo</Label>
                 <Input
-                  type="url"
                   value={feedbackZaloUrl}
                   onChange={(e) => setFeedbackZaloUrl(e.target.value)}
-                  placeholder="https://zalo.me/..."
+                  placeholder="0123456789"
                 />
               </div>
               <div className="space-y-2">

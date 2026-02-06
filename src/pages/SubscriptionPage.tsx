@@ -423,7 +423,7 @@ export default function SubscriptionPage() {
               <div className="grid gap-4 sm:grid-cols-3">
                 {feedbackZaloUrl && (
                   <a
-                    href={feedbackZaloUrl}
+                    href={`https://zalo.me/${feedbackZaloUrl.replace(/\D/g, '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors group"
@@ -433,7 +433,7 @@ export default function SubscriptionPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-sm">Zalo</p>
-                      <p className="text-xs text-muted-foreground truncate">Nhắn tin trực tiếp</p>
+                      <p className="text-xs text-muted-foreground truncate">{feedbackZaloUrl}</p>
                     </div>
                     <ExternalLink className="h-4 w-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   </a>
