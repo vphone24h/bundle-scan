@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -18,6 +19,7 @@ import {
   useSubscriptionHistory,
   calculateRemainingDays 
 } from '@/hooks/useTenant';
+import { usePermissions } from '@/hooks/usePermissions';
 import { 
   CreditCard, 
   Check, 
@@ -29,7 +31,9 @@ import {
   Phone,
   QrCode,
   Trash2,
-  XCircle
+  XCircle,
+  MessageCircle,
+  ExternalLink
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { formatNumber } from '@/lib/formatNumber';
@@ -63,6 +67,7 @@ export default function SubscriptionPage() {
   const { data: plans } = useSubscriptionPlans();
   const { data: payments, refetch: refetchPayments } = usePaymentRequests(tenant?.id);
   const { data: history } = useSubscriptionHistory(tenant?.id);
+  const { data: permissions } = usePermissions();
   const createPayment = useCreatePaymentRequest();
   const cancelPayment = useCancelPaymentRequest();
 
@@ -101,8 +106,12 @@ export default function SubscriptionPage() {
 
   const hotline = configs?.find(c => c.config_key === 'hotline')?.config_value || '0909 123 456';
   const companyName = configs?.find(c => c.config_key === 'company_name')?.config_value || 'Kho Hàng Pro';
+  const feedbackZaloUrl = configs?.find(c => c.config_key === 'feedback_zalo_url')?.config_value || '';
+  const feedbackFbUrl = configs?.find(c => c.config_key === 'feedback_fb_url')?.config_value || '';
+  const feedbackHotline = configs?.find(c => c.config_key === 'feedback_hotline')?.config_value || '';
   const primaryBank = bankAccounts?.[0];
 
+  const isSuperAdmin = permissions?.role === 'super_admin';
   const remainingDays = calculateRemainingDays(tenant || null);
   const pendingPayment = payments?.find(p => p.status === 'pending');
 
@@ -397,6 +406,78 @@ export default function SubscriptionPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Feedback Tab - Only for super_admin */}
+        {isSuperAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5" />
+                Góp ý & Yêu cầu tính năng
+              </CardTitle>
+              <CardDescription>
+                Mọi góp ý hoặc yêu cầu thêm tính năng, vui lòng liên hệ qua các kênh bên dưới
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {feedbackZaloUrl && (
+                  <a
+                    href={feedbackZaloUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex-shrink-0">
+                      <MessageCircle className="h-6 w-6" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm">Zalo</p>
+                      <p className="text-xs text-muted-foreground truncate">Nhắn tin trực tiếp</p>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </a>
+                )}
+                {feedbackFbUrl && (
+                  <a
+                    href={feedbackFbUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                      <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm">Facebook</p>
+                      <p className="text-xs text-muted-foreground truncate">Fanpage hỗ trợ</p>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </a>
+                )}
+                {feedbackHotline && (
+                  <a
+                    href={`tel:${feedbackHotline.replace(/\s/g, '')}`}
+                    className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 flex-shrink-0">
+                      <Phone className="h-6 w-6" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm">Hotline</p>
+                      <p className="text-xs text-primary font-mono">{feedbackHotline}</p>
+                    </div>
+                  </a>
+                )}
+              </div>
+              {!feedbackZaloUrl && !feedbackFbUrl && !feedbackHotline && (
+                <p className="text-center py-4 text-muted-foreground text-sm">
+                  Chưa có thông tin liên hệ. Vui lòng liên hệ quản trị viên nền tảng.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Payment Instructions Dialog with QR */}

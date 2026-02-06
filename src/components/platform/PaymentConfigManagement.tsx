@@ -61,6 +61,9 @@ export function PaymentConfigManagement() {
   const [reportsGuideUrl, setReportsGuideUrl] = useState('');
   const [barcodePrintGuideUrl, setBarcodePrintGuideUrl] = useState('');
   const [importGuideUrl, setImportGuideUrl] = useState('');
+  const [feedbackZaloUrl, setFeedbackZaloUrl] = useState('');
+  const [feedbackFbUrl, setFeedbackFbUrl] = useState('');
+  const [feedbackHotline, setFeedbackHotline] = useState('');
   const [savingConfig, setSavingConfig] = useState(false);
 
   // Bank account dialog
@@ -109,6 +112,9 @@ export function PaymentConfigManagement() {
       const reportsGuideConfig = configs.find(c => c.config_key === 'reports_guide_url');
       const barcodePrintGuideConfig = configs.find(c => c.config_key === 'barcode_print_guide_url');
       const importGuideConfig = configs.find(c => c.config_key === 'import_guide_url');
+      const feedbackZaloConfig = configs.find(c => c.config_key === 'feedback_zalo_url');
+      const feedbackFbConfig = configs.find(c => c.config_key === 'feedback_fb_url');
+      const feedbackHotlineConfig = configs.find(c => c.config_key === 'feedback_hotline');
       
       if (hotlineConfig?.config_value) setHotline(hotlineConfig.config_value);
       if (emailConfig?.config_value) setSupportEmail(emailConfig.config_value);
@@ -118,6 +124,9 @@ export function PaymentConfigManagement() {
       if (reportsGuideConfig?.config_value) setReportsGuideUrl(reportsGuideConfig.config_value);
       if (barcodePrintGuideConfig?.config_value) setBarcodePrintGuideUrl(barcodePrintGuideConfig.config_value);
       if (importGuideConfig?.config_value) setImportGuideUrl(importGuideConfig.config_value);
+      if (feedbackZaloConfig?.config_value) setFeedbackZaloUrl(feedbackZaloConfig.config_value);
+      if (feedbackFbConfig?.config_value) setFeedbackFbUrl(feedbackFbConfig.config_value);
+      if (feedbackHotlineConfig?.config_value) setFeedbackHotline(feedbackHotlineConfig.config_value);
     }
   }, [configs]);
 
@@ -134,6 +143,9 @@ export function PaymentConfigManagement() {
         { config_key: 'reports_guide_url', config_value: reportsGuideUrl },
         { config_key: 'barcode_print_guide_url', config_value: barcodePrintGuideUrl },
         { config_key: 'import_guide_url', config_value: importGuideUrl },
+        { config_key: 'feedback_zalo_url', config_value: feedbackZaloUrl },
+        { config_key: 'feedback_fb_url', config_value: feedbackFbUrl },
+        { config_key: 'feedback_hotline', config_value: feedbackHotline },
       ];
 
       for (const update of updates) {
@@ -339,6 +351,41 @@ export function PaymentConfigManagement() {
                 onChange={(e) => setImportGuideUrl(e.target.value)}
                 placeholder="https://example.com/nhap-hang"
               />
+            </div>
+          </div>
+
+          {/* Feedback Contact Config */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="font-medium text-sm mb-3 flex items-center gap-2">
+              💬 Liên hệ góp ý & yêu cầu tính năng
+            </h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label>Link Zalo</Label>
+                <Input
+                  type="url"
+                  value={feedbackZaloUrl}
+                  onChange={(e) => setFeedbackZaloUrl(e.target.value)}
+                  placeholder="https://zalo.me/..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Link Facebook</Label>
+                <Input
+                  type="url"
+                  value={feedbackFbUrl}
+                  onChange={(e) => setFeedbackFbUrl(e.target.value)}
+                  placeholder="https://fb.com/..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Hotline góp ý</Label>
+                <Input
+                  value={feedbackHotline}
+                  onChange={(e) => setFeedbackHotline(e.target.value)}
+                  placeholder="0123456789"
+                />
+              </div>
             </div>
           </div>
           <Button onClick={saveConfig} disabled={savingConfig}>
