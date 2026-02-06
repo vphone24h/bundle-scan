@@ -49,6 +49,7 @@ import { AdjustQuantityDialog } from '@/components/products/AdjustQuantityDialog
 import { usePermissions } from '@/hooks/usePermissions';
 import { useMarkProductWarranty } from '@/hooks/useWarrantyInventory';
 import { WarrantyNoteDialog } from '@/components/import/WarrantyNoteDialog';
+import { ImportInventorySummary } from '@/components/import/ImportInventorySummary';
 
 export default function ImportHistoryPage() {
   const navigate = useNavigate();
@@ -628,6 +629,12 @@ export default function ImportHistoryPage() {
           </TabsContent>
 
           <TabsContent value="products">
+            {/* Tổng hợp giá trị kho hàng nhập */}
+            <ImportInventorySummary 
+              products={filteredProducts} 
+              isFiltered={Boolean(hasActiveFilters) || searchTerm.length > 0}
+            />
+
             <div className="flex justify-end mb-4">
               <Button variant="outline" onClick={handleExportProducts}>
                 <Download className="mr-2 h-4 w-4" />
