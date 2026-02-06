@@ -31,6 +31,7 @@ import {
   ExternalLink,
   Phone,
   MapPin,
+  RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -80,7 +81,7 @@ export function SupplierDetailDialog({ supplier, open, onOpenChange }: SupplierD
 
   // Calculate product stats
   const productStats = useMemo(() => {
-    if (!products) return { total: 0, inStock: 0, sold: 0, returned: 0, totalValue: 0, inStockValue: 0, soldValue: 0 };
+    if (!products) return { total: 0, inStock: 0, sold: 0, returned: 0, totalValue: 0, inStockValue: 0, soldValue: 0, returnedValue: 0 };
     
     const inStockProducts = products.filter(p => p.status === 'in_stock');
     const soldProducts = products.filter(p => p.status === 'sold');
@@ -94,6 +95,7 @@ export function SupplierDetailDialog({ supplier, open, onOpenChange }: SupplierD
       totalValue: products.reduce((sum, p) => sum + (Number(p.import_price) * (p.quantity || 1)), 0),
       inStockValue: inStockProducts.reduce((sum, p) => sum + (Number(p.import_price) * (p.quantity || 1)), 0),
       soldValue: soldProducts.reduce((sum, p) => sum + (Number(p.import_price) * (p.quantity || 1)), 0),
+      returnedValue: returnedProducts.reduce((sum, p) => sum + (Number(p.import_price) * (p.quantity || 1)), 0),
     };
   }, [products]);
 
@@ -148,7 +150,7 @@ export function SupplierDetailDialog({ supplier, open, onOpenChange }: SupplierD
             <h3 className="font-semibold mb-2 md:mb-3 text-xs md:text-sm uppercase tracking-wide text-muted-foreground">
               Thống kê hàng hóa
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
               <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
                 <CardContent className="p-3 md:p-4">
                   <div className="flex items-center gap-2 md:gap-3">
@@ -183,7 +185,7 @@ export function SupplierDetailDialog({ supplier, open, onOpenChange }: SupplierD
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-sky-500/10 to-sky-500/5 border-sky-500/20 sm:col-span-2 lg:col-span-1">
+              <Card className="bg-gradient-to-br from-sky-500/10 to-sky-500/5 border-sky-500/20">
                 <CardContent className="p-3 md:p-4">
                   <div className="flex items-center gap-2 md:gap-3">
                     <div className="p-1.5 md:p-2 rounded-lg bg-sky-500/20">
@@ -195,6 +197,23 @@ export function SupplierDetailDialog({ supplier, open, onOpenChange }: SupplierD
                         {formatCurrency(productStats.soldValue)}
                       </p>
                       <p className="text-[10px] md:text-xs text-muted-foreground">{productStats.sold} SP</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
+                <CardContent className="p-3 md:p-4">
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="p-1.5 md:p-2 rounded-lg bg-amber-500/20">
+                      <RotateCcw className="h-4 w-4 md:h-5 md:w-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] md:text-xs text-muted-foreground">Đã trả hàng (giá nhập)</p>
+                      <p className="text-sm md:text-lg font-bold text-amber-600 dark:text-amber-400 truncate">
+                        {formatCurrency(productStats.returnedValue)}
+                      </p>
+                      <p className="text-[10px] md:text-xs text-muted-foreground">{productStats.returned} SP</p>
                     </div>
                   </div>
                 </CardContent>
@@ -327,7 +346,7 @@ export function SupplierDetailDialog({ supplier, open, onOpenChange }: SupplierD
                             : product.status === 'sold' 
                             ? 'Đã bán'
                             : product.status === 'returned'
-                            ? 'Đã trả'
+                            ? 'Đã trả hàng'
                             : 'Đã xóa'}
                         </Badge>
                       </div>
@@ -399,7 +418,7 @@ export function SupplierDetailDialog({ supplier, open, onOpenChange }: SupplierD
                               : product.status === 'sold' 
                               ? 'Đã bán'
                               : product.status === 'returned'
-                              ? 'Đã trả NCC'
+                              ? 'Đã trả hàng'
                               : 'Đã xóa'}
                           </Badge>
                         </td>
