@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier, Supplier } from '@/hooks/useSuppliers';
+import { useSupplierStats } from '@/hooks/useSupplierStats';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { formatDate } from '@/lib/mockData';
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -22,9 +24,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Pencil, Trash2, Phone, MapPin, Search, Loader2, Eye } from 'lucide-react';
+import { Plus, MoreHorizontal, Pencil, Trash2, Phone, MapPin, Loader2, Eye } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { SupplierDetailDialog } from '@/components/suppliers/SupplierDetailDialog';
+import { SupplierFilters, SortMode } from '@/components/suppliers/SupplierFilters';
+import { formatCurrency } from '@/lib/mockData';
 
 export default function SuppliersPage() {
   const { data: suppliers, isLoading } = useSuppliers();
@@ -36,6 +40,10 @@ export default function SuppliersPage() {
   const [editSupplier, setEditSupplier] = useState<Supplier | null>(null);
   const [detailSupplier, setDetailSupplier] = useState<Supplier | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortMode, setSortMode] = useState<SortMode>('name');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [branchId, setBranchId] = useState('');
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -43,11 +51,48 @@ export default function SuppliersPage() {
     note: '',
   });
 
-  const filteredSuppliers = suppliers?.filter(
-    (s) =>
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.phone?.includes(searchTerm)
-  ) || [];
+  // Fetch stats for sorting
+  const { data: supplierStats } = useSupplierStats({
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+    branchId: branchId || undefined,
+  });
+
+  // Build a stats map for quick lookup
+  const statsMap = useMemo(() => {
+    const map = new Map<string, { totalImportValue: number; totalDebt: number; receiptCount: number; avgReceiptValue: number }>();
+    supplierStats?.forEach((s) => {
+      map.set(s.supplierId, {
+        totalImportValue: s.totalImportValue,
+        totalDebt: s.totalDebt,
+        receiptCount: s.receiptCount,
+        avgReceiptValue: s.avgReceiptValue,
+      });
+    });
+    return map;
+  }, [supplierStats]);
+
+  // Filter and sort suppliers
+  const filteredSuppliers = useMemo(() => {
+    let result = suppliers?.filter(
+      (s) =>
+        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.phone?.includes(searchTerm)
+    ) || [];
+
+    // When sorting by stats, only show suppliers that have stats (i.e. have import receipts)
+    if (sortMode !== 'name' && supplierStats) {
+      result.sort((a, b) => {
+        const statsA = statsMap.get(a.id);
+        const statsB = statsMap.get(b.id);
+        const valA = getSortValue(statsA, sortMode);
+        const valB = getSortValue(statsB, sortMode);
+        return valB - valA; // descending
+      });
+    }
+
+    return result;
+  }, [suppliers, searchTerm, sortMode, statsMap, supplierStats]);
 
   // Pagination
   const pagination = usePagination(filteredSuppliers, { storageKey: 'suppliers' });
@@ -132,85 +177,117 @@ export default function SuppliersPage() {
       />
 
       <div className="p-6 lg:p-8 space-y-4">
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Tìm theo tên hoặc số điện thoại..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        {/* Filters */}
+        <SupplierFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          sortMode={sortMode}
+          onSortModeChange={setSortMode}
+          startDate={startDate}
+          onStartDateChange={setStartDate}
+          endDate={endDate}
+          onEndDateChange={setEndDate}
+          branchId={branchId}
+          onBranchIdChange={setBranchId}
+        />
 
         {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {pagination.paginatedData.map((supplier) => (
-            <div 
-              key={supplier.id} 
-              className="bg-card border rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => setDetailSupplier(supplier)}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold">{supplier.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Thêm: {formatDate(new Date(supplier.created_at))}
-                  </p>
+          {pagination.paginatedData.map((supplier) => {
+            const stats = statsMap.get(supplier.id);
+            return (
+              <div
+                key={supplier.id}
+                className="bg-card border rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => setDetailSupplier(supplier)}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-semibold">{supplier.name}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Thêm: {formatDate(new Date(supplier.created_at))}
+                    </p>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-popover">
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDetailSupplier(supplier); }}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Xem chi tiết
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(supplier); }}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Chỉnh sửa
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => { e.stopPropagation(); handleDelete(supplier); }}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Xoá
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-popover">
-                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDetailSupplier(supplier); }}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      Xem chi tiết
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(supplier); }}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Chỉnh sửa
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={(e) => { e.stopPropagation(); handleDelete(supplier); }}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Xoá
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
 
-              <div className="mt-4 space-y-2">
-                {supplier.phone && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{supplier.phone}</span>
+                <div className="mt-4 space-y-2">
+                  {supplier.phone && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span>{supplier.phone}</span>
+                    </div>
+                  )}
+                  {supplier.address && (
+                    <div className="flex items-start gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground">{supplier.address}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Stats badges when sorting */}
+                {sortMode !== 'name' && stats && (
+                  <div className="mt-3 pt-3 border-t flex flex-wrap gap-1.5">
+                    {sortMode === 'most_import_value' && (
+                      <Badge variant="secondary" className="text-[10px]">
+                        Nhập: {formatCurrency(stats.totalImportValue)}
+                      </Badge>
+                    )}
+                    {sortMode === 'highest_debt' && (
+                      <Badge variant={stats.totalDebt > 0 ? "destructive" : "secondary"} className="text-[10px]">
+                        Nợ: {formatCurrency(stats.totalDebt)}
+                      </Badge>
+                    )}
+                    {sortMode === 'most_receipts' && (
+                      <Badge variant="secondary" className="text-[10px]">
+                        {stats.receiptCount} phiếu nhập
+                      </Badge>
+                    )}
+                    {sortMode === 'highest_avg' && (
+                      <Badge variant="secondary" className="text-[10px]">
+                        TB: {formatCurrency(stats.avgReceiptValue)}
+                      </Badge>
+                    )}
                   </div>
                 )}
-                {supplier.address && (
-                  <div className="flex items-start gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <span className="text-muted-foreground">{supplier.address}</span>
-                  </div>
+
+                {supplier.note && (
+                  <p className={`mt-3 pt-3 ${sortMode === 'name' ? 'border-t' : ''} text-sm text-muted-foreground`}>
+                    {supplier.note}
+                  </p>
                 )}
               </div>
-
-              {supplier.note && (
-                <p className="mt-3 pt-3 border-t text-sm text-muted-foreground">
-                  {supplier.note}
-                </p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {filteredSuppliers.length === 0 && (
@@ -289,8 +366,8 @@ export default function SuppliersPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Huỷ
             </Button>
-            <Button 
-              onClick={handleSave} 
+            <Button
+              onClick={handleSave}
               disabled={!form.name.trim() || createSupplier.isPending || updateSupplier.isPending}
             >
               {(createSupplier.isPending || updateSupplier.isPending) && (
@@ -310,4 +387,18 @@ export default function SuppliersPage() {
       />
     </MainLayout>
   );
+}
+
+function getSortValue(
+  stats: { totalImportValue: number; totalDebt: number; receiptCount: number; avgReceiptValue: number } | undefined,
+  mode: SortMode
+): number {
+  if (!stats) return 0;
+  switch (mode) {
+    case 'most_import_value': return stats.totalImportValue;
+    case 'highest_debt': return stats.totalDebt;
+    case 'most_receipts': return stats.receiptCount;
+    case 'highest_avg': return stats.avgReceiptValue;
+    default: return 0;
+  }
 }
