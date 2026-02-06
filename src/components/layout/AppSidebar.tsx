@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { usePendingTransferCount } from '@/hooks/useStockTransfers';
 import {
   LayoutDashboard,
   Package,
@@ -53,7 +54,7 @@ interface NavItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  children?: { title: string; href: string; permission?: string }[];
+  children?: { title: string; href: string; permission?: string; badgeKey?: string }[];
   permission?: string; // Tên permission cần để hiển thị menu này
 }
 
@@ -86,6 +87,7 @@ const allNavItems: NavItem[] = [
     children: [
       { title: 'Tạo phiếu nhập', href: '/import/new' },
       { title: 'Lịch sử nhập', href: '/import/history' },
+      { title: 'Chuyển hàng', href: '/import/transfer', badgeKey: 'pendingTransfer' },
     ],
   },
   {
@@ -126,6 +128,7 @@ export function AppSidebar() {
   const { data: platformUser } = usePlatformUser();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Nhập hàng', 'Xuất hàng']);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { data: pendingTransferCount } = usePendingTransferCount();
 
   const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
   const hasTenant = !!platformUser?.tenant_id;
@@ -232,7 +235,12 @@ export function AppSidebar() {
                         <span className="w-5 h-5 flex items-center justify-center">
                           <span className="w-1.5 h-1.5 rounded-full bg-current" />
                         </span>
-                        {child.title}
+                        <span className="flex-1">{child.title}</span>
+                        {child.badgeKey === 'pendingTransfer' && (pendingTransferCount || 0) > 0 && (
+                          <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+                            +{pendingTransferCount}
+                          </span>
+                        )}
                       </Link>
                     ))}
                   </div>

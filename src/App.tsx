@@ -44,7 +44,8 @@ const StoreLandingPage = lazy(() => import("./pages/StoreLandingPage"));
 const PublicLandingPage = lazy(() => import("./pages/PublicLandingPage"));
 const LandingPageAdminPage = lazy(() => import("./pages/LandingPageAdminPage"));
 const InstallAppPage = lazy(() => import("./pages/InstallAppPage"));
- const TaxPolicyPage = lazy(() => import("./pages/TaxPolicyPage"));
+const TaxPolicyPage = lazy(() => import("./pages/TaxPolicyPage"));
+const StockTransferPage = lazy(() => import("./pages/StockTransferPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -114,6 +115,7 @@ const App = () => (
                 <Route path="/suppliers" element={<GuardedRoute><SuppliersPage /></GuardedRoute>} />
                 <Route path="/import/new" element={<GuardedRoute><ImportNewPage /></GuardedRoute>} />
                 <Route path="/import/history" element={<GuardedRoute><ImportHistoryPage /></GuardedRoute>} />
+                <Route path="/import/transfer" element={<GuardedRoute><StockTransferPage /></GuardedRoute>} />
                 <Route path="/export/new" element={<GuardedRoute><ExportNewPage /></GuardedRoute>} />
                 <Route path="/export/history" element={<GuardedRoute><ExportHistoryPage /></GuardedRoute>} />
                 <Route path="/export/template" element={<GuardedRoute><InvoiceTemplatePage /></GuardedRoute>} />

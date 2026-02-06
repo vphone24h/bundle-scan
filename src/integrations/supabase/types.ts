@@ -3458,6 +3458,127 @@ export type Database = {
           },
         ]
       }
+      stock_transfer_items: {
+        Row: {
+          created_at: string
+          id: string
+          imei: string | null
+          import_price: number
+          product_id: string
+          product_name: string
+          quantity: number
+          sku: string
+          transfer_request_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          imei?: string | null
+          import_price?: number
+          product_id: string
+          product_name: string
+          quantity?: number
+          sku: string
+          transfer_request_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          imei?: string | null
+          import_price?: number
+          product_id?: string
+          product_name?: string
+          quantity?: number
+          sku?: string
+          transfer_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_transfer_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfer_items_transfer_request_id_fkey"
+            columns: ["transfer_request_id"]
+            isOneToOne: false
+            referencedRelation: "stock_transfer_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_transfer_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string
+          from_branch_id: string
+          id: string
+          note: string | null
+          reject_reason: string | null
+          rejected_at: string | null
+          status: Database["public"]["Enums"]["transfer_request_status"]
+          tenant_id: string
+          to_branch_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by: string
+          from_branch_id: string
+          id?: string
+          note?: string | null
+          reject_reason?: string | null
+          rejected_at?: string | null
+          status?: Database["public"]["Enums"]["transfer_request_status"]
+          tenant_id: string
+          to_branch_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string
+          from_branch_id?: string
+          id?: string
+          note?: string | null
+          reject_reason?: string | null
+          rejected_at?: string | null
+          status?: Database["public"]["Enums"]["transfer_request_status"]
+          tenant_id?: string
+          to_branch_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_transfer_requests_from_branch_id_fkey"
+            columns: ["from_branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfer_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfer_requests_to_branch_id_fkey"
+            columns: ["to_branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_history: {
         Row: {
           action: string
@@ -4070,6 +4191,7 @@ export type Database = {
       stock_count_status: "draft" | "confirmed"
       subscription_plan: "monthly" | "yearly" | "lifetime"
       tenant_status: "trial" | "active" | "expired" | "locked"
+      transfer_request_status: "pending" | "approved" | "rejected" | "cancelled"
       user_role: "super_admin" | "branch_admin" | "staff" | "cashier"
       withdrawal_status: "pending" | "approved" | "paid" | "rejected"
     }
@@ -4230,6 +4352,7 @@ export const Constants = {
       stock_count_status: ["draft", "confirmed"],
       subscription_plan: ["monthly", "yearly", "lifetime"],
       tenant_status: ["trial", "active", "expired", "locked"],
+      transfer_request_status: ["pending", "approved", "rejected", "cancelled"],
       user_role: ["super_admin", "branch_admin", "staff", "cashier"],
       withdrawal_status: ["pending", "approved", "paid", "rejected"],
     },

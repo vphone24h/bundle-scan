@@ -315,7 +315,13 @@ export default function ImportHistoryPage() {
     return selectedProducts[0]?.branches?.name || '';
   }, [selectedProducts, selectedBranchId]);
 
+  const canTransferStock = permissions?.role === 'super_admin' || permissions?.role === 'branch_admin';
+
   const handleOpenTransfer = () => {
+    if (!canTransferStock) {
+      toast({ title: 'Không có quyền', description: 'Chỉ Admin Tổng và Admin Chi nhánh được chuyển hàng', variant: 'destructive' });
+      return;
+    }
     if (selectedProducts.length === 0) {
       toast({ title: 'Chưa chọn sản phẩm', description: 'Vui lòng chọn ít nhất 1 sản phẩm tồn kho để chuyển', variant: 'destructive' });
       return;
@@ -718,7 +724,7 @@ export default function ImportHistoryPage() {
             {/* Transfer bar + Export */}
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div className="flex items-center gap-2 flex-wrap">
-                {selectedProductIds.size > 0 && (
+                {canTransferStock && selectedProductIds.size > 0 && (
                   <>
                     <Badge variant="secondary" className="gap-1">
                       <CheckSquare className="h-3.5 w-3.5" />
@@ -758,13 +764,15 @@ export default function ImportHistoryPage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th className="w-10">
-                      <Checkbox
-                        checked={allPageSelected}
-                        onCheckedChange={toggleSelectAllOnPage}
-                        aria-label="Chọn tất cả trên trang"
-                      />
-                    </th>
+                    {canTransferStock && (
+                      <th className="w-10">
+                        <Checkbox
+                          checked={allPageSelected}
+                          onCheckedChange={toggleSelectAllOnPage}
+                          aria-label="Chọn tất cả trên trang"
+                        />
+                      </th>
+                    )}
                     <th>Tên sản phẩm</th>
                     <th>SKU</th>
                     <th>IMEI</th>
@@ -782,18 +790,20 @@ export default function ImportHistoryPage() {
                 </thead>
                 <tbody>
                   {productsPagination.paginatedData.map((product) => (
-                    <tr key={product.id} className={cn(selectedProductIds.has(product.id) && 'bg-primary/5')}>
-                      <td>
-                        {product.status === 'in_stock' ? (
-                          <Checkbox
-                            checked={selectedProductIds.has(product.id)}
-                            onCheckedChange={() => toggleProductSelect(product.id)}
-                            aria-label={`Chọn ${product.name}`}
-                          />
-                        ) : (
-                          <span className="block w-4" />
-                        )}
-                      </td>
+                    <tr key={product.id} className={cn(canTransferStock && selectedProductIds.has(product.id) && 'bg-primary/5')}>
+                      {canTransferStock && (
+                        <td>
+                          {product.status === 'in_stock' ? (
+                            <Checkbox
+                              checked={selectedProductIds.has(product.id)}
+                              onCheckedChange={() => toggleProductSelect(product.id)}
+                              aria-label={`Chọn ${product.name}`}
+                            />
+                          ) : (
+                            <span className="block w-4" />
+                          )}
+                        </td>
+                      )}
                       <td className="font-medium">{product.name}</td>
                       <td className="text-muted-foreground">{product.sku}</td>
                       <td className="font-mono text-sm">{product.imei || '-'}</td>
