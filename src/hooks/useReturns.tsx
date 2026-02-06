@@ -649,7 +649,7 @@ export function useCreateExportReturn() {
       // Audit log
       await supabase.from('audit_logs').insert([{
         user_id: user.id,
-        action_type: 'create',
+        action_type: 'RETURN',
         table_name: 'export_returns',
         record_id: returnData.id,
         branch_id: item.branch_id || null,
