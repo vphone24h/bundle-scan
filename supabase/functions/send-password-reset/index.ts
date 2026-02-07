@@ -89,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     await client.send({
-      from: `VKHO <${smtpUser}>`,
+      from: smtpUser,
       to: email,
       subject: "🔐 Khôi phục mật khẩu - VKHO",
       html: `
