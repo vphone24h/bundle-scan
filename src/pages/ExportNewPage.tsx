@@ -105,6 +105,7 @@ export default function ExportNewPage() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
   const [createdReceipt, setCreatedReceipt] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Hooks
   const checkProduct = useCheckProductForSale();
@@ -534,6 +535,8 @@ export default function ExportNewPage() {
 
   // Handle payment completion
   const handlePaymentComplete = async (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number) => {
+    if (isSubmitting) return; // Chống double-submit
+    setIsSubmitting(true);
     try {
       // Create or update customer
       const customer = await upsertCustomer.mutateAsync({
@@ -605,6 +608,8 @@ export default function ExportNewPage() {
         description: error.message || 'Không thể tạo phiếu xuất',
         variant: 'destructive',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1078,7 +1083,7 @@ export default function ExportNewPage() {
         onOpenChange={setShowPaymentDialog}
         totalAmount={totalAmount}
         onConfirm={handlePaymentComplete}
-        isLoading={createReceipt.isPending || upsertCustomer.isPending}
+        isLoading={isSubmitting || createReceipt.isPending || upsertCustomer.isPending}
         customerPoints={selectedCustomer ? {
           current_points: selectedCustomer.current_points,
           pending_points: selectedCustomer.pending_points,
