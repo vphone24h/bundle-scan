@@ -17,12 +17,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Loader2, Download, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { Loader2, Download, AlertTriangle, CheckCircle2, Info, Building2, FolderTree } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useReportStats, useReportChartData } from '@/hooks/useReportStats';
 import { formatCurrency } from '@/lib/mockData';
 import { exportToExcel } from '@/lib/exportExcel';
+import { useBranches } from '@/hooks/useBranches';
+import { useCategories } from '@/hooks/useCategories';
+import { usePermissions } from '@/hooks/usePermissions';
 
 // ---- Constants ----
 const INDUSTRIES = [
@@ -72,13 +75,25 @@ export function TaxReport() {
   const [industry, setIndustry] = useState<string>('');
   const [revenueTier, setRevenueTier] = useState<string>('');
   const [taxMethod, setTaxMethod] = useState<string>('');
+  const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
+
+  const { data: branches } = useBranches();
+  const { data: categories } = useCategories();
+  const { data: permissions } = usePermissions();
 
   const period = getTimePeriod(timePeriod);
   const startDate = format(period.start, 'yyyy-MM-dd');
   const endDate = format(period.end, 'yyyy-MM-dd');
 
-  const { data: stats, isLoading: statsLoading } = useReportStats({ startDate, endDate });
-  const { data: chartData, isLoading: chartLoading } = useReportChartData({ startDate, endDate, groupBy: 'day' });
+  // Branch Admin: chỉ xem được chi nhánh của mình
+  const effectiveBranchId = permissions?.role === 'branch_admin'
+    ? permissions.branchId || undefined
+    : selectedBranchId === 'all' ? undefined : selectedBranchId;
+  const effectiveCategoryId = selectedCategoryId === 'all' ? undefined : selectedCategoryId;
+
+  const { data: stats, isLoading: statsLoading } = useReportStats({ startDate, endDate, branchId: effectiveBranchId, categoryId: effectiveCategoryId });
+  const { data: chartData, isLoading: chartLoading } = useReportChartData({ startDate, endDate, branchId: effectiveBranchId, groupBy: 'day' });
 
   // Auto-force tax method when revenue tier is over_50b
   const selectedTier = REVENUE_TIERS.find(t => t.value === revenueTier);
@@ -170,6 +185,55 @@ export function TaxReport() {
           <p className="mt-2 text-sm text-muted-foreground">
             Kỳ báo cáo: <strong>{period.label}</strong> ({format(period.start, 'dd/MM/yyyy')} – {format(period.end, 'dd/MM/yyyy')})
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Branch & Category Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Branch Filter */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <Building2 className="h-3.5 w-3.5" />
+                Chi nhánh
+              </label>
+              <Select
+                value={permissions?.role === 'branch_admin' ? (permissions.branchId || 'all') : selectedBranchId}
+                onValueChange={setSelectedBranchId}
+                disabled={permissions?.role === 'branch_admin'}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Tất cả chi nhánh" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">Tất cả chi nhánh</SelectItem>
+                  {branches?.map(b => (
+                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Category Filter */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <FolderTree className="h-3.5 w-3.5" />
+                Danh mục
+              </label>
+              <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Tất cả danh mục" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">Tất cả danh mục</SelectItem>
+                  {categories?.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
