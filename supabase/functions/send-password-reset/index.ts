@@ -30,11 +30,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const smtpUser = Deno.env.get("SMTP_USER");
+    const smtpUser = (Deno.env.get("SMTP_USER") || "").trim();
     const smtpPassword = Deno.env.get("SMTP_PASSWORD");
 
+    console.log("SMTP_USER value:", JSON.stringify(smtpUser), "length:", smtpUser.length);
+
     if (!smtpUser || !smtpPassword) {
-      console.error("SMTP credentials not configured");
+      console.error("SMTP credentials not configured. SMTP_USER:", !!smtpUser, "SMTP_PASSWORD:", !!smtpPassword);
       return new Response(
         JSON.stringify({ error: "Cấu hình email chưa hoàn tất" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
