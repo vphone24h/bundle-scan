@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table';
 import { Loader2, Download, AlertTriangle, CheckCircle2, Info, Building2, FolderTree } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { vi } from 'date-fns/locale';
 import { useReportStats, useReportChartData } from '@/hooks/useReportStats';
 import { formatCurrency } from '@/lib/mockData';
@@ -71,6 +72,7 @@ function getTimePeriod(preset: string) {
 }
 
 export function TaxReport() {
+  const navigate = useNavigate();
   const [timePeriod, setTimePeriod] = useState('this_month');
   const [industry, setIndustry] = useState<string>('');
   const [revenueTier, setRevenueTier] = useState<string>('');
@@ -416,6 +418,16 @@ export function TaxReport() {
                   <AlertTriangle className="h-3.5 w-3.5" />
                   Đây là báo cáo ước tính gần đúng 95-98%, không thể đúng 100%.
                 </p>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 w-full sm:w-auto"
+                  onClick={() => navigate('/export/tax-policy')}
+                >
+                  <Info className="h-4 w-4 mr-1" />
+                  Chi tiết mức thuế 2026
+                </Button>
               </CardContent>
             </Card>
           )}
