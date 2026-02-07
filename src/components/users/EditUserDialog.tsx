@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -349,9 +350,14 @@ export function EditUserDialog({
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Cho phép xem thêm chi nhánh</Label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Bật để nhân viên có thể xem tồn kho của chi nhánh khác
-                </p>
+                <div className="flex items-center gap-2 mb-2">
+                  <p className="text-xs text-muted-foreground">
+                    Tích vào chi nhánh để nhân viên xem được tồn kho chi nhánh đó
+                  </p>
+                  <Badge variant="secondary" className="text-[10px] whitespace-nowrap shrink-0">
+                    Tự động lưu
+                  </Badge>
+                </div>
 
                 {branchAccessLoading ? (
                   <div className="text-center py-4 text-muted-foreground text-sm">Đang tải...</div>
@@ -373,10 +379,11 @@ export function EditUserDialog({
                           />
                           <label
                             htmlFor={`branch-${branch.id}`}
-                            className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-1"
                           >
                             {branch.name}
                           </label>
+                          {isPending && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
                         </div>
                       );
                     })}
