@@ -512,20 +512,25 @@ export function useCreateExportReceipt() {
     },
     onSuccess: async () => {
       // Invalidate với refetchType: 'all' để đảm bảo refetch ngay lập tức
-      await queryClient.invalidateQueries({ 
-        queryKey: ['export-receipts'],
-        refetchType: 'all'
-      });
-      queryClient.invalidateQueries({ queryKey: ['export-receipt-items'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['all-products'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
-      queryClient.invalidateQueries({ queryKey: ['report-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['customers-with-points'] });
-      queryClient.invalidateQueries({ queryKey: ['customer-detail'] });
-      queryClient.invalidateQueries({ queryKey: ['point-transactions'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ 
+          queryKey: ['export-receipts'],
+          refetchType: 'all'
+        }),
+        queryClient.invalidateQueries({ 
+          queryKey: ['export-receipt-items'],
+          refetchType: 'all'
+        }),
+        queryClient.invalidateQueries({ queryKey: ['products'] }),
+        queryClient.invalidateQueries({ queryKey: ['all-products'] }),
+        queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['cash-book'] }),
+        queryClient.invalidateQueries({ queryKey: ['report-stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['customers-with-points'] }),
+        queryClient.invalidateQueries({ queryKey: ['customer-detail'] }),
+        queryClient.invalidateQueries({ queryKey: ['point-transactions'] }),
+      ]);
     },
   });
 }
