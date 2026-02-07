@@ -1,9 +1,15 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
+import { encode as base64Encode } from 'https://deno.land/std@0.190.0/encoding/base64.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+function encodeSubject(subject: string): string {
+  const encoded = base64Encode(new TextEncoder().encode(subject))
+  return `=?UTF-8?B?${encoded}?=`
 }
 
 async function sendRegistrationNotification(businessName: string, subdomain: string, email: string, adminName: string) {
@@ -39,7 +45,7 @@ async function sendRegistrationNotification(businessName: string, subdomain: str
     await client.send({
       from: smtpUser,
       to: 'vphone24h@gmail.com',
-      subject: `[VKHO] Đăng ký mới: ${businessName} (${subdomain})`,
+      subject: encodeSubject(`[VKHO] Dang ky moi: ${businessName} (${subdomain})`),
       content: 'auto',
       html: htmlContent,
     })
