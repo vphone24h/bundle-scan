@@ -94,7 +94,7 @@ export function TaxReport() {
     if (isExempt) return { gtgt: 0, tncn: 0, total: 0, exempt: true };
     if (!selectedIndustry) return null;
 
-    const revenue = stats.totalSalesRevenue;
+    const revenue = stats.netRevenue; // Doanh thu thuần (đã trừ trả hàng)
     const gtgt = revenue * (selectedIndustry.gtgt / 100);
 
     let tncn = 0;
@@ -119,10 +119,11 @@ export function TaxReport() {
     }));
 
     const totalRevenue = dailyData.reduce((sum, d) => sum + d.amount, 0);
+    const netRevenue = stats?.netRevenue || totalRevenue;
 
     // Add summary rows
     const summaryRows = [
-      { stt: '', date: '', description: 'Tổng cộng (3)', amount: totalRevenue },
+      { stt: '', date: '', description: 'Tổng cộng (Doanh thu thuần)', amount: netRevenue },
       { stt: '', date: '', description: `Thuế GTGT (${selectedIndustry.gtgt}%)`, amount: taxResult?.gtgt || 0 },
       { stt: '', date: '', description: `Thuế TNCN`, amount: taxResult?.tncn || 0 },
       { stt: '', date: '', description: 'Tổng số thuế GTGT phải nộp', amount: taxResult?.gtgt || 0 },
@@ -332,10 +333,10 @@ export function TaxReport() {
 
                 {/* Reference info */}
                 <div className="text-xs space-y-1 text-muted-foreground bg-muted/30 rounded-lg p-3">
-                  <p>• Doanh thu kỳ: {formatCurrency(stats?.totalSalesRevenue || 0)}</p>
+                <p>• Doanh thu thuần kỳ: {formatCurrency(stats?.netRevenue || 0)} <span className="italic">(đã trừ trả hàng: {formatCurrency(stats?.totalReturnRevenue || 0)})</span></p>
                   <p>• Lợi nhuận thuần kỳ: {formatCurrency(stats?.netProfit || 0)}</p>
                   {effectiveTaxMethod === 'revenue' && (
-                    <p>• Cách tính TNCN: ({formatCurrency(stats?.totalSalesRevenue || 0)} - 500.000.000) × {selectedIndustry?.tncn}%</p>
+                    <p>• Cách tính TNCN: ({formatCurrency(stats?.netRevenue || 0)} - 500.000.000) × {selectedIndustry?.tncn}%</p>
                   )}
                 </div>
 
@@ -393,8 +394,8 @@ export function TaxReport() {
                         ))}
                         {/* Summary rows */}
                         <TableRow className="border-t-2 font-medium">
-                          <TableCell colSpan={3} className="text-xs text-right">Tổng cộng (3)</TableCell>
-                          <TableCell className="text-xs text-right font-mono font-bold">{formatCurrency(stats?.totalSalesRevenue || 0)}</TableCell>
+                          <TableCell colSpan={3} className="text-xs text-right">Tổng cộng (Doanh thu thuần)</TableCell>
+                          <TableCell className="text-xs text-right font-mono font-bold">{formatCurrency(stats?.netRevenue || 0)}</TableCell>
                         </TableRow>
                         <TableRow>
                           <TableCell colSpan={3} className="text-xs text-right">Thuế GTGT ({selectedIndustry?.gtgt}%)</TableCell>
