@@ -90,51 +90,36 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
 
+    const emailHtml = [
+      '<div style="font-family:Segoe UI,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;">',
+      '<div style="background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);padding:30px;text-align:center;border-radius:8px 8px 0 0;">',
+      '<h1 style="color:#ffffff;margin:0;font-size:28px;font-weight:700;">VKHO</h1>',
+      '<p style="color:#dbeafe;margin:8px 0 0 0;font-size:14px;">Hệ thống quản lý kho hàng</p>',
+      '</div>',
+      '<div style="padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">',
+      '<h2 style="color:#1f2937;font-size:20px;margin:0 0 16px 0;">Khôi phục mật khẩu</h2>',
+      '<p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 8px 0;">Xin chào,</p>',
+      '<p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 24px 0;">Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Nhấn nút bên dưới để tạo mật khẩu mới:</p>',
+      '<div style="text-align:center;margin:32px 0;">',
+      `<a href="${actionLink}" style="display:inline-block;background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:600;">Đặt lại mật khẩu</a>`,
+      '</div>',
+      '<div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:6px;padding:12px 16px;margin:24px 0;">',
+      '<p style="color:#92400e;font-size:13px;margin:0;">⚠️ Link này sẽ hết hạn sau <strong>1 giờ</strong>. Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.</p>',
+      '</div>',
+      '<p style="color:#9ca3af;font-size:12px;margin:24px 0 0 0;padding-top:16px;border-top:1px solid #f3f4f6;">',
+      'Nếu nút không hoạt động, sao chép và dán link sau vào trình duyệt:<br/>',
+      `<a href="${actionLink}" style="color:#2563eb;word-break:break-all;font-size:11px;">${actionLink}</a></p>`,
+      '</div>',
+      '<div style="text-align:center;padding:16px;color:#9ca3af;font-size:11px;">',
+      `© ${new Date().getFullYear()} VKHO - Hệ thống quản lý kho hàng</div>`,
+      '</div>',
+    ].join('');
+
     await client.send({
       from: smtpUser,
       to: email,
       subject: "🔐 Khôi phục mật khẩu - VKHO",
-      html: `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
-          <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">VKHO</h1>
-            <p style="color: #dbeafe; margin: 8px 0 0 0; font-size: 14px;">Hệ thống quản lý kho hàng</p>
-          </div>
-          
-          <div style="padding: 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
-            <h2 style="color: #1f2937; font-size: 20px; margin: 0 0 16px 0;">Khôi phục mật khẩu</h2>
-            
-            <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 8px 0;">
-              Xin chào,
-            </p>
-            <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0;">
-              Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Nhấn nút bên dưới để tạo mật khẩu mới:
-            </p>
-            
-            <div style="text-align: center; margin: 32px 0;">
-              <a href="${actionLink}" 
-                 style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600; letter-spacing: 0.3px;">
-                Đặt lại mật khẩu
-              </a>
-            </div>
-            
-            <div style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 6px; padding: 12px 16px; margin: 24px 0;">
-              <p style="color: #92400e; font-size: 13px; margin: 0;">
-                ⚠️ Link này sẽ hết hạn sau <strong>1 giờ</strong>. Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.
-              </p>
-            </div>
-            
-            <p style="color: #9ca3af; font-size: 12px; margin: 24px 0 0 0; padding-top: 16px; border-top: 1px solid #f3f4f6;">
-              Nếu nút không hoạt động, sao chép và dán link sau vào trình duyệt:<br/>
-              <a href="${actionLink}" style="color: #2563eb; word-break: break-all; font-size: 11px;">${actionLink}</a>
-            </p>
-          </div>
-          
-          <div style="text-align: center; padding: 16px; color: #9ca3af; font-size: 11px;">
-            © ${new Date().getFullYear()} VKHO - Hệ thống quản lý kho hàng
-          </div>
-        </div>
-      `,
+      html: emailHtml,
     });
 
     await client.close();
