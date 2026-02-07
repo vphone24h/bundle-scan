@@ -45,12 +45,26 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if caller is super_admin
-    const { data: callerRole, error: roleError } = await supabaseAdmin
+    // Get caller's tenant_id from platform_users
+    const { data: callerPlatform } = await supabaseAdmin
+      .from('platform_users')
+      .select('tenant_id')
+      .eq('user_id', caller.id)
+      .maybeSingle()
+
+    const callerTenantId = callerPlatform?.tenant_id
+
+    // Check if caller is super_admin (filter by tenant to avoid .single() error on multi-tenant)
+    let callerRoleQuery = supabaseAdmin
       .from('user_roles')
       .select('user_role')
       .eq('user_id', caller.id)
-      .single()
+
+    if (callerTenantId) {
+      callerRoleQuery = callerRoleQuery.eq('tenant_id', callerTenantId)
+    }
+
+    const { data: callerRole, error: roleError } = await callerRoleQuery.maybeSingle()
 
     if (roleError || callerRole?.user_role !== 'super_admin') {
       return new Response(
@@ -69,14 +83,19 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check target user's role - cannot edit super_admin
-    const { data: targetRole, error: targetRoleError } = await supabaseAdmin
+    // Check target user's role (filter by same tenant)
+    let targetRoleQuery = supabaseAdmin
       .from('user_roles')
       .select('user_role')
       .eq('user_id', userId)
-      .single()
 
-    if (targetRoleError) {
+    if (callerTenantId) {
+      targetRoleQuery = targetRoleQuery.eq('tenant_id', callerTenantId)
+    }
+
+    const { data: targetRole, error: targetRoleError } = await targetRoleQuery.maybeSingle()
+
+    if (targetRoleError || !targetRole) {
       return new Response(
         JSON.stringify({ error: 'Không tìm thấy người dùng' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
