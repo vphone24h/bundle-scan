@@ -19,6 +19,7 @@ import {
   Receipt,
 } from 'lucide-react';
 import { useReportsGuideUrl } from '@/hooks/useAppConfig';
+import { usePermissions } from '@/hooks/usePermissions';
 import { RevenueProfitReport } from '@/components/reports/RevenueProfitReport';
 import { ProductReport } from '@/components/reports/ProductReport';
 import { CustomerReport } from '@/components/reports/CustomerReport';
@@ -26,18 +27,24 @@ import { SupplierReport } from '@/components/reports/SupplierReport';
 import { StaffReport } from '@/components/reports/StaffReport';
 import { TaxReport } from '@/components/reports/TaxReport';
 
-const reportTabs = [
+const baseReportTabs = [
   { id: 'revenue', label: 'Doanh thu & Lợi nhuận', icon: DollarSign, description: 'Phân tích doanh thu, chi phí, lợi nhuận' },
   { id: 'products', label: 'Hàng hóa', icon: Package, description: 'Bán chạy, tồn kho, nhập xuất' },
   { id: 'customers', label: 'Khách hàng', icon: Users, description: 'Top khách hàng, công nợ, CRM' },
   { id: 'suppliers', label: 'Nhà cung cấp', icon: Factory, description: 'Nhập hàng, công nợ NCC' },
   { id: 'staff', label: 'Nhân viên', icon: UserCheck, description: 'Hiệu suất, KPI, doanh thu' },
-  { id: 'tax', label: 'Báo cáo thuế', icon: Receipt, description: 'Ước tính thuế GTGT, TNCN phải nộp' },
 ];
+
+const taxTab = { id: 'tax', label: 'Báo cáo thuế', icon: Receipt, description: 'Ước tính thuế GTGT, TNCN phải nộp' };
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState('revenue');
   const reportsGuideUrl = useReportsGuideUrl();
+  const { data: permissions } = usePermissions();
+
+  // Chỉ super_admin và branch_admin mới thấy báo cáo thuế
+  const canViewTaxReport = permissions?.role === 'super_admin' || permissions?.role === 'branch_admin';
+  const reportTabs = canViewTaxReport ? [...baseReportTabs, taxTab] : baseReportTabs;
 
   const activeReport = reportTabs.find(t => t.id === activeTab);
   const ActiveIcon = activeReport?.icon || DollarSign;
@@ -89,7 +96,7 @@ export default function ReportsPage() {
         {activeTab === 'customers' && <CustomerReport />}
         {activeTab === 'suppliers' && <SupplierReport />}
         {activeTab === 'staff' && <StaffReport />}
-        {activeTab === 'tax' && <TaxReport />}
+        {activeTab === 'tax' && canViewTaxReport && <TaxReport />}
       </div>
     </MainLayout>
   );
