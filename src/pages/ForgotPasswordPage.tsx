@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
-import { Warehouse, Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
+import vkhoLogo from '@/assets/vkho-logo.png';
 
 export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
@@ -92,9 +93,7 @@ export default function ForgotPasswordPage() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary">
-              <Warehouse className="h-8 w-8 text-primary-foreground" />
-            </div>
+            <img src={vkhoLogo} alt="VKHO Logo" className="h-14 w-14 rounded-xl" />
           </div>
           <CardTitle className="text-2xl">Quên mật khẩu</CardTitle>
           <CardDescription>
