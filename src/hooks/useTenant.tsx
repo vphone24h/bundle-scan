@@ -263,6 +263,12 @@ export function useCreatePaymentRequest() {
         .single();
 
       if (error) throw error;
+
+      // Send notification email (non-blocking)
+      supabase.functions.invoke('notify-payment-request', {
+        body: { paymentRequestId: result.id },
+      }).catch(err => console.error('Payment notification error:', err));
+
       return result;
     },
     onSuccess: () => {
