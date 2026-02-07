@@ -176,8 +176,14 @@ export function EditUserDialog({
 
       const response = await supabase.functions.invoke('update-user', { body });
 
-      if (response.error) throw new Error(response.error.message);
+      // Check specific error from function response body first
       if (response.data?.error) throw new Error(response.data.error);
+      // Then check generic invoke error  
+      if (response.error) {
+        // Try to extract specific error from response
+        const errorMsg = response.error.message || 'Lỗi không xác định';
+        throw new Error(errorMsg);
+      }
       
       return response.data;
     },

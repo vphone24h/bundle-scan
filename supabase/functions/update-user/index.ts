@@ -74,7 +74,9 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { userId, email, password, displayName, phone } = await req.json()
+    const body = await req.json()
+    const { userId, email, password, displayName, phone } = body
+    console.log('Update user request:', { userId, hasEmail: !!email, hasPassword: !!password, hasDisplayName: !!displayName, hasPhone: phone !== undefined })
 
     if (!userId) {
       return new Response(
