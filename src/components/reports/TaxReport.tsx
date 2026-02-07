@@ -244,6 +244,9 @@ export function TaxReport() {
             <Info className="h-5 w-5 text-primary" />
             Chọn đủ 3 bước để hiện số thuế phải đóng
           </CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            Hệ thống tự động lấy doanh thu hoặc lợi nhuận trong kho để xuất báo cáo
+          </p>
         </CardHeader>
         <CardContent className="space-y-5">
           {/* Step 1: Industry */}
