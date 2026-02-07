@@ -1,15 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
-import { encode as base64Encode } from 'https://deno.land/std@0.190.0/encoding/base64.ts'
+import nodemailer from 'npm:nodemailer@6.9.10'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-function encodeSubject(subject: string): string {
-  const encoded = base64Encode(new TextEncoder().encode(subject))
-  return `=?UTF-8?B?${encoded}?=`
 }
 
 Deno.serve(async (req) => {
@@ -34,7 +28,6 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
-    // Get payment request with tenant and plan info
     const { data: payment, error: paymentError } = await supabaseAdmin
       .from('payment_requests')
       .select(`
@@ -59,7 +52,7 @@ Deno.serve(async (req) => {
     if (!smtpUser || !smtpPassword) {
       console.error('SMTP credentials not configured')
       return new Response(
-        JSON.stringify({ success: true, message: 'SMTP not configured, skipping email' }),
+        JSON.stringify({ success: true, message: 'SMTP not configured' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -129,27 +122,23 @@ Deno.serve(async (req) => {
       </div>
     </div>`
 
-    const client = new SMTPClient({
-      connection: {
-        hostname: 'smtp.gmail.com',
-        port: 465,
-        tls: true,
-        auth: {
-          username: smtpUser,
-          password: smtpPassword,
-        },
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: smtpUser,
+        pass: smtpPassword,
       },
     })
 
-    await client.send({
+    await transporter.sendMail({
       from: smtpUser,
       to: 'vphone24h@gmail.com',
-      subject: encodeSubject(`[VKHO] Yeu cau mua goi: ${tenant?.name} - ${plan?.name} (${formatPrice(payment.amount)})`),
-      content: 'auto',
+      subject: `[VKHO] Yêu cầu mua gói: ${tenant?.name} - ${plan?.name} (${formatPrice(payment.amount)})`,
       html: htmlContent,
     })
 
-    await client.close()
     console.log('Payment request notification email sent successfully')
 
     return new Response(
@@ -158,7 +147,6 @@ Deno.serve(async (req) => {
     )
   } catch (error) {
     console.error('Error sending payment notification:', error)
-    // Don't return error - notification failure should not affect user flow
     return new Response(
       JSON.stringify({ success: true, warning: 'Email notification failed' }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
