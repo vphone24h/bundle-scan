@@ -148,12 +148,8 @@ Deno.serve(async (req) => {
             console.error('Platform user email update error:', platformUserError)
           }
         } else {
-          // Get tenant_id from caller's platform_users record
-          const { data: callerPlatformUser } = await supabaseAdmin
-            .from('platform_users')
-            .select('tenant_id')
-            .eq('user_id', caller.id)
-            .single()
+          // Use already-fetched callerTenantId instead of re-querying
+          const callerPlatformTenantId = callerTenantId
 
           // Fetch existing profile to satisfy NOT NULL display_name constraint on platform_users
           const { data: targetProfile } = await supabaseAdmin
@@ -162,7 +158,7 @@ Deno.serve(async (req) => {
             .eq('user_id', userId)
             .maybeSingle()
 
-          if (callerPlatformUser) {
+          if (callerPlatformTenantId) {
             const resolvedDisplayName =
               (displayName?.trim() || '') ||
               (targetProfile?.display_name?.trim() || '') ||
@@ -174,7 +170,7 @@ Deno.serve(async (req) => {
               .insert({
                 user_id: userId,
                 email: email,
-                tenant_id: callerPlatformUser.tenant_id,
+                tenant_id: callerPlatformTenantId,
                 display_name: resolvedDisplayName,
                 phone: phone !== undefined ? phone : (targetProfile?.phone ?? null),
                 is_active: true,
@@ -205,6 +201,22 @@ Deno.serve(async (req) => {
           JSON.stringify({ error: 'Không thể cập nhật thông tin người dùng' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
+      }
+
+      // Also sync displayName/phone to platform_users if record exists
+      const platformUserUpdates: Record<string, string> = {}
+      if (displayName) platformUserUpdates.display_name = displayName
+      if (phone !== undefined) platformUserUpdates.phone = phone
+
+      if (Object.keys(platformUserUpdates).length > 0) {
+        const { error: platformSyncError } = await supabaseAdmin
+          .from('platform_users')
+          .update(platformUserUpdates)
+          .eq('user_id', userId)
+
+        if (platformSyncError) {
+          console.error('Platform user sync error (non-fatal):', platformSyncError)
+        }
       }
     }
 
