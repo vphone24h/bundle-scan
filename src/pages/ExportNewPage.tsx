@@ -40,6 +40,7 @@ import { useUpsertCustomer } from '@/hooks/useCustomers';
 import { useInvoiceTemplateByBranch } from '@/hooks/useInvoiceTemplates';
 import { useBranches } from '@/hooks/useBranches';
 import { usePointSettings } from '@/hooks/useCustomerPoints';
+import { usePermissions } from '@/hooks/usePermissions';
 import { ExportPaymentDialog } from '@/components/export/ExportPaymentDialog';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
@@ -112,11 +113,27 @@ export default function ExportNewPage() {
   const createReceipt = useCreateExportReceipt();
   const { data: pointSettings } = usePointSettings();
   const { data: branches } = useBranches();
+  const { data: permissions } = usePermissions();
   
   // Get branch_id from first cart item for invoice template
   const cartBranchId = cart.find(item => item.branch_id)?.branch_id || null;
   const { data: invoiceTemplate } = useInvoiceTemplateByBranch(cartBranchId);
   const cartBranch = cartBranchId ? branches?.find(b => b.id === cartBranchId) : null;
+
+  // Helper: check if user can export from a specific branch
+  const canExportFromBranch = (productBranchId: string | null | undefined): boolean => {
+    // Super Admin can export from any branch
+    if (permissions?.canViewAllBranches) return true;
+    // No branch info on product -> allow
+    if (!productBranchId) return true;
+    // User must belong to the product's branch
+    return permissions?.branchId === productBranchId;
+  };
+
+  const getBlockedExportMessage = (branchName?: string | null): string => {
+    const name = branchName || 'chi nhánh khác';
+    return `Sản phẩm thuộc "${name}". Bạn chỉ được xuất hàng từ chi nhánh của mình. Muốn xuất sản phẩm này, vui lòng yêu cầu chuyển hàng về chi nhánh của bạn.`;
+  };
 
   // Calculate tax
   const effectiveTaxRate = taxEnabled ? (taxRate !== null ? taxRate : parseFloat(customTaxRate) || 0) : 0;
@@ -185,6 +202,16 @@ export default function ExportNewPage() {
       const matchedProduct = results?.find((p: any) => p.name === nonImeiProductName);
       
       if (matchedProduct) {
+        // ⛔ Block export from other branches
+        if (!canExportFromBranch(matchedProduct.branch_id)) {
+          toast({
+            title: 'Không thể xuất hàng',
+            description: getBlockedExportMessage(matchedProduct.branches?.name),
+            variant: 'destructive',
+          });
+          return;
+        }
+
         // Check if already in cart - for non-IMEI, we can increase quantity
         const existingItem = cart.find(item => item.product_id === matchedProduct.id && item.sale_price === encodedPrice);
         
@@ -259,6 +286,16 @@ export default function ExportNewPage() {
       toast({
         title: 'Không thể bán',
         description: `Sản phẩm này đang ở trạng thái "${result.status === 'sold' ? 'Đã bán' : 'Đã trả'}" và chưa được nhập lại`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // ⛔ Block export from other branches
+    if (!canExportFromBranch(result.branch_id)) {
+      toast({
+        title: 'Không thể xuất hàng',
+        description: getBlockedExportMessage(result.branches?.name),
         variant: 'destructive',
       });
       return;
@@ -346,6 +383,16 @@ export default function ExportNewPage() {
 
   // Select product from suggestions
   const handleSelectProduct = (product: any) => {
+    // ⛔ Block selecting products from other branches
+    if (!canExportFromBranch(product.branch_id)) {
+      toast({
+        title: 'Không thể xuất hàng',
+        description: getBlockedExportMessage(product.branches?.name),
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setSelectedProduct(product);
     setSalePrice(''); // Leave empty - don't reveal import price
     setItemQuantity(product.imei ? 1 : 1); // Default to 1, user can change for non-IMEI
@@ -369,6 +416,16 @@ export default function ExportNewPage() {
       toast({
         title: 'Lỗi',
         description: 'Vui lòng nhập giá bán hợp lệ',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // ⛔ Safety check: block export from other branches
+    if (!canExportFromBranch(selectedProduct.branch_id)) {
+      toast({
+        title: 'Không thể xuất hàng',
+        description: getBlockedExportMessage(selectedProduct.branches?.name),
         variant: 'destructive',
       });
       return;
