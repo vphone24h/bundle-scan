@@ -1,9 +1,15 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
+import { encode as base64Encode } from 'https://deno.land/std@0.190.0/encoding/base64.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+function encodeSubject(subject: string): string {
+  const encoded = base64Encode(new TextEncoder().encode(subject))
+  return `=?UTF-8?B?${encoded}?=`
 }
 
 Deno.serve(async (req) => {
@@ -138,7 +144,7 @@ Deno.serve(async (req) => {
     await client.send({
       from: smtpUser,
       to: 'vphone24h@gmail.com',
-      subject: `[VKHO] Yêu cầu mua gói: ${tenant?.name} - ${plan?.name} (${formatPrice(payment.amount)})`,
+      subject: encodeSubject(`[VKHO] Yeu cau mua goi: ${tenant?.name} - ${plan?.name} (${formatPrice(payment.amount)})`),
       content: 'auto',
       html: htmlContent,
     })
