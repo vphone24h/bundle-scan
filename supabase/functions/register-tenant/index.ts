@@ -1,8 +1,55 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+async function sendRegistrationNotification(businessName: string, subdomain: string, email: string, adminName: string) {
+  try {
+    const smtpUser = Deno.env.get('SMTP_USER')
+    const smtpPassword = Deno.env.get('SMTP_PASSWORD')
+
+    if (!smtpUser || !smtpPassword) {
+      console.error('SMTP credentials not configured')
+      return
+    }
+
+    const now = new Date()
+    const dateStr = now.toLocaleDateString('vi-VN', { 
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh'
+    })
+
+    const client = new SMTPClient({
+      connection: {
+        hostname: 'smtp.gmail.com',
+        port: 465,
+        tls: true,
+        auth: {
+          username: smtpUser,
+          password: smtpPassword,
+        },
+      },
+    })
+
+    const htmlContent = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f9fafb;border-radius:8px"><div style="background:#1a56db;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0;text-align:center"><h1 style="margin:0;font-size:20px">🎉 Đăng ký tài khoản mới - VKHO</h1></div><div style="background:#fff;padding:24px;border:1px solid #e5e7eb;border-radius:0 0 8px 8px"><p style="font-size:16px;color:#374151;margin-bottom:16px">Có tài khoản doanh nghiệp mới vừa đăng ký trên hệ thống VKHO:</p><table style="width:100%;border-collapse:collapse"><tr style="border-bottom:1px solid #e5e7eb"><td style="padding:10px 12px;color:#6b7280;font-weight:600;width:140px">Tên công ty</td><td style="padding:10px 12px;color:#111827;font-weight:bold">${businessName}</td></tr><tr style="border-bottom:1px solid #e5e7eb;background:#f9fafb"><td style="padding:10px 12px;color:#6b7280;font-weight:600">Tên ID (subdomain)</td><td style="padding:10px 12px;color:#111827;font-weight:bold">${subdomain}</td></tr><tr style="border-bottom:1px solid #e5e7eb"><td style="padding:10px 12px;color:#6b7280;font-weight:600">Người đăng ký</td><td style="padding:10px 12px;color:#111827">${adminName}</td></tr><tr style="border-bottom:1px solid #e5e7eb;background:#f9fafb"><td style="padding:10px 12px;color:#6b7280;font-weight:600">Gmail</td><td style="padding:10px 12px;color:#1a56db">${email}</td></tr><tr><td style="padding:10px 12px;color:#6b7280;font-weight:600">Ngày đăng ký</td><td style="padding:10px 12px;color:#111827">${dateStr}</td></tr></table><div style="margin-top:20px;padding:12px;background:#ecfdf5;border-radius:6px;text-align:center;color:#065f46;font-weight:600">✅ Tài khoản đã được tạo thành công</div></div></div>`
+
+    await client.send({
+      from: smtpUser,
+      to: 'vphone24h@gmail.com',
+      subject: `[VKHO] Đăng ký mới: ${businessName} (${subdomain})`,
+      content: 'auto',
+      html: htmlContent,
+    })
+
+    await client.close()
+    console.log('Registration notification email sent successfully')
+  } catch (error) {
+    console.error('Failed to send registration notification email:', error)
+    // Don't throw - email failure should not block registration
+  }
 }
 
 Deno.serve(async (req) => {
@@ -236,6 +283,10 @@ Deno.serve(async (req) => {
         { tenant_id: tenant.id, tier: 'gold', min_spent: 20000000, points_multiplier: 1.5 },
         { tenant_id: tenant.id, tier: 'vip', min_spent: 50000000, points_multiplier: 2 },
       ])
+
+    // Send notification email to admin (non-blocking)
+    sendRegistrationNotification(businessName, subdomain.toLowerCase(), email, adminName)
+      .catch(err => console.error('Email notification error:', err))
 
     return new Response(
       JSON.stringify({ 
