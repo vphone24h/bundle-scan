@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -32,8 +33,9 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, Eye } from 'lucide-react';
 import { UserRole } from '@/hooks/usePermissions';
+import { useUserBranchAccess, useManageBranchAccess } from '@/hooks/useUserBranchAccess';
 
 interface Branch {
   id: string;
@@ -243,6 +245,32 @@ export function EditUserDialog({
 
   const isLoading = updateUserRole.isPending || updateUserInfo.isPending || deleteUser.isPending;
 
+  // Branch access management
+  const { data: branchAccess, isLoading: branchAccessLoading } = useUserBranchAccess(user?.user_id || null);
+  const { grantAccess, revokeAccess } = useManageBranchAccess();
+
+  // Get list of extra branch IDs this user can access
+  const extraBranchIds = new Set((branchAccess || []).map(ba => ba.branch_id));
+
+  const handleToggleBranch = async (branchId: string, checked: boolean) => {
+    if (!user || !tenantId) return;
+
+    try {
+      if (checked) {
+        await grantAccess.mutateAsync({ userId: user.user_id, branchId, tenantId });
+        toast.success('Đã cấp quyền xem chi nhánh');
+      } else {
+        await revokeAccess.mutateAsync({ userId: user.user_id, branchId });
+        toast.success('Đã thu hồi quyền xem chi nhánh');
+      }
+    } catch (error) {
+      toast.error('Lỗi: ' + (error as Error).message);
+    }
+  };
+
+  // Filter branches for the access tab: exclude the user's assigned branch
+  const otherBranches = branches?.filter(b => b.id !== user?.branch_id) || [];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -254,8 +282,14 @@ export function EditUserDialog({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className={`grid w-full ${isSuperAdmin && user?.user_role !== 'super_admin' ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <TabsTrigger value="role">Quyền hạn</TabsTrigger>
+            {isSuperAdmin && user?.user_role !== 'super_admin' && (
+              <TabsTrigger value="branch-access" className="gap-1">
+                <Eye className="h-3 w-3" />
+                Xem chi nhánh
+              </TabsTrigger>
+            )}
             {isSuperAdmin && <TabsTrigger value="info">Thông tin</TabsTrigger>}
           </TabsList>
 
@@ -302,6 +336,61 @@ export function EditUserDialog({
               </Button>
             </DialogFooter>
           </TabsContent>
+
+          {/* Tab xem chi nhánh bổ sung */}
+          {isSuperAdmin && user?.user_role !== 'super_admin' && (
+            <TabsContent value="branch-access" className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Chi nhánh chính</Label>
+                <p className="text-sm text-muted-foreground px-2 py-1.5 bg-muted rounded">
+                  {user?.branches?.name || 'Chưa gán'}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Cho phép xem thêm chi nhánh</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Bật để nhân viên có thể xem tồn kho của chi nhánh khác
+                </p>
+
+                {branchAccessLoading ? (
+                  <div className="text-center py-4 text-muted-foreground text-sm">Đang tải...</div>
+                ) : otherBranches.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-2">Không có chi nhánh nào khác</p>
+                ) : (
+                  <div className="space-y-3 max-h-48 overflow-y-auto">
+                    {otherBranches.map((branch) => {
+                      const isGranted = extraBranchIds.has(branch.id);
+                      const isPending = grantAccess.isPending || revokeAccess.isPending;
+
+                      return (
+                        <div key={branch.id} className="flex items-center space-x-3 px-2 py-1.5 rounded hover:bg-muted/50">
+                          <Checkbox
+                            id={`branch-${branch.id}`}
+                            checked={isGranted}
+                            disabled={isPending}
+                            onCheckedChange={(checked) => handleToggleBranch(branch.id, !!checked)}
+                          />
+                          <label
+                            htmlFor={`branch-${branch.id}`}
+                            className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            {branch.name}
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="pt-4">
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                  Đóng
+                </Button>
+              </DialogFooter>
+            </TabsContent>
+          )}
 
           {isSuperAdmin && (
             <TabsContent value="info" className="space-y-4 mt-4">

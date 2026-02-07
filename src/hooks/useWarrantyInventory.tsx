@@ -108,10 +108,10 @@ function processProductsToWarrantyInventory(products: any[]): InventoryItem[] {
 export function useWarrantyInventory() {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
-  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+  const { branchId, branchIds, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   return useQuery({
-    queryKey: ['warranty-inventory', tenant?.id, branchId, isDataHidden],
+    queryKey: ['warranty-inventory', tenant?.id, branchIds, isDataHidden],
     queryFn: async () => {
       if (isDataHidden) {
         return [] as InventoryItem[];
@@ -130,7 +130,9 @@ export function useWarrantyInventory() {
         .eq('status', 'warranty' as any)
         .order('name', { ascending: true });
 
-      if (shouldFilter && branchId) {
+      if (shouldFilter && branchIds && branchIds.length > 0) {
+        query = query.in('branch_id', branchIds);
+      } else if (shouldFilter && branchId) {
         query = query.eq('branch_id', branchId);
       }
 
