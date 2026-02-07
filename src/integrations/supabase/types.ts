@@ -3983,6 +3983,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_branch_access: {
+        Row: {
+          branch_id: string
+          created_at: string
+          granted_by: string | null
+          id: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_branch_access_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_branch_access_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           branch_id: string | null
@@ -4111,6 +4153,10 @@ export type Database = {
           total_orders: number
           total_revenue: number
         }[]
+      }
+      get_user_accessible_branch_ids: {
+        Args: { _user_id: string }
+        Returns: string[]
       }
       get_user_branch: { Args: { _user_id: string }; Returns: string }
       get_user_role: {

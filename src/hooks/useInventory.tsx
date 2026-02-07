@@ -185,11 +185,11 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
 export function useInventory() {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
-  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+  const { branchId, branchIds, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   return useQuery({
-    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
-    queryKey: ['inventory', tenant?.id, branchId, isDataHidden],
+    // Keyed by tenant AND branches to prevent cross-tenant/branch cache leakage
+    queryKey: ['inventory', tenant?.id, branchIds, isDataHidden],
     queryFn: async () => {
       // If data is hidden, return empty array
       if (isDataHidden) {
@@ -211,7 +211,9 @@ export function useInventory() {
         .order('name', { ascending: true });
 
       // Apply branch filter for non-Super Admin users
-      if (shouldFilter && branchId) {
+      if (shouldFilter && branchIds && branchIds.length > 0) {
+        query = query.in('branch_id', branchIds);
+      } else if (shouldFilter && branchId) {
         query = query.eq('branch_id', branchId);
       }
 
