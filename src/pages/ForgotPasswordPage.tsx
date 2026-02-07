@@ -18,12 +18,19 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: {
+          email,
+          redirectUrl: `${window.location.origin}/reset-password`,
+        },
       });
 
       if (error) {
-        throw error;
+        throw new Error(data?.error || error.message || 'Không thể gửi email khôi phục');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
       }
 
       setSent(true);
