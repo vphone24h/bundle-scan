@@ -69,6 +69,7 @@ import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isToday } fro
 import { vi } from 'date-fns/locale';
 import { useCashBook, useCashBookCategories, useCreateCashBookEntry, useUpdateCashBookEntry, useDeleteCashBookEntry, useCreateCashBookCategory, type CashBookEntry } from '@/hooks/useCashBook';
 import { useBranches } from '@/hooks/useBranches';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useCashBookGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency } from '@/lib/mockData';
 import { formatNumberWithSpaces, parseFormattedNumber } from '@/lib/formatNumber';
@@ -197,6 +198,16 @@ export default function CashBookPage() {
   const isMobile = useIsMobile();
   const { data: latestOpeningBalances } = useLatestOpeningBalances();
   const { data: currentProfile } = useProfile();
+  const { data: permissions } = usePermissions();
+  const isSuperAdmin = permissions?.canViewAllBranches === true;
+
+  // Non-Super Admin: force branch view and lock to their branch
+  useEffect(() => {
+    if (!isSuperAdmin && permissions?.branchId) {
+      setViewMode('branch');
+      setSelectedBranchId(permissions.branchId);
+    }
+  }, [isSuperAdmin, permissions?.branchId]);
   
   // All categories for filter (both income and expense)
   const { data: allCategories } = useCashBookCategories();
@@ -361,13 +372,18 @@ export default function CashBookPage() {
   };
 
   const handleOpenAdd = (type: 'expense' | 'income') => {
+    // Non-Super Admin: always use their branch
+    const defaultBranchId = !isSuperAdmin && permissions?.branchId
+      ? permissions.branchId
+      : (viewMode === 'branch' && selectedBranchId ? selectedBranchId : '');
+
     setFormData({
       type,
       category: '',
       description: '',
       payments: [{ source: 'cash', amount: '' }],
       is_business_accounting: true,
-      branch_id: viewMode === 'branch' && selectedBranchId ? selectedBranchId : '',
+      branch_id: defaultBranchId,
       note: '',
       transaction_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
       recipient_name: '',
@@ -400,14 +416,18 @@ export default function CashBookPage() {
   };
 
   const handleOpenAdjustBalance = (source: string) => {
-    const defaultBranch = branches?.find(b => b.is_default) || branches?.[0];
+    // Non-Super Admin: always use their branch
+    const defaultBranch = !isSuperAdmin && permissions?.branchId
+      ? permissions.branchId
+      : (branches?.find(b => b.is_default) || branches?.[0])?.id || '';
+
     setAdjustBalanceData({
       source,
       currentBalance: balanceBySource[source] || 0,
       newBalance: '',
       reason: '',
       includeInAccounting: false,
-      branchId: defaultBranch?.id || '',
+      branchId: defaultBranch,
     });
     setShowAdjustBalanceDialog(true);
   };
@@ -704,36 +724,43 @@ export default function CashBookPage() {
       />
 
       <div className="p-6 space-y-6">
-        {/* View Mode Tabs */}
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'branch' | 'total')}>
-          <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger value="total" className="gap-2">
-                <Wallet className="h-4 w-4" />
-                Tổng sổ quỹ
-              </TabsTrigger>
-              <TabsTrigger value="branch" className="gap-2">
-                <Building2 className="h-4 w-4" />
-                Theo chi nhánh
-              </TabsTrigger>
-            </TabsList>
-            
-            {viewMode === 'branch' && (
-              <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Chọn chi nhánh" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {branches?.map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+        {/* View Mode Tabs - Only Super Admin can switch between total/branch view */}
+        {isSuperAdmin ? (
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'branch' | 'total')}>
+            <div className="flex items-center justify-between">
+              <TabsList>
+                <TabsTrigger value="total" className="gap-2">
+                  <Wallet className="h-4 w-4" />
+                  Tổng sổ quỹ
+                </TabsTrigger>
+                <TabsTrigger value="branch" className="gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Theo chi nhánh
+                </TabsTrigger>
+              </TabsList>
+              
+              {viewMode === 'branch' && (
+                <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Chọn chi nhánh" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {branches?.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </Tabs>
+        ) : (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Building2 className="h-4 w-4" />
+            <span>Chi nhánh: <strong className="text-foreground">{branches?.find(b => b.id === permissions?.branchId)?.name || 'Đang tải...'}</strong></span>
           </div>
-        </Tabs>
+        )}
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1345,22 +1372,30 @@ export default function CashBookPage() {
             </div>
 
             <div>
-              <Label>Chi nhánh {viewMode === 'total' && '*'}</Label>
-              <Select
-                value={formData.branch_id}
-                onValueChange={(v) => setFormData({ ...formData, branch_id: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn chi nhánh" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {branches?.map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Chi nhánh {isSuperAdmin && viewMode === 'total' && '*'}</Label>
+              {isSuperAdmin ? (
+                <Select
+                  value={formData.branch_id}
+                  onValueChange={(v) => setFormData({ ...formData, branch_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn chi nhánh" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {branches?.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value={branches?.find(b => b.id === formData.branch_id)?.name || 'Đang tải...'}
+                  disabled
+                  className="bg-muted"
+                />
+              )}
             </div>
 
             {/* Người lập phiếu */}
@@ -1500,21 +1535,29 @@ export default function CashBookPage() {
 
             <div>
               <Label>Chi nhánh</Label>
-              <Select
-                value={formData.branch_id}
-                onValueChange={(v) => setFormData({ ...formData, branch_id: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn chi nhánh" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {branches?.map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isSuperAdmin ? (
+                <Select
+                  value={formData.branch_id}
+                  onValueChange={(v) => setFormData({ ...formData, branch_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn chi nhánh" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {branches?.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value={branches?.find(b => b.id === formData.branch_id)?.name || 'Đang tải...'}
+                  disabled
+                  className="bg-muted"
+                />
+              )}
             </div>
 
             {/* Người nhận */}
