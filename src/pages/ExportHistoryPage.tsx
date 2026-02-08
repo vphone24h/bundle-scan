@@ -62,6 +62,7 @@ import { EditExportItemDialog } from '@/components/export/EditExportItemDialog';
 import { ReceiptReturnDialog } from '@/components/returns/ReceiptReturnDialog';
 import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
 import { supabase } from '@/integrations/supabase/client';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   completed: { label: 'Hoàn tất', variant: 'default' },
@@ -105,6 +106,8 @@ export default function ExportHistoryPage() {
   const { data: items, isLoading: itemsLoading } = useExportReceiptItems();
   const { data: branches } = useBranches();
   const returnProduct = useReturnProduct();
+  const { data: permissions } = usePermissions();
+  const isSuperAdmin = permissions?.canViewAllBranches === true;
   
   // Get template based on the print receipt's branch
   const printBranchId = printReceipt?.branch_id || null;
@@ -370,22 +373,24 @@ export default function ExportHistoryPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Chi nhánh</Label>
-                  <Select value={branchFilter} onValueChange={setBranchFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Tất cả" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      <SelectItem value="_all_">Tất cả chi nhánh</SelectItem>
-                      {branches?.map((branch) => (
-                        <SelectItem key={branch.id} value={branch.id}>
-                          {branch.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {isSuperAdmin && (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Chi nhánh</Label>
+                    <Select value={branchFilter} onValueChange={setBranchFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Tất cả" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="_all_">Tất cả chi nhánh</SelectItem>
+                        {branches?.map((branch) => (
+                          <SelectItem key={branch.id} value={branch.id}>
+                            {branch.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="flex items-end">
                   <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full">
                     <X className="h-4 w-4 mr-1" />
