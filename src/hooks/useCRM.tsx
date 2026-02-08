@@ -54,11 +54,12 @@
    assigned_staff_id: string | null;
    reminder_days: number;
    created_at: string;
-   customer?: {
-     id: string;
-     name: string;
-     phone: string;
-   };
+    customer?: {
+      id: string;
+      name: string;
+      phone: string;
+      preferred_branch_id?: string | null;
+    };
  }
  
  export interface CareLog {
@@ -331,10 +332,10 @@
    return useQuery({
      queryKey: ['care-schedules', user?.id, filters],
      queryFn: async () => {
-       let query = supabase
-         .from('customer_care_schedules')
-         .select('*, customer:customers(id, name, phone)')
-         .order('scheduled_date', { ascending: true });
+        let query = supabase
+          .from('customer_care_schedules')
+          .select('*, customer:customers(id, name, phone, preferred_branch_id)')
+          .order('scheduled_date', { ascending: true });
  
        if (filters?.customerId) {
          query = query.eq('customer_id', filters.customerId);

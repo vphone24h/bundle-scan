@@ -1,4 +1,4 @@
- import { useState } from 'react';
+ import { useState, useEffect } from 'react';
  import { Card, CardContent } from '@/components/ui/card';
  import { usePagination } from '@/hooks/usePagination';
  import { TablePagination } from '@/components/ui/table-pagination';
@@ -46,32 +46,40 @@
    onViewTimeline: (customerId: string) => void;
  }
  
- export function CustomerListTab({ onViewCare, onViewTimeline }: CustomerListTabProps) {
-   const navigate = useNavigate();
-   const { data: permissions } = usePermissions();
-   const [search, setSearch] = useState('');
-   const [branchFilter, setBranchFilter] = useState('_all_');
-   const [tierFilter, setTierFilter] = useState('_all_');
-   const [statusFilter, setStatusFilter] = useState('_all_');
-   const [sourceFilter, setSourceFilter] = useState('_all_');
-   const [crmStatusFilter, setCrmStatusFilter] = useState('_all_');
-   const [staffFilter, setStaffFilter] = useState('_all_');
- 
-   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
-   const [editingCustomer, setEditingCustomer] = useState<any>(null);
-   const [showDetailDialog, setShowDetailDialog] = useState(false);
-   const [showFormDialog, setShowFormDialog] = useState(false);
-   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-   const [showMergeDialog, setShowMergeDialog] = useState(false);
- 
-   const { data: customers, isLoading } = useCustomersWithPoints({
-     search: search || undefined,
-     branchId: branchFilter !== '_all_' ? branchFilter : undefined,
-     tier: tierFilter !== '_all_' ? tierFilter : undefined,
-     status: statusFilter !== '_all_' ? statusFilter : undefined,
-     crmStatus: crmStatusFilter !== '_all_' ? crmStatusFilter : undefined,
-     staffId: staffFilter !== '_all_' ? staffFilter : undefined,
-   });
+export function CustomerListTab({ onViewCare, onViewTimeline }: CustomerListTabProps) {
+    const navigate = useNavigate();
+    const { data: permissions } = usePermissions();
+    const isSuperAdmin = permissions?.canViewAllBranches === true;
+    const [search, setSearch] = useState('');
+    const [branchFilter, setBranchFilter] = useState('_all_');
+    const [tierFilter, setTierFilter] = useState('_all_');
+    const [statusFilter, setStatusFilter] = useState('_all_');
+    const [sourceFilter, setSourceFilter] = useState('_all_');
+    const [crmStatusFilter, setCrmStatusFilter] = useState('_all_');
+    const [staffFilter, setStaffFilter] = useState('_all_');
+
+    const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+    const [editingCustomer, setEditingCustomer] = useState<any>(null);
+    const [showDetailDialog, setShowDetailDialog] = useState(false);
+    const [showFormDialog, setShowFormDialog] = useState(false);
+    const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+    const [showMergeDialog, setShowMergeDialog] = useState(false);
+
+    // Auto-lock branch filter for non-Super Admin
+    useEffect(() => {
+      if (!isSuperAdmin && permissions?.branchId) {
+        setBranchFilter(permissions.branchId);
+      }
+    }, [isSuperAdmin, permissions?.branchId]);
+
+    const { data: customers, isLoading } = useCustomersWithPoints({
+      search: search || undefined,
+      branchId: branchFilter !== '_all_' ? branchFilter : undefined,
+      tier: tierFilter !== '_all_' ? tierFilter : undefined,
+      status: statusFilter !== '_all_' ? statusFilter : undefined,
+      crmStatus: crmStatusFilter !== '_all_' ? crmStatusFilter : undefined,
+      staffId: staffFilter !== '_all_' ? staffFilter : undefined,
+    });
  
    const { data: branches } = useBranches();
    const { data: customerSources } = useCustomerSources();
@@ -130,17 +138,19 @@
               </Button>
             </div>
             <div className="flex flex-wrap gap-2 overflow-x-auto">
-               <Select value={branchFilter} onValueChange={setBranchFilter}>
-                <SelectTrigger className="w-[100px] sm:w-[140px] h-9 text-xs sm:text-sm">
-                  <SelectValue placeholder="CN" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="_all_">Tất cả CN</SelectItem>
-                   {branches?.map((branch) => (
-                     <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
-                   ))}
-                 </SelectContent>
-               </Select>
+              {isSuperAdmin && (
+                <Select value={branchFilter} onValueChange={setBranchFilter}>
+                 <SelectTrigger className="w-[100px] sm:w-[140px] h-9 text-xs sm:text-sm">
+                   <SelectValue placeholder="CN" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_all_">Tất cả CN</SelectItem>
+                    {branches?.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
                <Select value={tierFilter} onValueChange={setTierFilter}>
                 <SelectTrigger className="w-[90px] sm:w-[120px] h-9 text-xs sm:text-sm">
                    <SelectValue placeholder="Hạng" />

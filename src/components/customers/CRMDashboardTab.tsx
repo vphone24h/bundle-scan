@@ -1,5 +1,5 @@
- import { useState } from 'react';
- import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
  import { Button } from '@/components/ui/button';
  import { Badge } from '@/components/ui/badge';
  import { Progress } from '@/components/ui/progress';
@@ -82,26 +82,43 @@
    return { start, end };
  }
  
- export function CRMDashboardTab() {
-   const [period, setPeriod] = useState('month');
-   const [selectedStaff, setSelectedStaff] = useState<StaffWithKPI | null>(null);
-   const [isKPIDialogOpen, setIsKPIDialogOpen] = useState(false);
- 
-   const { data: permissions } = usePermissions();
-   const { start, end } = getDateRange(period);
-   const { data: staffWithKPI = [], isLoading: staffLoading } = useStaffWithKPI(start, end);
-   const { data: schedules = [] } = useCareSchedules({ status: 'pending' });
-   const { data: customers = [] } = useCustomersWithPoints();
- 
-   const todaySchedules = schedules.filter(s => {
-     const today = new Date().toISOString().split('T')[0];
-     return s.scheduled_date === today;
-   });
-   const overdueSchedules = schedules.filter(s => s.status === 'overdue');
- 
-   const totalRevenue = staffWithKPI.reduce((sum, s) => sum + (s.stats?.total_revenue || 0), 0);
-   const totalOrders = staffWithKPI.reduce((sum, s) => sum + (s.stats?.total_orders || 0), 0);
-   const newCustomersThisPeriod = staffWithKPI.reduce((sum, s) => sum + (s.stats?.new_customers || 0), 0);
+export function CRMDashboardTab() {
+    const [period, setPeriod] = useState('month');
+    const [selectedStaff, setSelectedStaff] = useState<StaffWithKPI | null>(null);
+    const [isKPIDialogOpen, setIsKPIDialogOpen] = useState(false);
+
+    const { data: permissions } = usePermissions();
+    const isSuperAdmin = permissions?.canViewAllBranches === true;
+    const { start, end } = getDateRange(period);
+    const { data: staffWithKPIAll = [], isLoading: staffLoading } = useStaffWithKPI(start, end);
+    const { data: schedulesAll = [] } = useCareSchedules({ status: 'pending' });
+    const { data: customersAll = [] } = useCustomersWithPoints();
+
+    // Branch filtering for non-Super Admin
+    const staffWithKPI = useMemo(() => {
+      if (isSuperAdmin || !permissions?.branchId) return staffWithKPIAll;
+      return staffWithKPIAll.filter(s => s.branch_id === permissions.branchId);
+    }, [staffWithKPIAll, isSuperAdmin, permissions?.branchId]);
+
+    const schedules = useMemo(() => {
+      if (isSuperAdmin || !permissions?.branchId) return schedulesAll;
+      return schedulesAll.filter(s => s.customer?.preferred_branch_id === permissions.branchId);
+    }, [schedulesAll, isSuperAdmin, permissions?.branchId]);
+
+    const customers = useMemo(() => {
+      if (isSuperAdmin || !permissions?.branchId) return customersAll;
+      return customersAll.filter(c => c.preferred_branch_id === permissions.branchId);
+    }, [customersAll, isSuperAdmin, permissions?.branchId]);
+
+    const todaySchedules = schedules.filter(s => {
+      const today = new Date().toISOString().split('T')[0];
+      return s.scheduled_date === today;
+    });
+    const overdueSchedules = schedules.filter(s => s.status === 'overdue');
+
+    const totalRevenue = staffWithKPI.reduce((sum, s) => sum + (s.stats?.total_revenue || 0), 0);
+    const totalOrders = staffWithKPI.reduce((sum, s) => sum + (s.stats?.total_orders || 0), 0);
+    const newCustomersThisPeriod = staffWithKPI.reduce((sum, s) => sum + (s.stats?.new_customers || 0), 0);
  
    const revenueByStaff = staffWithKPI
      .filter(s => s.stats && s.stats.total_revenue > 0)

@@ -1,4 +1,4 @@
- import { useState } from 'react';
+ import { useState, useMemo, useEffect } from 'react';
  import { MainLayout } from '@/components/layout/MainLayout';
  import { PageHeader } from '@/components/layout/PageHeader';
  import { Card, CardContent } from '@/components/ui/card';
@@ -9,22 +9,33 @@
  import { CareTimelineTab } from '@/components/customers/CareTimelineTab';
  import { CRMDashboardTab } from '@/components/customers/CRMDashboardTab';
  import { CRMReportsTab } from '@/components/customers/CRMReportsTab';
- import { useCustomerDetail } from '@/hooks/useCustomerPoints';
- import { useCustomersWithPoints, MEMBERSHIP_TIER_NAMES, MEMBERSHIP_TIER_COLORS } from '@/hooks/useCustomerPoints';
- import { formatNumber } from '@/lib/formatNumber';
- import { Badge } from '@/components/ui/badge';
- import { useSearchParams } from 'react-router-dom';
+  import { useCustomerDetail } from '@/hooks/useCustomerPoints';
+  import { useCustomersWithPoints, MEMBERSHIP_TIER_NAMES, MEMBERSHIP_TIER_COLORS } from '@/hooks/useCustomerPoints';
+  import { formatNumber } from '@/lib/formatNumber';
+  import { Badge } from '@/components/ui/badge';
+  import { useSearchParams } from 'react-router-dom';
+  import { usePermissions } from '@/hooks/usePermissions';
  
- export default function CustomersPage() {
-   const [searchParams, setSearchParams] = useSearchParams();
-   const tabFromUrl = searchParams.get('tab') || 'list';
-   const customerIdFromUrl = searchParams.get('customerId');
-   
-   const [activeTab, setActiveTab] = useState(tabFromUrl);
-   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(customerIdFromUrl);
-   
-   const { data: selectedCustomer } = useCustomerDetail(selectedCustomerId);
-   const { data: customers } = useCustomersWithPoints();
+  export default function CustomersPage() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const tabFromUrl = searchParams.get('tab') || 'list';
+    const customerIdFromUrl = searchParams.get('customerId');
+    
+    const [activeTab, setActiveTab] = useState(tabFromUrl);
+    const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(customerIdFromUrl);
+    
+    const { data: permissions } = usePermissions();
+    const isSuperAdmin = permissions?.canViewAllBranches === true;
+    
+    const { data: selectedCustomer } = useCustomerDetail(selectedCustomerId);
+    const { data: customersAll } = useCustomersWithPoints();
+
+    // Branch-filter customers for summary stats
+    const customers = useMemo(() => {
+      if (!customersAll) return [];
+      if (isSuperAdmin || !permissions?.branchId) return customersAll;
+      return customersAll.filter(c => c.preferred_branch_id === permissions.branchId);
+    }, [customersAll, isSuperAdmin, permissions?.branchId]);
  
    const handleTabChange = (value: string) => {
      setActiveTab(value);
