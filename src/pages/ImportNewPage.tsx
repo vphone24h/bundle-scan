@@ -459,6 +459,12 @@ export default function ImportNewPage() {
                 </a>
               </Button>
             )}
+            <Button variant="outline" asChild>
+              <a href="/templates/Bang_ke_thu_mua_iPhone_cu.xlsx" download="Bang_ke_thu_mua_iPhone_cu.xlsx">
+                <Download className="mr-2 h-4 w-4" />
+                Mẫu bảng kê thu mua iPhone cũ
+              </a>
+            </Button>
             <Button variant="outline" onClick={handleExportTemplate}>
               <Download className="mr-2 h-4 w-4" />
               Tải file mẫu
