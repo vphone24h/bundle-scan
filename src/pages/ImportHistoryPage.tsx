@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useImportReceipts, useImportReceiptDetails, ImportReceipt } from '@/hooks/useImportReceipts';
@@ -62,6 +64,49 @@ export default function ImportHistoryPage() {
   const { data: branches } = useBranches();
   const { data: permissions } = usePermissions();
   const markWarranty = useMarkProductWarranty();
+  // Fetch staff profiles from import receipts' created_by
+  const staffUserIds = useMemo(() => {
+    if (!receipts) return [];
+    return [...new Set(receipts.map(r => r.created_by).filter(Boolean))] as string[];
+  }, [receipts]);
+  
+  const { data: staffProfiles } = useQuery({
+    queryKey: ['staff-profiles-import', staffUserIds],
+    queryFn: async () => {
+      if (staffUserIds.length === 0) return [];
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, display_name')
+        .in('user_id', staffUserIds);
+      return data || [];
+    },
+    enabled: staffUserIds.length > 0,
+  });
+
+  // Maps for staff name lookup: receipt_id → created_by, created_by → display_name
+  const receiptCreatorMap = useMemo(() => {
+    const map = new Map<string, string>();
+    receipts?.forEach(r => {
+      if (r.created_by) map.set(r.id, r.created_by);
+    });
+    return map;
+  }, [receipts]);
+
+  const staffNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    staffProfiles?.forEach(p => {
+      map.set(p.user_id, p.display_name || 'Nhân viên');
+    });
+    return map;
+  }, [staffProfiles]);
+
+  const getStaffName = (product: Product) => {
+    if (!product.import_receipt_id) return '-';
+    const createdBy = receiptCreatorMap.get(product.import_receipt_id);
+    if (!createdBy) return '-';
+    return staffNameMap.get(createdBy) || '-';
+  };
+
   
   // Search & filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -397,6 +442,7 @@ export default function ImportHistoryPage() {
         { header: 'Chi nhánh', key: 'branch_name', width: 15 },
         { header: 'Thư mục', key: 'category_name', width: 15 },
         { header: 'Số lượng', key: 'quantity', width: 10, isNumeric: true },
+        { header: 'Nhân viên nhập', key: 'staff_name', width: 18 },
         { header: 'Ghi chú', key: 'note', width: 30 },
         { header: 'Trạng thái', key: 'status', width: 12, format: (v) => v === 'in_stock' ? 'Tồn kho' : v === 'sold' ? 'Đã bán' : v === 'returned' ? 'Đã trả NCC' : v === 'deleted' ? 'Đã xóa' : v },
       ],
@@ -410,6 +456,7 @@ export default function ImportHistoryPage() {
         branch_name: p.branches?.name || '',
         category_name: p.categories?.name || '',
         quantity: p.quantity || 1,
+        staff_name: getStaffName(p),
         note: p.note || '',
         status: p.status,
       })),
@@ -783,6 +830,7 @@ export default function ImportHistoryPage() {
                     <th>Ngày nhập</th>
                     <th>Nhà cung cấp</th>
                     <th>Chi nhánh</th>
+                    <th>Nhân viên nhập</th>
                     <th>Ghi chú</th>
                     <th>Trạng thái</th>
                     <th className="w-24"></th>
@@ -818,6 +866,7 @@ export default function ImportHistoryPage() {
                       <td>{formatDate(new Date(product.import_date))}</td>
                       <td>{product.suppliers?.name || '-'}</td>
                       <td>{product.branches?.name || '-'}</td>
+                      <td className="text-sm">{getStaffName(product)}</td>
                       <td className="max-w-[120px] truncate" title={product.note || ''}>
                         {product.note ? (
                           <span className="flex items-center gap-1">
