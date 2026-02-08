@@ -116,7 +116,10 @@ export function TaxReport() {
     let tncn = 0;
     const profitTncnRate = revenueTier === 'over_50b' ? 0.17 : 0.15;
     if (effectiveTaxMethod === 'revenue') {
-      const taxableRevenue = Math.max(0, revenue - 500_000_000);
+      // Trên 50 tỷ: không trừ 500 triệu miễn thuế
+      const taxableRevenue = revenueTier === 'over_50b'
+        ? revenue
+        : Math.max(0, revenue - 500_000_000);
       tncn = taxableRevenue * (selectedIndustry.tncn / 100);
     } else if (effectiveTaxMethod === 'profit') {
       tncn = Math.max(0, stats.netProfit) * profitTncnRate;
@@ -341,7 +344,7 @@ export function TaxReport() {
                 </SelectContent>
               </Select>
               <div className="mt-2 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
-                <p>• <strong>Theo doanh số:</strong> TNCN = (Doanh thu − 500.000.000) × Thuế suất TNCN</p>
+                <p>• <strong>Theo doanh số:</strong> TNCN = {revenueTier === 'over_50b' ? 'Doanh thu' : '(Doanh thu − 500.000.000)'} × Thuế suất TNCN</p>
                 <p>• <strong>Theo lợi nhuận:</strong> TNCN = Lợi nhuận thuần × {revenueTier === 'over_50b' ? '17%' : '15%'} <em>(phải có hóa đơn đầu vào)</em></p>
                 <p className="italic pt-1">Cả 2 cách đều hợp lệ, hãy chọn cách nào cho số thuế thấp hơn để tối ưu nhất.</p>
               </div>
@@ -386,8 +389,10 @@ export function TaxReport() {
                       </p>
                       <p className="text-xl font-bold text-primary mt-1">{formatCurrency(taxResult.tncn)}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">
-                        {effectiveTaxMethod === 'revenue'
-                          ? `= (DT - 500tr) × ${selectedIndustry?.tncn}%`
+                         {effectiveTaxMethod === 'revenue'
+                          ? revenueTier === 'over_50b'
+                            ? `= DT × ${selectedIndustry?.tncn}%`
+                            : `= (DT - 500tr) × ${selectedIndustry?.tncn}%`
                           : `= Lợi nhuận thuần × ${revenueTier === 'over_50b' ? '17' : '15'}%`}
                       </p>
                     </CardContent>
@@ -405,7 +410,10 @@ export function TaxReport() {
                 <p>• Doanh thu thuần kỳ: {formatCurrency(stats?.netRevenue || 0)} <span className="italic">(đã trừ trả hàng: {formatCurrency(stats?.totalReturnRevenue || 0)})</span></p>
                   <p>• Lợi nhuận thuần kỳ: {formatCurrency(stats?.netProfit || 0)}</p>
                   {effectiveTaxMethod === 'revenue' && (
-                    <p>• Cách tính TNCN: ({formatCurrency(stats?.netRevenue || 0)} - 500.000.000) × {selectedIndustry?.tncn}%</p>
+                    <p>• Cách tính TNCN: {revenueTier === 'over_50b'
+                      ? `${formatCurrency(stats?.netRevenue || 0)} × ${selectedIndustry?.tncn}%`
+                      : `(${formatCurrency(stats?.netRevenue || 0)} - 500.000.000) × ${selectedIndustry?.tncn}%`
+                    }</p>
                   )}
                 </div>
 
