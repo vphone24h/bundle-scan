@@ -3,6 +3,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier, Supplier } from '@/hooks/useSuppliers';
 import { useSupplierStats } from '@/hooks/useSupplierStats';
+import { useBranches } from '@/hooks/useBranches';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { formatDate } from '@/lib/mockData';
@@ -24,7 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Pencil, Trash2, Phone, MapPin, Loader2, Eye } from 'lucide-react';
+import { Plus, MoreHorizontal, Pencil, Trash2, Phone, MapPin, Loader2, Eye, Building2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { SupplierDetailDialog } from '@/components/suppliers/SupplierDetailDialog';
 import { SupplierFilters, SortMode } from '@/components/suppliers/SupplierFilters';
@@ -32,7 +33,8 @@ import { formatCurrency } from '@/lib/mockData';
 import { usePermissions } from '@/hooks/usePermissions';
 
 export default function SuppliersPage() {
-  const { data: suppliers, isLoading } = useSuppliers();
+  const { data: allSuppliers, isLoading } = useSuppliers();
+  const { data: branches } = useBranches();
   const createSupplier = useCreateSupplier();
   const updateSupplier = useUpdateSupplier();
   const deleteSupplier = useDeleteSupplier();
@@ -83,13 +85,28 @@ export default function SuppliersPage() {
     return map;
   }, [supplierStats]);
 
-  // Filter and sort suppliers
+  // Build branch name map for display
+  const branchNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    branches?.forEach((b) => map.set(b.id, b.name));
+    return map;
+  }, [branches]);
+
+  // Filter by branch first, then search + sort
   const filteredSuppliers = useMemo(() => {
-    let result = suppliers?.filter(
+    // Non-super-admins: filter by their branch. Super admin: filter by selected branch or show all.
+    let suppliers = allSuppliers || [];
+    if (!isSuperAdmin && permissions?.branchId) {
+      suppliers = suppliers.filter(s => s.branch_id === permissions.branchId);
+    } else if (branchId) {
+      suppliers = suppliers.filter(s => s.branch_id === branchId);
+    }
+
+    let result = suppliers.filter(
       (s) =>
         s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.phone?.includes(searchTerm)
-    ) || [];
+    );
 
     // When sorting by stats, only show suppliers that have stats (i.e. have import receipts)
     if (sortMode !== 'name' && supplierStats) {
@@ -103,7 +120,7 @@ export default function SuppliersPage() {
     }
 
     return result;
-  }, [suppliers, searchTerm, sortMode, statsMap, supplierStats]);
+  }, [allSuppliers, searchTerm, sortMode, statsMap, supplierStats, isSuperAdmin, permissions?.branchId, branchId]);
 
   // Pagination
   const pagination = usePagination(filteredSuppliers, { storageKey: 'suppliers' });
@@ -141,6 +158,7 @@ export default function SuppliersPage() {
 
     try {
       if (editSupplier) {
+        // Never update branch_id
         await updateSupplier.mutateAsync({
           id: editSupplier.id,
           name: form.name.trim(),
@@ -150,11 +168,14 @@ export default function SuppliersPage() {
         });
         toast({ title: 'Đã cập nhật nhà cung cấp' });
       } else {
+        // Auto-assign branch_id based on user's branch
+        const assignedBranchId = permissions?.branchId || null;
         await createSupplier.mutateAsync({
           name: form.name.trim(),
           phone: form.phone.trim() || null,
           address: form.address.trim() || null,
           note: form.note.trim() || null,
+          branch_id: assignedBranchId,
         });
         toast({ title: 'Đã thêm nhà cung cấp mới' });
       }
@@ -216,6 +237,12 @@ export default function SuppliersPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-semibold">{supplier.name}</h3>
+                    {isSuperAdmin && supplier.branch_id && (
+                      <p className="text-[10px] text-primary/70 flex items-center gap-1 mt-0.5">
+                        <Building2 className="h-3 w-3" />
+                        {branchNameMap.get(supplier.branch_id) || 'Không rõ'}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground mt-1">
                       Thêm: {formatDate(new Date(supplier.created_at))}
                     </p>

@@ -3775,6 +3775,7 @@ export type Database = {
       suppliers: {
         Row: {
           address: string | null
+          branch_id: string | null
           created_at: string
           id: string
           name: string
@@ -3785,6 +3786,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          branch_id?: string | null
           created_at?: string
           id?: string
           name: string
@@ -3795,6 +3797,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          branch_id?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -3804,6 +3807,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "suppliers_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "suppliers_tenant_id_fkey"
             columns: ["tenant_id"]
