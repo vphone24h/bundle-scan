@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useBranches } from '@/hooks/useBranches';
 
 interface CustomerDetailDialogProps {
   customerId: string | null;
@@ -63,6 +64,7 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
   const { data: staffList } = useStaffList();
   const { data: permissions } = usePermissions();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
+  const { data: branches } = useBranches();
 
   const { data: customer, isLoading } = useCustomerDetail(customerId);
   const { data: pointTransactions } = usePointTransactions(customerId);
@@ -72,7 +74,7 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
 
   // Check if current user can edit this customer (same branch or super admin)
   const canEdit = isSuperAdmin || !customer?.preferred_branch_id || permissions?.branchId === customer?.preferred_branch_id;
-
+  const customerBranchName = branches?.find(b => b.id === customer?.preferred_branch_id)?.name;
 
   const handleAssignStaff = (staffId: string | null) => {
     if (!customerId) return;
@@ -190,6 +192,15 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Branch restriction warning */}
+              {!canEdit && customerBranchName && (
+                <div className="px-3 py-2 bg-destructive/10 border border-destructive/30 rounded-lg">
+                  <p className="text-sm text-destructive font-medium text-center">
+                    Khách hàng chi nhánh "{customerBranchName}", chỉ nhân viên chi nhánh "{customerBranchName}" được chỉnh sửa
+                  </p>
+                </div>
+              )}
 
               {/* CRM Assignment Section - Only editable for own branch */}
               {canEdit ? (
