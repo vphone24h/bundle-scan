@@ -7,7 +7,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useImportReceipts } from '@/hooks/useImportReceipts';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
-import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Download } from 'lucide-react';
+import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
@@ -41,7 +41,7 @@ const Index = () => {
         title="Tổng quan kho hàng"
         description="Theo dõi tình trạng kho và hoạt động nhập hàng"
         actions={
-          <div className="flex items-center gap-2 flex-wrap justify-end">
+          <div className="flex items-center gap-2">
             {statsFetching && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -61,12 +61,6 @@ const Index = () => {
                 </a>
               </Button>
             )}
-            <Button variant="outline" size="sm" asChild>
-              <a href="/templates/Bang_ke_thu_mua_iPhone_cu.xlsx" download="Bang_ke_thu_mua_iPhone_cu.xlsx">
-                <Download className="mr-2 h-4 w-4" />
-                Mẫu bảng kê thu mua iPhone cũ
-              </a>
-            </Button>
           </div>
         }
       />
