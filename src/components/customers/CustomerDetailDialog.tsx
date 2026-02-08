@@ -45,6 +45,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface CustomerDetailDialogProps {
   customerId: string | null;
@@ -60,12 +61,17 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
   const { mutate: assignStaff, isPending: isAssigning } = useAssignStaffToCustomer();
   const { mutate: updateCRMStatus, isPending: isUpdatingStatus } = useUpdateCustomerCRMStatus();
   const { data: staffList } = useStaffList();
+  const { data: permissions } = usePermissions();
+  const isSuperAdmin = permissions?.canViewAllBranches === true;
 
   const { data: customer, isLoading } = useCustomerDetail(customerId);
   const { data: pointTransactions } = usePointTransactions(customerId);
   const { data: purchaseHistory } = useCustomerPurchaseHistory(customerId);
   const { data: debtDetail } = useDebtDetail('customer', customerId);
   const { data: debtPayments } = useDebtPaymentHistory('customer', customerId);
+
+  // Check if current user can edit this customer (same branch or super admin)
+  const canEdit = isSuperAdmin || !customer?.preferred_branch_id || permissions?.branchId === customer?.preferred_branch_id;
 
 
   const handleAssignStaff = (staffId: string | null) => {
@@ -143,10 +149,12 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                         )}
                       </div>
                     </div>
-                      <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)} className="flex-shrink-0">
-                        <Edit2 className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Sửa</span>
-                      </Button>
+                      {canEdit && (
+                        <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)} className="flex-shrink-0">
+                          <Edit2 className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Sửa</span>
+                        </Button>
+                      )}
                   </div>
 
                     <Separator />
@@ -183,53 +191,73 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                 </CardContent>
               </Card>
 
-              {/* CRM Assignment Section - Outside tabs, below points */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 sm:p-4 bg-muted/50 rounded-lg border">
-                <div className="space-y-1.5">
-                  <label className="text-xs sm:text-sm font-medium flex items-center gap-2">
-                    <UserCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    Nhân viên phụ trách
-                  </label>
-                  <Select
-                    value={customer.assigned_staff_id || '_none_'}
-                    onValueChange={(v) => handleAssignStaff(v === '_none_' ? null : v)}
-                    disabled={isAssigning}
-                  >
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Chọn nhân viên..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="_none_">Chưa phân công</SelectItem>
-                      {staffList?.map((staff) => (
-                        <SelectItem key={staff.user_id} value={staff.user_id}>
-                          {staff.display_name || 'Nhân viên'}
-                          {staff.user_role === 'super_admin' && ' (Admin)'}
-                          {staff.user_role === 'branch_admin' && ' (QL)'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {/* CRM Assignment Section - Only editable for own branch */}
+              {canEdit ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 sm:p-4 bg-muted/50 rounded-lg border">
+                  <div className="space-y-1.5">
+                    <label className="text-xs sm:text-sm font-medium flex items-center gap-2">
+                      <UserCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      Nhân viên phụ trách
+                    </label>
+                    <Select
+                      value={customer.assigned_staff_id || '_none_'}
+                      onValueChange={(v) => handleAssignStaff(v === '_none_' ? null : v)}
+                      disabled={isAssigning}
+                    >
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue placeholder="Chọn nhân viên..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none_">Chưa phân công</SelectItem>
+                        {staffList?.map((staff) => (
+                          <SelectItem key={staff.user_id} value={staff.user_id}>
+                            {staff.display_name || 'Nhân viên'}
+                            {staff.user_role === 'super_admin' && ' (Admin)'}
+                            {staff.user_role === 'branch_admin' && ' (QL)'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs sm:text-sm font-medium">Trạng thái CRM</label>
+                    <Select
+                      value={customer.crm_status || 'new'}
+                      onValueChange={(v) => handleUpdateCRMStatus(v as CRMStatus)}
+                      disabled={isUpdatingStatus}
+                    >
+                      <SelectTrigger className="h-9 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(CRM_STATUS_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs sm:text-sm font-medium">Trạng thái CRM</label>
-                  <Select
-                    value={customer.crm_status || 'new'}
-                    onValueChange={(v) => handleUpdateCRMStatus(v as CRMStatus)}
-                    disabled={isUpdatingStatus}
-                  >
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(CRM_STATUS_LABELS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 sm:p-4 bg-muted/50 rounded-lg border">
+                  <div className="space-y-1.5">
+                    <label className="text-xs sm:text-sm font-medium flex items-center gap-2">
+                      <UserCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      Nhân viên phụ trách
+                    </label>
+                    <p className="text-sm text-muted-foreground">
+                      {staffList?.find(s => s.user_id === customer.assigned_staff_id)?.display_name || 'Chưa phân công'}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs sm:text-sm font-medium">Trạng thái CRM</label>
+                    <Badge className={CRM_STATUS_COLORS[customer.crm_status as CRMStatus || 'new']} variant="secondary">
+                      {CRM_STATUS_LABELS[customer.crm_status as CRMStatus || 'new']}
+                    </Badge>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Tabs */}
               <Tabs defaultValue="purchases" className="w-full">

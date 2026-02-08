@@ -232,7 +232,7 @@ export function useCreateExportReceipt() {
       // Get customer info for tier multiplier + name for cash book
       const { data: customer } = await supabase
         .from('customers')
-        .select('name, phone, current_points, pending_points, total_points_earned, total_points_used, membership_tier, total_spent')
+        .select('name, phone, current_points, pending_points, total_points_earned, total_points_used, membership_tier, total_spent, preferred_branch_id')
         .eq('id', customerId)
         .single();
 
@@ -460,21 +460,23 @@ export function useCreateExportReceipt() {
             created_by: user?.id,
           }]);
 
-          // Update customer points + auto-assign branch
+          // Update customer points + auto-assign branch (only on first purchase)
+          const branchAssign = (effectiveBranchId && !customer.preferred_branch_id) ? { preferred_branch_id: effectiveBranchId } : {};
           await supabase.from('customers').update({
             current_points: pointsArePending ? customer.current_points : newBalance,
             pending_points: newPending,
             total_points_earned: customer.total_points_earned + pointsToEarn,
             total_spent: customer.total_spent + totalAmount,
             last_purchase_date: new Date().toISOString(),
-            ...(effectiveBranchId ? { preferred_branch_id: effectiveBranchId } : {}),
+            ...branchAssign,
           }).eq('id', customerId);
         } else {
-          // No points earned, just update total_spent, last_purchase_date + auto-assign branch
+          // No points earned, just update total_spent, last_purchase_date + auto-assign branch (only on first purchase)
+          const branchAssign = (effectiveBranchId && !customer.preferred_branch_id) ? { preferred_branch_id: effectiveBranchId } : {};
           await supabase.from('customers').update({
             total_spent: customer.total_spent + totalAmount,
             last_purchase_date: new Date().toISOString(),
-            ...(effectiveBranchId ? { preferred_branch_id: effectiveBranchId } : {}),
+            ...branchAssign,
           }).eq('id', customerId);
         }
 
@@ -496,11 +498,12 @@ export function useCreateExportReceipt() {
             created_by: user?.id,
           }]);
 
-          // Update customer used points
+          // Update customer used points (branch only on first purchase)
+          const branchAssignRedeem = (effectiveBranchId && !customer.preferred_branch_id) ? { preferred_branch_id: effectiveBranchId } : {};
           await supabase.from('customers').update({
             current_points: newBalance,
             total_points_used: customer.total_points_used + pointsRedeemed,
-            ...(effectiveBranchId ? { preferred_branch_id: effectiveBranchId } : {}),
+            ...branchAssignRedeem,
           }).eq('id', customerId);
         }
       }
