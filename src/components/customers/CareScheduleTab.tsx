@@ -1,5 +1,5 @@
- import { useState } from 'react';
- import { Card, CardContent } from '@/components/ui/card';
+import { useState, useMemo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
  import { Button } from '@/components/ui/button';
  import { Badge } from '@/components/ui/badge';
  import { Input } from '@/components/ui/input';
@@ -43,6 +43,7 @@
  import { usePagination } from '@/hooks/usePagination';
  import { TablePagination } from '@/components/ui/table-pagination';
 import { CustomerMultiSelect } from '@/components/crm/CustomerMultiSelect';
+import { usePermissions } from '@/hooks/usePermissions';
  
  const STATUS_CONFIG = {
    pending: { label: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800' },
@@ -57,36 +58,46 @@ import { CustomerMultiSelect } from '@/components/crm/CustomerMultiSelect';
  }
  
 export function CareScheduleTab({ customerId: initialCustomerId, customerName: initialCustomerName }: CareScheduleTabProps) {
-   const [statusFilter, setStatusFilter] = useState('pending');
-   const [showCreateDialog, setShowCreateDialog] = useState(false);
-   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
-   const [selectedSchedule, setSelectedSchedule] = useState<CareSchedule | null>(null);
-   const [completeResult, setCompleteResult] = useState('');
-  const [selectedCustomers, setSelectedCustomers] = useState<{ id: string; name: string; phone: string }[]>([]);
- 
-   const [formData, setFormData] = useState({
-     careTypeId: '',
-     careTypeName: '',
-     scheduledDate: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
-     scheduledTime: '',
-     note: '',
-     assignedStaffId: '',
-     reminderDays: 1,
-   });
-   const [newTypeName, setNewTypeName] = useState('');
- 
-   const { data: schedules, isLoading } = useCareSchedules({
-    customerId: initialCustomerId || undefined,
-     status: statusFilter !== '_all_' ? statusFilter : undefined,
-   });
-   const { data: careTypes } = useCareScheduleTypes();
-   const { data: staffList } = useStaffList();
-   
-   const createSchedule = useCreateCareSchedule();
-   const completeSchedule = useCompleteCareSchedule();
-   const createCareType = useCreateCareScheduleType();
- 
-   const pagination = usePagination(schedules || [], { storageKey: 'crm-care-tab' });
+    const [statusFilter, setStatusFilter] = useState('pending');
+    const [showCreateDialog, setShowCreateDialog] = useState(false);
+    const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+    const [selectedSchedule, setSelectedSchedule] = useState<CareSchedule | null>(null);
+    const [completeResult, setCompleteResult] = useState('');
+   const [selectedCustomers, setSelectedCustomers] = useState<{ id: string; name: string; phone: string }[]>([]);
+    const { data: permissions } = usePermissions();
+    const isSuperAdmin = permissions?.canViewAllBranches === true;
+
+    const [formData, setFormData] = useState({
+      careTypeId: '',
+      careTypeName: '',
+      scheduledDate: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
+      scheduledTime: '',
+      note: '',
+      assignedStaffId: '',
+      reminderDays: 1,
+    });
+    const [newTypeName, setNewTypeName] = useState('');
+
+    const { data: schedulesAll, isLoading } = useCareSchedules({
+     customerId: initialCustomerId || undefined,
+      status: statusFilter !== '_all_' ? statusFilter : undefined,
+    });
+
+    // Branch filtering: non-Super Admin chỉ thấy lịch chăm sóc của khách hàng thuộc chi nhánh mình
+    const schedules = useMemo(() => {
+      if (!schedulesAll) return [];
+      if (isSuperAdmin || !permissions?.branchId) return schedulesAll;
+      return schedulesAll.filter(s => s.customer?.preferred_branch_id === permissions.branchId);
+    }, [schedulesAll, isSuperAdmin, permissions?.branchId]);
+
+    const { data: careTypes } = useCareScheduleTypes();
+    const { data: staffList } = useStaffList();
+    
+    const createSchedule = useCreateCareSchedule();
+    const completeSchedule = useCompleteCareSchedule();
+    const createCareType = useCreateCareScheduleType();
+
+    const pagination = usePagination(schedules || [], { storageKey: 'crm-care-tab' });
  
    const todayCount = schedules?.filter(s => s.status === 'pending' && isToday(new Date(s.scheduled_date))).length || 0;
    const overdueCount = schedules?.filter(s => s.status === 'pending' && isPast(new Date(s.scheduled_date)) && !isToday(new Date(s.scheduled_date))).length || 0;

@@ -1,4 +1,4 @@
- import { useState } from 'react';
+ import { useState, useMemo } from 'react';
  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
  import { Badge } from '@/components/ui/badge';
  import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -43,41 +43,61 @@
    Cell,
  } from 'recharts';
  
- const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+import { usePermissions } from '@/hooks/usePermissions';
+
+const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
  
- export function CRMReportsTab() {
-   const [period, setPeriod] = useState('month');
-   
-   const getDateRange = () => {
-     const today = new Date();
-     let start: Date, end: Date;
- 
-     switch (period) {
-       case 'today':
-         start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-         end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-         break;
-       case 'week':
-         const dayOfWeek = today.getDay();
-         start = new Date(today);
-         start.setDate(today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1));
-         end = new Date(start);
-         end.setDate(start.getDate() + 6);
-         break;
-       case 'month':
-       default:
-         start = new Date(today.getFullYear(), today.getMonth(), 1);
-         end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-         break;
-     }
-     return { start, end };
-   };
- 
-   const { start, end } = getDateRange();
-   const { data: staffWithKPI = [], isLoading: staffLoading } = useStaffWithKPI(start, end);
-   const { data: customerSources = [] } = useCustomerSources();
-   const { data: customers = [] } = useCustomersWithPoints();
-   const { data: schedules = [] } = useCareSchedules();
+export function CRMReportsTab() {
+    const [period, setPeriod] = useState('month');
+    const { data: permissions } = usePermissions();
+    const isSuperAdmin = permissions?.canViewAllBranches === true;
+    
+    const getDateRange = () => {
+      const today = new Date();
+      let start: Date, end: Date;
+
+      switch (period) {
+        case 'today':
+          start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          break;
+        case 'week':
+          const dayOfWeek = today.getDay();
+          start = new Date(today);
+          start.setDate(today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1));
+          end = new Date(start);
+          end.setDate(start.getDate() + 6);
+          break;
+        case 'month':
+        default:
+          start = new Date(today.getFullYear(), today.getMonth(), 1);
+          end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+          break;
+      }
+      return { start, end };
+    };
+
+    const { start, end } = getDateRange();
+    const { data: staffWithKPIAll = [], isLoading: staffLoading } = useStaffWithKPI(start, end);
+    const { data: customerSources = [] } = useCustomerSources();
+    const { data: customersAll = [] } = useCustomersWithPoints();
+    const { data: schedulesAll = [] } = useCareSchedules();
+
+    // Branch filtering for non-Super Admin
+    const staffWithKPI = useMemo(() => {
+      if (isSuperAdmin || !permissions?.branchId) return staffWithKPIAll;
+      return staffWithKPIAll.filter(s => s.branch_id === permissions.branchId);
+    }, [staffWithKPIAll, isSuperAdmin, permissions?.branchId]);
+
+    const customers = useMemo(() => {
+      if (isSuperAdmin || !permissions?.branchId) return customersAll;
+      return customersAll.filter(c => c.preferred_branch_id === permissions.branchId);
+    }, [customersAll, isSuperAdmin, permissions?.branchId]);
+
+    const schedules = useMemo(() => {
+      if (isSuperAdmin || !permissions?.branchId) return schedulesAll;
+      return schedulesAll.filter(s => s.customer?.preferred_branch_id === permissions.branchId);
+    }, [schedulesAll, isSuperAdmin, permissions?.branchId]);
  
    const revenueByStaff = staffWithKPI
      .filter(s => s.stats && s.stats.total_revenue > 0)
