@@ -54,6 +54,11 @@ export default function PublicLandingPage() {
       description: 'Theo dõi công nợ khách hàng, nhà cung cấp rõ ràng',
     },
     {
+      icon: Receipt,
+      title: 'Hỗ trợ nộp thuế tự động',
+      description: 'Tự động sắp xếp doanh thu vào file của cơ quan thuế, giúp công việc nộp thuế nhẹ nhàng đến 99%',
+    },
+    {
       icon: Smartphone,
       title: 'Sử dụng mọi lúc mọi nơi',
       description: 'Giao diện tối ưu cho điện thoại, máy tính bảng và PC',
@@ -71,6 +76,7 @@ export default function PublicLandingPage() {
     'Dễ dàng sử dụng, không cần đào tạo phức tạp',
     'Báo cáo lợi nhuận chi tiết, chính xác từng đồng',
     'Quản lý tồn kho theo IMEI/Serial Number',
+    'Tự động sắp xếp doanh thu vào file nộp cơ quan thuế',
     'Nền tảng an toàn, bảo mật tuyệt đối',
     'Hỗ trợ nhiều chi nhánh trên cùng tài khoản',
     'Ứng dụng PWA - cài đặt như app native',
@@ -116,8 +122,8 @@ export default function PublicLandingPage() {
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
               Báo cáo lợi nhuận chính xác <strong className="text-primary">100%</strong> từng sản phẩm. 
-              Quản lý tồn kho theo IMEI, mã vạch. Tích hợp landing page cá nhân, tra cứu bảo hành.
-              Tích hợp Mẫu kê khai thuế & Mức thuế ngành.
+              Quản lý tồn kho theo IMEI, mã vạch. Tự động sắp xếp doanh thu vào file nộp cơ quan thuế.
+              Tích hợp landing page cá nhân, tra cứu bảo hành & Mức thuế ngành.
             </p>
             <div className="mt-8 flex justify-center">
               <Button size="lg" className="gap-2 text-base" onClick={() => navigate('/register')}>
