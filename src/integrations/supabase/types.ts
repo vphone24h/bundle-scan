@@ -715,11 +715,14 @@ export type Database = {
           category: string
           created_at: string
           created_by: string | null
+          created_by_name: string | null
           description: string
           id: string
           is_business_accounting: boolean | null
           note: string | null
           payment_source: string
+          recipient_name: string | null
+          recipient_phone: string | null
           reference_id: string | null
           reference_type: string | null
           tenant_id: string | null
@@ -733,11 +736,14 @@ export type Database = {
           category: string
           created_at?: string
           created_by?: string | null
+          created_by_name?: string | null
           description: string
           id?: string
           is_business_accounting?: boolean | null
           note?: string | null
           payment_source: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
           reference_id?: string | null
           reference_type?: string | null
           tenant_id?: string | null
@@ -751,11 +757,14 @@ export type Database = {
           category?: string
           created_at?: string
           created_by?: string | null
+          created_by_name?: string | null
           description?: string
           id?: string
           is_business_accounting?: boolean | null
           note?: string | null
           payment_source?: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
           reference_id?: string | null
           reference_type?: string | null
           tenant_id?: string | null

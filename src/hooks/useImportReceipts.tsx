@@ -430,6 +430,24 @@ export function useCreateImportReceipt() {
       }
 
       // Create cash book entries for actual payments (not debt)
+      // Fetch staff name and supplier name for cash book
+      const { data: staffProfile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      const staffName = staffProfile?.display_name || user.email || null;
+
+      let supplierName: string | null = null;
+      if (supplierId) {
+        const { data: supplier } = await supabase
+          .from('suppliers')
+          .select('name')
+          .eq('id', supplierId)
+          .maybeSingle();
+        supplierName = supplier?.name || null;
+      }
+
       const cashBookEntries = payments
         .filter(p => p.type !== 'debt' && p.amount > 0)
         .map(p => ({
@@ -444,6 +462,8 @@ export function useCreateImportReceipt() {
           reference_type: 'import_receipt',
           created_by: user.id,
           tenant_id: tenantId,
+          created_by_name: staffName,
+          recipient_name: supplierName,
         }));
 
       if (cashBookEntries.length > 0) {

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,6 +78,7 @@ import { CashBookDetailDialog } from '@/components/cashbook/CashBookDetailDialog
 import { OpeningBalanceDialog } from '@/components/cashbook/OpeningBalanceDialog';
 import { useLatestOpeningBalances } from '@/hooks/useOpeningBalance';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useProfile } from '@/hooks/useProfile';
 
 const defaultPaymentSourceLabels: Record<string, string> = {
   cash: 'Tiền mặt',
@@ -177,6 +178,8 @@ export default function CashBookPage() {
     branch_id: '',
     note: '',
     transaction_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+    recipient_name: '',
+    recipient_phone: '',
   });
 
   // Data hooks
@@ -193,6 +196,7 @@ export default function CashBookPage() {
   const createCategory = useCreateCashBookCategory();
   const isMobile = useIsMobile();
   const { data: latestOpeningBalances } = useLatestOpeningBalances();
+  const { data: currentProfile } = useProfile();
   
   // All categories for filter (both income and expense)
   const { data: allCategories } = useCashBookCategories();
@@ -366,6 +370,8 @@ export default function CashBookPage() {
       branch_id: viewMode === 'branch' && selectedBranchId ? selectedBranchId : '',
       note: '',
       transaction_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+      recipient_name: '',
+      recipient_phone: '',
     });
     setShowAddDialog(true);
   };
@@ -381,6 +387,8 @@ export default function CashBookPage() {
       branch_id: entry.branch_id || '',
       note: entry.note || '',
       transaction_date: format(new Date(entry.transaction_date), "yyyy-MM-dd'T'HH:mm"),
+      recipient_name: entry.recipient_name || '',
+      recipient_phone: entry.recipient_phone || '',
     });
     setShowEditDialog(true);
   };
@@ -527,6 +535,9 @@ export default function CashBookPage() {
         branch_id: formData.branch_id || null,
         note: formData.note || undefined,
         transaction_date: formData.transaction_date,
+        recipient_name: formData.recipient_name || null,
+        recipient_phone: formData.recipient_phone || null,
+        created_by_name: currentProfile?.display_name || null,
       });
 
       setShowAddDialog(false);
@@ -568,6 +579,8 @@ export default function CashBookPage() {
         is_business_accounting: formData.is_business_accounting,
         branch_id: formData.branch_id || null,
         note: formData.note || undefined,
+        recipient_name: formData.recipient_name || null,
+        recipient_phone: formData.recipient_phone || null,
       });
 
       setShowEditDialog(false);
@@ -627,6 +640,9 @@ export default function CashBookPage() {
         { header: 'Mô tả', key: 'description', width: 35 },
         { header: 'Số tiền', key: 'signed_amount', width: 15, isNumeric: true },
         { header: 'Nguồn tiền', key: 'payment_source', width: 15, format: (v) => paymentSourceLabels[v] || v },
+        { header: 'Nhân viên', key: 'created_by_name', width: 20 },
+        { header: 'Người nhận', key: 'recipient_name', width: 20 },
+        { header: 'SĐT người nhận', key: 'recipient_phone', width: 15 },
         { header: 'Chi nhánh', key: 'branch_name', width: 20 },
         { header: 'Hạch toán KD', key: 'is_business_accounting', width: 12, format: (v) => v ? 'Có' : 'Không' },
         { header: 'Ghi chú', key: 'note', width: 30 },
@@ -639,6 +655,9 @@ export default function CashBookPage() {
         description: e.description,
         signed_amount: e.type === 'expense' ? -Number(e.amount) : Number(e.amount),
         payment_source: e.payment_source,
+        created_by_name: e.created_by_name || '',
+        recipient_name: e.recipient_name || '',
+        recipient_phone: e.recipient_phone || '',
         branch_name: e.branches?.name || '',
         is_business_accounting: e.is_business_accounting,
         note: e.note || '',
@@ -1033,6 +1052,7 @@ export default function CashBookPage() {
                         <p className="text-xs text-muted-foreground mt-1">
                           {entry.category} • {paymentSourceLabels[entry.payment_source] || entry.payment_source}
                           {entry.branches?.name && ` • ${entry.branches.name}`}
+                          {entry.created_by_name && ` • NV: ${entry.created_by_name}`}
                         </p>
                       </div>
                       <div className="text-right shrink-0">
@@ -1079,6 +1099,8 @@ export default function CashBookPage() {
                       <TableHead>Mô tả</TableHead>
                       <TableHead className="text-right">Số tiền</TableHead>
                       <TableHead>Nguồn tiền</TableHead>
+                      <TableHead>Nhân viên</TableHead>
+                      <TableHead>Người nhận</TableHead>
                       <TableHead>Chi nhánh</TableHead>
                       <TableHead>Hạch toán</TableHead>
                       <TableHead className="w-12"></TableHead>
@@ -1129,6 +1151,17 @@ export default function CashBookPage() {
                           {entry.type === 'expense' ? '-' : '+'}{formatCurrency(Number(entry.amount))}
                         </TableCell>
                         <TableCell>{paymentSourceLabels[entry.payment_source] || entry.payment_source}</TableCell>
+                        <TableCell className="text-sm">{entry.created_by_name || '-'}</TableCell>
+                        <TableCell className="text-sm">
+                          {entry.recipient_name ? (
+                            <div>
+                              <span>{entry.recipient_name}</span>
+                              {entry.recipient_phone && (
+                                <span className="text-xs text-muted-foreground block">{entry.recipient_phone}</span>
+                              )}
+                            </div>
+                          ) : '-'}
+                        </TableCell>
                         <TableCell>{entry.branches?.name || '-'}</TableCell>
                         <TableCell>
                           {entry.is_business_accounting ? (
@@ -1329,6 +1362,29 @@ export default function CashBookPage() {
               </Select>
             </div>
 
+            {/* Người lập phiếu */}
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <Label className="text-xs text-muted-foreground">Người lập phiếu</Label>
+              <p className="text-sm font-medium">{currentProfile?.display_name || 'Đang tải...'}</p>
+            </div>
+
+            {/* Người nhận */}
+            <div className="space-y-2">
+              <Label>Người nhận (không bắt buộc)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  placeholder="Tên người nhận"
+                  value={formData.recipient_name}
+                  onChange={(e) => setFormData({ ...formData, recipient_name: e.target.value })}
+                />
+                <Input
+                  placeholder="SĐT"
+                  value={formData.recipient_phone}
+                  onChange={(e) => setFormData({ ...formData, recipient_phone: e.target.value })}
+                />
+              </div>
+            </div>
+
             <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
               <div>
                 <Label className="font-medium">Hạch toán kinh doanh</Label>
@@ -1458,6 +1514,23 @@ export default function CashBookPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Người nhận */}
+            <div className="space-y-2">
+              <Label>Người nhận (không bắt buộc)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  placeholder="Tên người nhận"
+                  value={formData.recipient_name}
+                  onChange={(e) => setFormData({ ...formData, recipient_name: e.target.value })}
+                />
+                <Input
+                  placeholder="SĐT"
+                  value={formData.recipient_phone}
+                  onChange={(e) => setFormData({ ...formData, recipient_phone: e.target.value })}
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-between p-3 bg-muted rounded-lg">

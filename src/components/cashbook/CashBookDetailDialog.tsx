@@ -114,6 +114,27 @@ export function CashBookDetailDialog({
             </div>
           </div>
 
+          {/* Staff & Recipient Info */}
+          <div className="space-y-3 p-4 rounded-lg bg-muted/50">
+            {entry.created_by_name && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Nhân viên thực hiện</span>
+                <span className="text-sm font-medium">{entry.created_by_name}</span>
+              </div>
+            )}
+            {entry.recipient_name && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Người nhận</span>
+                <div className="text-right">
+                  <span className="text-sm font-medium">{entry.recipient_name}</span>
+                  {entry.recipient_phone && (
+                    <span className="text-xs text-muted-foreground block">{entry.recipient_phone}</span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Description */}
           <div className="space-y-1">
             <span className="text-sm font-medium">Mô tả</span>
