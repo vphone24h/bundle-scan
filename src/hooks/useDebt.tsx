@@ -99,6 +99,17 @@ export function useCustomerDebts(showSettled: boolean = false) {
         customersFromPayments = customerData || [];
       }
 
+      // Build branch name lookup from debt_payments branch_id
+      const paymentBranchIds = [...new Set(payments?.map(p => p.branch_id).filter(Boolean) || [])];
+      let branchNameMap = new Map<string, string>();
+      if (paymentBranchIds.length > 0) {
+        const { data: branchData } = await supabase
+          .from('branches')
+          .select('id, name')
+          .in('id', paymentBranchIds);
+        branchData?.forEach(b => branchNameMap.set(b.id, b.name));
+      }
+
       // Group by customer
       const customerMap = new Map<string, DebtSummary>();
 
@@ -147,7 +158,7 @@ export function useCustomerDebts(showSettled: boolean = false) {
               entity_name: customer.name,
               entity_phone: customer.phone,
               branch_id: payment.branch_id,
-              branch_name: null,
+              branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
               total_amount: Number(payment.amount),
               paid_amount: 0,
               remaining_amount: 0,
@@ -253,6 +264,17 @@ export function useSupplierDebts(showSettled: boolean = false) {
         suppliersFromPayments = supplierData || [];
       }
 
+      // Build branch name lookup from debt_payments branch_id
+      const paymentBranchIds = [...new Set(payments?.map(p => p.branch_id).filter(Boolean) || [])];
+      let branchNameMap = new Map<string, string>();
+      if (paymentBranchIds.length > 0) {
+        const { data: branchData } = await supabase
+          .from('branches')
+          .select('id, name')
+          .in('id', paymentBranchIds);
+        branchData?.forEach(b => branchNameMap.set(b.id, b.name));
+      }
+
       // Group by supplier
       const supplierMap = new Map<string, DebtSummary>();
 
@@ -301,7 +323,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
               entity_name: supplier.name,
               entity_phone: supplier.phone,
               branch_id: payment.branch_id,
-              branch_name: null,
+              branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
               total_amount: Number(payment.amount),
               paid_amount: 0,
               remaining_amount: 0,
