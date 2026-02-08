@@ -38,10 +38,10 @@ const INDUSTRIES = [
 ];
 
 const REVENUE_TIERS = [
-  { value: 'under_500m', label: 'Dưới 500 triệu', exempt: true },
-  { value: '500m_3b', label: 'Từ 500tr đến dưới 3 tỷ', exempt: false },
-  { value: '3b_50b', label: 'Từ 3 tỷ đến dưới 50 tỷ', exempt: false },
-  { value: 'over_50b', label: 'Trên 50 tỷ', exempt: false, forceRevenue: true },
+  { value: 'under_500m', label: 'Dưới 500 triệu', exempt: true, note: '' },
+  { value: '500m_3b', label: 'Từ 500tr đến dưới 3 tỷ', exempt: false, note: 'TNCN 15% – HKD' },
+  { value: '3b_50b', label: 'Từ 3 tỷ đến dưới 50 tỷ', exempt: false, note: 'TNCN 15% – HKD | 17% – DN' },
+  { value: 'over_50b', label: 'Trên 50 tỷ', exempt: false, note: 'TNCN 17% – HKD | 20% – DN' },
 ];
 
 const TAX_METHODS = [
@@ -97,9 +97,8 @@ export function TaxReport() {
   const { data: stats, isLoading: statsLoading } = useReportStats({ startDate, endDate, branchId: effectiveBranchId, categoryId: effectiveCategoryId });
   const { data: chartData, isLoading: chartLoading } = useReportChartData({ startDate, endDate, branchId: effectiveBranchId, groupBy: 'day' });
 
-  // Auto-force tax method when revenue tier is over_50b
   const selectedTier = REVENUE_TIERS.find(t => t.value === revenueTier);
-  const effectiveTaxMethod = selectedTier?.forceRevenue ? 'revenue' : taxMethod;
+  const effectiveTaxMethod = taxMethod;
 
   const selectedIndustry = INDUSTRIES.find(i => i.value === industry);
   const allStepsComplete = !!industry && !!revenueTier && (!!effectiveTaxMethod || selectedTier?.exempt);
@@ -115,11 +114,12 @@ export function TaxReport() {
     const gtgt = revenue * (selectedIndustry.gtgt / 100);
 
     let tncn = 0;
+    const profitTncnRate = revenueTier === 'over_50b' ? 0.17 : 0.15;
     if (effectiveTaxMethod === 'revenue') {
       const taxableRevenue = Math.max(0, revenue - 500_000_000);
       tncn = taxableRevenue * (selectedIndustry.tncn / 100);
     } else if (effectiveTaxMethod === 'profit') {
-      tncn = Math.max(0, stats.netProfit) * 0.15;
+      tncn = Math.max(0, stats.netProfit) * profitTncnRate;
     }
 
     return { gtgt, tncn, total: gtgt + tncn, exempt: false };
@@ -306,14 +306,15 @@ export function TaxReport() {
             </div>
             <Select value={revenueTier} onValueChange={(v) => {
               setRevenueTier(v);
-              const tier = REVENUE_TIERS.find(t => t.value === v);
-              if (tier?.forceRevenue) setTaxMethod('revenue');
             }}>
               <SelectTrigger className="w-full"><SelectValue placeholder="Chọn mức doanh thu..." /></SelectTrigger>
               <SelectContent className="bg-popover">
                 {REVENUE_TIERS.map(t => (
                   <SelectItem key={t.value} value={t.value}>
-                    {t.label}{t.exempt ? ' (Không phải đóng thuế)' : ''}
+                    <div>
+                      <span>{t.label}{t.exempt ? ' (Không phải đóng thuế)' : ''}</span>
+                      {t.note && <span className="block text-[10px] text-muted-foreground">{t.note}</span>}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -331,7 +332,6 @@ export function TaxReport() {
               <Select
                 value={effectiveTaxMethod}
                 onValueChange={setTaxMethod}
-                disabled={selectedTier?.forceRevenue}
               >
                 <SelectTrigger className="w-full"><SelectValue placeholder="Chọn cách tính thuế..." /></SelectTrigger>
                 <SelectContent className="bg-popover">
@@ -340,14 +340,9 @@ export function TaxReport() {
                   ))}
                 </SelectContent>
               </Select>
-              {selectedTier?.forceRevenue && (
-                <p className="text-xs text-muted-foreground italic">
-                  ⚠️ Doanh thu trên 50 tỷ bắt buộc tính theo doanh số
-                </p>
-              )}
               <div className="mt-2 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
                 <p>• <strong>Theo doanh số:</strong> TNCN = (Doanh thu − 500.000.000) × Thuế suất TNCN</p>
-                <p>• <strong>Theo lợi nhuận:</strong> TNCN = Lợi nhuận thuần × 15% <em>(phải có hóa đơn đầu vào)</em></p>
+                <p>• <strong>Theo lợi nhuận:</strong> TNCN = Lợi nhuận thuần × {revenueTier === 'over_50b' ? '17%' : '15%'} <em>(phải có hóa đơn đầu vào)</em></p>
                 <p className="italic pt-1">Cả 2 cách đều hợp lệ, hãy chọn cách nào cho số thuế thấp hơn để tối ưu nhất.</p>
               </div>
             </div>
@@ -387,13 +382,13 @@ export function TaxReport() {
                   <Card>
                     <CardContent className="pt-4 text-center">
                       <p className="text-xs text-muted-foreground">
-                        Thuế TNCN {effectiveTaxMethod === 'revenue' ? `(${selectedIndustry?.tncn}%)` : '(15% LN)'}
+                        Thuế TNCN {effectiveTaxMethod === 'revenue' ? `(${selectedIndustry?.tncn}%)` : `(${revenueTier === 'over_50b' ? '17' : '15'}% LN)`}
                       </p>
                       <p className="text-xl font-bold text-primary mt-1">{formatCurrency(taxResult.tncn)}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">
                         {effectiveTaxMethod === 'revenue'
                           ? `= (DT - 500tr) × ${selectedIndustry?.tncn}%`
-                          : '= Lợi nhuận thuần × 15%'}
+                          : `= Lợi nhuận thuần × ${revenueTier === 'over_50b' ? '17' : '15'}%`}
                       </p>
                     </CardContent>
                   </Card>
