@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useCustomerDebts, DebtSummary } from '@/hooks/useDebt';
 import { formatNumber } from '@/lib/formatNumber';
 import { Badge } from '@/components/ui/badge';
@@ -28,10 +28,18 @@ import { CreateDebtDialog } from './CreateDebtDialog';
 
 interface CustomerDebtTableProps {
   showSettled: boolean;
+  branchFilter: string;
 }
 
-export function CustomerDebtTable({ showSettled }: CustomerDebtTableProps) {
-  const { data: debts, isLoading } = useCustomerDebts(showSettled);
+export function CustomerDebtTable({ showSettled, branchFilter }: CustomerDebtTableProps) {
+  const { data: allDebts, isLoading } = useCustomerDebts(showSettled);
+  
+  // Filter by branch
+  const debts = useMemo(() => {
+    if (!allDebts) return [];
+    if (branchFilter === '_all_') return allDebts;
+    return allDebts.filter(d => d.branch_id === branchFilter);
+  }, [allDebts, branchFilter]);
   const [selectedDebt, setSelectedDebt] = useState<DebtSummary | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
