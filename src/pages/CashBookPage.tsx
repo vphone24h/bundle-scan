@@ -1053,6 +1053,7 @@ export default function CashBookPage() {
                           {entry.category} • {paymentSourceLabels[entry.payment_source] || entry.payment_source}
                           {entry.branches?.name && ` • ${entry.branches.name}`}
                           {entry.created_by_name && ` • NV: ${entry.created_by_name}`}
+                          {entry.recipient_name && ` • NN: ${entry.recipient_name}`}
                         </p>
                       </div>
                       <div className="text-right shrink-0">
