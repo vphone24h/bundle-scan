@@ -111,11 +111,13 @@ export default function ExportHistoryPage() {
   const { data: template } = useInvoiceTemplateByBranch(printBranchId);
   const printBranch = printBranchId ? branches?.find(b => b.id === printBranchId) : null;
 
-  // Fetch staff names from profiles for items tab
+  // Fetch staff names from profiles for both tabs
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
   useEffect(() => {
-    if (!items?.length) return;
-    const userIds = [...new Set(items.map(i => i.export_receipts?.created_by).filter(Boolean))] as string[];
+    // Collect all created_by IDs from both receipts and items
+    const receiptUserIds = receipts?.map(r => r.created_by).filter(Boolean) || [];
+    const itemUserIds = items?.map(i => i.export_receipts?.created_by).filter(Boolean) || [];
+    const userIds = [...new Set([...receiptUserIds, ...itemUserIds])] as string[];
     if (userIds.length === 0) return;
     supabase
       .from('profiles')
@@ -126,7 +128,7 @@ export default function ExportHistoryPage() {
           setStaffNames(Object.fromEntries(data.map(p => [p.user_id, p.display_name])));
         }
       });
-  }, [items]);
+  }, [items, receipts]);
 
   // Filter receipts
   const filteredReceipts = receipts?.filter((receipt) => {
@@ -276,6 +278,7 @@ export default function ExportHistoryPage() {
         { header: 'Công nợ', key: 'debt_amount', width: 15, isNumeric: true },
         { header: 'Trạng thái', key: 'status', width: 15, format: (v) => statusLabels[v]?.label || v },
         { header: 'Chi nhánh', key: 'branch_name', width: 20 },
+        { header: 'Nhân viên', key: 'staff_name', width: 18 },
       ],
       data: filteredReceipts.map((r, index) => ({
         stt: index + 1,
@@ -291,6 +294,7 @@ export default function ExportHistoryPage() {
         debt_amount: r.debt_amount,
         status: r.status,
         branch_name: branches?.find(b => b.id === r.branch_id)?.name || '',
+        staff_name: r.created_by ? (staffNames[r.created_by] || '') : '',
       })),
     });
 
@@ -432,6 +436,7 @@ export default function ExportHistoryPage() {
                       <TableHead className="text-center">Thuế</TableHead>
                       <TableHead className="text-right">Đã TT</TableHead>
                       <TableHead className="text-right">Công nợ</TableHead>
+                      <TableHead>Nhân viên</TableHead>
                       <TableHead>Trạng thái</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
@@ -473,6 +478,9 @@ export default function ExportHistoryPage() {
                         </TableCell>
                         <TableCell className="text-right text-destructive">
                           {receipt.debt_amount > 0 ? `${receipt.debt_amount.toLocaleString('vi-VN')}đ` : '-'}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {receipt.created_by ? (staffNames[receipt.created_by] || '-') : '-'}
                         </TableCell>
                         <TableCell>
                           <Badge variant={statusLabels[receipt.status]?.variant || 'default'}>
