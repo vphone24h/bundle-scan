@@ -1,4 +1,4 @@
- import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
  import { MainLayout } from '@/components/layout/MainLayout';
  import { PageHeader } from '@/components/layout/PageHeader';
  import { Card, CardContent } from '@/components/ui/card';
@@ -23,6 +23,7 @@
     
     const [activeTab, setActiveTab] = useState(tabFromUrl);
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(customerIdFromUrl);
+    const [branchFilter, setBranchFilter] = useState('_all_');
     
     const { data: permissions } = usePermissions();
     const isSuperAdmin = permissions?.canViewAllBranches === true;
@@ -30,12 +31,19 @@
     const { data: selectedCustomer } = useCustomerDetail(selectedCustomerId);
     const { data: customersAll } = useCustomersWithPoints();
 
-    // Branch-filter customers for summary stats
+    // Auto-lock branch filter for non-super-admins
+    useEffect(() => {
+      if (!isSuperAdmin && permissions?.branchId) {
+        setBranchFilter(permissions.branchId);
+      }
+    }, [isSuperAdmin, permissions?.branchId]);
+
+    // Filter customers based on selected branch filter for summary stats
     const customers = useMemo(() => {
       if (!customersAll) return [];
-      if (isSuperAdmin || !permissions?.branchId) return customersAll;
-      return customersAll.filter(c => c.preferred_branch_id === permissions.branchId);
-    }, [customersAll, isSuperAdmin, permissions?.branchId]);
+      if (branchFilter === '_all_') return customersAll;
+      return customersAll.filter(c => c.preferred_branch_id === branchFilter);
+    }, [customersAll, branchFilter]);
  
    const handleTabChange = (value: string) => {
      setActiveTab(value);
@@ -153,12 +161,14 @@
            </TabsTrigger>
          </TabsList>
  
-         <TabsContent value="list">
-           <CustomerListTab 
-             onViewCare={handleViewCare} 
-             onViewTimeline={handleViewTimeline} 
-           />
-         </TabsContent>
+          <TabsContent value="list">
+            <CustomerListTab 
+              onViewCare={handleViewCare} 
+              onViewTimeline={handleViewTimeline}
+              branchFilter={branchFilter}
+              onBranchFilterChange={setBranchFilter}
+            />
+          </TabsContent>
  
          <TabsContent value="care">
            <CareScheduleTab 

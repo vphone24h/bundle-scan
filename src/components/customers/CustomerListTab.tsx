@@ -41,17 +41,18 @@
  import { useNavigate } from 'react-router-dom';
  import { usePermissions } from '@/hooks/usePermissions';
  
- interface CustomerListTabProps {
-   onViewCare: (customerId: string) => void;
-   onViewTimeline: (customerId: string) => void;
- }
- 
-export function CustomerListTab({ onViewCare, onViewTimeline }: CustomerListTabProps) {
+interface CustomerListTabProps {
+  onViewCare: (customerId: string) => void;
+  onViewTimeline: (customerId: string) => void;
+  branchFilter: string;
+  onBranchFilterChange: (value: string) => void;
+}
+
+export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBranchFilterChange }: CustomerListTabProps) {
     const navigate = useNavigate();
     const { data: permissions } = usePermissions();
     const isSuperAdmin = permissions?.canViewAllBranches === true;
     const [search, setSearch] = useState('');
-    const [branchFilter, setBranchFilter] = useState('_all_');
     const [tierFilter, setTierFilter] = useState('_all_');
     const [statusFilter, setStatusFilter] = useState('_all_');
     const [sourceFilter, setSourceFilter] = useState('_all_');
@@ -141,7 +142,7 @@ export function CustomerListTab({ onViewCare, onViewTimeline }: CustomerListTabP
               </Button>
             </div>
             <div className="flex flex-wrap gap-2 overflow-x-auto">
-               <Select value={branchFilter} onValueChange={setBranchFilter}>
+               <Select value={branchFilter} onValueChange={onBranchFilterChange}>
                 <SelectTrigger className="w-[100px] sm:w-[140px] h-9 text-xs sm:text-sm">
                   <SelectValue placeholder="CN" />
                  </SelectTrigger>
