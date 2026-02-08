@@ -460,19 +460,21 @@ export function useCreateExportReceipt() {
             created_by: user?.id,
           }]);
 
-          // Update customer points
+          // Update customer points + auto-assign branch
           await supabase.from('customers').update({
             current_points: pointsArePending ? customer.current_points : newBalance,
             pending_points: newPending,
             total_points_earned: customer.total_points_earned + pointsToEarn,
             total_spent: customer.total_spent + totalAmount,
             last_purchase_date: new Date().toISOString(),
+            ...(effectiveBranchId ? { preferred_branch_id: effectiveBranchId } : {}),
           }).eq('id', customerId);
         } else {
-          // No points earned, just update total_spent and last_purchase_date
+          // No points earned, just update total_spent, last_purchase_date + auto-assign branch
           await supabase.from('customers').update({
             total_spent: customer.total_spent + totalAmount,
             last_purchase_date: new Date().toISOString(),
+            ...(effectiveBranchId ? { preferred_branch_id: effectiveBranchId } : {}),
           }).eq('id', customerId);
         }
 
@@ -498,6 +500,7 @@ export function useCreateExportReceipt() {
           await supabase.from('customers').update({
             current_points: newBalance,
             total_points_used: customer.total_points_used + pointsRedeemed,
+            ...(effectiveBranchId ? { preferred_branch_id: effectiveBranchId } : {}),
           }).eq('id', customerId);
         }
       }
