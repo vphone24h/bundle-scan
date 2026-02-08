@@ -44,6 +44,7 @@ import { useSuppliers } from '@/hooks/useSuppliers';
 import { useProducts } from '@/hooks/useProducts';
 import { useExportReceiptItems, type ExportReceiptItemDetail } from '@/hooks/useExportReceipts';
 import { useImportReturns, useExportReturns, useAllProfiles, type ImportReturn, type ExportReturn } from '@/hooks/useReturns';
+import { usePermissions } from '@/hooks/usePermissions';
 import { formatNumberWithSpaces } from '@/lib/formatNumber';
 import { ImportReturnForm } from '@/components/returns/ImportReturnForm';
 import { ExportReturnForm } from '@/components/returns/ExportReturnForm';
@@ -85,6 +86,9 @@ export default function ReturnsPage() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedReturnItem, setSelectedReturnItem] = useState<CombinedReturn | null>(null);
 
+  const { data: permissions } = usePermissions();
+  const isSuperAdmin = permissions?.canViewAllBranches === true;
+  
   const { data: branches } = useBranches();
   const { data: suppliers } = useSuppliers();
   const { data: products } = useProducts();
@@ -504,22 +508,24 @@ export default function ReturnsPage() {
                       onChange={(e) => { setDateTo(e.target.value); setDatePreset('_custom_'); }}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Chi nhánh</Label>
-                    <Select value={branchFilter} onValueChange={setBranchFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Tất cả" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả chi nhánh</SelectItem>
-                        {branches?.map((branch) => (
-                          <SelectItem key={branch.id} value={branch.id}>
-                            {branch.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {isSuperAdmin && (
+                    <div className="space-y-2">
+                      <Label className="text-xs">Chi nhánh</Label>
+                      <Select value={branchFilter} onValueChange={setBranchFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Tất cả" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          <SelectItem value="_all_">Tất cả chi nhánh</SelectItem>
+                          {branches?.map((branch) => (
+                            <SelectItem key={branch.id} value={branch.id}>
+                              {branch.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label className="text-xs">Nhân viên</Label>
                     <Select value={employeeFilter} onValueChange={setEmployeeFilter}>

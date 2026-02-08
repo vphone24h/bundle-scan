@@ -73,10 +73,17 @@ export function useCustomerDebts(showSettled: boolean = false) {
       if (receiptsError) throw receiptsError;
 
       // Get debt payments for customers
-      const { data: payments, error: paymentsError } = await supabase
+      let paymentsQuery = supabase
         .from('debt_payments')
         .select('*')
         .eq('entity_type', 'customer');
+
+      // Filter by branch if not super_admin
+      if (permissions?.role !== 'super_admin' && permissions?.branchId) {
+        paymentsQuery = paymentsQuery.eq('branch_id', permissions.branchId);
+      }
+
+      const { data: payments, error: paymentsError } = await paymentsQuery;
       if (paymentsError) throw paymentsError;
 
       // Get unique customer IDs from payments that might not be in receipts
@@ -220,10 +227,17 @@ export function useSupplierDebts(showSettled: boolean = false) {
       if (receiptsError) throw receiptsError;
 
       // Get debt payments for suppliers
-      const { data: payments, error: paymentsError } = await supabase
+      let paymentsQuery = supabase
         .from('debt_payments')
         .select('*')
         .eq('entity_type', 'supplier');
+
+      // Filter by branch if not super_admin
+      if (permissions?.role !== 'super_admin' && permissions?.branchId) {
+        paymentsQuery = paymentsQuery.eq('branch_id', permissions.branchId);
+      }
+
+      const { data: payments, error: paymentsError } = await paymentsQuery;
       if (paymentsError) throw paymentsError;
 
       // Get unique supplier IDs from payments that might not be in receipts
