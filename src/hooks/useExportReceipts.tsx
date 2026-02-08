@@ -74,6 +74,7 @@ export interface ExportReceiptItemDetail {
     export_date: string;
     branch_id: string | null;
     customer_id: string | null;
+    created_by: string | null;
     customers?: { name: string; phone: string } | null;
     branches?: { name: string } | null;
   } | null;
@@ -151,6 +152,7 @@ export function useExportReceiptItems() {
             export_date,
             branch_id,
             customer_id,
+            created_by,
             customers(name, phone),
             branches(name)
           )
