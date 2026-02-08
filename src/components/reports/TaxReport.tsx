@@ -433,10 +433,13 @@ export function TaxReport() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg">SỔ DOANH THU BÁN HÀNG HÓA, DỊCH VỤ</CardTitle>
-                <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={chartLoading || !chartData}>
-                  <Download className="h-4 w-4 mr-1" />
-                  Xuất Excel
-                </Button>
+                <div className="flex flex-col items-end gap-1">
+                  <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={chartLoading || !chartData}>
+                    <Download className="h-4 w-4 mr-1" />
+                    Xuất Excel
+                  </Button>
+                  <span className="text-[10px] text-muted-foreground italic">Xuất excel nộp cơ quan thuế</span>
+                </div>
               </CardHeader>
               <CardContent>
                 {chartLoading ? (
