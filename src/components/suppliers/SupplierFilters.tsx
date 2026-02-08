@@ -42,6 +42,7 @@ interface SupplierFiltersProps {
   onEndDateChange: (value: string) => void;
   branchId: string;
   onBranchIdChange: (value: string) => void;
+  isSuperAdmin?: boolean;
 }
 
 const sortButtons: { mode: SortMode; label: string; icon: React.ElementType }[] = [
@@ -62,11 +63,12 @@ export function SupplierFilters({
   onEndDateChange,
   branchId,
   onBranchIdChange,
+  isSuperAdmin = true,
 }: SupplierFiltersProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { data: branches } = useBranches();
 
-  const activeFilterCount = [startDate, endDate, branchId].filter(Boolean).length;
+  const activeFilterCount = [startDate, endDate, isSuperAdmin ? branchId : ''].filter(Boolean).length;
 
   const handleClearFilters = () => {
     onStartDateChange('');
@@ -146,22 +148,24 @@ export function SupplierFilters({
                   className="h-9 text-sm"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Chi nhánh</Label>
-                <Select value={branchId || 'all'} onValueChange={(v) => onBranchIdChange(v === 'all' ? '' : v)}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Tất cả chi nhánh" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả chi nhánh</SelectItem>
-                    {branches?.map((branch) => (
-                      <SelectItem key={branch.id} value={branch.id}>
-                        {branch.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {isSuperAdmin && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Chi nhánh</Label>
+                  <Select value={branchId || 'all'} onValueChange={(v) => onBranchIdChange(v === 'all' ? '' : v)}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Tất cả chi nhánh" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả chi nhánh</SelectItem>
+                      {branches?.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             {activeFilterCount > 0 && (
               <div className="flex justify-end">
