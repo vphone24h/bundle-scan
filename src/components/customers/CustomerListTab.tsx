@@ -1,4 +1,4 @@
- import { useState, useEffect } from 'react';
+ import { useState } from 'react';
  import { Card, CardContent } from '@/components/ui/card';
  import { usePagination } from '@/hooks/usePagination';
  import { TablePagination } from '@/components/ui/table-pagination';
@@ -65,12 +65,12 @@ export function CustomerListTab({ onViewCare, onViewTimeline }: CustomerListTabP
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
     const [showMergeDialog, setShowMergeDialog] = useState(false);
 
-    // Auto-lock branch filter for non-Super Admin
-    useEffect(() => {
-      if (!isSuperAdmin && permissions?.branchId) {
-        setBranchFilter(permissions.branchId);
-      }
-    }, [isSuperAdmin, permissions?.branchId]);
+    // Helper: check if a customer belongs to current user's branch (for edit permission)
+    const canEditCustomer = (customerBranchId: string | null | undefined): boolean => {
+      if (isSuperAdmin) return true;
+      if (!customerBranchId) return true; // No branch assigned = anyone can edit
+      return permissions?.branchId === customerBranchId;
+    };
 
     const { data: customers, isLoading } = useCustomersWithPoints({
       search: search || undefined,
@@ -106,10 +106,13 @@ export function CustomerListTab({ onViewCare, onViewTimeline }: CustomerListTabP
      navigate(`/debt?customerId=${customerId}`);
    };
  
-   const handleEditCustomer = (customer: any) => {
-     setEditingCustomer(customer);
-     setShowFormDialog(true);
-   };
+    const handleEditCustomer = (customer: any) => {
+      if (!canEditCustomer(customer.preferred_branch_id)) {
+        return; // Silently block - button should be hidden anyway
+      }
+      setEditingCustomer(customer);
+      setShowFormDialog(true);
+    };
  
    const handleCloseFormDialog = (open: boolean) => {
      setShowFormDialog(open);
@@ -138,19 +141,17 @@ export function CustomerListTab({ onViewCare, onViewTimeline }: CustomerListTabP
               </Button>
             </div>
             <div className="flex flex-wrap gap-2 overflow-x-auto">
-              {isSuperAdmin && (
-                <Select value={branchFilter} onValueChange={setBranchFilter}>
-                 <SelectTrigger className="w-[100px] sm:w-[140px] h-9 text-xs sm:text-sm">
-                   <SelectValue placeholder="CN" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_all_">Tất cả CN</SelectItem>
-                    {branches?.map((branch) => (
-                      <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+               <Select value={branchFilter} onValueChange={setBranchFilter}>
+                <SelectTrigger className="w-[100px] sm:w-[140px] h-9 text-xs sm:text-sm">
+                  <SelectValue placeholder="CN" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="_all_">Tất cả CN</SelectItem>
+                   {branches?.map((branch) => (
+                     <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
                <Select value={tierFilter} onValueChange={setTierFilter}>
                 <SelectTrigger className="w-[90px] sm:w-[120px] h-9 text-xs sm:text-sm">
                    <SelectValue placeholder="Hạng" />
@@ -309,21 +310,27 @@ export function CustomerListTab({ onViewCare, onViewTimeline }: CustomerListTabP
                              </Button>
                            </DropdownMenuTrigger>
                            <DropdownMenuContent align="end">
-                             <DropdownMenuItem onClick={() => handleViewDetail(customer.id)}>
-                               <Eye className="h-4 w-4 mr-2" />Xem chi tiết
-                             </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
-                               <Pencil className="h-4 w-4 mr-2" />Sửa thông tin
-                             </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => handleSell(customer.id)}>
-                               <ShoppingCart className="h-4 w-4 mr-2" />Bán hàng
-                             </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => handleCollectDebt(customer.id)}>
-                               <Wallet className="h-4 w-4 mr-2" />Thu nợ
-                             </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => onViewCare(customer.id)}>
-                               <Calendar className="h-4 w-4 mr-2" />Lịch chăm sóc
-                             </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleViewDetail(customer.id)}>
+                                <Eye className="h-4 w-4 mr-2" />Xem chi tiết
+                              </DropdownMenuItem>
+                              {canEditCustomer(customer.preferred_branch_id) && (
+                                <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
+                                  <Pencil className="h-4 w-4 mr-2" />Sửa thông tin
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem onClick={() => handleSell(customer.id)}>
+                                <ShoppingCart className="h-4 w-4 mr-2" />Bán hàng
+                              </DropdownMenuItem>
+                              {canEditCustomer(customer.preferred_branch_id) && (
+                                <>
+                                  <DropdownMenuItem onClick={() => handleCollectDebt(customer.id)}>
+                                    <Wallet className="h-4 w-4 mr-2" />Thu nợ
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => onViewCare(customer.id)}>
+                                    <Calendar className="h-4 w-4 mr-2" />Lịch chăm sóc
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                            </DropdownMenuContent>
                          </DropdownMenu>
                        </TableCell>
