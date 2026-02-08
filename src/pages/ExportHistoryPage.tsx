@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -61,6 +61,7 @@ import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { EditExportItemDialog } from '@/components/export/EditExportItemDialog';
 import { ReceiptReturnDialog } from '@/components/returns/ReceiptReturnDialog';
 import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
+import { supabase } from '@/integrations/supabase/client';
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   completed: { label: 'Hoàn tất', variant: 'default' },
@@ -109,6 +110,23 @@ export default function ExportHistoryPage() {
   const printBranchId = printReceipt?.branch_id || null;
   const { data: template } = useInvoiceTemplateByBranch(printBranchId);
   const printBranch = printBranchId ? branches?.find(b => b.id === printBranchId) : null;
+
+  // Fetch staff names from profiles for items tab
+  const [staffNames, setStaffNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!items?.length) return;
+    const userIds = [...new Set(items.map(i => i.export_receipts?.created_by).filter(Boolean))] as string[];
+    if (userIds.length === 0) return;
+    supabase
+      .from('profiles')
+      .select('user_id, display_name')
+      .in('user_id', userIds)
+      .then(({ data }) => {
+        if (data) {
+          setStaffNames(Object.fromEntries(data.map(p => [p.user_id, p.display_name])));
+        }
+      });
+  }, [items]);
 
   // Filter receipts
   const filteredReceipts = receipts?.filter((receipt) => {
@@ -533,6 +551,7 @@ export default function ExportHistoryPage() {
                       <TableHead className="text-right">Thành tiền</TableHead>
                       <TableHead>Bảo hành</TableHead>
                       <TableHead>Khách hàng</TableHead>
+                      <TableHead>Nhân viên</TableHead>
                       <TableHead>Ngày bán</TableHead>
                       <TableHead>Chi nhánh</TableHead>
                       <TableHead>Trạng thái</TableHead>
@@ -582,6 +601,9 @@ export default function ExportHistoryPage() {
                             <div className="text-xs text-muted-foreground">
                               {item.export_receipts?.customers?.phone}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {item.export_receipts?.created_by ? staffNames[item.export_receipts.created_by] || '-' : '-'}
                           </TableCell>
                           <TableCell>
                             {item.export_receipts?.export_date ? 
