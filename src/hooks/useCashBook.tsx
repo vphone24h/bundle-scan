@@ -26,6 +26,9 @@ export interface CashBookEntry {
   reference_type: string | null;
   created_by: string | null;
   note: string | null;
+  recipient_name: string | null;
+  recipient_phone: string | null;
+  created_by_name: string | null;
   created_at: string;
   updated_at: string;
   // Joined
@@ -156,6 +159,9 @@ export function useCreateCashBookEntry() {
       reference_type?: string | null;
       note?: string;
       transaction_date?: string;
+      recipient_name?: string | null;
+      recipient_phone?: string | null;
+      created_by_name?: string | null;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -163,12 +169,24 @@ export function useCreateCashBookEntry() {
       const tenantId = await getCurrentTenantId();
       if (!tenantId) throw new Error('Không tìm thấy tenant');
 
+      // If created_by_name not provided, fetch from profile
+      let createdByName = entry.created_by_name;
+      if (!createdByName && user?.id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        createdByName = profile?.display_name || user.email || null;
+      }
+
       const { data, error } = await supabase
         .from('cash_book')
         .insert([{
           ...entry,
           created_by: user?.id,
           tenant_id: tenantId,
+          created_by_name: createdByName,
         }])
         .select()
         .single();

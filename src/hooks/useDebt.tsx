@@ -561,6 +561,14 @@ export function useCreateDebtPayment() {
       if (payment.payment_type === 'payment' && payment.payment_source) {
         const cashBookType = payment.entity_type === 'customer' ? 'income' as const : 'expense' as const;
         
+        // Fetch staff name for cash book
+        const { data: staffProfile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+        const staffName = staffProfile?.display_name || user?.email || null;
+
         await supabase.from('cash_book').insert([{
           type: cashBookType,
           category: payment.entity_type === 'customer' ? 'Thu nợ khách hàng' : 'Trả nợ nhà cung cấp',
@@ -573,6 +581,8 @@ export function useCreateDebtPayment() {
           reference_type: 'debt_payment',
           created_by: user?.id,
           tenant_id: tenantId,
+          created_by_name: staffName,
+          recipient_name: payment.entity_name || null,
         }]);
       }
 

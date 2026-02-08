@@ -229,10 +229,10 @@ export function useCreateExportReceipt() {
         .limit(1)
         .maybeSingle();
 
-      // Get customer info for tier multiplier
+      // Get customer info for tier multiplier + name for cash book
       const { data: customer } = await supabase
         .from('customers')
-        .select('current_points, pending_points, total_points_earned, total_points_used, membership_tier, total_spent')
+        .select('name, phone, current_points, pending_points, total_points_earned, total_points_used, membership_tier, total_spent')
         .eq('id', customerId)
         .single();
 
@@ -399,6 +399,14 @@ export function useCreateExportReceipt() {
 
       // Create cash book entries for actual payments (not debt)
       // Use branch_id from export receipt to link cash entry to same branch as products
+      // Fetch staff name for cash book
+      const { data: staffProfile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+      const staffName = staffProfile?.display_name || user?.email || null;
+
       const cashBookEntries = payments
         .filter((p) => p.payment_type !== 'debt' && p.amount > 0)
         .map((p) => ({
@@ -413,6 +421,9 @@ export function useCreateExportReceipt() {
           branch_id: effectiveBranchId, // Use same branch as export receipt (derived from products)
           created_by: user?.id,
           tenant_id: tenantId,
+          created_by_name: staffName,
+          recipient_name: customer?.name || null,
+          recipient_phone: customer?.phone || null,
         }));
 
       if (cashBookEntries.length > 0) {
