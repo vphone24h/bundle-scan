@@ -14,7 +14,7 @@ export function ImportCart({ items, onRemove, onCheckout }: ImportCartProps) {
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="bg-card border rounded-xl p-4 sticky top-4">
+    <div className="bg-card border rounded-xl p-4 lg:sticky lg:top-4">
       <div className="flex items-center gap-2 mb-4">
         <ShoppingCart className="h-5 w-5 text-primary" />
         <h3 className="font-semibold">Giỏ nhập hàng</h3>

@@ -451,37 +451,41 @@ export default function ImportNewPage() {
               <Button 
                 variant="default" 
                 asChild 
+                size="sm"
                 className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md animate-pulse hover:animate-none"
               >
                 <a href={importGuideUrl} target="_blank" rel="noopener noreferrer">
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  Hướng dẫn sử dụng
+                  <BookOpen className="mr-1.5 h-4 w-4" />
+                  Hướng dẫn
                 </a>
               </Button>
             )}
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="sm" asChild>
               <a href="/templates/Bang_ke_thu_mua_iPhone_cu.xlsx" download="Bang_ke_thu_mua_iPhone_cu.xlsx">
-                <Download className="mr-2 h-4 w-4" />
-                Mẫu bảng kê thu mua iPhone cũ
+                <Download className="mr-1.5 h-4 w-4" />
+                <span className="hidden sm:inline">Mẫu bảng kê thu mua</span>
+                <span className="sm:hidden">Mẫu thu mua</span>
               </a>
             </Button>
-            <Button variant="outline" onClick={handleExportTemplate}>
-              <Download className="mr-2 h-4 w-4" />
-              Tải file mẫu
+            <Button variant="outline" size="sm" onClick={handleExportTemplate}>
+              <Download className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">Tải file mẫu</span>
+              <span className="sm:hidden">File mẫu</span>
             </Button>
-            <Button variant="outline" onClick={() => setExcelImportOpen(true)}>
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Nhập từ Excel
+            <Button variant="outline" size="sm" onClick={() => setExcelImportOpen(true)}>
+              <FileSpreadsheet className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">Nhập từ Excel</span>
+              <span className="sm:hidden">Excel</span>
             </Button>
           </div>
         }
       />
 
-      <div className="p-6 lg:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="p-3 sm:p-6 lg:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Form */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-card border rounded-xl p-6">
+          <div className="lg:col-span-2 space-y-4 lg:space-y-6">
+            <div className="bg-card border rounded-xl p-4 sm:p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
                 Thông tin phiếu nhập
@@ -539,13 +543,13 @@ export default function ImportNewPage() {
               </div>
             </div>
 
-            <div className="bg-card border rounded-xl p-6">
-              <h3 className="font-semibold mb-4">Thông tin sản phẩm</h3>
+            <div className="bg-card border rounded-xl p-4 sm:p-6">
+              <h3 className="font-semibold mb-3 sm:mb-4">Thông tin sản phẩm</h3>
               
               {/* Naming Tips */}
               <ProductNamingTip />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 {/* Product Name */}
                 <div className="form-field md:col-span-2 relative">
                   <Label htmlFor="productName">Tên sản phẩm *</Label>
@@ -664,13 +668,14 @@ export default function ImportNewPage() {
                     value={form.note}
                     onChange={(e) => setForm({ ...form, note: e.target.value })}
                     placeholder="Ghi chú (tuỳ chọn)"
-                    rows={2}
+                    rows={1}
+                    className="min-h-[2.5rem] resize-y"
                   />
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end">
-                <Button onClick={handleAddToCart} disabled={isCheckingIMEI}>
+              <div className="mt-4 sm:mt-6 flex justify-end">
+                <Button onClick={handleAddToCart} disabled={isCheckingIMEI} className="w-full sm:w-auto">
                   {isCheckingIMEI ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
