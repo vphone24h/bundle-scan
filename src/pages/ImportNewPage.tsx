@@ -8,6 +8,7 @@ import { ProductNamingTip } from '@/components/import/ProductNamingTip';
 import { useCategories, useCreateCategory } from '@/hooks/useCategories';
 import { useSuppliers, useCreateSupplier } from '@/hooks/useSuppliers';
 import { useProducts, useCheckIMEI, useBatchCheckIMEI } from '@/hooks/useProducts';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useCreateImportReceipt } from '@/hooks/useImportReceipts';
 import { useBranches } from '@/hooks/useBranches';
 import { useImportGuideUrl } from '@/hooks/useAppConfig';
@@ -44,6 +45,8 @@ export default function ImportNewPage() {
   const { data: products } = useProducts();
   const { data: branches } = useBranches();
   const importGuideUrl = useImportGuideUrl();
+  const { data: permissions } = usePermissions();
+  const isSuperAdmin = permissions?.canViewAllBranches === true;
   const createCategory = useCreateCategory();
   const createSupplier = useCreateSupplier();
   const createImportReceipt = useCreateImportReceipt();
@@ -53,13 +56,15 @@ export default function ImportNewPage() {
   // Branch state - default to first branch
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
 
-  // Set default branch
+  // Set default branch - non-Super Admin: lock to their branch
   useEffect(() => {
-    if (branches && branches.length > 0 && !selectedBranchId) {
+    if (!isSuperAdmin && permissions?.branchId) {
+      setSelectedBranchId(permissions.branchId);
+    } else if (isSuperAdmin && branches && branches.length > 0 && !selectedBranchId) {
       const defaultBranch = branches.find(b => b.is_default) || branches[0];
       setSelectedBranchId(defaultBranch.id);
     }
-  }, [branches, selectedBranchId]);
+  }, [branches, selectedBranchId, isSuperAdmin, permissions?.branchId]);
 
   const [cart, setCart] = useState<ImportReceiptItem[]>([]);
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -494,21 +499,29 @@ export default function ImportNewPage() {
                 {/* Branch Selection */}
                 <div className="form-field">
                   <Label>Chi nhánh nhập hàng *</Label>
-                  <Select
-                    value={selectedBranchId}
-                    onValueChange={setSelectedBranchId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn chi nhánh" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      {branches?.map((branch) => (
-                        <SelectItem key={branch.id} value={branch.id}>
-                          {branch.name} {branch.is_default && '(Mặc định)'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {isSuperAdmin ? (
+                    <Select
+                      value={selectedBranchId}
+                      onValueChange={setSelectedBranchId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn chi nhánh" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        {branches?.map((branch) => (
+                          <SelectItem key={branch.id} value={branch.id}>
+                            {branch.name} {branch.is_default && '(Mặc định)'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      value={branches?.find(b => b.id === selectedBranchId)?.name || 'Đang tải...'}
+                      disabled
+                      className="bg-muted"
+                    />
+                  )}
                 </div>
 
                 {/* Supplier Selection */}
