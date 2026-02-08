@@ -20,11 +20,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus } from 'lucide-react';
+import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus, Pencil } from 'lucide-react';
 import { DebtDetailDialog } from './DebtDetailDialog';
 import { DebtPaymentDialog } from './DebtPaymentDialog';
 import { DebtAdditionDialog } from './DebtAdditionDialog';
 import { CreateDebtDialog } from './CreateDebtDialog';
+import { EditSupplierDialog } from './EditSupplierDialog';
 
 interface SupplierDebtTableProps {
   showSettled: boolean;
@@ -45,6 +46,7 @@ export function SupplierDebtTable({ showSettled, branchFilter }: SupplierDebtTab
   const [showPayment, setShowPayment] = useState(false);
   const [showAddition, setShowAddition] = useState(false);
   const [showCreateDebt, setShowCreateDebt] = useState(false);
+  const [showEditSupplier, setShowEditSupplier] = useState(false);
 
   // Pagination
   const pagination = usePagination(debts || [], { storageKey: 'supplier-debt' });
@@ -64,8 +66,12 @@ export function SupplierDebtTable({ showSettled, branchFilter }: SupplierDebtTab
     setShowAddition(true);
   };
 
+  const handleEditSupplier = (debt: DebtSummary) => {
+    setSelectedDebt(debt);
+    setShowEditSupplier(true);
+  };
+
   const handlePrint = (debt: DebtSummary) => {
-    // TODO: Implement print functionality
     console.log('Print debt statement for', debt.entity_name);
   };
 
@@ -182,6 +188,10 @@ export function SupplierDebtTable({ showSettled, branchFilter }: SupplierDebtTab
                         <Plus className="mr-2 h-4 w-4" />
                         Cộng thêm nợ
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEditSupplier(debt)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Sửa NCC
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handlePrint(debt)}>
                         <Printer className="mr-2 h-4 w-4" />
                         In công nợ
@@ -240,6 +250,14 @@ export function SupplierDebtTable({ showSettled, branchFilter }: SupplierDebtTab
             entityName={selectedDebt.entity_name}
             remainingAmount={selectedDebt.remaining_amount}
             branchId={selectedDebt.branch_id}
+          />
+          <EditSupplierDialog
+            open={showEditSupplier}
+            onOpenChange={setShowEditSupplier}
+            supplierId={selectedDebt.entity_id}
+            supplierName={selectedDebt.entity_name}
+            supplierPhone={selectedDebt.entity_phone}
+            branchName={selectedDebt.branch_name}
           />
         </>
       )}

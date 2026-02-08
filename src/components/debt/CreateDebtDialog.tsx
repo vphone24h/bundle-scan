@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -17,9 +17,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PriceInput } from '@/components/ui/price-input';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useBranches } from '@/hooks/useBranches';
 
 interface CreateDebtDialogProps {
   open: boolean;
@@ -39,20 +42,41 @@ export function CreateDebtDialog({
   entityType,
 }: CreateDebtDialogProps) {
   const queryClient = useQueryClient();
+  const { data: permissions } = usePermissions();
+  const { data: branches } = useBranches();
+  const isSuperAdmin = permissions?.canViewAllBranches === true;
+
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [birthday, setBirthday] = useState<Date | undefined>();
   const [amount, setAmount] = useState(0);
   const [note, setNote] = useState('');
+  const [selectedBranchId, setSelectedBranchId] = useState<string>('');
 
   const isCustomer = entityType === 'customer';
+
+  // Auto-set branch for non-super-admin
+  useEffect(() => {
+    if (!isSuperAdmin && permissions?.branchId) {
+      setSelectedBranchId(permissions.branchId);
+    }
+  }, [isSuperAdmin, permissions?.branchId]);
+
+  // Reset branch when dialog opens for super admin (pick default)
+  useEffect(() => {
+    if (open && isSuperAdmin && branches?.length && !selectedBranchId) {
+      const defaultBranch = branches.find(b => b.is_default);
+      if (defaultBranch) setSelectedBranchId(defaultBranch.id);
+    }
+  }, [open, isSuperAdmin, branches, selectedBranchId]);
 
   const createDebtMutation = useMutation({
     mutationFn: async () => {
       if (!name.trim()) throw new Error('Vui lòng nhập tên');
       if (!phone.trim() && isCustomer) throw new Error('Vui lòng nhập số điện thoại');
       if (amount <= 0) throw new Error('Vui lòng nhập số tiền nợ');
+      if (!selectedBranchId) throw new Error('Vui lòng chọn chi nhánh');
 
       const tenantId = await getCurrentTenantId();
       if (!tenantId) throw new Error('Không tìm thấy tenant');
@@ -84,6 +108,7 @@ export function CreateDebtDialog({
               source: 'Công nợ',
               crm_status: 'new',
               tenant_id: tenantId,
+              preferred_branch_id: selectedBranchId,
             }])
             .select('id')
             .single();
@@ -108,7 +133,7 @@ export function CreateDebtDialog({
         if (existingSupplier) {
           entityId = existingSupplier.id;
         } else {
-          // Create new supplier
+          // Create new supplier with branch
           const { data: newSupplier, error: supplierError } = await supabase
             .from('suppliers')
             .insert([{
@@ -116,6 +141,7 @@ export function CreateDebtDialog({
               phone: phone.trim() || null,
               note: email.trim() ? `Email: ${email.trim()}` : null,
               tenant_id: tenantId,
+              branch_id: selectedBranchId,
             }])
             .select('id')
             .single();
@@ -136,6 +162,7 @@ export function CreateDebtDialog({
           description: note.trim() || (isCustomer ? 'Công nợ khách hàng mới' : 'Công nợ nhà cung cấp mới'),
           created_by: user?.id,
           tenant_id: tenantId,
+          branch_id: selectedBranchId,
         }]);
 
       if (debtError) throw debtError;
@@ -145,6 +172,7 @@ export function CreateDebtDialog({
         user_id: user?.id,
         action_type: 'create',
         table_name: 'debt_payments',
+        branch_id: selectedBranchId,
         description: `Thêm công nợ mới: ${name.trim()} - ${amount.toLocaleString('vi-VN')}đ`,
       }]);
 
@@ -171,6 +199,9 @@ export function CreateDebtDialog({
     setBirthday(undefined);
     setAmount(0);
     setNote('');
+    if (isSuperAdmin) {
+      setSelectedBranchId('');
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -191,6 +222,34 @@ export function CreateDebtDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Branch selector - Super Admin sees dropdown, others see label */}
+          <div className="space-y-2">
+            <Label>
+              Chi nhánh <span className="text-destructive">*</span>
+            </Label>
+            {isSuperAdmin ? (
+              <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
+                <SelectTrigger>
+                  <Building2 className="h-4 w-4 mr-2 shrink-0" />
+                  <SelectValue placeholder="Chọn chi nhánh" />
+                </SelectTrigger>
+                <SelectContent>
+                  {branches?.map(branch => (
+                    <SelectItem key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                value={branches?.find(b => b.id === selectedBranchId)?.name || 'Chi nhánh của bạn'}
+                disabled
+                className="bg-muted"
+              />
+            )}
+          </div>
+
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="name">
