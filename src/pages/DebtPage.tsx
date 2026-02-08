@@ -1,26 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CustomerDebtTable } from '@/components/debt/CustomerDebtTable';
 import { SupplierDebtTable } from '@/components/debt/SupplierDebtTable';
 import { useCustomerDebts, useSupplierDebts } from '@/hooks/useDebt';
+import { useBranches } from '@/hooks/useBranches';
+import { usePermissions } from '@/hooks/usePermissions';
 import { formatNumber } from '@/lib/formatNumber';
-import { Users, Truck, TrendingUp, TrendingDown } from 'lucide-react';
+import { Users, Truck, TrendingUp, TrendingDown, Building2 } from 'lucide-react';
 
 export default function DebtPage() {
   const [showSettled, setShowSettled] = useState(false);
+  const [branchFilter, setBranchFilter] = useState('_all_');
+  
+  const { data: permissions } = usePermissions();
+  const { data: branches } = useBranches();
+  const isSuperAdmin = permissions?.canViewAllBranches === true;
+  
+  // Auto-lock branch filter for non-super-admins
+  useEffect(() => {
+    if (!isSuperAdmin && permissions?.branchId) {
+      setBranchFilter(permissions.branchId);
+    }
+  }, [isSuperAdmin, permissions?.branchId]);
   
   // Fetch debt data for summary
   const { data: customerDebts } = useCustomerDebts(false);
   const { data: supplierDebts } = useSupplierDebts(false);
   
-  // Calculate totals
-  const totalCustomerDebt = customerDebts?.reduce((sum, d) => sum + d.remaining_amount, 0) || 0;
-  const totalSupplierDebt = supplierDebts?.reduce((sum, d) => sum + d.remaining_amount, 0) || 0;
+  // Filter debts by selected branch
+  const filteredCustomerDebts = useMemo(() => {
+    if (!customerDebts) return [];
+    if (branchFilter === '_all_') return customerDebts;
+    return customerDebts.filter(d => d.branch_id === branchFilter);
+  }, [customerDebts, branchFilter]);
+
+  const filteredSupplierDebts = useMemo(() => {
+    if (!supplierDebts) return [];
+    if (branchFilter === '_all_') return supplierDebts;
+    return supplierDebts.filter(d => d.branch_id === branchFilter);
+  }, [supplierDebts, branchFilter]);
+  
+  // Calculate totals from filtered data
+  const totalCustomerDebt = filteredCustomerDebts.reduce((sum, d) => sum + d.remaining_amount, 0);
+  const totalSupplierDebt = filteredSupplierDebts.reduce((sum, d) => sum + d.remaining_amount, 0);
 
   return (
     <MainLayout>
@@ -61,16 +89,34 @@ export default function DebtPage() {
           </Card>
         </div>
 
-        {/* Filter */}
-        <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-lg">
-          <Checkbox
-            id="showSettled"
-            checked={showSettled}
-            onCheckedChange={(checked) => setShowSettled(checked === true)}
-          />
-          <Label htmlFor="showSettled" className="text-sm cursor-pointer">
-            Hiện cả đối tượng đã trả hết nợ
-          </Label>
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3 bg-muted/50 p-3 rounded-lg">
+          {isSuperAdmin && (
+            <Select value={branchFilter} onValueChange={setBranchFilter}>
+              <SelectTrigger className="w-[140px] sm:w-[180px] h-9 text-xs sm:text-sm">
+                <Building2 className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                <SelectValue placeholder="Chi nhánh" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all_">Tất cả chi nhánh</SelectItem>
+                {branches?.map(branch => (
+                  <SelectItem key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="showSettled"
+              checked={showSettled}
+              onCheckedChange={(checked) => setShowSettled(checked === true)}
+            />
+            <Label htmlFor="showSettled" className="text-sm cursor-pointer">
+              Hiện cả đối tượng đã trả hết nợ
+            </Label>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -89,11 +135,11 @@ export default function DebtPage() {
           </TabsList>
 
           <TabsContent value="customer" className="mt-4">
-            <CustomerDebtTable showSettled={showSettled} />
+            <CustomerDebtTable showSettled={showSettled} branchFilter={branchFilter} />
           </TabsContent>
 
           <TabsContent value="supplier" className="mt-4">
-            <SupplierDebtTable showSettled={showSettled} />
+            <SupplierDebtTable showSettled={showSettled} branchFilter={branchFilter} />
           </TabsContent>
         </Tabs>
       </div>
