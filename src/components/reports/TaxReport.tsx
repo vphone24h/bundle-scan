@@ -39,9 +39,9 @@ const INDUSTRIES = [
 
 const REVENUE_TIERS = [
   { value: 'under_500m', label: 'Dưới 500 triệu', exempt: true, note: '' },
-  { value: '500m_3b', label: 'Từ 500tr đến dưới 3 tỷ', exempt: false, note: 'TNCN 15% – HKD' },
-  { value: '3b_50b', label: 'Từ 3 tỷ đến dưới 50 tỷ', exempt: false, note: 'TNCN 15% – HKD | 17% – DN' },
-  { value: 'over_50b', label: 'Trên 50 tỷ', exempt: false, note: 'TNCN 17% – HKD | 20% – DN' },
+  { value: '500m_3b', label: 'Từ 500tr đến dưới 3 tỷ', exempt: false, note: 'TNCN 15%' },
+  { value: '3b_50b', label: 'Từ 3 tỷ đến dưới 50 tỷ', exempt: false, note: 'TNCN 15%' },
+  { value: 'over_50b', label: 'Trên 50 tỷ', exempt: false, note: 'TNCN 17%' },
 ];
 
 const TAX_METHODS = [
