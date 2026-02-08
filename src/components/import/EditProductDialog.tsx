@@ -314,8 +314,8 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                       disabled
                       className="bg-muted"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Để đổi chi nhánh, vui lòng sử dụng chức năng <strong>Chuyển hàng</strong>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Để đổi chi nhánh: vào <strong>Lịch sử nhập hàng</strong> → tab <strong>Theo sản phẩm</strong> → tích chọn sản phẩm → bấm nút <strong>Chuyển hàng</strong>
                     </p>
                   </>
                 )}
