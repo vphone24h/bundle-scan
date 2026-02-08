@@ -401,6 +401,7 @@ export default function ImportHistoryPage() {
         { header: 'Còn nợ', key: 'debt_amount', width: 15, isNumeric: true },
         { header: 'Nhà cung cấp', key: 'supplier_name', width: 25 },
         { header: 'Chi nhánh', key: 'branch_name', width: 20 },
+        { header: 'Nhân viên', key: 'staff_name', width: 18 },
         { header: 'Ghi chú', key: 'note', width: 30 },
         { header: 'Trạng thái', key: 'status', width: 12, format: (v) => v === 'completed' ? 'Hoàn tất' : 'Đã huỷ' },
       ],
@@ -413,6 +414,7 @@ export default function ImportHistoryPage() {
         debt_amount: r.debt_amount,
         supplier_name: r.suppliers?.name || '',
         branch_name: r.branches?.name || '',
+        staff_name: r.created_by ? (staffNameMap.get(r.created_by) || '') : '',
         note: r.note || '',
         status: r.status,
       })),
@@ -660,6 +662,7 @@ export default function ImportHistoryPage() {
                     <th className="text-right">Còn nợ</th>
                     <th>Nhà cung cấp</th>
                     <th>Chi nhánh</th>
+                    <th>Nhân viên</th>
                     <th>Ghi chú</th>
                     <th>Trạng thái</th>
                     <th className="w-16"></th>
@@ -688,6 +691,7 @@ export default function ImportHistoryPage() {
                       </td>
                       <td>{receipt.suppliers?.name || '-'}</td>
                       <td>{receipt.branches?.name || '-'}</td>
+                      <td className="text-sm">{receipt.created_by ? (staffNameMap.get(receipt.created_by) || '-') : '-'}</td>
                       <td className="max-w-[150px] truncate" title={receipt.note || ''}>
                         {receipt.note ? (
                           <span className="flex items-center gap-1">
