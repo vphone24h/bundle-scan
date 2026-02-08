@@ -6,7 +6,7 @@ import { PaymentDialog } from '@/components/import/PaymentDialog';
 import { ExcelImportDialog } from '@/components/import/ExcelImportDialog';
 import { ProductNamingTip } from '@/components/import/ProductNamingTip';
 import { useCategories, useCreateCategory } from '@/hooks/useCategories';
-import { useSuppliers, useCreateSupplier } from '@/hooks/useSuppliers';
+import { useSuppliersByBranch, useCreateSupplier } from '@/hooks/useSuppliers';
 import { useProducts, useCheckIMEI, useBatchCheckIMEI } from '@/hooks/useProducts';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCreateImportReceipt } from '@/hooks/useImportReceipts';
@@ -41,7 +41,6 @@ import { downloadImportTemplate } from '@/lib/excelTemplates';
 export default function ImportNewPage() {
   const navigate = useNavigate();
   const { data: categories } = useCategories();
-  const { data: suppliers } = useSuppliers();
   const { data: products } = useProducts();
   const { data: branches } = useBranches();
   const importGuideUrl = useImportGuideUrl();
@@ -55,6 +54,9 @@ export default function ImportNewPage() {
 
   // Branch state - default to first branch
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+
+  // Suppliers filtered by selected branch
+  const { data: suppliers } = useSuppliersByBranch(selectedBranchId || undefined);
 
   // Set default branch - non-Super Admin: lock to their branch
   useEffect(() => {
@@ -292,7 +294,7 @@ export default function ImportNewPage() {
     if (newSupplierNames.length > 0) {
       try {
         for (const name of newSupplierNames) {
-          await createSupplier.mutateAsync({ name });
+          await createSupplier.mutateAsync({ name, branch_id: selectedBranchId || null });
         }
         toast({
           title: 'Đã tạo nhà cung cấp mới',
@@ -420,10 +422,12 @@ export default function ImportNewPage() {
   const handleAddNewSupplier = async () => {
     if (!newSupplierForm.name.trim()) return;
     try {
+      // Auto-assign to current selected branch
       await createSupplier.mutateAsync({
         name: newSupplierForm.name.trim(),
         phone: newSupplierForm.phone.trim() || null,
         address: newSupplierForm.address.trim() || null,
+        branch_id: selectedBranchId || null,
       });
       toast({ title: 'Đã thêm nhà cung cấp', description: newSupplierForm.name });
       setSupplierDialogOpen(false);
@@ -502,7 +506,11 @@ export default function ImportNewPage() {
                   {isSuperAdmin ? (
                     <Select
                       value={selectedBranchId}
-                      onValueChange={setSelectedBranchId}
+                      onValueChange={(val) => {
+                        setSelectedBranchId(val);
+                        // Reset supplier when branch changes
+                        setSelectedSupplierId('');
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Chọn chi nhánh" />
