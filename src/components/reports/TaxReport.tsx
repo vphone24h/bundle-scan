@@ -124,7 +124,7 @@ export function TaxReport() {
     }
 
     return { gtgt, tncn, total: gtgt + tncn, exempt: false };
-  }, [allStepsComplete, stats, isExempt, selectedIndustry, effectiveTaxMethod]);
+  }, [allStepsComplete, stats, isExempt, selectedIndustry, effectiveTaxMethod, revenueTier]);
 
   const handleExportExcel = () => {
     if (!chartData || !selectedIndustry) return;
