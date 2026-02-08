@@ -113,7 +113,6 @@ export function CustomerDebtTable({ showSettled, branchFilter }: CustomerDebtTab
           <TableHeader>
             <TableRow>
               <TableHead>Tên / SĐT</TableHead>
-              <TableHead className="hidden md:table-cell">Chi nhánh</TableHead>
               <TableHead className="text-right">Tổng bán</TableHead>
               <TableHead className="text-right hidden sm:table-cell">Đã thu</TableHead>
               <TableHead className="text-right">Còn nợ</TableHead>
@@ -131,14 +130,10 @@ export function CustomerDebtTable({ showSettled, branchFilter }: CustomerDebtTab
                     {debt.entity_phone && (
                       <p className="text-sm text-muted-foreground">{debt.entity_phone}</p>
                     )}
-                    {/* Mobile: show branch */}
-                    <p className="text-xs text-muted-foreground md:hidden">
+                    <p className="text-xs text-muted-foreground">
                       {debt.branch_name || 'Chưa phân chi nhánh'}
                     </p>
                   </div>
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {debt.branch_name || '-'}
                 </TableCell>
                 <TableCell className="text-right font-medium">
                   {formatNumber(debt.total_amount)}
