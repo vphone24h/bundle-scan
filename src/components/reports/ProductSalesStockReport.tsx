@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,7 @@ import { formatCurrency } from '@/lib/mockData';
 import { exportToExcel, formatCurrencyForExcel } from '@/lib/exportExcel';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const timePresets = [
   { label: 'Hôm nay', value: 'today' },
@@ -57,6 +58,14 @@ export function ProductSalesStockReport() {
 
   const { data: branches } = useBranches();
   const { data: categories } = useCategories();
+  const { data: permissions } = usePermissions();
+  const isSuperAdmin = permissions?.canViewAllBranches === true;
+
+  useEffect(() => {
+    if (!isSuperAdmin && permissions?.branchId) {
+      setBranchId(permissions.branchId);
+    }
+  }, [isSuperAdmin, permissions?.branchId]);
 
   const { data, isLoading } = useProductReport({
     startDate,
@@ -140,16 +149,18 @@ export function ProductSalesStockReport() {
               <div><Label>Từ ngày</Label><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" /></div>
               <div><Label>Đến ngày</Label><Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" /></div>
             </div>
-            <div>
-              <Label>Chi nhánh</Label>
-              <Select value={branchId} onValueChange={setBranchId}>
-                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="_all_">Tất cả</SelectItem>
-                  {branches?.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+            {isSuperAdmin && (
+              <div>
+                <Label>Chi nhánh</Label>
+                <Select value={branchId} onValueChange={setBranchId}>
+                  <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="_all_">Tất cả</SelectItem>
+                    {branches?.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <Label>Danh mục</Label>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>

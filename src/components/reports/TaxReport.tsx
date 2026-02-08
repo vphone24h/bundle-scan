@@ -88,9 +88,10 @@ export function TaxReport() {
   const startDate = format(period.start, 'yyyy-MM-dd');
   const endDate = format(period.end, 'yyyy-MM-dd');
 
-  // Branch Admin: chỉ xem được chi nhánh của mình
-  const effectiveBranchId = permissions?.role === 'branch_admin'
-    ? permissions.branchId || undefined
+  // Branch Admin / staff / cashier: chỉ xem chi nhánh của mình
+  const isSuperAdmin = permissions?.canViewAllBranches === true;
+  const effectiveBranchId = !isSuperAdmin
+    ? permissions?.branchId || undefined
     : selectedBranchId === 'all' ? undefined : selectedBranchId;
   const effectiveCategoryId = selectedCategoryId === 'all' ? undefined : selectedCategoryId;
 
@@ -195,28 +196,29 @@ export function TaxReport() {
       <Card>
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Branch Filter */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                <Building2 className="h-3.5 w-3.5" />
-                Chi nhánh
-              </label>
-              <Select
-                value={permissions?.role === 'branch_admin' ? (permissions.branchId || 'all') : selectedBranchId}
-                onValueChange={setSelectedBranchId}
-                disabled={permissions?.role === 'branch_admin'}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Tất cả chi nhánh" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="all">Tất cả chi nhánh</SelectItem>
-                  {branches?.map(b => (
-                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Branch Filter - only for Super Admin */}
+            {isSuperAdmin && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                  <Building2 className="h-3.5 w-3.5" />
+                  Chi nhánh
+                </label>
+                <Select
+                  value={selectedBranchId}
+                  onValueChange={setSelectedBranchId}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Tất cả chi nhánh" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="all">Tất cả chi nhánh</SelectItem>
+                    {branches?.map(b => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Category Filter */}
             <div className="space-y-1.5">
