@@ -343,7 +343,7 @@ export function TaxReport() {
               </Select>
               <div className="mt-2 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
                 <p>• <strong>Theo doanh số:</strong> TNCN = (Doanh thu − 500.000.000) × Thuế suất TNCN</p>
-                <p>• <strong>Theo lợi nhuận:</strong> TNCN = Lợi nhuận thuần × {revenueTier === 'over_50b' ? '17%' : '15%'} <em>(phải có hóa đơn đầu vào)</em></p>
+                <p>• <strong>Theo lợi nhuận:</strong> TNCN = Lợi nhuận thuần × % mức thuế theo mốc doanh thu ở B2 ({revenueTier === 'over_50b' ? '17%' : '15%'}) <em>(phải có hóa đơn đầu vào)</em></p>
                 <p className="italic pt-1">Cả 2 cách đều hợp lệ, hãy chọn cách nào cho số thuế thấp hơn để tối ưu nhất.</p>
               </div>
             </div>
