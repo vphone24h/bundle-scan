@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier, Supplier } from '@/hooks/useSuppliers';
@@ -29,6 +29,7 @@ import { toast } from '@/hooks/use-toast';
 import { SupplierDetailDialog } from '@/components/suppliers/SupplierDetailDialog';
 import { SupplierFilters, SortMode } from '@/components/suppliers/SupplierFilters';
 import { formatCurrency } from '@/lib/mockData';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export default function SuppliersPage() {
   const { data: suppliers, isLoading } = useSuppliers();
@@ -44,6 +45,16 @@ export default function SuppliersPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [branchId, setBranchId] = useState('');
+
+  const { data: permissions } = usePermissions();
+  const isSuperAdmin = permissions?.canViewAllBranches === true;
+
+  // Auto-lock branch for non-super-admins
+  useEffect(() => {
+    if (!isSuperAdmin && permissions?.branchId) {
+      setBranchId(permissions.branchId);
+    }
+  }, [isSuperAdmin, permissions?.branchId]);
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -189,6 +200,7 @@ export default function SuppliersPage() {
           onEndDateChange={setEndDate}
           branchId={branchId}
           onBranchIdChange={setBranchId}
+          isSuperAdmin={isSuperAdmin}
         />
 
         {/* Grid */}
