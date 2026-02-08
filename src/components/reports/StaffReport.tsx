@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,7 @@ import { formatCurrency } from '@/lib/mockData';
 import { exportToExcel } from '@/lib/exportExcel';
 import { StaffDetailDialog } from './StaffDetailDialog';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Quản lý',
@@ -142,11 +143,20 @@ export function StaffReport() {
   const [sortMode, setSortMode] = useState<SortMode>('revenue');
   const [selectedStaff, setSelectedStaff] = useState<StaffWithKPI | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const { data: permissions } = usePermissions();
+  const isSuperAdmin = permissions?.canViewAllBranches === true;
 
   const start = new Date(startDate);
   const end = new Date(endDate);
 
-  const { data: staffWithKPI = [], isLoading } = useStaffWithKPI(start, end);
+  const { data: staffWithKPIAll = [], isLoading } = useStaffWithKPI(start, end);
+
+  // Branch Admin: chỉ thấy nhân viên chi nhánh mình
+  const staffWithKPI = useMemo(() => {
+    if (isSuperAdmin || !permissions?.branchId) return staffWithKPIAll;
+    return staffWithKPIAll.filter(s => s.branch_id === permissions.branchId);
+  }, [staffWithKPIAll, isSuperAdmin, permissions?.branchId]);
+
   const sortedStaff = useMemo(() => sortStaff(staffWithKPI, sortMode), [staffWithKPI, sortMode]);
 
   const handleTimePreset = (preset: string) => {
