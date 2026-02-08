@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Loader2, Search, ArrowRight, Eye, Check, X, Package, ArrowRightLeft } from 'lucide-react';
+import { Loader2, Search, ArrowRight, Eye, Check, X, Package, ArrowRightLeft, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/mockData';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -221,6 +221,13 @@ export default function StockTransferPage() {
       />
 
       <div className="p-6 lg:p-8 space-y-4">
+        {/* Hướng dẫn */}
+        <div className="flex items-start gap-2.5 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-800 dark:text-blue-300">
+          <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <p>
+            Để chuyển hàng: vào <strong>Lịch sử nhập hàng</strong> → tab <strong>Theo sản phẩm</strong> → tích chọn sản phẩm → bấm nút <strong>Chuyển hàng</strong>.
+          </p>
+        </div>
         {/* Search */}
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
