@@ -63,6 +63,7 @@ import {
   Settings,
   BookOpen,
   ArrowLeftRight,
+  Landmark,
 } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isToday } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -74,6 +75,8 @@ import { formatNumberWithSpaces, parseFormattedNumber } from '@/lib/formatNumber
 import { cn } from '@/lib/utils';
 import { TransferFundsDialog } from '@/components/cashbook/TransferFundsDialog';
 import { CashBookDetailDialog } from '@/components/cashbook/CashBookDetailDialog';
+import { OpeningBalanceDialog } from '@/components/cashbook/OpeningBalanceDialog';
+import { useLatestOpeningBalances } from '@/hooks/useOpeningBalance';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const defaultPaymentSourceLabels: Record<string, string> = {
@@ -118,6 +121,7 @@ export default function CashBookPage() {
   const [showAddSourceDialog, setShowAddSourceDialog] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [showOpeningBalanceDialog, setShowOpeningBalanceDialog] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<CashBookEntry | null>(null);
   const [editingEntry, setEditingEntry] = useState<CashBookEntry | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
@@ -188,6 +192,7 @@ export default function CashBookPage() {
   const deleteEntry = useDeleteCashBookEntry();
   const createCategory = useCreateCashBookCategory();
   const isMobile = useIsMobile();
+  const { data: latestOpeningBalances } = useLatestOpeningBalances();
   
   // All categories for filter (both income and expense)
   const { data: allCategories } = useCashBookCategories();
@@ -260,8 +265,12 @@ export default function CashBookPage() {
     if (!allEntries) return 0;
     const income = allEntries.filter(e => e.type === 'income').reduce((sum, e) => sum + Number(e.amount), 0);
     const expense = allEntries.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.amount), 0);
-    return income - expense;
-  }, [allEntries]);
+    // Cộng thêm tổng số dư đầu kỳ từ tất cả nguồn tiền
+    const openingTotal = latestOpeningBalances 
+      ? Object.values(latestOpeningBalances).reduce((sum, ob) => sum + Number(ob.amount), 0) 
+      : 0;
+    return openingTotal + income - expense;
+  }, [allEntries, latestOpeningBalances]);
 
   // Calculate balance by payment source (including custom sources)
   const balanceBySource = useMemo(() => {
@@ -270,14 +279,17 @@ export default function CashBookPage() {
     // Initialize with all sources (built-in + custom)
     const result: Record<string, number> = {};
     allPaymentSources.forEach(src => {
-      result[src.id] = 0;
+      // Bắt đầu từ số dư đầu kỳ (nếu có)
+      const openingBalance = latestOpeningBalances?.[src.id];
+      result[src.id] = openingBalance ? Number(openingBalance.amount) : 0;
     });
     
     allEntries.forEach((entry) => {
       const source = entry.payment_source;
       const amount = Number(entry.amount);
       if (result[source] === undefined) {
-        result[source] = 0;
+        const openingBalance = latestOpeningBalances?.[source];
+        result[source] = openingBalance ? Number(openingBalance.amount) : 0;
       }
       if (entry.type === 'income') {
         result[source] += amount;
@@ -287,7 +299,7 @@ export default function CashBookPage() {
     });
     
     return result;
-  }, [allEntries, allPaymentSources]);
+  }, [allEntries, allPaymentSources, latestOpeningBalances]);
 
   const todayStats = useMemo(() => {
     if (!allEntries) return { income: 0, expense: 0 };
@@ -642,23 +654,28 @@ export default function CashBookPage() {
         title="Sổ quỹ"
         description="Quản lý dòng tiền thu chi"
         actions={
-          <div className="flex flex-wrap gap-1.5 sm:gap-2">
-            {cashBookGuideUrl && (
-              <Button variant="secondary" size="sm" asChild className="hidden sm:inline-flex">
-                <a href={cashBookGuideUrl} target="_blank" rel="noopener noreferrer">
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  Hướng dẫn
-                </a>
-              </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={() => handleOpenAdd('income')} className="text-green-600 border-green-600 hover:bg-green-50 text-xs sm:text-sm px-2 sm:px-3">
-              <TrendingUp className="h-4 w-4 mr-1 sm:mr-2" />
-              Thu
-            </Button>
-            <Button size="sm" onClick={() => handleOpenAdd('expense')} className="bg-destructive hover:bg-destructive/90 text-xs sm:text-sm px-2 sm:px-3">
-              <TrendingDown className="h-4 w-4 mr-1 sm:mr-2" />
-              Chi
-            </Button>
+           <div className="flex flex-wrap gap-1.5 sm:gap-2">
+             {cashBookGuideUrl && (
+               <Button variant="secondary" size="sm" asChild className="hidden sm:inline-flex">
+                 <a href={cashBookGuideUrl} target="_blank" rel="noopener noreferrer">
+                   <BookOpen className="mr-2 h-4 w-4" />
+                   Hướng dẫn
+                 </a>
+               </Button>
+             )}
+             <Button variant="outline" size="sm" onClick={() => setShowOpeningBalanceDialog(true)} className="text-xs sm:text-sm px-2 sm:px-3">
+               <Landmark className="h-4 w-4 mr-1 sm:mr-2" />
+               <span className="hidden sm:inline">Quỹ kỳ đầu</span>
+               <span className="sm:hidden">Kỳ đầu</span>
+             </Button>
+             <Button variant="outline" size="sm" onClick={() => handleOpenAdd('income')} className="text-green-600 border-green-600 hover:bg-green-50 text-xs sm:text-sm px-2 sm:px-3">
+               <TrendingUp className="h-4 w-4 mr-1 sm:mr-2" />
+               Thu
+             </Button>
+             <Button size="sm" onClick={() => handleOpenAdd('expense')} className="bg-destructive hover:bg-destructive/90 text-xs sm:text-sm px-2 sm:px-3">
+               <TrendingDown className="h-4 w-4 mr-1 sm:mr-2" />
+               Chi
+             </Button>
             <Button variant="secondary" size="sm" onClick={() => setShowTransferDialog(true)} className="text-xs sm:text-sm px-2 sm:px-3">
               <ArrowLeftRight className="h-4 w-4 mr-1 sm:mr-2" />
               Chuyển
@@ -781,12 +798,13 @@ export default function CashBookPage() {
               {allPaymentSources.map((source) => {
                 const balance = balanceBySource[source.id] || 0;
                 const isBuiltIn = builtInPaymentSources.some(s => s.id === source.id);
+                const openingBal = latestOpeningBalances?.[source.id];
                 const colorClass = source.color === 'green' ? 'bg-green-100' : 
                                    source.color === 'blue' ? 'bg-blue-100' : 
                                    source.color === 'purple' ? 'bg-purple-100' : 'bg-muted';
                 const iconColorClass = source.color === 'green' ? 'text-green-600' : 
-                                       source.color === 'blue' ? 'text-blue-600' : 
-                                       source.color === 'purple' ? 'text-purple-600' : 'text-muted-foreground';
+                                        source.color === 'blue' ? 'text-blue-600' : 
+                                        source.color === 'purple' ? 'text-purple-600' : 'text-muted-foreground';
                 
                 return (
                   <div key={source.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
@@ -805,6 +823,11 @@ export default function CashBookPage() {
                         <p className={cn("text-lg font-bold", balance >= 0 ? 'text-green-600' : 'text-destructive')}>
                           {formatCurrency(balance)}
                         </p>
+                        {openingBal && (
+                          <p className="text-xs text-muted-foreground">
+                            Đầu kỳ: {formatCurrency(openingBal.amount)}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -1703,6 +1726,14 @@ export default function CashBookPage() {
         open={showDetailDialog}
         onOpenChange={setShowDetailDialog}
         paymentSourceLabels={paymentSourceLabels}
+      />
+
+      {/* Opening Balance Dialog */}
+      <OpeningBalanceDialog
+        open={showOpeningBalanceDialog}
+        onOpenChange={setShowOpeningBalanceDialog}
+        paymentSources={allPaymentSources.map(s => ({ id: s.id, name: s.name }))}
+        hasTransactions={(source) => allEntries?.some(e => e.payment_source === source) || false}
       />
 
       {/* Add Category Dialog */}
