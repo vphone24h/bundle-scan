@@ -42,7 +42,8 @@ import {
   ImagePlus,
   X,
   Loader2,
-  Building2
+  Building2,
+  Copy
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
@@ -326,6 +327,79 @@ export default function InvoiceTemplatePage() {
         description: error.message || 'Không thể lưu cấu hình',
         variant: 'destructive',
       });
+    }
+  };
+
+  const [isApplyingAll, setIsApplyingAll] = useState(false);
+
+  const handleApplyToAll = async () => {
+    if (!currentTemplate?.id || !branches || branches.length === 0) return;
+
+    // Merge current settings with template
+    const merged = { ...currentTemplate, ...settings };
+
+    // Fields to apply (exclude branch-specific fields)
+    const {
+      id: _id, branch_id: _bid, created_at: _ca, updated_at: _ua,
+      store_address: _sa, store_phone: _sp, store_name: _sn,
+      name: _name,
+      ...commonSettings
+    } = merged;
+
+    setIsApplyingAll(true);
+    try {
+      // First save current template
+      if (Object.keys(settings).length > 0) {
+        await updateTemplate.mutateAsync({
+          id: currentTemplate.id,
+          ...settings,
+        });
+      }
+
+      // Apply to all other branches
+      for (const branch of branches) {
+        if (branch.id === selectedBranchId) continue;
+
+        // Check if template exists for this branch
+        let branchTemplate = allTemplates?.find(t => t.branch_id === branch.id);
+        
+        if (!branchTemplate) {
+          // Create template for this branch
+          branchTemplate = await getOrCreateBranchTemplate.mutateAsync({
+            branchId: branch.id,
+            branchName: branch.name,
+            branchAddress: branch.address,
+            branchPhone: branch.phone,
+          });
+        }
+
+        if (branchTemplate) {
+          // Apply common settings but keep branch-specific address/phone
+          await updateTemplate.mutateAsync({
+            id: branchTemplate.id,
+            ...commonSettings,
+            // Use each branch's own address and phone
+            store_name: branch.name,
+            store_address: branch.address || '',
+            store_phone: branch.phone || '',
+            name: `Mẫu ${branch.name}`,
+          });
+        }
+      }
+
+      setSettings({});
+      toast({
+        title: 'Đã áp dụng',
+        description: `Mẫu in đã được áp dụng cho tất cả ${branches.length} chi nhánh (địa chỉ & SĐT lấy từ từng chi nhánh)`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể áp dụng cho tất cả chi nhánh',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsApplyingAll(false);
     }
   };
 
@@ -766,6 +840,22 @@ export default function InvoiceTemplatePage() {
               />
             </SettingItem>
           </SectionCard>
+
+          {/* Apply to all branches button */}
+          <Button
+            className="w-full"
+            size="lg"
+            variant="outline"
+            onClick={handleApplyToAll}
+            disabled={isApplyingAll || !currentTemplate?.id || !branches || branches.length <= 1}
+          >
+            {isApplyingAll ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Copy className="h-4 w-4 mr-2" />
+            )}
+            {isApplyingAll ? 'Đang áp dụng...' : 'Áp dụng cho tất cả chi nhánh'}
+          </Button>
 
           {/* Save button */}
           <Button 
