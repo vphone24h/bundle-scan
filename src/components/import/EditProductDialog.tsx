@@ -12,6 +12,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useBranches } from '@/hooks/useBranches';
+import { usePermissions } from '@/hooks/usePermissions';
 import type { Product } from '@/hooks/useProducts';
 import { formatCurrency } from '@/lib/mockData';
 
@@ -26,7 +27,8 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
   const { data: branches } = useBranches();
-
+  const { data: permissions } = usePermissions();
+  const isSuperAdmin = permissions?.canViewAllBranches === true;
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -147,17 +149,23 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         branch_id: product.branch_id,
       };
 
+      const updates: Record<string, any> = {
+        name: formData.name.trim(),
+        sku: formData.sku.trim(),
+        imei: formData.imei.trim() || null,
+        note: formData.note.trim() || null,
+        category_id: formData.category_id === '_none_' ? null : formData.category_id,
+        supplier_id: formData.supplier_id === '_none_' ? null : formData.supplier_id,
+      };
+
+      // Chỉ Super Admin mới được đổi chi nhánh
+      if (isSuperAdmin) {
+        updates.branch_id = formData.branch_id === '_none_' ? null : formData.branch_id;
+      }
+
       await updateProduct.mutateAsync({
         productId: product.id,
-        updates: {
-          name: formData.name.trim(),
-          sku: formData.sku.trim(),
-          imei: formData.imei.trim() || null,
-          note: formData.note.trim() || null,
-          category_id: formData.category_id === '_none_' ? null : formData.category_id,
-          supplier_id: formData.supplier_id === '_none_' ? null : formData.supplier_id,
-          branch_id: formData.branch_id === '_none_' ? null : formData.branch_id,
-        },
+        updates,
         oldData,
       });
 
@@ -282,22 +290,35 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
 
               <div className="space-y-2">
                 <Label>Chi nhánh</Label>
-                <Select 
-                  value={formData.branch_id} 
-                  onValueChange={(v) => setFormData(prev => ({ ...prev, branch_id: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn chi nhánh" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover">
-                    <SelectItem value="_none_">Không có</SelectItem>
-                    {branches?.map((branch) => (
-                      <SelectItem key={branch.id} value={branch.id}>
-                        {branch.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {isSuperAdmin ? (
+                  <Select 
+                    value={formData.branch_id} 
+                    onValueChange={(v) => setFormData(prev => ({ ...prev, branch_id: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn chi nhánh" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="_none_">Không có</SelectItem>
+                      {branches?.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <>
+                    <Input
+                      value={product?.branches?.name || 'Không có'}
+                      disabled
+                      className="bg-muted"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Để đổi chi nhánh, vui lòng sử dụng chức năng <strong>Chuyển hàng</strong>
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>
