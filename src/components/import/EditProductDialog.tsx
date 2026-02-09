@@ -218,12 +218,31 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sku">SKU <span className="text-destructive">*</span></Label>
-                  <Input
-                    id="sku"
-                    value={formData.sku}
-                    onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
-                    placeholder="Nhập SKU"
-                  />
+                  <div className="flex gap-1.5">
+                    <Input
+                      id="sku"
+                      value={formData.sku}
+                      onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
+                      placeholder="Mã viết tắt"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                      title="Copy tên sản phẩm làm SKU"
+                      onClick={() => {
+                        if (formData.name.trim()) {
+                          setFormData(prev => ({ ...prev, sku: prev.name.trim() }));
+                        }
+                      }}
+                      disabled={!formData.name.trim()}
+                    >
+                      <span className="text-xs font-medium">A→</span>
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Mã viết tắt tên SP, dễ nhớ</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="imei">IMEI</Label>

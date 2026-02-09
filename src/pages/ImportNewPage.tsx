@@ -599,12 +599,32 @@ export default function ImportNewPage() {
                 {/* SKU */}
                 <div className="form-field">
                   <Label htmlFor="sku">SKU *</Label>
-                  <Input
-                    id="sku"
-                    value={form.sku}
-                    onChange={(e) => setForm({ ...form, sku: e.target.value })}
-                    placeholder="Mã sản phẩm"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="sku"
+                      value={form.sku}
+                      onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                      placeholder="Mã viết tắt tên sản phẩm"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      title="Copy tên sản phẩm làm SKU"
+                      onClick={() => {
+                        if (form.productName.trim()) {
+                          setForm({ ...form, sku: form.productName.trim() });
+                        }
+                      }}
+                      disabled={!form.productName.trim()}
+                    >
+                      <span className="text-xs font-medium">A→</span>
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Mã viết tắt của tên sản phẩm, để dễ nhớ và tìm kiếm
+                  </p>
                 </div>
 
                 {/* IMEI */}
