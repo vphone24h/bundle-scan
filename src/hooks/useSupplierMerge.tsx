@@ -12,7 +12,7 @@ export interface DuplicateGroup {
 }
 
 /**
- * Detect duplicate suppliers: same name (case-insensitive) + same phone + same branch_id
+ * Detect duplicate suppliers: exact same name (case-sensitive) + same phone + same branch_id
  */
 export function useDuplicateSuppliers(suppliers: Supplier[] | undefined) {
   return useMemo(() => {
@@ -21,7 +21,7 @@ export function useDuplicateSuppliers(suppliers: Supplier[] | undefined) {
     const groupMap = new Map<string, Supplier[]>();
 
     for (const s of suppliers) {
-      const key = `${s.name.trim().toLowerCase()}|${(s.phone || '').trim()}|${s.branch_id || ''}`;
+      const key = `${s.name.trim()}|${(s.phone || '').trim()}|${s.branch_id || ''}`;
       const group = groupMap.get(key) || [];
       group.push(s);
       groupMap.set(key, group);
