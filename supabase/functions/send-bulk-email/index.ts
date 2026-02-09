@@ -116,6 +116,17 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Save email history
+    await supabaseAdmin.from('email_history').insert({
+      subject,
+      html_content: htmlContent,
+      recipients: emails,
+      total_recipients: emails.length,
+      success_count: sent,
+      fail_count: failed,
+      sent_by: user.id,
+    })
+
     // Log action
     await supabaseAdmin.from('audit_logs').insert({
       user_id: user.id,
