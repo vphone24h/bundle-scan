@@ -4295,6 +4295,7 @@ export type Database = {
       lookup_warranty_by_imei: {
         Args: { _imei: string; _tenant_id: string }
         Returns: {
+          branch_id: string
           branch_name: string
           created_at: string
           export_date: string
@@ -4303,12 +4304,15 @@ export type Database = {
           product_name: string
           sale_price: number
           sku: string
+          staff_name: string
+          staff_user_id: string
           warranty: string
         }[]
       }
       lookup_warranty_by_phone: {
         Args: { _phone: string; _tenant_id: string }
         Returns: {
+          branch_id: string
           branch_name: string
           created_at: string
           export_date: string
@@ -4317,6 +4321,8 @@ export type Database = {
           product_name: string
           sale_price: number
           sku: string
+          staff_name: string
+          staff_user_id: string
           warranty: string
         }[]
       }

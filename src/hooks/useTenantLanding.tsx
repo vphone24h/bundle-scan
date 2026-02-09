@@ -48,6 +48,9 @@ export interface WarrantyResult {
   branch_name: string | null;
   export_date: string;
   customer_phone: string | null;
+  staff_user_id: string | null;
+  staff_name: string | null;
+  branch_id: string | null;
 }
 
 export interface CustomerPointsPublic {
@@ -211,7 +214,10 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
           created_at: item.created_at,
           branch_name: item.branch_name || null,
           export_date: item.export_date || item.created_at,
-          customer_phone: null, // Không trả về SĐT để bảo mật
+          customer_phone: null,
+          staff_user_id: item.staff_user_id || null,
+          staff_name: item.staff_name || null,
+          branch_id: item.branch_id || null,
         }));
       } else {
         // Sử dụng RPC function bảo mật để tra cứu theo IMEI
@@ -233,7 +239,10 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
           created_at: item.created_at,
           branch_name: item.branch_name || null,
           export_date: item.export_date || item.created_at,
-          customer_phone: null, // Không trả về SĐT để bảo mật
+          customer_phone: null,
+          staff_user_id: item.staff_user_id || null,
+          staff_name: item.staff_name || null,
+          branch_id: item.branch_id || null,
         }));
       }
     },
