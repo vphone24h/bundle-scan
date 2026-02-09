@@ -2860,6 +2860,7 @@ export type Database = {
           redeem_points: number
           redeem_value: number
           require_full_payment: boolean
+          review_reward_points: number
           spend_amount: number
           tenant_id: string | null
           updated_at: string
@@ -2878,6 +2879,7 @@ export type Database = {
           redeem_points?: number
           redeem_value?: number
           require_full_payment?: boolean
+          review_reward_points?: number
           spend_amount?: number
           tenant_id?: string | null
           updated_at?: string
@@ -2896,6 +2898,7 @@ export type Database = {
           redeem_points?: number
           redeem_value?: number
           require_full_payment?: boolean
+          review_reward_points?: number
           spend_amount?: number
           tenant_id?: string | null
           updated_at?: string
@@ -4226,6 +4229,13 @@ export type Database = {
       }
     }
     Functions: {
+      add_review_reward_points: {
+        Args: { _customer_id: string; _review_id: string; _tenant_id: string }
+        Returns: {
+          new_balance: number
+          points_added: number
+        }[]
+      }
       belongs_to_tenant: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
@@ -4282,12 +4292,15 @@ export type Database = {
         Args: { _phone: string; _tenant_id: string }
         Returns: {
           current_points: number
+          customer_id: string
+          customer_name: string
           is_points_enabled: boolean
           max_redemption_amount: number
           max_redemption_enabled: boolean
           membership_tier: string
           point_value: number
           redeem_points: number
+          review_reward_points: number
           total_points_earned: number
           total_points_used: number
         }[]
@@ -4298,6 +4311,8 @@ export type Database = {
           branch_id: string
           branch_name: string
           created_at: string
+          customer_id: string
+          customer_name: string
           export_date: string
           id: string
           imei: string
@@ -4315,6 +4330,8 @@ export type Database = {
           branch_id: string
           branch_name: string
           created_at: string
+          customer_id: string
+          customer_name: string
           export_date: string
           id: string
           imei: string

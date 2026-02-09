@@ -55,6 +55,7 @@ const settingsSchema = z.object({
   points_expire: z.boolean(),
   points_expire_days: z.string().optional(),
   require_full_payment: z.boolean(),
+  review_reward_points: z.string().optional(),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
@@ -88,6 +89,7 @@ export function PointSettingsDialog({ open, onOpenChange }: PointSettingsDialogP
       points_expire: false,
       points_expire_days: '365',
       require_full_payment: true,
+      review_reward_points: '0',
     },
   });
 
@@ -106,6 +108,7 @@ export function PointSettingsDialog({ open, onOpenChange }: PointSettingsDialogP
         points_expire: settings.points_expire,
         points_expire_days: String(settings.points_expire_days || 365),
         require_full_payment: settings.require_full_payment,
+        review_reward_points: String((settings as any).review_reward_points || 0),
       });
     }
   }, [settings, form]);
@@ -138,7 +141,8 @@ export function PointSettingsDialog({ open, onOpenChange }: PointSettingsDialogP
         points_expire: data.points_expire,
         points_expire_days: data.points_expire ? parseInt(data.points_expire_days || '365') : null,
         require_full_payment: data.require_full_payment,
-      });
+        review_reward_points: parseInt(data.review_reward_points || '0'),
+      } as any);
       toast.success('Cập nhật cài đặt thành công');
     } catch (error: any) {
       toast.error(error.message || 'Có lỗi xảy ra');
@@ -392,6 +396,24 @@ export function PointSettingsDialog({ open, onOpenChange }: PointSettingsDialogP
                           </FormItem>
                         )}
                       />
+                      {/* Review Reward Points */}
+                      <div className="border rounded-lg p-4 space-y-3">
+                        <FormField
+                          control={form.control}
+                          name="review_reward_points"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Thưởng điểm khi đánh giá nhân viên</FormLabel>
+                              <FormDescription>
+                                Số điểm khách hàng nhận được khi gửi đánh giá nhân viên trên Landing Page. Đặt 0 để tắt.
+                              </FormDescription>
+                              <FormControl>
+                                <Input type="number" min="0" {...field} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
 
                       <FormField
                         control={form.control}
