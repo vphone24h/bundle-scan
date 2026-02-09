@@ -4313,6 +4313,7 @@ export type Database = {
           created_at: string
           customer_id: string
           customer_name: string
+          customer_phone: string
           export_date: string
           id: string
           imei: string
@@ -4332,6 +4333,7 @@ export type Database = {
           created_at: string
           customer_id: string
           customer_name: string
+          customer_phone: string
           export_date: string
           id: string
           imei: string

@@ -164,10 +164,15 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   
   // Check if search is phone number for customer points lookup
   const isPhoneSearch = /^0\d{9,10}$/.test(submittedValue.replace(/\s/g, ''));
-  const { data: customerPoints } = useCustomerPointsPublic(isPhoneSearch ? submittedValue : '', tenantId);
   
   // Get customer info from warranty results (first result)
   const firstResult = warrantyResults?.[0];
+  const customerPhoneFromResult = firstResult?.customer_phone || '';
+  
+  // Use phone from search or from warranty result to look up points
+  const phoneForPoints = isPhoneSearch ? submittedValue : customerPhoneFromResult;
+  const { data: customerPoints } = useCustomerPointsPublic(phoneForPoints, tenantId);
+  
   const customerName = firstResult?.customer_name || customerPoints?.customer_name || '';
   const customerId = firstResult?.customer_id || customerPoints?.customer_id || null;
   const reviewRewardPoints = customerPoints?.review_reward_points || 0;
@@ -579,7 +584,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                                 exportReceiptItemId={item.id}
                                 primaryColor={primaryColor}
                                 defaultCustomerName={item.customer_name || customerName}
-                                defaultCustomerPhone={isPhoneSearch ? submittedValue : ''}
+                                defaultCustomerPhone={isPhoneSearch ? submittedValue : (item.customer_phone || '')}
                                 customerId={item.customer_id || customerId}
                                 reviewRewardPoints={reviewRewardPoints}
                                 onPointsAwarded={handlePointsAwarded}
@@ -589,8 +594,8 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                         );
                       })}
                       
-                      {/* Customer Points Display - Only show for phone search */}
-                      {isPhoneSearch && customerPoints && customerPoints.is_points_enabled && customerPoints.current_points > 0 && (
+                      {/* Customer Points Display - Show when points data available */}
+                      {customerPoints && customerPoints.is_points_enabled && customerPoints.current_points > 0 && (
                         <div className="border rounded-xl p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 space-y-3">
                           <div className="flex items-center gap-2">
                             <div className="p-2 rounded-full bg-amber-100">
