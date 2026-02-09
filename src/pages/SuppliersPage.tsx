@@ -20,6 +20,13 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -29,6 +36,7 @@ import { Plus, MoreHorizontal, Pencil, Trash2, Phone, MapPin, Loader2, Eye, Buil
 import { toast } from '@/hooks/use-toast';
 import { SupplierDetailDialog } from '@/components/suppliers/SupplierDetailDialog';
 import { SupplierMergeDialog } from '@/components/suppliers/SupplierMergeDialog';
+import { SupplierStats } from '@/components/suppliers/SupplierStats';
 import { SupplierFilters, SortMode } from '@/components/suppliers/SupplierFilters';
 import { formatCurrency } from '@/lib/mockData';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -50,6 +58,7 @@ export default function SuppliersPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [branchId, setBranchId] = useState('');
+  const [formBranchId, setFormBranchId] = useState('');
 
   const { data: permissions } = usePermissions();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
@@ -60,6 +69,7 @@ export default function SuppliersPage() {
       setBranchId(permissions.branchId);
     }
   }, [isSuperAdmin, permissions?.branchId]);
+
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -100,7 +110,6 @@ export default function SuppliersPage() {
 
   // Filter by branch first, then search + sort
   const filteredSuppliers = useMemo(() => {
-    // Non-super-admins: filter by their branch. Super admin: filter by selected branch or show all.
     let suppliers = allSuppliers || [];
     if (!isSuperAdmin && permissions?.branchId) {
       suppliers = suppliers.filter(s => s.branch_id === permissions.branchId);
@@ -114,14 +123,13 @@ export default function SuppliersPage() {
         s.phone?.includes(searchTerm)
     );
 
-    // When sorting by stats, only show suppliers that have stats (i.e. have import receipts)
     if (sortMode !== 'name' && supplierStats) {
       result.sort((a, b) => {
         const statsA = statsMap.get(a.id);
         const statsB = statsMap.get(b.id);
         const valA = getSortValue(statsA, sortMode);
         const valB = getSortValue(statsB, sortMode);
-        return valB - valA; // descending
+        return valB - valA;
       });
     }
 
@@ -131,9 +139,16 @@ export default function SuppliersPage() {
   // Pagination
   const pagination = usePagination(filteredSuppliers, { storageKey: 'suppliers' });
 
+  // Find default branch for form
+  const defaultBranch = useMemo(() => {
+    return branches?.find(b => b.is_default) || branches?.[0];
+  }, [branches]);
+
   const handleAdd = () => {
     setEditSupplier(null);
     setForm({ name: '', phone: '', address: '', note: '' });
+    // Super admin: default to default branch; branch admin: locked to their branch
+    setFormBranchId(isSuperAdmin ? (defaultBranch?.id || '') : (permissions?.branchId || ''));
     setDialogOpen(true);
   };
 
@@ -145,6 +160,7 @@ export default function SuppliersPage() {
       address: supplier.address || '',
       note: supplier.note || '',
     });
+    setFormBranchId(supplier.branch_id || '');
     setDialogOpen(true);
   };
 
@@ -164,7 +180,6 @@ export default function SuppliersPage() {
 
     try {
       if (editSupplier) {
-        // Never update branch_id
         await updateSupplier.mutateAsync({
           id: editSupplier.id,
           name: form.name.trim(),
@@ -174,14 +189,12 @@ export default function SuppliersPage() {
         });
         toast({ title: 'Đã cập nhật nhà cung cấp' });
       } else {
-        // Auto-assign branch_id based on user's branch
-        const assignedBranchId = permissions?.branchId || null;
         await createSupplier.mutateAsync({
           name: form.name.trim(),
           phone: form.phone.trim() || null,
           address: form.address.trim() || null,
           note: form.note.trim() || null,
-          branch_id: assignedBranchId,
+          branch_id: formBranchId || null,
         });
         toast({ title: 'Đã thêm nhà cung cấp mới' });
       }
@@ -226,6 +239,12 @@ export default function SuppliersPage() {
       />
 
       <div className="p-6 lg:p-8 space-y-4">
+        {/* Stats Dashboard */}
+        <SupplierStats
+          suppliers={filteredSuppliers}
+          supplierStats={supplierStats}
+        />
+
         {/* Filters */}
         <SupplierFilters
           searchTerm={searchTerm}
@@ -394,6 +413,38 @@ export default function SuppliersPage() {
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 placeholder="VD: 0901234567"
               />
+            </div>
+
+            {/* Branch selector - Super Admin can choose, Branch Admin locked */}
+            <div className="form-field">
+              <Label>Chi nhánh</Label>
+              {editSupplier ? (
+                // When editing: show branch as read-only
+                <Input
+                  value={formBranchId ? (branchNameMap.get(formBranchId) || 'Không rõ') : 'Chưa gán'}
+                  disabled
+                  className="bg-muted"
+                />
+              ) : isSuperAdmin ? (
+                <Select value={formBranchId} onValueChange={setFormBranchId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn chi nhánh" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches?.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value={formBranchId ? (branchNameMap.get(formBranchId) || '') : ''}
+                  disabled
+                  className="bg-muted"
+                />
+              )}
             </div>
 
             <div className="form-field">
