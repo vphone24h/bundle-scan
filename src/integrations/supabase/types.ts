@@ -4284,6 +4284,10 @@ export type Database = {
           warranty: string
         }[]
       }
+      merge_suppliers: {
+        Args: { _duplicate_ids: string[]; _primary_id: string }
+        Returns: undefined
+      }
       resolve_tenant_by_domain: { Args: { _domain: string }; Returns: string }
       update_overdue_care_schedules: { Args: never; Returns: undefined }
       user_belongs_to_tenant: { Args: { _tenant_id: string }; Returns: boolean }
