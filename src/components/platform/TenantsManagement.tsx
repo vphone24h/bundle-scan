@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   useAllTenants, 
@@ -20,7 +21,8 @@ import {
   Building2,
   Loader2,
   FileText,
-  Package
+  Package,
+  Mail
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -44,6 +46,7 @@ import { vi } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { TenantProductsDialog } from './TenantProductsDialog';
+import { BulkEmailDialog } from './BulkEmailDialog';
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   trial: { label: 'Dùng thử', variant: 'secondary' },
@@ -64,6 +67,8 @@ export function TenantsManagement() {
   const [days, setDays] = useState('30');
   const [togglingEinvoice, setTogglingEinvoice] = useState<string | null>(null);
   const [showProductsDialog, setShowProductsDialog] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkEmail, setShowBulkEmail] = useState(false);
 
   const filteredTenants = tenants?.filter(t => 
     t.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -142,8 +147,8 @@ export function TenantsManagement() {
 
   return (
     <div className="space-y-4">
-      {/* Search */}
-      <div className="flex items-center gap-4">
+      {/* Search & Bulk Actions */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -153,6 +158,25 @@ export function TenantsManagement() {
             className="pl-10"
           />
         </div>
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{selectedIds.size} đã chọn</Badge>
+            <Button
+              size="sm"
+              onClick={() => setShowBulkEmail(true)}
+            >
+              <Mail className="h-4 w-4 mr-1.5" />
+              Gửi email
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              Bỏ chọn
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Desktop Table */}
@@ -161,6 +185,18 @@ export function TenantsManagement() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[40px]" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={filteredTenants && filteredTenants.length > 0 && filteredTenants.every(t => selectedIds.has(t.id))}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedIds(new Set(filteredTenants?.map(t => t.id) || []));
+                      } else {
+                        setSelectedIds(new Set());
+                      }
+                    }}
+                  />
+                </TableHead>
                 <TableHead>Doanh nghiệp</TableHead>
                 <TableHead>Store ID</TableHead>
                 <TableHead>Email</TableHead>
@@ -186,7 +222,18 @@ export function TenantsManagement() {
                       setSelectedTenant(tenant);
                       setShowProductsDialog(true);
                     }}
-                  >
+                    >
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.has(tenant.id)}
+                        onCheckedChange={(checked) => {
+                          const next = new Set(selectedIds);
+                          if (checked) next.add(tenant.id);
+                          else next.delete(tenant.id);
+                          setSelectedIds(next);
+                        }}
+                      />
+                    </TableCell>
                     <TableCell>
                       <p className="font-medium">{tenant.name}</p>
                     </TableCell>
@@ -277,6 +324,19 @@ export function TenantsManagement() {
 
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
+        <div className="flex items-center gap-2 px-1">
+          <Checkbox
+            checked={filteredTenants && filteredTenants.length > 0 && filteredTenants.every(t => selectedIds.has(t.id))}
+            onCheckedChange={(checked) => {
+              if (checked) {
+                setSelectedIds(new Set(filteredTenants?.map(t => t.id) || []));
+              } else {
+                setSelectedIds(new Set());
+              }
+            }}
+          />
+          <span className="text-sm text-muted-foreground">Chọn tất cả</span>
+        </div>
         {filteredTenants?.map((tenant) => {
           const remaining = calculateRemainingDays(tenant);
           const status = statusConfig[tenant.status];
@@ -293,6 +353,17 @@ export function TenantsManagement() {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.has(tenant.id)}
+                        onCheckedChange={(checked) => {
+                          const next = new Set(selectedIds);
+                          if (checked) next.add(tenant.id);
+                          else next.delete(tenant.id);
+                          setSelectedIds(next);
+                        }}
+                      />
+                    </div>
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                       <Building2 className="h-5 w-5 text-primary" />
                     </div>
@@ -451,6 +522,17 @@ export function TenantsManagement() {
         onOpenChange={setShowProductsDialog}
         tenantId={selectedTenant?.id || null}
         tenantName={selectedTenant?.name || ''}
+      />
+
+      {/* Bulk Email Dialog */}
+      <BulkEmailDialog
+        open={showBulkEmail}
+        onOpenChange={setShowBulkEmail}
+        tenants={
+          tenants
+            ?.filter(t => selectedIds.has(t.id))
+            .map(t => ({ name: t.name, email: t.email || '' })) || []
+        }
       />
     </div>
   );
