@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { usePublicLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo } from '@/hooks/useTenantLanding';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -154,6 +155,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   
   const { data: landingData, isLoading } = usePublicLandingSettings(storeId);
   
+  const queryClient = useQueryClient();
   const [searchValue, setSearchValue] = useState('');
   const [submittedValue, setSubmittedValue] = useState('');
   
@@ -164,6 +166,17 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const isPhoneSearch = /^0\d{9,10}$/.test(submittedValue.replace(/\s/g, ''));
   const { data: customerPoints } = useCustomerPointsPublic(isPhoneSearch ? submittedValue : '', tenantId);
   
+  // Get customer info from warranty results (first result)
+  const firstResult = warrantyResults?.[0];
+  const customerName = firstResult?.customer_name || customerPoints?.customer_name || '';
+  const customerId = firstResult?.customer_id || customerPoints?.customer_id || null;
+  const reviewRewardPoints = customerPoints?.review_reward_points || 0;
+
+  // Callback when points are awarded after review
+  const handlePointsAwarded = useCallback((pointsAdded: number, newBalance: number) => {
+    // Invalidate customer points query to refresh the display
+    queryClient.invalidateQueries({ queryKey: ['customer-points-public'] });
+  }, [queryClient]);
   const settings = landingData?.settings;
   const tenant = landingData?.tenant;
 
@@ -565,6 +578,11 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                                 branchId={item.branch_id}
                                 exportReceiptItemId={item.id}
                                 primaryColor={primaryColor}
+                                defaultCustomerName={item.customer_name || customerName}
+                                defaultCustomerPhone={isPhoneSearch ? submittedValue : ''}
+                                customerId={item.customer_id || customerId}
+                                reviewRewardPoints={reviewRewardPoints}
+                                onPointsAwarded={handlePointsAwarded}
                               />
                             )}
                           </div>

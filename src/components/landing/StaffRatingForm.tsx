@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Star, Send, Loader2, CheckCircle, User } from 'lucide-react';
+import { Star, Send, Loader2, CheckCircle, User, Gift, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { formatNumber } from '@/lib/formatNumber';
 
 const SUGGESTION_TAGS = [
   'Nhiệt tình',
@@ -24,6 +25,11 @@ interface StaffRatingFormProps {
   branchId: string | null;
   exportReceiptItemId: string;
   primaryColor: string;
+  defaultCustomerName?: string;
+  defaultCustomerPhone?: string;
+  customerId?: string | null;
+  reviewRewardPoints?: number;
+  onPointsAwarded?: (pointsAdded: number, newBalance: number) => void;
 }
 
 export function StaffRatingForm({
@@ -33,20 +39,36 @@ export function StaffRatingForm({
   branchId,
   exportReceiptItemId,
   primaryColor,
+  defaultCustomerName = '',
+  defaultCustomerPhone = '',
+  customerId,
+  reviewRewardPoints = 0,
+  onPointsAwarded,
 }: StaffRatingFormProps) {
   const [rating, setRating] = useState(0);
   const [hoveredStar, setHoveredStar] = useState(0);
   const [content, setContent] = useState('');
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerName, setCustomerName] = useState(defaultCustomerName);
+  const [customerPhone, setCustomerPhone] = useState(defaultCustomerPhone);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [pointsEarned, setPointsEarned] = useState(0);
+  const [showThankYou, setShowThankYou] = useState(false);
 
   const toggleTag = (tag: string) => {
     setSelectedTags(prev =>
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
     );
+    // Auto-fill tag into content
+    setContent(prev => {
+      const currentTags = prev.split('. ').filter(Boolean);
+      if (currentTags.includes(tag)) {
+        return currentTags.filter(t => t !== tag).join('. ');
+      } else {
+        return [...currentTags, tag].join('. ');
+      }
+    });
   };
 
   const handleSubmit = async () => {
@@ -57,13 +79,7 @@ export function StaffRatingForm({
 
     setIsSubmitting(true);
     try {
-      // Combine tags + custom content
-      const fullContent = [
-        ...selectedTags,
-        content.trim(),
-      ].filter(Boolean).join('. ');
-
-      const { error } = await supabase
+      const { data: reviewData, error } = await (supabase
         .from('staff_reviews' as any)
         .insert({
           tenant_id: tenantId,
@@ -72,14 +88,37 @@ export function StaffRatingForm({
           customer_name: customerName.trim() || null,
           customer_phone: customerPhone.trim() || null,
           rating,
-          content: fullContent || null,
+          content: content.trim() || null,
           export_receipt_item_id: exportReceiptItemId,
-        });
+        })
+        .select('id')
+        .single() as any);
 
       if (error) throw error;
 
+      // Award points if configured and customer exists
+      let awarded = 0;
+      if (customerId && reviewRewardPoints > 0 && reviewData?.id) {
+        try {
+          const { data: pointsResult } = await supabase
+            .rpc('add_review_reward_points', {
+              _customer_id: customerId,
+              _tenant_id: tenantId,
+              _review_id: reviewData.id,
+            });
+
+          if (pointsResult && pointsResult.length > 0 && pointsResult[0].points_added > 0) {
+            awarded = pointsResult[0].points_added;
+            setPointsEarned(awarded);
+            onPointsAwarded?.(pointsResult[0].points_added, pointsResult[0].new_balance);
+          }
+        } catch (pointsErr) {
+          console.error('Award points error:', pointsErr);
+        }
+      }
+
       setIsSubmitted(true);
-      toast.success('Cảm ơn bạn đã đánh giá!');
+      setShowThankYou(true);
     } catch (err) {
       console.error('Submit review error:', err);
       toast.error('Không thể gửi đánh giá. Vui lòng thử lại.');
@@ -88,22 +127,63 @@ export function StaffRatingForm({
     }
   };
 
-  if (isSubmitted) {
+  // Thank you screen with points
+  if (isSubmitted && showThankYou) {
     return (
-      <div className="mt-3 p-4 rounded-xl bg-green-50 border border-green-200 text-center space-y-2">
-        <CheckCircle className="h-8 w-8 text-green-500 mx-auto" />
-        <p className="text-sm font-medium text-green-800">
+      <div className="mt-3 p-5 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 text-center space-y-3">
+        <CheckCircle className="h-10 w-10 text-green-500 mx-auto" />
+        <p className="text-sm font-semibold text-green-800">
           Cảm ơn bạn đã đánh giá nhân viên {staffName}!
         </p>
         <div className="flex justify-center gap-0.5">
           {[1, 2, 3, 4, 5].map(i => (
             <Star
               key={i}
-              className="h-4 w-4"
+              className="h-5 w-5"
               fill={i <= rating ? '#f59e0b' : 'none'}
               stroke={i <= rating ? '#f59e0b' : '#d1d5db'}
             />
           ))}
+        </div>
+
+        {pointsEarned > 0 && (
+          <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-amber-100 border border-amber-200">
+            <Gift className="h-5 w-5 text-amber-600" />
+            <p className="text-sm font-medium text-amber-800">
+              Bạn nhận được <span className="text-lg font-bold text-amber-600">{formatNumber(pointsEarned)}</span> điểm tích lũy
+            </p>
+          </div>
+        )}
+
+        <Button
+          variant="outline"
+          className="mt-2"
+          onClick={() => setShowThankYou(false)}
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Xong
+        </Button>
+      </div>
+    );
+  }
+
+  // After "Done" pressed - compact submitted state
+  if (isSubmitted && !showThankYou) {
+    return (
+      <div className="mt-3 p-3 rounded-xl bg-green-50 border border-green-200 text-center space-y-1">
+        <div className="flex items-center justify-center gap-2">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <span className="text-xs font-medium text-green-800">Đã đánh giá {staffName}</span>
+          <div className="flex gap-0.5">
+            {[1, 2, 3, 4, 5].map(i => (
+              <Star
+                key={i}
+                className="h-3 w-3"
+                fill={i <= rating ? '#f59e0b' : 'none'}
+                stroke={i <= rating ? '#f59e0b' : '#d1d5db'}
+              />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -157,7 +237,7 @@ export function StaffRatingForm({
 
       {/* Suggestion Tags */}
       <div className="space-y-1">
-        <p className="text-xs text-muted-foreground">Gợi ý:</p>
+        <p className="text-xs text-muted-foreground">Gợi ý (nhấn để điền vào nội dung):</p>
         <div className="flex flex-wrap gap-1.5">
           {SUGGESTION_TAGS.map(tag => (
             <Badge
@@ -182,7 +262,7 @@ export function StaffRatingForm({
         className="text-sm bg-white"
       />
 
-      {/* Customer info */}
+      {/* Customer info - auto filled */}
       <div className="grid grid-cols-2 gap-2">
         <Input
           placeholder="Tên của bạn"
@@ -198,6 +278,16 @@ export function StaffRatingForm({
           inputMode="tel"
         />
       </div>
+
+      {/* Points reward note */}
+      {reviewRewardPoints > 0 && (
+        <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+          <Gift className="h-4 w-4 text-amber-500 flex-shrink-0" />
+          <p className="text-xs text-amber-700">
+            Gửi đánh giá để nhận <span className="font-bold">{formatNumber(reviewRewardPoints)} điểm</span> tích lũy
+          </p>
+        </div>
+      )}
 
       {/* Submit */}
       <Button

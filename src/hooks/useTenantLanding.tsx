@@ -51,6 +51,8 @@ export interface WarrantyResult {
   staff_user_id: string | null;
   staff_name: string | null;
   branch_id: string | null;
+  customer_name: string | null;
+  customer_id: string | null;
 }
 
 export interface CustomerPointsPublic {
@@ -63,6 +65,9 @@ export interface CustomerPointsPublic {
   is_points_enabled: boolean;
   max_redemption_enabled: boolean;
   max_redemption_amount: number;
+  review_reward_points: number;
+  customer_name: string | null;
+  customer_id: string | null;
 }
 
 // Hook để lấy landing settings của tenant hiện tại (cho admin)
@@ -218,6 +223,8 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
           staff_user_id: item.staff_user_id || null,
           staff_name: item.staff_name || null,
           branch_id: item.branch_id || null,
+          customer_name: item.customer_name || null,
+          customer_id: item.customer_id || null,
         }));
       } else {
         // Sử dụng RPC function bảo mật để tra cứu theo IMEI
@@ -243,6 +250,8 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
           staff_user_id: item.staff_user_id || null,
           staff_name: item.staff_name || null,
           branch_id: item.branch_id || null,
+          customer_name: item.customer_name || null,
+          customer_id: item.customer_id || null,
         }));
       }
     },
