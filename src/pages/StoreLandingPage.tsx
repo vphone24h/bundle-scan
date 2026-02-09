@@ -24,11 +24,13 @@ import {
   Users,
   ExternalLink,
   Star,
-  Gift
+  Gift,
+  User
 } from 'lucide-react';
 import { format, addMonths, isAfter, differenceInDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
+import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 
 /**
  * Hook để set dynamic PWA manifest cho landing page của từng cửa hàng
@@ -553,6 +555,18 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                                 </div>
                               )}
                             </div>
+
+                            {/* Staff info + Rating */}
+                            {item.staff_name && item.staff_user_id && tenantId && (
+                              <StaffRatingForm
+                                staffName={item.staff_name}
+                                staffUserId={item.staff_user_id}
+                                tenantId={tenantId}
+                                branchId={item.branch_id}
+                                exportReceiptItemId={item.id}
+                                primaryColor={primaryColor}
+                              />
+                            )}
                           </div>
                         );
                       })}
