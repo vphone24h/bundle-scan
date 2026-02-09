@@ -623,7 +623,8 @@ export default function ImportNewPage() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Mã viết tắt của tên sản phẩm, để dễ nhớ và tìm kiếm
+                    Mã viết tắt của tên sản phẩm, để dễ nhớ và tìm kiếm.
+                    <br />Bạn copy tên sản phẩm xuống luôn cũng được (bấm nút <strong>A→</strong>)
                   </p>
                 </div>
 
