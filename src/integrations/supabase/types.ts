@@ -1796,6 +1796,42 @@ export type Database = {
           },
         ]
       }
+      email_history: {
+        Row: {
+          created_at: string
+          fail_count: number
+          html_content: string | null
+          id: string
+          recipients: Json
+          sent_by: string | null
+          subject: string
+          success_count: number
+          total_recipients: number
+        }
+        Insert: {
+          created_at?: string
+          fail_count?: number
+          html_content?: string | null
+          id?: string
+          recipients?: Json
+          sent_by?: string | null
+          subject: string
+          success_count?: number
+          total_recipients?: number
+        }
+        Update: {
+          created_at?: string
+          fail_count?: number
+          html_content?: string | null
+          id?: string
+          recipients?: Json
+          sent_by?: string | null
+          subject?: string
+          success_count?: number
+          total_recipients?: number
+        }
+        Relationships: []
+      }
       email_queue: {
         Row: {
           body_html: string
