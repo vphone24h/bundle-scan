@@ -25,12 +25,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Pencil, Trash2, Phone, MapPin, Loader2, Eye, Building2 } from 'lucide-react';
+import { Plus, MoreHorizontal, Pencil, Trash2, Phone, MapPin, Loader2, Eye, Building2, Merge } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { SupplierDetailDialog } from '@/components/suppliers/SupplierDetailDialog';
+import { SupplierMergeDialog } from '@/components/suppliers/SupplierMergeDialog';
 import { SupplierFilters, SortMode } from '@/components/suppliers/SupplierFilters';
 import { formatCurrency } from '@/lib/mockData';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useDuplicateSuppliers } from '@/hooks/useSupplierMerge';
 
 export default function SuppliersPage() {
   const { data: allSuppliers, isLoading } = useSuppliers();
@@ -42,6 +44,7 @@ export default function SuppliersPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editSupplier, setEditSupplier] = useState<Supplier | null>(null);
   const [detailSupplier, setDetailSupplier] = useState<Supplier | null>(null);
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortMode, setSortMode] = useState<SortMode>('name');
   const [startDate, setStartDate] = useState('');
@@ -63,6 +66,9 @@ export default function SuppliersPage() {
     address: '',
     note: '',
   });
+
+  // Detect duplicate suppliers
+  const duplicateGroups = useDuplicateSuppliers(allSuppliers);
 
   // Fetch stats for sorting
   const { data: supplierStats } = useSupplierStats({
@@ -201,10 +207,21 @@ export default function SuppliersPage() {
         title="Quản lý nhà cung cấp"
         description="Thông tin nhà cung cấp và đối tác"
         actions={
-          <Button onClick={handleAdd}>
-            <Plus className="mr-2 h-4 w-4" />
-            Thêm nhà cung cấp
-          </Button>
+          <div className="flex items-center gap-2">
+            {duplicateGroups.length > 0 && (
+              <Button variant="outline" onClick={() => setMergeDialogOpen(true)} className="gap-1.5">
+                <Merge className="h-4 w-4" />
+                <span className="hidden sm:inline">Gộp trùng</span>
+                <Badge variant="destructive" className="ml-1 text-[10px] h-5 px-1.5">
+                  {duplicateGroups.length}
+                </Badge>
+              </Button>
+            )}
+            <Button onClick={handleAdd}>
+              <Plus className="mr-2 h-4 w-4" />
+              Thêm nhà cung cấp
+            </Button>
+          </div>
         }
       />
 
@@ -423,6 +440,14 @@ export default function SuppliersPage() {
         supplier={detailSupplier}
         open={!!detailSupplier}
         onOpenChange={(open) => !open && setDetailSupplier(null)}
+      />
+
+      {/* Supplier Merge Dialog */}
+      <SupplierMergeDialog
+        open={mergeDialogOpen}
+        onOpenChange={setMergeDialogOpen}
+        duplicateGroups={duplicateGroups}
+        branchNameMap={branchNameMap}
       />
     </MainLayout>
   );
