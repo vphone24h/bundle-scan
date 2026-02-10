@@ -85,9 +85,9 @@ const allNavItems: NavItem[] = [
     icon: FileDown,
     permission: 'canImportProducts',
     children: [
-      { title: 'Tạo phiếu nhập', href: '/import/new' },
+      { title: 'Tạo phiếu nhập', href: '/import/new', permission: 'canCreateImportReceipt' },
       { title: 'Lịch sử nhập', href: '/import/history' },
-      { title: 'Chuyển hàng', href: '/import/transfer', badgeKey: 'pendingTransfer' },
+      { title: 'Chuyển hàng', href: '/import/transfer', badgeKey: 'pendingTransfer', permission: 'canCreateImportReceipt' },
     ],
   },
   {
@@ -96,7 +96,7 @@ const allNavItems: NavItem[] = [
     icon: FileUp,
     permission: 'canExportProducts',
     children: [
-      { title: 'Tạo phiếu xuất', href: '/export/new' },
+      { title: 'Tạo phiếu xuất', href: '/export/new', permission: 'canCreateExportReceipt' },
       { title: 'Lịch sử xuất', href: '/export/history' },
       { title: 'Mẫu in hóa đơn', href: '/export/template', permission: 'canManageInvoiceTemplates' },
       { title: 'Hoá đơn điện tử', href: '/einvoice', permission: 'canManageInvoiceTemplates' },

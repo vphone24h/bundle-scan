@@ -19,8 +19,10 @@ export interface UserPermissions {
   canManageUsers: boolean; // Super Admin: quản lý tất cả user
   canManageBranchStaff: boolean; // Branch Admin: quản lý nhân viên chi nhánh
   canManageBranches: boolean;
-  canImportProducts: boolean;
-  canExportProducts: boolean;
+  canImportProducts: boolean;   // Xem menu nhập hàng
+  canExportProducts: boolean;   // Xem menu xuất hàng
+  canCreateImportReceipt: boolean; // Tạo phiếu nhập mới
+  canCreateExportReceipt: boolean; // Tạo phiếu xuất mới
   canManageProducts: boolean;
   canManageCategories: boolean;
   canManageSuppliers: boolean;
@@ -40,13 +42,15 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
   canViewCashBook: false,
   canViewImportPrice: false,
   canViewAuditLogs: false,
-  canViewProducts: true, // Tất cả đều xem được sản phẩm
-  canViewInventory: true, // Tất cả đều xem được tồn kho
+  canViewProducts: true,
+  canViewInventory: true,
   canManageUsers: false,
   canManageBranchStaff: false,
   canManageBranches: false,
   canImportProducts: false,
   canExportProducts: false,
+  canCreateImportReceipt: false,
+  canCreateExportReceipt: false,
   canManageProducts: false,
   canManageCategories: false,
   canManageSuppliers: false,
@@ -65,76 +69,82 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
       // ✅ Quyền cao nhất – quản trị toàn hệ thống
       return {
         ...base,
-        canViewAllBranches: true,     // Xem tất cả chi nhánh
-        canViewReports: true,          // Xem báo cáo tổng hợp
-        canViewCashBook: true,         // Xem sổ quỹ
-        canViewImportPrice: true,      // Xem giá nhập
-        canViewAuditLogs: true,        // Lịch sử thao tác người dùng
-        canViewProducts: true,         // Xem sản phẩm
-        canViewInventory: true,        // Xem tồn kho
-        canManageUsers: true,          // Tạo/sửa/khóa tài khoản
-        canManageBranchStaff: true,    // Quản lý nhân viên
-        canManageBranches: true,       // Tạo/sửa/xóa chi nhánh
-        canImportProducts: true,       // Nhập hàng
-        canExportProducts: true,       // Xuất hàng
-        canManageProducts: true,       // Quản lý sản phẩm
-        canManageCategories: true,     // Quản lý danh mục
-        canManageSuppliers: true,      // Quản lý NCC
-        canManageCustomers: true,      // Quản lý khách hàng
-        canManageInvoiceTemplates: true, // Mẫu hóa đơn
-        canManageCashBook: true,       // Quản lý sổ quỹ
-        canAdjustProductQuantity: true, // ✅ Chỉ Super Admin được điều chỉnh số lượng
-        canDeleteIMEIProducts: true,    // ✅ Chỉ Super Admin được xóa sản phẩm IMEI
+        canViewAllBranches: true,
+        canViewReports: true,
+        canViewCashBook: true,
+        canViewImportPrice: true,
+        canViewAuditLogs: true,
+        canViewProducts: true,
+        canViewInventory: true,
+        canManageUsers: true,
+        canManageBranchStaff: true,
+        canManageBranches: true,
+        canImportProducts: true,
+        canExportProducts: true,
+        canCreateImportReceipt: true,
+        canCreateExportReceipt: true,
+        canManageProducts: true,
+        canManageCategories: true,
+        canManageSuppliers: true,
+        canManageCustomers: true,
+        canManageInvoiceTemplates: true,
+        canManageCashBook: true,
+        canAdjustProductQuantity: true,
+        canDeleteIMEIProducts: true,
       };
 
     case 'branch_admin':
       // ✅ Chỉ quản lý một chi nhánh được gán
       return {
         ...base,
-        canViewAllBranches: false,    // ❌ Không xem chi nhánh khác
-        canViewReports: true,          // Xem báo cáo chi nhánh
-        canViewCashBook: true,         // Xem sổ quỹ chi nhánh
-        canViewImportPrice: true,      // Xem giá nhập
-        canViewAuditLogs: true,        // ✅ Xem lịch sử thao tác chi nhánh
-        canViewProducts: true,         // Xem sản phẩm
-        canViewInventory: true,        // Xem tồn kho
-        canManageUsers: false,         // ❌ Không tạo tài khoản
-        canManageBranchStaff: true,    // ✅ Quản lý nhân viên trong chi nhánh
-        canManageBranches: false,      // ❌ Không tạo chi nhánh
-        canImportProducts: true,       // Nhập hàng
-        canExportProducts: true,       // Xuất hàng
-        canManageProducts: true,       // Quản lý sản phẩm chi nhánh
-        canManageCategories: true,     // Quản lý danh mục
-        canManageSuppliers: true,      // Quản lý NCC
-        canManageCustomers: true,      // Quản lý khách hàng
-        canManageInvoiceTemplates: true, // Mẫu hóa đơn
-        canManageCashBook: true,       // Quản lý sổ quỹ chi nhánh
-        canAdjustProductQuantity: false, // ❌ Branch Admin không được điều chỉnh số lượng
-        canDeleteIMEIProducts: false,    // ❌ Branch Admin không được xóa sản phẩm IMEI
+        canViewAllBranches: false,
+        canViewReports: true,
+        canViewCashBook: true,
+        canViewImportPrice: true,
+        canViewAuditLogs: true,
+        canViewProducts: true,
+        canViewInventory: true,
+        canManageUsers: false,
+        canManageBranchStaff: true,
+        canManageBranches: false,
+        canImportProducts: true,
+        canExportProducts: true,
+        canCreateImportReceipt: true,
+        canCreateExportReceipt: true,
+        canManageProducts: true,
+        canManageCategories: true,
+        canManageSuppliers: true,
+        canManageCustomers: true,
+        canManageInvoiceTemplates: true,
+        canManageCashBook: true,
+        canAdjustProductQuantity: false,
+        canDeleteIMEIProducts: false,
       };
 
     case 'cashier':
-      // ✅ Kế toán - phụ trách tiền & bán hàng tại quầy
+      // ✅ Kế toán - phụ trách sổ sách, báo cáo tài chính
       return {
         ...base,
-        canViewAllBranches: false,    // ❌ Chỉ chi nhánh được gán
-        canViewReports: true,          // ✅ Xem báo cáo bán hàng
-        canViewCashBook: true,         // ✅ Xem sổ quỹ (thu-chi-tồn quỹ)
-        canViewImportPrice: false,     // ❌ Không xem giá nhập
-        canViewAuditLogs: false,       // ❌ Không xem audit logs
-        canViewProducts: true,         // ✅ Xem sản phẩm
-        canViewInventory: true,        // ✅ Xem tồn kho
-        canManageUsers: false,         // ❌ Không quản lý tài khoản
-        canManageBranchStaff: false,   // ❌ Không quản lý nhân viên
-        canManageBranches: false,      // ❌ Không quản lý chi nhánh
-        canImportProducts: false,      // ❌ Không nhập hàng
-        canExportProducts: true,       // ✅ Xuất hàng
-        canManageProducts: false,      // ❌ Không quản lý sản phẩm
-        canManageCategories: false,    // ❌ Không quản lý danh mục
-        canManageSuppliers: false,     // ❌ Không quản lý NCC
-        canManageCustomers: true,      // ✅ Thêm khách khi bán
-        canManageInvoiceTemplates: false, // ❌ Không quản lý mẫu HĐ
-        canManageCashBook: true,       // ✅ Thu chi tại quầy
+        canViewAllBranches: false,     // ❌ Chỉ chi nhánh được gán
+        canViewReports: true,           // ✅ Xem tất cả báo cáo
+        canViewCashBook: true,          // ✅ Xem sổ quỹ
+        canViewImportPrice: true,       // ✅ Xem giá nhập, giá vốn
+        canViewAuditLogs: false,        // ❌ Không xem audit logs
+        canViewProducts: true,          // ✅ Xem sản phẩm
+        canViewInventory: true,         // ✅ Xem tồn kho
+        canManageUsers: false,          // ❌ Không quản lý tài khoản
+        canManageBranchStaff: false,    // ❌ Không quản lý nhân viên
+        canManageBranches: false,       // ❌ Không quản lý chi nhánh
+        canImportProducts: true,        // ✅ Xem lịch sử nhập hàng
+        canExportProducts: true,        // ✅ Xem lịch sử xuất hàng
+        canCreateImportReceipt: false,  // ❌ Không tạo phiếu nhập
+        canCreateExportReceipt: false,  // ❌ Không tạo phiếu xuất
+        canManageProducts: false,       // ❌ Không sửa/xóa sản phẩm
+        canManageCategories: false,     // ❌ Không quản lý danh mục
+        canManageSuppliers: true,       // ✅ Xem NCC, công nợ NCC
+        canManageCustomers: true,       // ✅ Xem khách hàng
+        canManageInvoiceTemplates: true, // ✅ Hoá đơn điện tử
+        canManageCashBook: true,        // ✅ Xem/tạo thu chi sổ quỹ
         canAdjustProductQuantity: false, // ❌
         canDeleteIMEIProducts: false,    // ❌
       };
@@ -144,26 +154,28 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
       // ✅ Nhân viên bán hàng/kỹ thuật
       return {
         ...base,
-        canViewAllBranches: false,    // ❌ Chỉ chi nhánh được gán
-        canViewReports: false,         // ❌ Không xem báo cáo
-        canViewCashBook: false,        // ❌ Không xem sổ quỹ
-        canViewImportPrice: false,     // ❌ Không xem giá nhập
-        canViewAuditLogs: false,       // ❌ Không xem audit logs
-        canViewProducts: true,         // ✅ Xem danh sách sản phẩm
-        canViewInventory: true,        // ✅ Xem tồn kho chi nhánh
-        canManageUsers: false,         // ❌ Không quản lý tài khoản
-        canManageBranchStaff: false,   // ❌ Không quản lý nhân viên
-        canManageBranches: false,      // ❌ Không quản lý chi nhánh
-        canImportProducts: false,      // ❌ Không nhập hàng
-        canExportProducts: true,       // ✅ Xuất hàng
-        canManageProducts: false,      // ❌ Không quản lý sản phẩm
-        canManageCategories: false,    // ❌ Không quản lý danh mục
-        canManageSuppliers: false,     // ❌ Không quản lý NCC
-        canManageCustomers: true,      // ✅ Thêm khách khi bán
-        canManageInvoiceTemplates: false, // ❌ Không quản lý mẫu HĐ
-        canManageCashBook: false,      // ❌ Không quản lý sổ quỹ
-        canAdjustProductQuantity: false, // ❌
-        canDeleteIMEIProducts: false,    // ❌
+        canViewAllBranches: false,
+        canViewReports: false,
+        canViewCashBook: false,
+        canViewImportPrice: false,
+        canViewAuditLogs: false,
+        canViewProducts: true,
+        canViewInventory: true,
+        canManageUsers: false,
+        canManageBranchStaff: false,
+        canManageBranches: false,
+        canImportProducts: false,
+        canExportProducts: true,
+        canCreateImportReceipt: false,
+        canCreateExportReceipt: true,
+        canManageProducts: false,
+        canManageCategories: false,
+        canManageSuppliers: false,
+        canManageCustomers: true,
+        canManageInvoiceTemplates: false,
+        canManageCashBook: false,
+        canAdjustProductQuantity: false,
+        canDeleteIMEIProducts: false,
       };
   }
 }
