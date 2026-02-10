@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -31,6 +32,7 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter }: Supp
   const { data: allDebts, isLoading } = useSupplierDebts(showSettled);
   const { data: tags } = useDebtTags();
   const { data: assignments } = useDebtTagAssignments('supplier');
+  const isMobile = useIsMobile();
   
   const debts = useMemo(() => {
     if (!allDebts) return [];
@@ -58,6 +60,36 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter }: Supp
     return tags.filter(t => tagIds.includes(t.id));
   };
 
+  const ActionMenu = ({ debt }: { debt: DebtSummary }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="bg-popover">
+        <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowDetail(true); }}>
+          <Eye className="mr-2 h-4 w-4" /> Xem chi tiết
+        </DropdownMenuItem>
+        {debt.remaining_amount > 0 && (
+          <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowPayment(true); }}>
+            <Wallet className="mr-2 h-4 w-4" /> Trả nợ
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowAddition(true); }}>
+          <Plus className="mr-2 h-4 w-4" /> Cộng thêm nợ
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowTagAssign(true); }}>
+          <Hash className="mr-2 h-4 w-4" /> Gắn hashtag
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowEditSupplier(true); }}>
+          <Pencil className="mr-2 h-4 w-4" /> Sửa NCC
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => console.log('Print', debt.entity_name)}>
+          <Printer className="mr-2 h-4 w-4" /> In công nợ
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -70,7 +102,7 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter }: Supp
     return (
       <div className="space-y-4">
         <div className="flex justify-end">
-          <Button onClick={() => setShowCreateDebt(true)}>
+          <Button size={isMobile ? 'sm' : 'default'} onClick={() => setShowCreateDebt(true)}>
             <UserPlus className="mr-2 h-4 w-4" /> Thêm công nợ
           </Button>
         </div>
@@ -84,110 +116,127 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter }: Supp
 
   return (
     <>
-      <div className="flex justify-end mb-4">
-        <Button onClick={() => setShowCreateDebt(true)}>
+      <div className="flex justify-end mb-3 sm:mb-4">
+        <Button size={isMobile ? 'sm' : 'default'} onClick={() => setShowCreateDebt(true)}>
           <UserPlus className="mr-2 h-4 w-4" /> Thêm công nợ
         </Button>
       </div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Tên / SĐT</TableHead>
-              <TableHead className="text-right">Tổng nhập</TableHead>
-              <TableHead className="text-right hidden sm:table-cell">Đã trả</TableHead>
-              <TableHead className="text-right">Còn nợ</TableHead>
-              <TableHead className="hidden lg:table-cell text-center">Số ngày</TableHead>
-              <TableHead className="hidden sm:table-cell">Trạng thái</TableHead>
-              <TableHead className="text-right">Thao tác</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pagination.paginatedData.map((debt) => {
-              const entityTags = getEntityTags(debt.entity_id);
-              return (
-                <TableRow key={debt.entity_id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{debt.entity_name}</p>
-                      {debt.entity_phone && (
-                        <p className="text-sm text-muted-foreground">{debt.entity_phone}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        {debt.branch_name || 'Chưa phân chi nhánh'}
-                      </p>
-                      {entityTags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {entityTags.map((tag) => (
-                            <Badge
-                              key={tag.id}
-                              variant="outline"
-                              className="text-[10px] px-1.5 py-0 h-4 text-white border-0"
-                              style={{ backgroundColor: tag.color }}
-                            >
-                              #{tag.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatNumber(debt.total_amount)}
-                  </TableCell>
-                  <TableCell className="text-right hidden sm:table-cell text-green-600">
-                    {formatNumber(debt.paid_amount)}
-                  </TableCell>
-                  <TableCell className="text-right font-semibold text-destructive">
-                    {formatNumber(debt.remaining_amount)}
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell text-center">
-                    <span className={debt.days_overdue > 30 ? 'text-destructive font-semibold' : ''}>
-                      {debt.days_overdue} ngày
-                    </span>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {debt.remaining_amount > 0 ? (
-                      <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Đang nợ</Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Đã tất toán</Badge>
+
+      {/* Mobile: Card layout */}
+      {isMobile ? (
+        <div className="space-y-2">
+          {pagination.paginatedData.map((debt) => {
+            const entityTags = getEntityTags(debt.entity_id);
+            return (
+              <div key={debt.entity_id} className="rounded-lg border bg-card p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm truncate">{debt.entity_name}</p>
+                    {debt.entity_phone && (
+                      <p className="text-xs text-muted-foreground">{debt.entity_phone}</p>
                     )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-popover">
-                        <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowDetail(true); }}>
-                          <Eye className="mr-2 h-4 w-4" /> Xem chi tiết
-                        </DropdownMenuItem>
-                        {debt.remaining_amount > 0 && (
-                          <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowPayment(true); }}>
-                            <Wallet className="mr-2 h-4 w-4" /> Trả nợ
-                          </DropdownMenuItem>
+                    <p className="text-[11px] text-muted-foreground">{debt.branch_name || 'Chưa phân CN'}</p>
+                  </div>
+                  <ActionMenu debt={debt} />
+                </div>
+                {entityTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {entityTags.map((tag) => (
+                      <Badge key={tag.id} variant="outline" className="text-[10px] px-1.5 py-0 h-4 text-white border-0" style={{ backgroundColor: tag.color }}>
+                        #{tag.name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-xs pt-1 border-t">
+                  <div>
+                    <span className="text-muted-foreground">Tổng nhập: </span>
+                    <span className="font-medium">{formatNumber(debt.total_amount)}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Còn nợ: </span>
+                    <span className="font-bold text-destructive">{formatNumber(debt.remaining_amount)}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Đã trả: </span>
+                    <span className="text-green-600">{formatNumber(debt.paid_amount)}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">{debt.days_overdue} ngày</span>
+                    {debt.remaining_amount > 0 ? (
+                      <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 h-4 bg-yellow-50 text-yellow-700 border-yellow-200">Đang nợ</Badge>
+                    ) : (
+                      <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 h-4 bg-green-50 text-green-700 border-green-200">Đã tất toán</Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* Desktop: Table layout */
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tên / SĐT</TableHead>
+                <TableHead className="text-right">Tổng nhập</TableHead>
+                <TableHead className="text-right hidden sm:table-cell">Đã trả</TableHead>
+                <TableHead className="text-right">Còn nợ</TableHead>
+                <TableHead className="hidden lg:table-cell text-center">Số ngày</TableHead>
+                <TableHead className="hidden sm:table-cell">Trạng thái</TableHead>
+                <TableHead className="text-right">Thao tác</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pagination.paginatedData.map((debt) => {
+                const entityTags = getEntityTags(debt.entity_id);
+                return (
+                  <TableRow key={debt.entity_id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{debt.entity_name}</p>
+                        {debt.entity_phone && (
+                          <p className="text-sm text-muted-foreground">{debt.entity_phone}</p>
                         )}
-                        <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowAddition(true); }}>
-                          <Plus className="mr-2 h-4 w-4" /> Cộng thêm nợ
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowTagAssign(true); }}>
-                          <Hash className="mr-2 h-4 w-4" /> Gắn hashtag
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowEditSupplier(true); }}>
-                          <Pencil className="mr-2 h-4 w-4" /> Sửa NCC
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => console.log('Print', debt.entity_name)}>
-                          <Printer className="mr-2 h-4 w-4" /> In công nợ
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+                        <p className="text-xs text-muted-foreground">{debt.branch_name || 'Chưa phân chi nhánh'}</p>
+                        {entityTags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {entityTags.map((tag) => (
+                              <Badge key={tag.id} variant="outline" className="text-[10px] px-1.5 py-0 h-4 text-white border-0" style={{ backgroundColor: tag.color }}>
+                                #{tag.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right font-medium">{formatNumber(debt.total_amount)}</TableCell>
+                    <TableCell className="text-right hidden sm:table-cell text-green-600">{formatNumber(debt.paid_amount)}</TableCell>
+                    <TableCell className="text-right font-semibold text-destructive">{formatNumber(debt.remaining_amount)}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-center">
+                      <span className={debt.days_overdue > 30 ? 'text-destructive font-semibold' : ''}>{debt.days_overdue} ngày</span>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {debt.remaining_amount > 0 ? (
+                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Đang nợ</Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Đã tất toán</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <ActionMenu debt={debt} />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {(debts?.length || 0) > 0 && (
         <TablePagination

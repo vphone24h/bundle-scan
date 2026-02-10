@@ -94,11 +94,11 @@ export default function DebtPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 bg-muted/50 p-3 rounded-lg">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-muted/50 p-2 sm:p-3 rounded-lg">
           {isSuperAdmin && (
             <Select value={branchFilter} onValueChange={setBranchFilter}>
-              <SelectTrigger className="w-[140px] sm:w-[180px] h-9 text-xs sm:text-sm">
-                <Building2 className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              <SelectTrigger className="w-[130px] sm:w-[180px] h-8 sm:h-9 text-xs sm:text-sm">
+                <Building2 className="h-3.5 w-3.5 mr-1 shrink-0" />
                 <SelectValue placeholder="Chi nhánh" />
               </SelectTrigger>
               <SelectContent>
@@ -111,34 +111,35 @@ export default function DebtPage() {
               </SelectContent>
             </Select>
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Checkbox
               id="showSettled"
               checked={showSettled}
               onCheckedChange={(checked) => setShowSettled(checked === true)}
             />
-            <Label htmlFor="showSettled" className="text-sm cursor-pointer">
-              Hiện cả đối tượng đã trả hết nợ
+            <Label htmlFor="showSettled" className="text-xs sm:text-sm cursor-pointer">
+              <span className="hidden sm:inline">Hiện cả đối tượng đã trả hết nợ</span>
+              <span className="sm:hidden">Đã trả hết</span>
             </Label>
           </div>
-          <Button variant="outline" size="sm" className="h-9 gap-1.5" onClick={() => setShowTagManager(true)}>
+          <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1 text-xs sm:text-sm ml-auto" onClick={() => setShowTagManager(true)}>
             <Settings className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Quản lý</span> Hashtag
+            Hashtag
           </Button>
         </div>
 
         {/* Tag filter */}
         {tags && tags.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Hash className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
             <button
               type="button"
               onClick={() => setTagFilter(null)}
-              className="focus:outline-none"
+              className="focus:outline-none shrink-0"
             >
               <Badge
                 variant="outline"
-                className={`cursor-pointer transition-all ${!tagFilter ? 'bg-foreground text-background' : 'hover:bg-muted'}`}
+                className={`cursor-pointer transition-all whitespace-nowrap ${!tagFilter ? 'bg-foreground text-background' : 'hover:bg-muted'}`}
               >
                 Tất cả
               </Badge>
@@ -148,11 +149,11 @@ export default function DebtPage() {
                 key={tag.id}
                 type="button"
                 onClick={() => setTagFilter(tagFilter === tag.id ? null : tag.id)}
-                className="focus:outline-none"
+                className="focus:outline-none shrink-0"
               >
                 <Badge
                   variant="outline"
-                  className={`cursor-pointer transition-all text-white border-0 ${tagFilter === tag.id ? 'ring-2 ring-offset-1 ring-foreground/30 scale-105' : 'opacity-70 hover:opacity-100'}`}
+                  className={`cursor-pointer transition-all text-white border-0 whitespace-nowrap ${tagFilter === tag.id ? 'ring-2 ring-offset-1 ring-foreground/30 scale-105' : 'opacity-70 hover:opacity-100'}`}
                   style={{ backgroundColor: tag.color }}
                 >
                   #{tag.name}
