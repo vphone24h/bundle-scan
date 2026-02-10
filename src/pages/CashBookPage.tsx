@@ -964,24 +964,24 @@ export default function CashBookPage() {
         {/* Tổng thu / Tổng chi - Always visible */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="border-green-200 dark:border-green-800">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-950/30 flex items-center justify-center shrink-0">
-                <TrendingUp className="h-5 w-5 text-green-600" />
+            <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-green-100 dark:bg-green-950/30 flex items-center justify-center shrink-0">
+                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
               </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">Tổng thu{hasActiveFilters ? ' (đã lọc)' : ''}</p>
-                <p className="text-lg sm:text-xl font-bold text-green-600 truncate">{formatCurrency(filteredTotals.income)}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">Tổng thu{hasActiveFilters ? ' (lọc)' : ''}</p>
+                <p className="text-sm sm:text-xl font-bold text-green-600 break-all leading-tight">{formatCurrency(filteredTotals.income)}</p>
               </div>
             </CardContent>
           </Card>
           <Card className="border-red-200 dark:border-red-800">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
-                <TrendingDown className="h-5 w-5 text-destructive" />
+            <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+                <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
               </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">Tổng chi{hasActiveFilters ? ' (đã lọc)' : ''}</p>
-                <p className="text-lg sm:text-xl font-bold text-destructive truncate">{formatCurrency(filteredTotals.expense)}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">Tổng chi{hasActiveFilters ? ' (lọc)' : ''}</p>
+                <p className="text-sm sm:text-xl font-bold text-destructive break-all leading-tight">{formatCurrency(filteredTotals.expense)}</p>
               </div>
             </CardContent>
           </Card>
