@@ -6,34 +6,38 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { CustomerDebtTable } from '@/components/debt/CustomerDebtTable';
 import { SupplierDebtTable } from '@/components/debt/SupplierDebtTable';
+import { DebtTagManager } from '@/components/debt/DebtTagManager';
 import { useCustomerDebts, useSupplierDebts } from '@/hooks/useDebt';
+import { useDebtTags } from '@/hooks/useDebtTags';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatNumber } from '@/lib/formatNumber';
-import { Users, Truck, TrendingUp, TrendingDown, Building2 } from 'lucide-react';
+import { Users, Truck, TrendingUp, TrendingDown, Building2, Hash, Settings } from 'lucide-react';
 
 export default function DebtPage() {
   const [showSettled, setShowSettled] = useState(false);
   const [branchFilter, setBranchFilter] = useState('_all_');
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [showTagManager, setShowTagManager] = useState(false);
   
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
+  const { data: tags } = useDebtTags();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
   
-  // Auto-lock branch filter for non-super-admins
   useEffect(() => {
     if (!isSuperAdmin && permissions?.branchId) {
       setBranchFilter(permissions.branchId);
     }
   }, [isSuperAdmin, permissions?.branchId]);
   
-  // Fetch debt data for summary
   const { data: customerDebts } = useCustomerDebts(false);
   const { data: supplierDebts } = useSupplierDebts(false);
   
-  // Filter debts by selected branch
   const filteredCustomerDebts = useMemo(() => {
     if (!customerDebts) return [];
     if (branchFilter === '_all_') return customerDebts;
@@ -46,7 +50,6 @@ export default function DebtPage() {
     return supplierDebts.filter(d => d.branch_id === branchFilter);
   }, [supplierDebts, branchFilter]);
   
-  // Calculate totals from filtered data
   const totalCustomerDebt = filteredCustomerDebts.reduce((sum, d) => sum + d.remaining_amount, 0);
   const totalSupplierDebt = filteredSupplierDebts.reduce((sum, d) => sum + d.remaining_amount, 0);
 
@@ -118,7 +121,46 @@ export default function DebtPage() {
               Hiện cả đối tượng đã trả hết nợ
             </Label>
           </div>
+          <Button variant="outline" size="sm" className="h-9 gap-1.5" onClick={() => setShowTagManager(true)}>
+            <Settings className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Quản lý</span> Hashtag
+          </Button>
         </div>
+
+        {/* Tag filter */}
+        {tags && tags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Hash className="h-4 w-4 text-muted-foreground" />
+            <button
+              type="button"
+              onClick={() => setTagFilter(null)}
+              className="focus:outline-none"
+            >
+              <Badge
+                variant="outline"
+                className={`cursor-pointer transition-all ${!tagFilter ? 'bg-foreground text-background' : 'hover:bg-muted'}`}
+              >
+                Tất cả
+              </Badge>
+            </button>
+            {tags.map((tag) => (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() => setTagFilter(tagFilter === tag.id ? null : tag.id)}
+                className="focus:outline-none"
+              >
+                <Badge
+                  variant="outline"
+                  className={`cursor-pointer transition-all text-white border-0 ${tagFilter === tag.id ? 'ring-2 ring-offset-1 ring-foreground/30 scale-105' : 'opacity-70 hover:opacity-100'}`}
+                  style={{ backgroundColor: tag.color }}
+                >
+                  #{tag.name}
+                </Badge>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Tabs */}
         <Tabs defaultValue="customer" className="w-full">
@@ -136,14 +178,16 @@ export default function DebtPage() {
           </TabsList>
 
           <TabsContent value="customer" className="mt-4">
-            <CustomerDebtTable showSettled={showSettled} branchFilter={branchFilter} />
+            <CustomerDebtTable showSettled={showSettled} branchFilter={branchFilter} tagFilter={tagFilter} />
           </TabsContent>
 
           <TabsContent value="supplier" className="mt-4">
-            <SupplierDebtTable showSettled={showSettled} branchFilter={branchFilter} />
+            <SupplierDebtTable showSettled={showSettled} branchFilter={branchFilter} tagFilter={tagFilter} />
           </TabsContent>
         </Tabs>
       </div>
+
+      <DebtTagManager open={showTagManager} onOpenChange={setShowTagManager} />
     </MainLayout>
   );
 }
