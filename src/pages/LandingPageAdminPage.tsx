@@ -31,7 +31,8 @@ export default function LandingPageAdminPage() {
       <div className="p-4 sm:p-6">
         <PageHeader 
           title="Landing Page" 
-          description="Cấu hình trang giới thiệu cửa hàng cho khách hàng" 
+          description="Cấu hình trang giới thiệu cửa hàng cho khách hàng"
+          helpText="Thiết lập trang giới thiệu công khai cho cửa hàng: banner, thông tin liên hệ, sản phẩm nổi bật. Khách hàng có thể truy cập qua subdomain riêng của bạn."
         />
         <div className="mt-6">
           <LandingPageSettings />

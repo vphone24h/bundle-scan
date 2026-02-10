@@ -55,6 +55,7 @@ export default function DebtPage() {
       <PageHeader
         title="Quản lý Công nợ"
         description="Theo dõi và quản lý công nợ khách hàng và nhà cung cấp"
+        helpText="Theo dõi số tiền còn nợ của khách hàng (bán chịu) và nợ nhà cung cấp (nhập chịu). Ghi nhận thanh toán từng phần, xem lịch sử thanh toán chi tiết."
       />
 
       <div className="space-y-4">

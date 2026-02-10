@@ -49,7 +49,7 @@ export default function ApplicationsPage() {
 
   return (
     <MainLayout>
-      <PageHeader title="Ứng Dụng & Dịch Vụ" description="Khám phá các ứng dụng và dịch vụ đối tác" />
+      <PageHeader title="Ứng Dụng & Dịch Vụ" description="Khám phá các ứng dụng và dịch vụ đối tác" helpText="Danh sách các ứng dụng và dịch vụ đối tác hữu ích cho hoạt động kinh doanh. Nhấn vào để truy cập trực tiếp." />
 
       <div className="p-4 sm:p-6 space-y-6">
         {!ads || ads.length === 0 ? (

@@ -236,6 +236,7 @@ export default function InventoryPage() {
       <PageHeader
         title="Tồn kho"
         description="Quản lý và theo dõi tồn kho theo thời gian thực"
+        helpText="Xem chi tiết tồn kho theo từng chi nhánh, trạng thái IMEI (đang bán, đã bán, bảo hành). Hỗ trợ kiểm kê và đối soát số lượng thực tế với hệ thống."
         actions={
           activeTab === 'inventory' && (
             <div className="flex gap-2 flex-wrap">

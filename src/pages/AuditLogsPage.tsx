@@ -105,7 +105,8 @@ export default function AuditLogsPage() {
     <MainLayout>
       <PageHeader 
         title="Lịch sử thao tác" 
-        description={permissions?.role === 'super_admin' 
+        helpText="Ghi lại mọi thao tác quan trọng: tạo/sửa/xóa phiếu, thay đổi giá, điều chỉnh tồn kho. Giúp kiểm soát và truy vết khi có sai sót hoặc gian lận."
+        description={permissions?.role === 'super_admin'
           ? "Theo dõi toàn bộ thao tác trong hệ thống"
           : "Theo dõi thao tác của chi nhánh"
         }

@@ -22,7 +22,8 @@
        <div className="p-4 sm:p-6">
          <PageHeader 
            title={article?.title || 'Mức Thuế 2026'} 
-           description="Thông tin về mức thuế áp dụng năm 2026" 
+           description="Thông tin về mức thuế áp dụng năm 2026"
+           helpText="Tra cứu mức thuế VAT theo ngành hàng áp dụng từ năm 2026. Giúp tính toán thuế chính xác khi xuất hóa đơn điện tử."
          />
          <Card className="mt-6">
            <CardContent className="p-4 sm:p-6">

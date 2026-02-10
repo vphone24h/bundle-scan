@@ -9,6 +9,7 @@ export default function AffiliatePage() {
         <PageHeader 
           title="Chương trình Affiliate" 
           description="Giới thiệu khách hàng mới và nhận hoa hồng"
+          helpText="Chia sẻ link giới thiệu để mời người dùng mới đăng ký vkho.vn. Khi họ mua gói dịch vụ, bạn nhận hoa hồng. Theo dõi lượt click, đăng ký và số tiền hoa hồng."
         />
         <AffiliateUserDashboard />
       </div>

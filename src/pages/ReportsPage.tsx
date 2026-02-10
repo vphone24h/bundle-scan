@@ -54,6 +54,7 @@ export default function ReportsPage() {
       <PageHeader
         title="Báo cáo"
         description={activeReport?.description || 'Phân tích chi tiết hoạt động kinh doanh'}
+        helpText="Xem báo cáo chi tiết về doanh thu, lợi nhuận, hàng bán chạy, hiệu suất nhân viên và tình hình nhà cung cấp. Lọc theo khoảng thời gian và xuất Excel."
         actions={
           reportsGuideUrl && (
             <Button variant="secondary" size="sm" asChild>

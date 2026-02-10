@@ -172,6 +172,7 @@ export default function SubscriptionPage() {
         <PageHeader 
           title="Gói dịch vụ" 
           description="Quản lý gói đăng ký và thanh toán"
+          helpText="Xem gói dịch vụ hiện tại, gia hạn hoặc nâng cấp gói. Thanh toán qua chuyển khoản ngân hàng. Gói hết hạn sẽ bị giới hạn tính năng."
         />
 
         {/* Feedback - Only for super_admin */}

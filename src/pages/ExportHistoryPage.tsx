@@ -312,6 +312,7 @@ export default function ExportHistoryPage() {
       <PageHeader
         title="Lịch sử xuất hàng"
         description="Xem và quản lý các phiếu xuất hàng"
+        helpText="Xem tất cả phiếu xuất (bán hàng) đã tạo. Lọc theo ngày, khách hàng, trạng thái. Nhấn vào phiếu để xem chi tiết, in hóa đơn hoặc xử lý trả hàng."
       />
 
       {/* Filters */}

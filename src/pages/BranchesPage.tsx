@@ -144,6 +144,7 @@ export default function BranchesPage() {
         <PageHeader
           title="Quản lý chi nhánh"
           description="Thêm, sửa, xóa thông tin các chi nhánh"
+          helpText="Tạo và quản lý các chi nhánh/cửa hàng. Mỗi chi nhánh có kho hàng riêng, nhân viên riêng. Dữ liệu nhập/xuất được phân tách theo chi nhánh."
         />
 
         <div className="flex justify-end">

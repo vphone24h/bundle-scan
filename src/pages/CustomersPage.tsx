@@ -78,7 +78,7 @@ import { useState, useMemo, useEffect } from 'react';
  
    return (
      <MainLayout>
-       <PageHeader title="Khách hàng & CRM" />
+       <PageHeader title="Khách hàng & CRM" helpText="Quản lý thông tin khách hàng, theo dõi lịch sử mua hàng, tích điểm, lên lịch chăm sóc và phân loại khách hàng theo nhóm/tag. CRM giúp duy trì mối quan hệ tốt với khách." />
  
        {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6">

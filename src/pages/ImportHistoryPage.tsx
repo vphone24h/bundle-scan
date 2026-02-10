@@ -484,6 +484,7 @@ export default function ImportHistoryPage() {
       <PageHeader
         title="Lịch sử nhập hàng"
         description="Theo dõi các phiếu nhập và sản phẩm đã nhập"
+        helpText="Xem danh sách tất cả phiếu nhập đã tạo. Có thể lọc theo ngày, nhà cung cấp, trạng thái thanh toán. Nhấn vào phiếu để xem chi tiết sản phẩm, chỉnh sửa hoặc trả hàng."
         actions={
           <Button asChild>
             <Link to="/import/new">

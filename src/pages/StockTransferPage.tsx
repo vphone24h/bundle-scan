@@ -218,6 +218,7 @@ export default function StockTransferPage() {
       <PageHeader
         title="Chuyển hàng"
         description="Quản lý phiếu chuyển hàng giữa các chi nhánh"
+        helpText="Tạo phiếu chuyển hàng từ chi nhánh này sang chi nhánh khác. Chi nhánh nhận cần xác nhận trước khi hàng được cập nhật tồn kho. Theo dõi trạng thái: chờ duyệt, đã nhận, từ chối."
       />
 
       <div className="p-6 lg:p-8 space-y-4">
