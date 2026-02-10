@@ -9,6 +9,7 @@ import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
 import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -16,6 +17,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 const Index = () => {
   const [productTab, setProductTab] = useState<'imported' | 'sold'>('imported');
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
+  const { data: permissions } = usePermissions();
+  const canViewImportPrice = permissions?.canViewImportPrice ?? false;
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: receipts, isLoading: receiptsLoading } = useImportReceipts();
   const { data: todaySoldProducts, isLoading: soldLoading } = useTodaySoldProducts();
@@ -78,25 +81,31 @@ const Index = () => {
             value={stats?.inStockProducts || 0}
             icon={<TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />}
           />
-          <StatCard
-            title="Giá trị kho"
-            value={formatCurrency(stats?.totalImportValue || 0)}
-            icon={<Wallet className="h-5 w-5 sm:h-6 sm:w-6" />}
-          />
-          <StatCard
-            title="Công nợ"
-            value={formatCurrency(stats?.pendingDebt || 0)}
-            icon={<AlertCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
-            className={(stats?.pendingDebt || 0) > 0 ? 'border-warning/50' : ''}
-          />
+          {canViewImportPrice && (
+            <StatCard
+              title="Giá trị kho"
+              value={formatCurrency(stats?.totalImportValue || 0)}
+              icon={<Wallet className="h-5 w-5 sm:h-6 sm:w-6" />}
+            />
+          )}
+          {canViewImportPrice && (
+            <StatCard
+              title="Công nợ"
+              value={formatCurrency(stats?.pendingDebt || 0)}
+              icon={<AlertCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
+              className={(stats?.pendingDebt || 0) > 0 ? 'border-warning/50' : ''}
+            />
+          )}
         </div>
 
         {/* Quick stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-card border rounded-lg p-3 sm:p-4 text-center">
-            <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats?.todayProfit || 0)}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Lợi nhuận hôm nay</p>
-          </div>
+          {canViewImportPrice && (
+            <div className="bg-card border rounded-lg p-3 sm:p-4 text-center">
+              <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats?.todayProfit || 0)}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Lợi nhuận hôm nay</p>
+            </div>
+          )}
           <div className="bg-card border rounded-lg p-3 sm:p-4 text-center">
             <p className="text-2xl sm:text-3xl font-bold text-primary">{formatCurrency(stats?.todayRevenue || 0)}</p>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Doanh thu hôm nay</p>
@@ -147,7 +156,9 @@ const Index = () => {
                           <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{product.categories?.name || 'Không có danh mục'}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="font-medium text-xs sm:text-sm">{formatCurrency(Number(product.import_price))}</p>
+                          {canViewImportPrice && (
+                            <p className="font-medium text-xs sm:text-sm">{formatCurrency(Number(product.import_price))}</p>
+                          )}
                           <Badge
                             variant="outline"
                             className={`text-[10px] sm:text-xs ${product.status === 'in_stock' ? 'status-in-stock' : 'status-sold'}`}
@@ -221,7 +232,7 @@ const Index = () => {
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="font-medium text-xs sm:text-sm">{formatCurrency(Number(receipt.total_amount))}</p>
+                      {canViewImportPrice && <p className="font-medium text-xs sm:text-sm">{formatCurrency(Number(receipt.total_amount))}</p>}
                       <p className="text-[10px] sm:text-xs text-muted-foreground">{formatDate(new Date(receipt.import_date))}</p>
                     </div>
                   </div>

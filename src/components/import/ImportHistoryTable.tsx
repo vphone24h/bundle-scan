@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Eye, Pencil, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface ImportHistoryTableProps {
   receipts: ImportReceipt[];
@@ -24,6 +25,9 @@ export function ImportHistoryTable({
   onEdit,
   onReturn,
 }: ImportHistoryTableProps) {
+  const { data: permissions } = usePermissions();
+  const canViewImportPrice = permissions?.canViewImportPrice ?? false;
+
   return (
     <div className="overflow-x-auto rounded-lg border bg-card">
       <table className="data-table">
@@ -32,9 +36,9 @@ export function ImportHistoryTable({
             <th>Mã phiếu</th>
             <th>Ngày nhập</th>
             <th className="text-center">Số lượng SP</th>
-            <th className="text-right">Tổng tiền</th>
-            <th className="text-right">Đã thanh toán</th>
-            <th className="text-right">Còn nợ</th>
+            {canViewImportPrice && <th className="text-right">Tổng tiền</th>}
+            {canViewImportPrice && <th className="text-right">Đã thanh toán</th>}
+            {canViewImportPrice && <th className="text-right">Còn nợ</th>}
             <th>Nhà cung cấp</th>
             <th>Người tạo</th>
             <th>Trạng thái</th>
@@ -47,17 +51,19 @@ export function ImportHistoryTable({
               <td className="font-mono font-medium text-primary">{receipt.code}</td>
               <td>{formatDate(receipt.importDate)}</td>
               <td className="text-center">{receipt.items.length}</td>
-              <td className="text-right font-medium">{formatCurrency(receipt.totalAmount)}</td>
-              <td className="text-right text-success">{formatCurrency(receipt.paidAmount)}</td>
-              <td className="text-right">
-                {receipt.debtAmount > 0 ? (
-                  <span className="text-destructive font-medium">
-                    {formatCurrency(receipt.debtAmount)}
-                  </span>
-                ) : (
-                  '-'
-                )}
-              </td>
+              {canViewImportPrice && <td className="text-right font-medium">{formatCurrency(receipt.totalAmount)}</td>}
+              {canViewImportPrice && <td className="text-right text-success">{formatCurrency(receipt.paidAmount)}</td>}
+              {canViewImportPrice && (
+                <td className="text-right">
+                  {receipt.debtAmount > 0 ? (
+                    <span className="text-destructive font-medium">
+                      {formatCurrency(receipt.debtAmount)}
+                    </span>
+                  ) : (
+                    '-'
+                  )}
+                </td>
+              )}
               <td>{receipt.supplierName}</td>
               <td>{receipt.createdBy}</td>
               <td>

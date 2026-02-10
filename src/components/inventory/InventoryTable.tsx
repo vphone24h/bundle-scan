@@ -15,6 +15,7 @@ import { IMEIDetailDialog } from './IMEIDetailDialog';
 import { NonIMEIDetailDialog } from './NonIMEIDetailDialog';
 import { cn } from '@/lib/utils';
 import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface InventoryTableProps {
   data: InventoryItem[];
@@ -22,6 +23,8 @@ interface InventoryTableProps {
 }
 
 export function InventoryTable({ data, isLoading }: InventoryTableProps) {
+  const { data: permissions } = usePermissions();
+  const canViewImportPrice = permissions?.canViewImportPrice ?? false;
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [showIMEIDialog, setShowIMEIDialog] = useState(false);
   const [showNonIMEIDialog, setShowNonIMEIDialog] = useState(false);
@@ -75,7 +78,7 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
               <TableHead className="text-center whitespace-nowrap hidden lg:table-cell">Tổng nhập</TableHead>
               <TableHead className="text-center whitespace-nowrap hidden lg:table-cell">Đã bán</TableHead>
               <TableHead className="text-center whitespace-nowrap">Tồn kho</TableHead>
-              <TableHead className="text-right whitespace-nowrap hidden md:table-cell">Giá nhập TB</TableHead>
+              {canViewImportPrice && <TableHead className="text-right whitespace-nowrap hidden md:table-cell">Giá nhập TB</TableHead>}
               <TableHead className="text-right whitespace-nowrap">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
@@ -126,9 +129,11 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
                     {item.stock}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right hidden md:table-cell font-medium">
-                  {formatCurrencyWithSpaces(item.avgImportPrice)}
-                </TableCell>
+                {canViewImportPrice && (
+                  <TableCell className="text-right hidden md:table-cell font-medium">
+                    {formatCurrencyWithSpaces(item.avgImportPrice)}
+                  </TableCell>
+                )}
                 <TableCell className="text-right">
                   <Button
                     variant="outline"
