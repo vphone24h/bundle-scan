@@ -155,39 +155,40 @@ export function TaxReport() {
     const wb = XLSX.utils.book_new();
     const wsData: any[][] = [];
 
-    // --- Header section (top-left: business info, top-right: form reference) ---
-    // Row 1: Business name + right side form code
+    // Row 0: Business name (left) + Mẫu số (right)
     wsData.push([`HỘ, CÁ NHÂN KINH DOANH: ${businessName || '......'}`, '', '', `Mẫu số S2a-HKD`]);
-    // Row 2: Tax code + right side reference
-    wsData.push([`Mã số thuế: ${taxCode || '..............................'}`, '', '', `(Kèm theo Thông tư số 152/2025/TT-BTC ngày`]);
-    // Row 3: Address + right side reference cont.
-    wsData.push([`Địa chỉ: ${businessAddress || '..............................'}`, '', '', `31 tháng 12 năm 2025 của Bộ trưởng Bộ Tài chính)`]);
-    // Row 4: blank
+    // Row 1: Tax code + right reference
+    wsData.push([`Mã số thuế: ${taxCode || '........................................'}`, '', '', `(Kèm theo Thông tư số 152/2025/TT-BTC ngày`]);
+    // Row 2: Address + right reference cont.
+    wsData.push([`Địa chỉ: ${businessAddress || '.............................................'}`, '', '', `31 tháng 12 năm 2025 của Bộ trưởng Bộ Tài chính)`]);
+    // Row 3: blank
     wsData.push([]);
 
-    // --- Title section (center) ---
+    // Row 4: Title (center, merged across all cols)
     const periodStr = `Từ ngày ${format(period.start, 'dd/MM/yyyy')} đến ngày ${format(period.end, 'dd/MM/yyyy')}`;
     wsData.push(['SỔ DOANH THU BÁN HÀNG HÓA, DỊCH VỤ']);
-    wsData.push([`Địa điểm kinh doanh: ${businessAddress || '..............................'}`]);
+    // Row 5: Địa điểm
+    wsData.push([`Địa điểm kinh doanh: ${businessAddress || '...........................'}`]);
+    // Row 6: Kỳ kê khai
     wsData.push([`Kỳ kê khai: ${periodStr}`]);
-    // Row 8: blank
+    // Row 7: blank
     wsData.push([]);
 
-    // --- Table header ---
-    // Merged header row
-    wsData.push(['', 'Chứng từ', '', 'Diễn giải', 'Số tiền']);
-    wsData.push(['Số hiệu', 'Ngày, tháng', '', '', '']);
-    wsData.push(['A', 'B', '', 'C', '1']);
+    // Row 8: Table header row 1 - "Chứng từ" spans col 0-1
+    wsData.push(['Chứng từ', '', 'Diễn giải', 'Số tiền']);
+    // Row 9: Table header row 2
+    wsData.push(['Số hiệu', 'Ngày, tháng', '', '']);
+    // Row 10: Column reference letters
+    wsData.push(['A', 'B', 'C', '1']);
 
-    // Industry header row
-    wsData.push(['', '', '', `1. Ngành nghề: ${selectedIndustry.label}`, '']);
+    // Row 11: Industry header
+    wsData.push(['', '', `1. Ngành nghề: ${selectedIndustry.label}`, '']);
 
-    // Daily data rows
+    // Data rows
     chartData.forEach((day, idx) => {
       wsData.push([
         idx + 1,
         format(new Date(day.date), 'dd/MM/yyyy'),
-        '',
         `Ngành ${selectedIndustry.label} trong ngày`,
         day.revenue,
       ]);
@@ -196,50 +197,43 @@ export function TaxReport() {
     const netRevenue = stats?.netRevenue || 0;
 
     // Summary rows
-    wsData.push(['', '', '', 'Tổng cộng (3)', netRevenue]);
-    wsData.push(['', '', '', `Thuế GTGT (${selectedIndustry.gtgt}%)`, taxResult?.gtgt || 0]);
-    wsData.push(['', '', '', 'Thuế TNCN', taxResult?.tncn || 0]);
-    wsData.push(['', '', '', 'Tổng số thuế GTGT phải nộp', taxResult?.gtgt || 0]);
-    wsData.push(['', '', '', 'Tổng số thuế TNCN phải nộp', taxResult?.tncn || 0]);
+    wsData.push(['', '', 'Tổng cộng (3)', netRevenue]);
+    wsData.push(['', '', `Thuế GTGT (${selectedIndustry.gtgt}%)`, taxResult?.gtgt || 0]);
+    wsData.push(['', '', 'Thuế TNCN', taxResult?.tncn || 0]);
+    wsData.push(['', '', 'Tổng số thuế GTGT phải nộp', taxResult?.gtgt || 0]);
+    wsData.push(['', '', 'Tổng số thuế TNCN phải nộp', taxResult?.tncn || 0]);
 
     // Blank row
     wsData.push([]);
 
-    // Signature section (right-aligned)
-    wsData.push(['', '', '', 'Ngày.... tháng...... năm......', '']);
-    wsData.push(['', '', '', 'NGƯỜI ĐẠI DIỆN HỘ KINH DOANH/', '']);
-    wsData.push(['', '', '', 'CÁ NHÂN KINH DOANH', '']);
-    wsData.push(['', '', '', '(Ký, họ tên, đóng dấu)', '']);
+    // Signature section (right side - column 3)
+    wsData.push(['', '', '', 'Ngày ... tháng ... năm ...']);
+    wsData.push(['', '', '', 'NGƯỜI ĐẠI DIỆN HỘ KINH DOANH/']);
+    wsData.push(['', '', '', 'CÁ NHÂN KINH DOANH']);
+    wsData.push(['', '', '', '(Ký, họ tên, đóng dấu)']);
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    // Set column widths
+    // Set column widths (4 columns matching template)
     ws['!cols'] = [
-      { wch: 12 }, // A - Số hiệu
-      { wch: 15 }, // B - Ngày tháng
-      { wch: 5 },  // C - spacer
-      { wch: 45 }, // D - Diễn giải
-      { wch: 20 }, // E - Số tiền
+      { wch: 15 }, // A - Số hiệu
+      { wch: 15 }, // B - Ngày, tháng
+      { wch: 40 }, // C - Diễn giải
+      { wch: 25 }, // D - Số tiền
     ];
 
-    // Merge cells for header/title rows
+    // Merge cells
     ws['!merges'] = [
-      // Business info merges (left side)
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }, // Row 1 left
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } }, // Row 2 left
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 2 } }, // Row 3 left
-      // Right side form reference
-      { s: { r: 0, c: 3 }, e: { r: 0, c: 4 } },
-      { s: { r: 1, c: 3 }, e: { r: 1, c: 4 } },
-      { s: { r: 2, c: 3 }, e: { r: 2, c: 4 } },
-      // Title merges (center)
-      { s: { r: 4, c: 0 }, e: { r: 4, c: 4 } }, // SỔ DOANH THU
-      { s: { r: 5, c: 0 }, e: { r: 5, c: 4 } }, // Địa điểm
-      { s: { r: 6, c: 0 }, e: { r: 6, c: 4 } }, // Kỳ kê khai
-      // Table header merges
-      { s: { r: 8, c: 1 }, e: { r: 8, c: 2 } }, // Chứng từ spans 2 cols
-      { s: { r: 8, c: 3 }, e: { r: 8, c: 3 } },
-      { s: { r: 9, c: 2 }, e: { r: 9, c: 2 } },
+      // Header: left side business info spans cols 0-2
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 2 } },
+      // Title rows span all 4 cols
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 3 } },
+      { s: { r: 5, c: 0 }, e: { r: 5, c: 3 } },
+      { s: { r: 6, c: 0 }, e: { r: 6, c: 3 } },
+      // Table header: "Chứng từ" spans cols 0-1
+      { s: { r: 8, c: 0 }, e: { r: 8, c: 1 } },
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, 'S2a');
