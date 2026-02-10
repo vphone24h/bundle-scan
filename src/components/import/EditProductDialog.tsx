@@ -216,7 +216,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
 
         {product && (isOwnBranch || !isBranchAdmin) && (
           <div className="space-y-4">
-            {/* Price - read only */}
+            {/* Giá nhập - chỉ hiển thị cho ai có quyền xem giá nhập (Admin, Kế toán) */}
             {permissions?.canViewImportPrice && (
               <div className="rounded-lg bg-muted/50 p-3">
                 <div className="flex justify-between text-sm">
@@ -228,8 +228,8 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
               </div>
             )}
 
-            {/* Sale price - editable for Super Admin & Branch Admin */}
-            {canEditSalePrice && (
+            {/* Giá bán - editable cho Admin, read-only cho Kế toán/Nhân viên */}
+            {canEditSalePrice ? (
               <div className="space-y-2">
                 <Label htmlFor="sale_price">Giá bán</Label>
                 <PriceInput
@@ -238,6 +238,15 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                   onChange={(value) => setFormData(prev => ({ ...prev, sale_price: String(value) }))}
                   placeholder="Nhập giá bán"
                 />
+              </div>
+            ) : (
+              <div className="rounded-lg bg-muted/50 p-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Giá bán:</span>
+                  <span className="font-medium">
+                    {product.sale_price ? formatCurrency(Number(product.sale_price)) : 'Chưa đặt giá'} (không thể sửa)
+                  </span>
+                </div>
               </div>
             )}
 
