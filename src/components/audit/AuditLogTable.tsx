@@ -210,7 +210,7 @@ export function AuditLogTable({ logs, isLoading, profileMap, roleMap, branchMap 
                             <span className="text-xs text-muted-foreground ml-4">
                               {userRole === 'super_admin' ? 'Admin tổng' : 
                                userRole === 'branch_admin' ? 'Quản lý CN' : 
-                               userRole === 'cashier' ? 'Thu ngân' : 'Nhân viên'}
+                               userRole === 'cashier' ? 'Kế toán' : 'Nhân viên'}
                             </span>
                           )}
                         </div>

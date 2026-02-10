@@ -18,7 +18,7 @@ const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Quản lý',
   branch_admin: 'QL Chi nhánh',
   staff: 'Nhân viên',
-  cashier: 'Thu ngân',
+  cashier: 'Kế toán',
 };
 
 const CARE_ACTION_LABELS: Record<string, string> = {

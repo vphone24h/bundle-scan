@@ -112,7 +112,7 @@ function formatFieldValue(key: string, value: unknown): string {
     const roles: Record<string, string> = {
       super_admin: 'Admin tổng',
       branch_admin: 'Quản lý chi nhánh',
-      cashier: 'Thu ngân',
+      cashier: 'Kế toán',
       staff: 'Nhân viên',
     };
     return roles[String(value)] || String(value);
@@ -357,7 +357,7 @@ export function AuditLogDetailDialog({
                     <span>
                       {userRole === 'super_admin' ? 'Admin tổng' : 
                        userRole === 'branch_admin' ? 'Quản lý CN' : 
-                       userRole === 'cashier' ? 'Thu ngân' : 'Nhân viên'}
+                       userRole === 'cashier' ? 'Kế toán' : 'Nhân viên'}
                     </span>
                   </div>
                 )}

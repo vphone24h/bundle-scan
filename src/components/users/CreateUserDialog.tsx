@@ -167,7 +167,7 @@ export function CreateUserDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="branch_admin">Admin Chi nhánh</SelectItem>
-                <SelectItem value="cashier">Thu ngân</SelectItem>
+                <SelectItem value="cashier">Kế toán</SelectItem>
                 <SelectItem value="staff">Nhân viên</SelectItem>
               </SelectContent>
             </Select>
