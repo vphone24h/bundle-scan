@@ -1019,6 +1019,33 @@ export default function CashBookPage() {
           dateRange={summaryDateRange}
         />
 
+        {/* Filtered Summary Totals - above filters */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="flex items-center gap-2 p-2.5 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+            <TrendingUp className="h-4 w-4 text-green-600 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Tổng thu{hasActiveFilters ? ' (lọc)' : ''}</p>
+              <p className="text-sm sm:text-base font-bold text-green-600 break-all leading-tight">{formatCurrency(filteredTotals.income)}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 p-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+            <TrendingDown className="h-4 w-4 text-destructive shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Tổng chi{hasActiveFilters ? ' (lọc)' : ''}</p>
+              <p className="text-sm sm:text-base font-bold text-destructive break-all leading-tight">{formatCurrency(filteredTotals.expense)}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 p-2.5 rounded-lg bg-muted/50 border col-span-2 sm:col-span-1">
+            <Wallet className="h-4 w-4 text-primary shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Chênh lệch{hasActiveFilters ? ' (lọc)' : ''}</p>
+              <p className={cn("text-sm sm:text-base font-bold break-all leading-tight", (filteredTotals.income - filteredTotals.expense) >= 0 ? 'text-green-600' : 'text-destructive')}>
+                {formatCurrency(filteredTotals.income - filteredTotals.expense)}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Filters */}
         <Card>
           <CardContent className="pt-6">
@@ -1390,39 +1417,6 @@ export default function CashBookPage() {
               />
             )}
 
-            {/* Filtered Summary Totals */}
-            {filteredEntries.length > 0 && (
-              <div className="mt-4 pt-4 border-t space-y-2">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-                    <TrendingUp className="h-4 w-4 text-green-600 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">Tổng thu</p>
-                      <p className="text-sm sm:text-base font-bold text-green-600 break-all leading-tight">{formatCurrency(filteredTotals.income)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
-                    <TrendingDown className="h-4 w-4 text-destructive shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">Tổng chi</p>
-                      <p className="text-sm sm:text-base font-bold text-destructive break-all leading-tight">{formatCurrency(filteredTotals.expense)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-muted/50 border col-span-2 sm:col-span-1">
-                    <Wallet className="h-4 w-4 text-primary shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-[10px] sm:text-xs text-muted-foreground">Chênh lệch</p>
-                      <p className={cn("text-sm sm:text-base font-bold break-all leading-tight", (filteredTotals.income - filteredTotals.expense) >= 0 ? 'text-green-600' : 'text-destructive')}>
-                        {formatCurrency(filteredTotals.income - filteredTotals.expense)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                {hasActiveFilters && (
-                  <p className="text-[10px] text-muted-foreground text-center">* Số liệu theo bộ lọc đang áp dụng</p>
-                )}
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
