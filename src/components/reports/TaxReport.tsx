@@ -166,10 +166,10 @@ export function TaxReport() {
     wsData.push([]);
 
     // --- Title section (center) ---
-    wsData.push(['', '', 'SỔ DOANH THU BÁN HÀNG HÓA, DỊCH VỤ', '']);
-    wsData.push(['', '', `Địa điểm kinh doanh: ${businessAddress || '..............................'}`, '']);
     const periodStr = `Từ ngày ${format(period.start, 'dd/MM/yyyy')} đến ngày ${format(period.end, 'dd/MM/yyyy')}`;
-    wsData.push(['', '', `Kỳ kê khai: ${periodStr}`, '']);
+    wsData.push(['SỔ DOANH THU BÁN HÀNG HÓA, DỊCH VỤ']);
+    wsData.push([`Địa điểm kinh doanh: ${businessAddress || '..............................'}`]);
+    wsData.push([`Kỳ kê khai: ${periodStr}`]);
     // Row 8: blank
     wsData.push([]);
 
