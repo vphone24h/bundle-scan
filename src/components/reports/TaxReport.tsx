@@ -232,8 +232,12 @@ export function TaxReport() {
       { s: { r: 4, c: 0 }, e: { r: 4, c: 3 } },
       { s: { r: 5, c: 0 }, e: { r: 5, c: 3 } },
       { s: { r: 6, c: 0 }, e: { r: 6, c: 3 } },
-      // Table header: "Chứng từ" spans cols 0-1
+      // Table header: "Chứng từ" spans cols 0-1 (row 8)
       { s: { r: 8, c: 0 }, e: { r: 8, c: 1 } },
+      // "Diễn giải" spans rows 8-9 (vertical merge)
+      { s: { r: 8, c: 2 }, e: { r: 9, c: 2 } },
+      // "Số tiền" spans rows 8-9 (vertical merge)
+      { s: { r: 8, c: 3 }, e: { r: 9, c: 3 } },
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, 'S2a');
