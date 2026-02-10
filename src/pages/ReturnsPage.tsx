@@ -269,6 +269,7 @@ export default function ReturnsPage() {
         <PageHeader
           title="Trả hàng nhập"
           description="Hoàn trả sản phẩm cho nhà cung cấp"
+          helpText="Trả lại sản phẩm đã nhập cho nhà cung cấp (hàng lỗi, sai mẫu). Chọn phiếu nhập gốc, chọn sản phẩm cần trả, hệ thống tự động cập nhật tồn kho và công nợ."
           actions={
             <Button variant="outline" onClick={handleCancel}>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -293,6 +294,7 @@ export default function ReturnsPage() {
         <PageHeader
           title="Trả hàng bán"
           description="Khách hàng trả lại sản phẩm"
+          helpText="Xử lý khi khách hàng trả lại sản phẩm đã mua. Chọn phiếu xuất gốc, chọn sản phẩm trả, hàng tự động nhập lại kho và ghi nhận hoàn tiền."
           actions={
             <Button variant="outline" onClick={handleCancel}>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -439,6 +441,7 @@ export default function ReturnsPage() {
       <PageHeader
         title="Lịch sử trả hàng"
         description="Xem lịch sử trả hàng nhập và trả hàng bán"
+        helpText="Xem toàn bộ lịch sử trả hàng: trả cho nhà cung cấp và nhận trả từ khách hàng. Lọc theo ngày, loại trả hàng để đối soát."
       />
 
       {/* Filters */}

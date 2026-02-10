@@ -466,6 +466,7 @@ export default function ImportNewPage() {
       <PageHeader
         title="Tạo phiếu nhập hàng"
         description="Nhập hàng thủ công hoặc từ file Excel"
+        helpText="Tạo phiếu nhập mới bằng cách thêm sản phẩm thủ công hoặc import từ Excel. Chọn nhà cung cấp, nhập IMEI/serial cho từng sản phẩm, sau đó thanh toán để hoàn tất phiếu nhập."
         actions={
           <div className="flex gap-2 flex-wrap">
             {importGuideUrl && (

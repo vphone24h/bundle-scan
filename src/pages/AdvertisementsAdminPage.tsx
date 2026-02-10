@@ -43,6 +43,7 @@ export default function AdvertisementsAdminPage() {
       <PageHeader 
         title="Quản lý Ứng Dụng / Quảng Cáo" 
         description="Thêm, sửa, xóa và sắp xếp các banner quảng cáo"
+        helpText="Tạo và quản lý banner quảng cáo hiển thị trong trang Ứng dụng. Thiết lập link, thời gian hiển thị, thứ tự ưu tiên."
       />
 
       <div className="p-4 sm:p-6 space-y-6">

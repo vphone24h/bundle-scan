@@ -219,6 +219,7 @@ export default function SuppliersPage() {
       <PageHeader
         title="Quản lý nhà cung cấp"
         description="Thông tin nhà cung cấp và đối tác"
+        helpText="Quản lý danh sách nhà cung cấp: thêm mới, sửa thông tin, xem công nợ. Nhà cung cấp được liên kết với phiếu nhập hàng để theo dõi nguồn hàng và công nợ."
         actions={
           <div className="flex items-center gap-2">
             {duplicateGroups.length > 0 && (

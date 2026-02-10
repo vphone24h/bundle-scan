@@ -224,6 +224,7 @@ export default function UsersPage() {
       <PageHeader 
         title="Quản lý người dùng" 
         description="Phân quyền và quản lý tài khoản nhân viên"
+        helpText="Tạo tài khoản cho nhân viên, phân quyền (Admin, Kế toán, Nhân viên). Mỗi vai trò có quyền truy cập khác nhau: nhân viên chỉ thấy chức năng được cấp phép."
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">

@@ -618,6 +618,7 @@ export default function ExportNewPage() {
       <PageHeader
         title="Tạo phiếu xuất hàng"
         description="Xuất hàng và ghi nhận bán hàng"
+        helpText="Tạo phiếu xuất (bán hàng) bằng cách quét mã vạch hoặc tìm sản phẩm. Chọn khách hàng, áp dụng chiết khấu, sau đó thanh toán và in hóa đơn."
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

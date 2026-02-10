@@ -43,6 +43,7 @@ const Index = () => {
       <PageHeader
         title="Tổng quan kho hàng"
         description="Theo dõi tình trạng kho và hoạt động nhập hàng"
+        helpText="Trang tổng quan hiển thị số liệu tóm tắt: tổng giá trị hàng tồn, doanh thu hôm nay, số sản phẩm nhập/xuất gần đây. Giúp bạn nắm bắt nhanh tình hình kinh doanh."
         actions={
           <div className="flex items-center gap-2">
             {statsFetching && (

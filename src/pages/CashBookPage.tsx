@@ -773,6 +773,7 @@ export default function CashBookPage() {
       <PageHeader
         title="Sổ quỹ"
         description="Quản lý dòng tiền thu chi"
+        helpText="Ghi nhận mọi giao dịch thu/chi tiền mặt và chuyển khoản. Xem tổng quan dòng tiền, lịch sử số dư theo ngày, và lọc chi tiết từng giao dịch. Có thể thiết lập số dư đầu kỳ."
         actions={
            <div className="flex flex-wrap gap-1.5 sm:gap-2">
              {cashBookGuideUrl && (

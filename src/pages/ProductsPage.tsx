@@ -204,6 +204,7 @@ export default function ProductsPage() {
       <PageHeader
         title="Quản lý sản phẩm"
         description="Xem, chỉnh sửa và in mã vạch cho sản phẩm"
+        helpText="Danh sách tất cả sản phẩm trong kho. Bạn có thể tìm kiếm, lọc theo danh mục, in mã vạch, điều chỉnh số lượng hoặc xóa sản phẩm. Sản phẩm được tạo tự động khi nhập hàng."
         actions={
           selectedProducts.length > 0 && (
             <Button onClick={handlePrintSelected}>

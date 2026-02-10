@@ -33,6 +33,7 @@ export default function EInvoicePage() {
           <PageHeader
             title="Hoá Đơn Điện Tử"
             description="Quản lý và phát hành hoá đơn điện tử kết nối cơ quan thuế"
+            helpText="Kết nối với nhà cung cấp hoá đơn điện tử để phát hành hóa đơn VAT. Cấu hình thông tin doanh nghiệp, mã số thuế, sau đó tạo hóa đơn từ phiếu xuất."
           />
           
           <Card className="max-w-lg mx-auto">
@@ -63,6 +64,7 @@ export default function EInvoicePage() {
         <PageHeader
           title="Hoá Đơn Điện Tử"
           description="Quản lý và phát hành hoá đơn điện tử kết nối cơ quan thuế"
+          helpText="Kết nối với nhà cung cấp hoá đơn điện tử để phát hành hóa đơn VAT. Cấu hình thông tin doanh nghiệp, mã số thuế, sau đó tạo hóa đơn từ phiếu xuất."
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>

@@ -118,6 +118,7 @@ export default function CategoriesPage() {
       <PageHeader
         title="Quản lý danh mục"
         description="Phân loại sản phẩm theo danh mục cha - con"
+        helpText="Tạo cây danh mục để phân loại sản phẩm (VD: Điện thoại > iPhone, Samsung). Danh mục giúp lọc và tìm kiếm sản phẩm nhanh hơn trong các phiếu nhập/xuất."
         actions={
           <Button onClick={handleAdd}>
             <FolderPlus className="mr-2 h-4 w-4" />

@@ -427,6 +427,7 @@ export default function InvoiceTemplatePage() {
       <PageHeader
         title="Thiết lập mẫu in hóa đơn"
         description="Mỗi chi nhánh có mẫu in riêng với địa chỉ khác nhau"
+        helpText="Tùy chỉnh mẫu in hóa đơn cho từng chi nhánh: logo, tên cửa hàng, địa chỉ, số điện thoại, ghi chú. Chọn khổ giấy (K57, K80, A4) phù hợp với máy in."
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
