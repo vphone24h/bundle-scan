@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Product } from '@/types/warehouse';
 import { formatCurrency, formatDate } from '@/lib/mockData';
+import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -199,9 +200,16 @@ export function ProductTable({
                 </div>
                 
                 <div className="flex items-center justify-between pl-7">
-                  <div className="flex items-center gap-3">
-                    <span className="font-semibold text-sm">{formatCurrency(product.importPrice)}</span>
-                    {getStatusBadge(product.status)}
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-sm">{formatCurrency(product.importPrice)}</span>
+                      {getStatusBadge(product.status)}
+                    </div>
+                    {product.salePrice && product.salePrice > 0 && (
+                      <span className="text-xs text-success">
+                        Giá bán: {formatCurrencyWithSpaces(product.salePrice)}đ
+                      </span>
+                    )}
                   </div>
                   <span className="text-xs text-muted-foreground">
                     {formatDate(product.importDate)}
@@ -253,6 +261,7 @@ export function ProductTable({
               <th className="hidden lg:table-cell">IMEI</th>
               <th className="hidden sm:table-cell">Danh mục</th>
               <th className="text-right">Giá nhập</th>
+              <th className="text-right hidden sm:table-cell">Giá bán</th>
               <th className="hidden md:table-cell">Ngày nhập</th>
               <th className="hidden lg:table-cell">Nhà cung cấp</th>
               <th>Trạng thái</th>
@@ -274,6 +283,9 @@ export function ProductTable({
                 <td className="font-mono text-xs sm:text-sm hidden lg:table-cell">{product.imei || '-'}</td>
                 <td className="hidden sm:table-cell">{product.categoryName}</td>
                 <td className="text-right font-medium text-sm">{formatCurrency(product.importPrice)}</td>
+                <td className="text-right font-medium text-sm hidden sm:table-cell">
+                  {product.salePrice ? formatCurrencyWithSpaces(product.salePrice) + 'đ' : '-'}
+                </td>
                 <td className="hidden md:table-cell">{formatDate(product.importDate)}</td>
                 <td className="hidden lg:table-cell">{product.supplierName}</td>
                 <td>{getStatusBadge(product.status)}</td>
