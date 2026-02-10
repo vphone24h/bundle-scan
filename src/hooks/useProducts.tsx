@@ -18,8 +18,8 @@ export interface Product {
   sku: string;
   imei: string | null;
   category_id: string | null;
-  import_price: number;
   sale_price: number | null;
+  import_price: number;
   import_date: string;
   supplier_id: string | null;
   branch_id: string | null;

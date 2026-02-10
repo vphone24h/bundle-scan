@@ -15,6 +15,7 @@ import { useBranches } from '@/hooks/useBranches';
 import { usePermissions } from '@/hooks/usePermissions';
 import type { Product } from '@/hooks/useProducts';
 import { formatCurrency } from '@/lib/mockData';
+import { PriceInput } from '@/components/ui/price-input';
 
 interface EditProductDialogProps {
   product: Product | null;
@@ -29,11 +30,18 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
   const { data: branches } = useBranches();
   const { data: permissions } = usePermissions();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
+  const canEditSalePrice = permissions?.canEditSalePrice === true;
+  const isBranchAdmin = permissions?.role === 'branch_admin';
+
+  // Branch Admin chỉ được sửa sản phẩm thuộc chi nhánh mình
+  const isOwnBranch = isSuperAdmin || (product?.branch_id === permissions?.branchId);
+
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
     imei: '',
     note: '',
+    sale_price: '',
     category_id: '',
     supplier_id: '',
     branch_id: '',
@@ -46,6 +54,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         sku: product.sku || '',
         imei: product.imei || '',
         note: product.note || '',
+        sale_price: product.sale_price != null ? String(product.sale_price) : '',
         category_id: product.category_id || '_none_',
         supplier_id: product.supplier_id || '_none_',
         branch_id: product.branch_id || '_none_',
@@ -65,6 +74,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         sku?: string;
         imei?: string | null;
         note?: string | null;
+        sale_price?: number | null;
         category_id?: string | null;
         supplier_id?: string | null;
         branch_id?: string | null;
@@ -74,6 +84,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         sku: string;
         imei: string | null;
         note: string | null;
+        sale_price: number | null;
         category_id: string | null;
         supplier_id: string | null;
         branch_id: string | null;
@@ -127,7 +138,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
 
   const handleSubmit = async () => {
     if (!product) return;
-
+    if (!isOwnBranch && isBranchAdmin) return;
     if (!formData.name.trim()) {
       toast({ title: 'Lỗi', description: 'Tên sản phẩm không được để trống', variant: 'destructive' });
       return;
@@ -144,6 +155,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         sku: product.sku,
         imei: product.imei,
         note: product.note,
+        sale_price: product.sale_price ?? null,
         category_id: product.category_id,
         supplier_id: product.supplier_id,
         branch_id: product.branch_id,
@@ -158,7 +170,10 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
         supplier_id: formData.supplier_id === '_none_' ? null : formData.supplier_id,
       };
 
-      // Chỉ Super Admin mới được đổi chi nhánh
+      // Chỉ Super Admin / Branch Admin mới được sửa giá bán
+      if (canEditSalePrice) {
+        updates.sale_price = formData.sale_price ? Number(formData.sale_price) : null;
+      }
       if (isSuperAdmin) {
         updates.branch_id = formData.branch_id === '_none_' ? null : formData.branch_id;
       }
@@ -191,9 +206,17 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           <DialogTitle>Chỉnh sửa sản phẩm</DialogTitle>
         </DialogHeader>
 
-        {product && (
+        {product && !isOwnBranch && isBranchAdmin && (
+          <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-center">
+            <p className="text-sm text-destructive font-medium">
+              Sản phẩm thuộc chi nhánh khác. Bạn không có quyền chỉnh sửa.
+            </p>
+          </div>
+        )}
+
+        {product && (isOwnBranch || !isBranchAdmin) && (
           <div className="space-y-4">
-            {/* Price - read only, only visible to users with import price permission */}
+            {/* Price - read only */}
             {permissions?.canViewImportPrice && (
               <div className="rounded-lg bg-muted/50 p-3">
                 <div className="flex justify-between text-sm">
@@ -202,6 +225,19 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
                     {formatCurrency(Number(product.import_price))} (không thể sửa)
                   </span>
                 </div>
+              </div>
+            )}
+
+            {/* Sale price - editable for Super Admin & Branch Admin */}
+            {canEditSalePrice && (
+              <div className="space-y-2">
+                <Label htmlFor="sale_price">Giá bán</Label>
+                <PriceInput
+                  id="sale_price"
+                  value={formData.sale_price}
+                  onChange={(value) => setFormData(prev => ({ ...prev, sale_price: String(value) }))}
+                  placeholder="Nhập giá bán"
+                />
               </div>
             )}
 
@@ -349,7 +385,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Hủy
           </Button>
-          <Button onClick={handleSubmit} disabled={updateProduct.isPending}>
+          <Button onClick={handleSubmit} disabled={updateProduct.isPending || (!isOwnBranch && isBranchAdmin)}>
             {updateProduct.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <Save className="h-4 w-4 mr-2" />
             Lưu thay đổi
