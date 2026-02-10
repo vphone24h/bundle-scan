@@ -71,16 +71,20 @@ const Index = () => {
       <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <StatCard
-            title="Tổng sản phẩm"
-            value={stats?.totalProducts || 0}
-            icon={<Package className="h-5 w-5 sm:h-6 sm:w-6" />}
-          />
-          <StatCard
-            title="Tồn kho"
-            value={stats?.inStockProducts || 0}
-            icon={<TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />}
-          />
+          {canViewImportPrice && (
+            <StatCard
+              title="Tổng sản phẩm"
+              value={stats?.totalProducts || 0}
+              icon={<Package className="h-5 w-5 sm:h-6 sm:w-6" />}
+            />
+          )}
+          {canViewImportPrice && (
+            <StatCard
+              title="Tồn kho"
+              value={stats?.inStockProducts || 0}
+              icon={<TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />}
+            />
+          )}
           {canViewImportPrice && (
             <StatCard
               title="Giá trị kho"

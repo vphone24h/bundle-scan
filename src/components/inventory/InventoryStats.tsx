@@ -59,9 +59,11 @@ export function InventoryStats({
     },
   ];
 
+  const hiddenForStaff = ['Giá trị kho', 'Tổng sản phẩm', 'Tổng tồn kho'];
+
   return (
     <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
-      {stats.filter(stat => !(stat.title === 'Giá trị kho' && !canViewImportPrice)).map((stat) => (
+      {stats.filter(stat => !(hiddenForStaff.includes(stat.title) && !canViewImportPrice)).map((stat) => (
         <Card key={stat.title}>
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-3 sm:gap-4">
