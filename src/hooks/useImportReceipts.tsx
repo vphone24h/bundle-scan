@@ -162,6 +162,7 @@ export function useCreateImportReceipt() {
         imei?: string | null;
         category_id?: string | null;
         import_price: number;
+        sale_price?: number | null;
         quantity: number;
         supplier_id?: string | null;
         note?: string | null;
@@ -285,6 +286,7 @@ export function useCreateImportReceipt() {
           imei: p.imei,
           category_id: p.category_id,
           import_price: p.import_price,
+          sale_price: p.sale_price || null,
           quantity: 1,
           total_import_cost: p.import_price,
           supplier_id: supplierId,
@@ -333,6 +335,7 @@ export function useCreateImportReceipt() {
             imei: null,
             category_id: p.category_id,
             import_price: p.import_price,
+            sale_price: p.sale_price || null,
             quantity: p.quantity,
             total_import_cost: totalCost,
             supplier_id: supplierId,

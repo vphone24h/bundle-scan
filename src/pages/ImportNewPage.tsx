@@ -85,6 +85,7 @@ export default function ImportNewPage() {
     imei: '',
     categoryId: '',
     importPrice: '',
+    salePrice: '',
     quantity: '1',
     note: '',
   });
@@ -181,6 +182,13 @@ export default function ImportNewPage() {
     // For IMEI products, quantity is always 1
     const quantity = form.imei ? 1 : Math.max(1, parseInt(form.quantity) || 1);
 
+    const importPrice = Number(form.importPrice);
+    // Auto-calculate sale price if not manually set
+    let salePrice = form.salePrice ? Number(form.salePrice) : undefined;
+    if (!salePrice || salePrice <= 0) {
+      salePrice = form.imei ? importPrice + 2000000 : importPrice * 2;
+    }
+
     const newItem: ImportReceiptItem = {
       id: String(Date.now()),
       productName: form.productName,
@@ -188,7 +196,8 @@ export default function ImportNewPage() {
       imei: form.imei || undefined,
       categoryId: form.categoryId,
       categoryName: category?.name,
-      importPrice: Number(form.importPrice),
+      importPrice,
+      salePrice,
       quantity,
       supplierId: '', // Will use receipt-level supplier
       supplierName: '',
@@ -202,6 +211,7 @@ export default function ImportNewPage() {
       imei: '',
       categoryId: '',
       importPrice: '',
+      salePrice: '',
       quantity: '1',
       note: '',
     });
@@ -248,6 +258,7 @@ export default function ImportNewPage() {
           imei: item.imei || null,
           category_id: item.categoryId || null,
           import_price: item.importPrice,
+          sale_price: item.salePrice || null,
           quantity: item.quantity,
           supplier_id: selectedSupplierId || null,
           note: item.note || null,
@@ -383,6 +394,7 @@ export default function ImportNewPage() {
             imei: item.imei || null,
             category_id: item.categoryId || null,
             import_price: item.importPrice,
+            sale_price: item.salePrice || null,
             quantity: item.quantity,
             supplier_id: supplierId,
             note: item.note || null,
@@ -675,9 +687,34 @@ export default function ImportNewPage() {
                   <PriceInput
                     id="importPrice"
                     value={form.importPrice}
-                    onChange={(val) => setForm({ ...form, importPrice: val.toString() })}
+                    onChange={(val) => {
+                      const newImportPrice = val.toString();
+                      // Auto-calculate sale price when import price changes
+                      const numVal = Number(newImportPrice);
+                      let autoSalePrice = '';
+                      if (numVal > 0) {
+                        autoSalePrice = form.imei 
+                          ? String(numVal + 2000000) 
+                          : String(numVal * 2);
+                      }
+                      setForm({ ...form, importPrice: newImportPrice, salePrice: autoSalePrice });
+                    }}
                     placeholder="VD: 28 000 000"
                   />
+                </div>
+
+                {/* Sale Price */}
+                <div className="form-field">
+                  <Label htmlFor="salePrice">Giá bán (gợi ý)</Label>
+                  <PriceInput
+                    id="salePrice"
+                    value={form.salePrice}
+                    onChange={(val) => setForm({ ...form, salePrice: val.toString() })}
+                    placeholder={form.imei ? 'Giá nhập + 2 triệu' : 'Giá nhập x2'}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {form.imei ? 'Mặc định: Giá nhập + 2.000.000đ' : 'Mặc định: Giá nhập x2'}. Có thể sửa.
+                  </p>
                 </div>
 
                 {/* Quantity - only show for non-IMEI products */}

@@ -3053,6 +3053,7 @@ export type Database = {
           name: string
           note: string | null
           quantity: number
+          sale_price: number | null
           sku: string
           status: Database["public"]["Enums"]["product_status"]
           supplier_id: string | null
@@ -3073,6 +3074,7 @@ export type Database = {
           name: string
           note?: string | null
           quantity?: number
+          sale_price?: number | null
           sku: string
           status?: Database["public"]["Enums"]["product_status"]
           supplier_id?: string | null
@@ -3093,6 +3095,7 @@ export type Database = {
           name?: string
           note?: string | null
           quantity?: number
+          sale_price?: number | null
           sku?: string
           status?: Database["public"]["Enums"]["product_status"]
           supplier_id?: string | null

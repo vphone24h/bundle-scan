@@ -44,6 +44,7 @@ export interface ImportReceiptItem {
   categoryId: string;
   categoryName?: string;
   importPrice: number;
+  salePrice?: number; // Giá bán gợi ý (không bắt buộc)
   quantity: number; // Always 1 for IMEI products, can be >1 for non-IMEI
   supplierId: string;
   supplierName?: string;
