@@ -164,13 +164,13 @@ export function TaxReport() {
     // Row 3: blank
     wsData.push([]);
 
-    // Row 4: Title (center, merged across all cols)
+    // Row 4: Title in column C (Diễn giải)
     const periodStr = `Từ ngày ${format(period.start, 'dd/MM/yyyy')} đến ngày ${format(period.end, 'dd/MM/yyyy')}`;
-    wsData.push(['SỔ DOANH THU BÁN HÀNG HÓA, DỊCH VỤ']);
-    // Row 5: Địa điểm
-    wsData.push([`Địa điểm kinh doanh: ${businessAddress || '...........................'}`]);
-    // Row 6: Kỳ kê khai
-    wsData.push([`Kỳ kê khai: ${periodStr}`]);
+    wsData.push(['', '', 'SỔ DOANH THU BÁN HÀNG HÓA, DỊCH VỤ', '']);
+    // Row 5: Địa điểm in column C
+    wsData.push(['', '', `Địa điểm kinh doanh: ${businessAddress || '...........................'}`, '']);
+    // Row 6: Kỳ kê khai in column C
+    wsData.push(['', '', `Kỳ kê khai: ${periodStr}`, '']);
     // Row 7: blank
     wsData.push([]);
 
@@ -228,10 +228,7 @@ export function TaxReport() {
       { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
       { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } },
       { s: { r: 2, c: 0 }, e: { r: 2, c: 2 } },
-      // Title rows span all 4 cols
-      { s: { r: 4, c: 0 }, e: { r: 4, c: 3 } },
-      { s: { r: 5, c: 0 }, e: { r: 5, c: 3 } },
-      { s: { r: 6, c: 0 }, e: { r: 6, c: 3 } },
+      // No full-row merges for title rows - they sit in column C
       // Table header: "Chứng từ" spans cols 0-1 (row 8)
       { s: { r: 8, c: 0 }, e: { r: 8, c: 1 } },
       // "Diễn giải" spans rows 8-9 (vertical merge)
