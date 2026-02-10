@@ -1,5 +1,6 @@
 import { ImportReceiptItem } from '@/types/warehouse';
 import { formatCurrency } from '@/lib/mockData';
+import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
 import { Button } from '@/components/ui/button';
 import { Trash2, ShoppingCart } from 'lucide-react';
 
@@ -55,6 +56,11 @@ export function ImportCart({ items, onRemove, onCheckout }: ImportCartProps) {
                       </p>
                     )}
                   </div>
+                  {item.salePrice && item.salePrice > 0 && (
+                    <p className="text-xs text-success mt-0.5">
+                      Giá bán: {formatCurrencyWithSpaces(item.salePrice)}đ
+                    </p>
+                  )}
                 </div>
                 <Button
                   variant="ghost"

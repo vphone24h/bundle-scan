@@ -33,6 +33,7 @@ interface ParsedRow {
   productName: string;
   sku: string;
   importPrice: number;
+  salePrice?: number;
   importDate?: string;
   supplierName?: string;
   branchName?: string;
@@ -85,18 +86,27 @@ export function ExcelImportDialog({
       const parsed: ParsedRow[] = rows.map((row) => {
         const errors: string[] = [];
         
-        // Column order: IMEI | Tên sản phẩm | SKU | Giá nhập | Ngày nhập | Nhà cung cấp | Chi nhánh | Thư mục | Số lượng | Ghi chú | Trạng thái
+        // Column order: IMEI | Tên sản phẩm | SKU | Giá nhập | Giá bán | Ngày nhập | Nhà cung cấp | Chi nhánh | Thư mục | Số lượng | Ghi chú | Trạng thái
         const imei = row[0] ? String(row[0]).trim() : undefined;
         const productName = String(row[1] || '').trim();
         const sku = String(row[2] || '').trim();
         const importPrice = Number(row[3]) || 0;
-        const importDate = row[4] ? String(row[4]).trim() : undefined;
-        const supplierName = row[5] ? String(row[5]).trim() : undefined;
-        const branchName = row[6] ? String(row[6]).trim() : undefined;
-        const categoryName = String(row[7] || '').trim(); // Thư mục = Danh mục
-        const quantity = imei ? 1 : (Number(row[8]) || 1); // IMEI products always have quantity 1
-        const note = row[9] ? String(row[9]).trim() : undefined;
-        // Column 10 is Trạng thái - ignored on import (always "Tồn kho" for new items)
+        const rawSalePrice = row[4] ? Number(row[4]) : undefined;
+        const importDate = row[5] ? String(row[5]).trim() : undefined;
+        const supplierName = row[6] ? String(row[6]).trim() : undefined;
+        const branchName = row[7] ? String(row[7]).trim() : undefined;
+        const categoryName = String(row[8] || '').trim(); // Thư mục = Danh mục
+        const quantity = imei ? 1 : (Number(row[9]) || 1); // IMEI products always have quantity 1
+        const note = row[10] ? String(row[10]).trim() : undefined;
+        // Column 11 is Trạng thái - ignored on import
+
+        // Auto-calculate sale price if not provided
+        let salePrice = rawSalePrice;
+        if (!salePrice || salePrice <= 0) {
+          if (importPrice > 0) {
+            salePrice = imei ? importPrice + 2000000 : importPrice * 2;
+          }
+        }
 
         // Validate required fields
         if (!productName) errors.push('Thiếu tên sản phẩm');
@@ -113,8 +123,6 @@ export function ExcelImportDialog({
           errors.push(`Thư mục "${categoryName}" không tồn tại`);
         }
 
-        // Note: Supplier validation removed - new suppliers will be auto-created during import
-
         // Validate branch if provided
         if (branchName && branches.length > 0) {
           const matchedBranch = branches.find(
@@ -130,6 +138,7 @@ export function ExcelImportDialog({
           productName,
           sku,
           importPrice,
+          salePrice,
           importDate,
           supplierName,
           branchName,
@@ -284,6 +293,7 @@ export function ExcelImportDialog({
         categoryId: row.categoryId || '',
         categoryName: row.categoryName,
         importPrice: row.importPrice,
+        salePrice: row.salePrice,
         quantity: row.quantity,
         supplierId: '',
         supplierName: group.supplierName,
