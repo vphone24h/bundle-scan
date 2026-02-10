@@ -46,6 +46,7 @@ interface ProductForBarcode {
   sku: string;
   imei?: string;
   importPrice: number;
+  salePrice?: number;
 }
 
 interface ProductPriceEntry {
@@ -118,7 +119,7 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
           sku: p.sku,
           imei: p.imei,
           importPrice: p.importPrice,
-          printPrice: p.importPrice, // Default to import price, user can change
+          printPrice: p.salePrice && p.salePrice > 0 ? p.salePrice : p.importPrice,
           quantity: 1,
         }))
       );
