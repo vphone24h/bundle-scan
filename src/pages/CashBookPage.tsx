@@ -159,14 +159,14 @@ export default function CashBookPage() {
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateFrom, setDateFrom] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+  const [dateTo, setDateTo] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [paymentSourceFilter, setPaymentSourceFilter] = useState('_all_');
   const [accountingFilter, setAccountingFilter] = useState('_all_');
   const [categoryFilter, setCategoryFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
   const [staffFilter, setStaffFilter] = useState('_all_');
-  const [timePreset, setTimePreset] = useState('');
+  const [timePreset, setTimePreset] = useState('today');
   
   // Shared time preset for summary cards + balance history
   const [summaryTimePreset, setSummaryTimePreset] = useState('this_month');
