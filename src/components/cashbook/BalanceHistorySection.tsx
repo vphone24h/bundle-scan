@@ -1,11 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { History, Download, ChevronDown, ChevronUp } from 'lucide-react';
-import { format, startOfWeek, startOfMonth, startOfYear, subDays, eachDayOfInterval, startOfDay, parseISO } from 'date-fns';
+import { format, eachDayOfInterval, startOfDay } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { formatCurrency } from '@/lib/mockData';
 import { exportToExcel } from '@/lib/exportExcel';
@@ -16,42 +14,16 @@ import type { CashBookEntry } from '@/hooks/useCashBook';
 interface BalanceHistoryProps {
   allEntries: CashBookEntry[] | undefined;
   latestOpeningBalances: Record<string, { amount: number; [key: string]: any }> | undefined | null;
+  dateRange: { from: Date; to: Date };
 }
 
-const presets = [
-  { key: 'today', label: 'Hôm nay' },
-  { key: 'yesterday', label: 'Hôm qua' },
-  { key: 'this_week', label: 'Tuần này' },
-  { key: 'this_month', label: 'Tháng này' },
-  { key: 'this_year', label: 'Năm nay' },
-  { key: 'custom', label: 'Tùy chọn' },
-];
-
-export function BalanceHistorySection({ allEntries, latestOpeningBalances }: BalanceHistoryProps) {
+export function BalanceHistorySection({ allEntries, latestOpeningBalances, dateRange }: BalanceHistoryProps) {
   const [expanded, setExpanded] = useState(false);
-  const [timePreset, setTimePreset] = useState('this_month');
-  const [customFrom, setCustomFrom] = useState('');
-  const [customTo, setCustomTo] = useState('');
 
   const openingTotal = useMemo(() => {
     if (!latestOpeningBalances) return 0;
     return Object.values(latestOpeningBalances).reduce((sum, ob) => sum + Number(ob.amount), 0);
   }, [latestOpeningBalances]);
-
-  const dateRange = useMemo(() => {
-    if (timePreset === 'custom' && customFrom && customTo) {
-      return { from: parseISO(customFrom), to: parseISO(customTo) };
-    }
-    const today = new Date();
-    switch (timePreset) {
-      case 'today': return { from: today, to: today };
-      case 'yesterday': { const y = subDays(today, 1); return { from: y, to: y }; }
-      case 'this_week': return { from: startOfWeek(today, { weekStartsOn: 1 }), to: today };
-      case 'this_month': return { from: startOfMonth(today), to: today };
-      case 'this_year': return { from: startOfYear(today), to: today };
-      default: return { from: startOfMonth(today), to: today };
-    }
-  }, [timePreset, customFrom, customTo]);
 
   const dailyBalances = useMemo(() => {
     if (!allEntries?.length) return [];
@@ -59,7 +31,6 @@ export function BalanceHistorySection({ allEntries, latestOpeningBalances }: Bal
     try {
       const days = eachDayOfInterval({ start: dateRange.from, end: dateRange.to });
 
-      // Group entries by date for O(1) lookup
       const byDate = new Map<string, { income: number; expense: number }>();
       allEntries.forEach(e => {
         const key = format(new Date(e.transaction_date), 'yyyy-MM-dd');
@@ -69,7 +40,6 @@ export function BalanceHistorySection({ allEntries, latestOpeningBalances }: Bal
         byDate.set(key, existing);
       });
 
-      // Cumulative totals before range start
       const rangeStart = startOfDay(dateRange.from);
       let cumIncome = 0;
       let cumExpense = 0;
@@ -93,7 +63,7 @@ export function BalanceHistorySection({ allEntries, latestOpeningBalances }: Bal
           dayExpense: dayData.expense,
           closingBalance: openingTotal + cumIncome - cumExpense,
         };
-      }).reverse(); // newest first
+      }).reverse();
     } catch {
       return [];
     }
@@ -113,7 +83,7 @@ export function BalanceHistorySection({ allEntries, latestOpeningBalances }: Bal
         { header: 'Chi trong ngày', key: 'dayExpense', width: 18, isNumeric: true },
         { header: 'Số dư cuối ngày', key: 'closingBalance', width: 20, isNumeric: true },
       ],
-      data: [...dailyBalances].reverse(), // oldest first for Excel
+      data: [...dailyBalances].reverse(),
     });
     toast({ title: 'Xuất Excel thành công' });
   };
@@ -141,37 +111,6 @@ export function BalanceHistorySection({ allEntries, latestOpeningBalances }: Bal
 
       {expanded && (
         <CardContent className="space-y-3 pt-0">
-          {/* Time presets */}
-          <div className="flex flex-wrap gap-1.5">
-            {presets.map(p => (
-              <Button
-                key={p.key}
-                variant={timePreset === p.key ? 'default' : 'outline'}
-                size="sm"
-                className="text-xs h-7 px-2.5"
-                onClick={() => {
-                  setTimePreset(p.key);
-                  if (p.key !== 'custom') { setCustomFrom(''); setCustomTo(''); }
-                }}
-              >
-                {p.label}
-              </Button>
-            ))}
-          </div>
-
-          {timePreset === 'custom' && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Từ ngày</Label>
-                <Input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="h-8 text-sm" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Đến ngày</Label>
-                <Input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="h-8 text-sm" />
-              </div>
-            </div>
-          )}
-
           {/* Export */}
           <Button variant="outline" size="sm" onClick={handleExport} className="w-full text-xs h-8">
             <Download className="h-3.5 w-3.5 mr-1.5" />

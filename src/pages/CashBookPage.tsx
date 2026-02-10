@@ -65,7 +65,7 @@ import {
   ArrowLeftRight,
   Landmark,
 } from 'lucide-react';
-import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isToday, subDays, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useCashBook, useCashBookCategories, useCreateCashBookEntry, useUpdateCashBookEntry, useDeleteCashBookEntry, useCreateCashBookCategory, type CashBookEntry } from '@/hooks/useCashBook';
 import { useBranches } from '@/hooks/useBranches';
@@ -167,6 +167,11 @@ export default function CashBookPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [staffFilter, setStaffFilter] = useState('_all_');
   const [timePreset, setTimePreset] = useState('');
+  
+  // Shared time preset for summary cards + balance history
+  const [summaryTimePreset, setSummaryTimePreset] = useState('this_month');
+  const [summaryCustomFrom, setSummaryCustomFrom] = useState('');
+  const [summaryCustomTo, setSummaryCustomTo] = useState('');
   
   // Add category dialog
   const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
@@ -337,14 +342,36 @@ export default function CashBookPage() {
     return result;
   }, [allEntries, allPaymentSources, latestOpeningBalances]);
 
-  const todayStats = useMemo(() => {
+  // Shared date range for summary + balance history
+  const summaryDateRange = useMemo(() => {
+    if (summaryTimePreset === 'custom' && summaryCustomFrom && summaryCustomTo) {
+      return { from: parseISO(summaryCustomFrom), to: parseISO(summaryCustomTo) };
+    }
+    const today = new Date();
+    switch (summaryTimePreset) {
+      case 'today': return { from: today, to: today };
+      case 'yesterday': { const y = subDays(today, 1); return { from: y, to: y }; }
+      case 'this_week': return { from: startOfWeek(today, { weekStartsOn: 1 }), to: today };
+      case 'this_month': return { from: startOfMonth(today), to: today };
+      case 'this_year': return { from: startOfYear(today), to: today };
+      default: return { from: startOfMonth(today), to: today };
+    }
+  }, [summaryTimePreset, summaryCustomFrom, summaryCustomTo]);
+
+  // Summary totals based on shared time preset
+  const summaryTotals = useMemo(() => {
     if (!allEntries) return { income: 0, expense: 0 };
-    const todayEntries = allEntries.filter(e => isToday(new Date(e.transaction_date)));
+    const rangeStart = startOfDay(summaryDateRange.from);
+    const rangeEnd = endOfDay(summaryDateRange.to);
+    const filtered = allEntries.filter(e => {
+      const d = new Date(e.transaction_date);
+      return d >= rangeStart && d <= rangeEnd;
+    });
     return {
-      income: todayEntries.filter(e => e.type === 'income').reduce((sum, e) => sum + Number(e.amount), 0),
-      expense: todayEntries.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.amount), 0),
+      income: filtered.filter(e => e.type === 'income').reduce((sum, e) => sum + Number(e.amount), 0),
+      expense: filtered.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.amount), 0),
     };
-  }, [allEntries]);
+  }, [allEntries, summaryDateRange]);
 
   const hasActiveFilters = dateFrom || dateTo || paymentSourceFilter !== '_all_' || accountingFilter !== '_all_' || categoryFilter !== '_all_' || searchTerm || staffFilter !== '_all_';
 
@@ -817,7 +844,7 @@ export default function CashBookPage() {
         )}
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -829,50 +856,6 @@ export default function CashBookPage() {
                 </div>
                 <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Wallet className="h-5 w-5 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Tiền vào hôm nay</p>
-                  <p className="text-2xl font-bold text-green-600">{formatCurrency(todayStats.income)}</p>
-                </div>
-                <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Tiền ra hôm nay</p>
-                  <p className="text-2xl font-bold text-destructive">{formatCurrency(todayStats.expense)}</p>
-                </div>
-                <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
-                  <TrendingDown className="h-5 w-5 text-destructive" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Chênh lệch hôm nay</p>
-                  <p className={cn("text-2xl font-bold", todayStats.income - todayStats.expense >= 0 ? 'text-green-600' : 'text-destructive')}>
-                    {formatCurrency(todayStats.income - todayStats.expense)}
-                  </p>
-                </div>
-                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                  <Wallet className="h-5 w-5 text-muted-foreground" />
                 </div>
               </div>
             </CardContent>
@@ -962,36 +945,78 @@ export default function CashBookPage() {
           </CardContent>
         </Card>
 
-        {/* Tổng thu / Tổng chi - Always visible */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="border-green-200 dark:border-green-800">
-            <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
-              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-green-100 dark:bg-green-950/30 flex items-center justify-center shrink-0">
-                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+        {/* Tiền vào / Tiền ra with shared time filter */}
+        <div className="space-y-3">
+          {/* Time presets */}
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { key: 'today', label: 'Hôm nay' },
+              { key: 'yesterday', label: 'Hôm qua' },
+              { key: 'this_week', label: 'Tuần này' },
+              { key: 'this_month', label: 'Tháng này' },
+              { key: 'this_year', label: 'Năm nay' },
+              { key: 'custom', label: 'Tùy chọn' },
+            ].map(p => (
+              <Button
+                key={p.key}
+                variant={summaryTimePreset === p.key ? 'default' : 'outline'}
+                size="sm"
+                className="text-xs h-7 px-2.5"
+                onClick={() => {
+                  setSummaryTimePreset(p.key);
+                  if (p.key !== 'custom') { setSummaryCustomFrom(''); setSummaryCustomTo(''); }
+                }}
+              >
+                {p.label}
+              </Button>
+            ))}
+          </div>
+
+          {summaryTimePreset === 'custom' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Từ ngày</Label>
+                <Input type="date" value={summaryCustomFrom} onChange={e => setSummaryCustomFrom(e.target.value)} className="h-8 text-sm" />
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">Tổng thu{hasActiveFilters ? ' (lọc)' : ''}</p>
-                <p className="text-sm sm:text-xl font-bold text-green-600 break-all leading-tight">{formatCurrency(filteredTotals.income)}</p>
+              <div className="space-y-1">
+                <Label className="text-xs">Đến ngày</Label>
+                <Input type="date" value={summaryCustomTo} onChange={e => setSummaryCustomTo(e.target.value)} className="h-8 text-sm" />
               </div>
-            </CardContent>
-          </Card>
-          <Card className="border-red-200 dark:border-red-800">
-            <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
-              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
-                <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">Tổng chi{hasActiveFilters ? ' (lọc)' : ''}</p>
-                <p className="text-sm sm:text-xl font-bold text-destructive break-all leading-tight">{formatCurrency(filteredTotals.expense)}</p>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          )}
+
+          {/* Income / Expense cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="border-green-200 dark:border-green-800">
+              <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-green-100 dark:bg-green-950/30 flex items-center justify-center shrink-0">
+                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">Tiền vào</p>
+                  <p className="text-sm sm:text-xl font-bold text-green-600 break-all leading-tight">{formatCurrency(summaryTotals.income)}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-red-200 dark:border-red-800">
+              <CardContent className="p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+                  <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground leading-tight">Tiền ra</p>
+                  <p className="text-sm sm:text-xl font-bold text-destructive break-all leading-tight">{formatCurrency(summaryTotals.expense)}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        {/* Balance History */}
+        {/* Balance History - uses same time filter */}
         <BalanceHistorySection
           allEntries={allEntries}
           latestOpeningBalances={latestOpeningBalances}
+          dateRange={summaryDateRange}
         />
 
         {/* Filters */}
