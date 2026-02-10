@@ -945,6 +945,9 @@ export default function CashBookPage() {
           </CardContent>
         </Card>
 
+        {/* Section: Tổng quan */}
+        <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center gap-2">📊 Tổng quan</h2>
+
         {/* Tiền vào / Tiền ra with shared time filter */}
         <div className="space-y-3">
           {/* Time presets */}
@@ -1018,6 +1021,9 @@ export default function CashBookPage() {
           latestOpeningBalances={latestOpeningBalances}
           dateRange={summaryDateRange}
         />
+
+        {/* Section: Chi tiết */}
+        <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center gap-2 mt-2">📋 Chi tiết</h2>
 
         {/* Filtered Summary Totals - above filters */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
