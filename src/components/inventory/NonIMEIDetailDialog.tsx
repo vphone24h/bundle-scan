@@ -18,6 +18,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
 import { useProductImportHistory } from '@/hooks/useInventory';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface NonIMEIDetailDialogProps {
   open: boolean;
@@ -38,6 +39,8 @@ export function NonIMEIDetailDialog({
   totalStock,
   avgImportPrice,
 }: NonIMEIDetailDialogProps) {
+  const { data: permissions } = usePermissions();
+  const canViewImportPrice = permissions?.canViewImportPrice ?? false;
   const { data: importHistory, isLoading } = useProductImportHistory(open ? productId : null);
 
   // Tính tổng số lượng đã nhập
@@ -71,9 +74,9 @@ export function NonIMEIDetailDialog({
                   <TableHead className="w-[50px]">#</TableHead>
                   <TableHead>Ngày nhập</TableHead>
                   <TableHead>Mã phiếu</TableHead>
-                  <TableHead className="text-right">Giá nhập</TableHead>
+                  {canViewImportPrice && <TableHead className="text-right">Giá nhập</TableHead>}
                   <TableHead className="text-center">Số lượng</TableHead>
-                  <TableHead className="text-right">Thành tiền</TableHead>
+                  {canViewImportPrice && <TableHead className="text-right">Thành tiền</TableHead>}
                   <TableHead>Nhà cung cấp</TableHead>
                 </TableRow>
               </TableHeader>
@@ -91,15 +94,19 @@ export function NonIMEIDetailDialog({
                     <TableCell className="font-mono text-primary">
                       {item.import_receipts?.code || '-'}
                     </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrencyWithSpaces(item.import_price)}
-                    </TableCell>
+                    {canViewImportPrice && (
+                      <TableCell className="text-right font-medium">
+                        {formatCurrencyWithSpaces(item.import_price)}
+                      </TableCell>
+                    )}
                     <TableCell className="text-center">
                       <Badge variant="outline">{item.quantity}</Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrencyWithSpaces(item.import_price * item.quantity)}
-                    </TableCell>
+                    {canViewImportPrice && (
+                      <TableCell className="text-right">
+                        {formatCurrencyWithSpaces(item.import_price * item.quantity)}
+                      </TableCell>
+                    )}
                     <TableCell>{item.suppliers?.name || '-'}</TableCell>
                   </TableRow>
                 ))}
@@ -117,11 +124,13 @@ export function NonIMEIDetailDialog({
               Tồn kho: <strong className={totalStock <= 2 ? 'text-destructive' : ''}>{totalStock}</strong>
             </span>
           </div>
-          <div>
-            <span className="text-muted-foreground">
-              Giá nhập TB: <strong className="text-primary">{formatCurrencyWithSpaces(avgImportPrice)}</strong>
-            </span>
-          </div>
+          {canViewImportPrice && (
+            <div>
+              <span className="text-muted-foreground">
+                Giá nhập TB: <strong className="text-primary">{formatCurrencyWithSpaces(avgImportPrice)}</strong>
+              </span>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

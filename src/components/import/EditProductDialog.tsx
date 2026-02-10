@@ -193,15 +193,17 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
 
         {product && (
           <div className="space-y-4">
-            {/* Price - read only */}
-            <div className="rounded-lg bg-muted/50 p-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Giá nhập:</span>
-                <span className="font-medium">
-                  {formatCurrency(Number(product.import_price))} (không thể sửa)
-                </span>
+            {/* Price - read only, only visible to users with import price permission */}
+            {permissions?.canViewImportPrice && (
+              <div className="rounded-lg bg-muted/50 p-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Giá nhập:</span>
+                  <span className="font-medium">
+                    {formatCurrency(Number(product.import_price))} (không thể sửa)
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Editable fields */}
             <div className="grid gap-4">

@@ -18,6 +18,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
 import { ProductDetail } from '@/hooks/useInventory';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface IMEIDetailDialogProps {
   open: boolean;
@@ -34,6 +35,9 @@ export function IMEIDetailDialog({
   sku,
   products,
 }: IMEIDetailDialogProps) {
+  const { data: permissions } = usePermissions();
+  const canViewImportPrice = permissions?.canViewImportPrice ?? false;
+
   // Only show in_stock products with IMEI
   const inStockProducts = products.filter(
     (p) => p.status === 'in_stock' && p.imei
@@ -64,7 +68,7 @@ export function IMEIDetailDialog({
                   <TableHead>IMEI</TableHead>
                   <TableHead>Tên sản phẩm</TableHead>
                   <TableHead>Chi nhánh</TableHead>
-                  <TableHead className="text-right">Giá nhập</TableHead>
+                  {canViewImportPrice && <TableHead className="text-right">Giá nhập</TableHead>}
                   <TableHead>Ngày nhập</TableHead>
                   <TableHead>Nhà cung cấp</TableHead>
                   <TableHead>Ghi chú</TableHead>
@@ -83,9 +87,11 @@ export function IMEIDetailDialog({
                     </TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell>{product.branchName || '-'}</TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrencyWithSpaces(product.importPrice)}
-                    </TableCell>
+                    {canViewImportPrice && (
+                      <TableCell className="text-right font-medium">
+                        {formatCurrencyWithSpaces(product.importPrice)}
+                      </TableCell>
+                    )}
                     <TableCell>
                       {format(new Date(product.importDate), 'dd/MM/yyyy', {
                         locale: vi,

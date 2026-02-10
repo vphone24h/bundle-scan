@@ -1,5 +1,6 @@
 import { Package, AlertTriangle, XCircle, TrendingUp, Wallet } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface InventoryStatsProps {
   totalProducts: number;
@@ -16,6 +17,9 @@ export function InventoryStats({
   outOfStockItems,
   totalValue,
 }: InventoryStatsProps) {
+  const { data: permissions } = usePermissions();
+  const canViewImportPrice = permissions?.canViewImportPrice ?? false;
+
   const stats = [
     {
       title: 'Tổng sản phẩm',
@@ -57,7 +61,7 @@ export function InventoryStats({
 
   return (
     <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
-      {stats.map((stat) => (
+      {stats.filter(stat => !(stat.title === 'Giá trị kho' && !canViewImportPrice)).map((stat) => (
         <Card key={stat.title}>
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-3 sm:gap-4">
