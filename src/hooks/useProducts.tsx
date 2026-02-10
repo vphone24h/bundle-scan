@@ -19,6 +19,7 @@ export interface Product {
   imei: string | null;
   category_id: string | null;
   import_price: number;
+  sale_price: number | null;
   import_date: string;
   supplier_id: string | null;
   branch_id: string | null;

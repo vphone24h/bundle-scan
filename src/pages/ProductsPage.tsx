@@ -38,6 +38,7 @@ function mapProductForTable(product: Product) {
     categoryId: product.category_id || '',
     categoryName: product.categories?.name,
     importPrice: Number(product.import_price),
+    salePrice: product.sale_price ? Number(product.sale_price) : undefined,
     importDate: new Date(product.import_date),
     supplierId: product.supplier_id || '',
     supplierName: product.suppliers?.name,
@@ -46,7 +47,7 @@ function mapProductForTable(product: Product) {
     status: product.status as 'in_stock' | 'sold' | 'returned',
     note: product.note || undefined,
     importReceiptId: product.import_receipt_id || undefined,
-    quantity: product.quantity || 1, // Default to 1 for IMEI products
+    quantity: product.quantity || 1,
   };
 }
 
@@ -164,6 +165,7 @@ export default function ProductsPage() {
         { header: 'IMEI', key: 'imei', width: 18 },
         { header: 'Danh mục', key: 'categoryName', width: 18 },
         { header: 'Giá nhập', key: 'importPrice', width: 15, isNumeric: true },
+        { header: 'Giá bán', key: 'salePrice', width: 15, isNumeric: true },
         { header: 'Ngày nhập', key: 'importDate', width: 12, format: (v) => formatDateForExcel(v) },
         { header: 'Nhà cung cấp', key: 'supplierName', width: 20 },
         { header: 'Chi nhánh', key: 'branchName', width: 18 },
@@ -176,6 +178,7 @@ export default function ProductsPage() {
         imei: p.imei || '',
         categoryName: p.categoryName || '',
         importPrice: p.importPrice,
+        salePrice: p.salePrice || '',
         importDate: p.importDate,
         supplierName: p.supplierName || '',
         branchName: p.branchName || '',
