@@ -1,7 +1,16 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -17,13 +26,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Loader2, Download, AlertTriangle, CheckCircle2, Info, Building2, FolderTree } from 'lucide-react';
+import { Loader2, Download, AlertTriangle, CheckCircle2, Info, Building2, FolderTree, Settings2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { vi } from 'date-fns/locale';
 import { useReportStats, useReportChartData } from '@/hooks/useReportStats';
 import { formatCurrency } from '@/lib/mockData';
 import { exportToExcel } from '@/lib/exportExcel';
+import * as XLSX from 'xlsx';
 import { useBranches } from '@/hooks/useBranches';
 import { useCategories } from '@/hooks/useCategories';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -80,6 +90,18 @@ export function TaxReport() {
   const [selectedBranchId, setSelectedBranchId] = useState<string>('all');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
 
+  const [businessName, setBusinessName] = useState(() => localStorage.getItem('tax_business_name') || '');
+  const [taxCode, setTaxCode] = useState(() => localStorage.getItem('tax_code') || '');
+  const [businessAddress, setBusinessAddress] = useState(() => localStorage.getItem('tax_business_address') || '');
+  const [showBusinessDialog, setShowBusinessDialog] = useState(false);
+
+  // Persist business info
+  useEffect(() => {
+    localStorage.setItem('tax_business_name', businessName);
+    localStorage.setItem('tax_code', taxCode);
+    localStorage.setItem('tax_business_address', businessAddress);
+  }, [businessName, taxCode, businessAddress]);
+
   const { data: branches } = useBranches();
   const { data: categories } = useCategories();
   const { data: permissions } = usePermissions();
@@ -130,36 +152,98 @@ export function TaxReport() {
   const handleExportExcel = () => {
     if (!chartData || !selectedIndustry) return;
 
-    const dailyData = chartData.map((day, idx) => ({
-      stt: idx + 1,
-      date: format(new Date(day.date), 'dd/MM/yyyy'),
-      description: `Ngành ${selectedIndustry.label} trong ngày`,
-      amount: day.revenue,
-    }));
+    const wb = XLSX.utils.book_new();
+    const wsData: any[][] = [];
 
-    const totalRevenue = dailyData.reduce((sum, d) => sum + d.amount, 0);
-    const netRevenue = stats?.netRevenue || totalRevenue;
+    // --- Header section (top-left: business info, top-right: form reference) ---
+    // Row 1: Business name + right side form code
+    wsData.push([`HỘ, CÁ NHÂN KINH DOANH: ${businessName || '......'}`, '', '', `Mẫu số S2a-HKD`]);
+    // Row 2: Tax code + right side reference
+    wsData.push([`Mã số thuế: ${taxCode || '..............................'}`, '', '', `(Kèm theo Thông tư số 152/2025/TT-BTC ngày`]);
+    // Row 3: Address + right side reference cont.
+    wsData.push([`Địa chỉ: ${businessAddress || '..............................'}`, '', '', `31 tháng 12 năm 2025 của Bộ trưởng Bộ Tài chính)`]);
+    // Row 4: blank
+    wsData.push([]);
 
-    // Add summary rows
-    const summaryRows = [
-      { stt: '', date: '', description: 'Tổng cộng (Doanh thu thuần)', amount: netRevenue },
-      { stt: '', date: '', description: `Thuế GTGT (${selectedIndustry.gtgt}%)`, amount: taxResult?.gtgt || 0 },
-      { stt: '', date: '', description: `Thuế TNCN`, amount: taxResult?.tncn || 0 },
-      { stt: '', date: '', description: 'Tổng số thuế GTGT phải nộp', amount: taxResult?.gtgt || 0 },
-      { stt: '', date: '', description: 'Tổng số thuế TNCN phải nộp', amount: taxResult?.tncn || 0 },
+    // --- Title section (center) ---
+    wsData.push(['', '', 'SỔ DOANH THU BÁN HÀNG HÓA, DỊCH VỤ', '']);
+    wsData.push(['', '', `Địa điểm kinh doanh: ${businessAddress || '..............................'}`, '']);
+    const periodStr = `Từ ngày ${format(period.start, 'dd/MM/yyyy')} đến ngày ${format(period.end, 'dd/MM/yyyy')}`;
+    wsData.push(['', '', `Kỳ kê khai: ${periodStr}`, '']);
+    // Row 8: blank
+    wsData.push([]);
+
+    // --- Table header ---
+    // Merged header row
+    wsData.push(['', 'Chứng từ', '', 'Diễn giải', 'Số tiền']);
+    wsData.push(['Số hiệu', 'Ngày, tháng', '', '', '']);
+    wsData.push(['A', 'B', '', 'C', '1']);
+
+    // Industry header row
+    wsData.push(['', '', '', `1. Ngành nghề: ${selectedIndustry.label}`, '']);
+
+    // Daily data rows
+    chartData.forEach((day, idx) => {
+      wsData.push([
+        idx + 1,
+        format(new Date(day.date), 'dd/MM/yyyy'),
+        '',
+        `Ngành ${selectedIndustry.label} trong ngày`,
+        day.revenue,
+      ]);
+    });
+
+    const netRevenue = stats?.netRevenue || 0;
+
+    // Summary rows
+    wsData.push(['', '', '', 'Tổng cộng (3)', netRevenue]);
+    wsData.push(['', '', '', `Thuế GTGT (${selectedIndustry.gtgt}%)`, taxResult?.gtgt || 0]);
+    wsData.push(['', '', '', 'Thuế TNCN', taxResult?.tncn || 0]);
+    wsData.push(['', '', '', 'Tổng số thuế GTGT phải nộp', taxResult?.gtgt || 0]);
+    wsData.push(['', '', '', 'Tổng số thuế TNCN phải nộp', taxResult?.tncn || 0]);
+
+    // Blank row
+    wsData.push([]);
+
+    // Signature section (right-aligned)
+    wsData.push(['', '', '', 'Ngày.... tháng...... năm......', '']);
+    wsData.push(['', '', '', 'NGƯỜI ĐẠI DIỆN HỘ KINH DOANH/', '']);
+    wsData.push(['', '', '', 'CÁ NHÂN KINH DOANH', '']);
+    wsData.push(['', '', '', '(Ký, họ tên, đóng dấu)', '']);
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 12 }, // A - Số hiệu
+      { wch: 15 }, // B - Ngày tháng
+      { wch: 5 },  // C - spacer
+      { wch: 45 }, // D - Diễn giải
+      { wch: 20 }, // E - Số tiền
     ];
 
-    exportToExcel({
-      filename: `BC_Thue_${period.label.replace(/[\/\s]/g, '_')}`,
-      sheetName: 'Sổ doanh thu',
-      columns: [
-        { header: 'Số hiệu (A)', key: 'stt', width: 10 },
-        { header: 'Ngày, tháng (B)', key: 'date', width: 15 },
-        { header: 'Diễn giải (C)', key: 'description', width: 40 },
-        { header: 'Số tiền (1)', key: 'amount', width: 20, isNumeric: true },
-      ],
-      data: [...dailyData, ...summaryRows],
-    });
+    // Merge cells for header/title rows
+    ws['!merges'] = [
+      // Business info merges (left side)
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }, // Row 1 left
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } }, // Row 2 left
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 2 } }, // Row 3 left
+      // Right side form reference
+      { s: { r: 0, c: 3 }, e: { r: 0, c: 4 } },
+      { s: { r: 1, c: 3 }, e: { r: 1, c: 4 } },
+      { s: { r: 2, c: 3 }, e: { r: 2, c: 4 } },
+      // Title merges (center)
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 4 } }, // SỔ DOANH THU
+      { s: { r: 5, c: 0 }, e: { r: 5, c: 4 } }, // Địa điểm
+      { s: { r: 6, c: 0 }, e: { r: 6, c: 4 } }, // Kỳ kê khai
+      // Table header merges
+      { s: { r: 8, c: 1 }, e: { r: 8, c: 2 } }, // Chứng từ spans 2 cols
+      { s: { r: 8, c: 3 }, e: { r: 8, c: 3 } },
+      { s: { r: 9, c: 2 }, e: { r: 9, c: 2 } },
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'S2a');
+    XLSX.writeFile(wb, `BC_Thue_S2a_${period.label.replace(/[\/\s]/g, '_')}.xlsx`);
   };
 
   return (
@@ -433,15 +517,64 @@ export function TaxReport() {
           {/* Daily Detail Table */}
           {!isExempt && (
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg">SỔ DOANH THU BÁN HÀNG HÓA, DỊCH VỤ</CardTitle>
-                <div className="flex flex-col items-end gap-1">
-                  <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={chartLoading || !chartData}>
-                    <Download className="h-4 w-4 mr-1" />
-                    Xuất Excel
-                  </Button>
-                  <span className="text-[10px] text-muted-foreground italic">Xuất excel nộp cơ quan thuế</span>
+              <CardHeader className="flex flex-col gap-3">
+                <div className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-lg">SỔ DOANH THU BÁN HÀNG HÓA, DỊCH VỤ</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Dialog open={showBusinessDialog} onOpenChange={setShowBusinessDialog}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Settings2 className="h-4 w-4 mr-1" />
+                          Thông tin HKD
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Thông tin Hộ Kinh Doanh</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 pt-2">
+                          <div className="space-y-2">
+                            <Label>Tên hộ kinh doanh / Cá nhân kinh doanh</Label>
+                            <Input
+                              placeholder="VD: Hộ kinh doanh Nguyễn Văn A"
+                              value={businessName}
+                              onChange={e => setBusinessName(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Mã số thuế</Label>
+                            <Input
+                              placeholder="VD: 0123456789"
+                              value={taxCode}
+                              onChange={e => setTaxCode(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Địa chỉ kinh doanh</Label>
+                            <Input
+                              placeholder="VD: 123 Nguyễn Trãi, P.1, Q.1, TP.HCM"
+                              value={businessAddress}
+                              onChange={e => setBusinessAddress(e.target.value)}
+                            />
+                          </div>
+                          <Button className="w-full" onClick={() => setShowBusinessDialog(false)}>
+                            Lưu thông tin
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={chartLoading || !chartData}>
+                      <Download className="h-4 w-4 mr-1" />
+                      Xuất Excel (S2a-HKD)
+                    </Button>
+                  </div>
                 </div>
+                {businessName && (
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    <p><strong>HKD:</strong> {businessName} | <strong>MST:</strong> {taxCode || 'Chưa có'} | <strong>Địa chỉ:</strong> {businessAddress || 'Chưa có'}</p>
+                  </div>
+                )}
+                <span className="text-[10px] text-muted-foreground italic">Xuất excel nộp cơ quan thuế (Mẫu S2a-HKD theo TT 152/2025/TT-BTC)</span>
               </CardHeader>
               <CardContent>
                 {chartLoading ? (
