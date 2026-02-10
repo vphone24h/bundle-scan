@@ -114,7 +114,7 @@ const allNavItems: NavItem[] = [
   { title: 'Lịch sử thao tác', href: '/audit-logs', icon: History, permission: 'canViewAuditLogs' },
   { title: 'Landing Page', href: '/landing-settings', icon: Globe, permission: 'canManageBranches' },
   { title: 'Ứng dụng', href: '/applications', icon: AppWindow },
-  { title: 'Affiliate', href: '/affiliate', icon: Share2 },
+  { title: 'Affiliate', href: '/affiliate', icon: Share2, permission: 'canManageBranches' },
   { title: 'Tải ứng dụng', href: '/install-app', icon: Download },
   { title: 'Gói dịch vụ', href: '/subscription', icon: CreditCard, permission: 'canManageBranches' },
 ];
