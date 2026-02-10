@@ -75,6 +75,7 @@ import { formatCurrency } from '@/lib/mockData';
 import { formatNumberWithSpaces, parseFormattedNumber } from '@/lib/formatNumber';
 import { cn } from '@/lib/utils';
 import { TransferFundsDialog } from '@/components/cashbook/TransferFundsDialog';
+import { BalanceHistorySection } from '@/components/cashbook/BalanceHistorySection';
 import { CashBookDetailDialog } from '@/components/cashbook/CashBookDetailDialog';
 import { OpeningBalanceDialog } from '@/components/cashbook/OpeningBalanceDialog';
 import { useLatestOpeningBalances } from '@/hooks/useOpeningBalance';
@@ -986,6 +987,12 @@ export default function CashBookPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Balance History */}
+        <BalanceHistorySection
+          allEntries={allEntries}
+          latestOpeningBalances={latestOpeningBalances}
+        />
 
         {/* Filters */}
         <Card>
