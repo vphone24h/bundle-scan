@@ -30,6 +30,7 @@ export interface UserPermissions {
   canManageInvoiceTemplates: boolean;
   canManageCashBook: boolean;
   // Quyền đặc biệt (chỉ Super Admin)
+  canEditSalePrice: boolean;
   canAdjustProductQuantity: boolean;
   canDeleteIMEIProducts: boolean;
 }
@@ -57,6 +58,7 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
   canManageCustomers: false,
   canManageInvoiceTemplates: false,
   canManageCashBook: false,
+  canEditSalePrice: false,
   canAdjustProductQuantity: false,
   canDeleteIMEIProducts: false,
 };
@@ -89,6 +91,7 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
         canManageCustomers: true,
         canManageInvoiceTemplates: true,
         canManageCashBook: true,
+        canEditSalePrice: true,
         canAdjustProductQuantity: true,
         canDeleteIMEIProducts: true,
       };
@@ -117,6 +120,7 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
         canManageCustomers: true,
         canManageInvoiceTemplates: true,
         canManageCashBook: true,
+        canEditSalePrice: true,
         canAdjustProductQuantity: false,
         canDeleteIMEIProducts: false,
       };
@@ -145,6 +149,7 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
         canManageCustomers: true,       // ✅ Xem khách hàng
         canManageInvoiceTemplates: true, // ✅ Hoá đơn điện tử
         canManageCashBook: true,        // ✅ Xem/tạo thu chi sổ quỹ
+        canEditSalePrice: false,         // ❌ Không sửa giá bán
         canAdjustProductQuantity: false, // ❌
         canDeleteIMEIProducts: false,    // ❌
       };
@@ -174,6 +179,7 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
         canManageCustomers: true,
         canManageInvoiceTemplates: false,
         canManageCashBook: false,
+        canEditSalePrice: false,
         canAdjustProductQuantity: false,
         canDeleteIMEIProducts: false,
       };
