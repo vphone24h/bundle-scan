@@ -69,6 +69,25 @@ export function useCreateDebtTag() {
   });
 }
 
+export function useUpdateDebtTag() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name, color }: { id: string; name: string; color: string }) => {
+      const { data, error } = await supabase
+        .from('debt_tags')
+        .update({ name, color })
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as DebtTag;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['debt-tags'] });
+    },
+  });
+}
+
 export function useDeleteDebtTag() {
   const queryClient = useQueryClient();
   return useMutation({
