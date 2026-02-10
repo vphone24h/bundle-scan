@@ -114,7 +114,7 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
       };
 
     case 'cashier':
-      // ✅ Thu ngân - phụ trách tiền & bán hàng tại quầy
+      // ✅ Kế toán - phụ trách tiền & bán hàng tại quầy
       return {
         ...base,
         canViewAllBranches: false,    // ❌ Chỉ chi nhánh được gán

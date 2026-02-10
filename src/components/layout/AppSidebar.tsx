@@ -62,7 +62,7 @@ const getRoleName = (role: UserRole | undefined): string => {
   switch (role) {
     case 'super_admin': return 'Admin Tổng';
     case 'branch_admin': return 'Admin CN';
-    case 'cashier': return 'Thu Ngân';
+    case 'cashier': return 'Kế Toán';
     case 'staff': return 'Nhân viên';
     default: return 'Nhân viên';
   }

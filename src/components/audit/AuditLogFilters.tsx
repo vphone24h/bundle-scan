@@ -257,7 +257,7 @@ export function AuditLogFiltersComponent({ filters, onFiltersChange }: AuditLogF
                     <span className="ml-1 text-xs opacity-70">
                       ({user.user_role === 'super_admin' ? 'Admin' : 
                         user.user_role === 'branch_admin' ? 'QL' : 
-                        user.user_role === 'cashier' ? 'TN' : 'NV'})
+                        user.user_role === 'cashier' ? 'KT' : 'NV'})
                     </span>
                   </Badge>
                 ))}

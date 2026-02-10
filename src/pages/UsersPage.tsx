@@ -47,7 +47,7 @@ const roleLabels: Record<UserRole, string> = {
   super_admin: 'Admin Tổng',
   branch_admin: 'Admin Chi nhánh',
   staff: 'Nhân viên',
-  cashier: 'Thu ngân',
+  cashier: 'Kế toán',
 };
 
 const roleColors: Record<UserRole, string> = {
@@ -100,7 +100,7 @@ const roleDescriptions: Record<UserRole, { title: string; permissions: string[] 
     ],
   },
   cashier: {
-    title: 'Thu ngân - Phụ trách tiền & bán hàng tại quầy',
+    title: 'Kế toán - Phụ trách tiền & bán hàng tại quầy',
     permissions: [
       '✅ Xuất hàng (bán hàng)',
       '✅ Xem sổ quỹ, báo cáo bán hàng',
