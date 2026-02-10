@@ -202,14 +202,16 @@ export function ProductTable({
                 <div className="flex items-center justify-between pl-7">
                   <div className="flex flex-col gap-0.5">
                     <div className="flex items-center gap-3">
-                      <span className="font-semibold text-sm">{formatCurrency(product.importPrice)}</span>
+                      {permissions?.canViewImportPrice && (
+                        <span className="font-semibold text-sm">{formatCurrency(product.importPrice)}</span>
+                      )}
+                      {product.salePrice && product.salePrice > 0 && (
+                        <span className={cn("text-xs text-success", !permissions?.canViewImportPrice && "font-semibold text-sm text-foreground")}>
+                          {permissions?.canViewImportPrice ? 'Giá bán: ' : ''}{formatCurrencyWithSpaces(product.salePrice)}đ
+                        </span>
+                      )}
                       {getStatusBadge(product.status)}
                     </div>
-                    {product.salePrice && product.salePrice > 0 && (
-                      <span className="text-xs text-success">
-                        Giá bán: {formatCurrencyWithSpaces(product.salePrice)}đ
-                      </span>
-                    )}
                   </div>
                   <span className="text-xs text-muted-foreground">
                     {formatDate(product.importDate)}
@@ -260,7 +262,7 @@ export function ProductTable({
               <th>SKU</th>
               <th className="hidden lg:table-cell">IMEI</th>
               <th className="hidden sm:table-cell">Danh mục</th>
-              <th className="text-right">Giá nhập</th>
+              {permissions?.canViewImportPrice && <th className="text-right">Giá nhập</th>}
               <th className="text-right hidden sm:table-cell">Giá bán</th>
               <th className="hidden md:table-cell">Ngày nhập</th>
               <th className="hidden lg:table-cell">Nhà cung cấp</th>
@@ -282,7 +284,7 @@ export function ProductTable({
                 <td className="text-muted-foreground text-xs sm:text-sm">{product.sku}</td>
                 <td className="font-mono text-xs sm:text-sm hidden lg:table-cell">{product.imei || '-'}</td>
                 <td className="hidden sm:table-cell">{product.categoryName}</td>
-                <td className="text-right font-medium text-sm">{formatCurrency(product.importPrice)}</td>
+                {permissions?.canViewImportPrice && <td className="text-right font-medium text-sm">{formatCurrency(product.importPrice)}</td>}
                 <td className="text-right font-medium text-sm hidden sm:table-cell">
                   {product.salePrice ? formatCurrencyWithSpaces(product.salePrice) + 'đ' : '-'}
                 </td>
