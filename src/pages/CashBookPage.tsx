@@ -169,7 +169,7 @@ export default function CashBookPage() {
   const [timePreset, setTimePreset] = useState('today');
   
   // Shared time preset for summary cards + balance history
-  const [summaryTimePreset, setSummaryTimePreset] = useState('this_month');
+  const [summaryTimePreset, setSummaryTimePreset] = useState('today');
   const [summaryCustomFrom, setSummaryCustomFrom] = useState('');
   const [summaryCustomTo, setSummaryCustomTo] = useState('');
   
