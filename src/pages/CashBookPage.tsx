@@ -961,6 +961,32 @@ export default function CashBookPage() {
           </CardContent>
         </Card>
 
+        {/* Tổng thu / Tổng chi - Always visible */}
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="border-green-200 dark:border-green-800">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-950/30 flex items-center justify-center shrink-0">
+                <TrendingUp className="h-5 w-5 text-green-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Tổng thu{hasActiveFilters ? ' (đã lọc)' : ''}</p>
+                <p className="text-lg sm:text-xl font-bold text-green-600 truncate">{formatCurrency(filteredTotals.income)}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-red-200 dark:border-red-800">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+                <TrendingDown className="h-5 w-5 text-destructive" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Tổng chi{hasActiveFilters ? ' (đã lọc)' : ''}</p>
+                <p className="text-lg sm:text-xl font-bold text-destructive truncate">{formatCurrency(filteredTotals.expense)}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Filters */}
         <Card>
           <CardContent className="pt-6">
@@ -1107,23 +1133,6 @@ export default function CashBookPage() {
                     </div>
                   </div>
 
-                  {/* Filtered Totals: Tổng thu / Tổng chi */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-3 p-3 rounded-lg border bg-green-50 dark:bg-green-950/20">
-                      <TrendingUp className="h-5 w-5 text-green-600 shrink-0" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Tổng thu</p>
-                        <p className="text-lg font-bold text-green-600">{formatCurrency(filteredTotals.income)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 rounded-lg border bg-red-50 dark:bg-red-950/20">
-                      <TrendingDown className="h-5 w-5 text-destructive shrink-0" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Tổng chi</p>
-                        <p className="text-lg font-bold text-destructive">{formatCurrency(filteredTotals.expense)}</p>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
