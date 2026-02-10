@@ -65,7 +65,7 @@ import {
   ArrowLeftRight,
   Landmark,
 } from 'lucide-react';
-import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isToday } from 'date-fns';
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isToday, subDays, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useCashBook, useCashBookCategories, useCreateCashBookEntry, useUpdateCashBookEntry, useDeleteCashBookEntry, useCreateCashBookCategory, type CashBookEntry } from '@/hooks/useCashBook';
 import { useBranches } from '@/hooks/useBranches';
@@ -164,6 +164,8 @@ export default function CashBookPage() {
   const [accountingFilter, setAccountingFilter] = useState('_all_');
   const [categoryFilter, setCategoryFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
+  const [staffFilter, setStaffFilter] = useState('_all_');
+  const [timePreset, setTimePreset] = useState('');
   
   // Add category dialog
   const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
@@ -266,9 +268,27 @@ export default function CashBookPage() {
       // Category filter
       const matchesCategory = categoryFilter === '_all_' || entry.category === categoryFilter;
 
-      return matchesType && matchesSearch && matchesDate && matchesPaymentSource && matchesAccounting && matchesCategory;
+      // Staff filter
+      const matchesStaff = staffFilter === '_all_' || entry.created_by_name === staffFilter;
+
+      return matchesType && matchesSearch && matchesDate && matchesPaymentSource && matchesAccounting && matchesCategory && matchesStaff;
     });
-  }, [allEntries, typeFilter, searchTerm, dateFrom, dateTo, paymentSourceFilter, accountingFilter, categoryFilter]);
+  }, [allEntries, typeFilter, searchTerm, dateFrom, dateTo, paymentSourceFilter, accountingFilter, categoryFilter, staffFilter]);
+
+  // Filtered totals (react to all filters)
+  const filteredTotals = useMemo(() => {
+    const income = filteredEntries.filter(e => e.type === 'income').reduce((sum, e) => sum + Number(e.amount), 0);
+    const expense = filteredEntries.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.amount), 0);
+    return { income, expense };
+  }, [filteredEntries]);
+
+  // Unique staff names for filter
+  const uniqueStaffNames = useMemo(() => {
+    if (!allEntries) return [];
+    const names = new Set<string>();
+    allEntries.forEach(e => { if (e.created_by_name) names.add(e.created_by_name); });
+    return Array.from(names).sort();
+  }, [allEntries]);
 
   // Pagination for transactions
   const pagination = usePagination(filteredEntries, { 
@@ -325,7 +345,7 @@ export default function CashBookPage() {
     };
   }, [allEntries]);
 
-  const hasActiveFilters = dateFrom || dateTo || paymentSourceFilter !== '_all_' || accountingFilter !== '_all_' || categoryFilter !== '_all_' || searchTerm;
+  const hasActiveFilters = dateFrom || dateTo || paymentSourceFilter !== '_all_' || accountingFilter !== '_all_' || categoryFilter !== '_all_' || searchTerm || staffFilter !== '_all_';
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -334,6 +354,39 @@ export default function CashBookPage() {
     setPaymentSourceFilter('_all_');
     setAccountingFilter('_all_');
     setCategoryFilter('_all_');
+    setStaffFilter('_all_');
+    setTimePreset('');
+  };
+
+  const handleTimePreset = (preset: string) => {
+    const today = new Date();
+    let from: Date;
+    let to: Date = today;
+    
+    switch (preset) {
+      case 'today':
+        from = today;
+        break;
+      case 'yesterday':
+        from = subDays(today, 1);
+        to = subDays(today, 1);
+        break;
+      case 'this_week':
+        from = startOfWeek(today, { weekStartsOn: 1 });
+        break;
+      case 'this_month':
+        from = startOfMonth(today);
+        break;
+      case 'this_year':
+        from = startOfYear(today);
+        break;
+      default:
+        return;
+    }
+    
+    setDateFrom(format(from, 'yyyy-MM-dd'));
+    setDateTo(format(to, 'yyyy-MM-dd'));
+    setTimePreset(preset);
   };
   
   // Handle add category
@@ -952,69 +1005,124 @@ export default function CashBookPage() {
               </div>
 
               {showFilters && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 pt-4 border-t">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Từ ngày</Label>
-                    <Input
-                      type="date"
-                      value={dateFrom}
-                      onChange={(e) => setDateFrom(e.target.value)}
-                    />
+                <div className="space-y-4 pt-4 border-t">
+                  {/* Time Presets */}
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { key: 'today', label: 'Hôm nay' },
+                      { key: 'yesterday', label: 'Hôm qua' },
+                      { key: 'this_week', label: 'Tuần này' },
+                      { key: 'this_month', label: 'Tháng này' },
+                      { key: 'this_year', label: 'Năm nay' },
+                    ].map((p) => (
+                      <Button
+                        key={p.key}
+                        variant={timePreset === p.key ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleTimePreset(p.key)}
+                        className="text-xs"
+                      >
+                        {p.label}
+                      </Button>
+                    ))}
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Đến ngày</Label>
-                    <Input
-                      type="date"
-                      value={dateTo}
-                      onChange={(e) => setDateTo(e.target.value)}
-                    />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Từ ngày</Label>
+                      <Input
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => { setDateFrom(e.target.value); setTimePreset(''); }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Đến ngày</Label>
+                      <Input
+                        type="date"
+                        value={dateTo}
+                        onChange={(e) => { setDateTo(e.target.value); setTimePreset(''); }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Danh mục</Label>
+                      <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          <SelectItem value="_all_">Tất cả danh mục</SelectItem>
+                          {allCategories?.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Nguồn tiền</Label>
+                      <Select value={paymentSourceFilter} onValueChange={setPaymentSourceFilter}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          <SelectItem value="_all_">Tất cả nguồn</SelectItem>
+                          {allPaymentSources.map((src) => (
+                            <SelectItem key={src.id} value={src.id}>{src.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Nhân viên</Label>
+                      <Select value={staffFilter} onValueChange={setStaffFilter}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          <SelectItem value="_all_">Tất cả NV</SelectItem>
+                          {uniqueStaffNames.map((name) => (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Hạch toán KD</Label>
+                      <Select value={accountingFilter} onValueChange={setAccountingFilter}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          <SelectItem value="_all_">Tất cả</SelectItem>
+                          <SelectItem value="yes">Có hạch toán</SelectItem>
+                          <SelectItem value="no">Không hạch toán</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-end">
+                      <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full">
+                        <X className="h-4 w-4 mr-1" />
+                        Xóa lọc
+                      </Button>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Danh mục</Label>
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả danh mục</SelectItem>
-                        {allCategories?.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Nguồn tiền</Label>
-                    <Select value={paymentSourceFilter} onValueChange={setPaymentSourceFilter}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả nguồn</SelectItem>
-                        {allPaymentSources.map((src) => (
-                          <SelectItem key={src.id} value={src.id}>{src.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Hạch toán KD</Label>
-                    <Select value={accountingFilter} onValueChange={setAccountingFilter}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả</SelectItem>
-                        <SelectItem value="yes">Có hạch toán</SelectItem>
-                        <SelectItem value="no">Không hạch toán</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-end">
-                    <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full">
-                      <X className="h-4 w-4 mr-1" />
-                      Xóa lọc
-                    </Button>
+
+                  {/* Filtered Totals: Tổng thu / Tổng chi */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3 p-3 rounded-lg border bg-green-50 dark:bg-green-950/20">
+                      <TrendingUp className="h-5 w-5 text-green-600 shrink-0" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Tổng thu</p>
+                        <p className="text-lg font-bold text-green-600">{formatCurrency(filteredTotals.income)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg border bg-red-50 dark:bg-red-950/20">
+                      <TrendingDown className="h-5 w-5 text-destructive shrink-0" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Tổng chi</p>
+                        <p className="text-lg font-bold text-destructive">{formatCurrency(filteredTotals.expense)}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
