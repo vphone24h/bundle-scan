@@ -279,6 +279,11 @@ export function LandingPageSettings() {
               <CardDescription>
                 Thiết lập website bán hàng và tra cứu bảo hành cho khách hàng
               </CardDescription>
+              <div className="mt-2 rounded-md bg-muted/50 border border-border px-3 py-2">
+                <p className="text-xs text-muted-foreground">
+                  💡 Chức năng này <span className="font-medium text-foreground">miễn phí trọn đời</span>, không cần mua gói theo VKho — hoạt động độc lập hoàn toàn.
+                </p>
+              </div>
             </div>
             {landingUrl && (
               <a
