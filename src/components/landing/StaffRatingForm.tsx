@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Star, Send, Loader2, CheckCircle, User, Gift, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -55,6 +55,32 @@ export function StaffRatingForm({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [pointsEarned, setPointsEarned] = useState(0);
   const [showThankYou, setShowThankYou] = useState(false);
+  const [checkingExisting, setCheckingExisting] = useState(true);
+
+  // Check if review already exists for this export receipt item
+  useEffect(() => {
+    const checkExisting = async () => {
+      try {
+        const { data } = await (supabase
+          .from('staff_reviews' as any)
+          .select('id, rating')
+          .eq('export_receipt_item_id', exportReceiptItemId)
+          .eq('tenant_id', tenantId)
+          .limit(1) as any);
+
+        if (data && data.length > 0) {
+          setRating(data[0].rating);
+          setIsSubmitted(true);
+          setShowThankYou(false);
+        }
+      } catch (err) {
+        console.error('Check existing review error:', err);
+      } finally {
+        setCheckingExisting(false);
+      }
+    };
+    checkExisting();
+  }, [exportReceiptItemId, tenantId]);
 
   const toggleTag = (tag: string) => {
     setSelectedTags(prev =>
@@ -126,6 +152,11 @@ export function StaffRatingForm({
       setIsSubmitting(false);
     }
   };
+
+  // Loading check for existing review
+  if (checkingExisting) {
+    return null;
+  }
 
   // Thank you screen with points
   if (isSubmitted && showThankYou) {
