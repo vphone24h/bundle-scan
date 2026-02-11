@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Shield, Edit2, UserPlus, Info, ChevronDown, ChevronUp, Star } from 'lucide-react';
+import { Shield, Edit2, UserPlus, Info, ChevronDown, ChevronUp, Star, ExternalLink } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
@@ -24,6 +24,7 @@ import { CreateUserDialog } from '@/components/users/CreateUserDialog';
 import { DataManagementSection } from '@/components/admin/DataManagementSection';
 import { StaffReviewsTab } from '@/components/users/StaffReviewsTab';
 import { useCurrentTenant } from '@/hooks/useTenant';
+import { useUsersGuideUrl } from '@/hooks/useAppConfig';
 
 interface UserWithRole {
   id: string;
@@ -122,6 +123,7 @@ export default function UsersPage() {
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
   const { data: currentTenant } = useCurrentTenant();
+  const usersGuideUrl = useUsersGuideUrl();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
@@ -221,11 +223,23 @@ export default function UsersPage() {
 
   return (
     <MainLayout>
-      <PageHeader 
-        title="Quản lý người dùng" 
-        description="Phân quyền và quản lý tài khoản nhân viên"
-        helpText="Tạo tài khoản cho nhân viên, phân quyền (Admin, Kế toán, Nhân viên). Mỗi vai trò có quyền truy cập khác nhau: nhân viên chỉ thấy chức năng được cấp phép."
-      />
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <PageHeader 
+          title="Quản lý người dùng" 
+          description="Phân quyền và quản lý tài khoản nhân viên"
+          helpText="Tạo tài khoản cho nhân viên, phân quyền (Admin, Kế toán, Nhân viên). Mỗi vai trò có quyền truy cập khác nhau: nhân viên chỉ thấy chức năng được cấp phép."
+        />
+        {usersGuideUrl && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open(usersGuideUrl, '_blank')}
+          >
+            <ExternalLink className="h-4 w-4 mr-1.5" />
+            Hướng dẫn
+          </Button>
+        )}
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>

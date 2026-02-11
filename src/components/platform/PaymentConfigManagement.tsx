@@ -68,6 +68,7 @@ export function PaymentConfigManagement() {
   const [customDomainArticle, setCustomDomainArticle] = useState('');
   const [taxGuideUrl, setTaxGuideUrl] = useState('');
   const [landingGuideUrl, setLandingGuideUrl] = useState('');
+  const [usersGuideUrl, setUsersGuideUrl] = useState('');
   const [savingConfig, setSavingConfig] = useState(false);
 
   // Bank account dialog
@@ -122,6 +123,7 @@ export function PaymentConfigManagement() {
       const customDomainArticleConfig = configs.find(c => c.config_key === 'custom_domain_article');
       const taxGuideConfig = configs.find(c => c.config_key === 'tax_guide_url');
       const landingGuideConfig = configs.find(c => c.config_key === 'landing_guide_url');
+      const usersGuideConfig = configs.find(c => c.config_key === 'users_guide_url');
       
       if (hotlineConfig?.config_value) setHotline(hotlineConfig.config_value);
       if (emailConfig?.config_value) setSupportEmail(emailConfig.config_value);
@@ -137,6 +139,7 @@ export function PaymentConfigManagement() {
       if (customDomainArticleConfig?.config_value) setCustomDomainArticle(customDomainArticleConfig.config_value);
       if (taxGuideConfig?.config_value) setTaxGuideUrl(taxGuideConfig.config_value);
       if (landingGuideConfig?.config_value) setLandingGuideUrl(landingGuideConfig.config_value);
+      if (usersGuideConfig?.config_value) setUsersGuideUrl(usersGuideConfig.config_value);
     }
   }, [configs]);
 
@@ -159,6 +162,7 @@ export function PaymentConfigManagement() {
         { config_key: 'custom_domain_article', config_value: customDomainArticle },
         { config_key: 'tax_guide_url', config_value: taxGuideUrl },
         { config_key: 'landing_guide_url', config_value: landingGuideUrl },
+        { config_key: 'users_guide_url', config_value: usersGuideUrl },
       ];
 
       for (const update of updates) {
@@ -381,6 +385,15 @@ export function PaymentConfigManagement() {
                 value={landingGuideUrl}
                 onChange={(e) => setLandingGuideUrl(e.target.value)}
                 placeholder="https://example.com/website-ban-hang"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Link hướng dẫn (Quản lý người dùng)</Label>
+              <Input
+                type="url"
+                value={usersGuideUrl}
+                onChange={(e) => setUsersGuideUrl(e.target.value)}
+                placeholder="https://example.com/quan-ly-nguoi-dung"
               />
             </div>
           </div>
