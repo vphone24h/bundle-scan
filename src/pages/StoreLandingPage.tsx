@@ -820,9 +820,10 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
             {showDomainArticle && (
               <CardContent className="pt-0 px-4 pb-4">
                 <div className="border-t pt-3">
-                  <div className="prose prose-sm max-w-none text-sm text-muted-foreground whitespace-pre-line">
-                    {customDomainArticle}
-                  </div>
+                  <div 
+                    className="prose prose-sm max-w-none text-sm text-muted-foreground [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_a]:text-primary [&_a]:underline"
+                    dangerouslySetInnerHTML={{ __html: customDomainArticle }}
+                  />
                 </div>
               </CardContent>
             )}
