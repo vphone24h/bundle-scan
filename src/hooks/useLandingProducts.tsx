@@ -23,6 +23,7 @@ export interface LandingProduct {
   is_featured: boolean;
   is_active: boolean;
   display_order: number;
+  variants: string[];
   created_at: string;
   updated_at: string;
 }
