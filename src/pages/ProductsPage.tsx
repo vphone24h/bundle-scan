@@ -22,7 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Barcode, Loader2, Filter, X, Download } from 'lucide-react';
+import { Search, Barcode, Loader2, Filter, X, Download, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/mockData';
@@ -52,6 +53,7 @@ function mapProductForTable(product: Product) {
 }
 
 export default function ProductsPage() {
+  const navigate = useNavigate();
   const { data: products, isLoading } = useProducts();
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
@@ -206,12 +208,18 @@ export default function ProductsPage() {
         description="Xem, chỉnh sửa và in mã vạch cho sản phẩm"
         helpText="Danh sách tất cả sản phẩm trong kho. Bạn có thể tìm kiếm, lọc theo danh mục, in mã vạch, điều chỉnh số lượng hoặc xóa sản phẩm. Sản phẩm được tạo tự động khi nhập hàng."
         actions={
-          selectedProducts.length > 0 && (
-            <Button onClick={handlePrintSelected}>
-              <Barcode className="mr-2 h-4 w-4" />
-              In mã vạch ({selectedProducts.length})
+          <div className="flex gap-2">
+            <Button onClick={() => navigate('/import/new')} size="sm">
+              <Plus className="mr-1.5 h-4 w-4" />
+              Thêm sản phẩm
             </Button>
-          )
+            {selectedProducts.length > 0 && (
+              <Button onClick={handlePrintSelected} size="sm" variant="outline">
+                <Barcode className="mr-1.5 h-4 w-4" />
+                In mã vạch ({selectedProducts.length})
+              </Button>
+            )}
+          </div>
         }
       />
 
