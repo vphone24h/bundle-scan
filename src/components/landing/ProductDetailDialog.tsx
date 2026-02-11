@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Package, Phone, ShoppingCart, CheckCircle2, Loader2 } from 'lucide-react';
+import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { LandingProduct, LandingProductVariant } from '@/hooks/useLandingProducts';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
@@ -37,29 +37,61 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
   const [selectedBranch, setSelectedBranch] = useState('');
   const [selectedVariantIndex, setSelectedVariantIndex] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const placeOrder = usePlaceLandingOrder();
 
-  // Parse variants - support both old string[] and new {name, price}[] format
-  const variants: LandingProductVariant[] = (() => {
+  // Parse variants
+  const variants: LandingProductVariant[] = useMemo(() => {
     try {
       const v = product?.variants as any;
       if (!Array.isArray(v)) return [];
       return v.map((item: any) => {
         if (typeof item === 'string') return { name: item, price: 0 };
-        if (item && typeof item === 'object' && item.name) return { name: item.name, price: item.price || 0 };
+        if (item && typeof item === 'object' && item.name) return { name: item.name, price: item.price || 0, image_url: item.image_url };
         return null;
       }).filter(Boolean) as LandingProductVariant[];
     } catch {}
     return [];
-  })();
+  }, [product?.variants]);
+
+  // Collect all images: product images + variant images
+  const allImages = useMemo(() => {
+    if (!product) return [];
+    const imgs: string[] = [];
+    // Product images array
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      imgs.push(...product.images);
+    } else if (product.image_url) {
+      imgs.push(product.image_url);
+    }
+    // Variant images
+    variants.forEach(v => {
+      if (v.image_url && !imgs.includes(v.image_url)) {
+        imgs.push(v.image_url);
+      }
+    });
+    return imgs;
+  }, [product, variants]);
 
   const selectedVariant = selectedVariantIndex !== null ? variants[selectedVariantIndex] : null;
 
-  // Display price: use variant price if selected and > 0, otherwise product price
   const displayPrice = selectedVariant && selectedVariant.price > 0
     ? selectedVariant.price
     : (product?.sale_price || product?.price || 0);
+
+  // When variant selected, jump to its image
+  const handleSelectVariant = (i: number) => {
+    const newIdx = selectedVariantIndex === i ? null : i;
+    setSelectedVariantIndex(newIdx);
+    if (newIdx !== null) {
+      const v = variants[newIdx];
+      if (v.image_url) {
+        const imgIdx = allImages.indexOf(v.image_url);
+        if (imgIdx >= 0) setCurrentImageIndex(imgIdx);
+      }
+    }
+  };
 
   const resetForm = () => {
     setShowOrderForm(false);
@@ -71,6 +103,7 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
     setSelectedBranch('');
     setSelectedVariantIndex(null);
     setQuantity(1);
+    setCurrentImageIndex(0);
   };
 
   const handleClose = (val: boolean) => {
@@ -113,9 +146,45 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0">
-        {/* Product image */}
-        {product.image_url ? (
-          <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover rounded-t-lg" />
+        {/* Image gallery */}
+        {allImages.length > 0 ? (
+          <div className="relative">
+            <img
+              src={allImages[currentImageIndex]}
+              alt={product.name}
+              className="w-full aspect-square object-cover rounded-t-lg"
+            />
+            {allImages.length > 1 && (
+              <>
+                <button
+                  onClick={() => setCurrentImageIndex(i => (i - 1 + allImages.length) % allImages.length)}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setCurrentImageIndex(i => (i + 1) % allImages.length)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+                {/* Thumbnails */}
+                <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 px-4">
+                  {allImages.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentImageIndex(idx)}
+                      className={`h-10 w-10 rounded border-2 overflow-hidden flex-shrink-0 ${
+                        currentImageIndex === idx ? 'border-white shadow-lg' : 'border-transparent opacity-70'
+                      }`}
+                    >
+                      <img src={img} alt="" className="h-full w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         ) : (
           <div className="w-full aspect-square bg-muted flex items-center justify-center rounded-t-lg">
             <Package className="h-16 w-16 text-muted-foreground" />
@@ -135,12 +204,12 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
             )}
           </div>
 
-          {/* Description (rich text) */}
+          {/* Description */}
           {product.description && (
             <div className="text-sm text-muted-foreground prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: product.description }} />
           )}
 
-          {/* Variants selection */}
+          {/* Variants */}
           {variants.length > 0 && (
             <div>
               <Label className="text-sm font-medium mb-2 block">Chọn phiên bản <span className="text-destructive">*</span></Label>
@@ -149,12 +218,17 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
                   <Badge
                     key={i}
                     variant={selectedVariantIndex === i ? 'default' : 'outline'}
-                    className="cursor-pointer text-sm px-3 py-1.5 flex-col items-start gap-0.5"
+                    className="cursor-pointer text-sm px-2 py-1.5 flex items-center gap-1.5"
                     style={selectedVariantIndex === i ? { backgroundColor: primaryColor } : {}}
-                    onClick={() => setSelectedVariantIndex(selectedVariantIndex === i ? null : i)}
+                    onClick={() => handleSelectVariant(i)}
                   >
-                    <span>{v.name}</span>
-                    {v.price > 0 && <span className="text-[10px] opacity-80">{formatNumber(v.price)}đ</span>}
+                    {v.image_url && (
+                      <img src={v.image_url} alt="" className="h-6 w-6 rounded object-cover" />
+                    )}
+                    <div className="flex flex-col items-start gap-0.5">
+                      <span>{v.name}</span>
+                      {v.price > 0 && <span className="text-[10px] opacity-80">{formatNumber(v.price)}đ</span>}
+                    </div>
                   </Badge>
                 ))}
               </div>
