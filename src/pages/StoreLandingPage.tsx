@@ -640,6 +640,16 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                       </div>
                       <ExternalLink className="h-4 w-4 text-red-600" />
                     </a>
+                    )}
+                  {warrantyHotline && (
+                    <a href={`tel:${warrantyHotline}`} className="flex items-center gap-2.5 p-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-100 border border-amber-200 transition-colors active:opacity-80">
+                      <div className="p-2 rounded-full bg-orange-100"><Phone className="h-4 w-4 text-orange-600" /></div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm text-orange-600">Thu cũ đổi mới - Lên đời</p>
+                        <p className="text-xs text-orange-500">Trợ giá siêu tốt • Gọi ngay →</p>
+                      </div>
+                      <Phone className="h-4 w-4 text-orange-400" />
+                    </a>
                   )}
                 </div>
 
