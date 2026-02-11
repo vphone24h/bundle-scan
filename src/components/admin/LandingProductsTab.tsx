@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { Separator } from '@/components/ui/separator';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
@@ -41,7 +41,10 @@ export function LandingProductsTab() {
   const [productDialog, setProductDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LandingProduct | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadingVariantIdx, setUploadingVariantIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const variantFileRef = useRef<HTMLInputElement>(null);
+  const [pendingVariantIdx, setPendingVariantIdx] = useState<number | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -50,6 +53,7 @@ export function LandingProductsTab() {
     sale_price: null as number | null,
     category_id: '_none_',
     image_url: '',
+    images: [] as string[],
     is_featured: false,
     is_active: true,
     variants: [] as LandingProductVariant[],
@@ -68,7 +72,7 @@ export function LandingProductsTab() {
 
   const openAddProduct = () => {
     setEditingProduct(null);
-    setForm({ name: '', description: '', price: 0, sale_price: null, category_id: '_none_', image_url: '', is_featured: false, is_active: true, variants: [] });
+    setForm({ name: '', description: '', price: 0, sale_price: null, category_id: '_none_', image_url: '', images: [], is_featured: false, is_active: true, variants: [] });
     setProductDialog(true);
   };
 
@@ -81,6 +85,7 @@ export function LandingProductsTab() {
       sale_price: p.sale_price,
       category_id: p.category_id || '_none_',
       image_url: p.image_url || '',
+      images: Array.isArray(p.images) ? p.images : [],
       is_featured: p.is_featured,
       is_active: p.is_active,
       variants: Array.isArray(p.variants) ? p.variants : [],
@@ -88,22 +93,70 @@ export function LandingProductsTab() {
     setProductDialog(true);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !tenant?.id) return;
+  const handleUploadImage = async (file: File): Promise<string | null> => {
+    if (!tenant?.id) return null;
     if (file.size > 5 * 1024 * 1024) {
       toast({ title: 'Ảnh không quá 5MB', variant: 'destructive' });
-      return;
+      return null;
     }
-    setUploading(true);
     try {
-      const url = await uploadLandingProductImage(file, tenant.id);
-      setForm(prev => ({ ...prev, image_url: url }));
+      return await uploadLandingProductImage(file, tenant.id);
     } catch {
       toast({ title: 'Lỗi upload ảnh', variant: 'destructive' });
+      return null;
+    }
+  };
+
+  const handleMultiImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      const newUrls: string[] = [];
+      for (const file of Array.from(files)) {
+        const url = await handleUploadImage(file);
+        if (url) newUrls.push(url);
+      }
+      setForm(prev => {
+        const allImages = [...prev.images, ...newUrls];
+        return {
+          ...prev,
+          images: allImages,
+          image_url: allImages[0] || prev.image_url, // first image = main
+        };
+      });
     } finally {
       setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
     }
+  };
+
+  const handleVariantImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || pendingVariantIdx === null) return;
+    const idx = pendingVariantIdx;
+    setUploadingVariantIdx(idx);
+    try {
+      const url = await handleUploadImage(file);
+      if (url) {
+        setForm(prev => {
+          const variants = [...prev.variants];
+          variants[idx] = { ...variants[idx], image_url: url };
+          return { ...prev, variants };
+        });
+      }
+    } finally {
+      setUploadingVariantIdx(null);
+      setPendingVariantIdx(null);
+      if (variantFileRef.current) variantFileRef.current.value = '';
+    }
+  };
+
+  const removeImage = (idx: number) => {
+    setForm(prev => {
+      const images = prev.images.filter((_, i) => i !== idx);
+      return { ...prev, images, image_url: images[0] || '' };
+    });
   };
 
   const handleSaveProduct = async () => {
@@ -115,7 +168,8 @@ export function LandingProductsTab() {
         price: form.price,
         sale_price: form.sale_price,
         category_id: form.category_id === '_none_' ? null : form.category_id,
-        image_url: form.image_url || null,
+        image_url: form.images[0] || form.image_url || null,
+        images: form.images,
         is_featured: form.is_featured,
         is_active: form.is_active,
         variants: form.variants,
@@ -246,6 +300,10 @@ export function LandingProductsTab() {
         </CardContent>
       </Card>
 
+      {/* Hidden file inputs */}
+      <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleMultiImageUpload} className="hidden" />
+      <input ref={variantFileRef} type="file" accept="image/*" onChange={handleVariantImageUpload} className="hidden" />
+
       {/* Dialog thêm/sửa sản phẩm */}
       <Dialog open={productDialog} onOpenChange={setProductDialog}>
         <DialogContent className="sm:max-w-lg">
@@ -295,35 +353,70 @@ export function LandingProductsTab() {
               {form.variants.length > 0 ? (
                 <div className="space-y-2">
                   {form.variants.map((v, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2 rounded-lg border bg-muted/30">
-                      <Input
-                        value={v.name}
-                        onChange={e => {
-                          const variants = [...form.variants];
-                          variants[i] = { ...variants[i], name: e.target.value };
-                          setForm(p => ({ ...p, variants }));
-                        }}
-                        placeholder="VD: 256GB Zin đẹp"
-                        className="flex-1 h-8 text-sm"
-                      />
-                      <PriceInput
-                        value={v.price}
-                        onChange={val => {
-                          const variants = [...form.variants];
-                          variants[i] = { ...variants[i], price: val };
-                          setForm(p => ({ ...p, variants }));
-                        }}
-                        className="w-32 h-8 text-sm"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive shrink-0"
-                        onClick={() => setForm(p => ({ ...p, variants: p.variants.filter((_, j) => j !== i) }))}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
+                    <div key={i} className="p-2 rounded-lg border bg-muted/30 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={v.name}
+                          onChange={e => {
+                            const variants = [...form.variants];
+                            variants[i] = { ...variants[i], name: e.target.value };
+                            setForm(p => ({ ...p, variants }));
+                          }}
+                          placeholder="VD: 256GB Zin đẹp"
+                          className="flex-1 h-8 text-sm"
+                        />
+                        <PriceInput
+                          value={v.price}
+                          onChange={val => {
+                            const variants = [...form.variants];
+                            variants[i] = { ...variants[i], price: val };
+                            setForm(p => ({ ...p, variants }));
+                          }}
+                          className="w-32 h-8 text-sm"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive shrink-0"
+                          onClick={() => setForm(p => ({ ...p, variants: p.variants.filter((_, j) => j !== i) }))}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      {/* Variant image */}
+                      <div className="flex items-center gap-2 pl-1">
+                        {v.image_url ? (
+                          <div className="relative">
+                            <img src={v.image_url} alt="" className="h-10 w-10 rounded object-cover border" />
+                            <button
+                              onClick={() => {
+                                const variants = [...form.variants];
+                                variants[i] = { ...variants[i], image_url: undefined };
+                                setForm(p => ({ ...p, variants }));
+                              }}
+                              className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs gap-1"
+                            disabled={uploadingVariantIdx === i}
+                            onClick={() => {
+                              setPendingVariantIdx(i);
+                              variantFileRef.current?.click();
+                            }}
+                          >
+                            {uploadingVariantIdx === i ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImagePlus className="h-3 w-3" />}
+                            Ảnh biến thể
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -341,22 +434,31 @@ export function LandingProductsTab() {
                 minHeight="150px"
               />
             </div>
+
+            {/* Multiple images */}
             <div className="space-y-2">
-              <Label>Hình ảnh</Label>
-              <input ref={fileRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-              {form.image_url ? (
-                <div className="relative inline-block">
-                  <img src={form.image_url} alt="" className="h-24 w-24 rounded-lg object-cover border" />
-                  <button onClick={() => setForm(p => ({ ...p, image_url: '' }))} className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
-                    <X className="h-3 w-3" />
-                  </button>
+              <Label>Hình ảnh sản phẩm (ảnh đầu tiên = ảnh chính)</Label>
+              {form.images.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {form.images.map((url, idx) => (
+                    <div key={idx} className="relative">
+                      <img src={url} alt="" className={`h-20 w-20 rounded-lg object-cover border-2 ${idx === 0 ? 'border-primary' : 'border-muted'}`} />
+                      {idx === 0 && (
+                        <span className="absolute bottom-0 left-0 right-0 bg-primary text-primary-foreground text-[9px] text-center py-0.5 rounded-b-lg">Ảnh chính</span>
+                      )}
+                      <button onClick={() => removeImage(idx)} className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ) : null}
+              )}
               <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className="gap-1.5">
                 {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                Upload ảnh
+                Thêm ảnh
               </Button>
             </div>
+
             <Separator />
             <div className="flex items-center justify-between">
               <Label>Sản phẩm nổi bật</Label>

@@ -14,6 +14,7 @@ export interface LandingProductCategory {
 export interface LandingProductVariant {
   name: string;
   price: number;
+  image_url?: string;
 }
 
 export interface LandingProduct {
@@ -25,6 +26,7 @@ export interface LandingProduct {
   price: number;
   sale_price: number | null;
   image_url: string | null;
+  images: string[];
   is_featured: boolean;
   is_active: boolean;
   display_order: number;

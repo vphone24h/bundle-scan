@@ -2954,6 +2954,7 @@ export type Database = {
           display_order: number | null
           id: string
           image_url: string | null
+          images: Json | null
           is_active: boolean | null
           is_featured: boolean | null
           name: string
@@ -2970,6 +2971,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           image_url?: string | null
+          images?: Json | null
           is_active?: boolean | null
           is_featured?: boolean | null
           name: string
@@ -2986,6 +2988,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           image_url?: string | null
+          images?: Json | null
           is_active?: boolean | null
           is_featured?: boolean | null
           name?: string
