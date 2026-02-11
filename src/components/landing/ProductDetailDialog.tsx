@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Package, Phone, ShoppingCart, CheckCircle2, Loader2 } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
-import { LandingProduct } from '@/hooks/useLandingProducts';
+import { LandingProduct, LandingProductVariant } from '@/hooks/useLandingProducts';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { toast } from 'sonner';
 
@@ -35,18 +35,31 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
   const [customerAddress, setCustomerAddress] = useState('');
   const [note, setNote] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('');
-  const [selectedVariant, setSelectedVariant] = useState('');
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
 
   const placeOrder = usePlaceLandingOrder();
 
-  const variants: string[] = (() => {
+  // Parse variants - support both old string[] and new {name, price}[] format
+  const variants: LandingProductVariant[] = (() => {
     try {
       const v = product?.variants as any;
-      if (Array.isArray(v)) return v.filter((i: any) => typeof i === 'string' && i.length > 0);
+      if (!Array.isArray(v)) return [];
+      return v.map((item: any) => {
+        if (typeof item === 'string') return { name: item, price: 0 };
+        if (item && typeof item === 'object' && item.name) return { name: item.name, price: item.price || 0 };
+        return null;
+      }).filter(Boolean) as LandingProductVariant[];
     } catch {}
     return [];
   })();
+
+  const selectedVariant = selectedVariantIndex !== null ? variants[selectedVariantIndex] : null;
+
+  // Display price: use variant price if selected and > 0, otherwise product price
+  const displayPrice = selectedVariant && selectedVariant.price > 0
+    ? selectedVariant.price
+    : (product?.sale_price || product?.price || 0);
 
   const resetForm = () => {
     setShowOrderForm(false);
@@ -56,7 +69,7 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
     setCustomerAddress('');
     setNote('');
     setSelectedBranch('');
-    setSelectedVariant('');
+    setSelectedVariantIndex(null);
     setQuantity(1);
   };
 
@@ -70,6 +83,10 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
       toast.error('Vui lòng điền đầy đủ thông tin bắt buộc');
       return;
     }
+    if (variants.length > 0 && selectedVariantIndex === null) {
+      toast.error('Vui lòng chọn biến thể sản phẩm');
+      return;
+    }
     try {
       await placeOrder.mutateAsync({
         tenant_id: tenantId,
@@ -77,8 +94,8 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
         product_id: product.id,
         product_name: product.name,
         product_image_url: product.image_url,
-        product_price: product.sale_price || product.price,
-        variant: selectedVariant || undefined,
+        product_price: displayPrice,
+        variant: selectedVariant?.name || undefined,
         quantity,
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
@@ -92,8 +109,6 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
   };
 
   if (!product) return null;
-
-  const displayPrice = product.sale_price || product.price;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -114,35 +129,32 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
 
           {/* Price */}
           <div className="flex items-baseline gap-2">
-            {product.sale_price ? (
-              <>
-                <span className="text-xl font-bold text-destructive">{formatNumber(product.sale_price)}đ</span>
-                <span className="text-sm text-muted-foreground line-through">{formatNumber(product.price)}đ</span>
-              </>
-            ) : (
-              <span className="text-xl font-bold" style={{ color: primaryColor }}>{formatNumber(product.price)}đ</span>
+            <span className="text-xl font-bold" style={{ color: primaryColor }}>{formatNumber(displayPrice)}đ</span>
+            {product.sale_price && !selectedVariant && (
+              <span className="text-sm text-muted-foreground line-through">{formatNumber(product.price)}đ</span>
             )}
           </div>
 
-          {/* Description */}
+          {/* Description (rich text) */}
           {product.description && (
-            <p className="text-sm text-muted-foreground">{product.description}</p>
+            <div className="text-sm text-muted-foreground prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: product.description }} />
           )}
 
-          {/* Variants */}
+          {/* Variants selection */}
           {variants.length > 0 && (
             <div>
-              <Label className="text-sm font-medium mb-2 block">Phiên bản / Màu sắc</Label>
+              <Label className="text-sm font-medium mb-2 block">Chọn phiên bản <span className="text-destructive">*</span></Label>
               <div className="flex flex-wrap gap-2">
-                {variants.map(v => (
+                {variants.map((v, i) => (
                   <Badge
-                    key={v}
-                    variant={selectedVariant === v ? 'default' : 'outline'}
-                    className="cursor-pointer text-sm px-3 py-1"
-                    style={selectedVariant === v ? { backgroundColor: primaryColor } : {}}
-                    onClick={() => setSelectedVariant(selectedVariant === v ? '' : v)}
+                    key={i}
+                    variant={selectedVariantIndex === i ? 'default' : 'outline'}
+                    className="cursor-pointer text-sm px-3 py-1.5 flex-col items-start gap-0.5"
+                    style={selectedVariantIndex === i ? { backgroundColor: primaryColor } : {}}
+                    onClick={() => setSelectedVariantIndex(selectedVariantIndex === i ? null : i)}
                   >
-                    {v}
+                    <span>{v.name}</span>
+                    {v.price > 0 && <span className="text-[10px] opacity-80">{formatNumber(v.price)}đ</span>}
                   </Badge>
                 ))}
               </div>
@@ -224,7 +236,7 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
                 {selectedVariant && (
                   <div className="flex justify-between">
                     <span>Phiên bản:</span>
-                    <span>{selectedVariant}</span>
+                    <span>{selectedVariant.name}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold pt-1 border-t">
