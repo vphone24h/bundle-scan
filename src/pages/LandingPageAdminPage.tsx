@@ -33,12 +33,27 @@ export default function LandingPageAdminPage() {
     );
   }
 
-  const isSuperAdmin = permissions?.role === 'super_admin';
-  const isBranchAdmin = permissions?.role === 'branch_admin';
+  const role = permissions?.role;
+  const isSuperAdmin = role === 'super_admin';
+  const isBranchAdmin = role === 'branch_admin';
+  const isStaff = role === 'staff';
+  const isCashier = role === 'cashier';
   
-  if (!isSuperAdmin && !isBranchAdmin) {
+  // Kế toán không có quyền truy cập Landing Page
+  if (isCashier || (!isSuperAdmin && !isBranchAdmin && !isStaff)) {
     return <Navigate to="/" replace />;
   }
+
+  // Xác định tab mặc định và tab hiển thị theo vai trò
+  // Super Admin: tất cả tab (Cấu hình, Sản phẩm, Tin tức, Đơn hàng)
+  // Branch Admin: Tin tức, Đơn đặt hàng
+  // Staff: Sản phẩm, Tin tức, Đơn đặt hàng
+  const showSettings = isSuperAdmin;
+  const showProducts = isSuperAdmin || isStaff;
+  const showArticles = true; // Tất cả role đều thấy
+  const showOrders = true;   // Tất cả role đều thấy
+
+  const defaultTab = isSuperAdmin ? 'settings' : (isStaff ? 'products' : 'articles');
 
   return (
     <MainLayout>
@@ -49,28 +64,38 @@ export default function LandingPageAdminPage() {
           helpText="Thiết lập trang web bán hàng công khai: sản phẩm, tin tức, tra cứu bảo hành. Khách hàng có thể truy cập qua subdomain riêng của bạn."
         />
         <div className="mt-6">
-          <Tabs defaultValue="settings">
+          <Tabs defaultValue={defaultTab}>
             <TabsList className="mb-4">
-              <TabsTrigger value="settings">Cấu hình</TabsTrigger>
-              <TabsTrigger value="products">Sản phẩm</TabsTrigger>
-              <TabsTrigger value="articles">Tin tức</TabsTrigger>
-              <TabsTrigger value="orders" className="relative">
-                Đơn đặt hàng
-                <PendingBadge />
-              </TabsTrigger>
+              {showSettings && <TabsTrigger value="settings">Cấu hình</TabsTrigger>}
+              {showProducts && <TabsTrigger value="products">Sản phẩm</TabsTrigger>}
+              {showArticles && <TabsTrigger value="articles">Tin tức</TabsTrigger>}
+              {showOrders && (
+                <TabsTrigger value="orders" className="relative">
+                  Đơn đặt hàng
+                  <PendingBadge />
+                </TabsTrigger>
+              )}
             </TabsList>
-            <TabsContent value="settings">
-              <LandingPageSettings />
-            </TabsContent>
-            <TabsContent value="products">
-              <LandingProductsTab />
-            </TabsContent>
-            <TabsContent value="articles">
-              <LandingArticlesTab />
-            </TabsContent>
-            <TabsContent value="orders">
-              <LandingOrdersTab />
-            </TabsContent>
+            {showSettings && (
+              <TabsContent value="settings">
+                <LandingPageSettings />
+              </TabsContent>
+            )}
+            {showProducts && (
+              <TabsContent value="products">
+                <LandingProductsTab />
+              </TabsContent>
+            )}
+            {showArticles && (
+              <TabsContent value="articles">
+                <LandingArticlesTab />
+              </TabsContent>
+            )}
+            {showOrders && (
+              <TabsContent value="orders">
+                <LandingOrdersTab />
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </div>

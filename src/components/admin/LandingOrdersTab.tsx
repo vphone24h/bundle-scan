@@ -28,7 +28,7 @@ export function LandingOrdersTab() {
   const isSuperAdmin = permissions?.role === 'super_admin';
   const userBranchId = permissions?.branchId;
 
-  // Branch admin only sees their branch
+  // Super Admin xem tất cả, Branch Admin và Staff chỉ xem đơn chi nhánh mình
   const filterBranchId = isSuperAdmin ? null : userBranchId;
   const { data: orders, isLoading } = useLandingOrders(filterBranchId);
   const updateOrder = useUpdateLandingOrder();
