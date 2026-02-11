@@ -69,6 +69,7 @@ export function PaymentConfigManagement() {
   const [taxGuideUrl, setTaxGuideUrl] = useState('');
   const [landingGuideUrl, setLandingGuideUrl] = useState('');
   const [usersGuideUrl, setUsersGuideUrl] = useState('');
+  const [stockCountGuideUrl, setStockCountGuideUrl] = useState('');
   const [savingConfig, setSavingConfig] = useState(false);
 
   // Bank account dialog
@@ -140,6 +141,8 @@ export function PaymentConfigManagement() {
       if (taxGuideConfig?.config_value) setTaxGuideUrl(taxGuideConfig.config_value);
       if (landingGuideConfig?.config_value) setLandingGuideUrl(landingGuideConfig.config_value);
       if (usersGuideConfig?.config_value) setUsersGuideUrl(usersGuideConfig.config_value);
+      const stockCountGuideConfig = configs.find(c => c.config_key === 'stock_count_guide_url');
+      if (stockCountGuideConfig?.config_value) setStockCountGuideUrl(stockCountGuideConfig.config_value);
     }
   }, [configs]);
 
@@ -163,6 +166,7 @@ export function PaymentConfigManagement() {
         { config_key: 'tax_guide_url', config_value: taxGuideUrl },
         { config_key: 'landing_guide_url', config_value: landingGuideUrl },
         { config_key: 'users_guide_url', config_value: usersGuideUrl },
+        { config_key: 'stock_count_guide_url', config_value: stockCountGuideUrl },
       ];
 
       for (const update of updates) {
@@ -388,12 +392,12 @@ export function PaymentConfigManagement() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Link hướng dẫn (Quản lý người dùng)</Label>
+              <Label>Link hướng dẫn (Kiểm kho)</Label>
               <Input
                 type="url"
-                value={usersGuideUrl}
-                onChange={(e) => setUsersGuideUrl(e.target.value)}
-                placeholder="https://example.com/quan-ly-nguoi-dung"
+                value={stockCountGuideUrl}
+                onChange={(e) => setStockCountGuideUrl(e.target.value)}
+                placeholder="https://example.com/huong-dan-kiem-kho"
               />
             </div>
           </div>
