@@ -86,9 +86,17 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const [selectedArticle, setSelectedArticle] = useState<LandingArticle | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
-  // Warranty search state
-  const [searchValue, setSearchValue] = useState('');
-  const [submittedValue, setSubmittedValue] = useState('');
+  // Warranty search state - restore from localStorage
+  const warrantyStorageKey = storeId ? `warranty_session_${storeId}` : null;
+  const savedSession = warrantyStorageKey ? (() => {
+    try {
+      const raw = localStorage.getItem(warrantyStorageKey);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  })() : null;
+
+  const [searchValue, setSearchValue] = useState(savedSession?.searchValue || '');
+  const [submittedValue, setSubmittedValue] = useState(savedSession?.searchValue || '');
 
   const tenantId = landingData?.tenant?.id || null;
   const { data: warrantyResults, isLoading: isSearching, isFetched } = useWarrantyLookup(submittedValue, tenantId);
@@ -107,6 +115,29 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const handlePointsAwarded = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['customer-points-public'] });
   }, [queryClient]);
+
+  // Save warranty search to localStorage when results arrive
+  useEffect(() => {
+    if (warrantyStorageKey && submittedValue && warrantyResults && warrantyResults.length > 0) {
+      localStorage.setItem(warrantyStorageKey, JSON.stringify({ searchValue: submittedValue }));
+    }
+  }, [warrantyStorageKey, submittedValue, warrantyResults]);
+
+  // Auto-navigate to warranty page if saved session exists
+  useEffect(() => {
+    if (savedSession?.searchValue && pageView === 'home') {
+      setPageView('warranty');
+    }
+  }, []);
+
+  const handleWarrantyLogout = () => {
+    if (warrantyStorageKey) {
+      localStorage.removeItem(warrantyStorageKey);
+    }
+    setSearchValue('');
+    setSubmittedValue('');
+    setPageView('home');
+  };
 
   const settings = landingData?.settings;
   const tenant = landingData?.tenant;
@@ -735,6 +766,18 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                 )}
               </CardContent>
             </Card>
+
+            {/* Logout button - only show when there's saved warranty data */}
+            {submittedValue && warrantyResults && warrantyResults.length > 0 && (
+              <Button
+                variant="outline"
+                className="w-full gap-2 text-muted-foreground border-dashed"
+                onClick={handleWarrantyLogout}
+              >
+                <XCircle className="h-4 w-4" />
+                Đăng xuất tra cứu bảo hành
+              </Button>
+            )}
           </div>
         )}
       </main>
