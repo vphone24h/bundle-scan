@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { 
   useAllTenants, 
   useManageTenant, 
+  useTenantEnrichment,
   Tenant,
   calculateRemainingDays 
 } from '@/hooks/useTenant';
@@ -22,7 +23,9 @@ import {
   Loader2,
   FileText,
   Package,
-  Mail
+  Mail,
+  Globe,
+  CheckCircle2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -57,6 +60,7 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
 
 export function TenantsManagement() {
   const { data: tenants, isLoading } = useAllTenants();
+  const { data: enrichmentMap } = useTenantEnrichment();
   const manageTenant = useManageTenant();
   const queryClient = useQueryClient();
   
@@ -199,9 +203,11 @@ export function TenantsManagement() {
                 </TableHead>
                 <TableHead>Doanh nghiệp</TableHead>
                 <TableHead>Store ID</TableHead>
+                <TableHead>Website</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>SĐT</TableHead>
                 <TableHead>Trạng thái</TableHead>
+                <TableHead>Sử dụng</TableHead>
                 <TableHead>Gói dịch vụ</TableHead>
                 <TableHead>HĐĐT</TableHead>
                 <TableHead>Còn lại</TableHead>
@@ -213,6 +219,7 @@ export function TenantsManagement() {
               {filteredTenants?.map((tenant) => {
                 const remaining = calculateRemainingDays(tenant);
                 const status = statusConfig[tenant.status];
+                const enrichment = enrichmentMap?.get(tenant.id);
                 
                 return (
                   <TableRow 
@@ -243,6 +250,22 @@ export function TenantsManagement() {
                       </code>
                     </TableCell>
                     <TableCell>
+                      {enrichment?.has_landing_enabled ? (
+                        <a 
+                          href={`https://${enrichment.landing_domain}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary hover:underline flex items-center gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Globe className="h-3 w-3" />
+                          {enrichment.landing_domain}
+                        </a>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <span className="text-sm">{tenant.email || '-'}</span>
                     </TableCell>
                     <TableCell>
@@ -250,6 +273,16 @@ export function TenantsManagement() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={status.variant}>{status.label}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {enrichment?.has_usage ? (
+                        <Badge variant="default" className="text-xs">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Đã sử dụng
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Chưa sử dụng</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {tenant.subscription_plan === 'monthly' && 'Tháng'}
@@ -340,6 +373,7 @@ export function TenantsManagement() {
         {filteredTenants?.map((tenant) => {
           const remaining = calculateRemainingDays(tenant);
           const status = statusConfig[tenant.status];
+          const enrichment = enrichmentMap?.get(tenant.id);
           
           return (
             <Card 
@@ -377,6 +411,22 @@ export function TenantsManagement() {
                   <Badge variant={status.variant}>{status.label}</Badge>
                 </div>
                 <div className="mt-3 space-y-1 text-sm">
+                  {enrichment?.has_landing_enabled && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Globe className="h-3 w-3" /> Website:
+                      </span>
+                      <a 
+                        href={`https://${enrichment.landing_domain}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {enrichment.landing_domain}
+                      </a>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Email:</span>
                     <span>{tenant.email || '-'}</span>
@@ -390,6 +440,17 @@ export function TenantsManagement() {
                     <span className={remaining <= 7 ? 'text-destructive font-medium' : ''}>
                       {remaining > 36500 ? 'Vĩnh viễn' : `${remaining} ngày`}
                     </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Trạng thái:</span>
+                    {enrichment?.has_usage ? (
+                      <Badge variant="default" className="text-xs">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Đã sử dụng
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Chưa sử dụng</span>
+                    )}
                   </div>
                   <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
                     <span className="text-muted-foreground flex items-center gap-1">

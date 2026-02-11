@@ -4701,6 +4701,15 @@ export type Database = {
           total_revenue: number
         }[]
       }
+      get_tenant_enrichment: {
+        Args: never
+        Returns: {
+          has_landing_enabled: boolean
+          has_usage: boolean
+          landing_domain: string
+          tenant_id: string
+        }[]
+      }
       get_user_accessible_branch_ids: {
         Args: { _user_id: string }
         Returns: string[]
