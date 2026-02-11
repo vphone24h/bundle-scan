@@ -3,7 +3,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import vkhoLogo from '@/assets/vkho-logo.png';
-import PublicReviewsSection from '@/components/landing/PublicReviewsSection';
 import { 
   Package, 
   BarChart3, 
@@ -240,9 +239,6 @@ export default function PublicLandingPage() {
           </div>
         </div>
       </section>
-
-      {/* Reviews Section */}
-      <PublicReviewsSection />
 
       {/* CTA Section */}
       <section className="py-16 md:py-24">

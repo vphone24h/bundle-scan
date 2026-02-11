@@ -21,6 +21,7 @@ import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
 import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { ProductDetailDialog } from '@/components/landing/ProductDetailDialog';
+import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
 
 // === PWA Manifest Hook ===
 function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?: string | null) {
@@ -439,6 +440,9 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
 
             {/* Install App Guide */}
             <InstallAppSection primaryColor={primaryColor} storeName={displayStoreName || ''} />
+
+            {/* Customer Reviews */}
+            {tenantId && <StoreReviewsSection tenantId={tenantId} primaryColor={primaryColor} />}
 
             {/* Store info */}
             {(settings?.show_store_info !== false) && (settings?.store_address || settings?.store_phone || branches.length > 0) && (
