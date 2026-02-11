@@ -777,7 +777,7 @@ export default function CashBookPage() {
         actions={
            <div className="flex flex-wrap gap-1.5 sm:gap-2">
              {cashBookGuideUrl && (
-               <Button variant="secondary" size="sm" asChild className="hidden sm:inline-flex">
+               <Button variant="secondary" size="sm" asChild className="text-xs sm:text-sm px-2 sm:px-3">
                  <a href={cashBookGuideUrl} target="_blank" rel="noopener noreferrer">
                    <BookOpen className="mr-2 h-4 w-4" />
                    Hướng dẫn
