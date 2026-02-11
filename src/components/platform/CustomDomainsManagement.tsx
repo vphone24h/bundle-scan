@@ -14,7 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Search, Plus, Trash2, CheckCircle, XCircle, Clock, Globe, Loader2, Shield } from 'lucide-react';
+import { Search, Plus, Trash2, CheckCircle, XCircle, Clock, Globe, Loader2, Shield, Copy, Info } from 'lucide-react';
 
 const sslStatusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: typeof Clock }> = {
   pending: { label: 'Chờ SSL', variant: 'outline', icon: Clock },
@@ -32,6 +32,7 @@ export function CustomDomainsManagement() {
   const [search, setSearch] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null);
+  const [showDnsDialog, setShowDnsDialog] = useState<any>(null);
   const [newDomain, setNewDomain] = useState('');
   const [selectedTenantId, setSelectedTenantId] = useState('');
   const [adding, setAdding] = useState(false);
@@ -155,7 +156,12 @@ export function CustomDomainsManagement() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Globe className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{d.domain}</span>
+                        <button
+                          className="font-medium text-primary hover:underline cursor-pointer"
+                          onClick={() => setShowDnsDialog(d)}
+                        >
+                          {d.domain}
+                        </button>
                       </div>
                     </TableCell>
                     <TableCell>{d.tenants?.name || '-'}</TableCell>
@@ -335,6 +341,99 @@ export function CustomDomainsManagement() {
             <Button variant="destructive" onClick={() => showDeleteDialog && handleDelete(showDeleteDialog)}>
               Xóa domain
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DNS Info Dialog */}
+      <Dialog open={!!showDnsDialog} onOpenChange={() => setShowDnsDialog(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-primary" />
+              Cấu hình DNS cho {showDnsDialog?.domain}
+            </DialogTitle>
+            <DialogDescription>
+              Hướng dẫn cấu hình DNS tại nhà cung cấp tên miền
+            </DialogDescription>
+          </DialogHeader>
+          {showDnsDialog && (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
+                <h4 className="font-semibold text-sm">1. Bản ghi A (bắt buộc)</h4>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Tên:</span>
+                    <p className="font-mono">{showDnsDialog.domain}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Loại:</span>
+                    <p className="font-mono">A</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Giá trị:</span>
+                    <div className="flex items-center gap-1">
+                      <p className="font-mono">185.158.133.1</p>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
+                        navigator.clipboard.writeText('185.158.133.1');
+                        toast({ title: 'Đã copy IP' });
+                      }}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <h4 className="font-semibold text-sm pt-2">2. Bản ghi A cho www (khuyến nghị)</h4>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Tên:</span>
+                    <p className="font-mono">www.{showDnsDialog.domain}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Loại:</span>
+                    <p className="font-mono">A</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Giá trị:</span>
+                    <p className="font-mono">185.158.133.1</p>
+                  </div>
+                </div>
+
+                <h4 className="font-semibold text-sm pt-2">3. Bản ghi TXT xác thực</h4>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Tên:</span>
+                    <p className="font-mono">_lovable.{showDnsDialog.domain.split('.').slice(0, -1).join('.') || showDnsDialog.domain}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Loại:</span>
+                    <p className="font-mono">TXT</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Giá trị:</span>
+                    <div className="flex items-center gap-1">
+                      <p className="font-mono text-xs break-all">{showDnsDialog.verification_token || 'N/A'}</p>
+                      {showDnsDialog.verification_token && (
+                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => {
+                          navigator.clipboard.writeText(showDnsDialog.verification_token);
+                          toast({ title: 'Đã copy token xác thực' });
+                        }}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                DNS có thể mất 5-30 phút (tối đa 72 giờ) để cập nhật. Sau khi cấu hình xong, quay lại đây nhấn xác thực.
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDnsDialog(null)}>Đóng</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
