@@ -282,12 +282,12 @@ export function LandingPageSettings() {
                   </p>
                 </div>
                 <a
-                  href="https://zalo.me/0123456789"
+                  href={`${fullLandingUrl}#custom-domain`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <Button type="button" size="sm" variant="outline" className="shrink-0 gap-1.5 text-primary border-primary/30 hover:bg-primary/10">
-                    Liên hệ ngay
+                    Xem bài giới thiệu
                     <ExternalLink className="h-3.5 w-3.5" />
                   </Button>
                 </a>
