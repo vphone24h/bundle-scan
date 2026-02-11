@@ -179,13 +179,14 @@ export default function InvoiceTemplatePage() {
   // Get selected branch info
   const selectedBranch = branches?.find(b => b.id === selectedBranchId);
 
-  // Auto-select first branch if available
+  // Auto-select first branch if available and create template if needed
   useEffect(() => {
     if (branches && branches.length > 0 && !selectedBranchId) {
       const defaultBranch = branches.find(b => b.is_default) || branches[0];
-      setSelectedBranchId(defaultBranch.id);
+      // Use handleBranchChange to also create template if needed
+      handleBranchChange(defaultBranch.id);
     }
-  }, [branches, selectedBranchId]);
+  }, [branches]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset settings when branch changes
   useEffect(() => {
