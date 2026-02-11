@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useCustomDomainArticlePublic } from '@/hooks/useAppConfig';
 import { useNavigate } from 'react-router-dom';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings, TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
+import { useCustomDomains } from '@/hooks/useCustomDomains';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -77,6 +78,7 @@ function CustomDomainCTA() {
 export function LandingPageSettings() {
   const { data: tenant } = useCurrentTenant();
   const { data: settings, isLoading } = useTenantLandingSettings();
+  const { data: customDomains } = useCustomDomains();
   const updateSettings = useUpdateTenantLandingSettings();
 
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -226,6 +228,9 @@ export function LandingPageSettings() {
   };
 
   const landingUrl = tenant?.subdomain ? `/store/${tenant.subdomain}` : null;
+  
+  // Check for verified custom domain
+  const verifiedDomain = customDomains?.find(d => d.is_verified);
 
   if (isLoading) {
     return (
@@ -235,14 +240,24 @@ export function LandingPageSettings() {
     );
   }
 
-  const fullLandingUrl = landingUrl 
+  // Use custom domain URL if available, otherwise default
+  const customDomainUrl = verifiedDomain ? `https://${verifiedDomain.domain}` : null;
+  const defaultLandingUrl = landingUrl 
     ? `${window.location.origin}${landingUrl}` 
     : null;
+  const fullLandingUrl = customDomainUrl || defaultLandingUrl;
 
   const handleCopyLink = () => {
     if (fullLandingUrl) {
       navigator.clipboard.writeText(fullLandingUrl);
       toast({ title: 'Đã sao chép link!' });
+    }
+  };
+
+  const handleCopyDefaultLink = () => {
+    if (defaultLandingUrl) {
+      navigator.clipboard.writeText(defaultLandingUrl);
+      toast({ title: 'Đã sao chép link mặc định!' });
     }
   };
 
@@ -287,7 +302,7 @@ export function LandingPageSettings() {
                 <div className="flex-1 space-y-2">
                   <Label className="flex items-center gap-2 text-sm font-medium">
                     <Share2 className="h-4 w-4" />
-                    Link Landing Page
+                    {customDomainUrl ? 'Website riêng' : 'Link Landing Page'}
                   </Label>
                   <div className="flex gap-2">
                     <Input
@@ -305,9 +320,38 @@ export function LandingPageSettings() {
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Chia sẻ link này cho khách hàng để tra cứu bảo hành
-                  </p>
+                  {customDomainUrl ? (
+                    <p className="text-xs text-emerald-600 font-medium">
+                      ✓ Tên miền riêng đã kích hoạt
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Chia sẻ link này cho khách hàng để tra cứu bảo hành
+                    </p>
+                  )}
+
+                  {/* Show default link below if custom domain active */}
+                  {customDomainUrl && defaultLandingUrl && (
+                    <div className="mt-2 pt-2 border-t">
+                      <Label className="text-xs text-muted-foreground">Link mặc định</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input
+                          value={defaultLandingUrl}
+                          readOnly
+                          className="flex-1 bg-background text-xs h-8"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={handleCopyDefaultLink}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 {/* QR Code section */}
@@ -330,8 +374,8 @@ export function LandingPageSettings() {
             </div>
           )}
 
-          {/* CTA tên miền riêng */}
-          {fullLandingUrl && <CustomDomainCTA />}
+          {/* CTA tên miền riêng - chỉ hiện khi chưa có domain riêng */}
+          {fullLandingUrl && !customDomainUrl && <CustomDomainCTA />}
           
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
