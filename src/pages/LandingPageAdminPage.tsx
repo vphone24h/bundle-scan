@@ -49,7 +49,7 @@ export default function LandingPageAdminPage() {
   // Branch Admin: Tin tức, Đơn đặt hàng
   // Staff: Sản phẩm, Tin tức, Đơn đặt hàng
   const showSettings = isSuperAdmin;
-  const showProducts = isSuperAdmin || isStaff;
+  const showProducts = isSuperAdmin || isBranchAdmin || isStaff;
   const showArticles = true; // Tất cả role đều thấy
   const showOrders = true;   // Tất cả role đều thấy
 
