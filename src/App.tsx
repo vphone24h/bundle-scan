@@ -133,7 +133,7 @@ const App = () => (
                  <Route path="/export/tax-policy" element={<GuardedRoute><TaxPolicyPage /></GuardedRoute>} />
                 <Route path="/applications" element={<GuardedRoute><ApplicationsPage /></GuardedRoute>} />
                 <Route path="/advertisements" element={<GuardedRoute><AdvertisementsAdminPage /></GuardedRoute>} />
-                <Route path="/landing-settings" element={<GuardedRoute><LandingPageAdminPage /></GuardedRoute>} />
+                <Route path="/landing-settings" element={<SubscriptionRoute><LandingPageAdminPage /></SubscriptionRoute>} />
                 <Route path="/install-app" element={<GuardedRoute><InstallAppPage /></GuardedRoute>} />
                 {/* Platform Admin route - also guarded */}
                 <Route path="/platform-admin" element={<GuardedRoute><PlatformAdminPage /></GuardedRoute>} />
