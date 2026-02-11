@@ -46,7 +46,6 @@ const LandingPageAdminPage = lazy(() => import("./pages/LandingPageAdminPage"));
 const InstallAppPage = lazy(() => import("./pages/InstallAppPage"));
 const TaxPolicyPage = lazy(() => import("./pages/TaxPolicyPage"));
 const StockTransferPage = lazy(() => import("./pages/StockTransferPage"));
-const PublicReviewsPage = lazy(() => import("./pages/PublicReviewsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -105,7 +104,6 @@ const App = () => (
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/forgot-store-id" element={<ForgotStoreIdPage />} />
-                <Route path="/reviews" element={<PublicReviewsPage />} />
                 
                 {/* Subscription page - accessible even when expired */}
                 <Route path="/subscription" element={<SubscriptionRoute><SubscriptionPage /></SubscriptionRoute>} />
