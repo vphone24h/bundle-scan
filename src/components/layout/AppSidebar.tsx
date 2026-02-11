@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { usePendingTransferCount } from '@/hooks/useStockTransfers';
 import {
@@ -128,7 +128,14 @@ export function AppSidebar() {
   const { data: platformUser } = usePlatformUser();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Nhập hàng', 'Xuất hàng']);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
   const { data: pendingTransferCount } = usePendingTransferCount();
+
+  useEffect(() => {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsStandalone(true);
+    }
+  }, []);
 
   const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
   const hasTenant = !!platformUser?.tenant_id;
@@ -141,9 +148,10 @@ export function AppSidebar() {
     }
 
     // Tenant users -> hiện menu kho hàng
-    if (!permissions) return allNavItems.filter(item => !item.permission);
+    if (!permissions) return allNavItems.filter(item => !item.permission && !(isStandalone && item.href === '/install-app'));
     
     return allNavItems.filter(item => {
+      if (isStandalone && item.href === '/install-app') return false;
       if (!item.permission) return true;
       return permissions[item.permission as keyof typeof permissions] === true;
     }).map(item => {
@@ -158,7 +166,7 @@ export function AppSidebar() {
       }
       return item;
     });
-  }, [permissions, isPlatformAdmin, hasTenant]);
+  }, [permissions, isPlatformAdmin, hasTenant, isStandalone]);
 
   const toggleExpand = (title: string) => {
     setExpandedItems((prev) =>
