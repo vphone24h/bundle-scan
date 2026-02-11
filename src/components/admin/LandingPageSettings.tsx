@@ -267,6 +267,33 @@ export function LandingPageSettings() {
               </div>
             </div>
           )}
+
+          {/* CTA tên miền riêng */}
+          {fullLandingUrl && (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+              <div className="flex items-start gap-3">
+                <Globe className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    Bạn muốn sở hữu website với tên miền riêng của doanh nghiệp?
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Liên hệ để được hỗ trợ gắn tên miền riêng (VD: cuahang.vn) cho trang Landing Page
+                  </p>
+                </div>
+                <a
+                  href="https://zalo.me/0123456789"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button type="button" size="sm" variant="outline" className="shrink-0 gap-1.5 text-primary border-primary/30 hover:bg-primary/10">
+                    Liên hệ ngay
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Button>
+                </a>
+              </div>
+            </div>
+          )}
           
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
