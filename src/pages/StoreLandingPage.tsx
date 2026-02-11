@@ -26,7 +26,10 @@ import {
   ExternalLink,
   Star,
   Gift,
-  User
+  User,
+  Globe,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { format, addMonths, isAfter, differenceInDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -158,6 +161,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const queryClient = useQueryClient();
   const [searchValue, setSearchValue] = useState('');
   const [submittedValue, setSubmittedValue] = useState('');
+  const [showDomainArticle, setShowDomainArticle] = useState(false);
   
   const tenantId = landingData?.tenant?.id || null;
   const { data: warrantyResults, isLoading: isSearching, isFetched } = useWarrantyLookup(submittedValue, tenantId);
@@ -783,6 +787,43 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                 </a>
               )}
             </CardContent>
+          </Card>
+        )}
+        {/* CTA Tên miền riêng */}
+        {settings?.show_custom_domain_cta && (
+          <Card className="shadow-md overflow-hidden">
+            <button
+              onClick={() => setShowDomainArticle(!showDomainArticle)}
+              className="w-full p-4 flex items-center gap-3 text-left active:bg-muted/50 transition-colors"
+            >
+              <div 
+                className="p-2.5 rounded-xl"
+                style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc)` }}
+              >
+                <Globe className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">Sở hữu website tên miền riêng</p>
+                <p className="text-xs text-muted-foreground">
+                  Nâng tầm thương hiệu doanh nghiệp của bạn
+                </p>
+              </div>
+              {showDomainArticle ? (
+                <ChevronUp className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+              )}
+            </button>
+            
+            {showDomainArticle && settings.custom_domain_article && (
+              <CardContent className="pt-0 px-4 pb-4">
+                <div className="border-t pt-3">
+                  <div className="prose prose-sm max-w-none text-sm text-muted-foreground whitespace-pre-line">
+                    {settings.custom_domain_article}
+                  </div>
+                </div>
+              </CardContent>
+            )}
           </Card>
         )}
       </main>
