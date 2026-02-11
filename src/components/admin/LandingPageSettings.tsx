@@ -35,7 +35,7 @@ function CustomDomainCTA() {
               Bạn muốn sở hữu website với tên miền riêng của doanh nghiệp?
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Liên hệ để được hỗ trợ gắn tên miền riêng (VD: cuahang.vn) cho trang Landing Page
+              Liên hệ để được hỗ trợ gắn tên miền riêng (VD: cuahang.vn) cho website bán hàng
             </p>
           </div>
           <Button
@@ -216,7 +216,7 @@ export function LandingPageSettings() {
       await updateSettings.mutateAsync(formData);
       toast({
         title: 'Đã lưu',
-        description: 'Cài đặt landing page đã được cập nhật',
+        description: 'Cài đặt website bán hàng đã được cập nhật',
       });
     } catch (error) {
       toast({
@@ -274,10 +274,10 @@ export function LandingPageSettings() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Globe className="h-5 w-5" />
-                Cấu hình Landing Page
+                Cấu hình Website bán hàng
               </CardTitle>
               <CardDescription>
-                Thiết lập trang giới thiệu và tra cứu bảo hành cho khách hàng
+                Thiết lập website bán hàng và tra cứu bảo hành cho khách hàng
               </CardDescription>
             </div>
             {landingUrl && (
@@ -287,7 +287,7 @@ export function LandingPageSettings() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
               >
-                Xem landing page
+                Xem website
                 <ExternalLink className="h-4 w-4" />
               </a>
             )}
@@ -302,7 +302,7 @@ export function LandingPageSettings() {
                 <div className="flex-1 space-y-2">
                   <Label className="flex items-center gap-2 text-sm font-medium">
                     <Share2 className="h-4 w-4" />
-                    {customDomainUrl ? 'Website riêng' : 'Link Landing Page'}
+                    {customDomainUrl ? 'Website riêng' : 'Link Website bán hàng'}
                   </Label>
                   <div className="flex gap-2">
                     <Input
@@ -379,7 +379,7 @@ export function LandingPageSettings() {
           
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Bật Landing Page</Label>
+              <Label>Bật Website bán hàng</Label>
               <p className="text-sm text-muted-foreground">
                 Cho phép khách hàng truy cập trang thông tin cửa hàng
               </p>
@@ -552,7 +552,7 @@ export function LandingPageSettings() {
                 Hiển thị chi nhánh
               </Label>
               <p className="text-sm text-muted-foreground">
-                Hiển thị danh sách chi nhánh với địa chỉ trên landing page (lấy từ quản lý chi nhánh)
+                Hiển thị danh sách chi nhánh với địa chỉ trên website (lấy từ quản lý chi nhánh)
               </p>
             </div>
             <Switch
@@ -739,7 +739,7 @@ export function LandingPageSettings() {
             Kênh thông tin
           </CardTitle>
           <CardDescription>
-            Link mạng xã hội hiển thị trên landing page
+            Link mạng xã hội hiển thị trên website bán hàng
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
