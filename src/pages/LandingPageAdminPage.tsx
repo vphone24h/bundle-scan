@@ -6,9 +6,11 @@ import { LandingArticlesTab } from '@/components/admin/LandingArticlesTab';
 import { LandingOrdersTab } from '@/components/admin/LandingOrdersTab';
 import { usePermissions } from '@/hooks/usePermissions';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
+import { useLandingGuideUrl } from '@/hooks/useAppConfig';
 import { Navigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, BookOpen } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 
 function PendingBadge() {
   const { data: count } = usePendingOrderCount();
@@ -22,6 +24,7 @@ function PendingBadge() {
 
 export default function LandingPageAdminPage() {
   const { data: permissions, isLoading } = usePermissions();
+  const landingGuideUrl = useLandingGuideUrl();
 
   if (isLoading) {
     return (
@@ -63,7 +66,17 @@ export default function LandingPageAdminPage() {
           description="Cấu hình website bán hàng cho khách hàng"
           helpText="Thiết lập website bán hàng công khai: sản phẩm, tin tức, tra cứu bảo hành. Khách hàng có thể truy cập qua subdomain hoặc tên miền riêng của bạn."
         />
-        <div className="mt-6">
+        {landingGuideUrl && (
+          <div className="mt-4">
+            <Button variant="outline" size="sm" asChild>
+              <a href={landingGuideUrl} target="_blank" rel="noopener noreferrer">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Hướng dẫn sử dụng
+              </a>
+            </Button>
+          </div>
+        )}
+        <div className="mt-4">
           <Tabs defaultValue={defaultTab}>
             <TabsList className="mb-4">
               {showSettings && <TabsTrigger value="settings">Cấu hình</TabsTrigger>}
