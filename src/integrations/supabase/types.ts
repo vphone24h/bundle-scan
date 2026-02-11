@@ -4665,6 +4665,16 @@ export type Database = {
       generate_affiliate_code: { Args: never; Returns: string }
       generate_domain_verification_token: { Args: never; Returns: string }
       get_current_tenant: { Args: never; Returns: string }
+      get_public_reviews: {
+        Args: { _limit?: number }
+        Returns: {
+          content: string
+          created_at: string
+          customer_name: string
+          id: string
+          rating: number
+        }[]
+      }
       get_staff_kpi_stats: {
         Args: {
           p_end_date: string
