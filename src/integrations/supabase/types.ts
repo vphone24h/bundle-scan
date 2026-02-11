@@ -3974,6 +3974,7 @@ export type Database = {
           banner_image_url: string | null
           banner_link_url: string | null
           created_at: string
+          custom_domain_article: string | null
           facebook_url: string | null
           id: string
           is_enabled: boolean | null
@@ -3982,6 +3983,7 @@ export type Database = {
           primary_color: string | null
           show_banner: boolean | null
           show_branches: boolean
+          show_custom_domain_cta: boolean | null
           show_store_info: boolean | null
           show_warranty_lookup: boolean | null
           store_address: string | null
@@ -4002,6 +4004,7 @@ export type Database = {
           banner_image_url?: string | null
           banner_link_url?: string | null
           created_at?: string
+          custom_domain_article?: string | null
           facebook_url?: string | null
           id?: string
           is_enabled?: boolean | null
@@ -4010,6 +4013,7 @@ export type Database = {
           primary_color?: string | null
           show_banner?: boolean | null
           show_branches?: boolean
+          show_custom_domain_cta?: boolean | null
           show_store_info?: boolean | null
           show_warranty_lookup?: boolean | null
           store_address?: string | null
@@ -4030,6 +4034,7 @@ export type Database = {
           banner_image_url?: string | null
           banner_link_url?: string | null
           created_at?: string
+          custom_domain_article?: string | null
           facebook_url?: string | null
           id?: string
           is_enabled?: boolean | null
@@ -4038,6 +4043,7 @@ export type Database = {
           primary_color?: string | null
           show_banner?: boolean | null
           show_branches?: boolean
+          show_custom_domain_cta?: boolean | null
           show_store_info?: boolean | null
           show_warranty_lookup?: boolean | null
           store_address?: string | null

@@ -26,6 +26,8 @@ export interface TenantLandingSettings {
   facebook_url: string | null;
   zalo_url: string | null;
   tiktok_url: string | null;
+  custom_domain_article: string | null;
+  show_custom_domain_cta: boolean;
   created_at: string;
   updated_at: string;
 }
