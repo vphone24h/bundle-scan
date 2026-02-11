@@ -63,6 +63,7 @@ import { ReceiptReturnDialog } from '@/components/returns/ReceiptReturnDialog';
 import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useCategories } from '@/hooks/useCategories';
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   completed: { label: 'Hoàn tất', variant: 'default' },
@@ -85,6 +86,7 @@ export default function ExportHistoryPage() {
   const [statusFilter, setStatusFilter] = useState('_all_');
   const [branchFilter, setBranchFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState('_all_');
   
   // Detail dialog
   const [selectedReceipt, setSelectedReceipt] = useState<ExportReceipt | null>(null);
@@ -105,6 +107,7 @@ export default function ExportHistoryPage() {
   const { data: receipts, isLoading: receiptsLoading } = useExportReceipts();
   const { data: items, isLoading: itemsLoading } = useExportReceiptItems();
   const { data: branches } = useBranches();
+  const { data: categories } = useCategories();
   const returnProduct = useReturnProduct();
   const { data: permissions } = usePermissions();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
@@ -150,12 +153,13 @@ export default function ExportHistoryPage() {
     return matchesSearch && matchesStatus && matchesDate && matchesBranch;
   });
 
-  const hasActiveFilters = dateFilter || statusFilter !== '_all_' || branchFilter !== '_all_';
+  const hasActiveFilters = dateFilter || statusFilter !== '_all_' || branchFilter !== '_all_' || categoryFilter !== '_all_';
 
   const clearFilters = () => {
     setDateFilter('');
     setStatusFilter('_all_');
     setBranchFilter('_all_');
+    setCategoryFilter('_all_');
   };
 
   // Filter items
@@ -167,7 +171,9 @@ export default function ExportHistoryPage() {
       item.export_receipts?.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.export_receipts?.customers?.phone?.includes(searchTerm);
 
-    return matchesSearch;
+    const matchesCategory = categoryFilter === '_all_' || item.category_id === categoryFilter;
+
+    return matchesSearch && matchesCategory;
   }) || [];
 
   // Group non-IMEI items by: product_name + branch + receipt_id + sale_price
@@ -392,6 +398,22 @@ export default function ExportHistoryPage() {
                     </Select>
                   </div>
                 )}
+                <div className="space-y-2">
+                  <Label className="text-xs">Danh mục</Label>
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tất cả" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="_all_">Tất cả danh mục</SelectItem>
+                      {categories?.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex items-end">
                   <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full">
                     <X className="h-4 w-4 mr-1" />
