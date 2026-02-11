@@ -3,10 +3,22 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { LandingPageSettings } from '@/components/admin/LandingPageSettings';
 import { LandingProductsTab } from '@/components/admin/LandingProductsTab';
 import { LandingArticlesTab } from '@/components/admin/LandingArticlesTab';
+import { LandingOrdersTab } from '@/components/admin/LandingOrdersTab';
 import { usePermissions } from '@/hooks/usePermissions';
+import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+function PendingBadge() {
+  const { data: count } = usePendingOrderCount();
+  if (!count) return null;
+  return (
+    <span className="ml-1.5 inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
 
 export default function LandingPageAdminPage() {
   const { data: permissions, isLoading } = usePermissions();
@@ -42,6 +54,10 @@ export default function LandingPageAdminPage() {
               <TabsTrigger value="settings">Cấu hình</TabsTrigger>
               <TabsTrigger value="products">Sản phẩm</TabsTrigger>
               <TabsTrigger value="articles">Tin tức</TabsTrigger>
+              <TabsTrigger value="orders" className="relative">
+                Đơn đặt hàng
+                <PendingBadge />
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="settings">
               <LandingPageSettings />
@@ -51,6 +67,9 @@ export default function LandingPageAdminPage() {
             </TabsContent>
             <TabsContent value="articles">
               <LandingArticlesTab />
+            </TabsContent>
+            <TabsContent value="orders">
+              <LandingOrdersTab />
             </TabsContent>
           </Tabs>
         </div>

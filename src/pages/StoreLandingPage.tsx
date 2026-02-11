@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { usePublicLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo } from '@/hooks/useTenantLanding';
-import { usePublicLandingProducts } from '@/hooks/useLandingProducts';
+import { usePublicLandingProducts, LandingProduct } from '@/hooks/useLandingProducts';
 import { usePublicLandingArticles, LandingArticle } from '@/hooks/useLandingArticles';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
@@ -19,6 +19,7 @@ import { format, addMonths, isAfter, differenceInDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
 import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
+import { ProductDetailDialog } from '@/components/landing/ProductDetailDialog';
 
 // === PWA Manifest Hook ===
 function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?: string | null) {
@@ -85,6 +86,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const [pageView, setPageView] = useState<PageView>('home');
   const [selectedArticle, setSelectedArticle] = useState<LandingArticle | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<LandingProduct | null>(null);
 
   // Warranty search state - restore from localStorage
   const warrantyStorageKey = storeId ? `warranty_session_${storeId}` : null;
@@ -340,7 +342,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {featuredProducts.slice(0, 4).map(p => (
-                    <Card key={p.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <Card key={p.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedProduct(p)}>
                       {p.image_url ? (
                         <img src={p.image_url} alt={p.name} className="w-full aspect-square object-cover" />
                       ) : (
@@ -470,7 +472,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
             )}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {filteredProducts.map(p => (
-                <Card key={p.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <Card key={p.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedProduct(p)}>
                   {p.image_url ? (
                     <img src={p.image_url} alt={p.name} className="w-full aspect-square object-cover" />
                   ) : (
@@ -799,6 +801,17 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
           <p className="text-[10px] text-muted-foreground/70 mt-1">Powered by VKHO</p>
         </div>
       </footer>
+
+      {/* Product detail & order dialog */}
+      <ProductDetailDialog
+        product={selectedProduct}
+        open={!!selectedProduct}
+        onOpenChange={v => !v && setSelectedProduct(null)}
+        tenantId={tenantId || ''}
+        branches={branches.map(b => ({ id: b.id, name: b.name }))}
+        primaryColor={primaryColor}
+        warrantyHotline={warrantyHotline}
+      />
     </div>
   );
 }

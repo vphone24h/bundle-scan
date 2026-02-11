@@ -2824,6 +2824,90 @@ export type Database = {
           },
         ]
       }
+      landing_orders: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          branch_id: string
+          cancelled_reason: string | null
+          created_at: string
+          customer_address: string | null
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string
+          id: string
+          note: string | null
+          product_id: string
+          product_image_url: string | null
+          product_name: string
+          product_price: number
+          quantity: number
+          status: string
+          tenant_id: string
+          updated_at: string
+          variant: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          branch_id: string
+          cancelled_reason?: string | null
+          created_at?: string
+          customer_address?: string | null
+          customer_email?: string | null
+          customer_name: string
+          customer_phone: string
+          id?: string
+          note?: string | null
+          product_id: string
+          product_image_url?: string | null
+          product_name: string
+          product_price?: number
+          quantity?: number
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          variant?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          branch_id?: string
+          cancelled_reason?: string | null
+          created_at?: string
+          customer_address?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string
+          id?: string
+          note?: string | null
+          product_id?: string
+          product_image_url?: string | null
+          product_name?: string
+          product_price?: number
+          quantity?: number
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          variant?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_orders_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_orders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_product_categories: {
         Row: {
           created_at: string
@@ -2877,6 +2961,7 @@ export type Database = {
           sale_price: number | null
           tenant_id: string
           updated_at: string
+          variants: Json | null
         }
         Insert: {
           category_id?: string | null
@@ -2892,6 +2977,7 @@ export type Database = {
           sale_price?: number | null
           tenant_id: string
           updated_at?: string
+          variants?: Json | null
         }
         Update: {
           category_id?: string | null
@@ -2907,6 +2993,7 @@ export type Database = {
           sale_price?: number | null
           tenant_id?: string
           updated_at?: string
+          variants?: Json | null
         }
         Relationships: [
           {
