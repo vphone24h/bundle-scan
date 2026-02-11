@@ -64,6 +64,11 @@ export function useUsersGuideUrl() {
   return configs?.find(c => c.config_key === 'users_guide_url')?.config_value || null;
 }
 
+export function useStockCountGuideUrl() {
+  const { data: configs } = useAppConfig();
+  return configs?.find(c => c.config_key === 'stock_count_guide_url')?.config_value || null;
+}
+
 // Public version - no auth required, fetches specific key
 export function useCustomDomainArticlePublic() {
   return useQuery({

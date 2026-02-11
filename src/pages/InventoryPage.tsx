@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Download, Package, ClipboardList, FileUp, AlertTriangle, Wrench } from 'lucide-react';
+import { Download, Package, ClipboardList, FileUp, AlertTriangle, Wrench, ExternalLink } from 'lucide-react';
 import { differenceInDays, format } from 'date-fns';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { usePagination } from '@/hooks/usePagination';
@@ -14,11 +14,13 @@ import { InventoryStats } from '@/components/inventory/InventoryStats';
 import { StockCountTab } from '@/components/stockCount/StockCountTab';
 import { WarrantyTab } from '@/components/inventory/WarrantyTab';
 import { useToast } from '@/hooks/use-toast';
+import { useStockCountGuideUrl } from '@/hooks/useAppConfig';
 import { exportToExcel } from '@/lib/exportExcel';
 
 export default function InventoryPage() {
   const { toast } = useToast();
   const { data: inventory, isLoading } = useInventory();
+  const stockCountGuideUrl = useStockCountGuideUrl();
   // Bỏ useInventoryStats vì đã tính filteredStats bên dưới
   const [activeTab, setActiveTab] = useState('inventory');
 
@@ -234,22 +236,47 @@ export default function InventoryPage() {
   return (
     <MainLayout>
       <PageHeader
-        title="Tồn kho"
-        description="Quản lý và theo dõi tồn kho theo thời gian thực"
-        helpText="Xem chi tiết tồn kho theo từng chi nhánh, trạng thái IMEI (đang bán, đã bán, bảo hành). Hỗ trợ kiểm kê và đối soát số lượng thực tế với hệ thống."
+        title={activeTab === 'inventory' ? 'Tồn kho' : activeTab === 'warranty' ? 'Hàng bảo hành' : 'Kiểm kho'}
+        description={
+          activeTab === 'inventory' 
+            ? 'Quản lý và theo dõi tồn kho theo thời gian thực'
+            : activeTab === 'warranty'
+            ? 'Quản lý hàng bảo hành'
+            : 'Quản lý kiểm kho theo kỳ kiểm'
+        }
+        helpText={
+          activeTab === 'inventory'
+            ? 'Xem chi tiết tồn kho theo từng chi nhánh, trạng thái IMEI (đang bán, đã bán, bảo hành). Hỗ trợ kiểm kê và đối soát số lượng thực tế với hệ thống.'
+            : activeTab === 'warranty'
+            ? 'Theo dõi các sản phẩm đang được bảo hành'
+            : 'Tạo phiếu kiểm kho, quét barcode và xác nhận kiểm kho. Hỗ trợ tính toán chênh lệch tồn kho thực tế so với hệ thống.'
+        }
         actions={
-          activeTab === 'inventory' && (
-            <div className="flex gap-2 flex-wrap">
-              <Button variant="outline" onClick={handleExportForReimport} className="gap-2">
-                <FileUp className="h-4 w-4" />
-                Xuất file nhập lại
+          <>
+            {activeTab === 'inventory' && (
+              <div className="flex gap-2 flex-wrap">
+                <Button variant="outline" onClick={handleExportForReimport} className="gap-2">
+                  <FileUp className="h-4 w-4" />
+                  Xuất file nhập lại
+                </Button>
+                <Button onClick={handleExportExcel} className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Xuất Excel
+                </Button>
+              </div>
+            )}
+            {activeTab === 'stock-count' && stockCountGuideUrl && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(stockCountGuideUrl, '_blank')}
+                className="gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Hướng dẫn
               </Button>
-              <Button onClick={handleExportExcel} className="gap-2">
-                <Download className="h-4 w-4" />
-                Xuất Excel
-              </Button>
-            </div>
-          )
+            )}
+          </>
         }
       />
 
