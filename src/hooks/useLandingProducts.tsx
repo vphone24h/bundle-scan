@@ -40,9 +40,12 @@ export function useLandingProductCategories() {
   return useQuery({
     queryKey: ['landing-product-categories'],
     queryFn: async () => {
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from('landing_product_categories' as any)
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('display_order', { ascending: true })
         .order('name', { ascending: true });
       if (error) throw error;
@@ -84,9 +87,12 @@ export function useLandingProducts() {
   return useQuery({
     queryKey: ['landing-products'],
     queryFn: async () => {
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from('landing_products' as any)
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('display_order', { ascending: true })
         .order('created_at', { ascending: false });
       if (error) throw error;
