@@ -9,13 +9,13 @@ import {
   useDeleteLandingProduct,
   uploadLandingProductImage,
   LandingProduct,
+  LandingProductVariant,
 } from '@/hooks/useLandingProducts';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,6 +24,8 @@ import { toast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { Separator } from '@/components/ui/separator';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { PriceInput } from '@/components/ui/price-input';
 
 export function LandingProductsTab() {
   const { data: tenant } = useCurrentTenant();
@@ -50,6 +52,7 @@ export function LandingProductsTab() {
     image_url: '',
     is_featured: false,
     is_active: true,
+    variants: [] as LandingProductVariant[],
   });
 
   const handleAddCategory = async () => {
@@ -65,7 +68,7 @@ export function LandingProductsTab() {
 
   const openAddProduct = () => {
     setEditingProduct(null);
-    setForm({ name: '', description: '', price: 0, sale_price: null, category_id: '_none_', image_url: '', is_featured: false, is_active: true });
+    setForm({ name: '', description: '', price: 0, sale_price: null, category_id: '_none_', image_url: '', is_featured: false, is_active: true, variants: [] });
     setProductDialog(true);
   };
 
@@ -80,6 +83,7 @@ export function LandingProductsTab() {
       image_url: p.image_url || '',
       is_featured: p.is_featured,
       is_active: p.is_active,
+      variants: Array.isArray(p.variants) ? p.variants : [],
     });
     setProductDialog(true);
   };
@@ -114,6 +118,7 @@ export function LandingProductsTab() {
         image_url: form.image_url || null,
         is_featured: form.is_featured,
         is_active: form.is_active,
+        variants: form.variants,
       };
       if (editingProduct) {
         await updateProduct.mutateAsync({ id: editingProduct.id, ...payload });
@@ -265,16 +270,76 @@ export function LandingProductsTab() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Giá gốc</Label>
-                <Input type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: Number(e.target.value) }))} />
+                <PriceInput value={form.price} onChange={v => setForm(p => ({ ...p, price: v }))} />
               </div>
               <div className="space-y-2">
                 <Label>Giá khuyến mãi</Label>
-                <Input type="number" value={form.sale_price ?? ''} onChange={e => setForm(p => ({ ...p, sale_price: e.target.value ? Number(e.target.value) : null }))} placeholder="Để trống nếu không" />
+                <PriceInput value={form.sale_price ?? 0} onChange={v => setForm(p => ({ ...p, sale_price: v || null }))} placeholder="Để trống nếu không" />
               </div>
             </div>
+
+            {/* Biến thể sản phẩm */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Biến thể (màu sắc, dung lượng, tình trạng...)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1 h-7 text-xs"
+                  onClick={() => setForm(p => ({ ...p, variants: [...p.variants, { name: '', price: 0 }] }))}
+                >
+                  <Plus className="h-3 w-3" /> Thêm biến thể
+                </Button>
+              </div>
+              {form.variants.length > 0 ? (
+                <div className="space-y-2">
+                  {form.variants.map((v, i) => (
+                    <div key={i} className="flex items-center gap-2 p-2 rounded-lg border bg-muted/30">
+                      <Input
+                        value={v.name}
+                        onChange={e => {
+                          const variants = [...form.variants];
+                          variants[i] = { ...variants[i], name: e.target.value };
+                          setForm(p => ({ ...p, variants }));
+                        }}
+                        placeholder="VD: 256GB Zin đẹp"
+                        className="flex-1 h-8 text-sm"
+                      />
+                      <PriceInput
+                        value={v.price}
+                        onChange={val => {
+                          const variants = [...form.variants];
+                          variants[i] = { ...variants[i], price: val };
+                          setForm(p => ({ ...p, variants }));
+                        }}
+                        className="w-32 h-8 text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive shrink-0"
+                        onClick={() => setForm(p => ({ ...p, variants: p.variants.filter((_, j) => j !== i) }))}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">Chưa có biến thể. Nhấn "Thêm biến thể" để thêm.</p>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label>Mô tả</Label>
-              <Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} placeholder="Mô tả ngắn..." />
+              <RichTextEditor
+                value={form.description}
+                onChange={v => setForm(p => ({ ...p, description: v }))}
+                placeholder="Mô tả chi tiết sản phẩm..."
+                minHeight="150px"
+              />
             </div>
             <div className="space-y-2">
               <Label>Hình ảnh</Label>

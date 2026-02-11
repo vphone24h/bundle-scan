@@ -11,6 +11,11 @@ export interface LandingProductCategory {
   updated_at: string;
 }
 
+export interface LandingProductVariant {
+  name: string;
+  price: number;
+}
+
 export interface LandingProduct {
   id: string;
   tenant_id: string;
@@ -23,7 +28,7 @@ export interface LandingProduct {
   is_featured: boolean;
   is_active: boolean;
   display_order: number;
-  variants: string[];
+  variants: LandingProductVariant[];
   created_at: string;
   updated_at: string;
 }
