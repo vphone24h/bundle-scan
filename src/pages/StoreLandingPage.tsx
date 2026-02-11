@@ -164,6 +164,16 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const [searchValue, setSearchValue] = useState('');
   const [submittedValue, setSubmittedValue] = useState('');
   const [showDomainArticle, setShowDomainArticle] = useState(false);
+
+  // Auto-open domain article when hash is #custom-domain
+  useEffect(() => {
+    if (window.location.hash === '#custom-domain' && customDomainArticle) {
+      setShowDomainArticle(true);
+      setTimeout(() => {
+        document.getElementById('custom-domain')?.scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    }
+  }, [customDomainArticle]);
   
   const tenantId = landingData?.tenant?.id || null;
   const { data: warrantyResults, isLoading: isSearching, isFetched } = useWarrantyLookup(submittedValue, tenantId);
@@ -793,7 +803,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
         )}
         {/* CTA Tên miền riêng - nội dung từ Platform Admin */}
         {customDomainArticle && (
-          <Card className="shadow-md overflow-hidden">
+          <Card id="custom-domain" className="shadow-md overflow-hidden">
             <button
               onClick={() => setShowDomainArticle(!showDomainArticle)}
               className="w-full p-4 flex items-center gap-3 text-left active:bg-muted/50 transition-colors"
