@@ -59,9 +59,9 @@ export default function LandingPageAdminPage() {
     <MainLayout>
       <div className="p-4 sm:p-6">
         <PageHeader 
-          title="Landing Page" 
-          description="Cấu hình trang web bán hàng cho khách hàng"
-          helpText="Thiết lập trang web bán hàng công khai: sản phẩm, tin tức, tra cứu bảo hành. Khách hàng có thể truy cập qua subdomain riêng của bạn."
+          title="Website bán hàng" 
+          description="Cấu hình website bán hàng cho khách hàng"
+          helpText="Thiết lập website bán hàng công khai: sản phẩm, tin tức, tra cứu bảo hành. Khách hàng có thể truy cập qua subdomain hoặc tên miền riêng của bạn."
         />
         <div className="mt-6">
           <Tabs defaultValue={defaultTab}>
