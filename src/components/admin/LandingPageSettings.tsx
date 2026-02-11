@@ -229,8 +229,8 @@ export function LandingPageSettings() {
 
   const landingUrl = tenant?.subdomain ? `/store/${tenant.subdomain}` : null;
   
-  // Check for verified custom domain
-  const verifiedDomain = customDomains?.find(d => d.is_verified);
+  // Check for verified custom domain belonging to THIS tenant only
+  const verifiedDomain = customDomains?.find(d => d.is_verified && d.tenant_id === tenant?.id);
 
   if (isLoading) {
     return (
