@@ -173,7 +173,14 @@ export default function ExportHistoryPage() {
 
     const matchesCategory = categoryFilter === '_all_' || item.category_id === categoryFilter;
 
-    return matchesSearch && matchesCategory;
+    const matchesStatus = statusFilter === '_all_' || item.export_receipts?.status === statusFilter;
+
+    const matchesDate = !dateFilter || 
+      (item.export_receipts?.export_date && format(new Date(item.export_receipts.export_date), 'yyyy-MM-dd') === dateFilter);
+
+    const matchesBranch = branchFilter === '_all_' || item.export_receipts?.branch_id === branchFilter;
+
+    return matchesSearch && matchesCategory && matchesStatus && matchesDate && matchesBranch;
   }) || [];
 
   // Group non-IMEI items by: product_name + branch + receipt_id + sale_price
