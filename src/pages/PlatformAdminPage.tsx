@@ -12,9 +12,10 @@ import { AffiliateManagement } from '@/components/platform/AffiliateManagement';
 import { PlatformAdvertisementsManagement } from '@/components/platform/PlatformAdvertisementsManagement';
  import { TaxPolicyArticleEditor } from '@/components/admin/TaxPolicyArticleEditor';
 import { EmailHistoryTable } from '@/components/platform/EmailHistoryTable';
+import { CustomDomainsManagement } from '@/components/platform/CustomDomainsManagement';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate } from 'react-router-dom';
- import { Loader2, Users, Megaphone, FileText, Mail } from 'lucide-react';
+ import { Loader2, Users, Megaphone, FileText, Mail, Globe } from 'lucide-react';
 
 export default function PlatformAdminPage() {
   const { data: platformUser, isLoading } = usePlatformUser();
@@ -56,7 +57,11 @@ export default function PlatformAdminPage() {
               <Megaphone className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Quảng cáo</span>
             </TabsTrigger>
-            <TabsTrigger value="config" className="text-xs sm:text-sm px-2 sm:px-3">Cấu hình</TabsTrigger>
+             <TabsTrigger value="domains" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
+               <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
+               <span className="hidden sm:inline">Domain</span>
+             </TabsTrigger>
+             <TabsTrigger value="config" className="text-xs sm:text-sm px-2 sm:px-3">Cấu hình</TabsTrigger>
             <TabsTrigger value="email-history" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
               <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">LS Email</span>
@@ -93,6 +98,10 @@ export default function PlatformAdminPage() {
 
           <TabsContent value="ads" className="mt-6">
             <PlatformAdvertisementsManagement />
+          </TabsContent>
+
+          <TabsContent value="domains" className="mt-6">
+            <CustomDomainsManagement />
           </TabsContent>
 
           <TabsContent value="config" className="mt-6">
