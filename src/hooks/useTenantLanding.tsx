@@ -118,20 +118,16 @@ export function usePublicLandingSettings(subdomain: string | null) {
 
       if (error) return null;
 
-      // Lấy danh sách chi nhánh nếu show_branches = true
-      let branches: BranchInfo[] = [];
-      const settings = data as unknown as TenantLandingSettings | null;
+      // Luôn lấy danh sách chi nhánh (dùng cho form đặt hàng + hiển thị)
+      const { data: branchesData } = await supabase
+        .from('branches')
+        .select('id, name, address, phone')
+        .eq('tenant_id', tenant.id)
+        .order('is_default', { ascending: false })
+        .order('name', { ascending: true });
       
-      if (settings?.show_branches) {
-        const { data: branchesData } = await supabase
-          .from('branches')
-          .select('id, name, address, phone')
-          .eq('tenant_id', tenant.id)
-          .order('is_default', { ascending: false })
-          .order('name', { ascending: true });
-        
-        branches = (branchesData || []) as BranchInfo[];
-      }
+      const branches: BranchInfo[] = (branchesData || []) as BranchInfo[];
+      const settings = data as unknown as TenantLandingSettings | null;
       
       // Trả về kết hợp tenant info + settings + branches
       return {
