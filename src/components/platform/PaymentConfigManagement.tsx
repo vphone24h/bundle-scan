@@ -64,6 +64,7 @@ export function PaymentConfigManagement() {
   const [feedbackZaloUrl, setFeedbackZaloUrl] = useState('');
   const [feedbackFbUrl, setFeedbackFbUrl] = useState('');
   const [feedbackHotline, setFeedbackHotline] = useState('');
+  const [customDomainArticle, setCustomDomainArticle] = useState('');
   const [savingConfig, setSavingConfig] = useState(false);
 
   // Bank account dialog
@@ -115,6 +116,7 @@ export function PaymentConfigManagement() {
       const feedbackZaloConfig = configs.find(c => c.config_key === 'feedback_zalo_url');
       const feedbackFbConfig = configs.find(c => c.config_key === 'feedback_fb_url');
       const feedbackHotlineConfig = configs.find(c => c.config_key === 'feedback_hotline');
+      const customDomainArticleConfig = configs.find(c => c.config_key === 'custom_domain_article');
       
       if (hotlineConfig?.config_value) setHotline(hotlineConfig.config_value);
       if (emailConfig?.config_value) setSupportEmail(emailConfig.config_value);
@@ -127,6 +129,7 @@ export function PaymentConfigManagement() {
       if (feedbackZaloConfig?.config_value) setFeedbackZaloUrl(feedbackZaloConfig.config_value);
       if (feedbackFbConfig?.config_value) setFeedbackFbUrl(feedbackFbConfig.config_value);
       if (feedbackHotlineConfig?.config_value) setFeedbackHotline(feedbackHotlineConfig.config_value);
+      if (customDomainArticleConfig?.config_value) setCustomDomainArticle(customDomainArticleConfig.config_value);
     }
   }, [configs]);
 
@@ -146,6 +149,7 @@ export function PaymentConfigManagement() {
         { config_key: 'feedback_zalo_url', config_value: feedbackZaloUrl },
         { config_key: 'feedback_fb_url', config_value: feedbackFbUrl },
         { config_key: 'feedback_hotline', config_value: feedbackHotline },
+        { config_key: 'custom_domain_article', config_value: customDomainArticle },
       ];
 
       for (const update of updates) {
@@ -386,6 +390,23 @@ export function PaymentConfigManagement() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Bài viết dịch vụ tên miền riêng */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="font-medium text-sm mb-3 flex items-center gap-2">
+              🌐 Bài mô tả dịch vụ tên miền riêng
+            </h3>
+            <p className="text-xs text-muted-foreground mb-2">
+              Nội dung này hiển thị trên landing page của tất cả cửa hàng khi khách nhấn &quot;Sở hữu website tên miền riêng&quot;. Để trống nếu không muốn hiển thị.
+            </p>
+            <textarea
+              value={customDomainArticle}
+              onChange={(e) => setCustomDomainArticle(e.target.value)}
+              placeholder={"Bạn muốn có website riêng với tên miền doanh nghiệp?\n\nChúng tôi cung cấp dịch vụ thiết kế website chuyên nghiệp...\n\n✅ Tên miền riêng (.com, .vn)\n✅ Giao diện chuyên nghiệp\n✅ Liên hệ: 0xxx xxx xxx"}
+              rows={6}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
           </div>
           <Button onClick={saveConfig} disabled={savingConfig}>
             {savingConfig && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

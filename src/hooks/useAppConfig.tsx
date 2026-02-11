@@ -43,3 +43,25 @@ export function useImportGuideUrl() {
   const { data: configs } = useAppConfig();
   return configs?.find(c => c.config_key === 'import_guide_url')?.config_value || null;
 }
+
+export function useCustomDomainArticle() {
+  const { data: configs } = useAppConfig();
+  return configs?.find(c => c.config_key === 'custom_domain_article')?.config_value || null;
+}
+
+// Public version - no auth required, fetches specific key
+export function useCustomDomainArticlePublic() {
+  return useQuery({
+    queryKey: ['custom-domain-article-public'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payment_config')
+        .select('config_value')
+        .eq('config_key', 'custom_domain_article')
+        .maybeSingle();
+      if (error) return null;
+      return data?.config_value || null;
+    },
+    staleTime: 5 * 60 * 1000, // cache 5 min
+  });
+}

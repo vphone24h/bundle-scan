@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Globe2 } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 export function LandingPageSettings() {
@@ -45,8 +45,6 @@ export function LandingPageSettings() {
     facebook_url: '',
     zalo_url: '',
     tiktok_url: '',
-    custom_domain_article: '',
-    show_custom_domain_cta: false,
   });
 
   useEffect(() => {
@@ -74,8 +72,6 @@ export function LandingPageSettings() {
         facebook_url: settings.facebook_url || '',
         zalo_url: settings.zalo_url || '',
         tiktok_url: settings.tiktok_url || '',
-        custom_domain_article: settings.custom_domain_article || '',
-        show_custom_domain_cta: settings.show_custom_domain_cta ?? false,
       });
     } else if (tenant) {
       setFormData(prev => ({
@@ -596,50 +592,6 @@ export function LandingPageSettings() {
         </CardContent>
       </Card>
 
-      {/* Dịch vụ tên miền riêng */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Globe2 className="h-4 w-4" />
-            Dịch vụ tên miền riêng
-          </CardTitle>
-          <CardDescription>
-            Hiển thị mục giới thiệu dịch vụ website tên miền riêng trên landing page
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Hiển thị trên Landing Page</Label>
-              <p className="text-sm text-muted-foreground">
-                Bật để khách hàng thấy mục &quot;Sở hữu website tên miền riêng&quot;
-              </p>
-            </div>
-            <Switch
-              checked={formData.show_custom_domain_cta}
-              onCheckedChange={(checked) => handleChange('show_custom_domain_cta', checked)}
-            />
-          </div>
-
-          {formData.show_custom_domain_cta && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <Label>Nội dung mô tả dịch vụ</Label>
-                <Textarea
-                  value={formData.custom_domain_article || ''}
-                  onChange={(e) => handleChange('custom_domain_article', e.target.value)}
-                  placeholder="Mô tả về dịch vụ thiết kế website tên miền riêng cho doanh nghiệp...&#10;&#10;VD: Bạn muốn có website riêng với tên miền doanh nghiệp? Chúng tôi cung cấp dịch vụ thiết kế website chuyên nghiệp với giá ưu đãi..."
-                  rows={6}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Nội dung này sẽ hiển thị khi khách nhấn vào mục trên landing page
-                </p>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Tuỳ chỉnh màu sắc */}
       <Card>
