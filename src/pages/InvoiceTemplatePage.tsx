@@ -973,13 +973,13 @@ export default function InvoiceTemplatePage() {
               >
                 {/* Section 1: Store info */}
                 <div className={`section ${getAlignClass(s1Align)}`}>
-                  {currentSettings.show_store_name && (
+                  {(currentSettings.show_store_name ?? true) && (
                     <div className="text-xl font-bold">{currentSettings.store_name || 'Tên cửa hàng'}</div>
                   )}
-                  {currentSettings.show_store_address && (
+                  {(currentSettings.show_store_address ?? true) && (
                     <div className="text-sm">{currentSettings.store_address || 'Địa chỉ cửa hàng'}</div>
                   )}
-                  {currentSettings.show_store_phone && (
+                  {(currentSettings.show_store_phone ?? true) && (
                     <div className="text-sm">ĐT: {currentSettings.store_phone || '0123456789'}</div>
                   )}
                 </div>
@@ -988,7 +988,7 @@ export default function InvoiceTemplatePage() {
                 <div className="separator" style={{ borderTop: '1px dashed #333', margin: '8px 0' }}></div>
 
                 {/* Section 2: Invoice title */}
-                {currentSettings.show_receipt_code && (
+                {(currentSettings.show_receipt_code ?? true) && (
                   <div className={`section ${getAlignClass(s2Align)}`}>
                     <div className="text-lg font-bold">HÓA ĐƠN BÁN HÀNG</div>
                   </div>
@@ -996,13 +996,13 @@ export default function InvoiceTemplatePage() {
 
                 {/* Section 3: Details */}
                 <div className={`section ${getAlignClass(s3Align)}`}>
-                  {currentSettings.show_receipt_code && (
+                  {(currentSettings.show_receipt_code ?? true) && (
                     <div className="text-sm mb-1">Mã: XH20260131143000</div>
                   )}
-                  {currentSettings.show_sale_date && (
+                  {(currentSettings.show_sale_date ?? true) && (
                     <div className="text-sm mb-1">Ngày: 31/01/2026 14:30</div>
                   )}
-                  {currentSettings.show_customer_info && (
+                  {(currentSettings.show_customer_info ?? true) && (
                     <>
                       <div className="text-sm">KH: Nguyễn Văn A</div>
                       <div className="text-sm">SĐT: 0987654321</div>
@@ -1017,19 +1017,19 @@ export default function InvoiceTemplatePage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr style={{ borderBottom: '1px solid #333' }}>
-                      {currentSettings.show_product_name && <th className="py-1" style={{ textAlign: s4Align }}>SP</th>}
-                      {currentSettings.show_sale_price && <th className="py-1 text-right">Giá</th>}
+                      {(currentSettings.show_product_name ?? true) && <th className="py-1" style={{ textAlign: s4Align }}>SP</th>}
+                      {(currentSettings.show_sale_price ?? true) && <th className="py-1 text-right">Giá</th>}
                     </tr>
                   </thead>
                   <tbody>
                     <tr style={{ borderBottom: '1px dashed #999' }}>
                       <td className="py-1" style={{ textAlign: s4Align }}>
-                        {currentSettings.show_product_name && <div>iPhone 15 Pro Max 256GB</div>}
-                        {currentSettings.show_sku && <div className="text-xs" style={{ color: '#666' }}>SKU: IP15PM256</div>}
-                        {currentSettings.show_imei && <div className="text-xs" style={{ color: '#666' }}>IMEI: 123456789012345</div>}
-                        {currentSettings.show_warranty && <div className="text-xs" style={{ color: '#0066cc' }}>BH: 12 tháng</div>}
+                        {(currentSettings.show_product_name ?? true) && <div>iPhone 15 Pro Max 256GB</div>}
+                        {(currentSettings.show_sku ?? true) && <div className="text-xs" style={{ color: '#666' }}>SKU: IP15PM256</div>}
+                        {(currentSettings.show_imei ?? true) && <div className="text-xs" style={{ color: '#666' }}>IMEI: 123456789012345</div>}
+                        {(currentSettings.show_warranty ?? false) && <div className="text-xs" style={{ color: '#0066cc' }}>BH: 12 tháng</div>}
                       </td>
-                      {currentSettings.show_sale_price && (
+                      {(currentSettings.show_sale_price ?? true) && (
                         <td className="py-1 text-right">32,000,000đ</td>
                       )}
                     </tr>
@@ -1074,14 +1074,14 @@ export default function InvoiceTemplatePage() {
                 </div>
 
                 {/* Note */}
-                {currentSettings.show_note && (
+                {(currentSettings.show_note ?? true) && (
                   <div className="mt-2 text-sm" style={{ color: '#666' }}>
                     Ghi chú: Khách hẹn thanh toán sau 7 ngày
                   </div>
                 )}
 
                 {/* Custom description - NOW BEFORE Thank you */}
-                {currentSettings.show_custom_description && (currentSettings.custom_description_text || currentSettings.custom_description_image_url) && (
+                {(currentSettings.show_custom_description ?? false) && (currentSettings.custom_description_text || currentSettings.custom_description_image_url) && (
                   <div 
                     className={`mt-2 text-sm ${getAlignClass((currentSettings.custom_description_align || 'center') as TextAlign)}`}
                     style={{ 
@@ -1102,7 +1102,7 @@ export default function InvoiceTemplatePage() {
                 )}
 
                 {/* Thank you - NOW AFTER Custom description */}
-                {currentSettings.show_thank_you && (
+                {(currentSettings.show_thank_you ?? true) && (
                   <div className="mt-4 text-center italic">
                     {currentSettings.thank_you_text || 'Cảm ơn quý khách!'}
                   </div>
