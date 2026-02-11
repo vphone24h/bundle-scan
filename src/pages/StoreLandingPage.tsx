@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { usePublicLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo } from '@/hooks/useTenantLanding';
-import { useCustomDomainArticlePublic } from '@/hooks/useAppConfig';
+
 import { useQueryClient } from '@tanstack/react-query';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { Input } from '@/components/ui/input';
@@ -158,22 +158,11 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain;
   
   const { data: landingData, isLoading } = usePublicLandingSettings(storeId);
-  const { data: customDomainArticle } = useCustomDomainArticlePublic();
+  
   
   const queryClient = useQueryClient();
   const [searchValue, setSearchValue] = useState('');
   const [submittedValue, setSubmittedValue] = useState('');
-  const [showDomainArticle, setShowDomainArticle] = useState(false);
-
-  // Auto-open domain article when hash is #custom-domain
-  useEffect(() => {
-    if (window.location.hash === '#custom-domain' && customDomainArticle) {
-      setShowDomainArticle(true);
-      setTimeout(() => {
-        document.getElementById('custom-domain')?.scrollIntoView({ behavior: 'smooth' });
-      }, 300);
-    }
-  }, [customDomainArticle]);
   
   const tenantId = landingData?.tenant?.id || null;
   const { data: warrantyResults, isLoading: isSearching, isFetched } = useWarrantyLookup(submittedValue, tenantId);
@@ -799,44 +788,6 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                 </a>
               )}
             </CardContent>
-          </Card>
-        )}
-        {/* CTA Tên miền riêng - nội dung từ Platform Admin */}
-        {customDomainArticle && (
-          <Card id="custom-domain" className="shadow-md overflow-hidden">
-            <button
-              onClick={() => setShowDomainArticle(!showDomainArticle)}
-              className="w-full p-4 flex items-center gap-3 text-left active:bg-muted/50 transition-colors"
-            >
-              <div 
-                className="p-2.5 rounded-xl"
-                style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc)` }}
-              >
-                <Globe className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm">Sở hữu website tên miền riêng</p>
-                <p className="text-xs text-muted-foreground">
-                  Nâng tầm thương hiệu doanh nghiệp của bạn
-                </p>
-              </div>
-              {showDomainArticle ? (
-                <ChevronUp className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-              ) : (
-                <ChevronDown className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-              )}
-            </button>
-            
-            {showDomainArticle && (
-              <CardContent className="pt-0 px-4 pb-4">
-                <div className="border-t pt-3">
-                  <div 
-                    className="prose prose-sm max-w-none text-sm text-muted-foreground [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_a]:text-primary [&_a]:underline"
-                    dangerouslySetInnerHTML={{ __html: customDomainArticle }}
-                  />
-                </div>
-              </CardContent>
-            )}
           </Card>
         )}
       </main>

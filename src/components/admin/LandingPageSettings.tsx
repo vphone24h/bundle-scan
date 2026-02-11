@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useCustomDomainArticlePublic } from '@/hooks/useAppConfig';
 import { useNavigate } from 'react-router-dom';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings, TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
 import { useCurrentTenant } from '@/hooks/useTenant';
@@ -11,6 +12,67 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
+function CustomDomainCTA() {
+  const [open, setOpen] = useState(false);
+  const { data: article } = useCustomDomainArticlePublic();
+
+  return (
+    <>
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+        <div className="flex items-start gap-3">
+          <Globe className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">
+              Bạn muốn sở hữu website với tên miền riêng của doanh nghiệp?
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Liên hệ để được hỗ trợ gắn tên miền riêng (VD: cuahang.vn) cho trang Landing Page
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="shrink-0 gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
+            onClick={() => setOpen(true)}
+          >
+            Xem chi tiết
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              Dịch vụ tên miền riêng
+            </DialogTitle>
+          </DialogHeader>
+          {article ? (
+            <div
+              className="prose prose-sm max-w-none [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_a]:text-primary [&_a]:underline"
+              dangerouslySetInnerHTML={{ __html: article }}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground py-4">
+              Chưa có nội dung bài viết. Vui lòng liên hệ quản trị viên nền tảng.
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 export function LandingPageSettings() {
   const { data: tenant } = useCurrentTenant();
@@ -269,31 +331,7 @@ export function LandingPageSettings() {
           )}
 
           {/* CTA tên miền riêng */}
-          {fullLandingUrl && (
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-              <div className="flex items-start gap-3">
-                <Globe className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">
-                    Bạn muốn sở hữu website với tên miền riêng của doanh nghiệp?
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Liên hệ để được hỗ trợ gắn tên miền riêng (VD: cuahang.vn) cho trang Landing Page
-                  </p>
-                </div>
-                <a
-                  href={`${fullLandingUrl}#custom-domain`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button type="button" size="sm" variant="outline" className="shrink-0 gap-1.5 text-primary border-primary/30 hover:bg-primary/10">
-                    Xem bài giới thiệu
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </Button>
-                </a>
-              </div>
-            </div>
-          )}
+          {fullLandingUrl && <CustomDomainCTA />}
           
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
