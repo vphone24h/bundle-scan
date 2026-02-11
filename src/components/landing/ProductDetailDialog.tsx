@@ -145,7 +145,7 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0 [&>button:last-child]:bg-black/60 [&>button:last-child]:text-white [&>button:last-child]:opacity-100 [&>button:last-child]:rounded-full [&>button:last-child]:h-8 [&>button:last-child]:w-8 [&>button:last-child]:top-2 [&>button:last-child]:right-2 [&>button:last-child>svg]:h-5 [&>button:last-child>svg]:w-5">
         {/* Image gallery */}
         {allImages.length > 0 ? (
           <div className="relative">
