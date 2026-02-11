@@ -148,6 +148,16 @@ export function RichTextEditor({
     }
   }, []); // Only run once on mount
 
+  // Sync value when it changes externally (e.g. async data load)
+  React.useEffect(() => {
+    if (editorRef.current && value && editorRef.current.innerHTML !== value) {
+      // Only update if the editor is not focused (user is not typing)
+      if (document.activeElement !== editorRef.current) {
+        editorRef.current.innerHTML = value;
+      }
+    }
+  }, [value]);
+
   return (
     <div className={cn('border rounded-md overflow-hidden', className)}>
       {/* Toolbar */}
