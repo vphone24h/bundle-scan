@@ -13,7 +13,8 @@ import {
   Search, MapPin, Phone, Mail, Shield, CheckCircle, XCircle,
   Store, Loader2, Building2, Headphones, Calendar, Package,
   Clock, Users, ExternalLink, Star, Gift, User, Globe,
-  ChevronDown, ChevronUp, ShoppingBag, Newspaper, ArrowLeft
+  ChevronDown, ChevronUp, ShoppingBag, Newspaper, ArrowLeft,
+  Download, Smartphone, Share, Plus, Apple, MoreVertical
 } from 'lucide-react';
 import { format, addMonths, isAfter, differenceInDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -146,7 +147,12 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const storeName = settings?.store_name || tenant?.name || storeId || '';
   useDynamicManifest(storeName, storeId, settings?.store_logo_url);
 
-  const handleSearch = () => { if (searchValue.trim()) setSubmittedValue(searchValue.trim()); };
+  const handleSearch = () => { 
+    if (searchValue.trim()) { 
+      setSubmittedValue(searchValue.trim()); 
+      if (pageView === 'home') setPageView('warranty');
+    } 
+  };
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
   // Loading / error states
@@ -430,6 +436,9 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                 </CardContent>
               </Card>
             )}
+
+            {/* Install App Guide */}
+            <InstallAppSection primaryColor={primaryColor} storeName={displayStoreName || ''} />
 
             {/* Store info */}
             {(settings?.show_store_info !== false) && (settings?.store_address || settings?.store_phone || branches.length > 0) && (
@@ -817,6 +826,92 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
 }
 
 // Store info section component
+// === Install App Section ===
+function InstallAppSection({ primaryColor, storeName }: { primaryColor: string; storeName: string }) {
+  const [isIOS, setIsIOS] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    const ua = navigator.userAgent.toLowerCase();
+    setIsIOS(/iphone|ipad|ipod/.test(ua));
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+    }
+  }, []);
+
+  if (isInstalled) return null;
+
+  return (
+    <Card className="shadow-md" style={{ borderTop: `3px solid ${primaryColor}` }}>
+      <CardHeader className="pb-2 px-4 pt-4">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <div className="p-1.5 rounded-lg" style={{ backgroundColor: `${primaryColor}15` }}>
+            <Download className="h-4 w-4" style={{ color: primaryColor }} />
+          </div>
+          Tải ứng dụng
+        </CardTitle>
+        <CardDescription className="text-xs">
+          Cài đặt {storeName} như ứng dụng trên điện thoại
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-4 pb-4">
+        <button 
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Smartphone className="h-4 w-4" style={{ color: primaryColor }} />
+            <span className="text-sm font-medium">Hướng dẫn cài đặt {isIOS ? '(iPhone/iPad)' : '(Android)'}</span>
+          </div>
+          {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+        </button>
+
+        {isExpanded && (
+          <div className="mt-3 space-y-3 px-1">
+            {isIOS ? (
+              <>
+                <Step num={1} title="Mở bằng Safari" desc='Đảm bảo bạn đang dùng trình duyệt Safari' primaryColor={primaryColor} />
+                <Step num={2} title="Nhấn nút Chia sẻ" desc='Nhấn biểu tượng chia sẻ (hình vuông có mũi tên lên) ở thanh dưới' icon={<Share className="h-3.5 w-3.5" style={{ color: primaryColor }} />} primaryColor={primaryColor} />
+                <Step num={3} title='"Thêm vào MH chính"' desc='Cuộn xuống chọn "Thêm vào Màn hình chính"' icon={<Plus className="h-3.5 w-3.5" style={{ color: primaryColor }} />} primaryColor={primaryColor} />
+                <Step num={4} title="Nhấn Thêm" desc='Nhấn "Thêm" ở góc trên bên phải để hoàn tất' primaryColor={primaryColor} />
+              </>
+            ) : (
+              <>
+                <Step num={1} title="Mở bằng Chrome" desc='Đảm bảo bạn đang dùng trình duyệt Chrome' primaryColor={primaryColor} />
+                <Step num={2} title="Nhấn vào menu ⋮" desc='Nhấn biểu tượng 3 chấm dọc ở góc trên bên phải' icon={<MoreVertical className="h-3.5 w-3.5" style={{ color: primaryColor }} />} primaryColor={primaryColor} />
+                <Step num={3} title='"Cài đặt ứng dụng"' desc='Chọn "Cài đặt ứng dụng" hoặc "Thêm vào màn hình chính"' icon={<Download className="h-3.5 w-3.5" style={{ color: primaryColor }} />} primaryColor={primaryColor} />
+                <Step num={4} title="Xác nhận" desc='Nhấn "Cài đặt" trong hộp thoại xác nhận' primaryColor={primaryColor} />
+              </>
+            )}
+            <div className="p-3 rounded-lg bg-muted/80 flex items-start gap-2 mt-2">
+              <CheckCircle className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: primaryColor }} />
+              <p className="text-xs text-muted-foreground">
+                Sau khi cài đặt, biểu tượng <strong>{storeName}</strong> sẽ xuất hiện trên màn hình chính. Nhấn vào để mở nhanh!
+              </p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function Step({ num, title, desc, icon, primaryColor }: { num: number; title: string; desc: string; icon?: React.ReactNode; primaryColor: string }) {
+  return (
+    <div className="flex gap-3">
+      <div className="h-6 w-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5" style={{ backgroundColor: primaryColor }}>
+        {num}
+      </div>
+      <div>
+        <p className="text-sm font-medium flex items-center gap-1.5">{title} {icon}</p>
+        <p className="text-xs text-muted-foreground">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+// === Store Info Section ===
 function StoreInfoSection({ settings, branches, primaryColor }: { settings: any; branches: BranchInfo[]; primaryColor: string }) {
   return (
     <Card className="shadow-md">
