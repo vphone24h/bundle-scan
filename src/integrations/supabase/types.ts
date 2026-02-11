@@ -3733,6 +3733,60 @@ export type Database = {
           },
         ]
       }
+      staff_reviews: {
+        Row: {
+          branch_id: string | null
+          content: string | null
+          created_at: string
+          customer_name: string | null
+          customer_phone: string | null
+          export_receipt_item_id: string | null
+          id: string
+          rating: number
+          staff_user_id: string
+          tenant_id: string
+        }
+        Insert: {
+          branch_id?: string | null
+          content?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          export_receipt_item_id?: string | null
+          id?: string
+          rating: number
+          staff_user_id: string
+          tenant_id: string
+        }
+        Update: {
+          branch_id?: string | null
+          content?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          export_receipt_item_id?: string | null
+          id?: string
+          rating?: number
+          staff_user_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_reviews_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_reviews_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_count_items: {
         Row: {
           actual_quantity: number
