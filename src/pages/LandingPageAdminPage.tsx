@@ -1,9 +1,12 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { LandingPageSettings } from '@/components/admin/LandingPageSettings';
+import { LandingProductsTab } from '@/components/admin/LandingProductsTab';
+import { LandingArticlesTab } from '@/components/admin/LandingArticlesTab';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function LandingPageAdminPage() {
   const { data: permissions, isLoading } = usePermissions();
@@ -18,7 +21,6 @@ export default function LandingPageAdminPage() {
     );
   }
 
-  // Chỉ admin mới có thể cấu hình
   const isSuperAdmin = permissions?.role === 'super_admin';
   const isBranchAdmin = permissions?.role === 'branch_admin';
   
@@ -31,11 +33,26 @@ export default function LandingPageAdminPage() {
       <div className="p-4 sm:p-6">
         <PageHeader 
           title="Landing Page" 
-          description="Cấu hình trang giới thiệu cửa hàng cho khách hàng"
-          helpText="Thiết lập trang giới thiệu công khai cho cửa hàng: banner, thông tin liên hệ, sản phẩm nổi bật. Khách hàng có thể truy cập qua subdomain riêng của bạn."
+          description="Cấu hình trang web bán hàng cho khách hàng"
+          helpText="Thiết lập trang web bán hàng công khai: sản phẩm, tin tức, tra cứu bảo hành. Khách hàng có thể truy cập qua subdomain riêng của bạn."
         />
         <div className="mt-6">
-          <LandingPageSettings />
+          <Tabs defaultValue="settings">
+            <TabsList className="mb-4">
+              <TabsTrigger value="settings">Cấu hình</TabsTrigger>
+              <TabsTrigger value="products">Sản phẩm</TabsTrigger>
+              <TabsTrigger value="articles">Tin tức</TabsTrigger>
+            </TabsList>
+            <TabsContent value="settings">
+              <LandingPageSettings />
+            </TabsContent>
+            <TabsContent value="products">
+              <LandingProductsTab />
+            </TabsContent>
+            <TabsContent value="articles">
+              <LandingArticlesTab />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </MainLayout>
