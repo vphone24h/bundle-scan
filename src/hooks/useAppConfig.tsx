@@ -59,6 +59,11 @@ export function useLandingGuideUrl() {
   return configs?.find(c => c.config_key === 'landing_guide_url')?.config_value || null;
 }
 
+export function useUsersGuideUrl() {
+  const { data: configs } = useAppConfig();
+  return configs?.find(c => c.config_key === 'users_guide_url')?.config_value || null;
+}
+
 // Public version - no auth required, fetches specific key
 export function useCustomDomainArticlePublic() {
   return useQuery({
