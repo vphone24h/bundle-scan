@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { usePublicLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo } from '@/hooks/useTenantLanding';
+import { useCustomDomainArticlePublic } from '@/hooks/useAppConfig';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { Input } from '@/components/ui/input';
@@ -157,6 +158,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain;
   
   const { data: landingData, isLoading } = usePublicLandingSettings(storeId);
+  const { data: customDomainArticle } = useCustomDomainArticlePublic();
   
   const queryClient = useQueryClient();
   const [searchValue, setSearchValue] = useState('');
@@ -789,8 +791,8 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
             </CardContent>
           </Card>
         )}
-        {/* CTA Tên miền riêng */}
-        {settings?.show_custom_domain_cta && (
+        {/* CTA Tên miền riêng - nội dung từ Platform Admin */}
+        {customDomainArticle && (
           <Card className="shadow-md overflow-hidden">
             <button
               onClick={() => setShowDomainArticle(!showDomainArticle)}
@@ -815,11 +817,11 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
               )}
             </button>
             
-            {showDomainArticle && settings.custom_domain_article && (
+            {showDomainArticle && (
               <CardContent className="pt-0 px-4 pb-4">
                 <div className="border-t pt-3">
                   <div className="prose prose-sm max-w-none text-sm text-muted-foreground whitespace-pre-line">
-                    {settings.custom_domain_article}
+                    {customDomainArticle}
                   </div>
                 </div>
               </CardContent>
