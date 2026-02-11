@@ -2726,6 +2726,205 @@ export type Database = {
           },
         ]
       }
+      landing_article_categories: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          id: string
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_article_categories_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_articles: {
+        Row: {
+          category_id: string | null
+          content: string | null
+          created_at: string
+          display_order: number | null
+          id: string
+          is_featured: boolean | null
+          is_published: boolean | null
+          slug: string | null
+          summary: string | null
+          tenant_id: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          content?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          slug?: string | null
+          summary?: string | null
+          tenant_id: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          content?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          slug?: string | null
+          summary?: string | null
+          tenant_id?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_articles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "landing_article_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_articles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_product_categories: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          id: string
+          image_url: string | null
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_product_categories_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      landing_products: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          name: string
+          price: number | null
+          sale_price: number | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name: string
+          price?: number | null
+          sale_price?: number | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name?: string
+          price?: number | null
+          sale_price?: number | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "landing_product_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       membership_tier_settings: {
         Row: {
           benefits: string | null
