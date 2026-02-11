@@ -26,7 +26,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Loader2, Download, AlertTriangle, CheckCircle2, Info, Building2, FolderTree, Settings2 } from 'lucide-react';
+import { Loader2, Download, AlertTriangle, CheckCircle2, Info, Building2, FolderTree, Settings2, BookOpen } from 'lucide-react';
+import { useTaxGuideUrl } from '@/hooks/useAppConfig';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { vi } from 'date-fns/locale';
@@ -83,6 +84,7 @@ function getTimePeriod(preset: string) {
 
 export function TaxReport() {
   const navigate = useNavigate();
+  const taxGuideUrl = useTaxGuideUrl();
   const [timePeriod, setTimePeriod] = useState('this_month');
   const [industry, setIndustry] = useState<string>('');
   const [revenueTier, setRevenueTier] = useState<string>('');
@@ -243,6 +245,16 @@ export function TaxReport() {
 
   return (
     <div className="space-y-4">
+      {/* Tax Guide Button */}
+      {taxGuideUrl && (
+        <Button variant="outline" size="sm" asChild>
+          <a href={taxGuideUrl} target="_blank" rel="noopener noreferrer">
+            <BookOpen className="mr-2 h-4 w-4" />
+            Hướng dẫn báo cáo thuế
+          </a>
+        </Button>
+      )}
+
       {/* Time Period Selector */}
       <Card>
         <CardContent className="pt-6">

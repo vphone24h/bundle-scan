@@ -66,6 +66,7 @@ export function PaymentConfigManagement() {
   const [feedbackFbUrl, setFeedbackFbUrl] = useState('');
   const [feedbackHotline, setFeedbackHotline] = useState('');
   const [customDomainArticle, setCustomDomainArticle] = useState('');
+  const [taxGuideUrl, setTaxGuideUrl] = useState('');
   const [savingConfig, setSavingConfig] = useState(false);
 
   // Bank account dialog
@@ -118,6 +119,7 @@ export function PaymentConfigManagement() {
       const feedbackFbConfig = configs.find(c => c.config_key === 'feedback_fb_url');
       const feedbackHotlineConfig = configs.find(c => c.config_key === 'feedback_hotline');
       const customDomainArticleConfig = configs.find(c => c.config_key === 'custom_domain_article');
+      const taxGuideConfig = configs.find(c => c.config_key === 'tax_guide_url');
       
       if (hotlineConfig?.config_value) setHotline(hotlineConfig.config_value);
       if (emailConfig?.config_value) setSupportEmail(emailConfig.config_value);
@@ -131,6 +133,7 @@ export function PaymentConfigManagement() {
       if (feedbackFbConfig?.config_value) setFeedbackFbUrl(feedbackFbConfig.config_value);
       if (feedbackHotlineConfig?.config_value) setFeedbackHotline(feedbackHotlineConfig.config_value);
       if (customDomainArticleConfig?.config_value) setCustomDomainArticle(customDomainArticleConfig.config_value);
+      if (taxGuideConfig?.config_value) setTaxGuideUrl(taxGuideConfig.config_value);
     }
   }, [configs]);
 
@@ -151,6 +154,7 @@ export function PaymentConfigManagement() {
         { config_key: 'feedback_fb_url', config_value: feedbackFbUrl },
         { config_key: 'feedback_hotline', config_value: feedbackHotline },
         { config_key: 'custom_domain_article', config_value: customDomainArticle },
+        { config_key: 'tax_guide_url', config_value: taxGuideUrl },
       ];
 
       for (const update of updates) {
@@ -355,6 +359,15 @@ export function PaymentConfigManagement() {
                 value={importGuideUrl}
                 onChange={(e) => setImportGuideUrl(e.target.value)}
                 placeholder="https://example.com/nhap-hang"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Link hướng dẫn (Báo cáo thuế)</Label>
+              <Input
+                type="url"
+                value={taxGuideUrl}
+                onChange={(e) => setTaxGuideUrl(e.target.value)}
+                placeholder="https://example.com/bao-cao-thue"
               />
             </div>
           </div>

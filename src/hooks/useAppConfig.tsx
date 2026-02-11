@@ -49,6 +49,11 @@ export function useCustomDomainArticle() {
   return configs?.find(c => c.config_key === 'custom_domain_article')?.config_value || null;
 }
 
+export function useTaxGuideUrl() {
+  const { data: configs } = useAppConfig();
+  return configs?.find(c => c.config_key === 'tax_guide_url')?.config_value || null;
+}
+
 // Public version - no auth required, fetches specific key
 export function useCustomDomainArticlePublic() {
   return useQuery({
