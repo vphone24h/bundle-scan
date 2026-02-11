@@ -136,6 +136,13 @@ export function useCurrentTenant() {
   });
 }
 
+export interface TenantEnrichment {
+  tenant_id: string;
+  has_landing_enabled: boolean;
+  landing_domain: string;
+  has_usage: boolean;
+}
+
 // Get all tenants (for platform admin)
 export function useAllTenants() {
   return useQuery({
@@ -148,6 +155,20 @@ export function useAllTenants() {
 
       if (error) throw error;
       return data as Tenant[];
+    },
+  });
+}
+
+// Get tenant enrichment data (landing + usage)
+export function useTenantEnrichment() {
+  return useQuery({
+    queryKey: ['tenant-enrichment'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_tenant_enrichment');
+      if (error) throw error;
+      const map = new Map<string, TenantEnrichment>();
+      (data || []).forEach((item: any) => map.set(item.tenant_id, item));
+      return map;
     },
   });
 }
