@@ -18,6 +18,7 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -400,12 +401,11 @@ export function PaymentConfigManagement() {
             <p className="text-xs text-muted-foreground mb-2">
               Nội dung này hiển thị trên landing page của tất cả cửa hàng khi khách nhấn &quot;Sở hữu website tên miền riêng&quot;. Để trống nếu không muốn hiển thị.
             </p>
-            <textarea
+            <RichTextEditor
               value={customDomainArticle}
-              onChange={(e) => setCustomDomainArticle(e.target.value)}
-              placeholder={"Bạn muốn có website riêng với tên miền doanh nghiệp?\n\nChúng tôi cung cấp dịch vụ thiết kế website chuyên nghiệp...\n\n✅ Tên miền riêng (.com, .vn)\n✅ Giao diện chuyên nghiệp\n✅ Liên hệ: 0xxx xxx xxx"}
-              rows={6}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onChange={setCustomDomainArticle}
+              placeholder="Nhập nội dung bài viết mô tả dịch vụ tên miền riêng..."
+              minHeight="200px"
             />
           </div>
           <Button onClick={saveConfig} disabled={savingConfig}>
