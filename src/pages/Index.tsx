@@ -47,13 +47,23 @@ const Index = () => {
         description="Theo dõi tình trạng kho và hoạt động nhập hàng"
         helpText="Trang tổng quan hiển thị số liệu tóm tắt: tổng giá trị hàng tồn, doanh thu hôm nay, số sản phẩm nhập/xuất gần đây. Giúp bạn nắm bắt nhanh tình hình kinh doanh."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {statsFetching && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 Đang cập nhật…
               </div>
             )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowInstallment(true)}
+              className="h-8 text-xs sm:text-sm"
+            >
+              <Calculator className="mr-1.5 sm:mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Tính trả góp</span>
+              <span className="sm:hidden">Trả góp</span>
+            </Button>
             {userGuideUrl && (
               <Button 
                 variant="default" 
@@ -278,11 +288,6 @@ const Index = () => {
               <span className="hidden sm:inline">Nhà cung cấp</span>
               <span className="sm:hidden">NCC</span>
             </Link>
-          </Button>
-          <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setShowInstallment(true)}>
-            <Calculator className="mr-1.5 sm:mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Tính trả góp</span>
-            <span className="sm:hidden">Trả góp</span>
           </Button>
         </div>
       </div>
