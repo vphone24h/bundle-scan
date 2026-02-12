@@ -14,6 +14,7 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
+  MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -151,6 +152,24 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
       itemId: item.id,
       actualQuantity: quantity,
     });
+  };
+
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteValue, setEditingNoteValue] = useState('');
+
+  const handleNoteClick = (item: StockCountItem) => {
+    if (isReadOnly) return;
+    setEditingNoteId(item.id);
+    setEditingNoteValue(item.note || '');
+  };
+
+  const handleNoteSave = (itemId: string) => {
+    updateItemMutation.mutate({
+      itemId,
+      note: editingNoteValue,
+      stockCountId,
+    });
+    setEditingNoteId(null);
   };
 
   const handleAddSurplusImei = () => {
@@ -400,12 +419,13 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
                   <TableHead className="text-center">Hệ thống</TableHead>
                   <TableHead className="text-center">Thực tế</TableHead>
                   <TableHead className="text-center">Trạng thái</TableHead>
+                  <TableHead className="min-w-[120px]">Ghi chú</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredImeiItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isReadOnly ? 5 : 6} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={isReadOnly ? 6 : 7} className="h-24 text-center text-muted-foreground">
                       Không có sản phẩm IMEI nào
                     </TableCell>
                   </TableRow>
@@ -442,6 +462,35 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
                           {getStatusIcon(item.status)}
                           <span className="text-sm">{getStatusLabel(item.status)}</span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {editingNoteId === item.id ? (
+                          <Input
+                            autoFocus
+                            value={editingNoteValue}
+                            onChange={(e) => setEditingNoteValue(e.target.value)}
+                            onBlur={() => handleNoteSave(item.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleNoteSave(item.id);
+                              if (e.key === 'Escape') setEditingNoteId(null);
+                            }}
+                            className="h-8 text-sm"
+                            placeholder="Nhập ghi chú..."
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleNoteClick(item)}
+                            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground cursor-pointer w-full min-h-[32px]"
+                            disabled={isReadOnly}
+                          >
+                            {item.note ? (
+                              <span className="text-foreground truncate max-w-[150px]">{item.note}</span>
+                            ) : (
+                              !isReadOnly && <><MessageSquare className="h-3 w-3" /><span className="text-xs">Ghi chú</span></>
+                            )}
+                          </button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
