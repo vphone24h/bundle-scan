@@ -1862,8 +1862,11 @@ export type Database = {
         Row: {
           created_at: string
           fail_count: number
+          failed_emails: string[] | null
           html_content: string | null
           id: string
+          is_read: boolean | null
+          read_at: string | null
           recipients: Json
           sent_by: string | null
           subject: string
@@ -1873,8 +1876,11 @@ export type Database = {
         Insert: {
           created_at?: string
           fail_count?: number
+          failed_emails?: string[] | null
           html_content?: string | null
           id?: string
+          is_read?: boolean | null
+          read_at?: string | null
           recipients?: Json
           sent_by?: string | null
           subject: string
@@ -1884,8 +1890,11 @@ export type Database = {
         Update: {
           created_at?: string
           fail_count?: number
+          failed_emails?: string[] | null
           html_content?: string | null
           id?: string
+          is_read?: boolean | null
+          read_at?: string | null
           recipients?: Json
           sent_by?: string | null
           subject?: string
