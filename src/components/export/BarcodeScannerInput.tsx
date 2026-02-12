@@ -12,6 +12,7 @@ interface BarcodeScannerInputProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  continuousCamera?: boolean;
 }
 
 export function BarcodeScannerInput({
@@ -19,6 +20,7 @@ export function BarcodeScannerInput({
   placeholder = 'Quét mã vạch hoặc nhập IMEI...',
   disabled = false,
   className,
+  continuousCamera = false,
 }: BarcodeScannerInputProps) {
   const [value, setValue] = useState('');
   const [isListening, setIsListening] = useState(true);
@@ -210,6 +212,7 @@ export function BarcodeScannerInput({
         isOpen={showCameraScanner}
         onScan={handleCameraScan}
         onClose={() => setShowCameraScanner(false)}
+        continuous={continuousCamera}
       />
     </>
   );

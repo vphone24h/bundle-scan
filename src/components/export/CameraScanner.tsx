@@ -7,13 +7,15 @@ interface CameraScannerProps {
   onScan: (code: string) => void;
   onClose: () => void;
   isOpen: boolean;
+  continuous?: boolean;
 }
 
-export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
+export function CameraScanner({ onScan, onClose, isOpen, continuous = false }: CameraScannerProps) {
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [isScanning, setIsScanning] = useState(false);
+  const [scanFeedback, setScanFeedback] = useState<string | null>(null);
   
   const scannerRef = useRef<any>(null);
   const html5QrcodeModuleRef = useRef<any>(null);
@@ -186,17 +188,27 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
             // Play beep sound
             playBeep();
 
-            // Stop scanner before callback
-            stopScanner().then(() => {
+            if (continuous) {
+              // Continuous mode: don't close, show feedback, keep scanning
               onScan(normalized);
-              onClose();
-            });
-
-            // Reset cooldown after 2 seconds
-            setTimeout(() => {
-              scanCooldownRef.current = false;
-              lastScannedRef.current = null;
-            }, 2000);
+              setScanFeedback(normalized);
+              setTimeout(() => setScanFeedback(null), 1500);
+              // Reset cooldown after 1.5 seconds to allow next scan
+              setTimeout(() => {
+                scanCooldownRef.current = false;
+                lastScannedRef.current = null;
+              }, 1500);
+            } else {
+              // Default: stop scanner and close
+              stopScanner().then(() => {
+                onScan(normalized);
+                onClose();
+              });
+              setTimeout(() => {
+                scanCooldownRef.current = false;
+                lastScannedRef.current = null;
+              }, 2000);
+            }
           },
           () => {
             // Ignore scan failures (QR not found) - this is normal
@@ -333,10 +345,18 @@ export function CameraScanner({ onScan, onClose, isOpen }: CameraScannerProps) {
               </div>
             )}
             
-            {isScanning && !error && (
+            {isScanning && !error && !scanFeedback && (
               <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
                 <div className="bg-primary/90 text-primary-foreground text-xs px-3 py-1 rounded-full animate-pulse">
                   Đang quét...
+                </div>
+              </div>
+            )}
+            
+            {scanFeedback && (
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10">
+                <div className="bg-emerald-500 text-white text-xs px-4 py-2 rounded-full font-medium shadow-lg animate-in fade-in zoom-in-95">
+                  ✓ Đã quét: {scanFeedback.length > 20 ? scanFeedback.slice(0, 20) + '...' : scanFeedback}
                 </div>
               </div>
             )}
