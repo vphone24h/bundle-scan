@@ -425,6 +425,7 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
           <BarcodeScannerInput
             onScan={handleBarcodeScan}
             placeholder="Quét mã QR/Barcode kiểm kho..."
+            continuousCamera
           />
           {scanResult && (
             <div className={cn(
