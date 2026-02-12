@@ -49,7 +49,7 @@ export function CreateStockCountDialog({
 
   const handleCreate = async () => {
     const result = await createMutation.mutateAsync({
-      branchId: branchId || null,
+      branchId: branchId && branchId !== '_all' ? branchId : null,
       countDate: countDate.toISOString(),
       scope,
       scopeCategoryId: scope === 'category' ? scopeCategoryId : null,
