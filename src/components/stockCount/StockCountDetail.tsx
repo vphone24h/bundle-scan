@@ -15,10 +15,12 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageSquare,
+  ScanBarcode,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -171,6 +173,82 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
     });
     setEditingNoteId(null);
   };
+
+  const [scanResult, setScanResult] = useState<{ type: 'success' | 'error' | 'notfound'; message: string } | null>(null);
+
+  const handleBarcodeScan = useCallback((barcode: string) => {
+    if (stockCount?.status === 'confirmed') return;
+
+    // Parse barcode - formats: IMEI|Name|Price, N:Name:Price, or plain IMEI/SKU
+    let scannedImei: string | null = null;
+    let scannedSku: string | null = null;
+    let scannedName: string | null = null;
+
+    if (barcode.includes('|')) {
+      // KiotViet format: IMEI|Name|Price
+      const parts = barcode.split('|');
+      scannedImei = parts[0]?.trim();
+      scannedName = parts[1]?.trim() || null;
+    } else if (barcode.startsWith('N:') || barcode.startsWith('n:')) {
+      // Non-IMEI QR format: N:Name:Price
+      const parts = barcode.split(':');
+      scannedName = parts[1]?.trim() || null;
+    } else {
+      // Plain barcode - could be IMEI or SKU
+      scannedImei = barcode.trim();
+      scannedSku = barcode.trim();
+    }
+
+    // 1. Try to match IMEI items
+    if (scannedImei) {
+      const imeiMatch = items.find(
+        (item) => item.hasImei && item.imei?.toLowerCase() === scannedImei!.toLowerCase()
+      );
+      if (imeiMatch) {
+        if (!imeiMatch.isChecked) {
+          handleToggleImei(imeiMatch, true);
+          setScanResult({ type: 'success', message: `✓ Đã tích: ${imeiMatch.productName} (${imeiMatch.imei})` });
+        } else {
+          setScanResult({ type: 'success', message: `⚡ Đã kiểm rồi: ${imeiMatch.productName} (${imeiMatch.imei})` });
+        }
+        // Navigate to correct page
+        const imeiIndex = filteredImeiItems.findIndex(i => i.id === imeiMatch.id);
+        if (imeiIndex >= 0) {
+          setImeiPage(Math.floor(imeiIndex / PAGE_SIZE) + 1);
+        }
+        setTimeout(() => setScanResult(null), 3000);
+        return;
+      }
+    }
+
+    // 2. Try to match non-IMEI items by SKU or name
+    if (scannedSku || scannedName) {
+      const nonImeiMatch = items.find(
+        (item) =>
+          !item.hasImei &&
+          (
+            (scannedSku && (item.sku.toLowerCase() === scannedSku.toLowerCase() || item.productId === scannedSku)) ||
+            (scannedName && item.productName.toLowerCase() === scannedName.toLowerCase())
+          )
+      );
+      if (nonImeiMatch) {
+        const newQty = nonImeiMatch.actualQuantity + 1;
+        handleUpdateQuantity(nonImeiMatch, newQty);
+        setScanResult({ type: 'success', message: `✓ +1 ${nonImeiMatch.productName} (SL: ${newQty})` });
+        // Navigate to correct page
+        const nonImeiIndex = filteredNonImeiItems.findIndex(i => i.id === nonImeiMatch.id);
+        if (nonImeiIndex >= 0) {
+          setNonImeiPage(Math.floor(nonImeiIndex / PAGE_SIZE) + 1);
+        }
+        setTimeout(() => setScanResult(null), 3000);
+        return;
+      }
+    }
+
+    // 3. Not found
+    setScanResult({ type: 'notfound', message: `⚠ Không tìm thấy sản phẩm: ${barcode}` });
+    setTimeout(() => setScanResult(null), 4000);
+  }, [items, filteredImeiItems, filteredNonImeiItems, stockCount?.status, handleToggleImei, handleUpdateQuantity, PAGE_SIZE]);
 
   const handleAddSurplusImei = () => {
     if (!manualImei.trim() || !manualProductName.trim() || !manualSku.trim()) return;
@@ -340,6 +418,26 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
           </CardContent>
         </Card>
       </div>
+
+      {/* Barcode Scanner */}
+      {!isReadOnly && (
+        <div className="space-y-2">
+          <BarcodeScannerInput
+            onScan={handleBarcodeScan}
+            placeholder="Quét mã QR/Barcode kiểm kho..."
+          />
+          {scanResult && (
+            <div className={cn(
+              'px-3 py-2 rounded-lg text-sm font-medium animate-in fade-in',
+              scanResult.type === 'success' && 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+              scanResult.type === 'error' && 'bg-destructive/10 text-destructive border border-destructive/20',
+              scanResult.type === 'notfound' && 'bg-amber-50 text-amber-700 border border-amber-200',
+            )}>
+              {scanResult.message}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative max-w-md">
