@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import {
@@ -12,6 +12,8 @@ import {
   Search,
   Loader2,
   Plus,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,6 +68,9 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
   const [manualImei, setManualImei] = useState('');
   const [manualProductName, setManualProductName] = useState('');
   const [manualSku, setManualSku] = useState('');
+  const [imeiPage, setImeiPage] = useState(1);
+  const [nonImeiPage, setNonImeiPage] = useState(1);
+  const PAGE_SIZE = 30;
 
   const stockCount = data?.stockCount;
   const isAdmin = permissions?.role === 'super_admin' || permissions?.role === 'branch_admin';
@@ -91,6 +96,28 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
 
     return { imeiItems: imei, nonImeiItems: nonImei, filteredImeiItems: filteredImei, filteredNonImeiItems: filteredNonImei };
   }, [items, search]);
+
+  // Pagination
+  const imeiTotalPages = Math.max(1, Math.ceil(filteredImeiItems.length / PAGE_SIZE));
+  const nonImeiTotalPages = Math.max(1, Math.ceil(filteredNonImeiItems.length / PAGE_SIZE));
+  const safeImeiPage = Math.min(imeiPage, imeiTotalPages);
+  const safeNonImeiPage = Math.min(nonImeiPage, nonImeiTotalPages);
+
+  const paginatedImeiItems = useMemo(() => {
+    const start = (safeImeiPage - 1) * PAGE_SIZE;
+    return filteredImeiItems.slice(start, start + PAGE_SIZE);
+  }, [filteredImeiItems, safeImeiPage]);
+
+  const paginatedNonImeiItems = useMemo(() => {
+    const start = (safeNonImeiPage - 1) * PAGE_SIZE;
+    return filteredNonImeiItems.slice(start, start + PAGE_SIZE);
+  }, [filteredNonImeiItems, safeNonImeiPage]);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    setImeiPage(1);
+    setNonImeiPage(1);
+  }, []);
 
   // Summary stats
   const summary = useMemo(() => {
@@ -301,7 +328,7 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
         <Input
           placeholder="Tìm sản phẩm, SKU, IMEI..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           className="pl-10"
         />
       </div>
@@ -383,7 +410,7 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredImeiItems.map((item) => (
+                  paginatedImeiItems.map((item) => (
                     <TableRow key={item.id} className={cn(item.status === 'missing' && 'bg-red-50/50')}>
                       {!isReadOnly && (
                         <TableCell>
@@ -422,6 +449,44 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
               </TableBody>
             </Table>
           </div>
+
+          {/* IMEI Pagination */}
+          {filteredImeiItems.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between pt-3">
+              <p className="text-sm text-muted-foreground">
+                Trang {safeImeiPage}/{imeiTotalPages} — {filteredImeiItems.length} sản phẩm
+              </p>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setImeiPage(p => Math.max(1, p - 1))}
+                  disabled={safeImeiPage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                {Array.from({ length: imeiTotalPages }, (_, i) => i + 1).map(page => (
+                  <Button
+                    key={page}
+                    variant={page === safeImeiPage ? 'default' : 'outline'}
+                    size="sm"
+                    className="w-9"
+                    onClick={() => setImeiPage(page)}
+                  >
+                    {page}
+                  </Button>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setImeiPage(p => Math.min(imeiTotalPages, p + 1))}
+                  disabled={safeImeiPage >= imeiTotalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* Non-IMEI Products Tab */}
@@ -445,7 +510,7 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredNonImeiItems.map((item) => (
+                  paginatedNonImeiItems.map((item) => (
                     <TableRow key={item.id} className={cn(item.status === 'missing' && 'bg-red-50/50')}>
                       <TableCell>
                         <div>
@@ -493,6 +558,44 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
               </TableBody>
             </Table>
           </div>
+
+          {/* Non-IMEI Pagination */}
+          {filteredNonImeiItems.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between pt-3">
+              <p className="text-sm text-muted-foreground">
+                Trang {safeNonImeiPage}/{nonImeiTotalPages} — {filteredNonImeiItems.length} sản phẩm
+              </p>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setNonImeiPage(p => Math.max(1, p - 1))}
+                  disabled={safeNonImeiPage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                {Array.from({ length: nonImeiTotalPages }, (_, i) => i + 1).map(page => (
+                  <Button
+                    key={page}
+                    variant={page === safeNonImeiPage ? 'default' : 'outline'}
+                    size="sm"
+                    className="w-9"
+                    onClick={() => setNonImeiPage(page)}
+                  >
+                    {page}
+                  </Button>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setNonImeiPage(p => Math.min(nonImeiTotalPages, p + 1))}
+                  disabled={safeNonImeiPage >= nonImeiTotalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
