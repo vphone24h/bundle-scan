@@ -28,6 +28,7 @@ interface EmailRecord {
 
 export function EmailHistoryTable() {
   const [selectedEmail, setSelectedEmail] = useState<EmailRecord | null>(null);
+  const [emailFilter, setEmailFilter] = useState<'all' | 'success' | 'failed'>('all');
   const queryClient = useQueryClient();
 
   const { data: emails, isLoading } = useQuery({
@@ -83,6 +84,7 @@ export function EmailHistoryTable() {
 
   const handleView = (email: EmailRecord) => {
     setSelectedEmail(email);
+    setEmailFilter('all');
     if (!email.is_read) markReadMutation.mutate(email.id);
   };
 
@@ -276,9 +278,19 @@ export function EmailHistoryTable() {
                 <div>
                   <p className="text-xs text-muted-foreground">Kết quả</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-sm text-green-600">{selectedEmail.success_count} thành công</span>
+                    <span
+                      className={`text-sm cursor-pointer rounded px-2 py-0.5 transition-colors ${emailFilter === 'success' ? 'bg-green-100 text-green-700 font-semibold' : 'text-green-600 hover:bg-green-50'}`}
+                      onClick={() => setEmailFilter(emailFilter === 'success' ? 'all' : 'success')}
+                    >
+                      {selectedEmail.success_count} thành công
+                    </span>
                     {selectedEmail.fail_count > 0 && (
-                      <span className="text-sm text-destructive">{selectedEmail.fail_count} thất bại</span>
+                      <span
+                        className={`text-sm cursor-pointer rounded px-2 py-0.5 transition-colors ${emailFilter === 'failed' ? 'bg-destructive/15 text-destructive font-semibold' : 'text-destructive hover:bg-destructive/10'}`}
+                        onClick={() => setEmailFilter(emailFilter === 'failed' ? 'all' : 'failed')}
+                      >
+                        {selectedEmail.fail_count} thất bại
+                      </span>
                     )}
                   </div>
                 </div>
@@ -290,23 +302,50 @@ export function EmailHistoryTable() {
               </div>
 
               <div>
-                <p className="text-xs text-muted-foreground mb-1">
-                  Người nhận ({selectedEmail.total_recipients})
-                </p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-muted-foreground">
+                    Người nhận
+                    {emailFilter === 'failed' && ` (${selectedEmail.failed_emails?.length || 0} thất bại)`}
+                    {emailFilter === 'success' && ` (${selectedEmail.success_count} thành công)`}
+                    {emailFilter === 'all' && ` (${selectedEmail.total_recipients})`}
+                  </p>
+                  {emailFilter === 'failed' && selectedEmail.failed_emails && selectedEmail.failed_emails.length > 0 && (
+                    <Button
+                      onClick={() => {
+                        resendMutation.mutate(selectedEmail);
+                        setSelectedEmail(null);
+                        setEmailFilter('all');
+                      }}
+                      disabled={resendMutation.isPending}
+                      size="sm"
+                      variant="destructive"
+                      className="h-7 text-xs"
+                    >
+                      <RefreshCw className={`h-3 w-3 mr-1 ${resendMutation.isPending ? 'animate-spin' : ''}`} />
+                      Gửi lại {selectedEmail.failed_emails.length} email
+                    </Button>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {(selectedEmail.recipients as string[]).map((email, i) => {
-                    const isFailed = selectedEmail.failed_emails?.includes(email);
-                    return (
-                      <Badge
-                        key={i}
-                        variant={isFailed ? 'destructive' : 'outline'}
-                        className="text-xs"
-                      >
-                        {email}
-                        {isFailed && <XCircle className="h-3 w-3 ml-1" />}
-                      </Badge>
-                    );
-                  })}
+                  {(selectedEmail.recipients as string[])
+                    .filter((email) => {
+                      if (emailFilter === 'failed') return selectedEmail.failed_emails?.includes(email);
+                      if (emailFilter === 'success') return !selectedEmail.failed_emails?.includes(email);
+                      return true;
+                    })
+                    .map((email, i) => {
+                      const isFailed = selectedEmail.failed_emails?.includes(email);
+                      return (
+                        <Badge
+                          key={i}
+                          variant={isFailed ? 'destructive' : 'outline'}
+                          className="text-xs"
+                        >
+                          {email}
+                          {isFailed && <XCircle className="h-3 w-3 ml-1" />}
+                        </Badge>
+                      );
+                    })}
                 </div>
               </div>
 
@@ -317,22 +356,6 @@ export function EmailHistoryTable() {
                     className="border rounded-lg p-4 bg-muted/30 text-sm prose prose-sm max-w-none"
                     dangerouslySetInnerHTML={{ __html: selectedEmail.html_content }}
                   />
-                </div>
-              )}
-
-              {selectedEmail.fail_count > 0 && (
-                <div className="pt-2 border-t">
-                  <Button
-                    onClick={() => {
-                      resendMutation.mutate(selectedEmail);
-                      setSelectedEmail(null);
-                    }}
-                    disabled={resendMutation.isPending}
-                    size="sm"
-                  >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${resendMutation.isPending ? 'animate-spin' : ''}`} />
-                    Gửi lại {selectedEmail.fail_count} email thất bại
-                  </Button>
                 </div>
               )}
             </div>
