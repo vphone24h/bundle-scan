@@ -1,11 +1,11 @@
-import { ReactNode } from 'react';
+import { ReactNode, memo } from 'react';
 import { AppSidebar } from './AppSidebar';
 
 interface MainLayoutProps {
   children: ReactNode;
 }
 
-export function MainLayout({ children }: MainLayoutProps) {
+export const MainLayout = memo(function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="min-h-screen bg-background safe-x">
       <AppSidebar />
@@ -22,4 +22,4 @@ export function MainLayout({ children }: MainLayoutProps) {
       </main>
     </div>
   );
-}
+});

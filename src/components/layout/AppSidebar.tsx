@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { usePendingTransferCount } from '@/hooks/useStockTransfers';
 import {
@@ -168,21 +168,21 @@ export function AppSidebar() {
     });
   }, [permissions, isPlatformAdmin, hasTenant, isStandalone]);
 
-  const toggleExpand = (title: string) => {
+  const toggleExpand = useCallback((title: string) => {
     setExpandedItems((prev) =>
       prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]
     );
-  };
+  }, []);
 
   const isActive = (href: string) => {
     if (href === '/') return location.pathname === '/';
     return location.pathname.startsWith(href);
   };
 
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
     await signOut();
     navigate('/auth');
-  };
+  }, [signOut, navigate]);
 
   const NavContent = () => (
     <>
