@@ -79,9 +79,13 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
   };
 
   // Generate single label HTML for 50x30mm with QR as embedded data URL
+  // Actual printable area ~46x28mm to avoid cutoff on 365B printer
   const generateSingleLabelHtml = (entry: ProductPriceEntry, qrDataUrl: string): string => {
-    const width = 50;
-    const height = 30;
+    const pageWidth = 50;
+    const pageHeight = 30;
+    const contentWidth = 46;
+    const contentHeight = 26;
+    const qrSize = 22;
 
     return `
       <!DOCTYPE html>
@@ -91,9 +95,9 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
         <title>QR Label</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          @page { size: ${width}mm ${height}mm; margin: 0; }
+          @page { size: ${pageWidth}mm ${pageHeight}mm; margin: 0; }
           @media print {
-            html, body { width: ${width}mm; height: ${height}mm; margin: 0; padding: 0; }
+            html, body { width: ${pageWidth}mm; height: ${pageHeight}mm; margin: 0; padding: 0; }
           }
           html, body {
             margin: 0; padding: 0;
@@ -101,8 +105,8 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
             background: white;
           }
           .label {
-            width: ${width}mm;
-            height: ${height}mm;
+            width: ${pageWidth}mm;
+            height: ${pageHeight}mm;
             position: relative;
             background: white;
             overflow: hidden;
@@ -114,9 +118,9 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
             display: flex;
             flex-direction: row;
             align-items: center;
-            width: ${width - 2}mm;
-            height: ${height - 2}mm;
-            gap: 2mm;
+            width: ${contentWidth}mm;
+            height: ${contentHeight}mm;
+            gap: 1.5mm;
           }
           .qr-section {
             flex-shrink: 0;
@@ -125,8 +129,8 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
             justify-content: center;
           }
           .qr-section img {
-            width: ${height - 6}mm;
-            height: ${height - 6}mm;
+            width: ${qrSize}mm;
+            height: ${qrSize}mm;
             image-rendering: pixelated;
           }
           .info-section {
@@ -139,7 +143,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
             min-width: 0;
           }
           .store-name {
-            font-size: 8pt;
+            font-size: 7pt;
             font-weight: bold;
             color: #000;
             white-space: nowrap;
@@ -148,7 +152,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
             line-height: 1.3;
           }
           .product-name {
-            font-size: 6.5pt;
+            font-size: 6pt;
             color: #000;
             line-height: 1.2;
             display: -webkit-box;
@@ -157,7 +161,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
             overflow: hidden;
           }
           .price {
-            font-size: 9pt;
+            font-size: 8pt;
             font-weight: bold;
             color: #000;
             line-height: 1.3;
@@ -360,7 +364,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
             >
               <div className="flex items-center h-full gap-2">
                 {/* QR preview - real QR */}
-                <div className="flex-shrink-0 w-[80px] h-[80px] flex items-center justify-center">
+                <div className="flex-shrink-0 w-[70px] h-[70px] flex items-center justify-center">
                   {previewQrUrl ? (
                     <img src={previewQrUrl} alt="QR Preview" className="w-full h-full" style={{ imageRendering: 'pixelated' }} />
                   ) : (
