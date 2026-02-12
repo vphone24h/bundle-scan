@@ -33,8 +33,10 @@ import {
   ScanBarcode,
   CalendarIcon,
   Cake,
-  Percent
+  Percent,
+  Calculator
 } from 'lucide-react';
+import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { useCheckProductForSale, useSearchProductsByName, useCreateExportReceipt, type ExportReceiptItem, type ExportPayment } from '@/hooks/useExportReceipts';
 import { useUpsertCustomer } from '@/hooks/useCustomers';
 import { useInvoiceTemplateByBranch } from '@/hooks/useInvoiceTemplates';
@@ -104,6 +106,7 @@ export default function ExportNewPage() {
   // Payment dialog
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
+  const [showInstallment, setShowInstallment] = useState(false);
   const [createdReceipt, setCreatedReceipt] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -347,9 +350,43 @@ export default function ExportNewPage() {
       return;
     }
 
-    // No price encoded -> Fill form for manual entry (don't reveal import price)
+    // No encoded price but product has sale_price in DB -> AUTO ADD TO CART
+    if (result.sale_price && result.sale_price > 0) {
+      const newItem: CartItem = {
+        tempId: Date.now().toString(),
+        product_id: result.id,
+        product_name: result.name,
+        sku: result.sku,
+        imei: result.imei,
+        category_id: result.category_id,
+        categoryName: result.categories?.name,
+        branch_id: result.branch_id,
+        branchName: result.branches?.name,
+        sale_price: result.sale_price,
+        note: null,
+        quantity: 1,
+        warranty: null,
+      };
+
+      setCart(prevCart => [...prevCart, newItem]);
+      
+      setSelectedProduct(null);
+      setSalePrice('');
+      setItemNote('');
+      setItemQuantity(1);
+      setItemWarranty('');
+      setImeiSearch('');
+      
+      toast({
+        title: 'Đã thêm vào giỏ',
+        description: `${result.name} - ${result.sale_price.toLocaleString('vi-VN')}đ`,
+      });
+      return;
+    }
+
+    // No price at all -> Fill form for manual entry (don't reveal import price)
     setSelectedProduct(result);
-    setSalePrice(''); // Leave empty - don't reveal import price
+    setSalePrice('');
     setItemQuantity(result.imei ? 1 : 1);
     setItemWarranty('');
     setItemNote('');
@@ -619,6 +656,18 @@ export default function ExportNewPage() {
         title="Tạo phiếu xuất hàng"
         description="Xuất hàng và ghi nhận bán hàng"
         helpText="Tạo phiếu xuất (bán hàng) bằng cách quét mã vạch hoặc tìm sản phẩm. Chọn khách hàng, áp dụng chiết khấu, sau đó thanh toán và in hóa đơn."
+        actions={
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowInstallment(true)}
+            className="h-8 text-xs sm:text-sm"
+          >
+            <Calculator className="mr-1.5 h-4 w-4" />
+            <span className="hidden sm:inline">Tính trả góp</span>
+            <span className="sm:hidden">Trả góp</span>
+          </Button>
+        }
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -638,6 +687,7 @@ export default function ExportNewPage() {
                 onScan={handleBarcodeScan}
                 placeholder="Quét mã vạch sản phẩm (IMEI/SKU)..."
                 disabled={checkProduct.isPending}
+                continuousCamera
               />
               
               <p className="text-xs text-muted-foreground">
@@ -1109,6 +1159,9 @@ export default function ExportNewPage() {
         template={invoiceTemplate}
         branchInfo={cartBranch}
       />
+
+      {/* Installment Calculator */}
+      <InstallmentCalculatorDialog open={showInstallment} onOpenChange={setShowInstallment} />
     </MainLayout>
   );
 }

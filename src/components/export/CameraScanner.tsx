@@ -61,6 +61,9 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false }: C
       }
       scannerRef.current = null;
     }
+    // Also clear the container to avoid stale DOM issues on reopen
+    const el = document.getElementById('qr-reader');
+    if (el) el.innerHTML = '';
     setIsScanning(false);
   }, []);
 
@@ -261,26 +264,28 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false }: C
   // Handle open/close
   useEffect(() => {
     isMountedRef.current = true;
+    // Reset cooldown refs when opening
+    lastScannedRef.current = null;
+    scanCooldownRef.current = false;
     
     if (isOpen) {
       // Delay start to ensure DOM is ready
       const timer = setTimeout(() => {
         startScanner(facingMode);
-      }, 150);
+      }, 200);
       
       return () => {
         clearTimeout(timer);
+        isMountedRef.current = false;
         stopScanner();
       };
     } else {
       stopScanner();
+      return () => {
+        isMountedRef.current = false;
+      };
     }
-
-    return () => {
-      isMountedRef.current = false;
-      stopScanner();
-    };
-  }, [isOpen]); // Only depend on isOpen, not startScanner/stopScanner
+  }, [isOpen]); // Only depend on isOpen
 
   // Handle camera switch
   const toggleCamera = useCallback(async () => {
