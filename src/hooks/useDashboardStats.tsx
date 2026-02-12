@@ -342,3 +342,64 @@ export function useTodaySoldProducts() {
     placeholderData: (previous) => previous,
   });
 }
+
+// Lightweight hook: only fetch 5 recent products for Dashboard
+export function useRecentProducts(limit = 5) {
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+
+  return useQuery({
+    queryKey: ['recent-products', tenant?.id, branchId, limit],
+    queryFn: async () => {
+      let query = supabase
+        .from('products')
+        .select('id, name, import_price, status, categories(name)')
+        .in('status', ['in_stock', 'sold'])
+        .order('import_date', { ascending: false })
+        .limit(limit);
+
+      if (shouldFilter && branchId) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !isTenantLoading && !branchLoading,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    placeholderData: (previous) => previous,
+  });
+}
+
+// Lightweight hook: only fetch 3 recent import receipts for Dashboard
+export function useRecentImportReceipts(limit = 3) {
+  const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
+  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+
+  return useQuery({
+    queryKey: ['recent-import-receipts', tenant?.id, branchId, limit],
+    queryFn: async () => {
+      let query = supabase
+        .from('import_receipts')
+        .select('id, code, import_date, total_amount, suppliers(name)')
+        .order('import_date', { ascending: false })
+        .limit(limit);
+
+      if (shouldFilter && branchId) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !isTenantLoading && !branchLoading,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    placeholderData: (previous) => previous,
+  });
+}
