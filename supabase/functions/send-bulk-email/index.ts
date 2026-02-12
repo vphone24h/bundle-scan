@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
 Deno.serve(async (req) => {
@@ -101,20 +101,41 @@ Deno.serve(async (req) => {
     const errors: string[] = []
     const failedEmails: string[] = []
 
+    // Create email history record first to get the ID for tracking pixel
+    const { data: historyRecord } = await supabaseAdmin.from('email_history').insert({
+      subject,
+      html_content: htmlContent,
+      recipients: emails,
+      total_recipients: emails.length,
+      success_count: 0,
+      fail_count: 0,
+      failed_emails: [],
+      sent_by: user.id,
+    }).select('id').single()
+
+    const historyId = historyRecord?.id
+    const trackingBaseUrl = `${supabaseUrl}/functions/v1/track-email-open`
+
     // Send in parallel batches of 5 for speed
     const BATCH_SIZE = 5
     for (let i = 0; i < emails.length; i += BATCH_SIZE) {
       const batch = emails.slice(i, i + BATCH_SIZE)
       const results = await Promise.allSettled(
-        batch.map((email: string) =>
-          transporter.sendMail({
+        batch.map((email: string) => {
+          // Append tracking pixel per recipient
+          const trackingPixel = historyId
+            ? `<img src="${trackingBaseUrl}?id=${historyId}&e=${encodeURIComponent(email)}" width="1" height="1" style="display:none" alt="" />`
+            : ''
+          const personalizedHtml = fullHtml + trackingPixel
+
+          return transporter.sendMail({
             from: `"VKHO" <${smtpUser}>`,
             to: email,
             subject,
-            html: fullHtml,
+            html: personalizedHtml,
           }).then(() => ({ email, ok: true }))
            .catch((err: any) => ({ email, ok: false, error: err.message }))
-        )
+        })
       )
       for (const r of results) {
         const val = r.status === 'fulfilled' ? r.value : { email: 'unknown', ok: false, error: 'Promise rejected' }
@@ -129,17 +150,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Save email history
-    await supabaseAdmin.from('email_history').insert({
-      subject,
-      html_content: htmlContent,
-      recipients: emails,
-      total_recipients: emails.length,
-      success_count: sent,
-      fail_count: failed,
-      failed_emails: failedEmails,
-      sent_by: user.id,
-    })
+    // Update email history with results
+    if (historyId) {
+      await supabaseAdmin.from('email_history').update({
+        success_count: sent,
+        fail_count: failed,
+        failed_emails: failedEmails,
+      }).eq('id', historyId)
+    }
 
     // Log action
     await supabaseAdmin.from('audit_logs').insert({

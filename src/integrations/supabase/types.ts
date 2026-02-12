@@ -1903,6 +1903,41 @@ export type Database = {
         }
         Relationships: []
       }
+      email_opens: {
+        Row: {
+          email_history_id: string
+          id: string
+          ip_address: string | null
+          opened_at: string
+          recipient_email: string
+          user_agent: string | null
+        }
+        Insert: {
+          email_history_id: string
+          id?: string
+          ip_address?: string | null
+          opened_at?: string
+          recipient_email: string
+          user_agent?: string | null
+        }
+        Update: {
+          email_history_id?: string
+          id?: string
+          ip_address?: string | null
+          opened_at?: string
+          recipient_email?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_opens_email_history_id_fkey"
+            columns: ["email_history_id"]
+            isOneToOne: false
+            referencedRelation: "email_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_queue: {
         Row: {
           body_html: string
