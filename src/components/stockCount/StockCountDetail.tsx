@@ -115,6 +115,7 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
       itemId: item.id,
       isChecked: checked,
       actualQuantity: checked ? 1 : 0,
+      stockCountId,
     });
   };
 

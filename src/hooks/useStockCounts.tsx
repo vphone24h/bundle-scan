@@ -416,15 +416,17 @@ export function useUpdateStockCountItem() {
       itemId,
       actualQuantity,
       isChecked,
+      stockCountId,
     }: {
       itemId: string;
       actualQuantity?: number;
       isChecked?: boolean;
+      stockCountId?: string;
     }) => {
-      // Get current item
+      // Get current item to compute status
       const { data: item, error: fetchError } = await supabase
         .from('stock_count_items')
-        .select('*')
+        .select('system_quantity, has_imei, is_checked, stock_count_id')
         .eq('id', itemId)
         .single();
 
@@ -442,7 +444,10 @@ export function useUpdateStockCountItem() {
         else status = 'surplus';
       }
 
-      const { error } = await supabase
+      // Update item and recalculate totals in parallel
+      const scId = stockCountId || item.stock_count_id;
+
+      const updateItemPromise = supabase
         .from('stock_count_items')
         .update({
           actual_quantity: newActual,
@@ -452,21 +457,26 @@ export function useUpdateStockCountItem() {
         })
         .eq('id', itemId);
 
-      if (error) throw error;
-
-      // Update stock count totals
-      const { data: allItems } = await supabase
+      const fetchTotalsPromise = supabase
         .from('stock_count_items')
-        .select('system_quantity, actual_quantity, variance')
-        .eq('stock_count_id', item.stock_count_id);
+        .select('system_quantity, actual_quantity, variance, id')
+        .eq('stock_count_id', scId);
 
-      if (allItems) {
-        const totals = allItems.reduce(
-          (acc, i) => ({
-            system: acc.system + i.system_quantity,
-            actual: acc.actual + i.actual_quantity,
-            variance: acc.variance + i.variance,
-          }),
+      const [updateResult, totalsResult] = await Promise.all([updateItemPromise, fetchTotalsPromise]);
+      if (updateResult.error) throw updateResult.error;
+
+      if (totalsResult.data) {
+        // Apply current change to the fetched data (it may not reflect our update yet)
+        const totals = totalsResult.data.reduce(
+          (acc, i) => {
+            const qty = i.id === itemId ? newActual : i.actual_quantity;
+            const v = i.id === itemId ? variance : i.variance;
+            return {
+              system: acc.system + i.system_quantity,
+              actual: acc.actual + qty,
+              variance: acc.variance + v,
+            };
+          },
           { system: 0, actual: 0, variance: 0 }
         );
 
@@ -477,13 +487,62 @@ export function useUpdateStockCountItem() {
             total_actual_quantity: totals.actual,
             total_variance: totals.variance,
           })
-          .eq('id', item.stock_count_id);
+          .eq('id', scId);
       }
 
-      return item.stock_count_id;
+      return scId;
     },
-    onSuccess: (stockCountId) => {
-      queryClient.invalidateQueries({ queryKey: ['stock-count', stockCountId] });
+    onMutate: async ({ itemId, actualQuantity, isChecked }) => {
+      // Optimistic update - update UI immediately
+      const queries = queryClient.getQueriesData<{ stockCount: StockCount; items: StockCountItem[] }>({ queryKey: ['stock-count'] });
+      
+      for (const [queryKey, data] of queries) {
+        if (!data?.items) continue;
+        const itemIndex = data.items.findIndex(i => i.id === itemId);
+        if (itemIndex === -1) continue;
+
+        await queryClient.cancelQueries({ queryKey });
+        const previousData = data;
+
+        const updatedItems = [...data.items];
+        const item = { ...updatedItems[itemIndex] };
+        const newActual = actualQuantity !== undefined ? actualQuantity : (isChecked ? 1 : 0);
+        item.actualQuantity = newActual;
+        item.variance = newActual - item.systemQuantity;
+        item.isChecked = isChecked ?? item.isChecked;
+        if (item.hasImei) {
+          item.status = isChecked ? 'ok' : 'missing';
+        } else {
+          item.status = item.variance === 0 ? 'ok' : item.variance < 0 ? 'missing' : 'surplus';
+        }
+        updatedItems[itemIndex] = item;
+
+        const totalActual = updatedItems.reduce((s, i) => s + i.actualQuantity, 0);
+        const totalVariance = updatedItems.reduce((s, i) => s + i.variance, 0);
+
+        queryClient.setQueryData(queryKey, {
+          stockCount: {
+            ...data.stockCount,
+            totalActualQuantity: totalActual,
+            totalVariance: totalVariance,
+          },
+          items: updatedItems,
+        });
+
+        return { previousData, queryKey };
+      }
+    },
+    onError: (_err, _vars, context: any) => {
+      // Rollback on error
+      if (context?.previousData && context?.queryKey) {
+        queryClient.setQueryData(context.queryKey, context.previousData);
+      }
+    },
+    onSettled: (_data, _err, _vars, context: any) => {
+      // Background refetch to sync with server
+      if (context?.queryKey) {
+        queryClient.invalidateQueries({ queryKey: context.queryKey });
+      }
       queryClient.invalidateQueries({ queryKey: ['stock-counts'] });
     },
   });
