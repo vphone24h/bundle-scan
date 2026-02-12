@@ -120,7 +120,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
             align-items: center;
             width: ${contentWidth}mm;
             height: ${contentHeight}mm;
-            gap: 1.5mm;
+            gap: 2.5mm;
           }
           .qr-section {
             flex-shrink: 0;
