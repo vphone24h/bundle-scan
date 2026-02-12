@@ -244,6 +244,10 @@ export function useCreateStockCount() {
     mutationFn: async (data: CreateStockCountData) => {
       if (!user) throw new Error('User not authenticated');
 
+      // Get tenant_id
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
       // Generate unique code
       const code = `KK${Date.now().toString().slice(-8)}`;
 
@@ -252,6 +256,7 @@ export function useCreateStockCount() {
         .from('stock_counts')
         .insert({
           code,
+          tenant_id: tenantId,
           branch_id: data.branchId || null,
           count_date: data.countDate,
           created_by: user.id,
