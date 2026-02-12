@@ -78,9 +78,9 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
     return all;
   };
 
-  // Generate single label HTML for 55x30mm with QR as embedded data URL
+  // Generate single label HTML for 50x30mm with QR as embedded data URL
   const generateSingleLabelHtml = (entry: ProductPriceEntry, qrDataUrl: string): string => {
-    const width = 55;
+    const width = 50;
     const height = 30;
 
     return `
@@ -125,8 +125,8 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
             justify-content: center;
           }
           .qr-section img {
-            width: ${height - 4}mm;
-            height: ${height - 4}mm;
+            width: ${height - 6}mm;
+            height: ${height - 6}mm;
             image-rendering: pixelated;
           }
           .info-section {
@@ -237,7 +237,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
       ]);
 
       const allLabels = expandLabels();
-      const width = 55;
+      const width = 50;
       const height = 30;
 
       // Pre-generate all QR data URLs
@@ -285,7 +285,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
       }
 
       pdf.save(`QR_Label_${new Date().toISOString().slice(0, 10)}.pdf`);
-      toast.success(`Đã xuất ${allLabels.length} nhãn QR ra PDF (55x30mm)`);
+      toast.success(`Đã xuất ${allLabels.length} nhãn QR ra PDF (50x30mm)`);
     } catch (error) {
       console.error('PDF export error:', error);
       toast.error('Lỗi khi xuất PDF.');
@@ -303,7 +303,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
         </div>
         <p className="text-xs text-muted-foreground">
           Mã QR lớn, dễ quét bằng camera. Dùng cho kiểm kho hoặc xuất hàng - quét phát ăn ngay!
-          Khổ giấy cố định: 55x30mm (máy in 365B).
+          Khổ giấy cố định: 50x30mm (máy in 365B).
         </p>
       </div>
 
@@ -354,13 +354,13 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
         {/* Preview */}
         {sampleEntry && (
           <div className="flex-1 flex flex-col items-center">
-            <p className="text-xs text-muted-foreground mb-2">Xem trước nhãn (55x30mm)</p>
+            <p className="text-xs text-muted-foreground mb-2">Xem trước nhãn (50x30mm)</p>
             <div className="border-2 border-dashed border-primary/30 rounded-lg bg-background"
               style={{ width: '220px', height: '120px', padding: '6px' }}
             >
               <div className="flex items-center h-full gap-2">
                 {/* QR preview - real QR */}
-                <div className="flex-shrink-0 w-[90px] h-[90px] flex items-center justify-center">
+                <div className="flex-shrink-0 w-[80px] h-[80px] flex items-center justify-center">
                   {previewQrUrl ? (
                     <img src={previewQrUrl} alt="QR Preview" className="w-full h-full" style={{ imageRendering: 'pixelated' }} />
                   ) : (
