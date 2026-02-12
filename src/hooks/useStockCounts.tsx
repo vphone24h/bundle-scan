@@ -417,12 +417,29 @@ export function useUpdateStockCountItem() {
       actualQuantity,
       isChecked,
       stockCountId,
+      note,
     }: {
       itemId: string;
       actualQuantity?: number;
       isChecked?: boolean;
       stockCountId?: string;
+      note?: string;
     }) => {
+      // If only updating note, do a simple update
+      if (note !== undefined && actualQuantity === undefined && isChecked === undefined) {
+        const { data: item } = await supabase
+          .from('stock_count_items')
+          .select('stock_count_id')
+          .eq('id', itemId)
+          .single();
+        
+        await supabase
+          .from('stock_count_items')
+          .update({ note })
+          .eq('id', itemId);
+        
+        return stockCountId || item?.stock_count_id;
+      }
       // Get current item to compute status
       const { data: item, error: fetchError } = await supabase
         .from('stock_count_items')
@@ -454,6 +471,7 @@ export function useUpdateStockCountItem() {
           variance,
           status,
           is_checked: isChecked ?? item.is_checked,
+          ...(note !== undefined ? { note } : {}),
         })
         .eq('id', itemId);
 
@@ -492,7 +510,7 @@ export function useUpdateStockCountItem() {
 
       return scId;
     },
-    onMutate: async ({ itemId, actualQuantity, isChecked }) => {
+    onMutate: async ({ itemId, actualQuantity, isChecked, note }) => {
       // Optimistic update - update UI immediately
       const queries = queryClient.getQueriesData<{ stockCount: StockCount; items: StockCountItem[] }>({ queryKey: ['stock-count'] });
       
@@ -506,14 +524,19 @@ export function useUpdateStockCountItem() {
 
         const updatedItems = [...data.items];
         const item = { ...updatedItems[itemIndex] };
-        const newActual = actualQuantity !== undefined ? actualQuantity : (isChecked ? 1 : 0);
-        item.actualQuantity = newActual;
-        item.variance = newActual - item.systemQuantity;
-        item.isChecked = isChecked ?? item.isChecked;
-        if (item.hasImei) {
-          item.status = isChecked ? 'ok' : 'missing';
-        } else {
-          item.status = item.variance === 0 ? 'ok' : item.variance < 0 ? 'missing' : 'surplus';
+        if (note !== undefined) {
+          item.note = note;
+        }
+        if (actualQuantity !== undefined || isChecked !== undefined) {
+          const newActual = actualQuantity !== undefined ? actualQuantity : (isChecked ? 1 : 0);
+          item.actualQuantity = newActual;
+          item.variance = newActual - item.systemQuantity;
+          item.isChecked = isChecked ?? item.isChecked;
+          if (item.hasImei) {
+            item.status = isChecked ? 'ok' : 'missing';
+          } else {
+            item.status = item.variance === 0 ? 'ok' : item.variance < 0 ? 'missing' : 'surplus';
+          }
         }
         updatedItems[itemIndex] = item;
 
