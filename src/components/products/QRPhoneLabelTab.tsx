@@ -21,6 +21,7 @@ interface ProductPriceEntry {
 interface QRSettings {
   showPrice: boolean;
   showProductName: boolean;
+  showIMEI: boolean;
   showStoreName: boolean;
   storeName: string;
 }
@@ -53,6 +54,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
   const [settings, setSettings] = useState<QRSettings>({
     showPrice: true,
     showProductName: true,
+    showIMEI: true,
     showStoreName: true,
     storeName: defaultStoreName,
   });
@@ -160,6 +162,15 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
             -webkit-box-orient: vertical;
             overflow: hidden;
           }
+          .imei {
+            font-size: 6pt;
+            font-weight: bold;
+            color: #000;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
           .price {
             font-size: 8pt;
             font-weight: bold;
@@ -177,6 +188,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
             <div class="info-section">
               ${settings.showStoreName && settings.storeName ? `<div class="store-name">${settings.storeName}</div>` : ''}
               ${settings.showProductName ? `<div class="product-name">${entry.name}</div>` : ''}
+              ${settings.showIMEI && entry.imei ? `<div class="imei">${entry.imei}</div>` : ''}
               ${settings.showPrice ? `<div class="price">${formatNumberWithSpaces(entry.printPrice)} đ</div>` : ''}
             </div>
           </div>
@@ -336,6 +348,15 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
 
           <div className="flex items-center space-x-3">
             <Checkbox
+              id="qr-showIMEI"
+              checked={settings.showIMEI}
+              onCheckedChange={(checked) => setSettings({ ...settings, showIMEI: checked as boolean })}
+            />
+            <Label htmlFor="qr-showIMEI" className="font-normal cursor-pointer">In IMEI</Label>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <Checkbox
               id="qr-showStoreName"
               checked={settings.showStoreName}
               onCheckedChange={(checked) => setSettings({ ...settings, showStoreName: checked as boolean })}
@@ -378,6 +399,9 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
                   )}
                   {settings.showProductName && (
                     <p className="text-[7px] text-foreground line-clamp-2">{sampleEntry.name}</p>
+                  )}
+                  {settings.showIMEI && sampleEntry.imei && (
+                    <p className="text-[7px] font-bold text-foreground truncate">{sampleEntry.imei}</p>
                   )}
                   {settings.showPrice && (
                     <p className="text-[10px] font-bold text-foreground">
