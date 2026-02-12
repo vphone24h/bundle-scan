@@ -57,8 +57,11 @@ export function EmailHistoryTable() {
 
   const resendMutation = useMutation({
     mutationFn: async (record: EmailRecord) => {
-      const failedList = record.failed_emails;
-      if (!failedList || failedList.length === 0) throw new Error('Không có email thất bại để gửi lại');
+      // Nếu có failed_emails thì dùng, nếu không (bản ghi cũ) thì gửi lại tất cả
+      const failedList = (record.failed_emails && record.failed_emails.length > 0)
+        ? record.failed_emails
+        : record.recipients;
+      if (!failedList || failedList.length === 0) throw new Error('Không có email để gửi lại');
 
       const { data, error } = await supabase.functions.invoke('send-bulk-email', {
         body: {
@@ -305,11 +308,11 @@ export function EmailHistoryTable() {
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-xs text-muted-foreground">
                     Người nhận
-                    {emailFilter === 'failed' && ` (${selectedEmail.failed_emails?.length || 0} thất bại)`}
+                    {emailFilter === 'failed' && ` (${selectedEmail.failed_emails?.length || selectedEmail.fail_count} thất bại)`}
                     {emailFilter === 'success' && ` (${selectedEmail.success_count} thành công)`}
                     {emailFilter === 'all' && ` (${selectedEmail.total_recipients})`}
                   </p>
-                  {emailFilter === 'failed' && selectedEmail.failed_emails && selectedEmail.failed_emails.length > 0 && (
+                  {emailFilter === 'failed' && selectedEmail.fail_count > 0 && (
                     <Button
                       onClick={() => {
                         resendMutation.mutate(selectedEmail);
@@ -322,15 +325,15 @@ export function EmailHistoryTable() {
                       className="h-7 text-xs"
                     >
                       <RefreshCw className={`h-3 w-3 mr-1 ${resendMutation.isPending ? 'animate-spin' : ''}`} />
-                      Gửi lại {selectedEmail.failed_emails.length} email
+                      Gửi lại {selectedEmail.failed_emails?.length || selectedEmail.fail_count} email
                     </Button>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {(selectedEmail.recipients as string[])
                     .filter((email) => {
-                      if (emailFilter === 'failed') return selectedEmail.failed_emails?.includes(email);
-                      if (emailFilter === 'success') return !selectedEmail.failed_emails?.includes(email);
+                      if (emailFilter === 'failed') return selectedEmail.failed_emails?.includes(email) ?? true;
+                      if (emailFilter === 'success') return !(selectedEmail.failed_emails?.includes(email) ?? false);
                       return true;
                     })
                     .map((email, i) => {
