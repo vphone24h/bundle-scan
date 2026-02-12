@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { useDashboardStats, useTodaySoldProducts } from '@/hooks/useDashboardStats';
-import { useProducts } from '@/hooks/useProducts';
-import { useImportReceipts } from '@/hooks/useImportReceipts';
+import { useDashboardStats, useTodaySoldProducts, useRecentProducts, useRecentImportReceipts } from '@/hooks/useDashboardStats';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
 import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator } from 'lucide-react';
@@ -21,13 +19,14 @@ const Index = () => {
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
-  const { data: products, isLoading: productsLoading } = useProducts();
-  const { data: receipts, isLoading: receiptsLoading } = useImportReceipts();
+  // Use lightweight queries - only fetch what Dashboard needs
+  const { data: recentProductsData } = useRecentProducts(5);
+  const { data: recentReceiptsData } = useRecentImportReceipts(3);
   const { data: todaySoldProducts, isLoading: soldLoading } = useTodaySoldProducts();
   const userGuideUrl = useUserGuideUrl();
 
-  const recentProducts = products?.slice(0, 5) || [];
-  const recentReceipts = receipts?.slice(0, 3) || [];
+  const recentProducts = recentProductsData || [];
+  const recentReceipts = recentReceiptsData || [];
 
   // Only show full-screen loader on first load (no cached data yet)
   if (statsLoading && !stats) {
