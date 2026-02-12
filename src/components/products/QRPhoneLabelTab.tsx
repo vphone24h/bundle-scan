@@ -113,7 +113,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
           }
           .label-content {
             position: absolute;
-            top: 50%; left: 50%;
+            top: 50%; left: calc(50% + 2mm);
             transform: translate(-50%, -50%);
             display: flex;
             flex-direction: row;
