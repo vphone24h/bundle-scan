@@ -4,9 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, Eye, Mail, CheckCircle, XCircle } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { Loader2, Eye, Mail, CheckCircle, XCircle, RefreshCw, MailOpen, MailIcon } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -18,12 +19,16 @@ interface EmailRecord {
   total_recipients: number;
   success_count: number;
   fail_count: number;
+  failed_emails: string[] | null;
   sent_by: string | null;
+  is_read: boolean;
+  read_at: string | null;
   created_at: string;
 }
 
 export function EmailHistoryTable() {
   const [selectedEmail, setSelectedEmail] = useState<EmailRecord | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: emails, isLoading } = useQuery({
     queryKey: ['email-history'],
@@ -37,6 +42,49 @@ export function EmailHistoryTable() {
       return (data || []) as EmailRecord[];
     },
   });
+
+  const markReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('email_history')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['email-history'] }),
+  });
+
+  const resendMutation = useMutation({
+    mutationFn: async (record: EmailRecord) => {
+      const failedList = record.failed_emails || [];
+      if (failedList.length === 0) throw new Error('Không có email thất bại');
+
+      const { data, error } = await supabase.functions.invoke('send-bulk-email', {
+        body: {
+          emails: failedList,
+          subject: record.subject,
+          htmlContent: record.html_content || '',
+        },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Gửi lại thành công',
+        description: `Đã gửi ${data.sent} email${data.failed > 0 ? `, ${data.failed} vẫn thất bại` : ''}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['email-history'] });
+    },
+    onError: (err: any) => {
+      toast({ title: 'Lỗi gửi lại', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const handleView = (email: EmailRecord) => {
+    setSelectedEmail(email);
+    if (!email.is_read) markReadMutation.mutate(email.id);
+  };
 
   if (isLoading) {
     return (
@@ -63,21 +111,41 @@ export function EmailHistoryTable() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[40px]"></TableHead>
                 <TableHead>Ngày giờ</TableHead>
                 <TableHead>Tiêu đề</TableHead>
                 <TableHead>Người nhận</TableHead>
                 <TableHead>Kết quả</TableHead>
-                <TableHead className="w-[60px]"></TableHead>
+                <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {emails.map((email) => (
-                <TableRow key={email.id}>
+                <TableRow
+                  key={email.id}
+                  className={!email.is_read ? 'bg-primary/5 font-medium' : ''}
+                >
+                  <TableCell>
+                    {email.is_read ? (
+                      <MailOpen className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <MailIcon className="h-4 w-4 text-primary" />
+                    )}
+                  </TableCell>
                   <TableCell className="whitespace-nowrap text-sm">
                     {format(new Date(email.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
                   </TableCell>
                   <TableCell>
-                    <span className="font-medium line-clamp-1">{email.subject}</span>
+                    <div>
+                      <span className="line-clamp-1">{email.subject}</span>
+                      {email.html_content && (
+                        <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5 font-normal"
+                          dangerouslySetInnerHTML={{
+                            __html: email.html_content.replace(/<[^>]*>/g, ' ').slice(0, 80),
+                          }}
+                        />
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">{email.total_recipients} người</Badge>
@@ -99,13 +167,22 @@ export function EmailHistoryTable() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setSelectedEmail(email)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleView(email)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {email.fail_count > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => resendMutation.mutate(email)}
+                          disabled={resendMutation.isPending}
+                          title="Gửi lại email thất bại"
+                        >
+                          <RefreshCw className={`h-4 w-4 ${resendMutation.isPending ? 'animate-spin' : ''}`} />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -119,28 +196,62 @@ export function EmailHistoryTable() {
         {emails.map((email) => (
           <Card
             key={email.id}
-            className="p-4 cursor-pointer active:bg-muted/50"
-            onClick={() => setSelectedEmail(email)}
+            className={`p-4 cursor-pointer active:bg-muted/50 ${!email.is_read ? 'border-primary/30 bg-primary/5' : ''}`}
+            onClick={() => handleView(email)}
           >
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2">
+              {email.is_read ? (
+                <MailOpen className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              ) : (
+                <MailIcon className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              )}
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-sm line-clamp-1">{email.subject}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className={`text-sm line-clamp-1 ${!email.is_read ? 'font-semibold' : 'font-medium'}`}>
+                    {email.subject}
+                  </p>
+                  <Badge variant="secondary" className="shrink-0 text-xs">{email.total_recipients}</Badge>
+                </div>
+                {email.html_content && (
+                  <p
+                    className="text-xs text-muted-foreground line-clamp-1 mt-0.5"
+                    dangerouslySetInnerHTML={{
+                      __html: email.html_content.replace(/<[^>]*>/g, ' ').slice(0, 60),
+                    }}
+                  />
+                )}
                 <p className="text-xs text-muted-foreground mt-1">
                   {format(new Date(email.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
                 </p>
               </div>
-              <Badge variant="secondary" className="shrink-0">{email.total_recipients}</Badge>
             </div>
-            <div className="mt-2 flex items-center gap-3 text-xs">
-              {email.success_count > 0 && (
-                <span className="flex items-center gap-1 text-green-600">
-                  <CheckCircle className="h-3 w-3" /> {email.success_count} thành công
-                </span>
-              )}
+            <div className="mt-2 flex items-center justify-between">
+              <div className="flex items-center gap-3 text-xs">
+                {email.success_count > 0 && (
+                  <span className="flex items-center gap-1 text-green-600">
+                    <CheckCircle className="h-3 w-3" /> {email.success_count}
+                  </span>
+                )}
+                {email.fail_count > 0 && (
+                  <span className="flex items-center gap-1 text-destructive">
+                    <XCircle className="h-3 w-3" /> {email.fail_count}
+                  </span>
+                )}
+              </div>
               {email.fail_count > 0 && (
-                <span className="flex items-center gap-1 text-destructive">
-                  <XCircle className="h-3 w-3" /> {email.fail_count} thất bại
-                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    resendMutation.mutate(email);
+                  }}
+                  disabled={resendMutation.isPending}
+                >
+                  <RefreshCw className={`h-3 w-3 mr-1 ${resendMutation.isPending ? 'animate-spin' : ''}`} />
+                  Gửi lại
+                </Button>
               )}
             </div>
           </Card>
@@ -183,11 +294,19 @@ export function EmailHistoryTable() {
                   Người nhận ({selectedEmail.total_recipients})
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {(selectedEmail.recipients as string[]).map((email, i) => (
-                    <Badge key={i} variant="outline" className="text-xs">
-                      {email}
-                    </Badge>
-                  ))}
+                  {(selectedEmail.recipients as string[]).map((email, i) => {
+                    const isFailed = selectedEmail.failed_emails?.includes(email);
+                    return (
+                      <Badge
+                        key={i}
+                        variant={isFailed ? 'destructive' : 'outline'}
+                        className="text-xs"
+                      >
+                        {email}
+                        {isFailed && <XCircle className="h-3 w-3 ml-1" />}
+                      </Badge>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -198,6 +317,22 @@ export function EmailHistoryTable() {
                     className="border rounded-lg p-4 bg-muted/30 text-sm prose prose-sm max-w-none"
                     dangerouslySetInnerHTML={{ __html: selectedEmail.html_content }}
                   />
+                </div>
+              )}
+
+              {selectedEmail.fail_count > 0 && (
+                <div className="pt-2 border-t">
+                  <Button
+                    onClick={() => {
+                      resendMutation.mutate(selectedEmail);
+                      setSelectedEmail(null);
+                    }}
+                    disabled={resendMutation.isPending}
+                    size="sm"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${resendMutation.isPending ? 'animate-spin' : ''}`} />
+                    Gửi lại {selectedEmail.fail_count} email thất bại
+                  </Button>
                 </div>
               )}
             </div>

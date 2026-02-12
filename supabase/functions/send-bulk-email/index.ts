@@ -99,6 +99,7 @@ Deno.serve(async (req) => {
     let sent = 0
     let failed = 0
     const errors: string[] = []
+    const failedEmails: string[] = []
 
     for (const email of emails) {
       try {
@@ -111,6 +112,7 @@ Deno.serve(async (req) => {
         sent++
       } catch (err: any) {
         failed++
+        failedEmails.push(email)
         errors.push(`${email}: ${err.message}`)
         console.error(`Failed to send to ${email}:`, err.message)
       }
@@ -124,6 +126,7 @@ Deno.serve(async (req) => {
       total_recipients: emails.length,
       success_count: sent,
       fail_count: failed,
+      failed_emails: failedEmails,
       sent_by: user.id,
     })
 
