@@ -7,7 +7,8 @@ import { useProducts } from '@/hooks/useProducts';
 import { useImportReceipts } from '@/hooks/useImportReceipts';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
-import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart } from 'lucide-react';
+import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator } from 'lucide-react';
+import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { Button } from '@/components/ui/button';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Link } from 'react-router-dom';
@@ -16,6 +17,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const Index = () => {
   const [productTab, setProductTab] = useState<'imported' | 'sold'>('imported');
+  const [showInstallment, setShowInstallment] = useState(false);
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
@@ -277,8 +279,14 @@ const Index = () => {
               <span className="sm:hidden">NCC</span>
             </Link>
           </Button>
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setShowInstallment(true)}>
+            <Calculator className="mr-1.5 sm:mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Tính trả góp</span>
+            <span className="sm:hidden">Trả góp</span>
+          </Button>
         </div>
       </div>
+      <InstallmentCalculatorDialog open={showInstallment} onOpenChange={setShowInstallment} />
     </MainLayout>
   );
 };
