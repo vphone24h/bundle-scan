@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Printer, Loader2, FileDown, Smartphone, QrCode } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatNumberWithSpaces } from '@/lib/formatNumber';
+import QRCode from 'qrcode';
 
 interface ProductPriceEntry {
   productId: string;
@@ -39,8 +40,13 @@ function encodeQRData(entry: ProductPriceEntry): string {
   return `N:${entry.name}:${entry.printPrice}`;
 }
 
-function getQRImageUrl(data: string, size: number = 200): string {
-  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}&margin=1&ecc=M`;
+// Generate QR code as base64 data URL locally
+async function generateQRDataUrl(data: string): Promise<string> {
+  return QRCode.toDataURL(data, {
+    width: 300,
+    margin: 1,
+    errorCorrectionLevel: 'M',
+  });
 }
 
 export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }: QRPhoneLabelTabProps) {
@@ -51,9 +57,17 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
     storeName: defaultStoreName,
   });
   const [isExporting, setIsExporting] = useState(false);
+  const [previewQrUrl, setPreviewQrUrl] = useState<string>('');
 
   const sampleEntry = productEntries[0];
   const totalLabels = productEntries.reduce((sum, e) => sum + e.quantity, 0);
+
+  // Generate preview QR
+  useEffect(() => {
+    if (sampleEntry) {
+      generateQRDataUrl(encodeQRData(sampleEntry)).then(setPreviewQrUrl);
+    }
+  }, [sampleEntry]);
 
   // Expand all labels by quantity
   const expandLabels = (): ProductPriceEntry[] => {
@@ -64,10 +78,8 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
     return all;
   };
 
-  // Generate single label HTML for 55x30mm with QR code
-  const generateSingleLabelHtml = (entry: ProductPriceEntry): string => {
-    const qrData = encodeQRData(entry);
-    const qrUrl = getQRImageUrl(qrData, 300);
+  // Generate single label HTML for 55x30mm with QR as embedded data URL
+  const generateSingleLabelHtml = (entry: ProductPriceEntry, qrDataUrl: string): string => {
     const width = 55;
     const height = 30;
 
@@ -156,7 +168,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
         <div class="label">
           <div class="label-content">
             <div class="qr-section">
-              <img src="${qrUrl}" alt="QR" />
+              <img src="${qrDataUrl}" alt="QR" />
             </div>
             <div class="info-section">
               ${settings.showStoreName && settings.storeName ? `<div class="store-name">${settings.storeName}</div>` : ''}
@@ -170,12 +182,20 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
     `;
   };
 
-  // Print: 1 job = 1 label (same approach as KiotViet)
-  const handlePrint = () => {
+  // Print: 1 job = 1 label
+  const handlePrint = useCallback(async () => {
     const allLabels = expandLabels();
     if (allLabels.length === 0) {
       toast.error('Không có tem để in');
       return;
+    }
+
+    // Pre-generate all QR data URLs
+    toast.info(`Đang tạo ${allLabels.length} mã QR...`);
+    const qrDataUrls: string[] = [];
+    for (const entry of allLabels) {
+      const url = await generateQRDataUrl(encodeQRData(entry));
+      qrDataUrls.push(url);
     }
 
     const printWindow = window.open('', '_blank', 'width=800,height=600');
@@ -184,8 +204,6 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
       return;
     }
 
-    toast.info(`Đang chuẩn bị in ${allLabels.length} tem QR...`);
-
     let currentIndex = 0;
     const printNextLabel = () => {
       if (currentIndex >= allLabels.length) {
@@ -193,20 +211,19 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
         toast.success(`Đã gửi ${allLabels.length} lệnh in QR (1 tem/lệnh)`);
         return;
       }
-      const labelHtml = generateSingleLabelHtml(allLabels[currentIndex]);
+      const labelHtml = generateSingleLabelHtml(allLabels[currentIndex], qrDataUrls[currentIndex]);
       printWindow.document.open();
       printWindow.document.write(labelHtml);
       printWindow.document.close();
 
-      // Wait for QR image to load
       setTimeout(() => {
         printWindow.print();
         currentIndex++;
         setTimeout(printNextLabel, 300);
-      }, 800);
+      }, 200);
     };
     printNextLabel();
-  };
+  }, [productEntries, settings]);
 
   // Export PDF
   const handleExportPDF = async () => {
@@ -223,6 +240,12 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
       const width = 55;
       const height = 30;
 
+      // Pre-generate all QR data URLs
+      const qrDataUrls: string[] = [];
+      for (const entry of allLabels) {
+        qrDataUrls.push(await generateQRDataUrl(encodeQRData(entry)));
+      }
+
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
@@ -232,10 +255,8 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
       for (let i = 0; i < allLabels.length; i++) {
         if (i > 0) pdf.addPage([width, height], 'landscape');
 
-        const entry = allLabels[i];
-        const labelHtml = generateSingleLabelHtml(entry);
+        const labelHtml = generateSingleLabelHtml(allLabels[i], qrDataUrls[i]);
 
-        // Render in hidden iframe
         const iframe = document.createElement('iframe');
         iframe.style.cssText = 'position:absolute;left:-9999px;top:-9999px;border:none;';
         iframe.style.width = `${width}mm`;
@@ -248,8 +269,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
         iframeDoc.write(labelHtml);
         iframeDoc.close();
 
-        // Wait for QR image to load
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 300));
 
         const label = iframeDoc.querySelector('.label') as HTMLElement;
         if (label) {
@@ -257,8 +277,6 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
             scale: 4,
             backgroundColor: '#ffffff',
             logging: false,
-            useCORS: true,
-            allowTaint: true,
           });
           pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, width, height);
         }
@@ -341,9 +359,13 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
               style={{ width: '220px', height: '120px', padding: '6px' }}
             >
               <div className="flex items-center h-full gap-2">
-                {/* QR placeholder */}
-                <div className="flex-shrink-0 w-[90px] h-[90px] border rounded flex items-center justify-center bg-muted">
-                  <QrCode className="h-12 w-12 text-foreground" />
+                {/* QR preview - real QR */}
+                <div className="flex-shrink-0 w-[90px] h-[90px] flex items-center justify-center">
+                  {previewQrUrl ? (
+                    <img src={previewQrUrl} alt="QR Preview" className="w-full h-full" style={{ imageRendering: 'pixelated' }} />
+                  ) : (
+                    <QrCode className="h-12 w-12 text-foreground" />
+                  )}
                 </div>
                 {/* Info */}
                 <div className="flex-1 flex flex-col justify-center gap-0.5 overflow-hidden min-w-0">
