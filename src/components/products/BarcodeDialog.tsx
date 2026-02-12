@@ -16,11 +16,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Printer, ArrowLeft, Eye, Grid3X3, Barcode, DollarSign, Copy, Trash2, Plus, Minus, FileDown, Loader2, HelpCircle, ExternalLink, FileText } from 'lucide-react';
+import { Printer, ArrowLeft, Eye, Grid3X3, Barcode, DollarSign, Copy, Trash2, Plus, Minus, FileDown, Loader2, HelpCircle, ExternalLink, FileText, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { useBarcodePrintGuideUrl } from '@/hooks/useAppConfig';
 import { cn } from '@/lib/utils';
 import { formatNumberWithSpaces } from '@/lib/formatNumber';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { QRPhoneLabelTab } from './QRPhoneLabelTab';
 
 // Import paper template images
 import paperTemplate1 from '@/assets/paper-template-1.jpg';
@@ -2292,126 +2294,148 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         </div>
       </div>
 
-      {/* Main content: Options + Preview */}
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Options */}
-        <div className="flex-1 space-y-4">
-          <p className="text-sm font-medium text-muted-foreground">Tuỳ chọn hiển thị</p>
-          
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <Checkbox
-                id="showPrice"
-                checked={settings.showPrice}
-                onCheckedChange={(checked) =>
-                  setSettings({ ...settings, showPrice: checked as boolean })
-                }
-              />
-              <Label htmlFor="showPrice" className="font-normal cursor-pointer">
-                In giá
-              </Label>
-            </div>
+      <Tabs defaultValue="barcode" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="barcode" className="flex items-center gap-1.5">
+            <Barcode className="h-3.5 w-3.5" />
+            Mã vạch
+          </TabsTrigger>
+          <TabsTrigger value="qr-phone" className="flex items-center gap-1.5">
+            <Smartphone className="h-3.5 w-3.5" />
+            Quét bằng ĐT
+          </TabsTrigger>
+        </TabsList>
 
-            {settings.showPrice && (
-              <div className="ml-7 space-y-2">
-                <RadioGroup
-                  value={settings.priceWithVND ? 'with' : 'without'}
-                  onValueChange={(v) =>
-                    setSettings({ ...settings, priceWithVND: v === 'with' })
-                  }
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="with" id="priceWith" />
-                    <Label htmlFor="priceWith" className="font-normal text-sm cursor-pointer">
-                      Giá kèm VND (vd: 28,000,000 VND)
-                    </Label>
+        <TabsContent value="barcode">
+          {/* Main content: Options + Preview */}
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Options */}
+            <div className="flex-1 space-y-4">
+              <p className="text-sm font-medium text-muted-foreground">Tuỳ chọn hiển thị</p>
+              
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="showPrice"
+                    checked={settings.showPrice}
+                    onCheckedChange={(checked) =>
+                      setSettings({ ...settings, showPrice: checked as boolean })
+                    }
+                  />
+                  <Label htmlFor="showPrice" className="font-normal cursor-pointer">
+                    In giá
+                  </Label>
+                </div>
+
+                {settings.showPrice && (
+                  <div className="ml-7 space-y-2">
+                    <RadioGroup
+                      value={settings.priceWithVND ? 'with' : 'without'}
+                      onValueChange={(v) =>
+                        setSettings({ ...settings, priceWithVND: v === 'with' })
+                      }
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="with" id="priceWith" />
+                        <Label htmlFor="priceWith" className="font-normal text-sm cursor-pointer">
+                          Giá kèm VND (vd: 28,000,000 VND)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="without" id="priceWithout" />
+                        <Label htmlFor="priceWithout" className="font-normal text-sm cursor-pointer">
+                          Giá không kèm VND (vd: 28,000,000)
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="without" id="priceWithout" />
-                    <Label htmlFor="priceWithout" className="font-normal text-sm cursor-pointer">
-                      Giá không kèm VND (vd: 28,000,000)
-                    </Label>
+                )}
+
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="showProductName"
+                    checked={settings.showProductName}
+                    onCheckedChange={(checked) =>
+                      setSettings({ ...settings, showProductName: checked as boolean })
+                    }
+                  />
+                  <Label htmlFor="showProductName" className="font-normal cursor-pointer">
+                    In tên sản phẩm
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="showStoreName"
+                    checked={settings.showStoreName}
+                    onCheckedChange={(checked) =>
+                      setSettings({ ...settings, showStoreName: checked as boolean })
+                    }
+                  />
+                  <Label htmlFor="showStoreName" className="font-normal cursor-pointer">
+                    In tên cửa hàng
+                  </Label>
+                </div>
+
+                {settings.showStoreName && (
+                  <div className="ml-7">
+                    <Input
+                      value={settings.storeName}
+                      onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
+                      placeholder="Tên cửa hàng"
+                      className="max-w-xs"
+                    />
                   </div>
-                </RadioGroup>
-              </div>
-            )}
+                )}
 
-            <div className="flex items-center space-x-3">
-              <Checkbox
-                id="showProductName"
-                checked={settings.showProductName}
-                onCheckedChange={(checked) =>
-                  setSettings({ ...settings, showProductName: checked as boolean })
-                }
-              />
-              <Label htmlFor="showProductName" className="font-normal cursor-pointer">
-                In tên sản phẩm
-              </Label>
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="showCustomDescription"
+                    checked={settings.showCustomDescription}
+                    onCheckedChange={(checked) =>
+                      setSettings({ ...settings, showCustomDescription: checked as boolean })
+                    }
+                  />
+                  <Label htmlFor="showCustomDescription" className="font-normal cursor-pointer">
+                    Mô tả khác
+                  </Label>
+                </div>
+
+                {settings.showCustomDescription && (
+                  <div className="ml-7">
+                    <Textarea
+                      value={settings.customDescription}
+                      onChange={(e) => setSettings({ ...settings, customDescription: e.target.value })}
+                      placeholder="Nhập mô tả tùy chỉnh..."
+                      className="max-w-xs min-h-[80px] resize-none"
+                      rows={3}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <Checkbox
-                id="showStoreName"
-                checked={settings.showStoreName}
-                onCheckedChange={(checked) =>
-                  setSettings({ ...settings, showStoreName: checked as boolean })
-                }
-              />
-              <Label htmlFor="showStoreName" className="font-normal cursor-pointer">
-                In tên cửa hàng
-              </Label>
-            </div>
-
-            {settings.showStoreName && (
-              <div className="ml-7">
-                <Input
-                  value={settings.storeName}
-                  onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
-                  placeholder="Tên cửa hàng"
-                  className="max-w-xs"
-                />
-              </div>
-            )}
-
-            <div className="flex items-center space-x-3">
-              <Checkbox
-                id="showCustomDescription"
-                checked={settings.showCustomDescription}
-                onCheckedChange={(checked) =>
-                  setSettings({ ...settings, showCustomDescription: checked as boolean })
-                }
-              />
-              <Label htmlFor="showCustomDescription" className="font-normal cursor-pointer">
-                Mô tả khác
-              </Label>
-            </div>
-
-            {settings.showCustomDescription && (
-              <div className="ml-7">
-                <Textarea
-                  value={settings.customDescription}
-                  onChange={(e) => setSettings({ ...settings, customDescription: e.target.value })}
-                  placeholder="Nhập mô tả tùy chỉnh..."
-                  className="max-w-xs min-h-[80px] resize-none"
-                  rows={3}
-                />
-              </div>
-            )}
+            {/* Live Preview */}
+            {sampleProduct && renderBarcodePreview()}
           </div>
-        </div>
 
-        {/* Live Preview */}
-        {sampleProduct && renderBarcodePreview()}
-      </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" onClick={() => setStep('price')}>
+              Quay lại
+            </Button>
+            <Button onClick={() => setStep('paper')}>
+              Tiếp tục
+            </Button>
+          </div>
+        </TabsContent>
 
-      <div className="flex justify-end gap-3 pt-4">
-        <Button variant="outline" onClick={() => setStep('price')}>
-          Quay lại
-        </Button>
-        <Button onClick={() => setStep('paper')}>
-          Tiếp tục
-        </Button>
-      </div>
+        <TabsContent value="qr-phone">
+          <QRPhoneLabelTab
+            productEntries={productEntries}
+            storeName={settings.storeName}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 
