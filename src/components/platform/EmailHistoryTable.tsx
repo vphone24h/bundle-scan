@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface EmailRecord {
   id: string;
@@ -24,6 +25,11 @@ interface EmailRecord {
   is_read: boolean;
   read_at: string | null;
   created_at: string;
+}
+
+interface EmailOpen {
+  recipient_email: string;
+  opened_at: string;
 }
 
 export function EmailHistoryTable() {
@@ -42,6 +48,21 @@ export function EmailHistoryTable() {
       if (error) throw error;
       return (data || []) as EmailRecord[];
     },
+  });
+
+  // Fetch email opens for selected email
+  const { data: emailOpens } = useQuery({
+    queryKey: ['email-opens', selectedEmail?.id],
+    queryFn: async () => {
+      if (!selectedEmail?.id) return [];
+      const { data, error } = await supabase
+        .from('email_opens')
+        .select('recipient_email, opened_at')
+        .eq('email_history_id', selectedEmail.id);
+      if (error) throw error;
+      return (data || []) as EmailOpen[];
+    },
+    enabled: !!selectedEmail?.id,
   });
 
   const markReadMutation = useMutation({
@@ -329,6 +350,7 @@ export function EmailHistoryTable() {
                     </Button>
                   )}
                 </div>
+                <TooltipProvider>
                 <div className="flex flex-wrap gap-1.5">
                   {(selectedEmail.recipients as string[])
                     .filter((email) => {
@@ -338,18 +360,30 @@ export function EmailHistoryTable() {
                     })
                     .map((email, i) => {
                       const isFailed = selectedEmail.failed_emails?.includes(email);
+                      const openRecord = emailOpens?.find(o => o.recipient_email === email);
+                      const isOpened = !!openRecord;
                       return (
-                        <Badge
-                          key={i}
-                          variant={isFailed ? 'destructive' : 'outline'}
-                          className="text-xs"
-                        >
-                          {email}
-                          {isFailed && <XCircle className="h-3 w-3 ml-1" />}
-                        </Badge>
+                        <Tooltip key={i}>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant={isFailed ? 'destructive' : 'outline'}
+                              className={`text-xs cursor-default ${isOpened && !isFailed ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}`}
+                            >
+                              {isOpened && !isFailed && <MailOpen className="h-3 w-3 mr-1 text-green-600" />}
+                              {email}
+                              {isFailed && <XCircle className="h-3 w-3 ml-1" />}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {isFailed ? 'Gửi thất bại' : isOpened
+                              ? `Đã xem lúc ${format(new Date(openRecord.opened_at), 'dd/MM/yyyy HH:mm', { locale: vi })}`
+                              : 'Chưa xem'}
+                          </TooltipContent>
+                        </Tooltip>
                       );
                     })}
                 </div>
+                </TooltipProvider>
               </div>
 
               {selectedEmail.html_content && (
