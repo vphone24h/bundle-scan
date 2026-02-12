@@ -163,14 +163,13 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
             overflow: hidden;
           }
           .imei {
-            font-size: 6pt;
+            font-size: 7pt;
             font-weight: bold;
             color: #000;
-            line-height: 1;
+            line-height: 1.2;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-top: -1px;
           }
           .price {
             font-size: 8pt;
