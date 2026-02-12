@@ -101,20 +101,31 @@ Deno.serve(async (req) => {
     const errors: string[] = []
     const failedEmails: string[] = []
 
-    for (const email of emails) {
-      try {
-        await transporter.sendMail({
-          from: `"VKHO" <${smtpUser}>`,
-          to: email,
-          subject,
-          html: fullHtml,
-        })
-        sent++
-      } catch (err: any) {
-        failed++
-        failedEmails.push(email)
-        errors.push(`${email}: ${err.message}`)
-        console.error(`Failed to send to ${email}:`, err.message)
+    // Send in parallel batches of 5 for speed
+    const BATCH_SIZE = 5
+    for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+      const batch = emails.slice(i, i + BATCH_SIZE)
+      const results = await Promise.allSettled(
+        batch.map((email: string) =>
+          transporter.sendMail({
+            from: `"VKHO" <${smtpUser}>`,
+            to: email,
+            subject,
+            html: fullHtml,
+          }).then(() => ({ email, ok: true }))
+           .catch((err: any) => ({ email, ok: false, error: err.message }))
+        )
+      )
+      for (const r of results) {
+        const val = r.status === 'fulfilled' ? r.value : { email: 'unknown', ok: false, error: 'Promise rejected' }
+        if (val.ok) {
+          sent++
+        } else {
+          failed++
+          failedEmails.push(val.email)
+          errors.push(`${val.email}: ${val.error}`)
+          console.error(`Failed to send to ${val.email}:`, val.error)
+        }
       }
     }
 
