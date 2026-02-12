@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
@@ -24,6 +25,7 @@ import {
   FileText,
   Package,
   Mail,
+  Filter,
   Globe,
   CheckCircle2
 } from 'lucide-react';
@@ -73,12 +75,41 @@ export function TenantsManagement() {
   const [showProductsDialog, setShowProductsDialog] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkEmail, setShowBulkEmail] = useState(false);
+  
+  // Filters
+  const [statusFilter, setStatusFilter] = useState('_all_');
+  const [usageFilter, setUsageFilter] = useState('_all_');
+  const [websiteFilter, setWebsiteFilter] = useState('_all_');
+  const [einvoiceFilter, setEinvoiceFilter] = useState('_all_');
 
-  const filteredTenants = tenants?.filter(t => 
-    t.name.toLowerCase().includes(search.toLowerCase()) ||
-    t.subdomain.toLowerCase().includes(search.toLowerCase()) ||
-    t.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredTenants = tenants?.filter(t => {
+    // Text search
+    const matchSearch = !search || 
+      t.name.toLowerCase().includes(search.toLowerCase()) ||
+      t.subdomain.toLowerCase().includes(search.toLowerCase()) ||
+      t.email?.toLowerCase().includes(search.toLowerCase());
+    
+    // Status filter
+    const matchStatus = statusFilter === '_all_' || t.status === statusFilter;
+    
+    // Usage filter (đã mua / chưa mua = has import/export receipts)
+    const enrichment = enrichmentMap?.get(t.id);
+    const matchUsage = usageFilter === '_all_' || 
+      (usageFilter === 'used' && enrichment?.has_usage) ||
+      (usageFilter === 'unused' && !enrichment?.has_usage);
+    
+    // Website filter
+    const matchWebsite = websiteFilter === '_all_' ||
+      (websiteFilter === 'enabled' && enrichment?.has_landing_enabled) ||
+      (websiteFilter === 'disabled' && !enrichment?.has_landing_enabled);
+    
+    // HĐĐT filter
+    const matchEinvoice = einvoiceFilter === '_all_' ||
+      (einvoiceFilter === 'on' && t.einvoice_enabled) ||
+      (einvoiceFilter === 'off' && !t.einvoice_enabled);
+    
+    return matchSearch && matchStatus && matchUsage && matchWebsite && matchEinvoice;
+  });
 
   const handleAction = async () => {
     if (!selectedTenant || !actionDialog) return;
@@ -151,36 +182,82 @@ export function TenantsManagement() {
 
   return (
     <div className="space-y-4">
-      {/* Search & Bulk Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Tìm doanh nghiệp..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        {selectedIds.size > 0 && (
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary">{selectedIds.size} đã chọn</Badge>
-            <Button
-              size="sm"
-              onClick={() => setShowBulkEmail(true)}
-            >
-              <Mail className="h-4 w-4 mr-1.5" />
-              Gửi email
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedIds(new Set())}
-            >
-              Bỏ chọn
-            </Button>
+      {/* Search & Filters */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Tìm doanh nghiệp..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+            />
           </div>
-        )}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{selectedIds.size} đã chọn</Badge>
+              <Button
+                size="sm"
+                onClick={() => setShowBulkEmail(true)}
+              >
+                <Mail className="h-4 w-4 mr-1.5" />
+                Gửi email
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                Bỏ chọn
+              </Button>
+            </div>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[120px] h-9 text-xs sm:text-sm">
+              <SelectValue placeholder="Trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all_">Tất cả TT</SelectItem>
+              <SelectItem value="trial">Dùng thử</SelectItem>
+              <SelectItem value="active">Hoạt động</SelectItem>
+              <SelectItem value="expired">Hết hạn</SelectItem>
+              <SelectItem value="locked">Bị khóa</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={usageFilter} onValueChange={setUsageFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs sm:text-sm">
+              <SelectValue placeholder="Sử dụng" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all_">Tất cả</SelectItem>
+              <SelectItem value="used">Đã sử dụng</SelectItem>
+              <SelectItem value="unused">Chưa sử dụng</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={websiteFilter} onValueChange={setWebsiteFilter}>
+            <SelectTrigger className="w-[130px] h-9 text-xs sm:text-sm">
+              <SelectValue placeholder="Website" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all_">Tất cả WS</SelectItem>
+              <SelectItem value="enabled">Có website</SelectItem>
+              <SelectItem value="disabled">Chưa có WS</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={einvoiceFilter} onValueChange={setEinvoiceFilter}>
+            <SelectTrigger className="w-[120px] h-9 text-xs sm:text-sm">
+              <SelectValue placeholder="HĐĐT" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all_">Tất cả HĐĐT</SelectItem>
+              <SelectItem value="on">HĐĐT bật</SelectItem>
+              <SelectItem value="off">HĐĐT tắt</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Desktop Table */}
