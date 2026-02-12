@@ -43,15 +43,15 @@ export function InstallmentCalculatorDialog({ open, onOpenChange }: InstallmentC
     const rateDecimal = interestRate / 100;
     const monthlyPayment = (principal + principal * rateDecimal * months) / months;
     const now = new Date();
-    const startMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const endMonth = new Date(now.getFullYear(), now.getMonth() + months, 1);
+    const startDate = now;
+    const endDate = new Date(now.getFullYear(), now.getMonth() + months, now.getDate());
     return {
       monthlyPayment: Math.round(monthlyPayment),
       principal,
       totalInterest: Math.round(principal * rateDecimal * months),
       totalPay: Math.round(principal + principal * rateDecimal * months),
-      startMonth,
-      endMonth,
+      startDate,
+      endDate,
     };
   }, [calculated, totalAmount, downPayment, months, interestRate]);
 
@@ -68,8 +68,8 @@ export function InstallmentCalculatorDialog({ open, onOpenChange }: InstallmentC
     setCalculated(false);
   };
 
-  const formatMonth = (d: Date) => {
-    return `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  const formatDate = (d: Date) => {
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   };
 
   return (
@@ -154,11 +154,11 @@ export function InstallmentCalculatorDialog({ open, onOpenChange }: InstallmentC
               <div className="flex items-baseline justify-between flex-wrap gap-2">
                 <div>
                   <p className="text-xs text-muted-foreground uppercase">Từ</p>
-                  <p className="text-lg font-bold">{formatMonth(result.startMonth)}</p>
+                  <p className="text-lg font-bold">{formatDate(result.startDate)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase">Đến</p>
-                  <p className="text-lg font-bold">{formatMonth(result.endMonth)}</p>
+                  <p className="text-lg font-bold">{formatDate(result.endDate)}</p>
                 </div>
               </div>
               
