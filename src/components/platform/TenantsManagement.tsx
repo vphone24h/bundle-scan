@@ -75,6 +75,10 @@ export function TenantsManagement() {
   const [showProductsDialog, setShowProductsDialog] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkEmail, setShowBulkEmail] = useState(false);
+  const [showBulkExtend, setShowBulkExtend] = useState(false);
+  const [bulkExtendDays, setBulkExtendDays] = useState('7');
+  const [bulkExtendNote, setBulkExtendNote] = useState('');
+  const [bulkExtending, setBulkExtending] = useState(false);
   
   // Filters
   const [statusFilter, setStatusFilter] = useState('_all_');
@@ -172,6 +176,40 @@ export function TenantsManagement() {
     setTogglingEinvoice(null);
   };
 
+  const handleBulkExtend = async () => {
+    if (selectedIds.size === 0 || !bulkExtendDays) return;
+    setBulkExtending(true);
+    try {
+      const response = await supabase.functions.invoke('manage-tenant', {
+        body: {
+          action: 'bulk_extend',
+          tenantIds: Array.from(selectedIds),
+          days: parseInt(bulkExtendDays),
+          note: bulkExtendNote || `Tặng thêm ${bulkExtendDays} ngày sử dụng`,
+        },
+      });
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
+
+      toast({
+        title: 'Thành công',
+        description: response.data.message,
+      });
+      setShowBulkExtend(false);
+      setBulkExtendDays('7');
+      setBulkExtendNote('');
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ['all-tenants'] });
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+    setBulkExtending(false);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -195,8 +233,16 @@ export function TenantsManagement() {
             />
           </div>
           {selectedIds.size > 0 && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary">{selectedIds.size} đã chọn</Badge>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowBulkExtend(true)}
+              >
+                <CalendarPlus className="h-4 w-4 mr-1.5" />
+                Gia hạn
+              </Button>
               <Button
                 size="sm"
                 onClick={() => setShowBulkEmail(true)}
@@ -672,6 +718,50 @@ export function TenantsManagement() {
             .map(t => ({ name: t.name, email: t.email || '' })) || []
         }
       />
+
+      {/* Bulk Extend Dialog */}
+      <Dialog open={showBulkExtend} onOpenChange={setShowBulkExtend}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Gia hạn hàng loạt</DialogTitle>
+            <DialogDescription>
+              Tặng thêm ngày sử dụng cho {selectedIds.size} doanh nghiệp đã chọn. Email thông báo sẽ được tự động gửi.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Số ngày tặng thêm</Label>
+              <Input
+                type="number"
+                value={bulkExtendDays}
+                onChange={(e) => setBulkExtendDays(e.target.value)}
+                min="1"
+                placeholder="VD: 7"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Ghi chú (hiển thị trong email)</Label>
+              <Textarea
+                value={bulkExtendNote}
+                onChange={(e) => setBulkExtendNote(e.target.value)}
+                placeholder="VD: Chúc mừng năm mới 2026! 🎊"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkExtend(false)}>
+              Hủy
+            </Button>
+            <Button
+              onClick={handleBulkExtend}
+              disabled={bulkExtending || !bulkExtendDays || parseInt(bulkExtendDays) < 1}
+            >
+              {bulkExtending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Gia hạn {selectedIds.size} DN
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
