@@ -896,14 +896,14 @@ export default function ImportHistoryPage() {
                           <Badge
                             className={cn(
                               product.status === 'in_stock'
-                                ? 'status-in-stock'
+                                ? (!product.imei && product.quantity === 0 ? 'bg-muted text-muted-foreground' : 'status-in-stock')
                                 : product.status === 'sold'
                                 ? 'status-sold'
                                 : 'status-pending'
                             )}
                           >
                             {product.status === 'in_stock'
-                              ? 'Tồn kho'
+                              ? (!product.imei && product.quantity === 0 ? 'Hết hàng' : 'Tồn kho')
                               : product.status === 'sold'
                               ? 'Đã bán'
                               : 'Đã trả'}
@@ -1101,7 +1101,7 @@ export default function ImportHistoryPage() {
                           )}
                         >
                           {item.products?.status === 'in_stock'
-                            ? 'Tồn kho'
+                            ? (!item.products?.imei && (item.products as any)?.quantity === 0 ? 'Hết hàng' : 'Tồn kho')
                             : item.products?.status === 'sold'
                             ? 'Đã bán'
                             : item.products?.status === 'deleted'
@@ -1172,7 +1172,7 @@ export default function ImportHistoryPage() {
                                 )}
                               >
                                 {item.products?.status === 'in_stock'
-                                  ? 'Tồn kho'
+                                  ? (!item.products?.imei && (item.products as any)?.quantity === 0 ? 'Hết hàng' : 'Tồn kho')
                                   : item.products?.status === 'sold'
                                   ? 'Đã bán'
                                   : item.products?.status === 'deleted'
