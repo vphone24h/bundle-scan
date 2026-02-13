@@ -29,6 +29,7 @@ interface QRSettings {
 interface QRPhoneLabelTabProps {
   productEntries: ProductPriceEntry[];
   storeName: string;
+  onPrinted?: (productIds: string[]) => Promise<void> | void;
 }
 
 // Encode QR data in format compatible with existing scanner
@@ -50,7 +51,7 @@ async function generateQRDataUrl(data: string): Promise<string> {
   });
 }
 
-export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }: QRPhoneLabelTabProps) {
+export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, onPrinted }: QRPhoneLabelTabProps) {
   const [settings, setSettings] = useState<QRSettings>({
     showPrice: true,
     showProductName: true,
@@ -225,6 +226,9 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
       if (currentIndex >= allLabels.length) {
         printWindow.close();
         toast.success(`Đã gửi ${allLabels.length} lệnh in QR (1 tem/lệnh)`);
+        // Mark products as printed
+        const productIds = [...new Set(allLabels.map(e => e.productId))];
+        if (onPrinted) onPrinted(productIds);
         return;
       }
       const labelHtml = generateSingleLabelHtml(allLabels[currentIndex], qrDataUrls[currentIndex]);
@@ -239,7 +243,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
       }, 200);
     };
     printNextLabel();
-  }, [productEntries, settings]);
+  }, [productEntries, settings, onPrinted]);
 
   // Export PDF
   const handleExportPDF = async () => {
@@ -302,6 +306,9 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName }:
 
       pdf.save(`QR_Label_${new Date().toISOString().slice(0, 10)}.pdf`);
       toast.success(`Đã xuất ${allLabels.length} nhãn QR ra PDF (50x30mm)`);
+      // Mark products as printed
+      const productIds = [...new Set(allLabels.map(e => e.productId))];
+      if (onPrinted) await onPrinted(productIds);
     } catch (error) {
       console.error('PDF export error:', error);
       toast.error('Lỗi khi xuất PDF.');
