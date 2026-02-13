@@ -3445,6 +3445,7 @@ export type Database = {
           import_date: string
           import_price: number
           import_receipt_id: string | null
+          is_printed: boolean
           name: string
           note: string | null
           quantity: number
@@ -3466,6 +3467,7 @@ export type Database = {
           import_date?: string
           import_price: number
           import_receipt_id?: string | null
+          is_printed?: boolean
           name: string
           note?: string | null
           quantity?: number
@@ -3487,6 +3489,7 @@ export type Database = {
           import_date?: string
           import_price?: number
           import_receipt_id?: string | null
+          is_printed?: boolean
           name?: string
           note?: string | null
           quantity?: number

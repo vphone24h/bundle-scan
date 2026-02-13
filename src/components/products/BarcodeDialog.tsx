@@ -65,6 +65,7 @@ interface BarcodeDialogProps {
   open: boolean;
   onClose: () => void;
   products: ProductForBarcode[];
+  onPrinted?: (productIds: string[]) => void;
 }
 
 type Step = 'price' | 'settings' | 'paper' | 'adjust';
@@ -75,7 +76,7 @@ interface PrintAdjustments {
   autoCompensateRotation: boolean; // tự bù xoay cho driver máy in nhiệt
 }
 
-export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
+export function BarcodeDialog({ open, onClose, products, onPrinted }: BarcodeDialogProps) {
   const [step, setStep] = useState<Step>('price');
   const [productEntries, setProductEntries] = useState<ProductPriceEntry[]>([]);
   const [bulkPrice, setBulkPrice] = useState<string>('');
@@ -150,6 +151,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
         printWindow.print();
       }, 500);
     }
+    
+    // Mark products as printed
+    const productIds = [...new Set(productEntries.map(e => e.productId))];
+    onPrinted?.(productIds);
     
     onClose();
   };
@@ -250,6 +255,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       
       document.body.removeChild(iframe);
       toast.success(`Đã xuất ${labels.length} nhãn ra file PDF (${pdfPageWidth}x${pdfPageHeight}mm)`);
+      
+      // Mark products as printed
+      const productIds = [...new Set(productEntries.map(e => e.productId))];
+      onPrinted?.(productIds);
     } catch (error) {
       console.error('PDF export error:', error);
       toast.error('Lỗi khi xuất PDF. Vui lòng thử lại.');
@@ -473,6 +482,10 @@ export function BarcodeDialog({ open, onClose, products }: BarcodeDialogProps) {
       saveAs(buffer, `Ma_Vach_${paperName}_${new Date().toISOString().slice(0, 10)}.docx`);
       
       toast.success(`Đã xuất ${allLabels.length} nhãn ra file Word (${pageWidthMm}x${pageHeightMm}mm)`);
+      
+      // Mark products as printed
+      const productIds = [...new Set(productEntries.map(e => e.productId))];
+      onPrinted?.(productIds);
     } catch (error) {
       console.error('Word export error:', error);
       toast.error('Lỗi khi xuất Word. Vui lòng thử lại.');
