@@ -122,7 +122,7 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
         const quantity = product.quantity || 1;
         const totalCost = Number(product.total_import_cost || product.import_price);
         
-        if (product.status === 'in_stock') {
+        if (product.status === 'in_stock' && quantity > 0) {
           existing.totalImported += quantity;
           existing.stock += quantity;
           existing.totalImportCost += totalCost;
@@ -155,7 +155,7 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
       } else {
         const quantity = product.quantity || 1;
         const totalCost = Number(product.total_import_cost || product.import_price);
-        const isInStock = product.status === 'in_stock';
+        const isInStock = product.status === 'in_stock' && quantity > 0;
         const stockQty = isInStock ? quantity : 0;
         const soldQty = product.status === 'sold' ? quantity : 0;
         
