@@ -186,22 +186,33 @@ export function useUpdateTenantLandingSettings() {
 }
 
 // Hook tra cứu bảo hành công khai - hỗ trợ IMEI hoặc SĐT
-// Sử dụng RPC functions bảo mật, KHÔNG trả về thông tin nhạy cảm của khách hàng
+// Sử dụng RPC functions bảo mật với rate limiting, KHÔNG trả về thông tin nhạy cảm của khách hàng
 export function useWarrantyLookup(searchValue: string, tenantId: string | null) {
   return useQuery({
     queryKey: ['warranty-lookup', searchValue, tenantId],
     queryFn: async (): Promise<WarrantyResult[] | null> => {
       if (!searchValue || !tenantId) return null;
 
+      // Get client IP for rate limiting
+      let clientIp = 'unknown';
+      try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        clientIp = data.ip || 'unknown';
+      } catch {
+        // If IP detection fails, continue without it
+      }
+
       const isPhoneNumber = /^0\d{9,10}$/.test(searchValue.replace(/\s/g, ''));
       
       if (isPhoneNumber) {
         // Sử dụng RPC function bảo mật để tra cứu theo SĐT
-        // Function này KHÔNG trả về SĐT khách hàng cho client
+        // Rate limiting enforced server-side per IP address
         const { data, error } = await supabase
           .rpc('lookup_warranty_by_phone', {
             _phone: searchValue,
-            _tenant_id: tenantId
+            _tenant_id: tenantId,
+            _ip_address: clientIp
           });
 
         if (error) throw error;
@@ -226,10 +237,12 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
         }));
       } else {
         // Sử dụng RPC function bảo mật để tra cứu theo IMEI
+        // Rate limiting enforced server-side per IP address
         const { data, error } = await supabase
           .rpc('lookup_warranty_by_imei', {
             _imei: searchValue,
-            _tenant_id: tenantId
+            _tenant_id: tenantId,
+            _ip_address: clientIp
           });
 
         if (error) throw error;
