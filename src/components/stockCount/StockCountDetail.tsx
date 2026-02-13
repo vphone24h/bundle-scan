@@ -16,9 +16,11 @@ import {
   ChevronRight,
   MessageSquare,
   ScanBarcode,
+  Filter,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -67,6 +69,7 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
   const { data: permissions } = usePermissions();
 
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('_all_');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [manualImei, setManualImei] = useState('');
   const [manualProductName, setManualProductName] = useState('');
@@ -85,20 +88,37 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
     const nonImei = items.filter((item) => !item.hasImei);
 
     const searchLower = search.toLowerCase();
+    
+    const matchesStatus = (item: StockCountItem) => {
+      if (statusFilter === '_all_') return true;
+      if (statusFilter === 'checked') {
+        return item.hasImei ? item.isChecked : item.actualQuantity > 0;
+      }
+      if (statusFilter === 'unchecked') {
+        return item.hasImei ? !item.isChecked : item.actualQuantity === 0;
+      }
+      if (statusFilter === 'ok') return item.status === 'ok';
+      if (statusFilter === 'missing') return item.status === 'missing';
+      if (statusFilter === 'surplus') return item.status === 'surplus';
+      return true;
+    };
+
     const filteredImei = imei.filter(
       (item) =>
-        item.productName.toLowerCase().includes(searchLower) ||
+        matchesStatus(item) &&
+        (item.productName.toLowerCase().includes(searchLower) ||
         item.sku.toLowerCase().includes(searchLower) ||
-        item.imei?.toLowerCase().includes(searchLower)
+        item.imei?.toLowerCase().includes(searchLower))
     );
     const filteredNonImei = nonImei.filter(
       (item) =>
-        item.productName.toLowerCase().includes(searchLower) ||
-        item.sku.toLowerCase().includes(searchLower)
+        matchesStatus(item) &&
+        (item.productName.toLowerCase().includes(searchLower) ||
+        item.sku.toLowerCase().includes(searchLower))
     );
 
     return { imeiItems: imei, nonImeiItems: nonImei, filteredImeiItems: filteredImei, filteredNonImeiItems: filteredNonImei };
-  }, [items, search]);
+  }, [items, search, statusFilter]);
 
   // Pagination
   const imeiTotalPages = Math.max(1, Math.ceil(filteredImeiItems.length / PAGE_SIZE));
@@ -118,6 +138,12 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
 
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
+    setImeiPage(1);
+    setNonImeiPage(1);
+  }, []);
+
+  const handleStatusFilterChange = useCallback((value: string) => {
+    setStatusFilter(value);
     setImeiPage(1);
     setNonImeiPage(1);
   }, []);
@@ -440,15 +466,31 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
         </div>
       )}
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Tìm sản phẩm, SKU, IMEI..."
-          value={search}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search & Filter */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[200px] max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Tìm sản phẩm, SKU, IMEI..."
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
+          <SelectTrigger className="w-[160px]">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Trạng thái" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="_all_">Tất cả</SelectItem>
+            <SelectItem value="checked">✅ Đã kiểm</SelectItem>
+            <SelectItem value="unchecked">⏳ Chờ kiểm</SelectItem>
+            <SelectItem value="ok">✓ OK</SelectItem>
+            <SelectItem value="missing">✗ Thiếu</SelectItem>
+            <SelectItem value="surplus">+ Dư</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Tabs for IMEI and Non-IMEI */}
