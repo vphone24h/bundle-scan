@@ -932,24 +932,28 @@ export default function ImportHistoryPage() {
                                 <RotateCcw className="mr-1 h-3 w-3" />
                                 Trả
                               </Button>
-                              {/* Warranty button - show "Đã BH" if already marked */}
-                              {warrantyMarkedIds.has(product.id) ? (
-                                <span className="text-xs text-destructive opacity-60 font-medium">
-                                  Đã BH
-                                </span>
-                              ) : (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setWarrantyProduct(product)}
-                                  disabled={markWarranty.isPending}
-                                  className="h-7 text-xs gap-1"
-                                  title="Chuyển sang bảo hành"
-                                >
-                                  <Wrench className="h-3 w-3" />
-                                  BH
-                                </Button>
-                              )}
+                               {/* Warranty button - only for IMEI products */}
+                               {product.imei && (
+                                 <>
+                                   {warrantyMarkedIds.has(product.id) ? (
+                                     <span className="text-xs text-destructive opacity-60 font-medium">
+                                       Đã BH
+                                     </span>
+                                   ) : (
+                                     <Button 
+                                       variant="outline" 
+                                       size="sm"
+                                       onClick={() => setWarrantyProduct(product)}
+                                       disabled={markWarranty.isPending}
+                                       className="h-7 text-xs gap-1"
+                                       title="Chuyển sang bảo hành"
+                                     >
+                                       <Wrench className="h-3 w-3" />
+                                       BH
+                                     </Button>
+                                   )}
+                                 </>
+                               )}
                               {/* Adjust quantity - only for non-IMEI products and super_admin */}
                               {!product.imei && permissions?.canAdjustProductQuantity && (
                                 <Button 
