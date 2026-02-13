@@ -88,12 +88,17 @@ export function AdjustQuantityDialog({
       }
 
       // Cập nhật số lượng sản phẩm
+      const updateData: Record<string, any> = {
+        quantity: newQuantity,
+        total_import_cost: newTotalCost,
+      };
+      if (newQuantity === 0) {
+        updateData.status = 'deleted';
+      }
+
       const { error: updateError } = await supabase
         .from('products')
-        .update({
-          quantity: newQuantity,
-          total_import_cost: newTotalCost,
-        })
+        .update(updateData)
         .eq('id', productId);
 
       if (updateError) throw updateError;

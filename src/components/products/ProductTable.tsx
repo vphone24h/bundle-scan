@@ -71,9 +71,12 @@ export function ProductTable({
     }
   };
 
-  const getStatusBadge = (status: Product['status']) => {
+  const getStatusBadge = (status: Product['status'], p?: Product) => {
     switch (status) {
       case 'in_stock':
+        if (p && !p.imei && p.quantity === 0) {
+          return <Badge className="bg-muted text-muted-foreground text-[10px] sm:text-xs">Hết hàng</Badge>;
+        }
         return <Badge className="status-in-stock text-[10px] sm:text-xs">Tồn kho</Badge>;
       case 'sold':
         return <Badge className="status-sold text-[10px] sm:text-xs">Đã bán</Badge>;
@@ -210,7 +213,7 @@ export function ProductTable({
                           {permissions?.canViewImportPrice ? 'Giá bán: ' : ''}{formatCurrencyWithSpaces(product.salePrice)}đ
                         </span>
                       )}
-                      {getStatusBadge(product.status)}
+                      {getStatusBadge(product.status, product)}
                       {(product as any).isPrinted && (
                         <Badge variant="outline" className="text-[10px] gap-0.5 h-5 border-primary/30 text-primary">
                           <Printer className="h-2.5 w-2.5" />
@@ -297,7 +300,7 @@ export function ProductTable({
                 <td className="hidden md:table-cell">{formatDate(product.importDate)}</td>
                 <td className="hidden lg:table-cell">{product.supplierName}</td>
                 <td>
-                  {getStatusBadge(product.status)}
+                  {getStatusBadge(product.status, product)}
                   {(product as any).isPrinted && (
                     <Badge variant="outline" className="ml-1 text-[10px] gap-0.5 h-5 border-primary/30 text-primary">
                       <Printer className="h-2.5 w-2.5" />
