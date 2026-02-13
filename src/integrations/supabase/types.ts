@@ -4707,6 +4707,13 @@ export type Database = {
       }
       can_access_cash_book: { Args: { _user_id: string }; Returns: boolean }
       can_become_affiliate: { Args: { _tenant_id: string }; Returns: boolean }
+      check_review_exists: {
+        Args: { _export_receipt_item_id: string; _tenant_id: string }
+        Returns: {
+          exists_flag: boolean
+          rating: number
+        }[]
+      }
       create_care_reminder_notifications: { Args: never; Returns: undefined }
       delete_branch_safe: { Args: { _branch_id: string }; Returns: undefined }
       generate_affiliate_code: { Args: never; Returns: string }
@@ -4841,6 +4848,20 @@ export type Database = {
         Returns: undefined
       }
       resolve_tenant_by_domain: { Args: { _domain: string }; Returns: string }
+      submit_staff_review: {
+        Args: {
+          _branch_id: string
+          _content: string
+          _customer_id?: string
+          _customer_name: string
+          _customer_phone: string
+          _export_receipt_item_id: string
+          _rating: number
+          _staff_user_id: string
+          _tenant_id: string
+        }
+        Returns: Json
+      }
       update_overdue_care_schedules: { Args: never; Returns: undefined }
       user_belongs_to_tenant: { Args: { _tenant_id: string }; Returns: boolean }
     }

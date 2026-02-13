@@ -57,16 +57,14 @@ export function StaffRatingForm({
   const [showThankYou, setShowThankYou] = useState(false);
   const [checkingExisting, setCheckingExisting] = useState(true);
 
-  // Check if review already exists for this export receipt item
+  // Check if review already exists using secure RPC
   useEffect(() => {
     const checkExisting = async () => {
       try {
-        const { data } = await (supabase
-          .from('staff_reviews' as any)
-          .select('id, rating')
-          .eq('export_receipt_item_id', exportReceiptItemId)
-          .eq('tenant_id', tenantId)
-          .limit(1) as any);
+        const { data } = await supabase.rpc('check_review_exists' as any, {
+          _export_receipt_item_id: exportReceiptItemId,
+          _tenant_id: tenantId,
+        });
 
         if (data && data.length > 0) {
           setRating(data[0].rating);
@@ -86,7 +84,6 @@ export function StaffRatingForm({
     setSelectedTags(prev =>
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
     );
-    // Auto-fill tag into content
     setContent(prev => {
       const currentTags = prev.split('. ').filter(Boolean);
       if (currentTags.includes(tag)) {
@@ -105,55 +102,42 @@ export function StaffRatingForm({
 
     setIsSubmitting(true);
     try {
-      const { data: reviewData, error } = await (supabase
-        .from('staff_reviews' as any)
-        .insert({
-          tenant_id: tenantId,
-          branch_id: branchId,
-          staff_user_id: staffUserId,
-          customer_name: customerName.trim() || null,
-          customer_phone: customerPhone.trim() || null,
-          rating,
-          content: content.trim() || null,
-          export_receipt_item_id: exportReceiptItemId,
-        })
-        .select('id')
-        .single() as any);
+      // Use secure RPC that validates data server-side and awards points atomically
+      const { data: result, error } = await supabase.rpc('submit_staff_review' as any, {
+        _tenant_id: tenantId,
+        _branch_id: branchId,
+        _staff_user_id: staffUserId,
+        _customer_name: customerName.trim() || '',
+        _customer_phone: customerPhone.trim() || '',
+        _rating: rating,
+        _content: content.trim() || '',
+        _export_receipt_item_id: exportReceiptItemId,
+        _customer_id: customerId || null,
+      });
 
       if (error) throw error;
 
-      // Award points if configured and customer exists
-      let awarded = 0;
-      if (customerId && reviewRewardPoints > 0 && reviewData?.id) {
-        try {
-          const { data: pointsResult } = await supabase
-            .rpc('add_review_reward_points', {
-              _customer_id: customerId,
-              _tenant_id: tenantId,
-              _review_id: reviewData.id,
-            });
-
-          if (pointsResult && pointsResult.length > 0 && pointsResult[0].points_added > 0) {
-            awarded = pointsResult[0].points_added;
-            setPointsEarned(awarded);
-            onPointsAwarded?.(pointsResult[0].points_added, pointsResult[0].new_balance);
-          }
-        } catch (pointsErr) {
-          console.error('Award points error:', pointsErr);
-        }
+      const pointsAdded = result?.points_added || 0;
+      if (pointsAdded > 0) {
+        setPointsEarned(pointsAdded);
+        onPointsAwarded?.(pointsAdded, result?.new_balance || 0);
       }
 
       setIsSubmitted(true);
       setShowThankYou(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Submit review error:', err);
-      toast.error('Không thể gửi đánh giá. Vui lòng thử lại.');
+      if (err?.message?.includes('already exists')) {
+        toast.error('Sản phẩm này đã được đánh giá trước đó.');
+        setIsSubmitted(true);
+      } else {
+        toast.error('Không thể gửi đánh giá. Vui lòng thử lại.');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Loading check for existing review
   if (checkingExisting) {
     return null;
   }
@@ -198,7 +182,7 @@ export function StaffRatingForm({
     );
   }
 
-  // After "Done" pressed - compact submitted state
+  // Compact submitted state
   if (isSubmitted && !showThankYou) {
     return (
       <div className="mt-3 p-3 rounded-xl bg-green-50 border border-green-200 text-center space-y-1">
@@ -222,23 +206,16 @@ export function StaffRatingForm({
 
   return (
     <div className="mt-3 p-4 rounded-xl border bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 space-y-3">
-      {/* Staff info */}
       <div className="flex items-center gap-2">
-        <div
-          className="p-2 rounded-full"
-          style={{ backgroundColor: `${primaryColor}15` }}
-        >
+        <div className="p-2 rounded-full" style={{ backgroundColor: `${primaryColor}15` }}>
           <User className="h-4 w-4" style={{ color: primaryColor }} />
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Nhân viên tư vấn</p>
-          <p className="font-semibold text-sm" style={{ color: primaryColor }}>
-            {staffName}
-          </p>
+          <p className="font-semibold text-sm" style={{ color: primaryColor }}>{staffName}</p>
         </div>
       </div>
 
-      {/* Star Rating */}
       <div className="space-y-1">
         <p className="text-xs font-medium text-foreground">Đánh giá nhân viên:</p>
         <div className="flex gap-1">
@@ -266,7 +243,6 @@ export function StaffRatingForm({
         </div>
       </div>
 
-      {/* Suggestion Tags */}
       <div className="space-y-1">
         <p className="text-xs text-muted-foreground">Gợi ý (nhấn để điền vào nội dung):</p>
         <div className="flex flex-wrap gap-1.5">
@@ -284,7 +260,6 @@ export function StaffRatingForm({
         </div>
       </div>
 
-      {/* Content */}
       <Textarea
         placeholder="Nhận xét thêm (tùy chọn)..."
         value={content}
@@ -293,7 +268,6 @@ export function StaffRatingForm({
         className="text-sm bg-white"
       />
 
-      {/* Customer info - auto filled */}
       <div className="grid grid-cols-2 gap-2">
         <Input
           placeholder="Tên của bạn"
@@ -310,7 +284,6 @@ export function StaffRatingForm({
         />
       </div>
 
-      {/* Points reward note */}
       {reviewRewardPoints > 0 && (
         <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
           <Gift className="h-4 w-4 text-amber-500 flex-shrink-0" />
@@ -320,7 +293,6 @@ export function StaffRatingForm({
         </div>
       )}
 
-      {/* Submit */}
       <Button
         className="w-full h-10 text-sm"
         style={{ backgroundColor: primaryColor }}
