@@ -4636,6 +4636,33 @@ export type Database = {
           },
         ]
       }
+      warranty_lookup_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          ip_address: string
+          search_type: string
+          search_value: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ip_address: string
+          search_type: string
+          search_value: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ip_address?: string
+          search_type?: string
+          search_value?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       advertisements_public: {
@@ -4713,6 +4740,10 @@ export type Database = {
           exists_flag: boolean
           rating: number
         }[]
+      }
+      check_warranty_lookup_limit: {
+        Args: { _ip_address: string }
+        Returns: boolean
       }
       create_care_reminder_notifications: { Args: never; Returns: undefined }
       delete_branch_safe: { Args: { _branch_id: string }; Returns: undefined }
@@ -4803,49 +4834,95 @@ export type Database = {
           total_points_used: number
         }[]
       }
-      lookup_warranty_by_imei: {
-        Args: { _imei: string; _tenant_id: string }
-        Returns: {
-          branch_id: string
-          branch_name: string
-          created_at: string
-          customer_id: string
-          customer_name: string
-          customer_phone: string
-          export_date: string
-          id: string
-          imei: string
-          product_name: string
-          sale_price: number
-          sku: string
-          staff_name: string
-          staff_user_id: string
-          warranty: string
-        }[]
-      }
-      lookup_warranty_by_phone: {
-        Args: { _phone: string; _tenant_id: string }
-        Returns: {
-          branch_id: string
-          branch_name: string
-          created_at: string
-          customer_id: string
-          customer_name: string
-          customer_phone: string
-          export_date: string
-          id: string
-          imei: string
-          product_name: string
-          sale_price: number
-          sku: string
-          staff_name: string
-          staff_user_id: string
-          warranty: string
-        }[]
-      }
+      lookup_warranty_by_imei:
+        | {
+            Args: { _imei: string; _tenant_id: string }
+            Returns: {
+              branch_id: string
+              branch_name: string
+              created_at: string
+              customer_id: string
+              customer_name: string
+              customer_phone: string
+              export_date: string
+              id: string
+              imei: string
+              product_name: string
+              sale_price: number
+              sku: string
+              staff_name: string
+              staff_user_id: string
+              warranty: string
+            }[]
+          }
+        | {
+            Args: { _imei: string; _ip_address?: string; _tenant_id: string }
+            Returns: {
+              branch_id: string
+              branch_name: string
+              created_at: string
+              export_date: string
+              id: string
+              imei: string
+              product_name: string
+              sale_price: number
+              sku: string
+              staff_name: string
+              staff_user_id: string
+              warranty: string
+            }[]
+          }
+      lookup_warranty_by_phone:
+        | {
+            Args: { _phone: string; _tenant_id: string }
+            Returns: {
+              branch_id: string
+              branch_name: string
+              created_at: string
+              customer_id: string
+              customer_name: string
+              customer_phone: string
+              export_date: string
+              id: string
+              imei: string
+              product_name: string
+              sale_price: number
+              sku: string
+              staff_name: string
+              staff_user_id: string
+              warranty: string
+            }[]
+          }
+        | {
+            Args: { _ip_address?: string; _phone: string; _tenant_id: string }
+            Returns: {
+              branch_id: string
+              branch_name: string
+              created_at: string
+              export_date: string
+              id: string
+              imei: string
+              product_name: string
+              sale_price: number
+              sku: string
+              warranty: string
+            }[]
+          }
       merge_suppliers: {
         Args: { _duplicate_ids: string[]; _primary_id: string }
         Returns: undefined
+      }
+      queue_email: {
+        Args: {
+          _body_html: string
+          _body_text?: string
+          _email_type: string
+          _recipient_email: string
+          _scheduled_for?: string
+          _subject: string
+          _tenant_id: string
+        }
+        Returns: string
       }
       resolve_tenant_by_domain: { Args: { _domain: string }; Returns: string }
       submit_staff_review: {
