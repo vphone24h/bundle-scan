@@ -6,7 +6,7 @@ import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { EditProductDialog } from '@/components/import/EditProductDialog';
-import { useProducts, Product, useUpdateProduct } from '@/hooks/useProducts';
+import { useProducts, Product } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useBranches } from '@/hooks/useBranches';
@@ -28,6 +28,8 @@ import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-f
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/mockData';
 import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Map Product to the format expected by ProductTable
 function mapProductForTable(product: Product) {
@@ -56,7 +58,7 @@ function mapProductForTable(product: Product) {
 export default function ProductsPage() {
   const navigate = useNavigate();
   const { data: products, isLoading } = useProducts();
-  const updateProduct = useUpdateProduct();
+  const queryClient = useQueryClient();
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
   const { data: branches } = useBranches();
@@ -420,11 +422,17 @@ export default function ProductsPage() {
         open={barcodeOpen}
         onClose={() => setBarcodeOpen(false)}
         products={productsForBarcode}
-        onPrinted={(productIds) => {
-          // Mark products as printed
-          productIds.forEach(id => {
-            updateProduct.mutate({ id, is_printed: true });
-          });
+        onPrinted={async (productIds) => {
+          // Mark products as printed directly via supabase
+          const { error } = await supabase
+            .from('products')
+            .update({ is_printed: true })
+            .in('id', productIds);
+          if (!error) {
+            queryClient.invalidateQueries({ queryKey: ['products'], refetchType: 'all' });
+          } else {
+            console.error('Failed to mark products as printed:', error);
+          }
         }}
       />
 
