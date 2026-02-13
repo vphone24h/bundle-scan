@@ -28,6 +28,7 @@ export interface Product {
   note: string | null;
   quantity: number;
   total_import_cost: number;
+  is_printed: boolean;
   created_at: string;
   updated_at: string;
   // Joined fields

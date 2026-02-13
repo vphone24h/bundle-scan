@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProductTable } from '@/components/products/ProductTable';
@@ -6,7 +6,7 @@ import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { EditProductDialog } from '@/components/import/EditProductDialog';
-import { useProducts, Product } from '@/hooks/useProducts';
+import { useProducts, Product, useUpdateProduct } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useBranches } from '@/hooks/useBranches';
@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Barcode, Loader2, Filter, X, Download, Plus } from 'lucide-react';
+import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
@@ -49,12 +49,14 @@ function mapProductForTable(product: Product) {
     note: product.note || undefined,
     importReceiptId: product.import_receipt_id || undefined,
     quantity: product.quantity || 1,
+    isPrinted: product.is_printed || false,
   };
 }
 
 export default function ProductsPage() {
   const navigate = useNavigate();
   const { data: products, isLoading } = useProducts();
+  const updateProduct = useUpdateProduct();
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
   const { data: branches } = useBranches();
@@ -72,6 +74,7 @@ export default function ProductsPage() {
   const [supplierFilter, setSupplierFilter] = useState('_all_');
   const [statusFilter, setStatusFilter] = useState('_all_');
   const [branchFilter, setBranchFilter] = useState('_all_');
+  const [printedFilter, setPrintedFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
 
   const mappedProducts = products?.map(mapProductForTable) || [];
@@ -112,9 +115,14 @@ export default function ProductsPage() {
       // Branch filter
       const matchesBranch = branchFilter === '_all_' || p.branchId === branchFilter;
       
-      return matchesSearch && matchesDate && matchesCategory && matchesSupplier && matchesStatus && matchesBranch;
+      // Printed filter
+      const matchesPrinted = printedFilter === '_all_' || 
+        (printedFilter === 'printed' && p.isPrinted) || 
+        (printedFilter === 'not_printed' && !p.isPrinted);
+      
+      return matchesSearch && matchesDate && matchesCategory && matchesSupplier && matchesStatus && matchesBranch && matchesPrinted;
     });
-  }, [mappedProducts, searchTerm, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter]);
+  }, [mappedProducts, searchTerm, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter, printedFilter]);
 
   // Pagination
   const pagination = usePagination(filteredProducts, { 
@@ -129,9 +137,10 @@ export default function ProductsPage() {
     setSupplierFilter('_all_');
     setStatusFilter('_all_');
     setBranchFilter('_all_');
+    setPrintedFilter('_all_');
   };
 
-  const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_';
+  const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_' || printedFilter !== '_all_';
 
   const handleEdit = (product: any) => {
     // Find the original product from the products array
@@ -265,7 +274,7 @@ export default function ProductsPage() {
 
               {/* Extended filters */}
               {showFilters && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4 pt-4 border-t">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-3 sm:gap-4 pt-4 border-t">
                   <div className="space-y-1.5 sm:space-y-2">
                     <Label className="text-[10px] sm:text-xs">Từ ngày</Label>
                     <Input
@@ -346,6 +355,19 @@ export default function ProductsPage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label className="text-[10px] sm:text-xs">Đã in tem</Label>
+                    <Select value={printedFilter} onValueChange={setPrintedFilter}>
+                      <SelectTrigger className="text-sm">
+                        <SelectValue placeholder="Tất cả" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="_all_">Tất cả</SelectItem>
+                        <SelectItem value="printed">Đã in</SelectItem>
+                        <SelectItem value="not_printed">Chưa in</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="flex items-end col-span-2 sm:col-span-1">
                     <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full text-xs sm:text-sm">
                       <X className="h-4 w-4 mr-1" />
@@ -398,6 +420,12 @@ export default function ProductsPage() {
         open={barcodeOpen}
         onClose={() => setBarcodeOpen(false)}
         products={productsForBarcode}
+        onPrinted={(productIds) => {
+          // Mark products as printed
+          productIds.forEach(id => {
+            updateProduct.mutate({ id, is_printed: true });
+          });
+        }}
       />
 
       {/* Edit Product Dialog */}

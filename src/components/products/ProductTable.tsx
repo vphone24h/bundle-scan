@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -211,6 +211,12 @@ export function ProductTable({
                         </span>
                       )}
                       {getStatusBadge(product.status)}
+                      {(product as any).isPrinted && (
+                        <Badge variant="outline" className="text-[10px] gap-0.5 h-5 border-primary/30 text-primary">
+                          <Printer className="h-2.5 w-2.5" />
+                          Đã in
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <span className="text-xs text-muted-foreground">
@@ -290,7 +296,15 @@ export function ProductTable({
                 </td>
                 <td className="hidden md:table-cell">{formatDate(product.importDate)}</td>
                 <td className="hidden lg:table-cell">{product.supplierName}</td>
-                <td>{getStatusBadge(product.status)}</td>
+                <td>
+                  {getStatusBadge(product.status)}
+                  {(product as any).isPrinted && (
+                    <Badge variant="outline" className="ml-1 text-[10px] gap-0.5 h-5 border-primary/30 text-primary">
+                      <Printer className="h-2.5 w-2.5" />
+                      Đã in
+                    </Badge>
+                  )}
+                </td>
                 <td>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
