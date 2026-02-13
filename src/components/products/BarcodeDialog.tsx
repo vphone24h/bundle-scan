@@ -65,7 +65,7 @@ interface BarcodeDialogProps {
   open: boolean;
   onClose: () => void;
   products: ProductForBarcode[];
-  onPrinted?: (productIds: string[]) => void;
+  onPrinted?: (productIds: string[]) => Promise<void> | void;
 }
 
 type Step = 'price' | 'settings' | 'paper' | 'adjust';
@@ -130,7 +130,7 @@ export function BarcodeDialog({ open, onClose, products, onPrinted }: BarcodeDia
     }
   }, [products]);
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!selectedPaper) return;
     
     const paper = mockPaperTemplates.find(p => p.id === selectedPaper);
@@ -152,9 +152,11 @@ export function BarcodeDialog({ open, onClose, products, onPrinted }: BarcodeDia
       }, 500);
     }
     
-    // Mark products as printed
+    // Mark products as printed - await before closing
     const productIds = [...new Set(productEntries.map(e => e.productId))];
-    onPrinted?.(productIds);
+    if (onPrinted) {
+      await onPrinted(productIds);
+    }
     
     onClose();
   };
@@ -258,7 +260,9 @@ export function BarcodeDialog({ open, onClose, products, onPrinted }: BarcodeDia
       
       // Mark products as printed
       const productIds = [...new Set(productEntries.map(e => e.productId))];
-      onPrinted?.(productIds);
+      if (onPrinted) {
+        await onPrinted(productIds);
+      }
     } catch (error) {
       console.error('PDF export error:', error);
       toast.error('Lỗi khi xuất PDF. Vui lòng thử lại.');
@@ -485,7 +489,9 @@ export function BarcodeDialog({ open, onClose, products, onPrinted }: BarcodeDia
       
       // Mark products as printed
       const productIds = [...new Set(productEntries.map(e => e.productId))];
-      onPrinted?.(productIds);
+      if (onPrinted) {
+        await onPrinted(productIds);
+      }
     } catch (error) {
       console.error('Word export error:', error);
       toast.error('Lỗi khi xuất Word. Vui lòng thử lại.');
@@ -2446,6 +2452,7 @@ export function BarcodeDialog({ open, onClose, products, onPrinted }: BarcodeDia
           <QRPhoneLabelTab
             productEntries={productEntries}
             storeName={settings.storeName}
+            onPrinted={onPrinted}
           />
         </TabsContent>
       </Tabs>
