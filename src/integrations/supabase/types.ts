@@ -3196,6 +3196,86 @@ export type Database = {
           },
         ]
       }
+      platform_article_categories: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          id: string
+          name: string
+          slug: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          name: string
+          slug?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          name?: string
+          slug?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_articles: {
+        Row: {
+          banner_url: string | null
+          category_id: string | null
+          content: string | null
+          created_at: string
+          created_by: string | null
+          display_order: number | null
+          id: string
+          is_published: boolean
+          slug: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          banner_url?: string | null
+          category_id?: string | null
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number | null
+          id?: string
+          is_published?: boolean
+          slug?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          banner_url?: string | null
+          category_id?: string | null
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_order?: number | null
+          id?: string
+          is_published?: boolean
+          slug?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_articles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "platform_article_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_users: {
         Row: {
           created_at: string
