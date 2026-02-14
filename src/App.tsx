@@ -46,6 +46,7 @@ const LandingPageAdminPage = lazy(() => import("./pages/LandingPageAdminPage"));
 const InstallAppPage = lazy(() => import("./pages/InstallAppPage"));
 const TaxPolicyPage = lazy(() => import("./pages/TaxPolicyPage"));
 const StockTransferPage = lazy(() => import("./pages/StockTransferPage"));
+const PlatformArticlesPage = lazy(() => import("./pages/PlatformArticlesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -135,6 +136,7 @@ const App = () => (
                 <Route path="/advertisements" element={<GuardedRoute><AdvertisementsAdminPage /></GuardedRoute>} />
                 <Route path="/landing-settings" element={<SubscriptionRoute><LandingPageAdminPage /></SubscriptionRoute>} />
                 <Route path="/install-app" element={<GuardedRoute><InstallAppPage /></GuardedRoute>} />
+                <Route path="/guides" element={<GuardedRoute><PlatformArticlesPage /></GuardedRoute>} />
                 {/* Platform Admin route - also guarded */}
                 <Route path="/platform-admin" element={<GuardedRoute><PlatformAdminPage /></GuardedRoute>} />
                 

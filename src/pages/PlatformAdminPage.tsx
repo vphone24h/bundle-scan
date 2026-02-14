@@ -13,6 +13,7 @@ import { PlatformAdvertisementsManagement } from '@/components/platform/Platform
  import { TaxPolicyArticleEditor } from '@/components/admin/TaxPolicyArticleEditor';
 import { EmailHistoryTable } from '@/components/platform/EmailHistoryTable';
 import { CustomDomainsManagement } from '@/components/platform/CustomDomainsManagement';
+import { PlatformArticlesManagement } from '@/components/platform/PlatformArticlesManagement';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate } from 'react-router-dom';
  import { Loader2, Users, Megaphone, FileText, Mail, Globe } from 'lucide-react';
@@ -70,6 +71,10 @@ export default function PlatformAdminPage() {
                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                <span className="hidden sm:inline">Thuế 2026</span>
              </TabsTrigger>
+             <TabsTrigger value="guides" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
+               <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+               <span className="hidden sm:inline">Bài viết</span>
+             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
@@ -114,6 +119,10 @@ export default function PlatformAdminPage() {
  
            <TabsContent value="tax-article" className="mt-6">
              <TaxPolicyArticleEditor />
+           </TabsContent>
+
+           <TabsContent value="guides" className="mt-6">
+             <PlatformArticlesManagement />
            </TabsContent>
         </Tabs>
       </div>

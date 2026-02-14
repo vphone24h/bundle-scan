@@ -117,6 +117,7 @@ const allNavItems: NavItem[] = [
   { title: 'Affiliate', href: '/affiliate', icon: Share2, permission: 'canManageBranches' },
   { title: 'Tải ứng dụng', href: '/install-app', icon: Download },
   { title: 'Gói dịch vụ', href: '/subscription', icon: CreditCard, permission: 'canManageBranches' },
+  { title: 'Hướng dẫn & Thông tin', href: '/guides', icon: FileText },
 ];
 
 export function AppSidebar() {
