@@ -79,10 +79,26 @@ export function RichTextEditor({
   minHeight = '200px',
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const savedSelectionRef = useRef<Range | null>(null);
   const [linkUrl, setLinkUrl] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [linkOpen, setLinkOpen] = useState(false);
   const [imageOpen, setImageOpen] = useState(false);
+
+  const saveSelection = useCallback(() => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
+    }
+  }, []);
+
+  const restoreSelection = useCallback(() => {
+    const sel = window.getSelection();
+    if (sel && savedSelectionRef.current) {
+      sel.removeAllRanges();
+      sel.addRange(savedSelectionRef.current);
+    }
+  }, []);
 
   const execCommand = useCallback((command: string, value?: string) => {
     document.execCommand(command, false, value);
@@ -113,8 +129,8 @@ export function RichTextEditor({
 
   const insertLink = useCallback(() => {
     if (linkUrl) {
+      restoreSelection();
       execCommand('createLink', linkUrl);
-      // Make link open in new tab
       const selection = window.getSelection();
       if (selection && selection.anchorNode) {
         const link = (selection.anchorNode as HTMLElement).closest?.('a') ||
@@ -128,7 +144,7 @@ export function RichTextEditor({
       setLinkOpen(false);
       if (editorRef.current) onChange(editorRef.current.innerHTML);
     }
-  }, [linkUrl, execCommand, onChange]);
+  }, [linkUrl, execCommand, onChange, restoreSelection]);
 
   const insertImage = useCallback(() => {
     if (imageUrl) {
@@ -244,7 +260,7 @@ export function RichTextEditor({
         <div className="w-px h-5 bg-border mx-1" />
 
         {/* Link */}
-        <Popover open={linkOpen} onOpenChange={setLinkOpen}>
+        <Popover open={linkOpen} onOpenChange={(open) => { if (open) saveSelection(); setLinkOpen(open); }}>
           <PopoverTrigger asChild>
             <button type="button" className="p-1.5 rounded hover:bg-muted transition-colors" title="Chèn link">
               <Link className="h-4 w-4" />
@@ -268,7 +284,7 @@ export function RichTextEditor({
         </Popover>
 
         {/* Image */}
-        <Popover open={imageOpen} onOpenChange={setImageOpen}>
+        <Popover open={imageOpen} onOpenChange={(open) => { if (open) saveSelection(); setImageOpen(open); }}>
           <PopoverTrigger asChild>
             <button type="button" className="p-1.5 rounded hover:bg-muted transition-colors" title="Chèn ảnh">
               <Image className="h-4 w-4" />
