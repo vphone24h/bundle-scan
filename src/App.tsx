@@ -64,12 +64,8 @@ const queryClient = new QueryClient({
   },
 });
 
-// Minimal loading fallback for Suspense
-const PageLoader = () => (
-  <div className="flex min-h-screen items-center justify-center">
-    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-  </div>
-);
+// Shell-first: no spinner, just an empty container while chunk loads
+const PageLoader = () => <div className="min-h-screen bg-background" />;
 
 // Helper component to wrap protected routes with TenantGuard
 const GuardedRoute = ({ children }: { children: React.ReactNode }) => (
