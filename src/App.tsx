@@ -64,8 +64,25 @@ const queryClient = new QueryClient({
   },
 });
 
-// Shell-first: no spinner, just an empty container while chunk loads
-const PageLoader = () => <div className="min-h-screen bg-background" />;
+// Shell-first: show skeleton layout so screen doesn't look blank
+const PageLoader = () => (
+  <div className="min-h-screen bg-background">
+    <div className="h-14 border-b border-border flex items-center px-4 gap-3">
+      <div className="h-8 w-8 rounded bg-muted animate-pulse" />
+      <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+    </div>
+    <div className="p-4 sm:p-6 space-y-4">
+      <div className="h-6 w-48 rounded bg-muted animate-pulse" />
+      <div className="h-4 w-64 rounded bg-muted animate-pulse" />
+      <div className="grid grid-cols-2 gap-3 mt-6">
+        <div className="h-24 rounded-lg bg-muted animate-pulse" />
+        <div className="h-24 rounded-lg bg-muted animate-pulse" />
+        <div className="h-24 rounded-lg bg-muted animate-pulse" />
+        <div className="h-24 rounded-lg bg-muted animate-pulse" />
+      </div>
+    </div>
+  </div>
+);
 
 // Helper component to wrap protected routes with TenantGuard
 const GuardedRoute = ({ children }: { children: React.ReactNode }) => (
