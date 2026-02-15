@@ -47,7 +47,7 @@ async function sendRegistrationNotification(businessName: string, subdomain: str
   }
 }
 
-async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: string) {
+async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: string, supabaseAdmin: any) {
   try {
     const smtpUser = Deno.env.get('SMTP_USER')
     const smtpPassword = Deno.env.get('SMTP_PASSWORD')
@@ -57,15 +57,68 @@ async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: s
       return
     }
 
+    // Read template from payment_config
+    const { data: configs } = await supabaseAdmin
+      .from('payment_config')
+      .select('config_key, config_value')
+      .in('config_key', ['welcome_email_enabled', 'welcome_email_subject', 'welcome_email_body'])
+
+    const configMap: Record<string, string> = {}
+    for (const c of (configs || [])) {
+      if (c.config_value) configMap[c.config_key] = c.config_value
+    }
+
+    // Check if welcome email is disabled
+    if (configMap['welcome_email_enabled'] === 'false') {
+      console.log('Welcome email is disabled, skipping')
+      return
+    }
+
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
-      auth: {
-        user: smtpUser,
-        pass: smtpPassword,
-      },
+      auth: { user: smtpUser, pass: smtpPassword },
     })
+
+    // Use custom template or fallback to default
+    const emailSubject = (configMap['welcome_email_subject'] || '🎉 Chào mừng bạn đến với VKHO – Hệ thống quản lý kho thông minh!')
+      .replace(/\{\{admin_name\}\}/g, adminName)
+      .replace(/\{\{subdomain\}\}/g, subdomain)
+
+    const customBody = configMap['welcome_email_body']
+    
+    let emailBody: string
+    if (customBody) {
+      // Use custom template with variable replacement
+      emailBody = customBody
+        .replace(/\{\{admin_name\}\}/g, adminName)
+        .replace(/\{\{subdomain\}\}/g, subdomain)
+        .replace(/\{\{business_name\}\}/g, adminName)
+    } else {
+      // Fallback to original hardcoded template
+      emailBody = [
+        `<p style="font-size:16px;color:#374151;margin:0 0 20px">Xin chào <strong>${adminName}</strong>,</p>`,
+        '<p style="font-size:15px;color:#374151;line-height:1.7;margin:0 0 16px">Chào mừng bạn đã đến với <strong>VKHO</strong> – nền tảng quản lý kho chi tiết, đầy đủ và an toàn nhất!</p>',
+        '<div style="background:#eff6ff;border-left:4px solid #1a56db;padding:16px 20px;border-radius:0 8px 8px 0;margin:0 0 20px">',
+          '<p style="margin:0 0 12px;font-size:15px;color:#1e40af;font-weight:bold">✨ Tính năng nổi bật:</p>',
+          '<ul style="margin:0;padding:0 0 0 20px;color:#374151;font-size:14px;line-height:2">',
+            '<li><strong>Xuất – Nhập – Tồn</strong> chi tiết đến từng sản phẩm</li>',
+            '<li>Giúp bạn dễ dàng <strong>quản lý sản phẩm</strong> và tư vấn khách hàng, gia tăng tỉ lệ chốt đơn</li>',
+            '<li>Tích hợp <strong>báo cáo thuế</strong> cho người mới chưa rành – Nhấp là ra chi tiết</li>',
+          '</ul>',
+        '</div>',
+        '<div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px 20px;border-radius:8px;margin:0 0 20px;text-align:center">',
+          `<p style="margin:0 0 4px;font-size:13px;color:#6b7280">ID cửa hàng của bạn</p>`,
+          `<p style="margin:0;font-size:20px;font-weight:bold;color:#166534;font-family:monospace">${subdomain}</p>`,
+        '</div>',
+        '<p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0 0 8px">Mọi thắc mắc vui lòng liên hệ:</p>',
+        '<p style="font-size:16px;color:#1a56db;font-weight:bold;margin:0 0 24px">📞 0396-793-883 (Zalo)</p>',
+        '<div style="text-align:center">',
+          '<p style="font-size:13px;color:#9ca3af;margin:0">Trân trọng,<br><strong style="color:#374151">Đội ngũ VKHO</strong></p>',
+        '</div>',
+      ].join('')
+    }
 
     const htmlContent = [
       '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:0;background:#f9fafb;border-radius:12px;overflow:hidden">',
@@ -74,28 +127,10 @@ async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: s
           '<p style="margin:0;font-size:14px;opacity:0.9">Hệ thống quản lý kho thông minh</p>',
         '</div>',
         '<div style="background:#fff;padding:32px 24px">',
-          `<p style="font-size:16px;color:#374151;margin:0 0 20px">Xin chào <strong>${adminName}</strong>,</p>`,
-          '<p style="font-size:15px;color:#374151;line-height:1.7;margin:0 0 16px">Chào mừng bạn đã đến với <strong>VKHO</strong> – nền tảng quản lý kho chi tiết, đầy đủ và an toàn nhất!</p>',
-          '<div style="background:#eff6ff;border-left:4px solid #1a56db;padding:16px 20px;border-radius:0 8px 8px 0;margin:0 0 20px">',
-            '<p style="margin:0 0 12px;font-size:15px;color:#1e40af;font-weight:bold">✨ Tính năng nổi bật:</p>',
-            '<ul style="margin:0;padding:0 0 0 20px;color:#374151;font-size:14px;line-height:2">',
-              '<li><strong>Xuất – Nhập – Tồn</strong> chi tiết đến từng sản phẩm</li>',
-              '<li>Giúp bạn dễ dàng <strong>quản lý sản phẩm</strong> và tư vấn khách hàng, gia tăng tỉ lệ chốt đơn</li>',
-              '<li>Tích hợp <strong>báo cáo thuế</strong> cho người mới chưa rành – Nhấp là ra chi tiết</li>',
-            '</ul>',
-          '</div>',
-          '<div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px 20px;border-radius:8px;margin:0 0 20px;text-align:center">',
-            `<p style="margin:0 0 4px;font-size:13px;color:#6b7280">ID cửa hàng của bạn</p>`,
-            `<p style="margin:0;font-size:20px;font-weight:bold;color:#166534;font-family:monospace">${subdomain}</p>`,
-          '</div>',
-          '<p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0 0 8px">Mọi thắc mắc vui lòng liên hệ:</p>',
-          '<p style="font-size:16px;color:#1a56db;font-weight:bold;margin:0 0 24px">📞 0396-793-883 (Zalo)</p>',
-          '<div style="text-align:center">',
-            '<p style="font-size:13px;color:#9ca3af;margin:0">Trân trọng,<br><strong style="color:#374151">Đội ngũ VKHO</strong></p>',
-          '</div>',
+          emailBody,
         '</div>',
         '<div style="background:#f3f4f6;padding:16px 24px;text-align:center">',
-          '<p style="margin:0;font-size:12px;color:#9ca3af">© 2025 VKHO – Hệ thống quản lý kho hàng thông minh</p>',
+          '<p style="margin:0;font-size:12px;color:#9ca3af">© 2026 VKHO – Hệ thống quản lý kho hàng thông minh</p>',
         '</div>',
       '</div>',
     ].join('')
@@ -103,7 +138,7 @@ async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: s
     await transporter.sendMail({
       from: `"VKHO" <${smtpUser}>`,
       to: toEmail,
-      subject: '🎉 Chào mừng bạn đến với VKHO – Hệ thống quản lý kho thông minh!',
+      subject: emailSubject,
       html: htmlContent,
     })
 
@@ -146,7 +181,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Validate subdomain format (lowercase, alphanumeric, hyphens)
+    // Validate subdomain format
     const subdomainRegex = /^[a-z0-9][a-z0-9-]{2,30}[a-z0-9]$/
     if (!subdomainRegex.test(subdomain.toLowerCase())) {
       return new Response(
@@ -183,7 +218,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if phone already exists (if provided)
+    // Check if phone already exists
     if (phone) {
       const { data: existingPhone } = await supabaseAdmin
         .from('platform_users')
@@ -198,7 +233,6 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Also check in tenants table
       const { data: existingTenantPhone } = await supabaseAdmin
         .from('tenants')
         .select('id')
@@ -225,7 +259,6 @@ Deno.serve(async (req) => {
 
     if (createError) {
       console.error('Create user error:', createError)
-      // Translate Supabase Auth errors to Vietnamese
       let errorMessage = createError.message
       if (createError.message.includes('already been registered') || createError.message.includes('already exists')) {
         errorMessage = 'Email này đã được sử dụng'
@@ -255,7 +288,6 @@ Deno.serve(async (req) => {
       .single()
 
     if (tenantError) {
-      // Rollback: delete the user
       await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
       console.error('Create tenant error:', tenantError)
       return new Response(
@@ -290,7 +322,7 @@ Deno.serve(async (req) => {
       console.error('Profile update error:', profileError)
     }
 
-    // Create default branch for tenant
+    // Create default branch
     const { data: defaultBranch, error: branchError } = await supabaseAdmin
       .from('branches')
       .insert({
@@ -305,7 +337,7 @@ Deno.serve(async (req) => {
       console.error('Branch create error:', branchError)
     }
 
-    // Update user_roles with tenant_id and branch_id
+    // Update user_roles
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
       .update({ 
@@ -319,7 +351,7 @@ Deno.serve(async (req) => {
       console.error('Role update error:', roleError)
     }
 
-    // Create subscription history entry
+    // Create subscription history
     await supabaseAdmin
       .from('subscription_history')
       .insert({
@@ -330,7 +362,7 @@ Deno.serve(async (req) => {
         note: 'Bắt đầu dùng thử 30 ngày',
       })
 
-    // Create default point settings for tenant
+    // Create default point settings
     await supabaseAdmin
       .from('point_settings')
       .insert({ tenant_id: tenant.id })
@@ -349,8 +381,8 @@ Deno.serve(async (req) => {
     sendRegistrationNotification(businessName, subdomain.toLowerCase(), email, adminName)
       .catch(err => console.error('Email notification error:', err))
 
-    // Send welcome email to new user (non-blocking)
-    sendWelcomeEmail(email, adminName, subdomain.toLowerCase())
+    // Send welcome email to new user (non-blocking) - now reads template from DB
+    sendWelcomeEmail(email, adminName, subdomain.toLowerCase(), supabaseAdmin)
       .catch(err => console.error('Welcome email error:', err))
 
     return new Response(

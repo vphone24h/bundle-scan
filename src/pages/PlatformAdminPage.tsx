@@ -14,9 +14,10 @@ import { PlatformAdvertisementsManagement } from '@/components/platform/Platform
 import { EmailHistoryTable } from '@/components/platform/EmailHistoryTable';
 import { CustomDomainsManagement } from '@/components/platform/CustomDomainsManagement';
 import { PlatformArticlesManagement } from '@/components/platform/PlatformArticlesManagement';
+import { WelcomeEmailConfig } from '@/components/platform/WelcomeEmailConfig';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate } from 'react-router-dom';
- import { Loader2, Users, Megaphone, FileText, Mail, Globe } from 'lucide-react';
+ import { Loader2, Users, Megaphone, FileText, Mail, Globe, MailPlus } from 'lucide-react';
 
 export default function PlatformAdminPage() {
   const { data: platformUser, isLoading } = usePlatformUser();
@@ -63,6 +64,10 @@ export default function PlatformAdminPage() {
                <span className="hidden sm:inline">Domain</span>
              </TabsTrigger>
              <TabsTrigger value="config" className="text-xs sm:text-sm px-2 sm:px-3">Cấu hình</TabsTrigger>
+            <TabsTrigger value="welcome-email" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
+              <MailPlus className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Email tự động</span>
+            </TabsTrigger>
             <TabsTrigger value="email-history" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
               <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">LS Email</span>
@@ -111,6 +116,10 @@ export default function PlatformAdminPage() {
 
           <TabsContent value="config" className="mt-6">
             <PaymentConfigManagement />
+          </TabsContent>
+
+          <TabsContent value="welcome-email" className="mt-6">
+            <WelcomeEmailConfig />
           </TabsContent>
 
           <TabsContent value="email-history" className="mt-6">
