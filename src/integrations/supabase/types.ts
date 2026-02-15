@@ -4814,6 +4814,7 @@ export type Database = {
       }
       can_access_cash_book: { Args: { _user_id: string }; Returns: boolean }
       can_become_affiliate: { Args: { _tenant_id: string }; Returns: boolean }
+      check_getting_started_status: { Args: never; Returns: Json }
       check_review_exists: {
         Args: { _export_receipt_item_id: string; _tenant_id: string }
         Returns: {

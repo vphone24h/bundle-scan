@@ -81,28 +81,12 @@ function useChecklistStatus() {
   return useQuery({
     queryKey: ['getting-started-checklist'],
     queryFn: async () => {
-      // Run all counts in parallel
-      const [categories, suppliers, imports, products, customers, exports, landing] = await Promise.all([
-        supabase.from('categories').select('id', { count: 'exact', head: true }),
-        supabase.from('suppliers').select('id', { count: 'exact', head: true }),
-        supabase.from('import_receipts').select('id', { count: 'exact', head: true }),
-        supabase.from('products').select('id', { count: 'exact', head: true }),
-        supabase.from('customers').select('id', { count: 'exact', head: true }),
-        supabase.from('export_receipts').select('id', { count: 'exact', head: true }),
-        supabase.from('tenant_landing_settings' as any).select('id', { count: 'exact', head: true }),
-      ]);
-
-      return {
-        category: (categories.count || 0) > 0,
-        supplier: (suppliers.count || 0) > 0,
-        import: (imports.count || 0) > 0,
-        product: (products.count || 0) > 0,
-        customer: (customers.count || 0) > 0,
-        export: (exports.count || 0) > 0,
-        landing: (landing.count || 0) > 0,
-      } as Record<string, boolean>;
+      // Single RPC call instead of 7 separate requests
+      const { data, error } = await supabase.rpc('check_getting_started_status');
+      if (error) throw error;
+      return (data || {}) as Record<string, boolean>;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // cache 10 min
     refetchOnWindowFocus: false,
   });
 }
