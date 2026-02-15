@@ -114,14 +114,20 @@ export function GettingStartedChecklist() {
     return localStorage.getItem(DISMISSED_KEY) === 'true';
   });
 
-  if (isDismissed || !status) return null;
-
-  const completedCount = STEPS.filter(s => status[s.key]).length;
+  const completedCount = status ? STEPS.filter(s => status[s.key]).length : 0;
   const totalSteps = STEPS.length;
   const progress = Math.round((completedCount / totalSteps) * 100);
-
-  // All done - allow dismissal
   const allDone = completedCount === totalSteps;
+
+  // Auto-dismiss when all done, auto-show when not all done
+  if (!status) return null;
+  if (allDone) {
+    if (!isDismissed) {
+      localStorage.setItem(DISMISSED_KEY, 'true');
+      setIsDismissed(true);
+    }
+    return null;
+  }
 
   const handleDismiss = () => {
     localStorage.setItem(DISMISSED_KEY, 'true');
