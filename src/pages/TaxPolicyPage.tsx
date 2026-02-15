@@ -7,15 +7,7 @@
  export default function TaxPolicyPage() {
    const { data: article, isLoading } = useTaxPolicyArticle();
  
-   if (isLoading) {
-     return (
-       <MainLayout>
-         <div className="flex items-center justify-center h-[50vh]">
-           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-         </div>
-       </MainLayout>
-     );
-   }
+  // Shell-first: no spinner
  
    return (
      <MainLayout>

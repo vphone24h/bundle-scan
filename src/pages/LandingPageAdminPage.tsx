@@ -26,15 +26,7 @@ export default function LandingPageAdminPage() {
   const { data: permissions, isLoading } = usePermissions();
   const landingGuideUrl = useLandingGuideUrl();
 
-  if (isLoading) {
-    return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-[50vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </MainLayout>
-    );
-  }
+  // Shell-first: no spinner, render layout immediately
 
   const role = permissions?.role;
   const isSuperAdmin = role === 'super_admin';
@@ -42,8 +34,8 @@ export default function LandingPageAdminPage() {
   const isStaff = role === 'staff';
   const isCashier = role === 'cashier';
   
-  // Kế toán không có quyền truy cập Landing Page
-  if (isCashier || (!isSuperAdmin && !isBranchAdmin && !isStaff)) {
+  // Kế toán không có quyền truy cập Landing Page (only enforce after loading)
+  if (!isLoading && (isCashier || (!isSuperAdmin && !isBranchAdmin && !isStaff))) {
     return <Navigate to="/" replace />;
   }
 
