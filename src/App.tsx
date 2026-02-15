@@ -49,6 +49,52 @@ const StockTransferPage = lazy(() => import("./pages/StockTransferPage"));
 const PlatformArticlesPage = lazy(() => import("./pages/PlatformArticlesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
+// Aggressively preload all main page chunks after initial render
+// so clicking any tab opens instantly (no white flash)
+function preloadAllPages() {
+  const pages = [
+    () => import("./pages/Index"),
+    () => import("./pages/ProductsPage"),
+    () => import("./pages/InventoryPage"),
+    () => import("./pages/ImportNewPage"),
+    () => import("./pages/ImportHistoryPage"),
+    () => import("./pages/ExportNewPage"),
+    () => import("./pages/ExportHistoryPage"),
+    () => import("./pages/SuppliersPage"),
+    () => import("./pages/CustomersPage"),
+    () => import("./pages/DebtPage"),
+    () => import("./pages/ReportsPage"),
+    () => import("./pages/CashBookPage"),
+    () => import("./pages/CategoriesPage"),
+    () => import("./pages/ReturnsPage"),
+    () => import("./pages/UsersPage"),
+    () => import("./pages/BranchesPage"),
+    () => import("./pages/AuditLogsPage"),
+    () => import("./pages/EInvoicePage"),
+    () => import("./pages/InvoiceTemplatePage"),
+    () => import("./pages/StockTransferPage"),
+  ];
+  // Load them sequentially with small delays to avoid blocking the main thread
+  let i = 0;
+  function loadNext() {
+    if (i < pages.length) {
+      pages[i]().catch(() => {});
+      i++;
+      setTimeout(loadNext, 100);
+    }
+  }
+  loadNext();
+}
+
+// Start preloading after the app is interactive
+if (typeof window !== 'undefined') {
+  if ('requestIdleCallback' in window) {
+    (window as any).requestIdleCallback(() => preloadAllPages());
+  } else {
+    setTimeout(preloadAllPages, 1000);
+  }
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
