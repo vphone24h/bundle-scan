@@ -105,33 +105,24 @@ export function useCurrentTenant() {
     queryFn: async () => {
       if (!user?.id) return null;
       
-      // First get platform user
-      const { data: platformUser, error: puError } = await supabase
+      // Single join query instead of 2 sequential queries
+      const { data, error } = await supabase
         .from('platform_users')
-        .select('tenant_id')
+        .select('tenant_id, tenants(*)')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (puError) throw puError;
-      if (!platformUser?.tenant_id) return null;
+      if (error) throw error;
+      if (!data?.tenants) return null;
       
-      // Then get tenant
-      const { data: tenant, error: tenantError } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('id', platformUser.tenant_id)
-        .single();
-
-      if (tenantError) throw tenantError;
-      return tenant as Tenant;
+      return data.tenants as unknown as Tenant;
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 phút
-    gcTime: 10 * 60 * 1000, // 10 phút
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
-    // Prevent flashing loaders when query temporarily refetches
     placeholderData: (previous) => previous,
   });
 }

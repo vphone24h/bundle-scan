@@ -1,10 +1,10 @@
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useCurrentTenant, usePlatformUser } from '@/hooks/useTenant';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useTenantResolver } from '@/hooks/useTenantResolver';
+import { getStoreIdFromSubdomain } from '@/lib/tenantResolver';
 
 const CURRENT_STORE_ID_KEY = 'current_store_id';
 
@@ -63,7 +63,7 @@ export function TenantGuard({ children, allowExpired = false }: TenantGuardProps
   const { user, loading: authLoading } = useAuth();
   const { data: tenant, isLoading: tenantLoading } = useCurrentTenant();
   const { data: platformUser, isLoading: platformUserLoading } = usePlatformUser();
-  const resolvedTenant = useTenantResolver();
+  const expectedSubdomain = useRef(getStoreIdFromSubdomain());
   const location = useLocation();
   const [forceAuth, setForceAuth] = useState(false);
 
@@ -86,8 +86,8 @@ export function TenantGuard({ children, allowExpired = false }: TenantGuardProps
 
     const expectedStoreId = (() => {
       // Subdomain mode: expected store is derived from hostname.
-      if (resolvedTenant.status === 'resolved' && resolvedTenant.subdomain) {
-        return resolvedTenant.subdomain.toLowerCase();
+      if (expectedSubdomain.current) {
+        return expectedSubdomain.current.toLowerCase();
       }
       // Main domain: expected store is the last store user selected at login.
       const stored = (localStorage.getItem(CURRENT_STORE_ID_KEY) || '').trim().toLowerCase();
@@ -103,7 +103,7 @@ export function TenantGuard({ children, allowExpired = false }: TenantGuardProps
       setForceAuth(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, tenant?.subdomain, resolvedTenant.status, resolvedTenant.subdomain]);
+  }, [user?.id, tenant?.subdomain]);
 
   // Show loading only briefly - use a smaller spinner
   if (isLoading) {
