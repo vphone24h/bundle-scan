@@ -38,6 +38,7 @@ const DEFAULT_WELCOME_BODY = `<p>Xin chào <strong>{{admin_name}}</strong>,</p>
 <li><strong>Xuất – Nhập – Tồn</strong> chi tiết đến từng sản phẩm</li>
 <li>Giúp bạn dễ dàng <strong>quản lý sản phẩm</strong> và tư vấn khách hàng, gia tăng tỉ lệ chốt đơn</li>
 <li>Tích hợp <strong>báo cáo thuế</strong> cho người mới chưa rành – Nhấp là ra chi tiết</li>
+<li>Tích hợp <strong>website bán hàng</strong> và <strong>tra cứu bảo hành</strong> miễn phí</li>
 </ul>
 </div>
 <p>ID cửa hàng của bạn: <strong>{{subdomain}}</strong></p>
