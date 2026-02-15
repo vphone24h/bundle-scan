@@ -3,7 +3,27 @@ import nodemailer from 'npm:nodemailer@6.9.10'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+}
+
+// Input validation helpers
+function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 320
+}
+
+function validatePhone(phone: string): boolean {
+  return /^[0-9+\-() ]{8,20}$/.test(phone)
+}
+
+function sanitizeString(str: string, maxLength: number): string {
+  return String(str).trim().slice(0, maxLength)
+}
+
+function getClientIP(req: Request): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
+    || req.headers.get('cf-connecting-ip') 
+    || req.headers.get('x-real-ip') 
+    || '0.0.0.0'
 }
 
 async function sendRegistrationNotification(businessName: string, subdomain: string, email: string, adminName: string) {
@@ -57,7 +77,6 @@ async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: s
       return
     }
 
-    // Read template from payment_config
     const { data: configs } = await supabaseAdmin
       .from('payment_config')
       .select('config_key, config_value')
@@ -68,7 +87,6 @@ async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: s
       if (c.config_value) configMap[c.config_key] = c.config_value
     }
 
-    // Check if welcome email is disabled
     if (configMap['welcome_email_enabled'] === 'false') {
       console.log('Welcome email is disabled, skipping')
       return
@@ -81,7 +99,6 @@ async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: s
       auth: { user: smtpUser, pass: smtpPassword },
     })
 
-    // Use custom template or fallback to default
     const emailSubject = (configMap['welcome_email_subject'] || '🎉 Chào mừng bạn đến với VKHO – Hệ thống quản lý kho thông minh!')
       .replace(/\{\{admin_name\}\}/g, adminName)
       .replace(/\{\{subdomain\}\}/g, subdomain)
@@ -90,13 +107,11 @@ async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: s
     
     let emailBody: string
     if (customBody) {
-      // Use custom template with variable replacement
       emailBody = customBody
         .replace(/\{\{admin_name\}\}/g, adminName)
         .replace(/\{\{subdomain\}\}/g, subdomain)
         .replace(/\{\{business_name\}\}/g, adminName)
     } else {
-      // Fallback to original hardcoded template
       emailBody = [
         `<p style="font-size:16px;color:#374151;margin:0 0 20px">Xin chào <strong>${adminName}</strong>,</p>`,
         '<p style="font-size:15px;color:#374151;line-height:1.7;margin:0 0 16px">Chào mừng bạn đã đến với <strong>VKHO</strong> – nền tảng quản lý kho chi tiết, đầy đủ và an toàn nhất!</p>',
@@ -165,14 +180,40 @@ Deno.serve(async (req) => {
       },
     })
 
-    const { 
-      businessName, 
-      subdomain, 
-      adminName, 
-      email, 
-      password, 
-      phone 
-    } = await req.json()
+    // Rate limiting: 5 registrations per IP per 60 minutes
+    const clientIP = getClientIP(req)
+    const { data: allowed } = await supabaseAdmin.rpc('check_rate_limit', {
+      _function_name: 'register-tenant',
+      _ip_address: clientIP,
+      _max_requests: 5,
+      _window_minutes: 60,
+    })
+
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Request body size check
+    const contentLength = parseInt(req.headers.get('content-length') || '0')
+    if (contentLength > 10240) { // 10KB max
+      return new Response(
+        JSON.stringify({ error: 'Request quá lớn' }),
+        { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const body = await req.json()
+    
+    // Sanitize and validate inputs
+    const businessName = sanitizeString(body.businessName || '', 200)
+    const subdomain = sanitizeString(body.subdomain || '', 32).toLowerCase()
+    const adminName = sanitizeString(body.adminName || '', 200)
+    const email = sanitizeString(body.email || '', 320).toLowerCase()
+    const password = body.password || ''
+    const phone = body.phone ? sanitizeString(body.phone, 20) : null
 
     // Validate required fields
     if (!businessName || !subdomain || !adminName || !email || !password) {
@@ -182,9 +223,33 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Validate email format
+    if (!validateEmail(email)) {
+      return new Response(
+        JSON.stringify({ error: 'Định dạng email không hợp lệ' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Validate phone if provided
+    if (phone && !validatePhone(phone)) {
+      return new Response(
+        JSON.stringify({ error: 'Số điện thoại không hợp lệ' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Validate password length
+    if (password.length < 6 || password.length > 128) {
+      return new Response(
+        JSON.stringify({ error: 'Mật khẩu phải từ 6-128 ký tự' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Validate subdomain format
     const subdomainRegex = /^[a-z0-9][a-z0-9-]{2,30}[a-z0-9]$/
-    if (!subdomainRegex.test(subdomain.toLowerCase())) {
+    if (!subdomainRegex.test(subdomain)) {
       return new Response(
         JSON.stringify({ error: 'Tên miền phụ không hợp lệ (3-32 ký tự, chỉ chữ thường, số và dấu gạch ngang)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -195,7 +260,7 @@ Deno.serve(async (req) => {
     const { data: existingTenant } = await supabaseAdmin
       .from('tenants')
       .select('id')
-      .eq('subdomain', subdomain.toLowerCase())
+      .eq('subdomain', subdomain)
       .maybeSingle()
 
     if (existingTenant) {
@@ -279,7 +344,7 @@ Deno.serve(async (req) => {
       .from('tenants')
       .insert({
         name: businessName,
-        subdomain: subdomain.toLowerCase(),
+        subdomain,
         owner_id: newUser.user.id,
         status: 'trial',
         phone,
@@ -379,11 +444,11 @@ Deno.serve(async (req) => {
       ])
 
     // Send notification email to admin (non-blocking)
-    sendRegistrationNotification(businessName, subdomain.toLowerCase(), email, adminName)
+    sendRegistrationNotification(businessName, subdomain, email, adminName)
       .catch(err => console.error('Email notification error:', err))
 
-    // Send welcome email to new user (non-blocking) - now reads template from DB
-    sendWelcomeEmail(email, adminName, subdomain.toLowerCase(), supabaseAdmin)
+    // Send welcome email to new user (non-blocking)
+    sendWelcomeEmail(email, adminName, subdomain, supabaseAdmin)
       .catch(err => console.error('Welcome email error:', err))
 
     return new Response(
