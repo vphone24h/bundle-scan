@@ -15,15 +15,7 @@ export default function EInvoicePage() {
   const [activeTab, setActiveTab] = useState('invoices');
   const { data: tenant, isLoading: loadingTenant } = useCurrentTenant();
 
-  if (loadingTenant) {
-    return (
-      <MainLayout>
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </MainLayout>
-    );
-  }
+  // Shell-first: no spinner, render layout immediately
 
   // Check if e-invoice is enabled for this tenant
   if (!tenant?.einvoice_enabled) {
