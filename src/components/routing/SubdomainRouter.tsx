@@ -42,14 +42,15 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
       return 'app';
     }
     
-    // For subdomains/custom domains, need to wait for tenant resolution
+    // For subdomains/custom domains, don't block with spinner
+    // Let the app render immediately, data will load in background
     if (resolvedTenant.status === 'loading') {
-      return 'loading';
+      return 'app';
     }
     
-    // Auth loading on subdomain
+    // Auth loading on subdomain - render app shell immediately
     if (authLoading) {
-      return 'loading';
+      return 'app';
     }
     
     // Đã đăng nhập → luôn hiển thị app
@@ -70,14 +71,7 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
     return 'app';
   }, [resolvedTenant, user, authLoading, location.pathname, publicLandingPage]);
 
-  // Loading state - only for subdomains, main domain resolves instantly
-  if (routerState === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
+  // No loading spinner - app shell renders immediately
 
   if (routerState === 'public_landing' && publicLandingPage) {
     return <>{publicLandingPage}</>;
