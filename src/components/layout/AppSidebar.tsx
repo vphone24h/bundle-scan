@@ -40,7 +40,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
-import { usePlatformUser } from '@/hooks/useTenant';
+import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
 import { Badge } from '@/components/ui/badge';
 import { NotificationBell } from '@/components/crm/NotificationBell';
 import {
@@ -127,6 +127,7 @@ export function AppSidebar() {
   const { data: profile } = useProfile();
   const { data: permissions, isLoading: permissionsLoading } = usePermissions();
   const { data: platformUser } = usePlatformUser();
+  const { data: currentTenant } = useCurrentTenant();
   const [expandedItems, setExpandedItems] = useState<string[]>(['Nhập hàng', 'Xuất hàng']);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -191,8 +192,8 @@ export function AppSidebar() {
       <div className="flex items-center gap-3 px-4 py-6 border-b border-sidebar-border">
         <img src={vkhoLogo} alt="vkho.vn" className="h-10 w-10 object-contain rounded-lg" />
         <div className="flex flex-col">
-          <span className="text-lg font-bold text-sidebar-foreground">vkho.vn</span>
-          <span className="text-xs text-sidebar-muted">Quản lý thông minh</span>
+          <span className="text-lg font-bold text-sidebar-foreground">{currentTenant?.name || 'vkho.vn'}</span>
+          <span className="text-xs text-sidebar-muted">{currentTenant?.subdomain ? `${currentTenant.subdomain}.vkho.vn` : 'Quản lý thông minh'}</span>
         </div>
         <div className="ml-auto">
           <NotificationBell />
