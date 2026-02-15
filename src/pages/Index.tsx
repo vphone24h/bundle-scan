@@ -6,6 +6,7 @@ import { useDashboardStats, useTodaySoldProducts, useRecentProducts, useRecentIm
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
 import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator } from 'lucide-react';
+import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { Button } from '@/components/ui/button';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -81,6 +82,9 @@ const Index = () => {
       />
 
       <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
+        {/* Getting Started Checklist */}
+        <GettingStartedChecklist />
+
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {canViewImportPrice && (
