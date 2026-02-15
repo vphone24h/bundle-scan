@@ -2,17 +2,30 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+}
+
+function getClientIP(req: Request): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
+    || req.headers.get('cf-connecting-ip') 
+    || req.headers.get('x-real-ip') 
+    || '0.0.0.0'
+}
+
+function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 320
+}
+
+function sanitizeString(str: string, maxLength: number): string {
+  return String(str).trim().slice(0, maxLength)
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    // Get the authorization header to verify the caller is authenticated
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(
@@ -21,16 +34,28 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Create Supabase client with service role for admin operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
+      auth: { autoRefreshToken: false, persistSession: false },
     })
+
+    // Rate limiting: 20 user creations per IP per 60 minutes
+    const clientIP = getClientIP(req)
+    const { data: allowed } = await supabaseAdmin.rpc('check_rate_limit', {
+      _function_name: 'create-user',
+      _ip_address: clientIP,
+      _max_requests: 20,
+      _window_minutes: 60,
+    })
+
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Verify the caller is a super_admin
     const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
@@ -45,7 +70,6 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if caller is super_admin and get their tenant_id
     const { data: callerRole, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('user_role, tenant_id')
@@ -61,8 +85,13 @@ Deno.serve(async (req) => {
 
     const callerTenantId = callerRole.tenant_id
 
-    // Parse request body
-    const { email, password, displayName, phone, role, branchId } = await req.json()
+    const body = await req.json()
+    const email = sanitizeString(body.email || '', 320).toLowerCase()
+    const password = body.password || ''
+    const displayName = sanitizeString(body.displayName || '', 200)
+    const phone = body.phone ? sanitizeString(body.phone, 20) : null
+    const role = sanitizeString(body.role || '', 50)
+    const branchId = body.branchId || null
 
     if (!email || !password || !displayName) {
       return new Response(
@@ -71,7 +100,21 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Không cho phép tạo super_admin - chỉ có duy nhất 1 tài khoản
+    if (!validateEmail(email)) {
+      return new Response(
+        JSON.stringify({ error: 'Định dạng email không hợp lệ' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (password.length < 6 || password.length > 128) {
+      return new Response(
+        JSON.stringify({ error: 'Mật khẩu phải từ 6-128 ký tự' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Không cho phép tạo super_admin
     if (role === 'super_admin') {
       return new Response(
         JSON.stringify({ error: 'Không thể tạo thêm tài khoản Admin Tổng' }),
@@ -79,8 +122,15 @@ Deno.serve(async (req) => {
       )
     }
 
-    // LOGIC MỚI: Kiểm tra email trong phạm vi TENANT thay vì toàn hệ thống
-    // Bước 1: Tìm user có email này trong auth.users
+    // Validate role is an allowed value
+    const allowedRoles = ['branch_admin', 'cashier', 'staff']
+    if (!allowedRoles.includes(role)) {
+      return new Response(
+        JSON.stringify({ error: 'Vai trò không hợp lệ' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers()
     if (listError) {
       console.error('List users error:', listError)
@@ -90,10 +140,9 @@ Deno.serve(async (req) => {
       )
     }
 
-    const existingUser = existingUsers.users.find(u => u.email?.toLowerCase() === email.toLowerCase())
+    const existingUser = existingUsers.users.find(u => u.email?.toLowerCase() === email)
 
     if (existingUser) {
-      // Email đã tồn tại trong hệ thống - kiểm tra xem đã có trong tenant này chưa
       const { data: existingRoleInTenant } = await supabaseAdmin
         .from('user_roles')
         .select('id, user_role')
@@ -102,7 +151,6 @@ Deno.serve(async (req) => {
         .maybeSingle()
 
       if (existingRoleInTenant) {
-        // Đã có role trong tenant này → CHẶN
         return new Response(
           JSON.stringify({ 
             error: `Email này đã được sử dụng trong cửa hàng của bạn (vai trò: ${existingRoleInTenant.user_role})` 
@@ -111,8 +159,6 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Chưa có role trong tenant này → Thêm vai trò mới cho user hiện có
-      // Insert new role for existing user in this tenant
       const { error: insertRoleError } = await supabaseAdmin
         .from('user_roles')
         .insert({
@@ -130,7 +176,6 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Cập nhật profile nếu cần (phone)
       if (phone) {
         await supabaseAdmin
           .from('profiles')
@@ -142,28 +187,22 @@ Deno.serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           message: 'Đã thêm vai trò mới cho tài khoản hiện có',
-          user: { 
-            id: existingUser.id, 
-            email: existingUser.email 
-          } 
+          user: { id: existingUser.id, email: existingUser.email } 
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Email chưa tồn tại → Tạo user mới
+    // Create new user
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirm email
-      user_metadata: {
-        display_name: displayName,
-      },
+      email_confirm: true,
+      user_metadata: { display_name: displayName },
     })
 
     if (createError) {
       console.error('Create user error:', createError)
-      // Translate common error messages to Vietnamese
       let errorMessage = createError.message
       if (createError.message.includes('already been registered')) {
         errorMessage = 'Email này đã được sử dụng cho tài khoản khác'
@@ -176,38 +215,28 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Update the profile with phone number and tenant_id
     const profileUpdateData: Record<string, any> = { tenant_id: callerTenantId }
-    if (phone) {
-      profileUpdateData.phone = phone
-    }
+    if (phone) profileUpdateData.phone = phone
     
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .update(profileUpdateData)
       .eq('user_id', newUser.user.id)
 
-    if (profileError) {
-      console.error('Profile update error:', profileError)
-    }
+    if (profileError) console.error('Profile update error:', profileError)
 
-    // Insert platform_user record for email lookup
     const { error: platformUserError } = await supabaseAdmin
       .from('platform_users')
       .insert({
         user_id: newUser.user.id,
-        email: email,
+        email,
         display_name: displayName,
         tenant_id: callerTenantId,
         is_active: true,
       })
 
-    if (platformUserError) {
-      console.error('Platform user insert error:', platformUserError)
-      // Not critical, continue
-    }
+    if (platformUserError) console.error('Platform user insert error:', platformUserError)
 
-    // Update the user_role with the specified role, branch and tenant_id
     const { error: roleUpdateError } = await supabaseAdmin
       .from('user_roles')
       .update({
@@ -228,10 +257,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        user: { 
-          id: newUser.user.id, 
-          email: newUser.user.email 
-        } 
+        user: { id: newUser.user.id, email: newUser.user.email } 
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

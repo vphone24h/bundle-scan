@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
@@ -8,47 +7,70 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-interface ResetRequest {
-  email: string;
-  redirectUrl: string;
+function getClientIP(req: Request): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
+    || req.headers.get('cf-connecting-ip') 
+    || req.headers.get('x-real-ip') 
+    || '0.0.0.0'
 }
 
-const handler = async (req: Request): Promise<Response> => {
+function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 320
+}
+
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { email, redirectUrl }: ResetRequest = await req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    if (!email) {
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    // Rate limiting: 5 password resets per IP per 15 minutes
+    const clientIP = getClientIP(req);
+    const { data: allowed } = await supabaseAdmin.rpc('check_rate_limit', {
+      _function_name: 'send-password-reset',
+      _ip_address: clientIP,
+      _max_requests: 5,
+      _window_minutes: 15,
+    });
+
+    if (!allowed) {
       return new Response(
-        JSON.stringify({ error: "Email là bắt buộc" }),
+        JSON.stringify({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau 15 phút.' }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const body = await req.json();
+    const email = String(body.email || '').trim().toLowerCase().slice(0, 320);
+    const redirectUrl = String(body.redirectUrl || '').slice(0, 500);
+
+    if (!email || !validateEmail(email)) {
+      return new Response(
+        JSON.stringify({ error: "Email không hợp lệ" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const smtpUser = (Deno.env.get("SMTP_USER") || "").trim();
     const smtpPassword = Deno.env.get("SMTP_PASSWORD");
 
-    console.log("SMTP_USER value:", JSON.stringify(smtpUser), "length:", smtpUser.length);
-
     if (!smtpUser || !smtpPassword) {
-      console.error("SMTP credentials not configured. SMTP_USER:", !!smtpUser, "SMTP_PASSWORD:", !!smtpPassword);
+      console.error("SMTP credentials not configured");
       return new Response(
         JSON.stringify({ error: "Cấu hình email chưa hoàn tất" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
     // Generate password recovery link using Admin API
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
       email: email,
       options: {
@@ -65,7 +87,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Build the recovery URL with the token
     const actionLink = linkData?.properties?.action_link;
     if (!actionLink) {
       console.error("No action link generated");
@@ -133,10 +154,8 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in send-password-reset:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Không thể gửi email khôi phục" }),
+      JSON.stringify({ error: "Không thể gửi email khôi phục" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
-};
-
-serve(handler);
+});

@@ -1542,6 +1542,27 @@ export type Database = {
         }
         Relationships: []
       }
+      edge_function_rate_limits: {
+        Row: {
+          created_at: string
+          function_name: string
+          id: string
+          ip_address: string
+        }
+        Insert: {
+          created_at?: string
+          function_name: string
+          id?: string
+          ip_address: string
+        }
+        Update: {
+          created_at?: string
+          function_name?: string
+          id?: string
+          ip_address?: string
+        }
+        Relationships: []
+      }
       einvoice_configs: {
         Row: {
           api_key_encrypted: string | null
@@ -4815,6 +4836,15 @@ export type Database = {
       can_access_cash_book: { Args: { _user_id: string }; Returns: boolean }
       can_become_affiliate: { Args: { _tenant_id: string }; Returns: boolean }
       check_getting_started_status: { Args: never; Returns: Json }
+      check_rate_limit: {
+        Args: {
+          _function_name: string
+          _ip_address: string
+          _max_requests: number
+          _window_minutes: number
+        }
+        Returns: boolean
+      }
       check_review_exists: {
         Args: { _export_receipt_item_id: string; _tenant_id: string }
         Returns: {
@@ -4826,6 +4856,7 @@ export type Database = {
         Args: { _ip_address: string }
         Returns: boolean
       }
+      cleanup_rate_limits: { Args: never; Returns: undefined }
       create_care_reminder_notifications: { Args: never; Returns: undefined }
       delete_branch_safe: { Args: { _branch_id: string }; Returns: undefined }
       generate_affiliate_code: { Args: never; Returns: string }
