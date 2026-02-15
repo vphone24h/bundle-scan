@@ -124,6 +124,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Rate limiting
+    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rlClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { autoRefreshToken: false, persistSession: false } });
+    const { data: allowed } = await rlClient.rpc('check_rate_limit', { _function_name: 'einvoice-api', _ip_address: clientIP, _max_requests: 30, _window_minutes: 60 });
+    if (allowed === false) {
+      return new Response(JSON.stringify({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     
