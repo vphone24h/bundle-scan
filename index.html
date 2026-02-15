@@ -72,7 +72,30 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Skeleton placeholder before JS loads - looks like real UI -->
+      <div id="app-preloader" style="min-height:100vh;background:#f8fafc">
+        <div style="height:56px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;padding:0 16px;gap:12px">
+          <div style="width:32px;height:32px;border-radius:6px;background:#e2e8f0"></div>
+          <div style="width:128px;height:16px;border-radius:4px;background:#e2e8f0"></div>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+          <div style="width:192px;height:24px;border-radius:4px;background:#e2e8f0"></div>
+          <div style="width:256px;height:16px;border-radius:4px;background:#e2e8f0"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+            <div style="height:96px;border-radius:8px;background:#e2e8f0"></div>
+            <div style="height:96px;border-radius:8px;background:#e2e8f0"></div>
+            <div style="height:96px;border-radius:8px;background:#e2e8f0"></div>
+            <div style="height:96px;border-radius:8px;background:#e2e8f0"></div>
+          </div>
+          <div style="height:160px;border-radius:8px;background:#e2e8f0;margin-top:8px"></div>
+        </div>
+      </div>
+      <style>
+        #app-preloader div > div { animation: skpulse 1.5s ease-in-out infinite; }
+        @keyframes skpulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+      </style>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
