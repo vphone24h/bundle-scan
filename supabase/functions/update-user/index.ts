@@ -12,6 +12,16 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Rate limiting
+    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const supabaseUrlRL = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKeyRL = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const rlClient = createClient(supabaseUrlRL, supabaseServiceKeyRL, { auth: { autoRefreshToken: false, persistSession: false } })
+    const { data: allowed } = await rlClient.rpc('check_rate_limit', { _function_name: 'update-user', _ip_address: clientIP, _max_requests: 30, _window_minutes: 60 })
+    if (allowed === false) {
+      return new Response(JSON.stringify({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     // Get the authorization header to verify the caller is authenticated
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
