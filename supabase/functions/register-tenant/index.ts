@@ -106,6 +106,7 @@ async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: s
             '<li><strong>Xuất – Nhập – Tồn</strong> chi tiết đến từng sản phẩm</li>',
             '<li>Giúp bạn dễ dàng <strong>quản lý sản phẩm</strong> và tư vấn khách hàng, gia tăng tỉ lệ chốt đơn</li>',
             '<li>Tích hợp <strong>báo cáo thuế</strong> cho người mới chưa rành – Nhấp là ra chi tiết</li>',
+            '<li>Tích hợp <strong>website bán hàng</strong> và <strong>tra cứu bảo hành</strong> miễn phí</li>',
           '</ul>',
         '</div>',
         '<div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px 20px;border-radius:8px;margin:0 0 20px;text-align:center">',
