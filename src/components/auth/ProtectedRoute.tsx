@@ -1,7 +1,6 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -10,12 +9,13 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
 
+  // While loading auth, render children immediately so the layout shell appears.
+  // Children (TenantGuard / pages) will show their own skeleton/loading states.
+  // Only redirect to /auth once we are sure there is no user.
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    // Still loading – render children so the shell (sidebar etc.) shows instantly.
+    // Pages should handle their own data-loading states gracefully.
+    return <>{children}</>;
   }
 
   if (!user) {
