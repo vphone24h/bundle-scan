@@ -29,16 +29,7 @@ const Index = () => {
   const recentProducts = recentProductsData || [];
   const recentReceipts = recentReceiptsData || [];
 
-  // Only show full-screen loader on first load (no cached data yet)
-  if (statsLoading && !stats) {
-    return (
-      <MainLayout>
-        <div className="min-h-screen flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </MainLayout>
-    );
-  }
+  // No full-screen spinner – shell renders immediately, data fills in progressively
 
   return (
     <MainLayout>
