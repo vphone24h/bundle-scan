@@ -55,8 +55,8 @@ export default function PublicLandingPage() {
     },
     {
       icon: Receipt,
-      title: 'Hỗ trợ nộp thuế tự động',
-      description: 'Tự động sắp xếp doanh thu vào file của cơ quan thuế, giúp công việc nộp thuế nhẹ nhàng đến 99%',
+      title: 'Website bán hàng miễn phí',
+      description: 'Tích hợp website riêng, tra cứu bảo hành, giữ chân khách hàng hiệu quả',
     },
     {
       icon: Smartphone,
@@ -123,7 +123,7 @@ export default function PublicLandingPage() {
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
               Báo cáo lợi nhuận chính xác <strong className="text-primary">100%</strong> từng sản phẩm. 
-              Quản lý tồn kho theo IMEI, mã vạch. Tự động sắp xếp doanh thu vào file nộp cơ quan thuế.
+              Quản lý tồn kho theo IMEI, mã vạch.
               Website miễn phí, tra cứu bảo hành & giữ chân khách hàng.
             </p>
             <div className="mt-8 flex justify-center">
@@ -303,7 +303,7 @@ export default function PublicLandingPage() {
                 <li>Nhập xuất kho</li>
                 <li>Báo cáo lợi nhuận</li>
                 <li>Quản lý công nợ</li>
-                <li>Hóa đơn điện tử</li>
+                <li>Website bán hàng miễn phí</li>
               </ul>
             </div>
           </div>
