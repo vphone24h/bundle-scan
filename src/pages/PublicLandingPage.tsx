@@ -82,6 +82,7 @@ export default function PublicLandingPage() {
     'Ứng dụng PWA - cài đặt như app native',
     'Sao lưu dữ liệu tự động, an toàn tuyệt đối',
     'Cập nhật tính năng miễn phí liên tục',
+    'Website miễn phí - tra cứu bảo hành - giữ chân khách hàng',
   ];
 
   return (
