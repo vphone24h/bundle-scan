@@ -76,7 +76,7 @@ export default function PublicLandingPage() {
     'Dễ dàng sử dụng, không cần đào tạo phức tạp',
     'Báo cáo lợi nhuận chi tiết, chính xác từng đồng',
     'Quản lý tồn kho theo IMEI/Serial Number',
-    'Tự động sắp xếp doanh thu vào file nộp cơ quan thuế',
+    
     'Nền tảng an toàn, bảo mật tuyệt đối',
     'Hỗ trợ nhiều chi nhánh trên cùng tài khoản',
     'Ứng dụng PWA - cài đặt như app native',
