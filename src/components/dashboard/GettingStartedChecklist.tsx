@@ -70,7 +70,7 @@ const STEPS: ChecklistStep[] = [
     label: 'Thiết lập website bán hàng',
     description: 'Tạo trang web riêng cho cửa hàng, tra cứu bảo hành miễn phí',
     icon: <Globe className="h-4 w-4" />,
-    link: '/landing-admin',
+    link: '/landing-settings',
     linkLabel: 'Thiết lập',
   },
 ];
