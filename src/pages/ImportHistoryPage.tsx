@@ -54,8 +54,31 @@ import { WarrantyNoteDialog } from '@/components/import/WarrantyNoteDialog';
 import { ImportInventorySummary } from '@/components/import/ImportInventorySummary';
 import { TransferStockDialog } from '@/components/import/TransferStockDialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useOnboardingTour } from '@/hooks/useOnboardingTour';
+import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
+
+const IMPORT_HISTORY_TOUR_STEPS: TourStep[] = [
+  {
+    title: 'Lịch sử nhập hàng 📋',
+    description: 'Đây là nơi xem tất cả phiếu nhập đã tạo. Bạn có thể lọc và tìm kiếm phiếu nhập.',
+    isInfo: true,
+  },
+  {
+    title: 'Tab "Theo phiếu nhập"',
+    description: 'Tab này hiển thị danh sách phiếu nhập. Nhấn vào mã phiếu để xem chi tiết sản phẩm trong phiếu.',
+    targetSelector: '[data-tour="import-history-receipts-tab"]',
+    position: 'bottom',
+  },
+  {
+    title: 'Tab "Theo sản phẩm"',
+    description: 'Chuyển sang tab này để xem tất cả sản phẩm đã nhập. Bạn có thể chỉnh sửa, trả hàng, hoặc chuyển kho từ đây.',
+    targetSelector: '[data-tour="import-history-products-tab"]',
+    position: 'bottom',
+  },
+];
 
 export default function ImportHistoryPage() {
+  const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('import_history');
   const navigate = useNavigate();
   const { data: receipts, isLoading: receiptsLoading } = useImportReceipts();
   const { data: products, isLoading: productsLoading } = useAllProducts();
@@ -628,10 +651,10 @@ export default function ImportHistoryPage() {
         <Tabs defaultValue="receipts" className="space-y-4">
           <div className="flex items-center justify-between">
             <TabsList>
-              <TabsTrigger value="receipts">
+              <TabsTrigger value="receipts" data-tour="import-history-receipts-tab">
                 Theo phiếu nhập ({filteredReceipts.length})
               </TabsTrigger>
-              <TabsTrigger value="products">
+              <TabsTrigger value="products" data-tour="import-history-products-tab">
                 Theo sản phẩm ({filteredProducts.length})
               </TabsTrigger>
             </TabsList>
@@ -1300,6 +1323,12 @@ export default function ImportHistoryPage() {
           onSuccess={() => setSelectedProductIds(new Set())}
         />
       )}
+      <OnboardingTourOverlay
+        steps={IMPORT_HISTORY_TOUR_STEPS}
+        isActive={!tourCompleted}
+        onComplete={completeTour}
+        tourKey="import_history"
+      />
     </MainLayout>
   );
 }

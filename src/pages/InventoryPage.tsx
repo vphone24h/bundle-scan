@@ -16,8 +16,36 @@ import { WarrantyTab } from '@/components/inventory/WarrantyTab';
 import { useToast } from '@/hooks/use-toast';
 import { useStockCountGuideUrl } from '@/hooks/useAppConfig';
 import { exportToExcel } from '@/lib/exportExcel';
+import { useOnboardingTour } from '@/hooks/useOnboardingTour';
+import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
+
+const INVENTORY_TOUR_STEPS: TourStep[] = [
+  {
+    title: 'Tồn kho 📦',
+    description: 'Đây là trang quản lý tồn kho. Hãy cùng tìm hiểu cách xem chi tiết sản phẩm!',
+    isInfo: true,
+  },
+  {
+    title: 'Kéo sang phải để xem thêm',
+    description: 'Trên điện thoại, bảng tồn kho có thể bị ẩn một số cột. Hãy kéo (vuốt) sang phải để xem đầy đủ thông tin.',
+    targetSelector: '[data-tour="inventory-table"]',
+    position: 'top',
+  },
+  {
+    title: 'Xem chi tiết sản phẩm',
+    description: 'Nhấn vào nút "Xem chi tiết" (hoặc tên sản phẩm) để mở popup hiển thị toàn bộ thông tin: danh sách IMEI, giá nhập, giá bán, trạng thái...',
+    targetSelector: '[data-tour="inventory-detail-btn"]',
+    position: 'bottom',
+  },
+  {
+    title: 'Kéo sang phải trong popup',
+    description: 'Trong popup chi tiết, nếu bảng bị tràn, hãy kéo sang phải để xem hết thông tin sản phẩm. Vậy là xong! 🎉',
+    isInfo: true,
+  },
+];
 
 export default function InventoryPage() {
+  const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('inventory');
   const { toast } = useToast();
   const { data: inventory, isLoading } = useInventory();
   const stockCountGuideUrl = useStockCountGuideUrl();
@@ -342,6 +370,12 @@ export default function InventoryPage() {
           </TabsContent>
         </Tabs>
       </div>
+      <OnboardingTourOverlay
+        steps={INVENTORY_TOUR_STEPS}
+        isActive={!tourCompleted}
+        onComplete={completeTour}
+        tourKey="inventory"
+      />
     </MainLayout>
   );
 }

@@ -3124,6 +3124,30 @@ export type Database = {
           },
         ]
       }
+      onboarding_tours: {
+        Row: {
+          completed_at: string
+          id: string
+          tenant_id: string | null
+          tour_key: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          tenant_id?: string | null
+          tour_key: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          tenant_id?: string | null
+          tour_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payment_config: {
         Row: {
           config_key: string
