@@ -67,7 +67,7 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
 
   return (
     <>
-      <div className="rounded-lg border bg-card overflow-x-auto">
+      <div className="rounded-lg border bg-card overflow-x-auto" data-tour="inventory-table">
         <Table>
           <TableHeader>
             <TableRow>
@@ -140,6 +140,7 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
                     size="sm"
                     onClick={() => handleViewDetail(item)}
                     className="gap-1 text-xs sm:text-sm sm:gap-2"
+                    {...(index === 0 ? { 'data-tour': 'inventory-detail-btn' } : {})}
                   >
                     {item.hasImei ? (
                       <>

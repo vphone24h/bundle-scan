@@ -37,8 +37,43 @@ import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, Book
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { downloadImportTemplate } from '@/lib/excelTemplates';
+import { useOnboardingTour } from '@/hooks/useOnboardingTour';
+import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
+
+const IMPORT_NEW_TOUR_STEPS: TourStep[] = [
+  {
+    title: 'Chào mừng đến trang Nhập hàng! 🎉',
+    description: 'Đây là nơi bạn tạo phiếu nhập hàng. Hãy cùng tìm hiểu cách nhập 1 sản phẩm thử nhé!',
+    isInfo: true,
+  },
+  {
+    title: 'Chọn chi nhánh & nhà cung cấp',
+    description: 'Đầu tiên, chọn chi nhánh nhập hàng và nhà cung cấp. Nếu chưa có NCC, nhấn nút "+" để tạo mới.',
+    targetSelector: '[data-tour="import-receipt-info"]',
+    position: 'bottom',
+  },
+  {
+    title: 'Nhập thông tin sản phẩm',
+    description: 'Điền tên sản phẩm, SKU (mã viết tắt), IMEI (nếu có), chọn danh mục, nhập giá nhập và giá bán.',
+    targetSelector: '[data-tour="import-product-form"]',
+    position: 'bottom',
+  },
+  {
+    title: 'Thêm vào giỏ nhập hàng',
+    description: 'Sau khi điền xong, nhấn nút "Thêm vào giỏ" để thêm sản phẩm vào phiếu nhập.',
+    targetSelector: '[data-tour="import-add-to-cart"]',
+    position: 'top',
+  },
+  {
+    title: 'Thanh toán & hoàn tất',
+    description: 'Khi đã thêm đủ sản phẩm, nhấn "Thanh toán" ở giỏ hàng bên phải để hoàn tất phiếu nhập. Hãy thử nhập 1 sản phẩm ngay!',
+    targetSelector: '[data-tour="import-cart"]',
+    position: 'left',
+  },
+];
 
 export default function ImportNewPage() {
+  const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('import_new');
   const navigate = useNavigate();
   const { data: categories } = useCategories();
   const { data: products } = useProducts();
@@ -507,7 +542,7 @@ export default function ImportNewPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Form */}
           <div className="lg:col-span-2 space-y-4 lg:space-y-6">
-            <div className="bg-card border rounded-xl p-4 sm:p-6">
+            <div className="bg-card border rounded-xl p-4 sm:p-6" data-tour="import-receipt-info">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
                 Thông tin phiếu nhập
@@ -577,7 +612,7 @@ export default function ImportNewPage() {
               </div>
             </div>
 
-            <div className="bg-card border rounded-xl p-4 sm:p-6">
+            <div className="bg-card border rounded-xl p-4 sm:p-6" data-tour="import-product-form">
               <h3 className="font-semibold mb-3 sm:mb-4">Thông tin sản phẩm</h3>
               
               {/* Naming Tips */}
@@ -755,7 +790,7 @@ export default function ImportNewPage() {
               </div>
 
               <div className="mt-4 sm:mt-6 flex justify-end">
-                <Button onClick={handleAddToCart} disabled={isCheckingIMEI} className="w-full sm:w-auto">
+                <Button onClick={handleAddToCart} disabled={isCheckingIMEI} className="w-full sm:w-auto" data-tour="import-add-to-cart">
                   {isCheckingIMEI ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
@@ -768,7 +803,7 @@ export default function ImportNewPage() {
           </div>
 
           {/* Cart */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1" data-tour="import-cart">
             <ImportCart
               items={cart}
               onRemove={handleRemoveFromCart}
@@ -886,6 +921,12 @@ export default function ImportNewPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <OnboardingTourOverlay
+        steps={IMPORT_NEW_TOUR_STEPS}
+        isActive={!tourCompleted}
+        onComplete={completeTour}
+        tourKey="import_new"
+      />
     </MainLayout>
   );
 }
