@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, ChevronRight, ChevronLeft } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { X, ChevronRight, ChevronLeft, Hand } from 'lucide-react';
 
 export interface TourStep {
   title: string;
@@ -9,9 +8,11 @@ export interface TourStep {
   /** CSS selector of the target element to highlight */
   targetSelector?: string;
   /** Position of the popup relative to target */
-  position?: 'top' | 'bottom' | 'left' | 'right';
+  position?: 'top' | 'bottom' | 'left' | 'right' | 'center';
   /** If true, clicking "Tiếp" completes this step (no target needed) */
   isInfo?: boolean;
+  /** Optional icon hint e.g. swipe gesture */
+  gesture?: 'swipe-right' | 'tap';
 }
 
 interface OnboardingTourOverlayProps {
@@ -21,9 +22,10 @@ interface OnboardingTourOverlayProps {
   tourKey: string;
 }
 
-export function OnboardingTourOverlay({ steps, isActive, onComplete, tourKey }: OnboardingTourOverlayProps) {
+export function OnboardingTourOverlay({ steps, isActive, onComplete }: OnboardingTourOverlayProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
 
   const step = steps[currentStep];
 
@@ -36,8 +38,7 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, tourKey }: 
     if (el) {
       const rect = el.getBoundingClientRect();
       setTargetRect(rect);
-      // Scroll element into view
-      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
     } else {
       setTargetRect(null);
     }
@@ -45,8 +46,7 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, tourKey }: 
 
   useEffect(() => {
     if (!isActive) return;
-    // Small delay to let DOM render
-    const timer = setTimeout(updateTargetRect, 500);
+    const timer = setTimeout(updateTargetRect, 400);
     window.addEventListener('resize', updateTargetRect);
     window.addEventListener('scroll', updateTargetRect, true);
     return () => {
@@ -55,6 +55,19 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, tourKey }: 
       window.removeEventListener('scroll', updateTargetRect, true);
     };
   }, [isActive, currentStep, updateTargetRect]);
+
+  // Also raise z-index of target element so it's clickable above backdrop
+  useEffect(() => {
+    if (!isActive || !step?.targetSelector || step.isInfo) return;
+    const el = document.querySelector(step.targetSelector) as HTMLElement | null;
+    if (!el) return;
+    const prev = el.style.cssText;
+    el.style.position = 'relative';
+    el.style.zIndex = '10001';
+    return () => {
+      el.style.cssText = prev;
+    };
+  }, [isActive, currentStep, step?.targetSelector, step?.isInfo]);
 
   if (!isActive || !step) return null;
 
@@ -77,10 +90,9 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, tourKey }: 
     onComplete();
   };
 
-  // Calculate popup position
+  // Calculate popup position - prefer center on mobile for non-info steps too
   const getPopupStyle = (): React.CSSProperties => {
-    if (!targetRect || step.isInfo) {
-      // Center popup
+    if (!targetRect || step.isInfo || step.position === 'center') {
       return {
         position: 'fixed',
         top: '50%',
@@ -90,94 +102,125 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, tourKey }: 
       };
     }
 
-    const padding = 12;
+    const gap = 16;
+    const popupW = 340;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // On mobile, always show popup at bottom of screen if target is in upper half, or top if lower
+    if (vw < 640) {
+      const targetMid = targetRect.top + targetRect.height / 2;
+      if (targetMid < vh / 2) {
+        // Target in upper half → popup at bottom
+        return {
+          position: 'fixed',
+          bottom: 16,
+          left: 16,
+          right: 16,
+          zIndex: 10002,
+        };
+      } else {
+        // Target in lower half → popup at top
+        return {
+          position: 'fixed',
+          top: Math.max(60, 16), // avoid safe-area
+          left: 16,
+          right: 16,
+          zIndex: 10002,
+        };
+      }
+    }
+
+    // Desktop positioning
     const pos = step.position || 'bottom';
+    const left = Math.max(16, Math.min(targetRect.left, vw - popupW - 16));
 
     switch (pos) {
       case 'bottom':
-        return {
-          position: 'fixed',
-          top: targetRect.bottom + padding,
-          left: Math.max(16, Math.min(targetRect.left, window.innerWidth - 320)),
-          zIndex: 10002,
-        };
+        return { position: 'fixed', top: targetRect.bottom + gap, left, zIndex: 10002 };
       case 'top':
-        return {
-          position: 'fixed',
-          bottom: window.innerHeight - targetRect.top + padding,
-          left: Math.max(16, Math.min(targetRect.left, window.innerWidth - 320)),
-          zIndex: 10002,
-        };
+        return { position: 'fixed', bottom: vh - targetRect.top + gap, left, zIndex: 10002 };
       case 'right':
-        return {
-          position: 'fixed',
-          top: targetRect.top,
-          left: targetRect.right + padding,
-          zIndex: 10002,
-        };
+        return { position: 'fixed', top: targetRect.top, left: targetRect.right + gap, zIndex: 10002 };
       case 'left':
-        return {
-          position: 'fixed',
-          top: targetRect.top,
-          right: window.innerWidth - targetRect.left + padding,
-          zIndex: 10002,
-        };
+        return { position: 'fixed', top: targetRect.top, right: vw - targetRect.left + gap, zIndex: 10002 };
       default:
-        return {
-          position: 'fixed',
-          top: targetRect.bottom + padding,
-          left: Math.max(16, targetRect.left),
-          zIndex: 10002,
-        };
+        return { position: 'fixed', top: targetRect.bottom + gap, left, zIndex: 10002 };
     }
   };
 
   return (
     <>
-      {/* Backdrop overlay */}
+      {/* Backdrop - allows clicks to pass through to highlighted element */}
       <div
-        className="fixed inset-0 z-[10000] bg-black/60 transition-opacity duration-300"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-[10000] bg-black/50 transition-opacity duration-300"
+        onClick={handleSkip}
       />
 
-      {/* Highlight cutout */}
+      {/* Highlight border around target (pointer-events-none so target stays clickable) */}
       {targetRect && !step.isInfo && (
         <div
-          className="fixed z-[10001] rounded-lg ring-4 ring-primary/80 ring-offset-2 pointer-events-none"
+          className="fixed z-[10001] rounded-lg pointer-events-none"
           style={{
-            top: targetRect.top - 4,
-            left: targetRect.left - 4,
-            width: targetRect.width + 8,
-            height: targetRect.height + 8,
-            boxShadow: '0 0 0 9999px rgba(0,0,0,0.6)',
+            top: targetRect.top - 6,
+            left: targetRect.left - 6,
+            width: targetRect.width + 12,
+            height: targetRect.height + 12,
+            border: '3px solid hsl(var(--primary))',
+            boxShadow: '0 0 0 4px hsl(var(--primary) / 0.3), 0 0 20px hsl(var(--primary) / 0.2)',
+            background: 'transparent',
           }}
         />
       )}
 
+      {/* Gesture hint animation */}
+      {targetRect && step.gesture === 'swipe-right' && (
+        <div
+          className="fixed z-[10001] pointer-events-none animate-bounce-horizontal"
+          style={{
+            top: targetRect.top + targetRect.height / 2 - 20,
+            left: targetRect.left + targetRect.width / 2 - 20,
+          }}
+        >
+          <Hand className="h-10 w-10 text-primary drop-shadow-lg" />
+        </div>
+      )}
+
       {/* Popup card */}
       <div
+        ref={popupRef}
         style={getPopupStyle()}
-        className="w-[300px] sm:w-[360px] bg-card border border-border rounded-xl shadow-2xl p-4 sm:p-5"
+        className="w-auto max-w-[340px] sm:w-[360px] bg-card border border-border rounded-xl shadow-2xl p-4 sm:p-5"
       >
-        {/* Header */}
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">
-              Bước {currentStep + 1}/{steps.length}
-            </p>
-            <h3 className="font-semibold text-sm sm:text-base text-foreground">
-              {step.title}
-            </h3>
-          </div>
+        {/* Step indicator dots */}
+        <div className="flex items-center gap-1.5 mb-3">
+          {steps.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all ${
+                i === currentStep 
+                  ? 'w-6 bg-primary' 
+                  : i < currentStep 
+                  ? 'w-1.5 bg-primary/50' 
+                  : 'w-1.5 bg-muted-foreground/30'
+              }`}
+            />
+          ))}
+          <div className="flex-1" />
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 -mt-1 -mr-1 text-muted-foreground hover:text-foreground"
+            className="h-6 w-6 text-muted-foreground hover:text-foreground"
             onClick={handleSkip}
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </Button>
         </div>
+
+        {/* Title */}
+        <h3 className="font-semibold text-sm sm:text-base text-foreground mb-1.5">
+          {step.title}
+        </h3>
 
         {/* Description */}
         <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
@@ -186,23 +229,21 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, tourKey }: 
 
         {/* Actions */}
         <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs text-muted-foreground"
+          <button
+            className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
             onClick={handleSkip}
           >
-            Bỏ qua
-          </Button>
+            Bỏ qua tất cả
+          </button>
           <div className="flex items-center gap-2">
             {!isFirst && (
               <Button variant="outline" size="sm" onClick={handlePrev} className="h-8 text-xs">
                 <ChevronLeft className="h-3.5 w-3.5 mr-1" />
-                Quay lại
+                Lùi
               </Button>
             )}
             <Button size="sm" onClick={handleNext} className="h-8 text-xs">
-              {isLast ? 'Hoàn thành' : 'Tiếp theo'}
+              {isLast ? '✓ Xong' : 'Tiếp'}
               {!isLast && <ChevronRight className="h-3.5 w-3.5 ml-1" />}
             </Button>
           </div>
