@@ -43,32 +43,32 @@ import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/Onboard
 const IMPORT_NEW_TOUR_STEPS: TourStep[] = [
   {
     title: 'Chào mừng đến trang Nhập hàng! 🎉',
-    description: 'Đây là nơi bạn tạo phiếu nhập hàng. Hãy cùng tìm hiểu cách nhập 1 sản phẩm thử nhé!',
+    description: 'Đây là nơi bạn tạo phiếu nhập hàng mới. Hãy làm theo từng bước để nhập thử 1 sản phẩm nhé!',
     isInfo: true,
   },
   {
-    title: 'Chọn chi nhánh & nhà cung cấp',
-    description: 'Đầu tiên, chọn chi nhánh nhập hàng và nhà cung cấp. Nếu chưa có NCC, nhấn nút "+" để tạo mới.',
+    title: '① Chọn nhà cung cấp',
+    description: 'Kéo lên trên, chọn chi nhánh và nhà cung cấp. Nếu chưa có NCC, nhấn nút "+" bên cạnh để tạo mới. Sau đó nhấn "Tiếp" ở đây.',
     targetSelector: '[data-tour="import-receipt-info"]',
     position: 'bottom',
   },
   {
-    title: 'Nhập thông tin sản phẩm',
-    description: 'Điền tên sản phẩm, SKU (mã viết tắt), IMEI (nếu có), chọn danh mục, nhập giá nhập và giá bán.',
+    title: '② Điền thông tin sản phẩm',
+    description: 'Nhập: Tên SP → SKU (bấm A→ để copy tên) → IMEI (nếu có) → Chọn danh mục → Giá nhập. Các ô có dấu * là bắt buộc. Điền xong nhấn "Tiếp".',
     targetSelector: '[data-tour="import-product-form"]',
-    position: 'bottom',
+    position: 'center',
   },
   {
-    title: 'Thêm vào giỏ nhập hàng',
-    description: 'Sau khi điền xong, nhấn nút "Thêm vào giỏ" để thêm sản phẩm vào phiếu nhập.',
+    title: '③ Nhấn "Thêm vào giỏ"',
+    description: 'Kéo xuống dưới cùng và nhấn nút màu xanh "Thêm vào giỏ" để đưa sản phẩm vào giỏ nhập hàng.',
     targetSelector: '[data-tour="import-add-to-cart"]',
     position: 'top',
   },
   {
-    title: 'Thanh toán & hoàn tất',
-    description: 'Khi đã thêm đủ sản phẩm, nhấn "Thanh toán" ở giỏ hàng bên phải để hoàn tất phiếu nhập. Hãy thử nhập 1 sản phẩm ngay!',
+    title: '④ Thanh toán để hoàn tất',
+    description: 'Sau khi thêm sản phẩm, kéo xuống phần "Giỏ nhập hàng" → nhấn "Thanh toán" để hoàn tất phiếu nhập. Chúc bạn nhập hàng thành công! 🎊',
     targetSelector: '[data-tour="import-cart"]',
-    position: 'left',
+    position: 'center',
   },
 ];
 

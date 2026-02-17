@@ -22,24 +22,26 @@ import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/Onboard
 const INVENTORY_TOUR_STEPS: TourStep[] = [
   {
     title: 'Tồn kho 📦',
-    description: 'Đây là trang quản lý tồn kho. Hãy cùng tìm hiểu cách xem chi tiết sản phẩm!',
+    description: 'Đây là trang quản lý tồn kho. Hãy cùng tìm hiểu cách xem chi tiết sản phẩm trên điện thoại!',
     isInfo: true,
   },
   {
-    title: 'Kéo sang phải để xem thêm',
-    description: 'Trên điện thoại, bảng tồn kho có thể bị ẩn một số cột. Hãy kéo (vuốt) sang phải để xem đầy đủ thông tin.',
+    title: '👆 Vuốt sang phải để xem thêm',
+    description: 'Trên điện thoại, bảng có nhiều cột bị ẩn. Hãy dùng ngón tay vuốt sang phải trên bảng để xem thêm thông tin.',
     targetSelector: '[data-tour="inventory-table"]',
     position: 'top',
+    gesture: 'swipe-right',
   },
   {
-    title: 'Xem chi tiết sản phẩm',
-    description: 'Nhấn vào nút "Xem chi tiết" (hoặc tên sản phẩm) để mở popup hiển thị toàn bộ thông tin: danh sách IMEI, giá nhập, giá bán, trạng thái...',
+    title: '👆 Nhấn nút xem chi tiết',
+    description: 'Nhấn vào nút này để mở popup hiển thị toàn bộ thông tin: danh sách IMEI, giá nhập, giá bán, trạng thái từng sản phẩm.',
     targetSelector: '[data-tour="inventory-detail-btn"]',
     position: 'bottom',
+    gesture: 'tap',
   },
   {
-    title: 'Kéo sang phải trong popup',
-    description: 'Trong popup chi tiết, nếu bảng bị tràn, hãy kéo sang phải để xem hết thông tin sản phẩm. Vậy là xong! 🎉',
+    title: '👆 Vuốt phải trong popup chi tiết',
+    description: 'Trong popup chi tiết, bảng cũng có thể tràn. Hãy vuốt sang phải để xem hết thông tin sản phẩm. Vậy là xong! 🎊',
     isInfo: true,
   },
 ];
