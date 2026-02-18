@@ -366,3 +366,9 @@ html, body, #root {
 .animate-bounce-horizontal {
   animation: bounce-horizontal 1.5s ease-in-out infinite;
 }
+
+@keyframes swipe-hint {
+  0%   { transform: translateX(0px); opacity: 1; }
+  50%  { transform: translateX(8px); opacity: 0.5; }
+  100% { transform: translateX(0px); opacity: 1; }
+}
