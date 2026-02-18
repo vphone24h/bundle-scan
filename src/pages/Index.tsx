@@ -113,17 +113,8 @@ const Index = () => {
   const recentProducts = recentProductsData || [];
   const recentReceipts = recentReceiptsData || [];
 
-  // Tour: chưa nhập hàng → hiện lại mỗi lần vào, đã nhập hàng → lưu vĩnh viễn khi hoàn thành
-  const hasImported = (stats?.totalProducts || 0) > 0;
+  // Tour: bỏ qua → chỉ ẩn tạm, hoàn thành tất cả bước → lưu vĩnh viễn
   const showDashTour = !dashTourLoading && !dashTourDone && !tourDismissed;
-
-  const handleDashTourComplete = () => {
-    if (hasImported) {
-      completeDashTour();
-    } else {
-      setTourDismissed(true);
-    }
-  };
 
   return (
     <MainLayout>
@@ -383,7 +374,8 @@ const Index = () => {
       <OnboardingTourOverlay
         steps={dashboardTourSteps}
         isActive={showDashTour}
-        onComplete={handleDashTourComplete}
+        onComplete={completeDashTour}
+        onSkip={() => setTourDismissed(true)}
         tourKey="dashboard_overview"
       />
     </MainLayout>
