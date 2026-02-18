@@ -82,33 +82,31 @@ const paymentLabels: Record<string, string> = {
   debt: 'Công nợ',
 };
 
-const exportHistoryTourSteps: TourStep[] = [
-  {
-    title: '📋 Lịch sử xuất hàng',
-    description: 'Đây là nơi xem lại tất cả **phiếu bán hàng** đã tạo. Bạn có thể **lọc**, **in hóa đơn**, **xem chi tiết** hoặc **trả hàng** cho khách.',
-    isInfo: true,
-  },
+const EXPORT_RECEIPT_TAB_TOUR: TourStep[] = [
   {
     title: '📄 Tab "Theo phiếu xuất"',
-    description: 'Tab này liệt kê từng **phiếu bán hàng**. Nhấn vào **mã phiếu** để xem chi tiết, hoặc dùng các nút thao tác ở bên phải.',
+    description: 'Tab này liệt kê từng **phiếu bán hàng**. Nhấn vào **mã phiếu** để xem chi tiết đơn hàng.',
     targetSelector: '[data-tour="export-tab-receipts"]',
     position: 'bottom',
   },
   {
     title: '⚙️ Thao tác với phiếu xuất',
-    description: 'Mỗi phiếu xuất có 3 nút thao tác:\n• 👁️ **Xem chi tiết** — xem sản phẩm, khách hàng, thanh toán\n• 🖨️ **In hóa đơn** — in hóa đơn theo mẫu đã cài đặt\n• 🔄 **Trả hàng** — xử lý trả toàn bộ đơn hàng',
+    description: 'Mỗi phiếu xuất có 3 nút thao tác:\n• 👁️ **Xem chi tiết** — xem sản phẩm, khách hàng, thanh toán\n• 🖨️ **In hóa đơn** — in theo mẫu hóa đơn đã cài đặt\n• 🔄 **Trả hàng** — xử lý trả toàn bộ đơn hàng',
     targetSelector: '[data-tour="export-receipt-actions"]',
     position: 'left',
   },
+];
+
+const EXPORT_ITEM_TAB_TOUR: TourStep[] = [
   {
     title: '📦 Tab "Theo chi tiết SP"',
-    description: 'Tab này liệt kê từng **sản phẩm đã bán** với IMEI, giá bán, khách hàng. Tiện để tìm nhanh một sản phẩm cụ thể hoặc **trả từng món hàng** lẻ.',
+    description: 'Xem từng **sản phẩm đã bán** với IMEI, giá bán, khách hàng. Tìm nhanh từng món hoặc **trả hàng** lẻ từng sản phẩm.',
     targetSelector: '[data-tour="export-tab-items"]',
     position: 'bottom',
   },
   {
-    title: '🔄 Trả hàng từng món',
-    description: 'Trong tab chi tiết SP, mỗi dòng có nút **"Trả"** (mũi tên tròn) để xử lý trả hàng cho từng sản phẩm riêng lẻ. Sản phẩm đã trả sẽ hiển thị badge **"Đã trả"**.',
+    title: '🔄 Nút "Trả" — Trả hàng từng món',
+    description: 'Mỗi dòng sản phẩm có nút **"Trả"** để xử lý trả hàng riêng lẻ cho từng sản phẩm. Sản phẩm đã trả sẽ hiển thị badge **"Đã trả"**.',
     targetSelector: '[data-tour="export-item-return"]',
     position: 'left',
   },
@@ -116,9 +114,12 @@ const exportHistoryTourSteps: TourStep[] = [
 
 export default function ExportHistoryPage() {
   // Onboarding tour
-  const { isCompleted: historyTourDone, isLoading: historyTourLoading, completeTour: completeHistoryTour } = useOnboardingTour('export_history');
+  const { completeTour: completeHistoryTour } = useOnboardingTour('export_history');
+  const [activeTab, setActiveTab] = useState<'receipts' | 'items'>('receipts');
+  const [receiptTabTourSeen, setReceiptTabTourSeen] = useState(false);
+  const [itemTabTourSeen, setItemTabTourSeen] = useState(false);
+  const [activeTour, setActiveTour] = useState<'receipt-tab' | 'item-tab' | null>(null);
   const [manualTourActive, setManualTourActive] = useState(false);
-  const showHistoryTour = manualTourActive || (!historyTourLoading && !historyTourDone);
 
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -368,14 +369,22 @@ export default function ExportHistoryPage() {
         helpText="Xem tất cả phiếu xuất (bán hàng) đã tạo. Lọc theo ngày, khách hàng, trạng thái. Nhấn vào phiếu để xem chi tiết, in hóa đơn hoặc xử lý trả hàng."
         actions={
           <Button
-            variant={manualTourActive ? "default" : "outline"}
+            variant="outline"
             size="sm"
-            onClick={() => setManualTourActive(v => !v)}
+            onClick={() => {
+              if (activeTab === 'receipts') {
+                setReceiptTabTourSeen(true);
+                setActiveTour('receipt-tab');
+              } else {
+                setItemTabTourSeen(true);
+                setActiveTour('item-tab');
+              }
+            }}
             className="h-8 text-xs sm:text-sm"
           >
             <PlayCircle className="mr-1.5 h-4 w-4" />
-            <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
-            <span className="sm:hidden">{manualTourActive ? 'Tắt HD' : 'Xem HD'}</span>
+            <span className="hidden sm:inline">Xem hướng dẫn</span>
+            <span className="sm:hidden">Xem HD</span>
           </Button>
         }
       />
@@ -486,7 +495,17 @@ export default function ExportHistoryPage() {
       </Card>
 
       {/* Tabs */}
-      <Tabs defaultValue="receipts" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={(v) => {
+        const tab = v as 'receipts' | 'items';
+        setActiveTab(tab);
+        if (tab === 'receipts' && !receiptTabTourSeen) {
+          setReceiptTabTourSeen(true);
+          setTimeout(() => setActiveTour('receipt-tab'), 400);
+        } else if (tab === 'items' && !itemTabTourSeen) {
+          setItemTabTourSeen(true);
+          setTimeout(() => setActiveTour('item-tab'), 400);
+        }
+      }} className="space-y-4">
         <TabsList>
           <TabsTrigger data-tour="export-tab-receipts" value="receipts" className="gap-2">
             <FileText className="h-4 w-4" />
@@ -575,7 +594,7 @@ export default function ExportHistoryPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-1">
+                          <div className="flex gap-1" data-tour="export-receipt-actions">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -730,6 +749,7 @@ export default function ExportHistoryPage() {
                                   onClick={() => handleReturn(item)}
                                   disabled={item.status === 'returned' || returnProduct.isPending}
                                   title="Trả hàng"
+                                  data-tour="export-item-return"
                                 >
                                   <RotateCcw className="h-4 w-4 mr-1" />
                                   Trả
@@ -945,11 +965,18 @@ export default function ExportHistoryPage() {
         }}
       />
       <OnboardingTourOverlay
-        steps={exportHistoryTourSteps}
-        isActive={showHistoryTour}
-        onComplete={() => { completeHistoryTour(); setManualTourActive(false); }}
-        onSkip={() => { completeHistoryTour(); setManualTourActive(false); }}
-        tourKey="export_history"
+        steps={EXPORT_RECEIPT_TAB_TOUR}
+        isActive={activeTour === 'receipt-tab' || (manualTourActive && activeTab === 'receipts')}
+        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeHistoryTour(); }}
+        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeHistoryTour(); }}
+        tourKey="export_receipt_tab"
+      />
+      <OnboardingTourOverlay
+        steps={EXPORT_ITEM_TAB_TOUR}
+        isActive={activeTour === 'item-tab' || (manualTourActive && activeTab === 'items')}
+        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeHistoryTour(); }}
+        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeHistoryTour(); }}
+        tourKey="export_item_tab"
       />
     </MainLayout>
   );
