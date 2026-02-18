@@ -57,33 +57,31 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 
-const IMPORT_HISTORY_TOUR_STEPS: TourStep[] = [
-  {
-    title: '📋 Lịch sử nhập hàng',
-    description: 'Đây là nơi xem tất cả **phiếu nhập** và **sản phẩm đã nhập**. Bạn có thể lọc, tìm kiếm, xem chi tiết hoặc thực hiện các thao tác trực tiếp.',
-    isInfo: true,
-  },
+const IMPORT_RECEIPT_TAB_TOUR: TourStep[] = [
   {
     title: '📄 Tab "Theo phiếu nhập"',
-    description: 'Tab này liệt kê từng **phiếu nhập hàng**. Nhấn vào **mã phiếu** để xem sản phẩm bên trong, hoặc nhấn nút **"⋯"** để thao tác.',
+    description: 'Tab này liệt kê từng **phiếu nhập hàng**. Nhấn vào **mã phiếu** để xem chi tiết sản phẩm bên trong.',
     targetSelector: '[data-tour="import-history-receipts-tab"]',
     position: 'bottom',
   },
   {
-    title: '⚙️ Thao tác với phiếu nhập',
-    description: 'Nhấn nút **"⋯"** ở cuối mỗi phiếu để mở menu:\n• **Xem chi tiết** — xem danh sách sản phẩm trong phiếu\n• **Chỉnh sửa** — sửa thông tin phiếu như ngày, NCC, ghi chú\n• **Trả hàng** — tạo phiếu trả lại cho nhà cung cấp',
+    title: '⚙️ Nút "⋯" — Thao tác với phiếu',
+    description: 'Nhấn nút **"⋯"** ở cuối mỗi hàng để mở menu thao tác:\n• 👁️ **Xem chi tiết** — xem toàn bộ sản phẩm trong phiếu\n• ✏️ **Chỉnh sửa** — sửa ngày nhập, NCC, ghi chú\n• 🔄 **Trả hàng** — tạo phiếu trả lại cho nhà cung cấp',
     targetSelector: '[data-tour="import-receipt-menu"]',
     position: 'left',
   },
+];
+
+const IMPORT_PRODUCT_TAB_TOUR: TourStep[] = [
   {
     title: '📦 Tab "Theo sản phẩm"',
-    description: 'Chuyển sang tab này để xem từng **sản phẩm đã nhập** với đầy đủ thông tin IMEI, giá, trạng thái. Có thể lọc theo danh mục, trạng thái...',
+    description: 'Xem từng **sản phẩm đã nhập** với đầy đủ IMEI, giá, trạng thái. Lọc theo danh mục, nhà cung cấp, trạng thái...',
     targetSelector: '[data-tour="import-history-products-tab"]',
     position: 'bottom',
   },
   {
     title: '🔧 Thao tác với từng sản phẩm',
-    description: 'Mỗi dòng sản phẩm có các nút thao tác:\n• ✏️ **Sửa** — chỉnh sửa thông tin sản phẩm\n• 🔄 **Trả** — trả sản phẩm về nhà cung cấp\n• 🔑 **BH** — đánh dấu bảo hành\n• 🔀 **Chuyển kho** — chuyển sản phẩm sang chi nhánh khác',
+    description: 'Mỗi dòng sản phẩm tồn kho có các nút:\n• ✏️ **Sửa** — chỉnh sửa thông tin sản phẩm\n• 🔄 **Trả** — trả sản phẩm về nhà cung cấp\n• 🔑 **BH** — đánh dấu bảo hành (chỉ hàng có IMEI)\n• 🔀 **Chuyển kho** — chuyển sang chi nhánh khác',
     targetSelector: '[data-tour="import-product-actions"]',
     position: 'left',
   },
@@ -91,8 +89,12 @@ const IMPORT_HISTORY_TOUR_STEPS: TourStep[] = [
 
 
 export default function ImportHistoryPage() {
-  const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('import_history');
-  const [tourDismissed, setTourDismissed] = useState(false);
+  const { completeTour } = useOnboardingTour('import_history');
+  const [activeTab, setActiveTab] = useState<'receipts' | 'products'>('receipts');
+  // Tour: track which tab tour has been shown this session
+  const [receiptTabTourSeen, setReceiptTabTourSeen] = useState(false);
+  const [productTabTourSeen, setProductTabTourSeen] = useState(false);
+  const [activeTour, setActiveTour] = useState<'receipt-tab' | 'product-tab' | null>(null);
   const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
   const { data: receipts, isLoading: receiptsLoading } = useImportReceipts();
@@ -518,14 +520,22 @@ export default function ImportHistoryPage() {
         actions={
           <div className="flex gap-2 flex-wrap">
             <Button
-              variant={manualTourActive ? "default" : "outline"}
+              variant="outline"
               size="sm"
-              onClick={() => setManualTourActive(v => !v)}
+              onClick={() => {
+                if (activeTab === 'receipts') {
+                  setReceiptTabTourSeen(true);
+                  setActiveTour('receipt-tab');
+                } else {
+                  setProductTabTourSeen(true);
+                  setActiveTour('product-tab');
+                }
+              }}
               className="h-8 text-xs sm:text-sm"
             >
               <PlayCircle className="mr-1.5 h-4 w-4" />
-              <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
-              <span className="sm:hidden">{manualTourActive ? 'Tắt HD' : 'Xem HD'}</span>
+              <span className="hidden sm:inline">Xem hướng dẫn</span>
+              <span className="sm:hidden">Xem HD</span>
             </Button>
             <Button asChild>
               <Link to="/import/new">
@@ -675,7 +685,18 @@ export default function ImportHistoryPage() {
         </Card>
 
         {/* Tabs */}
-        <Tabs defaultValue="receipts" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(v) => {
+          const tab = v as 'receipts' | 'products';
+          setActiveTab(tab);
+          // Trigger tab tour on first switch
+          if (tab === 'receipts' && !receiptTabTourSeen) {
+            setReceiptTabTourSeen(true);
+            setTimeout(() => setActiveTour('receipt-tab'), 400);
+          } else if (tab === 'products' && !productTabTourSeen) {
+            setProductTabTourSeen(true);
+            setTimeout(() => setActiveTour('product-tab'), 400);
+          }
+        }} className="space-y-4">
           <div className="flex items-center justify-between">
             <TabsList>
               <TabsTrigger value="receipts" data-tour="import-history-receipts-tab">
@@ -953,7 +974,7 @@ export default function ImportHistoryPage() {
                         )}
                       </td>
                       <td>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1" data-tour="import-product-actions">
                           {product.status === 'in_stock' && (
                             <>
                               <Button 
@@ -1351,11 +1372,18 @@ export default function ImportHistoryPage() {
         />
       )}
       <OnboardingTourOverlay
-        steps={IMPORT_HISTORY_TOUR_STEPS}
-        isActive={manualTourActive || (!tourCompleted && !tourDismissed)}
-        onComplete={() => { completeTour(); setManualTourActive(false); }}
-        onSkip={() => { completeTour(); setTourDismissed(true); setManualTourActive(false); }}
-        tourKey="import_history"
+        steps={IMPORT_RECEIPT_TAB_TOUR}
+        isActive={activeTour === 'receipt-tab' || (manualTourActive && activeTab === 'receipts')}
+        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeTour(); }}
+        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeTour(); }}
+        tourKey="import_receipt_tab"
+      />
+      <OnboardingTourOverlay
+        steps={IMPORT_PRODUCT_TAB_TOUR}
+        isActive={activeTour === 'product-tab' || (manualTourActive && activeTab === 'products')}
+        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeTour(); }}
+        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeTour(); }}
+        tourKey="import_product_tab"
       />
     </MainLayout>
   );
