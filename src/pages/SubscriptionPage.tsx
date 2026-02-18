@@ -359,15 +359,7 @@ export default function SubscriptionPage() {
                       <Check className="h-4 w-4 text-green-600" />
                       Đầy đủ tính năng
                     </li>
-                    <li className="flex items-center gap-2 opacity-70">
-                      <Megaphone className="h-4 w-4 text-orange-500" />
-                      Hiển thị quảng cáo mỗi thao tác ({adGateSettings.display_duration_seconds}s
-                      {adGateSettings.is_skippable ? `, bỏ qua sau ${adGateSettings.skip_after_seconds}s` : ', không thể bỏ qua'})
-                    </li>
                   </ul>
-                  <p className="mt-4 text-xs text-muted-foreground border-t pt-3">
-                    ✅ Bạn đang dùng gói này. Nâng cấp để không thấy quảng cáo.
-                  </p>
                 </CardContent>
               </Card>
             )}
