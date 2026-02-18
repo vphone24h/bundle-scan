@@ -337,9 +337,19 @@ export default function SubscriptionPage() {
           <div className={`grid gap-4 md:grid-cols-2 lg:grid-cols-3 ${pendingPayment ? 'opacity-60 pointer-events-none' : ''}`}>
             {/* Free-with-ads plan */}
             {adGateSettings?.is_enabled && (
-              <Card className="border-dashed border-2 border-muted-foreground/30 bg-muted/20 relative overflow-hidden">
-                <div className="absolute top-3 right-3">
+              <Card className={`border-dashed border-2 relative overflow-hidden ${
+                tenant?.status === 'expired'
+                  ? 'border-primary/50 bg-primary/5 ring-1 ring-primary/20'
+                  : 'border-muted-foreground/30 bg-muted/20'
+              }`}>
+                <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
                   <Badge variant="secondary" className="text-xs">Miễn phí</Badge>
+                  {tenant?.status === 'expired' && (
+                    <Badge variant="default" className="text-xs bg-primary/90">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Bạn đang dùng gói này
+                    </Badge>
+                  )}
                 </div>
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 text-base">
