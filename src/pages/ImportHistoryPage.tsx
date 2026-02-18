@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2, Settings2, AlertTriangle, Wrench, ArrowRightLeft, CheckSquare, Square } from 'lucide-react';
+import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2, Settings2, AlertTriangle, Wrench, ArrowRightLeft, CheckSquare, Square, PlayCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
@@ -80,6 +80,7 @@ const IMPORT_HISTORY_TOUR_STEPS: TourStep[] = [
 export default function ImportHistoryPage() {
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('import_history');
   const [tourDismissed, setTourDismissed] = useState(false);
+  const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
   const { data: receipts, isLoading: receiptsLoading } = useImportReceipts();
   const { data: products, isLoading: productsLoading } = useAllProducts();
@@ -502,12 +503,24 @@ export default function ImportHistoryPage() {
         description="Theo dõi các phiếu nhập và sản phẩm đã nhập"
         helpText="Xem danh sách tất cả phiếu nhập đã tạo. Có thể lọc theo ngày, nhà cung cấp, trạng thái thanh toán. Nhấn vào phiếu để xem chi tiết sản phẩm, chỉnh sửa hoặc trả hàng."
         actions={
-          <Button asChild>
-            <Link to="/import/new">
-              <FileText className="mr-2 h-4 w-4" />
-              Tạo phiếu mới
-            </Link>
-          </Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant={manualTourActive ? "default" : "outline"}
+              size="sm"
+              onClick={() => setManualTourActive(v => !v)}
+              className="h-8 text-xs sm:text-sm"
+            >
+              <PlayCircle className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
+              <span className="sm:hidden">{manualTourActive ? 'Tắt HD' : 'Xem HD'}</span>
+            </Button>
+            <Button asChild>
+              <Link to="/import/new">
+                <FileText className="mr-2 h-4 w-4" />
+                Tạo phiếu mới
+              </Link>
+            </Button>
+          </div>
         }
       />
 
@@ -1326,9 +1339,9 @@ export default function ImportHistoryPage() {
       )}
       <OnboardingTourOverlay
         steps={IMPORT_HISTORY_TOUR_STEPS}
-        isActive={!tourCompleted && !tourDismissed}
-        onComplete={completeTour}
-        onSkip={() => setTourDismissed(true)}
+        isActive={manualTourActive || (!tourCompleted && !tourDismissed)}
+        onComplete={() => { completeTour(); setManualTourActive(false); }}
+        onSkip={() => { completeTour(); setTourDismissed(true); setManualTourActive(false); }}
         tourKey="import_history"
       />
     </MainLayout>

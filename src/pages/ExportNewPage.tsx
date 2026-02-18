@@ -36,7 +36,8 @@ import {
   CalendarIcon,
   Cake,
   Percent,
-  Calculator
+  Calculator,
+  PlayCircle,
 } from 'lucide-react';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { useCheckProductForSale, useSearchProductsByName, useCreateExportReceipt, type ExportReceiptItem, type ExportPayment } from '@/hooks/useExportReceipts';
@@ -113,7 +114,8 @@ const exportNewTourSteps: TourStep[] = [
 export default function ExportNewPage() {
   // Onboarding tour
   const { isCompleted: exportTourDone, isLoading: exportTourLoading, completeTour: completeExportTour } = useOnboardingTour('export_new');
-  const showExportTour = !exportTourLoading && !exportTourDone;
+  const [manualTourActive, setManualTourActive] = useState(false);
+  const showExportTour = manualTourActive || (!exportTourLoading && !exportTourDone);
 
   // Form states
   const [imeiSearch, setImeiSearch] = useState('');
@@ -696,16 +698,28 @@ export default function ExportNewPage() {
         description="Xuất hàng và ghi nhận bán hàng"
         helpText="Tạo phiếu xuất (bán hàng) bằng cách quét mã vạch hoặc tìm sản phẩm. Chọn khách hàng, áp dụng chiết khấu, sau đó thanh toán và in hóa đơn."
         actions={
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowInstallment(true)}
-            className="h-8 text-xs sm:text-sm"
-          >
-            <Calculator className="mr-1.5 h-4 w-4" />
-            <span className="hidden sm:inline">Tính trả góp</span>
-            <span className="sm:hidden">Trả góp</span>
-          </Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant={manualTourActive ? "default" : "outline"}
+              size="sm"
+              onClick={() => setManualTourActive(v => !v)}
+              className="h-8 text-xs sm:text-sm"
+            >
+              <PlayCircle className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
+              <span className="sm:hidden">{manualTourActive ? 'Tắt HD' : 'Xem HD'}</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowInstallment(true)}
+              className="h-8 text-xs sm:text-sm"
+            >
+              <Calculator className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">Tính trả góp</span>
+              <span className="sm:hidden">Trả góp</span>
+            </Button>
+          </div>
         }
       />
 
@@ -1204,8 +1218,8 @@ export default function ExportNewPage() {
       <OnboardingTourOverlay
         steps={exportNewTourSteps}
         isActive={showExportTour}
-        onComplete={completeExportTour}
-        onSkip={completeExportTour}
+        onComplete={() => { completeExportTour(); setManualTourActive(false); }}
+        onSkip={() => { completeExportTour(); setManualTourActive(false); }}
         tourKey="export_new"
       />
     </MainLayout>

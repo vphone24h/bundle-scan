@@ -46,7 +46,8 @@ import {
   Calendar,
   Filter,
   X,
-  Pencil
+  Pencil,
+  PlayCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -111,7 +112,8 @@ const exportHistoryTourSteps: TourStep[] = [
 export default function ExportHistoryPage() {
   // Onboarding tour
   const { isCompleted: historyTourDone, isLoading: historyTourLoading, completeTour: completeHistoryTour } = useOnboardingTour('export_history');
-  const showHistoryTour = !historyTourLoading && !historyTourDone;
+  const [manualTourActive, setManualTourActive] = useState(false);
+  const showHistoryTour = manualTourActive || (!historyTourLoading && !historyTourDone);
 
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -359,6 +361,18 @@ export default function ExportHistoryPage() {
         title="Lịch sử xuất hàng"
         description="Xem và quản lý các phiếu xuất hàng"
         helpText="Xem tất cả phiếu xuất (bán hàng) đã tạo. Lọc theo ngày, khách hàng, trạng thái. Nhấn vào phiếu để xem chi tiết, in hóa đơn hoặc xử lý trả hàng."
+        actions={
+          <Button
+            variant={manualTourActive ? "default" : "outline"}
+            size="sm"
+            onClick={() => setManualTourActive(v => !v)}
+            className="h-8 text-xs sm:text-sm"
+          >
+            <PlayCircle className="mr-1.5 h-4 w-4" />
+            <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
+            <span className="sm:hidden">{manualTourActive ? 'Tắt HD' : 'Xem HD'}</span>
+          </Button>
+        }
       />
 
       {/* Filters */}
@@ -928,8 +942,8 @@ export default function ExportHistoryPage() {
       <OnboardingTourOverlay
         steps={exportHistoryTourSteps}
         isActive={showHistoryTour}
-        onComplete={completeHistoryTour}
-        onSkip={completeHistoryTour}
+        onComplete={() => { completeHistoryTour(); setManualTourActive(false); }}
+        onSkip={() => { completeHistoryTour(); setManualTourActive(false); }}
         tourKey="export_history"
       />
     </MainLayout>

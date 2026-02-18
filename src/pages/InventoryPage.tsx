@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Download, Package, ClipboardList, FileUp, AlertTriangle, Wrench, ExternalLink } from 'lucide-react';
+import { Download, Package, ClipboardList, FileUp, AlertTriangle, Wrench, ExternalLink, PlayCircle } from 'lucide-react';
 import { differenceInDays, format } from 'date-fns';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { usePagination } from '@/hooks/usePagination';
@@ -55,6 +55,7 @@ const INVENTORY_TOUR_STEPS: TourStep[] = [
 export default function InventoryPage() {
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('inventory');
   const [tourDismissed, setTourDismissed] = useState(false);
+  const [manualTourActive, setManualTourActive] = useState(false);
   const { toast } = useToast();
   const { data: inventory, isLoading } = useInventory();
   const stockCountGuideUrl = useStockCountGuideUrl();
@@ -289,9 +290,19 @@ export default function InventoryPage() {
             : 'Tạo phiếu kiểm kho, quét barcode và xác nhận kiểm kho. Hỗ trợ tính toán chênh lệch tồn kho thực tế so với hệ thống.'
         }
         actions={
-          <>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant={manualTourActive ? "default" : "outline"}
+              size="sm"
+              onClick={() => setManualTourActive(v => !v)}
+              className="h-8 text-xs sm:text-sm"
+            >
+              <PlayCircle className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
+              <span className="sm:hidden">{manualTourActive ? 'Tắt HD' : 'Xem HD'}</span>
+            </Button>
             {activeTab === 'inventory' && (
-              <div className="flex gap-2 flex-wrap">
+              <>
                 <Button variant="outline" onClick={handleExportForReimport} className="gap-2">
                   <FileUp className="h-4 w-4" />
                   Xuất file nhập lại
@@ -300,7 +311,7 @@ export default function InventoryPage() {
                   <Download className="h-4 w-4" />
                   Xuất Excel
                 </Button>
-              </div>
+              </>
             )}
             {activeTab === 'stock-count' && stockCountGuideUrl && (
               <Button
@@ -313,7 +324,7 @@ export default function InventoryPage() {
                 Hướng dẫn
               </Button>
             )}
-          </>
+          </div>
         }
       />
 
@@ -381,9 +392,9 @@ export default function InventoryPage() {
       </div>
       <OnboardingTourOverlay
         steps={INVENTORY_TOUR_STEPS}
-        isActive={!tourCompleted && !tourDismissed}
-        onComplete={completeTour}
-        onSkip={() => setTourDismissed(true)}
+        isActive={manualTourActive || (!tourCompleted && !tourDismissed)}
+        onComplete={() => { completeTour(); setManualTourActive(false); }}
+        onSkip={() => { completeTour(); setTourDismissed(true); setManualTourActive(false); }}
         tourKey="inventory"
       />
     </MainLayout>
