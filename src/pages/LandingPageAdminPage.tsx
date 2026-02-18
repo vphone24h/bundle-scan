@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { LandingPageSettings } from '@/components/admin/LandingPageSettings';
@@ -7,10 +8,53 @@ import { LandingOrdersTab } from '@/components/admin/LandingOrdersTab';
 import { usePermissions } from '@/hooks/usePermissions';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useLandingGuideUrl } from '@/hooks/useAppConfig';
+import { useOnboardingTour } from '@/hooks/useOnboardingTour';
+import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 import { Navigate } from 'react-router-dom';
 import { Loader2, BookOpen } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+
+const LANDING_TOUR_STEPS: TourStep[] = [
+  {
+    title: '🌐 Website bán hàng',
+    description: 'Đây là trang quản trị **Website bán hàng** — nơi bạn thiết lập trang web riêng để giới thiệu sản phẩm và nhận đơn hàng từ khách hàng **hoàn toàn miễn phí**!',
+    isInfo: true,
+  },
+  {
+    title: '⚙️ Tab Cấu hình',
+    description: 'Tại đây bạn cài đặt **tên cửa hàng**, **logo**, **số điện thoại**, **màu sắc**, **banner** và **tên miền riêng** cho website. Đây là bước đầu tiên cần làm!',
+    targetSelector: '[data-tour="landing-tab-settings"]',
+    position: 'bottom',
+    isInfo: true,
+  },
+  {
+    title: '📦 Tab Sản phẩm',
+    description: 'Chọn những sản phẩm từ kho muốn **hiển thị lên website**. Bạn có thể thêm ảnh, giá bán, mô tả và chọn thứ tự hiển thị cho từng sản phẩm.',
+    targetSelector: '[data-tour="landing-tab-products"]',
+    position: 'bottom',
+    isInfo: true,
+  },
+  {
+    title: '📰 Tab Tin tức',
+    description: 'Đăng các **bài viết tin tức**, khuyến mãi, thông báo lên website. Tin tức giúp giữ chân khách hàng và tăng uy tín cửa hàng.',
+    targetSelector: '[data-tour="landing-tab-articles"]',
+    position: 'bottom',
+    isInfo: true,
+  },
+  {
+    title: '🛒 Tab Đơn đặt hàng',
+    description: 'Khi khách đặt hàng qua website, đơn sẽ xuất hiện ở đây. Bạn **xác nhận**, **liên hệ khách** và chốt đơn. Badge đỏ sẽ báo số đơn chờ xử lý.',
+    targetSelector: '[data-tour="landing-tab-orders"]',
+    position: 'bottom',
+    isInfo: true,
+  },
+  {
+    title: '🔗 Xem website công khai',
+    description: 'Sau khi cấu hình xong, nhấn nút **"Xem website"** để xem trang bán hàng như khách hàng thấy. Chia sẻ link này cho khách để nhận đơn hàng! 🎊',
+    isInfo: true,
+  },
+];
 
 function PendingBadge() {
   const { data: count } = usePendingOrderCount();
@@ -25,6 +69,8 @@ function PendingBadge() {
 export default function LandingPageAdminPage() {
   const { data: permissions, isLoading } = usePermissions();
   const landingGuideUrl = useLandingGuideUrl();
+  const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('landing-page-admin');
+  const [tourDismissed, setTourDismissed] = useState(false);
 
   // Shell-first: no spinner, render layout immediately
 
@@ -71,11 +117,11 @@ export default function LandingPageAdminPage() {
         <div className="mt-4">
           <Tabs defaultValue={defaultTab}>
             <TabsList className="mb-4">
-              {showSettings && <TabsTrigger value="settings">Cấu hình</TabsTrigger>}
-              {showProducts && <TabsTrigger value="products">Sản phẩm</TabsTrigger>}
-              {showArticles && <TabsTrigger value="articles">Tin tức</TabsTrigger>}
+              {showSettings && <TabsTrigger value="settings" data-tour="landing-tab-settings">Cấu hình</TabsTrigger>}
+              {showProducts && <TabsTrigger value="products" data-tour="landing-tab-products">Sản phẩm</TabsTrigger>}
+              {showArticles && <TabsTrigger value="articles" data-tour="landing-tab-articles">Tin tức</TabsTrigger>}
               {showOrders && (
-                <TabsTrigger value="orders" className="relative">
+                <TabsTrigger value="orders" className="relative" data-tour="landing-tab-orders">
                   Đơn đặt hàng
                   <PendingBadge />
                 </TabsTrigger>
@@ -104,6 +150,13 @@ export default function LandingPageAdminPage() {
           </Tabs>
         </div>
       </div>
+      <OnboardingTourOverlay
+        steps={LANDING_TOUR_STEPS}
+        isActive={!tourCompleted && !tourDismissed}
+        onComplete={completeTour}
+        onSkip={() => { completeTour(); setTourDismissed(true); }}
+        tourKey="landing-page-admin"
+      />
     </MainLayout>
   );
 }
