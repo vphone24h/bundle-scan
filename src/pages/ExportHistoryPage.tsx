@@ -115,6 +115,8 @@ const EXPORT_ITEM_TAB_TOUR: TourStep[] = [
 export default function ExportHistoryPage() {
   // Onboarding tour
   const { completeTour: completeHistoryTour } = useOnboardingTour('export_history');
+  const { isCompleted: receiptTourDone, completeTour: completeReceiptTour } = useOnboardingTour('export_receipt_tab');
+  const { isCompleted: itemTourDone, completeTour: completeItemTour } = useOnboardingTour('export_item_tab');
   const [activeTab, setActiveTab] = useState<'receipts' | 'items'>('receipts');
   const [receiptTabTourSeen, setReceiptTabTourSeen] = useState(false);
   const [itemTabTourSeen, setItemTabTourSeen] = useState(false);
@@ -498,10 +500,11 @@ export default function ExportHistoryPage() {
       <Tabs value={activeTab} onValueChange={(v) => {
         const tab = v as 'receipts' | 'items';
         setActiveTab(tab);
-        if (tab === 'receipts' && !receiptTabTourSeen) {
+        // Only trigger tour when there's actual data and not done yet
+        if (tab === 'receipts' && !receiptTabTourSeen && !receiptTourDone && (receipts?.length ?? 0) > 0) {
           setReceiptTabTourSeen(true);
           setTimeout(() => setActiveTour('receipt-tab'), 400);
-        } else if (tab === 'items' && !itemTabTourSeen) {
+        } else if (tab === 'items' && !itemTabTourSeen && !itemTourDone && (items?.length ?? 0) > 0) {
           setItemTabTourSeen(true);
           setTimeout(() => setActiveTour('item-tab'), 400);
         }
@@ -967,15 +970,15 @@ export default function ExportHistoryPage() {
       <OnboardingTourOverlay
         steps={EXPORT_RECEIPT_TAB_TOUR}
         isActive={activeTour === 'receipt-tab' || (manualTourActive && activeTab === 'receipts')}
-        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeHistoryTour(); }}
-        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeHistoryTour(); }}
+        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeReceiptTour(); completeHistoryTour(); }}
+        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeReceiptTour(); completeHistoryTour(); }}
         tourKey="export_receipt_tab"
       />
       <OnboardingTourOverlay
         steps={EXPORT_ITEM_TAB_TOUR}
         isActive={activeTour === 'item-tab' || (manualTourActive && activeTab === 'items')}
-        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeHistoryTour(); }}
-        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeHistoryTour(); }}
+        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeItemTour(); completeHistoryTour(); }}
+        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeItemTour(); completeHistoryTour(); }}
         tourKey="export_item_tab"
       />
     </MainLayout>
