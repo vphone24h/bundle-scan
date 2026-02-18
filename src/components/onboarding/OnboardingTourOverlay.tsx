@@ -194,6 +194,16 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
   // Calculate popup position
   const getPopupStyle = (): React.CSSProperties => {
     if (!targetRect || step.position === 'center') {
+      // On mobile, anchor to bottom with safe area; on desktop, center
+      if (window.innerWidth < 640) {
+        return {
+          position: 'fixed',
+          bottom: 80,
+          left: 16,
+          right: 16,
+          zIndex: 10002,
+        };
+      }
       return {
         position: 'fixed',
         top: '50%',
@@ -207,12 +217,15 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
     const popupW = 340;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    // Reserve space for popup + safe area at bottom (for iPhone home indicator etc.)
+    const safeBottom = 80;
+    const popupH = 240; // approximate popup height
 
     // Mobile: sidebar items → popup to the right of sidebar
     if (vw < 640) {
       const isSidebarItem = step.targetSelector?.startsWith('[data-tour="sidebar-');
       if (isSidebarItem) {
-        const topPos = Math.max(16, Math.min(targetRect.top - 20, vh - 260));
+        const topPos = Math.max(16, Math.min(targetRect.top - 20, vh - 280));
         return {
           position: 'fixed',
           top: topPos,
@@ -221,13 +234,23 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
           zIndex: 10002,
         };
       }
-      // Below target on mobile, full width
+      // Try to place below target, fallback to above, fallback to bottom of screen
       const topBelow = targetRect.bottom + gap;
-      const topAbove = targetRect.top - gap - 200; // rough estimate
-      const useAbove = topBelow > vh - 220 && topAbove > 60;
+      const topAbove = targetRect.top - gap - popupH;
+      const fitsBelow = topBelow + popupH + safeBottom <= vh;
+      const fitsAbove = topAbove >= 60;
+      let topPos: number;
+      if (fitsBelow) {
+        topPos = topBelow;
+      } else if (fitsAbove) {
+        topPos = Math.max(60, topAbove);
+      } else {
+        // Place at bottom with enough room, scroll target into view
+        topPos = vh - popupH - safeBottom;
+      }
       return {
         position: 'fixed',
-        top: useAbove ? Math.max(60, topAbove) : Math.min(topBelow, vh - 220),
+        top: Math.max(60, Math.min(topPos, vh - popupH - safeBottom)),
         left: 16,
         right: 16,
         zIndex: 10002,
