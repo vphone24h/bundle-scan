@@ -268,7 +268,7 @@ export function LandingPageSettings() {
   return (
     <div className="space-y-6">
       {/* Header với link landing page */}
-      <Card>
+      <Card data-tour="landing-link-card">
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
@@ -398,7 +398,7 @@ export function LandingPageSettings() {
       </Card>
 
       {/* Thông tin cửa hàng */}
-      <Card>
+      <Card data-tour="landing-store-info-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Info className="h-4 w-4" />
@@ -569,7 +569,7 @@ export function LandingPageSettings() {
       </Card>
 
       {/* Tra cứu bảo hành */}
-      <Card>
+      <Card data-tour="landing-warranty-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Shield className="h-4 w-4" />
@@ -628,7 +628,7 @@ export function LandingPageSettings() {
       </Card>
 
       {/* Banner/Quảng cáo */}
-      <Card>
+      <Card data-tour="landing-banner-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Image className="h-4 w-4" />
@@ -708,7 +708,7 @@ export function LandingPageSettings() {
 
 
       {/* Tuỳ chỉnh màu sắc */}
-      <Card>
+      <Card data-tour="landing-color-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Palette className="h-4 w-4" />
@@ -737,7 +737,7 @@ export function LandingPageSettings() {
       </Card>
 
       {/* Kênh thông tin / Social Media */}
-      <Card>
+      <Card data-tour="landing-social-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Share2 className="h-4 w-4" />
