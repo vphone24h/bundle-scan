@@ -68,9 +68,11 @@ export function TenantsManagement() {
   
   const [search, setSearch] = useState('');
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
-  const [actionDialog, setActionDialog] = useState<'lock' | 'unlock' | 'extend' | null>(null);
+  const [actionDialog, setActionDialog] = useState<'lock' | 'unlock' | 'extend' | 'set_days' | null>(null);
   const [reason, setReason] = useState('');
   const [days, setDays] = useState('30');
+  const [setDaysValue, setSetDaysValue] = useState('0');
+  const [settingDays, setSettingDays] = useState(false);
   const [togglingEinvoice, setTogglingEinvoice] = useState<string | null>(null);
   const [showProductsDialog, setShowProductsDialog] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -116,11 +118,12 @@ export function TenantsManagement() {
   });
 
   const handleAction = async () => {
+    if (actionDialog === 'set_days') return; // handled separately
     if (!selectedTenant || !actionDialog) return;
 
     try {
       await manageTenant.mutateAsync({
-        action: actionDialog,
+        action: actionDialog as 'lock' | 'unlock' | 'extend',
         tenantId: selectedTenant.id,
         reason: reason || undefined,
         days: actionDialog === 'extend' ? parseInt(days) : undefined,
@@ -146,6 +149,51 @@ export function TenantsManagement() {
         variant: 'destructive',
       });
     }
+  };
+
+  const handleSetDays = async () => {
+    if (!selectedTenant) return;
+    const numDays = parseInt(setDaysValue);
+    if (isNaN(numDays) || numDays < 0) return;
+    setSettingDays(true);
+    try {
+      // Tính ngày hết hạn mới dựa trên ngày hiện tại + số ngày còn lại
+      let newEndDate: string;
+      if (numDays === 0) {
+        // Hết hạn ngay (đặt về hôm qua)
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        newEndDate = yesterday.toISOString();
+      } else {
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + numDays);
+        newEndDate = futureDate.toISOString();
+      }
+
+      const { error } = await supabase
+        .from('tenants')
+        .update({
+          trial_end_date: selectedTenant.status === 'trial' ? newEndDate : selectedTenant.trial_end_date,
+          subscription_end_date: selectedTenant.status !== 'trial' ? newEndDate : selectedTenant.subscription_end_date,
+        })
+        .eq('id', selectedTenant.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Thành công',
+        description: numDays === 0
+          ? `Đã đặt ${selectedTenant.name} về hết hạn (0 ngày)`
+          : `Đã đặt ${selectedTenant.name} còn ${numDays} ngày`,
+      });
+
+      setActionDialog(null);
+      setSelectedTenant(null);
+      queryClient.invalidateQueries({ queryKey: ['all-tenants'] });
+    } catch (error: any) {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+    }
+    setSettingDays(false);
   };
 
   const handleToggleEinvoice = async (tenant: Tenant) => {
@@ -467,6 +515,14 @@ export function TenantsManagement() {
                             <CalendarPlus className="h-4 w-4 mr-2" />
                             Gia hạn
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedTenant(tenant);
+                            setSetDaysValue(String(calculateRemainingDays(tenant)));
+                            setActionDialog('set_days');
+                          }}>
+                            <CalendarPlus className="h-4 w-4 mr-2 text-orange-500" />
+                            Chỉnh ngày còn lại
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -695,6 +751,53 @@ export function TenantsManagement() {
               {actionDialog === 'lock' && 'Khóa'}
               {actionDialog === 'unlock' && 'Mở khóa'}
               {actionDialog === 'extend' && 'Gia hạn'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Set Days Dialog */}
+      <Dialog open={actionDialog === 'set_days'} onOpenChange={(open) => !open && setActionDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Chỉnh ngày còn lại</DialogTitle>
+            <DialogDescription>
+              Thiết lập số ngày còn lại cho <strong>{selectedTenant?.name}</strong>. Đặt về 0 để test chế độ hết hạn.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Số ngày còn lại</Label>
+              <Input
+                type="number"
+                min="0"
+                max="36500"
+                value={setDaysValue}
+                onChange={(e) => setSetDaysValue(e.target.value)}
+                placeholder="0"
+              />
+              <p className="text-xs text-muted-foreground">
+                Nhập 0 để đặt tài khoản về trạng thái hết hạn (để test quảng cáo)
+              </p>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {[0, 1, 7, 14, 30].map((d) => (
+                <Button
+                  key={d}
+                  size="sm"
+                  variant={setDaysValue === String(d) ? 'default' : 'outline'}
+                  onClick={() => setSetDaysValue(String(d))}
+                >
+                  {d === 0 ? 'Hết hạn' : `${d} ngày`}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActionDialog(null)}>Hủy</Button>
+            <Button onClick={handleSetDays} disabled={settingDays}>
+              {settingDays && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Xác nhận
             </Button>
           </DialogFooter>
         </DialogContent>
