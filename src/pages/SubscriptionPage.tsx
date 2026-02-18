@@ -20,6 +20,7 @@ import {
   calculateRemainingDays 
 } from '@/hooks/useTenant';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useAdGateSettings } from '@/hooks/useAdGate';
 import { 
   CreditCard, 
   Check, 
@@ -33,7 +34,8 @@ import {
   Trash2,
   XCircle,
   MessageCircle,
-  ExternalLink
+  ExternalLink,
+  Megaphone
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { formatNumber } from '@/lib/formatNumber';
@@ -68,8 +70,10 @@ export default function SubscriptionPage() {
   const { data: payments, refetch: refetchPayments } = usePaymentRequests(tenant?.id);
   const { data: history } = useSubscriptionHistory(tenant?.id);
   const { data: permissions } = usePermissions();
+  const { data: adGateSettings } = useAdGateSettings();
   const createPayment = useCreatePaymentRequest();
   const cancelPayment = useCancelPaymentRequest();
+
 
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
@@ -258,15 +262,17 @@ export default function SubscriptionPage() {
           <CardContent>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant={
                     tenant?.status === 'active' ? 'default' :
                     tenant?.status === 'trial' ? 'secondary' :
+                    (tenant?.status === 'expired' && adGateSettings?.is_enabled) ? 'secondary' :
                     'destructive'
                   }>
                     {tenant?.status === 'active' && 'Đang hoạt động'}
                     {tenant?.status === 'trial' && 'Dùng thử'}
-                    {tenant?.status === 'expired' && 'Hết hạn'}
+                    {tenant?.status === 'expired' && !adGateSettings?.is_enabled && 'Hết hạn'}
+                    {tenant?.status === 'expired' && adGateSettings?.is_enabled && 'Miễn phí (kèm QC)'}
                     {tenant?.status === 'locked' && 'Bị khóa'}
                   </Badge>
                   {tenant?.subscription_plan && (
@@ -276,11 +282,19 @@ export default function SubscriptionPage() {
                       {tenant.subscription_plan === 'lifetime' && 'Vĩnh viễn'}
                     </Badge>
                   )}
+                  {tenant?.status === 'expired' && adGateSettings?.is_enabled && (
+                    <Badge variant="outline" className="text-orange-600 border-orange-300">
+                      <Megaphone className="h-3 w-3 mr-1" />
+                      Gói miễn phí trọn đời
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {remainingDays > 36500 
-                    ? 'Sử dụng vĩnh viễn'
-                    : `Còn ${remainingDays} ngày sử dụng`}
+                  {tenant?.status === 'expired' && adGateSettings?.is_enabled
+                    ? 'Bạn đang dùng gói miễn phí trọn đời, không cần mua (kèm theo quảng cáo)'
+                    : remainingDays > 36500
+                      ? 'Sử dụng vĩnh viễn'
+                      : `Còn ${remainingDays} ngày sử dụng`}
                 </p>
               </div>
 
@@ -360,6 +374,43 @@ export default function SubscriptionPage() {
               pendingPayment ? 'opacity-60 pointer-events-none' : ''
             }`}
           >
+            {/* Free-with-ads plan – shown only when ad gate is enabled */}
+            {adGateSettings?.is_enabled && (
+              <Card className="border-dashed border-2 border-muted-foreground/30 bg-muted/20 relative overflow-hidden">
+                <div className="absolute top-3 right-3">
+                  <Badge variant="secondary" className="text-xs">Miễn phí</Badge>
+                </div>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Megaphone className="h-4 w-4 text-muted-foreground" />
+                    Gói miễn phí trọn đời
+                  </CardTitle>
+                  <CardDescription>Dùng không giới hạn thời gian, kèm quảng cáo</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-muted-foreground mb-4">0đ</div>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-green-600" />
+                      Sử dụng vĩnh viễn, không cần mua
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-green-600" />
+                      Đầy đủ tính năng
+                    </li>
+                    <li className="flex items-center gap-2 opacity-70">
+                      <Megaphone className="h-4 w-4 text-orange-500" />
+                      Hiển thị quảng cáo mỗi thao tác ({adGateSettings.display_duration_seconds}s
+                      {adGateSettings.is_skippable ? `, bỏ qua sau ${adGateSettings.skip_after_seconds}s` : ', không thể bỏ qua'})
+                    </li>
+                  </ul>
+                  <p className="mt-4 text-xs text-muted-foreground border-t pt-3">
+                    ✅ Bạn đang dùng gói này. Nâng cấp để không thấy quảng cáo.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {plans?.map((plan) => (
               <Card
                 key={plan.id}
@@ -397,6 +448,10 @@ export default function SubscriptionPage() {
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
                       Đầy đủ tính năng
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-primary" />
+                      Không quảng cáo
                     </li>
                   </ul>
                 </CardContent>
