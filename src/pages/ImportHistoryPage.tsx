@@ -92,7 +92,7 @@ const IMPORT_PRODUCT_TAB_TOUR: TourStep[] = [
   },
   {
     title: '🔧 Thao tác với từng sản phẩm',
-    description: 'Mỗi dòng sản phẩm tồn kho có các nút:\n• ✏️ **Sửa** — chỉnh sửa thông tin sản phẩm\n• 🔄 **Trả** — trả sản phẩm về nhà cung cấp\n• 🔑 **BH** — đánh dấu bảo hành (chỉ hàng có IMEI)\n• 🔀 **Chuyển kho** — chuyển sang chi nhánh khác',
+    description: 'Mỗi dòng sản phẩm tồn kho có các nút:\n• ✏️ **Sửa** — chỉnh sửa thông tin sản phẩm\n• 🔄 **Trả** — trả sản phẩm về nhà cung cấp\n• 🔑 **BH** — đánh dấu bảo hành (chỉ hàng có IMEI)\n• 🔀 **Chuyển** — chuyển sản phẩm sang chi nhánh khác (trước nút Xóa)\n\nNgoài ra có thể **tích chọn nhiều sản phẩm** rồi nhấn **Chuyển hàng** ở thanh trên để chuyển hàng loạt.',
     targetSelector: '[data-tour="import-product-actions"]',
     position: 'left',
   },
@@ -1052,18 +1052,34 @@ export default function ImportHistoryPage() {
                                   <Settings2 className="h-3 w-3" />
                                 </Button>
                               )}
-                              {/* Delete button - only for IMEI products and super_admin */}
-                              {product.imei && permissions?.canDeleteIMEIProducts && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  onClick={() => setDeleteProduct(product)}
-                                  className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  title="Xóa sản phẩm"
+                              {/* Transfer button - for admin roles */}
+                              {canTransferStock && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedProductIds(new Set([product.id]));
+                                    setTimeout(() => setShowTransferDialog(true), 0);
+                                  }}
+                                  className="h-7 text-xs gap-1"
+                                  title="Chuyển sang chi nhánh khác"
                                 >
-                                  <Trash2 className="h-3 w-3" />
+                                  <ArrowRightLeft className="h-3 w-3" />
+                                  Chuyển
                                 </Button>
                               )}
+                               {/* Delete button - only for IMEI products and super_admin */}
+                              {product.imei && permissions?.canDeleteIMEIProducts && (
+                                 <Button 
+                                   variant="ghost" 
+                                   size="icon"
+                                   onClick={() => setDeleteProduct(product)}
+                                   className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                   title="Xóa sản phẩm"
+                                 >
+                                   <Trash2 className="h-3 w-3" />
+                                 </Button>
+                               )}
                             </>
                           )}
                           {(product.status === 'warranty' || warrantyMarkedIds.has(product.id)) && product.status !== 'in_stock' && (
