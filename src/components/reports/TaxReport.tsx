@@ -258,7 +258,7 @@ export function TaxReport() {
       {/* Time Period Selector */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" data-tour="tax-report-period">
             {[
               { value: 'this_month', label: 'Tháng này' },
               { value: 'q1', label: 'Quý 1' },

@@ -223,7 +223,7 @@ export function RevenueProfitReport() {
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-wrap gap-4 items-end">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" data-tour="report-time-presets">
               {timePresets.map((preset) => (
                 <Button
                   key={preset.value}

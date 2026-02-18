@@ -232,7 +232,7 @@ export function StaffReport() {
         <CardContent className="pt-4 md:pt-6 pb-4">
           {/* Time presets - horizontal scroll on mobile */}
           <ScrollArea className="w-full">
-            <div className="flex gap-2 pb-2">
+            <div className="flex gap-2 pb-2" data-tour="staff-report-filter">
               {timePresets.map((p) => (
                 <Button key={p.value} variant="outline" size="sm" className="flex-shrink-0 text-xs" onClick={() => handleTimePreset(p.value)}>
                   {p.label}
