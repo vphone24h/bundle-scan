@@ -148,6 +148,12 @@ const cashBookTourSteps: TourStep[] = [
     position: 'bottom',
   },
   {
+    title: '🕐 Lịch sử số dư',
+    description: 'Ghi nhận số dư cuối ngày của toàn bộ quỹ. Nhấn vào để mở rộng, xem từng ngày thu bao nhiêu – chi bao nhiêu – còn lại bao nhiêu. Xuất Excel để lưu báo cáo.',
+    targetSelector: '[data-tour="cashbook-balance-history"]',
+    position: 'bottom',
+  },
+  {
     title: '📋 Chi tiết – Bộ lọc giao dịch',
     description: 'Lọc giao dịch theo ngày, danh mục, nguồn tiền, nhân viên lập phiếu. Nhấn "Bộ lọc" để mở rộng thêm tùy chọn. Xuất Excel để in báo cáo.',
     targetSelector: '[data-tour="cashbook-detail-filter"]',
