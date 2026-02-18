@@ -42,6 +42,23 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
       return;
     }
 
+    const scrollAndMeasure = (selector: string) => {
+      const el = document.querySelector(selector);
+      if (!el) {
+        setTargetRect(null);
+        return;
+      }
+      // Scroll element into center view smoothly
+      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      // Wait for scroll animation to finish before measuring
+      setTimeout(() => {
+        const updated = document.querySelector(selector);
+        if (updated) {
+          setTargetRect(updated.getBoundingClientRect());
+        }
+      }, 500);
+    };
+
     // Auto-open mobile sidebar if target is inside it
     const isSidebarTarget = step.targetSelector.startsWith('[data-tour="sidebar-');
     if (isSidebarTarget) {
@@ -51,37 +68,15 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
         const isOpen = sidebar && !sidebar.classList.contains('-translate-x-full');
         if (!isOpen) {
           menuBtn.click();
-          setTimeout(() => {
-            const el = document.querySelector(step.targetSelector!);
-            if (el) {
-              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              setTimeout(() => {
-                setTargetRect(el.getBoundingClientRect());
-              }, 300);
-            }
-          }, 400);
+          setTimeout(() => scrollAndMeasure(step.targetSelector!), 450);
           return;
         }
       }
     }
 
-    const el = document.querySelector(step.targetSelector);
-    if (el) {
-      if (isSidebarTarget) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(() => {
-          setTargetRect(el.getBoundingClientRect());
-        }, 300);
-      } else {
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-        setTargetRect(el.getBoundingClientRect());
-      }
-    } else {
-      setTargetRect(null);
-    }
+    scrollAndMeasure(step.targetSelector);
   }, [step?.targetSelector]);
 
-  // Navigate when step changes
   useEffect(() => {
     if (!isActive || !step?.navigateTo) return;
     navigate(step.navigateTo);
@@ -89,7 +84,8 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
 
   useEffect(() => {
     if (!isActive) return;
-    const timer = setTimeout(updateTargetRect, 450);
+    // Longer initial delay to wait for DOM to render (especially after tab switches)
+    const timer = setTimeout(updateTargetRect, 600);
     window.addEventListener('resize', updateTargetRect);
     window.addEventListener('scroll', updateTargetRect, true);
     return () => {
