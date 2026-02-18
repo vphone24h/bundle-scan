@@ -22,26 +22,32 @@ import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/Onboard
 const INVENTORY_TOUR_STEPS: TourStep[] = [
   {
     title: 'Tồn kho 📦',
-    description: 'Đây là trang quản lý **tồn kho**. Hãy cùng tìm hiểu cách xem **chi tiết sản phẩm** trên điện thoại!',
+    description: 'Đây là trang quản lý **tồn kho** — nơi bạn theo dõi toàn bộ hàng hóa đang có trong cửa hàng theo thời gian thực.',
+    isInfo: true,
+  },
+  {
+    title: '📊 Bảng tồn kho',
+    description: 'Sau khi **nhập hàng**, danh sách sản phẩm sẽ hiện ở đây với đầy đủ thông tin: **tên**, **SKU**, **chi nhánh**, **số lượng tồn**. Nếu chưa có sản phẩm, hãy vào **Nhập hàng** để thêm trước nhé!',
     isInfo: true,
   },
   {
     title: '👆 Vuốt sang phải để xem thêm',
-    description: 'Trên điện thoại, bảng có nhiều cột bị ẩn. Hãy dùng ngón tay **vuốt sang phải** trên bảng để xem thêm thông tin.',
-    targetSelector: '[data-tour="inventory-table"]',
-    position: 'top',
-    gesture: 'swipe-right',
+    description: 'Trên điện thoại, bảng có nhiều cột bị ẩn. Dùng ngón tay **vuốt sang phải** trên bảng để xem thêm thông tin như **giá nhập**, **tổng nhập**, **đã bán**.',
+    isInfo: true,
   },
   {
-    title: '👆 Nhấn nút xem chi tiết',
-    description: 'Nhấn vào nút này để mở popup hiển thị toàn bộ thông tin: **danh sách IMEI**, **giá nhập**, **giá bán**, **trạng thái** từng sản phẩm.',
-    targetSelector: '[data-tour="inventory-detail-btn"]',
-    position: 'bottom',
-    gesture: 'tap',
+    title: '🔍 Xem chi tiết sản phẩm',
+    description: 'Mỗi dòng có nút **"IMEI"** hoặc **"Chi tiết"** để mở popup xem toàn bộ thông tin: **danh sách IMEI**, **giá nhập**, **giá bán**, **trạng thái** từng máy.',
+    isInfo: true,
   },
   {
-    title: '👆 Vuốt phải trong popup chi tiết',
-    description: 'Trong popup chi tiết, bảng cũng có thể tràn. Hãy **vuốt sang phải** để xem hết thông tin sản phẩm. Vậy là xong! 🎊',
+    title: '🔎 Bộ lọc & Tìm kiếm',
+    description: 'Dùng thanh **tìm kiếm** để tìm nhanh theo tên, SKU hoặc IMEI. Bộ lọc giúp xem theo **danh mục**, **chi nhánh**, **loại sản phẩm** hay **trạng thái tồn kho**.',
+    isInfo: true,
+  },
+  {
+    title: '✅ Hàng bảo hành & Kiểm kho',
+    description: 'Tab **"Hàng bảo hành"** theo dõi hàng lỗi cần xử lý. Tab **"Kiểm kho"** giúp đối soát số lượng thực tế với hệ thống định kỳ. Vậy là xong! 🎊',
     isInfo: true,
   },
 ];
