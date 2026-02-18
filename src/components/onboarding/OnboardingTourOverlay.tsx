@@ -34,6 +34,28 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete }: Onboardin
       setTargetRect(null);
       return;
     }
+
+    // Auto-open mobile sidebar if target is inside it
+    if (step.targetSelector.startsWith('[data-tour="sidebar-')) {
+      const menuBtn = document.querySelector('[data-tour="mobile-menu-btn"]') as HTMLElement | null;
+      if (menuBtn && window.innerWidth < 1024) {
+        const sidebar = document.querySelector('aside.fixed.z-40') as HTMLElement | null;
+        const isOpen = sidebar && !sidebar.classList.contains('-translate-x-full');
+        if (!isOpen) {
+          menuBtn.click();
+          // Wait for sidebar animation
+          setTimeout(() => {
+            const el = document.querySelector(step.targetSelector!);
+            if (el) {
+              setTargetRect(el.getBoundingClientRect());
+              el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
+          }, 350);
+          return;
+        }
+      }
+    }
+
     const el = document.querySelector(step.targetSelector);
     if (el) {
       const rect = el.getBoundingClientRect();
