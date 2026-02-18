@@ -297,13 +297,12 @@ export function AdvertisementFormDialog({
               <Label htmlFor="videoUrl">Link video *</Label>
               <Input
                 id="videoUrl"
-                type="url"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="https://example.com/video.mp4"
+                placeholder="https://youtube.com/watch?v=... hoặc link .mp4"
               />
               <p className="text-xs text-muted-foreground">
-                Hỗ trợ link trực tiếp đến file video (.mp4, .webm). Không hỗ trợ YouTube/Vimeo embed.
+                Hỗ trợ: YouTube, Vimeo, hoặc link trực tiếp file video (.mp4, .webm)
               </p>
             </div>
           )}
