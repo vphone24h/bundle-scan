@@ -48,15 +48,15 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
         setTargetRect(null);
         return;
       }
-      // Scroll element into center view - instant for speed
-      el.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'nearest' });
-      // Short wait for layout to settle then measure
+      // Smooth scroll so user can see where it's going
+      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      // Wait for scroll to finish then measure
       setTimeout(() => {
         const updated = document.querySelector(selector);
         if (updated) {
           setTargetRect(updated.getBoundingClientRect());
         }
-      }, 160);
+      }, 320);
     };
 
     // Auto-open mobile sidebar if target is inside it
