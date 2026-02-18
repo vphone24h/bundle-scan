@@ -204,7 +204,7 @@ export function LandingProductsTab() {
   return (
     <div className="space-y-6">
       {/* Danh mục sản phẩm */}
-      <Card>
+      <Card data-tour="landing-products-category">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <FolderPlus className="h-4 w-4" />
@@ -250,7 +250,7 @@ export function LandingProductsTab() {
               <Package className="h-4 w-4" />
               Sản phẩm ({products?.length || 0})
             </CardTitle>
-            <Button onClick={openAddProduct} size="sm" className="gap-1">
+            <Button onClick={openAddProduct} size="sm" className="gap-1" data-tour="landing-products-add-btn">
               <Plus className="h-4 w-4" />
               Thêm sản phẩm
             </Button>
