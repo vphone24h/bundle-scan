@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -31,11 +30,11 @@ import {
   CheckCircle,
   Phone,
   QrCode,
-  Trash2,
   XCircle,
   MessageCircle,
   ExternalLink,
-  Megaphone
+  Megaphone,
+  ChevronRight,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { formatNumber } from '@/lib/formatNumber';
@@ -67,34 +66,32 @@ interface PaymentConfig {
 export default function SubscriptionPage() {
   const { data: tenant } = useCurrentTenant();
   const { data: plans } = useSubscriptionPlans();
-  const { data: payments, refetch: refetchPayments } = usePaymentRequests(tenant?.id);
+  const { data: payments } = usePaymentRequests(tenant?.id);
   const { data: history } = useSubscriptionHistory(tenant?.id);
   const { data: permissions } = usePermissions();
   const { data: adGateSettings } = useAdGateSettings();
   const createPayment = useCreatePaymentRequest();
   const cancelPayment = useCancelPaymentRequest();
 
-
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
   const [note, setNote] = useState('');
+  // Plan selection dialog (step 1)
+  const [showPlanDialog, setShowPlanDialog] = useState(false);
+  // Payment QR dialog (step 2)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentCode, setPaymentCode] = useState('');
   const [selectedAmount, setSelectedAmount] = useState(0);
 
-  // Fetch payment config
   const { data: configs } = useQuery({
     queryKey: ['payment-config'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('payment_config')
-        .select('*');
+      const { data, error } = await supabase.from('payment_config').select('*');
       if (error) throw error;
       return data as PaymentConfig[];
     },
   });
 
-  // Fetch bank accounts
   const { data: bankAccounts } = useQuery({
     queryKey: ['bank-accounts-active'],
     queryFn: async () => {
@@ -118,18 +115,26 @@ export default function SubscriptionPage() {
   const isSuperAdmin = permissions?.role === 'super_admin';
   const remainingDays = calculateRemainingDays(tenant || null);
   const pendingPayment = payments?.find(p => p.status === 'pending');
+  const activePlan = plans?.find(p => p.id === selectedPlan);
 
-  // Generate VietQR URL using shared utility
   const generateVietQRUrl = (bank: BankAccount, amount: number, content: string) => {
     const bankCode = getBankCode(bank.bank_name);
     if (!bankCode) return null;
-    
     return generateQRUrl(bankCode, bank.account_number, amount, content, bank.account_holder);
   };
 
+  // Step 1: Click on plan → open plan dialog
+  const handleSelectPlan = (planId: string) => {
+    if (pendingPayment) return;
+    setSelectedPlan(planId);
+    setNote('');
+    setPaymentMethod('bank_transfer');
+    setShowPlanDialog(true);
+  };
+
+  // Step 2: Submit payment → open QR dialog
   const handleSubmitPayment = async () => {
     if (!selectedPlan || !tenant) return;
-
     const plan = plans?.find(p => p.id === selectedPlan);
     if (!plan) return;
 
@@ -143,20 +148,12 @@ export default function SubscriptionPage() {
 
       setPaymentCode(result.payment_code);
       setSelectedAmount(plan.price);
+      setShowPlanDialog(false);
       setShowPaymentDialog(true);
-      setSelectedPlan('');
-      setNote('');
 
-      toast({
-        title: 'Đã tạo yêu cầu thanh toán',
-        description: 'Vui lòng chuyển khoản theo hướng dẫn',
-      });
+      toast({ title: 'Đã tạo yêu cầu thanh toán', description: 'Vui lòng chuyển khoản theo hướng dẫn' });
     } catch (error: any) {
-      toast({
-        title: 'Lỗi',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -165,10 +162,7 @@ export default function SubscriptionPage() {
     toast({ title: 'Đã sao chép' });
   };
 
-  // Generate transfer content: {TENANT_SUBDOMAIN} - {PAYMENT_CODE}
-  const getTransferContent = () => {
-    return `${tenant?.subdomain?.toUpperCase() || ''} ${paymentCode}`;
-  };
+  const getTransferContent = () => `${tenant?.subdomain?.toUpperCase() || ''} ${paymentCode}`;
 
   return (
     <MainLayout>
@@ -194,12 +188,8 @@ export default function SubscriptionPage() {
             <CardContent>
               <div className="grid gap-4 sm:grid-cols-3">
                 {feedbackZaloUrl && (
-                  <a
-                    href={`https://zalo.me/${feedbackZaloUrl.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors group"
-                  >
+                  <a href={`https://zalo.me/${feedbackZaloUrl.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 flex-shrink-0">
                       <MessageCircle className="h-6 w-6" />
                     </div>
@@ -211,12 +201,8 @@ export default function SubscriptionPage() {
                   </a>
                 )}
                 {feedbackFbUrl && (
-                  <a
-                    href={feedbackFbUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors group"
-                  >
+                  <a href={feedbackFbUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 flex-shrink-0">
                       <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                     </div>
@@ -228,10 +214,8 @@ export default function SubscriptionPage() {
                   </a>
                 )}
                 {feedbackHotline && (
-                  <a
-                    href={`tel:${feedbackHotline.replace(/\s/g, '')}`}
-                    className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors group"
-                  >
+                  <a href={`tel:${feedbackHotline.replace(/\s/g, '')}`}
+                    className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors group">
                     <div className="flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 flex-shrink-0">
                       <Phone className="h-6 w-6" />
                     </div>
@@ -313,29 +297,15 @@ export default function SubscriptionPage() {
                         if (confirm('Bạn có chắc muốn hủy yêu cầu thanh toán này?')) {
                           try {
                             await cancelPayment.mutateAsync(pendingPayment.id);
-                            toast({
-                              title: 'Đã hủy yêu cầu',
-                              description: 'Bạn có thể tạo yêu cầu thanh toán mới',
-                            });
+                            toast({ title: 'Đã hủy yêu cầu', description: 'Bạn có thể tạo yêu cầu thanh toán mới' });
                           } catch (error: any) {
-                            toast({
-                              title: 'Lỗi',
-                              description: error.message,
-                              variant: 'destructive',
-                            });
+                            toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
                           }
                         }
                       }}
                       disabled={cancelPayment.isPending}
                     >
-                      {cancelPayment.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <XCircle className="h-4 w-4 mr-1" />
-                          Hủy
-                        </>
-                      )}
+                      {cancelPayment.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><XCircle className="h-4 w-4 mr-1" />Hủy</>}
                     </Button>
                   </div>
                 </div>
@@ -349,12 +319,7 @@ export default function SubscriptionPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Hotline hỗ trợ</p>
-                <a 
-                  href={`tel:${hotline.replace(/\s/g, '')}`}
-                  className="font-semibold text-primary hover:underline"
-                >
-                  {hotline}
-                </a>
+                <a href={`tel:${hotline.replace(/\s/g, '')}`} className="font-semibold text-primary hover:underline">{hotline}</a>
               </div>
             </div>
           </CardContent>
@@ -369,12 +334,8 @@ export default function SubscriptionPage() {
             </div>
           )}
 
-          <div
-            className={`grid gap-4 md:grid-cols-2 lg:grid-cols-3 ${
-              pendingPayment ? 'opacity-60 pointer-events-none' : ''
-            }`}
-          >
-            {/* Free-with-ads plan – shown only when ad gate is enabled */}
+          <div className={`grid gap-4 md:grid-cols-2 lg:grid-cols-3 ${pendingPayment ? 'opacity-60 pointer-events-none' : ''}`}>
+            {/* Free-with-ads plan */}
             {adGateSettings?.is_enabled && (
               <Card className="border-dashed border-2 border-muted-foreground/30 bg-muted/20 relative overflow-hidden">
                 <div className="absolute top-3 right-3">
@@ -414,17 +375,15 @@ export default function SubscriptionPage() {
             {plans?.map((plan) => (
               <Card
                 key={plan.id}
-                className={`cursor-pointer transition-all ${
-                  selectedPlan === plan.id ? 'ring-2 ring-primary' : 'hover:border-primary/50'
+                className={`cursor-pointer transition-all hover:shadow-md hover:border-primary/60 active:scale-[0.99] ${
+                  pendingPayment ? '' : 'hover:ring-1 hover:ring-primary/30'
                 }`}
-                onClick={() => setSelectedPlan(plan.id)}
+                onClick={() => handleSelectPlan(plan.id)}
               >
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     {plan.name}
-                    {selectedPlan === plan.id && (
-                      <CheckCircle className="h-5 w-5 text-primary" />
-                    )}
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </CardTitle>
                   <CardDescription>{plan.description}</CardDescription>
                 </CardHeader>
@@ -432,7 +391,7 @@ export default function SubscriptionPage() {
                   <div className="text-3xl font-bold text-primary mb-4">
                     {formatNumber(plan.price)}đ
                   </div>
-                  <ul className="space-y-2 text-sm">
+                  <ul className="space-y-2 text-sm mb-4">
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
                       {plan.duration_days ? `${plan.duration_days} ngày sử dụng` : 'Sử dụng vĩnh viễn'}
@@ -454,56 +413,15 @@ export default function SubscriptionPage() {
                       Không quảng cáo
                     </li>
                   </ul>
+                  <Button className="w-full" size="sm" onClick={(e) => { e.stopPropagation(); handleSelectPlan(plan.id); }}>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Chọn gói này
+                  </Button>
                 </CardContent>
               </Card>
             ))}
           </div>
         </div>
-
-        {/* Payment Form */}
-        {selectedPlan && !pendingPayment && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Thông tin thanh toán
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Phương thức thanh toán</Label>
-                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="bank_transfer" id="bank" />
-                    <Label htmlFor="bank">Chuyển khoản ngân hàng</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="momo" id="momo" />
-                    <Label htmlFor="momo">Ví MoMo</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Ghi chú (tùy chọn)</Label>
-                <Textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="Ghi chú thêm..."
-                />
-              </div>
-
-              <Button 
-                onClick={handleSubmitPayment}
-                disabled={createPayment.isPending}
-                className="w-full sm:w-auto"
-              >
-                {createPayment.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Tạo yêu cầu thanh toán
-              </Button>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Payment History */}
         <Card>
@@ -515,9 +433,7 @@ export default function SubscriptionPage() {
           </CardHeader>
           <CardContent>
             {history?.length === 0 && (
-              <p className="text-muted-foreground text-center py-4">
-                Chưa có lịch sử
-              </p>
+              <p className="text-muted-foreground text-center py-4">Chưa có lịch sử</p>
             )}
             <div className="space-y-3">
               {history?.map((item) => (
@@ -536,7 +452,74 @@ export default function SubscriptionPage() {
         </Card>
       </div>
 
-      {/* Payment Instructions Dialog with QR */}
+      {/* Step 1: Plan Selection Dialog */}
+      <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-primary" />
+              {activePlan?.name}
+            </DialogTitle>
+            <DialogDescription>{activePlan?.description}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Plan summary */}
+            <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Số tiền:</span>
+                <span className="text-2xl font-bold text-primary">{formatNumber(activePlan?.price || 0)}đ</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Thời hạn:</span>
+                <span className="font-medium">
+                  {activePlan?.duration_days ? `${activePlan.duration_days} ngày` : 'Vĩnh viễn'}
+                </span>
+              </div>
+            </div>
+
+            {/* Features */}
+            <ul className="space-y-1.5 text-sm">
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary flex-shrink-0" /> Tối đa {activePlan?.max_branches} chi nhánh</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary flex-shrink-0" /> Tối đa {activePlan?.max_users} nhân viên</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary flex-shrink-0" /> Đầy đủ tính năng</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-primary flex-shrink-0" /> Không quảng cáo</li>
+            </ul>
+
+            {/* Payment method */}
+            <div className="space-y-2">
+              <Label className="font-medium">Phương thức thanh toán</Label>
+              <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-1">
+                <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-muted/50" onClick={() => setPaymentMethod('bank_transfer')}>
+                  <RadioGroupItem value="bank_transfer" id="bank2" />
+                  <Label htmlFor="bank2" className="cursor-pointer">🏦 Chuyển khoản ngân hàng</Label>
+                </div>
+                <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-muted/50" onClick={() => setPaymentMethod('momo')}>
+                  <RadioGroupItem value="momo" id="momo2" />
+                  <Label htmlFor="momo2" className="cursor-pointer">💜 Ví MoMo</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Note */}
+            <div className="space-y-2">
+              <Label>Ghi chú (tùy chọn)</Label>
+              <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ghi chú thêm..." rows={2} />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowPlanDialog(false)}>Hủy</Button>
+            <Button onClick={handleSubmitPayment} disabled={createPayment.isPending} className="flex-1 sm:flex-none">
+              {createPayment.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <QrCode className="h-4 w-4 mr-2" />
+              Xem QR thanh toán
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Step 2: Payment QR Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -553,14 +536,12 @@ export default function SubscriptionPage() {
             {/* QR Code */}
             {primaryBank && (
               <div className="flex justify-center">
-                <div className="bg-white p-4 rounded-lg border">
+                <div className="bg-white p-4 rounded-lg border shadow-sm">
                   <img 
                     src={generateVietQRUrl(primaryBank, selectedAmount, getTransferContent()) || ''} 
                     alt="QR thanh toán"
                     className="w-48 h-48 object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                 </div>
               </div>
@@ -578,12 +559,7 @@ export default function SubscriptionPage() {
                     <span className="text-sm text-muted-foreground">Số tài khoản:</span>
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-medium">{primaryBank.account_number}</span>
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-6 w-6"
-                        onClick={() => copyToClipboard(primaryBank.account_number)}
-                      >
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(primaryBank.account_number)}>
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
@@ -601,12 +577,7 @@ export default function SubscriptionPage() {
                 <span className="text-sm text-muted-foreground">Số tiền:</span>
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-primary">{formatNumber(selectedAmount)}đ</span>
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    className="h-6 w-6"
-                    onClick={() => copyToClipboard(selectedAmount.toString())}
-                  >
+                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(selectedAmount.toString())}>
                     <Copy className="h-3 w-3" />
                   </Button>
                 </div>
@@ -615,12 +586,7 @@ export default function SubscriptionPage() {
                 <span className="text-sm text-muted-foreground">Nội dung CK:</span>
                 <div className="flex items-center gap-2">
                   <span className="font-mono font-medium text-primary">{getTransferContent()}</span>
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    className="h-6 w-6"
-                    onClick={() => copyToClipboard(getTransferContent())}
-                  >
+                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(getTransferContent())}>
                     <Copy className="h-3 w-3" />
                   </Button>
                 </div>
@@ -637,9 +603,7 @@ export default function SubscriptionPage() {
           </div>
 
           <DialogFooter>
-            <Button onClick={() => setShowPaymentDialog(false)}>
-              Đã hiểu
-            </Button>
+            <Button onClick={() => setShowPaymentDialog(false)}>Đã hiểu</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
