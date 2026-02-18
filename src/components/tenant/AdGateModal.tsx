@@ -23,7 +23,11 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const currentAd = ads?.[currentAdIndex] ?? null;
+  const pinnedAdId = (settings as any).pinned_ad_id as string | null;
+  // Nếu có pinned_ad_id thì dùng quảng cáo đó, ngược lại lấy ngẫu nhiên theo index
+  const currentAd = pinnedAdId
+    ? (ads?.find(a => a.id === pinnedAdId) ?? ads?.[0] ?? null)
+    : (ads?.[currentAdIndex] ?? null);
 
   const startTimer = useCallback(() => {
     setCountdown(settings.display_duration_seconds);

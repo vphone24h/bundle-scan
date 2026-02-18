@@ -4,19 +4,23 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Loader2, Megaphone, Info } from 'lucide-react';
+import { Loader2, Megaphone, Info, Pin, Shuffle } from 'lucide-react';
 import { useAdGateSettings, useUpdateAdGateSettings } from '@/hooks/useAdGate';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useActiveAdvertisements } from '@/hooks/useAdvertisements';
+import { Badge } from '@/components/ui/badge';
 
 export function AdGateManagement() {
   const { data: settings, isLoading } = useAdGateSettings();
   const update = useUpdateAdGateSettings();
+  const { data: activeAds } = useActiveAdvertisements();
 
   const [form, setForm] = useState({
     is_enabled: false,
     display_duration_seconds: 15,
     is_skippable: true,
     skip_after_seconds: 5,
+    pinned_ad_id: null as string | null,
   });
 
   useEffect(() => {
@@ -26,14 +30,17 @@ export function AdGateManagement() {
         display_duration_seconds: settings.display_duration_seconds,
         is_skippable: settings.is_skippable,
         skip_after_seconds: settings.skip_after_seconds,
+        pinned_ad_id: (settings as any).pinned_ad_id ?? null,
       });
     }
   }, [settings]);
 
   const handleSave = () => {
     if (!settings) return;
-    update.mutate({ id: settings.id, ...form });
+    update.mutate({ id: settings.id, ...form } as any);
   };
+
+  const pinnedAd = activeAds?.find(a => a.id === form.pinned_ad_id);
 
   if (isLoading) {
     return (
@@ -76,12 +83,82 @@ export function AdGateManagement() {
 
           {form.is_enabled && (
             <>
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Quảng cáo sẽ lấy từ danh sách quảng cáo đang hoạt động ở tab <strong>Quảng cáo</strong>. Cần có ít nhất 1 quảng cáo đang bật để hiển thị.
-                </AlertDescription>
-              </Alert>
+              {/* Ad Selection */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium flex items-center gap-2">
+                  <Pin className="h-4 w-4" />
+                  Chọn quảng cáo hiển thị
+                </Label>
+
+                {/* Random option */}
+                <div
+                  onClick={() => setForm({ ...form, pinned_ad_id: null })}
+                  className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                    form.pinned_ad_id === null
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:bg-muted/30'
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                    form.pinned_ad_id === null ? 'border-primary' : 'border-muted-foreground'
+                  }`}>
+                    {form.pinned_ad_id === null && <div className="w-2 h-2 rounded-full bg-primary" />}
+                  </div>
+                  <Shuffle className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium text-sm">Ngẫu nhiên</p>
+                    <p className="text-xs text-muted-foreground">Tự động chọn từ các quảng cáo đang hoạt động</p>
+                  </div>
+                </div>
+
+                {/* Specific ad options */}
+                {activeAds && activeAds.length > 0 ? (
+                  <div className="space-y-2">
+                    {activeAds.map((ad) => (
+                      <div
+                        key={ad.id}
+                        onClick={() => setForm({ ...form, pinned_ad_id: ad.id })}
+                        className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                          form.pinned_ad_id === ad.id
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:bg-muted/30'
+                        }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                          form.pinned_ad_id === ad.id ? 'border-primary' : 'border-muted-foreground'
+                        }`}>
+                          {form.pinned_ad_id === ad.id && <div className="w-2 h-2 rounded-full bg-primary" />}
+                        </div>
+                        {ad.image_url && (
+                          <img
+                            src={ad.image_url}
+                            alt={ad.title}
+                            className="w-12 h-8 object-cover rounded flex-shrink-0"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{ad.title}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <Badge variant="outline" className="text-xs py-0">
+                              {ad.ad_type === 'video' ? '🎬 Video' : '🖼️ Banner'}
+                            </Badge>
+                            {ad.description && (
+                              <p className="text-xs text-muted-foreground truncate">{ad.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Chưa có quảng cáo nào đang hoạt động. Vào tab <strong>Quảng cáo</strong> để thêm và bật quảng cáo.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
 
               {/* Duration */}
               <div className="space-y-3">
@@ -151,6 +228,7 @@ export function AdGateManagement() {
             <li>• Chế độ: <strong>{form.is_enabled ? 'Quảng cáo (người dùng có thể xem miễn phí)' : 'Chặn (bắt buộc mua gói)'}</strong></li>
             {form.is_enabled && (
               <>
+                <li>• Quảng cáo: <strong>{pinnedAd ? pinnedAd.title : 'Ngẫu nhiên'}</strong></li>
                 <li>• Thời gian xem: <strong>{form.display_duration_seconds} giây</strong></li>
                 <li>• Bỏ qua: <strong>{form.is_skippable ? `Sau ${form.skip_after_seconds}s` : 'Không cho phép'}</strong></li>
               </>
