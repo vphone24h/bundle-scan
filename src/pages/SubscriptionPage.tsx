@@ -283,31 +283,57 @@ export default function SubscriptionPage() {
               </div>
 
               {pendingPayment && (
-                <div className="bg-primary/10 text-primary px-4 py-3 rounded-lg">
+              <div className="bg-primary/10 text-primary px-4 py-3 rounded-lg space-y-2">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="font-medium">Đang chờ duyệt thanh toán</p>
                       <p className="text-xs">Mã: {pendingPayment.payment_code}</p>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={async () => {
-                        if (confirm('Bạn có chắc muốn hủy yêu cầu thanh toán này?')) {
-                          try {
-                            await cancelPayment.mutateAsync(pendingPayment.id);
-                            toast({ title: 'Đã hủy yêu cầu', description: 'Bạn có thể tạo yêu cầu thanh toán mới' });
-                          } catch (error: any) {
-                            toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-primary/40 text-primary hover:bg-primary/10"
+                        onClick={() => {
+                          setPaymentCode(pendingPayment.payment_code);
+                          setSelectedAmount(pendingPayment.amount);
+                          setShowPaymentDialog(true);
+                        }}
+                      >
+                        <QrCode className="h-4 w-4 mr-1" />
+                        Xem QR
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={async () => {
+                          if (confirm('Bạn có chắc muốn hủy yêu cầu thanh toán này?')) {
+                            try {
+                              await cancelPayment.mutateAsync(pendingPayment.id);
+                              toast({ title: 'Đã hủy yêu cầu', description: 'Bạn có thể tạo yêu cầu thanh toán mới' });
+                            } catch (error: any) {
+                              toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+                            }
                           }
-                        }
-                      }}
-                      disabled={cancelPayment.isPending}
-                    >
-                      {cancelPayment.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><XCircle className="h-4 w-4 mr-1" />Hủy</>}
-                    </Button>
+                        }}
+                        disabled={cancelPayment.isPending}
+                      >
+                        {cancelPayment.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><XCircle className="h-4 w-4 mr-1" />Hủy</>}
+                      </Button>
+                    </div>
                   </div>
+                  {/* Bank info preview */}
+                  {primaryBank && (
+                    <div className="text-xs border-t border-primary/20 pt-2 space-y-1 text-primary/80">
+                      <p>🏦 {primaryBank.bank_name} · STK: <span className="font-mono font-semibold">{primaryBank.account_number}</span>
+                        <button className="ml-1 opacity-70 hover:opacity-100" onClick={() => copyToClipboard(primaryBank.account_number)}>
+                          <Copy className="h-3 w-3 inline" />
+                        </button>
+                      </p>
+                      <p>Chủ TK: {primaryBank.account_holder}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
