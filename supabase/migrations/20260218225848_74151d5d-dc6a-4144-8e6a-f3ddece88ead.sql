@@ -1,0 +1,1 @@
+ALTER TABLE public.ad_gate_settings ADD COLUMN IF NOT EXISTS pinned_ad_id uuid REFERENCES public.advertisements(id) ON DELETE SET NULL;

@@ -21,6 +21,7 @@ export type Database = {
           id: string
           is_enabled: boolean
           is_skippable: boolean
+          pinned_ad_id: string | null
           skip_after_seconds: number
           updated_at: string
         }
@@ -30,6 +31,7 @@ export type Database = {
           id?: string
           is_enabled?: boolean
           is_skippable?: boolean
+          pinned_ad_id?: string | null
           skip_after_seconds?: number
           updated_at?: string
         }
@@ -39,10 +41,26 @@ export type Database = {
           id?: string
           is_enabled?: boolean
           is_skippable?: boolean
+          pinned_ad_id?: string | null
           skip_after_seconds?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ad_gate_settings_pinned_ad_id_fkey"
+            columns: ["pinned_ad_id"]
+            isOneToOne: false
+            referencedRelation: "advertisements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_gate_settings_pinned_ad_id_fkey"
+            columns: ["pinned_ad_id"]
+            isOneToOne: false
+            referencedRelation: "advertisements_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       advertisements: {
         Row: {
