@@ -363,7 +363,7 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
             <span className="text-[10px]">Vuốt sang phải để tiếp tục</span>
             <span
               className="inline-flex items-center gap-0.5 text-[10px]"
-              style={{ animation: 'swipe-hint 1.4s ease-in-out infinite' }}
+              style={{ animation: 'swipe-hint 0.9s ease-in-out infinite' }}
             >
               <span>👉</span>
             </span>
