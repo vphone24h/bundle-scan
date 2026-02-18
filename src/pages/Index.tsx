@@ -58,11 +58,11 @@ const dashboardTourSteps: TourStep[] = [
 const Index = () => {
   const [productTab, setProductTab] = useState<'imported' | 'sold'>('imported');
   const [showInstallment, setShowInstallment] = useState(false);
+  const [tourDismissed, setTourDismissed] = useState(false);
   const { isCompleted: dashTourDone, isLoading: dashTourLoading, completeTour: completeDashTour } = useOnboardingTour('dashboard_overview');
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
-  // Use lightweight queries - only fetch what Dashboard needs
   const { data: recentProductsData } = useRecentProducts(5);
   const { data: recentReceiptsData } = useRecentImportReceipts(3);
   const { data: todaySoldProducts, isLoading: soldLoading } = useTodaySoldProducts();
@@ -71,7 +71,17 @@ const Index = () => {
   const recentProducts = recentProductsData || [];
   const recentReceipts = recentReceiptsData || [];
 
-  // No full-screen spinner – shell renders immediately, data fills in progressively
+  // Tour: chưa nhập hàng → hiện lại mỗi lần vào, đã nhập hàng → lưu vĩnh viễn khi hoàn thành
+  const hasImported = (stats?.totalProducts || 0) > 0;
+  const showDashTour = !dashTourLoading && !dashTourDone && !tourDismissed;
+
+  const handleDashTourComplete = () => {
+    if (hasImported) {
+      completeDashTour();
+    } else {
+      setTourDismissed(true);
+    }
+  };
 
   return (
     <MainLayout>
@@ -330,8 +340,8 @@ const Index = () => {
       <InstallmentCalculatorDialog open={showInstallment} onOpenChange={setShowInstallment} />
       <OnboardingTourOverlay
         steps={dashboardTourSteps}
-        isActive={!dashTourLoading && !dashTourDone}
-        onComplete={completeDashTour}
+        isActive={showDashTour}
+        onComplete={handleDashTourComplete}
         tourKey="dashboard_overview"
       />
     </MainLayout>
