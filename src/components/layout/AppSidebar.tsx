@@ -208,6 +208,7 @@ export function AppSidebar() {
               <>
                 <button
                   onClick={() => toggleExpand(item.title)}
+                  data-tour={`sidebar-${item.href.replace(/\//g, '').replace(/-/g, '')}`}
                   className={cn(
                     'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     isActive(item.href)
@@ -262,6 +263,7 @@ export function AppSidebar() {
                   onMouseEnter={() => prefetchRoute(item.href)}
                   onTouchStart={() => prefetchRoute(item.href)}
                 onClick={() => setIsMobileOpen(false)}
+                data-tour={`sidebar-${item.href.replace(/\//g, '').replace(/-/g, '') || 'home'}`}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                   isActive(item.href)
@@ -314,6 +316,7 @@ export function AppSidebar() {
       <Button
         variant="outline"
         size="icon"
+        data-tour="mobile-menu-btn"
         className="fixed z-50 lg:hidden h-12 w-12 bg-card shadow-lg border-2 touch-target"
         style={{
           top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))',

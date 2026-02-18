@@ -13,10 +13,52 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
+import { useOnboardingTour } from '@/hooks/useOnboardingTour';
+
+const dashboardTourSteps: TourStep[] = [
+  {
+    title: '① Nút Menu',
+    description: 'Đây là nút mở Menu trên điện thoại. Nhấn vào đây để thấy tất cả các chức năng của hệ thống như: Nhập hàng, Xuất hàng, Tồn kho, Báo cáo...',
+    targetSelector: '[data-tour="mobile-menu-btn"]',
+    position: 'bottom',
+  },
+  {
+    title: '② Xuất hàng',
+    description: 'Chức năng Xuất hàng giúp bạn tạo phiếu bán hàng, quản lý lịch sử xuất, in hóa đơn và quản lý thuế.',
+    targetSelector: '[data-tour="sidebar-export"]',
+    position: 'right',
+  },
+  {
+    title: '③ Trả hàng',
+    description: 'Khi khách trả hàng hoặc bạn trả hàng cho nhà cung cấp, sử dụng chức năng Trả hàng để quản lý.',
+    targetSelector: '[data-tour="sidebar-returns"]',
+    position: 'right',
+  },
+  {
+    title: '④ Sản phẩm & In',
+    description: 'Quản lý danh sách sản phẩm: chọn sản phẩm để xem chi tiết, in tem barcode, QR code phục vụ bán hàng.',
+    targetSelector: '[data-tour="sidebar-products"]',
+    position: 'right',
+  },
+  {
+    title: '⑤ Website bán hàng',
+    description: 'Tạo website bán hàng riêng cho cửa hàng. Khách hàng có thể tra cứu bảo hành, xem sản phẩm — giúp giữ chân khách hàng hiệu quả.',
+    targetSelector: '[data-tour="sidebar-landingsettings"]',
+    position: 'right',
+  },
+  {
+    title: '✓ Hoàn tất!',
+    description: 'Bạn đã nắm được các chức năng chính. Hãy bắt đầu sử dụng hệ thống ngay!',
+    isInfo: true,
+    position: 'center',
+  },
+];
 
 const Index = () => {
   const [productTab, setProductTab] = useState<'imported' | 'sold'>('imported');
   const [showInstallment, setShowInstallment] = useState(false);
+  const { isCompleted: dashTourDone, isLoading: dashTourLoading, completeTour: completeDashTour } = useOnboardingTour('dashboard_overview');
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
@@ -286,6 +328,12 @@ const Index = () => {
         </div>
       </div>
       <InstallmentCalculatorDialog open={showInstallment} onOpenChange={setShowInstallment} />
+      <OnboardingTourOverlay
+        steps={dashboardTourSteps}
+        isActive={!dashTourLoading && !dashTourDone}
+        onComplete={completeDashTour}
+        tourKey="dashboard_overview"
+      />
     </MainLayout>
   );
 };
