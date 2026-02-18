@@ -262,12 +262,13 @@ export default function ReportsPage() {
   const activeReport = reportTabs.find(t => t.id === activeTab);
   const ActiveIcon = activeReport?.icon || DollarSign;
 
-  const showRevenueTour = manualTourActive || (!tourLoading && !reportsTourDone && profit7Days !== null && activeTab === 'revenue');
-  const showProductsTour = manualTourActive || (!productsTourLoading && !productsTourDone && activeTab === 'products');
-  const showCustomersTour = manualTourActive || (!customersTourLoading && !customersTourDone && activeTab === 'customers');
-  const showSuppliersTour = manualTourActive || (!suppliersTourLoading && !suppliersTourDone && activeTab === 'suppliers');
-  const showStaffTour = manualTourActive || (!staffTourLoading && !staffTourDone && activeTab === 'staff');
-  const showTaxTour = manualTourActive || (!taxTourLoading && !taxTourDone && activeTab === 'tax' && canViewTaxReport);
+  // Only show the tour for the currently active tab
+  const showRevenueTour = (manualTourActive && activeTab === 'revenue') || (!tourLoading && !reportsTourDone && profit7Days !== null && activeTab === 'revenue');
+  const showProductsTour = (manualTourActive && activeTab === 'products') || (!productsTourLoading && !productsTourDone && activeTab === 'products');
+  const showCustomersTour = (manualTourActive && activeTab === 'customers') || (!customersTourLoading && !customersTourDone && activeTab === 'customers');
+  const showSuppliersTour = (manualTourActive && activeTab === 'suppliers') || (!suppliersTourLoading && !suppliersTourDone && activeTab === 'suppliers');
+  const showStaffTour = (manualTourActive && activeTab === 'staff') || (!staffTourLoading && !staffTourDone && activeTab === 'staff');
+  const showTaxTour = (manualTourActive && activeTab === 'tax' && canViewTaxReport) || (!taxTourLoading && !taxTourDone && activeTab === 'tax' && canViewTaxReport);
 
   return (
     <MainLayout>
