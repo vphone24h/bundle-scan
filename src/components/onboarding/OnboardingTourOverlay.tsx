@@ -129,28 +129,15 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete }: Onboardin
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    // On mobile, always show popup at bottom of screen if target is in upper half, or top if lower
+    // On mobile, position popup near the top (close to menu button) for first step
     if (vw < 640) {
-      const targetMid = targetRect.top + targetRect.height / 2;
-      if (targetMid < vh / 2) {
-        // Target in upper half → popup at bottom
-        return {
-          position: 'fixed',
-          bottom: 16,
-          left: 16,
-          right: 16,
-          zIndex: 10002,
-        };
-      } else {
-        // Target in lower half → popup at top
-        return {
-          position: 'fixed',
-          top: Math.max(60, 16), // avoid safe-area
-          left: 16,
-          right: 16,
-          zIndex: 10002,
-        };
-      }
+      return {
+        position: 'fixed',
+        top: Math.max(80, targetRect.bottom + gap),
+        left: 16,
+        right: 16,
+        zIndex: 10002,
+      };
     }
 
     // Desktop positioning
@@ -179,17 +166,17 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete }: Onboardin
         onClick={handleSkip}
       />
 
-      {/* Highlight border around target (pointer-events-none so target stays clickable) */}
+      {/* Highlight border around target */}
       {targetRect && !step.isInfo && (
         <div
-          className="fixed z-[10001] rounded-lg pointer-events-none"
+          className="fixed z-[10001] rounded-lg pointer-events-none animate-pulse"
           style={{
             top: targetRect.top - 6,
             left: targetRect.left - 6,
             width: targetRect.width + 12,
             height: targetRect.height + 12,
-            border: '3px solid hsl(var(--primary))',
-            boxShadow: '0 0 0 4px hsl(var(--primary) / 0.3), 0 0 20px hsl(var(--primary) / 0.2)',
+            border: '3px solid hsl(var(--destructive))',
+            boxShadow: '0 0 0 4px hsl(var(--destructive) / 0.3), 0 0 20px hsl(var(--destructive) / 0.2)',
             background: 'transparent',
           }}
         />
