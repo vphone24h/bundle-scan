@@ -78,9 +78,16 @@ export default function RegisterPage() {
       });
 
       if (error) {
-        // Extract error message from FunctionsHttpError
-        const errorBody = error.message;
-        throw new Error(errorBody || 'Có lỗi xảy ra, vui lòng thử lại');
+        // Try to extract the actual error message from the response body
+        let errorMsg = 'Có lỗi xảy ra, vui lòng thử lại';
+        try {
+          const ctx = (error as any).context;
+          if (ctx) {
+            const body = typeof ctx.json === 'function' ? await ctx.json() : null;
+            if (body?.error) errorMsg = body.error;
+          }
+        } catch {}
+        throw new Error(errorMsg);
       }
       if (data?.error) throw new Error(data.error);
 

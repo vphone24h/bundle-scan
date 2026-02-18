@@ -247,11 +247,11 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Validate subdomain format
-    const subdomainRegex = /^[a-z0-9][a-z0-9-]{2,30}[a-z0-9]$/
-    if (!subdomainRegex.test(subdomain)) {
+    // Validate subdomain format - min 3 chars, max 32
+    const subdomainRegex = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$|^[a-z0-9]{3}$/
+    if (!subdomainRegex.test(subdomain) || subdomain.length < 3 || subdomain.length > 32) {
       return new Response(
-        JSON.stringify({ error: 'Tên miền phụ không hợp lệ (3-32 ký tự, chỉ chữ thường, số và dấu gạch ngang)' }),
+        JSON.stringify({ error: 'ID cửa hàng không hợp lệ (3-32 ký tự, chỉ chữ thường, số và dấu gạch ngang)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
