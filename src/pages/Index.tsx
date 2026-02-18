@@ -131,7 +131,7 @@ const Index = () => {
   const [productTab, setProductTab] = useState<'imported' | 'sold'>('imported');
   const [showInstallment, setShowInstallment] = useState(false);
   const [manualTourActive, setManualTourActive] = useState(false);
-  const { isCompleted: dashTourDone, isLoading: dashTourLoading, completeTour: completeDashTour } = useOnboardingTour('dashboard_overview', { reshowAfterDays: 7 });
+  const { isCompleted: dashTourDone, isLoading: dashTourLoading, completeTour: completeDashTour } = useOnboardingTour('dashboard_overview');
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
