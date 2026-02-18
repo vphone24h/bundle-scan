@@ -2,6 +2,49 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
+// All known tour keys — used for reset all tours feature
+export const ALL_TOUR_KEYS = [
+  'dashboard_overview',
+  'inventory',
+  'import_history',
+  'import_receipt_tab',
+  'import_product_tab',
+  'export_history',
+  'export_receipt_tab',
+  'export_product_tab',
+  'cashbook',
+  'reports',
+  'landing-page-admin-v3',
+  'customers',
+  'suppliers',
+  'products',
+  'debt',
+  'categories',
+  'users',
+  'audit_logs',
+];
+
+export function useResetAllTours() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!user?.id) return;
+      await supabase
+        .from('onboarding_tours')
+        .delete()
+        .eq('user_id', user.id);
+    },
+    onMutate: () => {
+      // Instantly mark all tours as not completed in cache
+      ALL_TOUR_KEYS.forEach(key => {
+        queryClient.setQueryData(['onboarding-tour', key, user?.id], false);
+      });
+    },
+  });
+}
+
 export function useOnboardingTour(tourKey: string, options?: { reshowAfterDays?: number }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();

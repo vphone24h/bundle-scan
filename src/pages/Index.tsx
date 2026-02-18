@@ -14,7 +14,7 @@ import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
-import { useOnboardingTour } from '@/hooks/useOnboardingTour';
+import { useOnboardingTour, useResetAllTours } from '@/hooks/useOnboardingTour';
 
 const dashboardTourSteps: TourStep[] = [
   {
@@ -132,6 +132,7 @@ const Index = () => {
   const [showInstallment, setShowInstallment] = useState(false);
   const [manualTourActive, setManualTourActive] = useState(false);
   const { isCompleted: dashTourDone, isLoading: dashTourLoading, completeTour: completeDashTour } = useOnboardingTour('dashboard_overview');
+  const { mutate: resetAllTours } = useResetAllTours();
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
@@ -162,7 +163,13 @@ const Index = () => {
             <Button
               variant={manualTourActive ? "default" : "outline"}
               size="sm"
-              onClick={() => setManualTourActive(v => !v)}
+              onClick={() => {
+                if (!manualTourActive) {
+                  // Reset all tours so they show again on each page
+                  resetAllTours();
+                }
+                setManualTourActive(v => !v);
+              }}
               className="h-8 text-xs sm:text-sm"
             >
               <PlayCircle className="mr-1.5 h-4 w-4" />
