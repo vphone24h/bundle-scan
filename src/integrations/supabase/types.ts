@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       ad_gate_settings: {
         Row: {
+          clicks_per_ad: number
           created_at: string
           display_duration_seconds: number
           id: string
@@ -26,6 +27,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          clicks_per_ad?: number
           created_at?: string
           display_duration_seconds?: number
           id?: string
@@ -36,6 +38,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          clicks_per_ad?: number
           created_at?: string
           display_duration_seconds?: number
           id?: string

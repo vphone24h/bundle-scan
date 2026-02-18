@@ -10,6 +10,8 @@ interface MainLayoutProps {
   children: ReactNode;
 }
 
+const AD_CLICK_COUNT_KEY = 'ad_gate_click_count';
+
 function useAdGate() {
   const { data: tenant } = useCurrentTenant();
   const { data: adGateSettings } = useAdGateSettings();
@@ -17,12 +19,11 @@ function useAdGate() {
   const location = useLocation();
   const prevPath = useRef(location.pathname);
   const [showAdGate, setShowAdGate] = useState(false);
-  // Track if we already showed the ad for this session init
-  const shownOnce = useRef(false);
+  const initializedRef = useRef(false);
 
   const isExpired = tenant
     ? (() => {
-        if (tenant.status === 'locked') return false; // locked is handled separately
+        if (tenant.status === 'locked') return false;
         const remaining = calculateRemainingDays(tenant);
         return remaining <= 0;
       })()
@@ -33,16 +34,40 @@ function useAdGate() {
     adGateSettings?.is_enabled === true &&
     (activeAds?.length ?? 0) > 0;
 
-  // Show ad on every route change (page navigation)
+  // Count clicks (page navigations) and show ad every N clicks
   useEffect(() => {
-    if (!adGateActive) return;
+    if (!adGateActive || !adGateSettings) return;
+
+    const clicksPerAd = adGateSettings.clicks_per_ad ?? 7;
     const currentPath = location.pathname;
-    if (currentPath !== prevPath.current || !shownOnce.current) {
+
+    // Track first load
+    if (!initializedRef.current) {
+      initializedRef.current = true;
       prevPath.current = currentPath;
-      shownOnce.current = true;
-      setShowAdGate(true);
+      // Count this as click 1
+      const count = 1;
+      sessionStorage.setItem(AD_CLICK_COUNT_KEY, String(count));
+      if (clicksPerAd <= 1) {
+        setShowAdGate(true);
+      }
+      return;
     }
-  }, [location.pathname, adGateActive]);
+
+    // Only count when path changes
+    if (currentPath === prevPath.current) return;
+    prevPath.current = currentPath;
+
+    const current = parseInt(sessionStorage.getItem(AD_CLICK_COUNT_KEY) || '0', 10);
+    const next = current + 1;
+
+    if (next >= clicksPerAd) {
+      sessionStorage.setItem(AD_CLICK_COUNT_KEY, '0');
+      setShowAdGate(true);
+    } else {
+      sessionStorage.setItem(AD_CLICK_COUNT_KEY, String(next));
+    }
+  }, [location.pathname, adGateActive, adGateSettings]);
 
   const closeAdGate = useCallback(() => setShowAdGate(false), []);
 

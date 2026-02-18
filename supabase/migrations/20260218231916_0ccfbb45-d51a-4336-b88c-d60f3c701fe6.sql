@@ -1,0 +1,1 @@
+ALTER TABLE public.ad_gate_settings ADD COLUMN IF NOT EXISTS clicks_per_ad integer NOT NULL DEFAULT 7;
