@@ -114,7 +114,7 @@ export function ProductTable({
       <>
         <div className="space-y-2">
           {/* Select All Header */}
-          <div className="flex items-center gap-3 p-3 bg-card border rounded-lg">
+          <div className="flex items-center gap-3 p-3 bg-card border rounded-lg" data-tour="product-select-all">
             <Checkbox
               checked={allSelected}
               onCheckedChange={toggleAll}
@@ -152,7 +152,7 @@ export function ProductTable({
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" data-tour="product-action-menu">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
