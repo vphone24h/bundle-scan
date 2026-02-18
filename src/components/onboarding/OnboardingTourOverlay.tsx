@@ -48,15 +48,15 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
         setTargetRect(null);
         return;
       }
-      // Scroll element into center view smoothly
-      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-      // Wait for scroll animation to finish before measuring
+      // Scroll element into center view - instant for speed
+      el.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'nearest' });
+      // Short wait for layout to settle then measure
       setTimeout(() => {
         const updated = document.querySelector(selector);
         if (updated) {
           setTargetRect(updated.getBoundingClientRect());
         }
-      }, 500);
+      }, 160);
     };
 
     // Auto-open mobile sidebar if target is inside it
@@ -68,7 +68,7 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
         const isOpen = sidebar && !sidebar.classList.contains('-translate-x-full');
         if (!isOpen) {
           menuBtn.click();
-          setTimeout(() => scrollAndMeasure(step.targetSelector!), 450);
+          setTimeout(() => scrollAndMeasure(step.targetSelector!), 150);
           return;
         }
       }
@@ -84,8 +84,8 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
 
   useEffect(() => {
     if (!isActive) return;
-    // Longer initial delay to wait for DOM to render (especially after tab switches)
-    const timer = setTimeout(updateTargetRect, 600);
+    // Short delay for DOM to render after tab switch
+    const timer = setTimeout(updateTargetRect, 200);
     window.addEventListener('resize', updateTargetRect);
     window.addEventListener('scroll', updateTargetRect, true);
     return () => {
