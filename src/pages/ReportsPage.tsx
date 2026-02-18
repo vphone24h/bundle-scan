@@ -17,6 +17,7 @@ import {
   Factory,
   UserCheck,
   Receipt,
+  PlayCircle,
 } from 'lucide-react';
 import { useReportsGuideUrl } from '@/hooks/useAppConfig';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -202,6 +203,7 @@ export default function ReportsPage() {
   const reportsGuideUrl = useReportsGuideUrl();
   const { data: permissions } = usePermissions();
   const { data: tenant } = useCurrentTenant();
+  const [manualTourActive, setManualTourActive] = useState(false);
 
   // Main onboarding tour (revenue tab)
   const { isCompleted: reportsTourDone, completeTour: completeReportsTour, isLoading: tourLoading } = useOnboardingTour('reports_overview');
@@ -260,12 +262,12 @@ export default function ReportsPage() {
   const activeReport = reportTabs.find(t => t.id === activeTab);
   const ActiveIcon = activeReport?.icon || DollarSign;
 
-  const showRevenueTour = !tourLoading && !reportsTourDone && profit7Days !== null && activeTab === 'revenue';
-  const showProductsTour = !productsTourLoading && !productsTourDone && activeTab === 'products';
-  const showCustomersTour = !customersTourLoading && !customersTourDone && activeTab === 'customers';
-  const showSuppliersTour = !suppliersTourLoading && !suppliersTourDone && activeTab === 'suppliers';
-  const showStaffTour = !staffTourLoading && !staffTourDone && activeTab === 'staff';
-  const showTaxTour = !taxTourLoading && !taxTourDone && activeTab === 'tax' && canViewTaxReport;
+  const showRevenueTour = manualTourActive || (!tourLoading && !reportsTourDone && profit7Days !== null && activeTab === 'revenue');
+  const showProductsTour = manualTourActive || (!productsTourLoading && !productsTourDone && activeTab === 'products');
+  const showCustomersTour = manualTourActive || (!customersTourLoading && !customersTourDone && activeTab === 'customers');
+  const showSuppliersTour = manualTourActive || (!suppliersTourLoading && !suppliersTourDone && activeTab === 'suppliers');
+  const showStaffTour = manualTourActive || (!staffTourLoading && !staffTourDone && activeTab === 'staff');
+  const showTaxTour = manualTourActive || (!taxTourLoading && !taxTourDone && activeTab === 'tax' && canViewTaxReport);
 
   return (
     <MainLayout>
@@ -273,8 +275,8 @@ export default function ReportsPage() {
         <OnboardingTourOverlay
           steps={buildRevenueTourSteps()}
           isActive={showRevenueTour}
-          onComplete={completeReportsTour}
-          onSkip={completeReportsTour}
+          onComplete={() => { completeReportsTour(); setManualTourActive(false); }}
+          onSkip={() => { completeReportsTour(); setManualTourActive(false); }}
           tourKey="reports_overview"
         />
       )}
@@ -282,8 +284,8 @@ export default function ReportsPage() {
         <OnboardingTourOverlay
           steps={TOUR_STEPS.products}
           isActive={showProductsTour}
-          onComplete={completeProductsTour}
-          onSkip={completeProductsTour}
+          onComplete={() => { completeProductsTour(); setManualTourActive(false); }}
+          onSkip={() => { completeProductsTour(); setManualTourActive(false); }}
           tourKey="reports_products"
         />
       )}
@@ -291,8 +293,8 @@ export default function ReportsPage() {
         <OnboardingTourOverlay
           steps={TOUR_STEPS.customers}
           isActive={showCustomersTour}
-          onComplete={completeCustomersTour}
-          onSkip={completeCustomersTour}
+          onComplete={() => { completeCustomersTour(); setManualTourActive(false); }}
+          onSkip={() => { completeCustomersTour(); setManualTourActive(false); }}
           tourKey="reports_customers"
         />
       )}
@@ -300,8 +302,8 @@ export default function ReportsPage() {
         <OnboardingTourOverlay
           steps={TOUR_STEPS.suppliers}
           isActive={showSuppliersTour}
-          onComplete={completeSuppliersTour}
-          onSkip={completeSuppliersTour}
+          onComplete={() => { completeSuppliersTour(); setManualTourActive(false); }}
+          onSkip={() => { completeSuppliersTour(); setManualTourActive(false); }}
           tourKey="reports_suppliers"
         />
       )}
@@ -309,8 +311,8 @@ export default function ReportsPage() {
         <OnboardingTourOverlay
           steps={TOUR_STEPS.staff}
           isActive={showStaffTour}
-          onComplete={completeStaffTour}
-          onSkip={completeStaffTour}
+          onComplete={() => { completeStaffTour(); setManualTourActive(false); }}
+          onSkip={() => { completeStaffTour(); setManualTourActive(false); }}
           tourKey="reports_staff"
         />
       )}
@@ -318,8 +320,8 @@ export default function ReportsPage() {
         <OnboardingTourOverlay
           steps={TOUR_STEPS.tax}
           isActive={showTaxTour}
-          onComplete={completeTaxTour}
-          onSkip={completeTaxTour}
+          onComplete={() => { completeTaxTour(); setManualTourActive(false); }}
+          onSkip={() => { completeTaxTour(); setManualTourActive(false); }}
           tourKey="reports_tax"
         />
       )}
@@ -329,14 +331,26 @@ export default function ReportsPage() {
         description={activeReport?.description || 'Phân tích chi tiết hoạt động kinh doanh'}
         helpText="Xem báo cáo chi tiết về doanh thu, lợi nhuận, hàng bán chạy, hiệu suất nhân viên và tình hình nhà cung cấp. Lọc theo khoảng thời gian và xuất Excel."
         actions={
-          reportsGuideUrl && (
-            <Button variant="secondary" size="sm" asChild>
-              <a href={reportsGuideUrl} target="_blank" rel="noopener noreferrer">
-                <BookOpen className="mr-2 h-4 w-4" />
-                Hướng dẫn
-              </a>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant={manualTourActive ? "default" : "outline"}
+              size="sm"
+              onClick={() => setManualTourActive(v => !v)}
+              className="h-8 text-xs sm:text-sm"
+            >
+              <PlayCircle className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
+              <span className="sm:hidden">{manualTourActive ? 'Tắt HD' : 'Xem HD'}</span>
             </Button>
-          )
+            {reportsGuideUrl && (
+              <Button variant="secondary" size="sm" asChild>
+                <a href={reportsGuideUrl} target="_blank" rel="noopener noreferrer">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Hướng dẫn
+                </a>
+              </Button>
+            )}
+          </div>
         }
       />
 

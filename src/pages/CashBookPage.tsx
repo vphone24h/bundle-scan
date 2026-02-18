@@ -66,6 +66,7 @@ import {
   BookOpen,
   ArrowLeftRight,
   Landmark,
+  PlayCircle,
 } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -170,7 +171,8 @@ const cashBookTourSteps: TourStep[] = [
 export default function CashBookPage() {
   // Onboarding tour
   const { isCompleted: cashTourDone, isLoading: cashTourLoading, completeTour: completeCashTour } = useOnboardingTour('cashbook_guide');
-  const showCashTour = !cashTourLoading && !cashTourDone;
+  const [manualTourActive, setManualTourActive] = useState(false);
+  const showCashTour = manualTourActive || (!cashTourLoading && !cashTourDone);
 
   // Main view tabs: by branch or total
   const [viewMode, setViewMode] = useState<'branch' | 'total'>('total');
@@ -839,6 +841,16 @@ export default function CashBookPage() {
         helpText="Ghi nhận mọi giao dịch thu/chi tiền mặt và chuyển khoản. Xem tổng quan dòng tiền, lịch sử số dư theo ngày, và lọc chi tiết từng giao dịch. Có thể thiết lập số dư đầu kỳ."
         actions={
            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+             <Button
+               variant={manualTourActive ? "default" : "outline"}
+               size="sm"
+               onClick={() => setManualTourActive(v => !v)}
+               className="h-8 text-xs sm:text-sm"
+             >
+               <PlayCircle className="mr-1.5 h-4 w-4" />
+               <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
+               <span className="sm:hidden">{manualTourActive ? 'Tắt HD' : 'Xem HD'}</span>
+             </Button>
              {cashBookGuideUrl && (
                <Button variant="secondary" size="sm" asChild className="text-xs sm:text-sm px-2 sm:px-3">
                  <a href={cashBookGuideUrl} target="_blank" rel="noopener noreferrer">
@@ -2140,8 +2152,8 @@ export default function CashBookPage() {
       <OnboardingTourOverlay
         steps={cashBookTourSteps}
         isActive={showCashTour}
-        onComplete={completeCashTour}
-        onSkip={completeCashTour}
+        onComplete={() => { completeCashTour(); setManualTourActive(false); }}
+        onSkip={() => { completeCashTour(); setManualTourActive(false); }}
         tourKey="cashbook_guide"
       />
     </MainLayout>

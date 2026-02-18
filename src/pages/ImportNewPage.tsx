@@ -33,7 +33,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen } from 'lucide-react';
+import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen, PlayCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { downloadImportTemplate } from '@/lib/excelTemplates';
@@ -75,6 +75,7 @@ const IMPORT_NEW_TOUR_STEPS: TourStep[] = [
 export default function ImportNewPage() {
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('import_new');
   const [tourDismissed, setTourDismissed] = useState(false);
+  const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
   const { data: categories } = useCategories();
   const { data: products } = useProducts();
@@ -505,6 +506,16 @@ export default function ImportNewPage() {
         helpText="Tạo phiếu nhập mới bằng cách thêm sản phẩm thủ công hoặc import từ Excel. Chọn nhà cung cấp, nhập IMEI/serial cho từng sản phẩm, sau đó thanh toán để hoàn tất phiếu nhập."
         actions={
           <div className="flex gap-2 flex-wrap">
+            <Button
+              variant={manualTourActive ? "default" : "outline"}
+              size="sm"
+              onClick={() => setManualTourActive(v => !v)}
+              className="h-8 text-xs sm:text-sm"
+            >
+              <PlayCircle className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
+              <span className="sm:hidden">{manualTourActive ? 'Tắt HD' : 'Xem HD'}</span>
+            </Button>
             {importGuideUrl && (
               <Button 
                 variant="default" 
@@ -924,9 +935,9 @@ export default function ImportNewPage() {
       </Dialog>
       <OnboardingTourOverlay
         steps={IMPORT_NEW_TOUR_STEPS}
-        isActive={!tourCompleted && !tourDismissed}
-        onComplete={completeTour}
-        onSkip={() => setTourDismissed(true)}
+        isActive={manualTourActive || (!tourCompleted && !tourDismissed)}
+        onComplete={() => { completeTour(); setManualTourActive(false); }}
+        onSkip={() => { completeTour(); setTourDismissed(true); setManualTourActive(false); }}
         tourKey="import_new"
       />
     </MainLayout>
