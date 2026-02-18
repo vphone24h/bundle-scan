@@ -118,6 +118,18 @@ const cashBookTourSteps: TourStep[] = [
     position: 'center',
   },
   {
+    title: '🏦 Tab Tổng sổ quỹ / Theo chi nhánh',
+    description: 'Chuyển giữa "Tổng sổ quỹ" (xem toàn bộ tiền của cả hệ thống) và "Theo chi nhánh" (xem riêng từng chi nhánh). Super Admin mới thấy tab này.',
+    targetSelector: '[data-tour="cashbook-view-tabs"]',
+    position: 'bottom',
+  },
+  {
+    title: '🏦 Bổ sung quỹ kỳ đầu',
+    description: 'Nếu bạn đã có sẵn tiền trong quỹ trước khi dùng phần mềm, hãy nhấn "Kỳ đầu" để nhập số dư ban đầu cho từng nguồn tiền (Tiền mặt, Thẻ ngân hàng, Ví điện tử…).',
+    targetSelector: '[data-tour="cashbook-opening-balance"]',
+    position: 'bottom',
+  },
+  {
     title: '② Thêm phiếu thu',
     description: 'Khi khách thanh toán tiền, hãy tạo Phiếu Thu để ghi nhận khoản tiền vào.',
     targetSelector: '[data-tour="cashbook-income"]',
@@ -127,6 +139,18 @@ const cashBookTourSteps: TourStep[] = [
     title: '③ Thêm phiếu chi',
     description: 'Khi trả tiền nhập hàng, chi phí, lương… hãy tạo Phiếu Chi để ghi nhận khoản tiền ra.',
     targetSelector: '[data-tour="cashbook-expense"]',
+    position: 'bottom',
+  },
+  {
+    title: '📊 Tổng quan – Bộ lọc thời gian',
+    description: 'Chọn nhanh Hôm nay / Hôm qua / Tuần này… để xem tiền vào – tiền ra theo khoảng thời gian bất kỳ. Lịch sử số dư cũng cập nhật theo bộ lọc này.',
+    targetSelector: '[data-tour="cashbook-summary-filter"]',
+    position: 'bottom',
+  },
+  {
+    title: '📋 Chi tiết – Bộ lọc giao dịch',
+    description: 'Lọc giao dịch theo ngày, danh mục, nguồn tiền, nhân viên lập phiếu. Nhấn "Bộ lọc" để mở rộng thêm tùy chọn. Xuất Excel để in báo cáo.',
+    targetSelector: '[data-tour="cashbook-detail-filter"]',
     position: 'bottom',
   },
   {
@@ -817,7 +841,7 @@ export default function CashBookPage() {
                  </a>
                </Button>
              )}
-             <Button variant="outline" size="sm" onClick={() => setShowOpeningBalanceDialog(true)} className="text-xs sm:text-sm px-2 sm:px-3">
+             <Button data-tour="cashbook-opening-balance" variant="outline" size="sm" onClick={() => setShowOpeningBalanceDialog(true)} className="text-xs sm:text-sm px-2 sm:px-3">
                <Landmark className="h-4 w-4 mr-1 sm:mr-2" />
                <span className="hidden sm:inline">Quỹ kỳ đầu</span>
                <span className="sm:hidden">Kỳ đầu</span>
@@ -843,7 +867,7 @@ export default function CashBookPage() {
         {isSuperAdmin ? (
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'branch' | 'total')}>
             <div className="flex items-center justify-between">
-              <TabsList>
+              <TabsList data-tour="cashbook-view-tabs">
                 <TabsTrigger value="total" className="gap-2">
                   <Wallet className="h-4 w-4" />
                   Tổng sổ quỹ
@@ -985,7 +1009,7 @@ export default function CashBookPage() {
         {/* Tiền vào / Tiền ra with shared time filter */}
         <div className="space-y-3">
           {/* Time presets */}
-          <div className="flex flex-wrap gap-1.5">
+          <div data-tour="cashbook-summary-filter" className="flex flex-wrap gap-1.5">
             {[
               { key: 'today', label: 'Hôm nay' },
               { key: 'yesterday', label: 'Hôm qua' },
@@ -1090,7 +1114,7 @@ export default function CashBookPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="space-y-4">
-              <div className="flex flex-col md:flex-row gap-4">
+              <div data-tour="cashbook-detail-filter" className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
