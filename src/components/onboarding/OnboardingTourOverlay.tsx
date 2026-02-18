@@ -357,6 +357,19 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
           )}
         </p>
 
+        {/* Swipe hint */}
+        {!isLast && (
+          <div className="flex items-center justify-center gap-1.5 mb-3 text-muted-foreground/60">
+            <span className="text-[10px]">Vuốt sang phải để tiếp tục</span>
+            <span
+              className="inline-flex items-center gap-0.5 text-[10px]"
+              style={{ animation: 'swipe-hint 1.4s ease-in-out infinite' }}
+            >
+              <span>👉</span>
+            </span>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex items-center justify-between">
           <button
