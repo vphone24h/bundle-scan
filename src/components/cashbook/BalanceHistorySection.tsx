@@ -91,7 +91,7 @@ export function BalanceHistorySection({ allEntries, latestOpeningBalances, dateR
   const latestBalance = dailyBalances[0]?.closingBalance;
 
   return (
-    <Card>
+    <Card data-tour="cashbook-balance-history">
       <CardHeader className="pb-2 cursor-pointer select-none" onClick={() => setExpanded(!expanded)}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
