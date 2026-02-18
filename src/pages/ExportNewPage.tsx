@@ -80,31 +80,31 @@ interface CartItem extends ExportReceiptItem {
 const exportNewTourSteps: TourStep[] = [
   {
     title: '📦 Chào mừng đến trang Xuất hàng!',
-    description: 'Đây là nơi bạn tạo phiếu bán hàng. Hãy cùng tìm hiểu các bước cơ bản.',
+    description: 'Đây là nơi bạn tạo **phiếu bán hàng**. Hãy cùng tìm hiểu các bước cơ bản.',
     isInfo: true,
     position: 'center',
   },
   {
     title: '① Quét mã vạch',
-    description: 'Quét mã vạch sản phẩm (IMEI/SKU) để tự động thêm vào giỏ hàng. Nếu mã có chứa giá → sản phẩm được thêm ngay.',
+    description: 'Quét **mã vạch** sản phẩm (**IMEI/SKU**) để tự động thêm vào **giỏ hàng**. Nếu mã có chứa giá → sản phẩm được thêm ngay.',
     targetSelector: '[data-tour="export-barcode"]',
     position: 'bottom',
   },
   {
     title: '② Tìm thủ công',
-    description: 'Không có mã vạch? Tìm sản phẩm theo IMEI hoặc tên, nhập giá bán rồi thêm vào giỏ.',
+    description: 'Không có mã vạch? Tìm sản phẩm theo **IMEI** hoặc **tên**, nhập **giá bán** rồi thêm vào giỏ.',
     targetSelector: '[data-tour="export-manual-search"]',
     position: 'bottom',
   },
   {
     title: '③ Giỏ hàng & Thanh toán',
-    description: 'Xem danh sách sản phẩm đã chọn, nhập thông tin khách hàng, sau đó nhấn "Thanh toán" để hoàn tất.',
+    description: 'Xem danh sách sản phẩm đã chọn, nhập **thông tin khách hàng**, sau đó nhấn **"Thanh toán"** để hoàn tất.',
     targetSelector: '[data-tour="export-cart"]',
     position: 'left',
   },
   {
     title: '✓ Sẵn sàng bán hàng!',
-    description: 'Bạn đã nắm được quy trình. Bắt đầu quét mã hoặc tìm sản phẩm để tạo phiếu xuất đầu tiên!',
+    description: 'Bạn đã nắm được quy trình. Bắt đầu **quét mã** hoặc **tìm sản phẩm** để tạo phiếu xuất đầu tiên!',
     isInfo: true,
     position: 'center',
   },

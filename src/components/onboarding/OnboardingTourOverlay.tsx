@@ -261,7 +261,11 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
 
         {/* Description */}
         <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-          {step.description}
+          {step.description.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+            part.startsWith('**') && part.endsWith('**')
+              ? <strong key={i} className="text-blue-700 dark:text-blue-400 font-semibold">{part.slice(2, -2)}</strong>
+              : part
+          )}
         </p>
 
         {/* Actions */}

@@ -43,30 +43,30 @@ import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/Onboard
 const IMPORT_NEW_TOUR_STEPS: TourStep[] = [
   {
     title: 'Chào mừng đến trang Nhập hàng! 🎉',
-    description: 'Đây là nơi bạn tạo phiếu nhập hàng mới. Hãy làm theo từng bước để nhập thử 1 sản phẩm nhé!',
+    description: 'Đây là nơi bạn tạo **phiếu nhập hàng** mới. Hãy làm theo từng bước để nhập thử 1 sản phẩm nhé!',
     isInfo: true,
   },
   {
     title: '① Chọn nhà cung cấp',
-    description: 'Kéo lên trên, chọn chi nhánh và nhà cung cấp. Nếu chưa có NCC, nhấn nút "+" bên cạnh để tạo mới. Sau đó nhấn "Tiếp" ở đây.',
+    description: 'Kéo lên trên, chọn **chi nhánh** và **nhà cung cấp**. Nếu chưa có NCC, nhấn nút **"+"** bên cạnh để tạo mới. Sau đó nhấn "Tiếp" ở đây.',
     targetSelector: '[data-tour="import-receipt-info"]',
     position: 'bottom',
   },
   {
     title: '② Điền thông tin sản phẩm',
-    description: 'Nhập: Tên SP → SKU (bấm A→ để copy tên) → IMEI (nếu có) → Chọn danh mục → Giá nhập. Các ô có dấu * là bắt buộc. Điền xong nhấn "Tiếp".',
+    description: 'Nhập: **Tên SP** → **SKU** (bấm A→ để copy tên) → **IMEI** (nếu có) → Chọn **danh mục** → **Giá nhập**. Các ô có dấu * là bắt buộc. Điền xong nhấn "Tiếp".',
     targetSelector: '[data-tour="import-product-form"]',
     position: 'center',
   },
   {
     title: '③ Nhấn "Thêm vào giỏ"',
-    description: 'Kéo xuống dưới cùng và nhấn nút màu xanh "Thêm vào giỏ" để đưa sản phẩm vào giỏ nhập hàng.',
+    description: 'Kéo xuống dưới cùng và nhấn nút màu xanh **"Thêm vào giỏ"** để đưa sản phẩm vào **giỏ nhập hàng**.',
     targetSelector: '[data-tour="import-add-to-cart"]',
     position: 'top',
   },
   {
     title: '④ Thanh toán để hoàn tất',
-    description: 'Sau khi thêm sản phẩm, kéo xuống phần "Giỏ nhập hàng" → nhấn "Thanh toán" để hoàn tất phiếu nhập. Chúc bạn nhập hàng thành công! 🎊',
+    description: 'Sau khi thêm sản phẩm, kéo xuống phần **"Giỏ nhập hàng"** → nhấn **"Thanh toán"** để hoàn tất phiếu nhập. Chúc bạn nhập hàng thành công! 🎊',
     targetSelector: '[data-tour="import-cart"]',
     position: 'center',
   },
