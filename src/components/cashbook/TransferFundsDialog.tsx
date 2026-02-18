@@ -129,7 +129,7 @@ export function TransferFundsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Chuyển tiền giữa các nguồn
@@ -139,7 +139,7 @@ export function TransferFundsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="space-y-4 py-2 overflow-y-auto flex-1 pr-1">
           {/* From Source */}
           <div className="space-y-2">
             <Label>Từ nguồn tiền</Label>
