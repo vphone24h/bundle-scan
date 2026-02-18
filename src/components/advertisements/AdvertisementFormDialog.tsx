@@ -60,8 +60,9 @@ export function AdvertisementFormDialog({
   const [description, setDescription] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
   const [isActive, setIsActive] = useState(true);
-  const [adType, setAdType] = useState('partner');
+  const [adType, setAdType] = useState('banner');
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [hasEndDate, setHasEndDate] = useState(false);
@@ -113,8 +114,9 @@ export function AdvertisementFormDialog({
       setDescription(advertisement.description || '');
       setLinkUrl(advertisement.link_url);
       setImageUrl(advertisement.image_url || '');
+      setVideoUrl((advertisement as any).video_url || '');
       setIsActive(advertisement.is_active);
-      setAdType(advertisement.ad_type || 'partner');
+      setAdType(advertisement.ad_type || 'banner');
       setStartDate(new Date(advertisement.start_date));
       if (advertisement.end_date) {
         setEndDate(new Date(advertisement.end_date));
@@ -133,8 +135,9 @@ export function AdvertisementFormDialog({
     setDescription('');
     setLinkUrl('');
     setImageUrl('');
+    setVideoUrl('');
     setIsActive(true);
-    setAdType('partner');
+    setAdType('banner');
     setStartDate(new Date());
     setEndDate(undefined);
     setHasEndDate(false);
@@ -161,6 +164,7 @@ export function AdvertisementFormDialog({
       description: description || null,
       link_url: linkUrl,
       image_url: imageUrl || null,
+      video_url: videoUrl || null,
       is_active: isActive,
       ad_type: adType,
       start_date: startDate.toISOString(),
@@ -273,17 +277,36 @@ export function AdvertisementFormDialog({
 
           {/* Ad Type */}
           <div className="space-y-2">
-            <Label>Phân loại</Label>
+            <Label>Loại quảng cáo</Label>
             <Select value={adType} onValueChange={setAdType}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="banner">🖼️ Banner (ảnh + link)</SelectItem>
+                <SelectItem value="video">🎬 Video (chèn link video)</SelectItem>
                 <SelectItem value="partner">Đối tác</SelectItem>
                 <SelectItem value="internal">Nội bộ</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {/* Video URL - show when type is video */}
+          {adType === 'video' && (
+            <div className="space-y-2">
+              <Label htmlFor="videoUrl">Link video *</Label>
+              <Input
+                id="videoUrl"
+                type="url"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://example.com/video.mp4"
+              />
+              <p className="text-xs text-muted-foreground">
+                Hỗ trợ link trực tiếp đến file video (.mp4, .webm). Không hỗ trợ YouTube/Vimeo embed.
+              </p>
+            </div>
+          )}
 
           {/* Start Date */}
           <div className="space-y-2">

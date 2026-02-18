@@ -4,6 +4,8 @@ import { useCurrentTenant, usePlatformUser } from '@/hooks/useTenant';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { getStoreIdFromSubdomain } from '@/lib/tenantResolver';
+import { useAdGateSettings } from '@/hooks/useAdGate';
+import { useActiveAdvertisements } from '@/hooks/useAdvertisements';
 
 const CURRENT_STORE_ID_KEY = 'current_store_id';
 
@@ -29,6 +31,8 @@ export function TenantGuard({ children, allowExpired = false }: TenantGuardProps
   const { user, loading: authLoading } = useAuth();
   const { data: tenant, isLoading: tenantLoading } = useCurrentTenant();
   const { data: platformUser, isLoading: platformUserLoading } = usePlatformUser();
+  const { data: adGateSettings } = useAdGateSettings();
+  const { data: activeAds } = useActiveAdvertisements();
   const expectedSubdomain = useRef(getStoreIdFromSubdomain());
   const location = useLocation();
   const [forceAuth, setForceAuth] = useState(false);
@@ -73,7 +77,12 @@ export function TenantGuard({ children, allowExpired = false }: TenantGuardProps
     return <Navigate to="/subscription" replace />;
   }
 
-  if (effectiveStatus === 'expired' && !allowExpired) {
+  // If ad gate is enabled and there are active ads, allow expired users through
+  // (they'll see ads in MainLayout instead of being blocked)
+  const adGateActive =
+    adGateSettings?.is_enabled === true && (activeAds?.length ?? 0) > 0;
+
+  if (effectiveStatus === 'expired' && !allowExpired && !adGateActive) {
     return <Navigate to="/subscription" replace />;
   }
 

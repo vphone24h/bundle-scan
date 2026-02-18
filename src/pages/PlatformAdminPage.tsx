@@ -10,7 +10,8 @@ import { PaymentHistoryTable } from '@/components/platform/PaymentHistoryTable';
 import { PlatformStats } from '@/components/platform/PlatformStats';
 import { AffiliateManagement } from '@/components/platform/AffiliateManagement';
 import { PlatformAdvertisementsManagement } from '@/components/platform/PlatformAdvertisementsManagement';
- import { TaxPolicyArticleEditor } from '@/components/admin/TaxPolicyArticleEditor';
+import { AdGateManagement } from '@/components/platform/AdGateManagement';
+import { TaxPolicyArticleEditor } from '@/components/admin/TaxPolicyArticleEditor';
 import { EmailHistoryTable } from '@/components/platform/EmailHistoryTable';
 import { CustomDomainsManagement } from '@/components/platform/CustomDomainsManagement';
 import { PlatformArticlesManagement } from '@/components/platform/PlatformArticlesManagement';
@@ -101,7 +102,16 @@ export default function PlatformAdminPage() {
           </TabsContent>
 
           <TabsContent value="ads" className="mt-6">
-            <PlatformAdvertisementsManagement />
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div>
+                <h3 className="text-base font-semibold mb-4">Danh sách quảng cáo</h3>
+                <PlatformAdvertisementsManagement />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold mb-4">Cài đặt Ad Gate (người dùng hết hạn)</h3>
+                <AdGateManagement />
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="domains" className="mt-6">

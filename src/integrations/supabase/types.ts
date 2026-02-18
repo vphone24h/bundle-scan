@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_gate_settings: {
+        Row: {
+          created_at: string
+          display_duration_seconds: number
+          id: string
+          is_enabled: boolean
+          is_skippable: boolean
+          skip_after_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_duration_seconds?: number
+          id?: string
+          is_enabled?: boolean
+          is_skippable?: boolean
+          skip_after_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_duration_seconds?: number
+          id?: string
+          is_enabled?: boolean
+          is_skippable?: boolean
+          skip_after_seconds?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       advertisements: {
         Row: {
           ad_type: string | null
@@ -31,6 +61,7 @@ export type Database = {
           tenant_id: string | null
           title: string
           updated_at: string
+          video_url: string | null
           view_count: number | null
         }
         Insert: {
@@ -49,6 +80,7 @@ export type Database = {
           tenant_id?: string | null
           title: string
           updated_at?: string
+          video_url?: string | null
           view_count?: number | null
         }
         Update: {
@@ -67,6 +99,7 @@ export type Database = {
           tenant_id?: string | null
           title?: string
           updated_at?: string
+          video_url?: string | null
           view_count?: number | null
         }
         Relationships: [
