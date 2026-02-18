@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, ChevronRight, ChevronLeft, Hand } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export interface TourStep {
   title: string;
@@ -9,10 +10,12 @@ export interface TourStep {
   targetSelector?: string;
   /** Position of the popup relative to target */
   position?: 'top' | 'bottom' | 'left' | 'right' | 'center';
-  /** If true, clicking "Tiếp" completes this step (no target needed) */
+  /** If true, just shows info popup without requiring interaction */
   isInfo?: boolean;
   /** Optional icon hint e.g. swipe gesture */
   gesture?: 'swipe-right' | 'tap';
+  /** Navigate to this route when this step becomes active */
+  navigateTo?: string;
 }
 
 interface OnboardingTourOverlayProps {
@@ -23,15 +26,18 @@ interface OnboardingTourOverlayProps {
   tourKey: string;
 }
 
+const PADDING = 10; // px padding around highlighted element
+
 export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: OnboardingTourOverlayProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const step = steps[currentStep];
 
   const updateTargetRect = useCallback(() => {
-    if (!step?.targetSelector || step.isInfo) {
+    if (!step?.targetSelector) {
       setTargetRect(null);
       return;
     }
@@ -48,7 +54,6 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
           setTimeout(() => {
             const el = document.querySelector(step.targetSelector!);
             if (el) {
-              // Scroll within sidebar nav container
               el.scrollIntoView({ behavior: 'smooth', block: 'center' });
               setTimeout(() => {
                 setTargetRect(el.getBoundingClientRect());
@@ -62,7 +67,6 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
 
     const el = document.querySelector(step.targetSelector);
     if (el) {
-      // For sidebar items, scroll within the sidebar container
       if (isSidebarTarget) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         setTimeout(() => {
@@ -75,11 +79,17 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
     } else {
       setTargetRect(null);
     }
-  }, [step?.targetSelector, step?.isInfo]);
+  }, [step?.targetSelector]);
+
+  // Navigate when step changes
+  useEffect(() => {
+    if (!isActive || !step?.navigateTo) return;
+    navigate(step.navigateTo);
+  }, [isActive, currentStep, step?.navigateTo, navigate]);
 
   useEffect(() => {
     if (!isActive) return;
-    const timer = setTimeout(updateTargetRect, 400);
+    const timer = setTimeout(updateTargetRect, 450);
     window.addEventListener('resize', updateTargetRect);
     window.addEventListener('scroll', updateTargetRect, true);
     return () => {
@@ -89,9 +99,9 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
     };
   }, [isActive, currentStep, updateTargetRect]);
 
-  // Also raise z-index of target element so it's clickable above backdrop
+  // Raise z-index of target element so it appears above backdrop
   useEffect(() => {
-    if (!isActive || !step?.targetSelector || step.isInfo) return;
+    if (!isActive || !step?.targetSelector) return;
     const el = document.querySelector(step.targetSelector) as HTMLElement | null;
     if (!el) return;
     const prev = el.style.cssText;
@@ -100,7 +110,7 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
     return () => {
       el.style.cssText = prev;
     };
-  }, [isActive, currentStep, step?.targetSelector, step?.isInfo]);
+  }, [isActive, currentStep, step?.targetSelector]);
 
   if (!isActive || !step) return null;
 
@@ -127,9 +137,63 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
     }
   };
 
-  // Calculate popup position - prefer center on mobile for non-info steps too
+  // Build SVG cutout backdrop: black overlay with transparent hole around target
+  const buildBackdropSvg = () => {
+    if (!targetRect) return null;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const x = targetRect.left - PADDING;
+    const y = targetRect.top - PADDING;
+    const w = targetRect.width + PADDING * 2;
+    const h = targetRect.height + PADDING * 2;
+    const r = 10; // border radius
+
+    return (
+      <svg
+        className="fixed inset-0 z-[10000] pointer-events-none"
+        width={vw}
+        height={vh}
+        viewBox={`0 0 ${vw} ${vh}`}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <mask id="cutout-mask">
+            <rect width={vw} height={vh} fill="white" />
+            <rect x={x} y={y} width={w} height={h} rx={r} ry={r} fill="black" />
+          </mask>
+        </defs>
+        <rect
+          width={vw}
+          height={vh}
+          fill="rgba(0,0,0,0.6)"
+          mask="url(#cutout-mask)"
+        />
+      </svg>
+    );
+  };
+
+  // Animated highlight border around target
+  const buildHighlightBorder = () => {
+    if (!targetRect) return null;
+    return (
+      <div
+        className="fixed z-[10001] rounded-xl pointer-events-none animate-pulse"
+        style={{
+          top: targetRect.top - PADDING,
+          left: targetRect.left - PADDING,
+          width: targetRect.width + PADDING * 2,
+          height: targetRect.height + PADDING * 2,
+          border: '2.5px solid hsl(var(--primary))',
+          boxShadow: '0 0 0 3px hsl(var(--primary) / 0.25), 0 0 18px hsl(var(--primary) / 0.3)',
+          background: 'transparent',
+        }}
+      />
+    );
+  };
+
+  // Calculate popup position
   const getPopupStyle = (): React.CSSProperties => {
-    if (!targetRect || step.isInfo || step.position === 'center') {
+    if (!targetRect || step.position === 'center') {
       return {
         position: 'fixed',
         top: '50%',
@@ -144,12 +208,11 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    // On mobile: sidebar items → show popup to the right of sidebar
+    // Mobile: sidebar items → popup to the right of sidebar
     if (vw < 640) {
       const isSidebarItem = step.targetSelector?.startsWith('[data-tour="sidebar-');
       if (isSidebarItem) {
-        // Position popup next to target, overlapping the main content area
-        const topPos = Math.max(16, Math.min(targetRect.top - 20, vh - 250));
+        const topPos = Math.max(16, Math.min(targetRect.top - 20, vh - 260));
         return {
           position: 'fixed',
           top: topPos,
@@ -158,10 +221,13 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
           zIndex: 10002,
         };
       }
-      // Non-sidebar items: position near target
+      // Below target on mobile, full width
+      const topBelow = targetRect.bottom + gap;
+      const topAbove = targetRect.top - gap - 200; // rough estimate
+      const useAbove = topBelow > vh - 220 && topAbove > 60;
       return {
         position: 'fixed',
-        top: Math.max(80, targetRect.bottom + gap),
+        top: useAbove ? Math.max(60, topAbove) : Math.min(topBelow, vh - 220),
         left: 16,
         right: 16,
         zIndex: 10002,
@@ -174,13 +240,13 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
 
     switch (pos) {
       case 'bottom':
-        return { position: 'fixed', top: targetRect.bottom + gap, left, zIndex: 10002 };
+        return { position: 'fixed', top: Math.min(targetRect.bottom + gap, vh - 280), left, zIndex: 10002 };
       case 'top':
         return { position: 'fixed', bottom: vh - targetRect.top + gap, left, zIndex: 10002 };
       case 'right':
-        return { position: 'fixed', top: targetRect.top, left: targetRect.right + gap, zIndex: 10002 };
+        return { position: 'fixed', top: Math.max(16, targetRect.top - 20), left: Math.min(targetRect.right + gap, vw - popupW - 16), zIndex: 10002 };
       case 'left':
-        return { position: 'fixed', top: targetRect.top, right: vw - targetRect.left + gap, zIndex: 10002 };
+        return { position: 'fixed', top: Math.max(16, targetRect.top - 20), right: vw - targetRect.left + gap, zIndex: 10002 };
       default:
         return { position: 'fixed', top: targetRect.bottom + gap, left, zIndex: 10002 };
     }
@@ -188,27 +254,26 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
 
   return (
     <>
-      {/* Backdrop - allows clicks to pass through to highlighted element */}
-      <div
-        className="fixed inset-0 z-[10000] bg-black/50 transition-opacity duration-300"
-        onClick={handleSkip}
-      />
-
-      {/* Highlight border around target */}
-      {targetRect && !step.isInfo && (
+      {/* Backdrop: cutout when we have a target, solid overlay otherwise */}
+      {targetRect ? (
+        buildBackdropSvg()
+      ) : (
         <div
-          className="fixed z-[10001] rounded-lg pointer-events-none animate-pulse"
-          style={{
-            top: targetRect.top - 6,
-            left: targetRect.left - 6,
-            width: targetRect.width + 12,
-            height: targetRect.height + 12,
-            border: '3px solid hsl(var(--destructive))',
-            boxShadow: '0 0 0 4px hsl(var(--destructive) / 0.3), 0 0 20px hsl(var(--destructive) / 0.2)',
-            background: 'transparent',
-          }}
+          className="fixed inset-0 z-[10000] bg-black/55 transition-opacity duration-300"
+          onClick={handleSkip}
         />
       )}
+
+      {/* Click blocker on backdrop area (outside cutout) */}
+      {targetRect && (
+        <div
+          className="fixed inset-0 z-[10000]"
+          style={{ pointerEvents: 'none' }}
+        />
+      )}
+
+      {/* Animated highlight border */}
+      {buildHighlightBorder()}
 
       {/* Gesture hint animation */}
       {targetRect && step.gesture === 'swipe-right' && (
@@ -235,10 +300,10 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
             <div
               key={i}
               className={`h-1.5 rounded-full transition-all ${
-                i === currentStep 
-                  ? 'w-6 bg-primary' 
-                  : i < currentStep 
-                  ? 'w-1.5 bg-primary/50' 
+                i === currentStep
+                  ? 'w-6 bg-primary'
+                  : i < currentStep
+                  ? 'w-1.5 bg-primary/50'
                   : 'w-1.5 bg-muted-foreground/30'
               }`}
             />
@@ -254,6 +319,11 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
           </Button>
         </div>
 
+        {/* Step number */}
+        <div className="text-[10px] font-medium text-muted-foreground mb-1">
+          Bước {currentStep + 1} / {steps.length}
+        </div>
+
         {/* Title */}
         <h3 className="font-semibold text-sm sm:text-base text-foreground mb-1.5">
           {step.title}
@@ -263,7 +333,7 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
         <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
           {step.description.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
             part.startsWith('**') && part.endsWith('**')
-              ? <strong key={i} className="text-blue-700 dark:text-blue-400 font-semibold">{part.slice(2, -2)}</strong>
+              ? <strong key={i} className="text-primary font-semibold">{part.slice(2, -2)}</strong>
               : part
           )}
         </p>

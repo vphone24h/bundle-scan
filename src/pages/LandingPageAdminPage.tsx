@@ -20,41 +20,44 @@ const LANDING_TOUR_STEPS: TourStep[] = [
     title: '🌐 Website bán hàng',
     description: 'Đây là trang quản trị **Website bán hàng** — nơi bạn thiết lập trang web riêng để giới thiệu sản phẩm và nhận đơn hàng từ khách hàng **hoàn toàn miễn phí**!',
     isInfo: true,
+    navigateTo: '/landing-settings',
   },
   {
     title: '⚙️ Tab Cấu hình',
     description: 'Tại đây bạn cài đặt **tên cửa hàng**, **logo**, **số điện thoại**, **màu sắc**, **banner** và **tên miền riêng** cho website. Đây là bước đầu tiên cần làm!',
     targetSelector: '[data-tour="landing-tab-settings"]',
     position: 'bottom',
-    isInfo: true,
+    navigateTo: '/landing-settings',
   },
   {
     title: '📦 Tab Sản phẩm',
     description: 'Chọn những sản phẩm từ kho muốn **hiển thị lên website**. Bạn có thể thêm ảnh, giá bán, mô tả và chọn thứ tự hiển thị cho từng sản phẩm.',
     targetSelector: '[data-tour="landing-tab-products"]',
     position: 'bottom',
-    isInfo: true,
+    navigateTo: '/landing-settings',
   },
   {
     title: '📰 Tab Tin tức',
     description: 'Đăng các **bài viết tin tức**, khuyến mãi, thông báo lên website. Tin tức giúp giữ chân khách hàng và tăng uy tín cửa hàng.',
     targetSelector: '[data-tour="landing-tab-articles"]',
     position: 'bottom',
-    isInfo: true,
+    navigateTo: '/landing-settings',
   },
   {
     title: '🛒 Tab Đơn đặt hàng',
     description: 'Khi khách đặt hàng qua website, đơn sẽ xuất hiện ở đây. Bạn **xác nhận**, **liên hệ khách** và chốt đơn. Badge đỏ sẽ báo số đơn chờ xử lý.',
     targetSelector: '[data-tour="landing-tab-orders"]',
     position: 'bottom',
-    isInfo: true,
+    navigateTo: '/landing-settings',
   },
   {
     title: '🔗 Xem website công khai',
     description: 'Sau khi cấu hình xong, nhấn nút **"Xem website"** để xem trang bán hàng như khách hàng thấy. Chia sẻ link này cho khách để nhận đơn hàng! 🎊',
     isInfo: true,
+    navigateTo: '/landing-settings',
   },
 ];
+
 
 function PendingBadge() {
   const { data: count } = usePendingOrderCount();
