@@ -66,8 +66,18 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
 
   if (!open || !currentAd) return null;
 
-  const isVideo = currentAd.ad_type === 'video' || (currentAd as any).video_url;
-  const videoUrl = (currentAd as any).video_url;
+  const isVideo = currentAd.ad_type === 'video' || !!(currentAd as any).video_url;
+  const videoUrl = (currentAd as any).video_url as string | undefined;
+
+  // Convert YouTube/Vimeo links to embed URLs
+  const getEmbedUrl = (url: string): string | null => {
+    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1`;
+    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&muted=1`;
+    return null;
+  };
+  const embedUrl = videoUrl ? getEmbedUrl(videoUrl) : null;
 
   const handleAdClick = () => {
     if (currentAd.link_url) {
@@ -115,28 +125,36 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
         </div>
 
         {/* Ad Content */}
-        <div
-          className="relative cursor-pointer"
-          onClick={handleAdClick}
-        >
+        <div className="relative cursor-pointer" onClick={handleAdClick}>
           {isVideo && videoUrl ? (
             <div className="relative aspect-video bg-black">
-              <video
-                ref={videoRef}
-                src={videoUrl}
-                autoPlay
-                muted={muted}
-                loop={false}
-                playsInline
-                className="w-full h-full object-contain"
-              />
-              {/* Mute toggle */}
-              <button
-                onClick={(e) => { e.stopPropagation(); setMuted(!muted); }}
-                className="absolute bottom-3 right-3 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition"
-              >
-                {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-              </button>
+              {embedUrl ? (
+                <iframe
+                  src={embedUrl}
+                  className="w-full h-full"
+                  allow="autoplay; fullscreen"
+                  allowFullScreen
+                  frameBorder="0"
+                />
+              ) : (
+                <>
+                  <video
+                    ref={videoRef}
+                    src={videoUrl}
+                    autoPlay
+                    muted={muted}
+                    loop={false}
+                    playsInline
+                    className="w-full h-full object-contain"
+                  />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setMuted(!muted); }}
+                    className="absolute bottom-3 right-3 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition"
+                  >
+                    {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <div className="relative aspect-video bg-muted overflow-hidden">
