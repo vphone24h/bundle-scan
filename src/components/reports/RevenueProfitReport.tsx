@@ -240,7 +240,7 @@ export function RevenueProfitReport() {
               <Download className="h-4 w-4 mr-1" />
               Xuất Excel
             </Button>
-            <div className="flex gap-2 items-end">
+            <div className="flex gap-2 items-end" data-tour="report-date-filter">
               <div>
                 <Label>Từ ngày</Label>
                 <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" />
