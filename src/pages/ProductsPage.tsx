@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer } from 'lucide-react';
+import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
@@ -30,6 +30,41 @@ import { formatCurrency } from '@/lib/mockData';
 import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
+import { useOnboardingTour } from '@/hooks/useOnboardingTour';
+
+const PRODUCTS_TOUR_STEPS: TourStep[] = [
+  {
+    title: '📦 Quản lý sản phẩm',
+    description: 'Đây là trang **Quản lý sản phẩm** — nơi bạn xem toàn bộ sản phẩm trong kho, tìm kiếm, in mã vạch và chỉnh sửa thông tin sản phẩm. Sản phẩm được tạo tự động khi bạn **nhập hàng**!',
+    isInfo: true,
+  },
+  {
+    title: '🔍 Tìm kiếm sản phẩm',
+    description: 'Nhập **tên sản phẩm**, **SKU** hoặc **IMEI** vào ô tìm kiếm để lọc nhanh. Nhấn **"Bộ lọc"** để mở thêm tùy chọn lọc theo danh mục, nhà cung cấp, trạng thái...',
+    targetSelector: '[data-tour="product-search"]',
+    position: 'bottom',
+  },
+  {
+    title: '☑️ Chọn nhiều sản phẩm',
+    description: 'Tick vào **ô checkbox** để chọn một hoặc nhiều sản phẩm cùng lúc. Sau khi chọn, nút **"In mã vạch"** sẽ xuất hiện để in tem cho tất cả sản phẩm đã chọn chỉ một lần!',
+    targetSelector: '[data-tour="product-select-all"]',
+    position: 'bottom',
+  },
+  {
+    title: '🖨️ In mã vạch hàng loạt',
+    description: 'Sau khi chọn sản phẩm, nhấn nút **"In mã vạch"** ở góc trên phải để in tem cho tất cả sản phẩm đã chọn. Tem có thể in **barcode** hoặc **QR code** tùy cấu hình.',
+    targetSelector: '[data-tour="product-print-btn"]',
+    position: 'bottom',
+  },
+  {
+    title: '⚙️ Thao tác với sản phẩm',
+    description: 'Nhấn nút **"⋯"** (ba chấm) ở cuối mỗi dòng để mở menu thao tác: **Chỉnh sửa** thông tin, **In mã vạch** riêng lẻ, hoặc **Điều chỉnh số lượng** (nếu là hàng không IMEI).',
+    targetSelector: '[data-tour="product-action-menu"]',
+    position: 'left',
+  },
+];
+
 
 // Map Product to the format expected by ProductTable
 function mapProductForTable(product: Product) {
@@ -56,6 +91,9 @@ function mapProductForTable(product: Product) {
 }
 
 export default function ProductsPage() {
+  const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('products-page-v1');
+  const [tourDismissed, setTourDismissed] = useState(false);
+  const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
   const { data: products, isLoading } = useProducts();
   const queryClient = useQueryClient();
@@ -211,13 +249,22 @@ export default function ProductsPage() {
         description="Xem, chỉnh sửa và in mã vạch cho sản phẩm"
         helpText="Danh sách tất cả sản phẩm trong kho. Bạn có thể tìm kiếm, lọc theo danh mục, in mã vạch, điều chỉnh số lượng hoặc xóa sản phẩm. Sản phẩm được tạo tự động khi nhập hàng."
         actions={
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant={manualTourActive ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setManualTourActive(v => !v)}
+            >
+              <PlayCircle className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
+              <span className="sm:hidden">HD</span>
+            </Button>
             <Button onClick={() => navigate('/import/new')} size="sm">
               <Plus className="mr-1.5 h-4 w-4" />
               Thêm sản phẩm
             </Button>
             {selectedProducts.length > 0 && (
-              <Button onClick={handlePrintSelected} size="sm" variant="outline">
+              <Button onClick={handlePrintSelected} size="sm" variant="outline" data-tour="product-print-btn">
                 <Barcode className="mr-1.5 h-4 w-4" />
                 In mã vạch ({selectedProducts.length})
               </Button>
@@ -233,7 +280,7 @@ export default function ProductsPage() {
             <div className="space-y-4">
               {/* Search row */}
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <div className="relative flex-1">
+                <div className="relative flex-1" data-tour="product-search">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Tìm theo tên, SKU hoặc IMEI..."
@@ -433,6 +480,14 @@ export default function ProductsPage() {
         product={editProduct}
         open={!!editProduct}
         onOpenChange={(open) => !open && setEditProduct(null)}
+      />
+
+      <OnboardingTourOverlay
+        steps={PRODUCTS_TOUR_STEPS}
+        isActive={manualTourActive || (!tourCompleted && !tourDismissed)}
+        onComplete={() => { completeTour(); setManualTourActive(false); }}
+        onSkip={() => { completeTour(); setTourDismissed(true); setManualTourActive(false); }}
+        tourKey="products-page-v1"
       />
     </MainLayout>
   );
