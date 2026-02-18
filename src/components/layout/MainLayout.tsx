@@ -1,4 +1,5 @@
 import { ReactNode, memo, useEffect, useState, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { useCurrentTenant, calculateRemainingDays } from '@/hooks/useTenant';
 import { useAdGateSettings } from '@/hooks/useAdGate';
@@ -16,6 +17,7 @@ function useAdGate() {
   const { data: adGateSettings } = useAdGateSettings();
   const { data: activeAds } = useActiveAdvertisements();
   const [showAdGate, setShowAdGate] = useState(false);
+  const location = useLocation();
 
   const isExpired = tenant
     ? (() => {
@@ -30,9 +32,12 @@ function useAdGate() {
     adGateSettings?.is_enabled === true &&
     (activeAds?.length ?? 0) > 0;
 
+  // Không đếm click khi đang ở trang Gói dịch vụ
+  const isSubscriptionPage = location.pathname === '/subscription';
+
   // Count every click in the app — any interaction = 1 action
   useEffect(() => {
-    if (!adGateActive || !adGateSettings) return;
+    if (!adGateActive || !adGateSettings || isSubscriptionPage) return;
 
     const clicksPerAd = adGateSettings.clicks_per_ad ?? 7;
 
@@ -53,7 +58,7 @@ function useAdGate() {
 
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
-  }, [adGateActive, adGateSettings]);
+  }, [adGateActive, adGateSettings, isSubscriptionPage]);
 
   const closeAdGate = useCallback(() => setShowAdGate(false), []);
 
