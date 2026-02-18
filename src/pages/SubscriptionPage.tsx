@@ -346,7 +346,7 @@ export default function SubscriptionPage() {
                     <Megaphone className="h-4 w-4 text-muted-foreground" />
                     Gói miễn phí trọn đời
                   </CardTitle>
-                  <CardDescription>Dùng không giới hạn thời gian, kèm quảng cáo</CardDescription>
+                  <CardDescription>Dùng không giới hạn thời gian</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-muted-foreground mb-4">0đ</div>
