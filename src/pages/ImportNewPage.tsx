@@ -74,6 +74,7 @@ const IMPORT_NEW_TOUR_STEPS: TourStep[] = [
 
 export default function ImportNewPage() {
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('import_new');
+  const [tourDismissed, setTourDismissed] = useState(false);
   const navigate = useNavigate();
   const { data: categories } = useCategories();
   const { data: products } = useProducts();
@@ -923,8 +924,9 @@ export default function ImportNewPage() {
       </Dialog>
       <OnboardingTourOverlay
         steps={IMPORT_NEW_TOUR_STEPS}
-        isActive={!tourCompleted}
+        isActive={!tourCompleted && !tourDismissed}
         onComplete={completeTour}
+        onSkip={() => setTourDismissed(true)}
         tourKey="import_new"
       />
     </MainLayout>

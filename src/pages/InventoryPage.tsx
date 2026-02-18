@@ -48,6 +48,7 @@ const INVENTORY_TOUR_STEPS: TourStep[] = [
 
 export default function InventoryPage() {
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('inventory');
+  const [tourDismissed, setTourDismissed] = useState(false);
   const { toast } = useToast();
   const { data: inventory, isLoading } = useInventory();
   const stockCountGuideUrl = useStockCountGuideUrl();
@@ -374,8 +375,9 @@ export default function InventoryPage() {
       </div>
       <OnboardingTourOverlay
         steps={INVENTORY_TOUR_STEPS}
-        isActive={!tourCompleted}
+        isActive={!tourCompleted && !tourDismissed}
         onComplete={completeTour}
+        onSkip={() => setTourDismissed(true)}
         tourKey="inventory"
       />
     </MainLayout>

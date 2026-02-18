@@ -19,10 +19,11 @@ interface OnboardingTourOverlayProps {
   steps: TourStep[];
   isActive: boolean;
   onComplete: () => void;
+  onSkip?: () => void;
   tourKey: string;
 }
 
-export function OnboardingTourOverlay({ steps, isActive, onComplete }: OnboardingTourOverlayProps) {
+export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: OnboardingTourOverlayProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -109,7 +110,11 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete }: Onboardin
   };
 
   const handleSkip = () => {
-    onComplete();
+    if (onSkip) {
+      onSkip();
+    } else {
+      onComplete();
+    }
   };
 
   // Calculate popup position - prefer center on mobile for non-info steps too

@@ -79,6 +79,7 @@ const IMPORT_HISTORY_TOUR_STEPS: TourStep[] = [
 
 export default function ImportHistoryPage() {
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('import_history');
+  const [tourDismissed, setTourDismissed] = useState(false);
   const navigate = useNavigate();
   const { data: receipts, isLoading: receiptsLoading } = useImportReceipts();
   const { data: products, isLoading: productsLoading } = useAllProducts();
@@ -1325,8 +1326,9 @@ export default function ImportHistoryPage() {
       )}
       <OnboardingTourOverlay
         steps={IMPORT_HISTORY_TOUR_STEPS}
-        isActive={!tourCompleted}
+        isActive={!tourCompleted && !tourDismissed}
         onComplete={completeTour}
+        onSkip={() => setTourDismissed(true)}
         tourKey="import_history"
       />
     </MainLayout>
