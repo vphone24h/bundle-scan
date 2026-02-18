@@ -690,11 +690,11 @@ export default function ImportHistoryPage() {
         <Tabs value={activeTab} onValueChange={(v) => {
           const tab = v as 'receipts' | 'products';
           setActiveTab(tab);
-          // Trigger tab tour on first visit (only if not done in DB)
-          if (tab === 'receipts' && !receiptTabTourSeen && !receiptTourDone) {
+          // Trigger tab tour on first visit (only if not done in DB and has data)
+          if (tab === 'receipts' && !receiptTabTourSeen && !receiptTourDone && (receipts?.length ?? 0) > 0) {
             setReceiptTabTourSeen(true);
             setTimeout(() => setActiveTour('receipt-tab'), 400);
-          } else if (tab === 'products' && !productTabTourSeen && !productTourDone) {
+          } else if (tab === 'products' && !productTabTourSeen && !productTourDone && (products?.length ?? 0) > 0) {
             setProductTabTourSeen(true);
             setTimeout(() => setActiveTour('product-tab'), 400);
           }
