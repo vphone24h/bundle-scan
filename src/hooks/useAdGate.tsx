@@ -9,6 +9,7 @@ export interface AdGateSettings {
   is_skippable: boolean;
   skip_after_seconds: number;
   pinned_ad_id: string | null;
+  clicks_per_ad: number;
   created_at: string;
   updated_at: string;
 }

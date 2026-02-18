@@ -4,7 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Loader2, Megaphone, Info, Pin, Shuffle } from 'lucide-react';
+import { Loader2, Megaphone, Info, Pin, Shuffle, MousePointerClick } from 'lucide-react';
 import { useAdGateSettings, useUpdateAdGateSettings } from '@/hooks/useAdGate';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useActiveAdvertisements } from '@/hooks/useAdvertisements';
@@ -21,6 +21,7 @@ export function AdGateManagement() {
     is_skippable: true,
     skip_after_seconds: 5,
     pinned_ad_id: null as string | null,
+    clicks_per_ad: 7,
   });
 
   useEffect(() => {
@@ -31,6 +32,7 @@ export function AdGateManagement() {
         is_skippable: settings.is_skippable,
         skip_after_seconds: settings.skip_after_seconds,
         pinned_ad_id: (settings as any).pinned_ad_id ?? null,
+        clicks_per_ad: (settings as any).clicks_per_ad ?? 7,
       });
     }
   }, [settings]);
@@ -160,6 +162,29 @@ export function AdGateManagement() {
                 )}
               </div>
 
+              {/* Clicks per ad */}
+              <div className="space-y-3">
+                <Label className="text-base font-medium flex items-center gap-2">
+                  <MousePointerClick className="h-4 w-4" />
+                  Hiển thị quảng cáo sau mỗi: <span className="text-primary font-bold">{form.clicks_per_ad} lần thao tác</span>
+                </Label>
+                <Slider
+                  min={1}
+                  max={20}
+                  step={1}
+                  value={[form.clicks_per_ad]}
+                  onValueChange={([v]) => setForm({ ...form, clicks_per_ad: v })}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>1 (mỗi lần)</span>
+                  <span>20 lần</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  💡 Khuyến nghị: 5–10 lần để không gây phiền cho người dùng
+                </p>
+              </div>
+
               {/* Duration */}
               <div className="space-y-3">
                 <Label className="text-base font-medium">
@@ -229,6 +254,7 @@ export function AdGateManagement() {
             {form.is_enabled && (
               <>
                 <li>• Quảng cáo: <strong>{pinnedAd ? pinnedAd.title : 'Ngẫu nhiên'}</strong></li>
+                <li>• Hiện sau mỗi: <strong>{form.clicks_per_ad} lần thao tác</strong></li>
                 <li>• Thời gian xem: <strong>{form.display_duration_seconds} giây</strong></li>
                 <li>• Bỏ qua: <strong>{form.is_skippable ? `Sau ${form.skip_after_seconds}s` : 'Không cho phép'}</strong></li>
               </>
