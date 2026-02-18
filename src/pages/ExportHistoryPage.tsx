@@ -84,25 +84,25 @@ const paymentLabels: Record<string, string> = {
 const exportHistoryTourSteps: TourStep[] = [
   {
     title: '📋 Lịch sử xuất hàng',
-    description: 'Đây là nơi xem lại tất cả phiếu bán hàng đã tạo. Bạn có thể lọc, xem chi tiết, in hóa đơn hoặc trả hàng.',
+    description: 'Đây là nơi xem lại tất cả **phiếu bán hàng** đã tạo. Bạn có thể **lọc**, xem **chi tiết**, **in hóa đơn** hoặc **trả hàng**.',
     isInfo: true,
     position: 'center',
   },
   {
     title: '① Xem theo phiếu xuất',
-    description: 'Tab này hiển thị danh sách từng phiếu xuất. Nhấn vào phiếu để xem chi tiết sản phẩm, in hóa đơn hoặc trả hàng.',
+    description: 'Tab này hiển thị **danh sách từng phiếu xuất**. Nhấn vào phiếu để xem **chi tiết sản phẩm**, **in hóa đơn** hoặc **trả hàng**.',
     targetSelector: '[data-tour="export-tab-receipts"]',
     position: 'bottom',
   },
   {
     title: '② Xem theo chi tiết sản phẩm',
-    description: 'Tab này liệt kê từng sản phẩm đã bán. Tiện lợi khi cần tìm nhanh IMEI, xem giá bán từng món hoặc thống kê.',
+    description: 'Tab này liệt kê từng **sản phẩm đã bán**. Tiện lợi khi cần tìm nhanh **IMEI**, xem **giá bán** từng món hoặc thống kê.',
     targetSelector: '[data-tour="export-tab-items"]',
     position: 'bottom',
   },
   {
     title: '✓ Đã hiểu!',
-    description: 'Sử dụng bộ lọc để tìm kiếm nhanh theo ngày, trạng thái, chi nhánh. Nhấn "Xuất Excel" để tải báo cáo.',
+    description: 'Sử dụng **bộ lọc** để tìm kiếm nhanh theo **ngày**, **trạng thái**, **chi nhánh**. Nhấn **"Xuất Excel"** để tải báo cáo.',
     isInfo: true,
     position: 'center',
   },

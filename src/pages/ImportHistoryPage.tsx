@@ -60,18 +60,18 @@ import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/Onboard
 const IMPORT_HISTORY_TOUR_STEPS: TourStep[] = [
   {
     title: 'Lịch sử nhập hàng 📋',
-    description: 'Đây là nơi xem tất cả phiếu nhập đã tạo. Bạn có thể lọc và tìm kiếm phiếu nhập.',
+    description: 'Đây là nơi xem tất cả **phiếu nhập** đã tạo. Bạn có thể **lọc** và **tìm kiếm** phiếu nhập.',
     isInfo: true,
   },
   {
     title: 'Tab "Theo phiếu nhập"',
-    description: 'Tab này hiển thị danh sách phiếu nhập. Nhấn vào mã phiếu để xem chi tiết sản phẩm trong phiếu.',
+    description: 'Tab này hiển thị **danh sách phiếu nhập**. Nhấn vào **mã phiếu** để xem chi tiết sản phẩm trong phiếu.',
     targetSelector: '[data-tour="import-history-receipts-tab"]',
     position: 'bottom',
   },
   {
     title: 'Tab "Theo sản phẩm"',
-    description: 'Chuyển sang tab này để xem tất cả sản phẩm đã nhập. Bạn có thể chỉnh sửa, trả hàng, hoặc chuyển kho từ đây.',
+    description: 'Chuyển sang tab này để xem tất cả **sản phẩm đã nhập**. Bạn có thể **chỉnh sửa**, **trả hàng**, hoặc **chuyển kho** từ đây.',
     targetSelector: '[data-tour="import-history-products-tab"]',
     position: 'bottom',
   },

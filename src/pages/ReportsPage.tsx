@@ -48,25 +48,25 @@ const TOUR_STEPS: Record<string, TourStep[]> = {
   revenue: [
     {
       title: '📊 Đây là trung tâm tài chính của bạn',
-      description: 'Xem doanh thu, chi phí và lợi nhuận theo ngày, tháng hoặc năm. Tất cả dữ liệu được tổng hợp tự động.',
+      description: 'Xem **doanh thu**, **chi phí** và **lợi nhuận** theo ngày, tháng hoặc năm. Tất cả dữ liệu được tổng hợp tự động.',
       isInfo: true,
       position: 'center',
     },
     {
       title: '⏱ Chọn nhanh khoảng thời gian',
-      description: 'Nhấn Hôm nay, Hôm qua, Tuần này, Tháng này... để lọc nhanh doanh thu theo mốc bất kỳ.',
+      description: 'Nhấn **Hôm nay**, **Hôm qua**, **Tuần này**, **Tháng này**... để lọc nhanh doanh thu theo mốc bất kỳ.',
       targetSelector: '[data-tour="report-time-presets"]',
       position: 'bottom',
     },
     {
       title: '📅 Hoặc tùy chỉnh ngày cụ thể',
-      description: 'Nhập ngày bắt đầu và kết thúc để xem báo cáo theo khoảng thời gian bất kỳ.',
+      description: 'Nhập **ngày bắt đầu** và **kết thúc** để xem báo cáo theo khoảng thời gian bất kỳ.',
       targetSelector: '[data-tour="report-date-filter"]',
       position: 'bottom',
     },
     {
       title: '💰 Báo cáo Doanh thu & Lợi nhuận',
-      description: 'Đây là báo cáo quan trọng nhất. Cho biết bạn đang lời hay lỗ, dựa trên từng đơn hàng thực tế.',
+      description: 'Đây là báo cáo quan trọng nhất. Cho biết bạn đang **lời hay lỗ**, dựa trên từng đơn hàng thực tế.',
       targetSelector: '[data-tour="report-selector"]',
       position: 'bottom',
     },
@@ -74,25 +74,25 @@ const TOUR_STEPS: Record<string, TourStep[]> = {
   products: [
     {
       title: '📦 Báo cáo Hàng hóa',
-      description: 'Theo dõi sản phẩm bán chạy, tồn kho hiện tại và lịch sử nhập-xuất theo từng danh mục.',
+      description: 'Theo dõi sản phẩm **bán chạy**, **tồn kho** hiện tại và lịch sử **nhập-xuất** theo từng danh mục.',
       isInfo: true,
       position: 'center',
     },
     {
       title: '⏱ Chọn khoảng thời gian',
-      description: 'Lọc nhanh theo Hôm nay, Tuần này, Tháng này để xem sản phẩm nào bán chạy nhất trong kỳ.',
+      description: 'Lọc nhanh theo **Hôm nay**, **Tuần này**, **Tháng này** để xem sản phẩm nào **bán chạy nhất** trong kỳ.',
       targetSelector: '[data-tour="product-report-filter"]',
       position: 'bottom',
     },
     {
       title: '🏆 Tab Bán hàng & Tồn kho',
-      description: 'Xem top sản phẩm bán chạy, doanh thu và lợi nhuận từng mặt hàng. Sắp xếp theo nhiều tiêu chí.',
+      description: 'Xem top sản phẩm **bán chạy**, **doanh thu** và **lợi nhuận** từng mặt hàng. Sắp xếp theo nhiều tiêu chí.',
       isInfo: true,
       position: 'center',
     },
     {
       title: '🔄 Tab Nhập – Xuất',
-      description: 'Theo dõi số lượng nhập kho và xuất bán theo từng sản phẩm trong kỳ.',
+      description: 'Theo dõi **số lượng nhập kho** và **xuất bán** theo từng sản phẩm trong kỳ.',
       isInfo: true,
       position: 'center',
     },
@@ -100,25 +100,25 @@ const TOUR_STEPS: Record<string, TourStep[]> = {
   customers: [
     {
       title: '👥 Báo cáo Khách hàng',
-      description: 'Xem danh sách khách hàng mua nhiều nhất, tổng công nợ và khách hàng mới trong kỳ.',
+      description: 'Xem danh sách khách hàng **mua nhiều nhất**, tổng **công nợ** và **khách hàng mới** trong kỳ.',
       isInfo: true,
       position: 'center',
     },
     {
       title: '⏱ Lọc theo thời gian',
-      description: 'Chọn khoảng thời gian để xem top khách hàng, doanh thu và công nợ trong kỳ đó.',
+      description: 'Chọn khoảng thời gian để xem **top khách hàng**, **doanh thu** và **công nợ** trong kỳ đó.',
       targetSelector: '[data-tour="customer-report-filter"]',
       position: 'bottom',
     },
     {
       title: '📊 Sắp xếp theo tiêu chí',
-      description: 'Sắp xếp theo Mua nhiều nhất, Nhiều đơn hàng, Công nợ cao hoặc Mua gần đây để phân tích từng nhóm khách.',
+      description: 'Sắp xếp theo **Mua nhiều nhất**, **Nhiều đơn hàng**, **Công nợ cao** hoặc **Mua gần đây** để phân tích từng nhóm khách.',
       isInfo: true,
       position: 'center',
     },
     {
       title: '📥 Xuất Excel',
-      description: 'Tải toàn bộ danh sách khách hàng ra file Excel để báo cáo hoặc phân tích thêm.',
+      description: 'Tải toàn bộ danh sách khách hàng ra **file Excel** để báo cáo hoặc phân tích thêm.',
       isInfo: true,
       position: 'center',
     },
@@ -126,19 +126,19 @@ const TOUR_STEPS: Record<string, TourStep[]> = {
   suppliers: [
     {
       title: '🏭 Báo cáo Nhà cung cấp',
-      description: 'Theo dõi tổng nhập hàng từ từng nhà cung cấp, công nợ chưa trả và lịch sử trả hàng.',
+      description: 'Theo dõi **tổng nhập hàng** từ từng nhà cung cấp, **công nợ chưa trả** và lịch sử **trả hàng**.',
       isInfo: true,
       position: 'center',
     },
     {
       title: '📦 Tab Nhập hàng & Công nợ',
-      description: 'Xem tổng tiền đã nhập từ mỗi NCC, số tiền còn nợ và trạng thái thanh toán.',
+      description: 'Xem **tổng tiền đã nhập** từ mỗi NCC, số tiền **còn nợ** và trạng thái **thanh toán**.',
       isInfo: true,
       position: 'center',
     },
     {
       title: '🔄 Tab Trả hàng NCC',
-      description: 'Theo dõi lý do trả hàng, tỷ lệ lỗi từng nhà cung cấp để đánh giá chất lượng nguồn hàng.',
+      description: 'Theo dõi **lý do trả hàng**, **tỷ lệ lỗi** từng nhà cung cấp để đánh giá chất lượng nguồn hàng.',
       isInfo: true,
       position: 'center',
     },
@@ -146,25 +146,25 @@ const TOUR_STEPS: Record<string, TourStep[]> = {
   staff: [
     {
       title: '👤 Báo cáo Nhân viên',
-      description: 'Xem doanh thu, số đơn hàng và tiến độ KPI của từng nhân viên trong kỳ.',
+      description: 'Xem **doanh thu**, **số đơn hàng** và tiến độ **KPI** của từng nhân viên trong kỳ.',
       isInfo: true,
       position: 'center',
     },
     {
       title: '⏱ Lọc theo kỳ',
-      description: 'Chọn Tuần này, Tháng này hoặc Tháng trước để so sánh hiệu suất nhân viên theo từng giai đoạn.',
+      description: 'Chọn **Tuần này**, **Tháng này** hoặc **Tháng trước** để so sánh hiệu suất nhân viên theo từng giai đoạn.',
       targetSelector: '[data-tour="staff-report-filter"]',
       position: 'bottom',
     },
     {
       title: '🏆 Xem chi tiết từng nhân viên',
-      description: 'Nhấn vào tên nhân viên để xem chi tiết đơn hàng, nhật ký chăm sóc khách và tiến độ KPI.',
+      description: 'Nhấn vào **tên nhân viên** để xem chi tiết **đơn hàng**, **nhật ký chăm sóc** khách và tiến độ **KPI**.',
       isInfo: true,
       position: 'center',
     },
     {
       title: '🎯 Sắp xếp theo KPI thấp nhất',
-      description: 'Dùng chế độ "KPI thấp nhất" để phát hiện nhân viên cần hỗ trợ và điều chỉnh mục tiêu kịp thời.',
+      description: 'Dùng chế độ **"KPI thấp nhất"** để phát hiện nhân viên cần hỗ trợ và điều chỉnh **mục tiêu** kịp thời.',
       isInfo: true,
       position: 'center',
     },
@@ -172,25 +172,25 @@ const TOUR_STEPS: Record<string, TourStep[]> = {
   tax: [
     {
       title: '🧾 Báo cáo thuế Hộ kinh doanh',
-      description: 'Ước tính thuế GTGT và TNCN phải nộp theo chuẩn mẫu S2a-HKD (Thông tư 152/2025). Chỉ mang tính tham khảo.',
+      description: 'Ước tính **thuế GTGT** và **TNCN** phải nộp theo chuẩn mẫu **S2a-HKD** (Thông tư 152/2025). Chỉ mang tính tham khảo.',
       isInfo: true,
       position: 'center',
     },
     {
       title: '📅 Chọn kỳ kê khai',
-      description: 'Chọn Tháng này, Quý 1-4 hoặc Năm nay để tính thuế theo đúng kỳ cần kê khai.',
+      description: 'Chọn **Tháng này**, **Quý 1-4** hoặc **Năm nay** để tính thuế theo đúng **kỳ cần kê khai**.',
       targetSelector: '[data-tour="tax-report-period"]',
       position: 'bottom',
     },
     {
       title: '📋 Điền đủ 3 bước',
-      description: 'Chọn ngành nghề → Ước chừng doanh thu năm → Cách tính thuế TNCN. Hệ thống sẽ tự tính số thuế phải nộp.',
+      description: 'Chọn **ngành nghề** → Ước chừng **doanh thu năm** → Cách tính **thuế TNCN**. Hệ thống sẽ tự tính **số thuế phải nộp**.',
       isInfo: true,
       position: 'center',
     },
     {
       title: '📤 Xuất mẫu S2a chính thức',
-      description: 'Nhấn "Xuất Excel S2a" để tải file Excel đúng mẫu kê khai nộp thuế, có đủ tiêu đề và chữ ký.',
+      description: 'Nhấn **"Xuất Excel S2a"** để tải file Excel **đúng mẫu kê khai** nộp thuế, có đủ tiêu đề và chữ ký.',
       isInfo: true,
       position: 'center',
     },
@@ -240,13 +240,13 @@ export default function ReportsPage() {
     const wowStep: TourStep = hasData
       ? {
           title: `🎉 Doanh thu 7 ngày: ${formatNumber(profit7Days!)}đ`,
-          description: 'Tuyệt vời! Bạn đang có doanh thu. Vào mục Doanh thu & Lợi nhuận để xem chi tiết lợi nhuận thực tế.',
+          description: 'Tuyệt vời! Bạn đang có **doanh thu**. Vào mục **Doanh thu & Lợi nhuận** để xem chi tiết **lợi nhuận thực tế**.',
           isInfo: true,
           position: 'center',
         }
       : {
           title: '⚠️ Bạn chưa có dữ liệu để phân tích',
-          description: 'Hãy tạo đơn hàng đầu tiên để xem lợi nhuận. Mỗi đơn bán ra, hệ thống sẽ tự tính lời/lỗ cho bạn.',
+          description: 'Hãy tạo **đơn hàng đầu tiên** để xem lợi nhuận. Mỗi đơn bán ra, hệ thống sẽ tự tính **lời/lỗ** cho bạn.',
           isInfo: true,
           position: 'center',
         };
