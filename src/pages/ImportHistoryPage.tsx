@@ -57,6 +57,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 
+// Tour đầy đủ khi đã có dữ liệu
 const IMPORT_RECEIPT_TAB_TOUR: TourStep[] = [
   {
     title: '📄 Tab "Theo phiếu nhập"',
@@ -72,6 +73,16 @@ const IMPORT_RECEIPT_TAB_TOUR: TourStep[] = [
   },
 ];
 
+// Tour mô tả khi chưa có dữ liệu
+const IMPORT_RECEIPT_TAB_TOUR_INFO: TourStep[] = [
+  {
+    title: '📄 Tab "Theo phiếu nhập"',
+    description: 'Sau khi bạn **tạo phiếu nhập hàng**, tab này sẽ liệt kê từng phiếu. Bạn có thể xem chi tiết, chỉnh sửa hoặc trả hàng cho nhà cung cấp từ đây.',
+    isInfo: true,
+    position: 'center',
+  },
+];
+
 const IMPORT_PRODUCT_TAB_TOUR: TourStep[] = [
   {
     title: '📦 Tab "Theo sản phẩm"',
@@ -84,6 +95,16 @@ const IMPORT_PRODUCT_TAB_TOUR: TourStep[] = [
     description: 'Mỗi dòng sản phẩm tồn kho có các nút:\n• ✏️ **Sửa** — chỉnh sửa thông tin sản phẩm\n• 🔄 **Trả** — trả sản phẩm về nhà cung cấp\n• 🔑 **BH** — đánh dấu bảo hành (chỉ hàng có IMEI)\n• 🔀 **Chuyển kho** — chuyển sang chi nhánh khác',
     targetSelector: '[data-tour="import-product-actions"]',
     position: 'left',
+  },
+];
+
+// Tour mô tả khi chưa có sản phẩm
+const IMPORT_PRODUCT_TAB_TOUR_INFO: TourStep[] = [
+  {
+    title: '📦 Tab "Theo sản phẩm"',
+    description: 'Khi bạn **nhập hàng vào kho**, các sản phẩm sẽ xuất hiện ở tab này. Bạn có thể lọc, tìm kiếm, sửa thông tin và thao tác với từng sản phẩm riêng lẻ.',
+    isInfo: true,
+    position: 'center',
   },
 ];
 
@@ -690,11 +711,11 @@ export default function ImportHistoryPage() {
         <Tabs value={activeTab} onValueChange={(v) => {
           const tab = v as 'receipts' | 'products';
           setActiveTab(tab);
-          // Trigger tab tour on first visit (only if not done in DB and has data)
-          if (tab === 'receipts' && !receiptTabTourSeen && !receiptTourDone && (receipts?.length ?? 0) > 0) {
+          // Trigger tour: info nếu chưa có data, chi tiết nếu có data
+          if (tab === 'receipts' && !receiptTabTourSeen && !receiptTourDone) {
             setReceiptTabTourSeen(true);
             setTimeout(() => setActiveTour('receipt-tab'), 400);
-          } else if (tab === 'products' && !productTabTourSeen && !productTourDone && (products?.length ?? 0) > 0) {
+          } else if (tab === 'products' && !productTabTourSeen && !productTourDone) {
             setProductTabTourSeen(true);
             setTimeout(() => setActiveTour('product-tab'), 400);
           }
@@ -1374,17 +1395,17 @@ export default function ImportHistoryPage() {
         />
       )}
       <OnboardingTourOverlay
-        steps={IMPORT_RECEIPT_TAB_TOUR}
+        steps={(receipts?.length ?? 0) > 0 ? IMPORT_RECEIPT_TAB_TOUR : IMPORT_RECEIPT_TAB_TOUR_INFO}
         isActive={activeTour === 'receipt-tab' || (manualTourActive && activeTab === 'receipts')}
-        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeReceiptTour(); completeTour(); }}
-        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeReceiptTour(); completeTour(); }}
+        onComplete={() => { setActiveTour(null); setManualTourActive(false); if ((receipts?.length ?? 0) > 0) { completeReceiptTour(); completeTour(); } }}
+        onSkip={() => { setActiveTour(null); setManualTourActive(false); if ((receipts?.length ?? 0) > 0) { completeReceiptTour(); completeTour(); } }}
         tourKey="import_receipt_tab"
       />
       <OnboardingTourOverlay
-        steps={IMPORT_PRODUCT_TAB_TOUR}
+        steps={(products?.length ?? 0) > 0 ? IMPORT_PRODUCT_TAB_TOUR : IMPORT_PRODUCT_TAB_TOUR_INFO}
         isActive={activeTour === 'product-tab' || (manualTourActive && activeTab === 'products')}
-        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeProductTour(); completeTour(); }}
-        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeProductTour(); completeTour(); }}
+        onComplete={() => { setActiveTour(null); setManualTourActive(false); if ((products?.length ?? 0) > 0) { completeProductTour(); completeTour(); } }}
+        onSkip={() => { setActiveTour(null); setManualTourActive(false); if ((products?.length ?? 0) > 0) { completeProductTour(); completeTour(); } }}
         tourKey="import_product_tab"
       />
     </MainLayout>

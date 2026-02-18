@@ -82,6 +82,7 @@ const paymentLabels: Record<string, string> = {
   debt: 'Công nợ',
 };
 
+// Tour đầy đủ khi đã có dữ liệu
 const EXPORT_RECEIPT_TAB_TOUR: TourStep[] = [
   {
     title: '📄 Tab "Theo phiếu xuất"',
@@ -97,6 +98,16 @@ const EXPORT_RECEIPT_TAB_TOUR: TourStep[] = [
   },
 ];
 
+// Tour mô tả khi chưa có phiếu xuất
+const EXPORT_RECEIPT_TAB_TOUR_INFO: TourStep[] = [
+  {
+    title: '📄 Tab "Theo phiếu xuất"',
+    description: 'Sau khi bạn **tạo phiếu bán hàng**, tab này sẽ hiển thị danh sách các đơn. Bạn có thể xem chi tiết, in hóa đơn hoặc xử lý trả hàng từ đây.',
+    isInfo: true,
+    position: 'center',
+  },
+];
+
 const EXPORT_ITEM_TAB_TOUR: TourStep[] = [
   {
     title: '📦 Tab "Theo chi tiết SP"',
@@ -109,6 +120,16 @@ const EXPORT_ITEM_TAB_TOUR: TourStep[] = [
     description: 'Mỗi dòng sản phẩm có nút **"Trả"** để xử lý trả hàng riêng lẻ cho từng sản phẩm. Sản phẩm đã trả sẽ hiển thị badge **"Đã trả"**.',
     targetSelector: '[data-tour="export-item-return"]',
     position: 'left',
+  },
+];
+
+// Tour mô tả khi chưa có sản phẩm đã bán
+const EXPORT_ITEM_TAB_TOUR_INFO: TourStep[] = [
+  {
+    title: '📦 Tab "Theo chi tiết SP"',
+    description: 'Khi bạn **bán hàng**, từng sản phẩm sẽ xuất hiện ở tab này. Bạn có thể tìm theo IMEI, tên khách hàng và trả hàng lẻ từng sản phẩm.',
+    isInfo: true,
+    position: 'center',
   },
 ];
 
@@ -500,11 +521,11 @@ export default function ExportHistoryPage() {
       <Tabs value={activeTab} onValueChange={(v) => {
         const tab = v as 'receipts' | 'items';
         setActiveTab(tab);
-        // Only trigger tour when there's actual data and not done yet
-        if (tab === 'receipts' && !receiptTabTourSeen && !receiptTourDone && (receipts?.length ?? 0) > 0) {
+        // Tour: info nếu chưa có data, chi tiết nếu có data
+        if (tab === 'receipts' && !receiptTabTourSeen && !receiptTourDone) {
           setReceiptTabTourSeen(true);
           setTimeout(() => setActiveTour('receipt-tab'), 400);
-        } else if (tab === 'items' && !itemTabTourSeen && !itemTourDone && (items?.length ?? 0) > 0) {
+        } else if (tab === 'items' && !itemTabTourSeen && !itemTourDone) {
           setItemTabTourSeen(true);
           setTimeout(() => setActiveTour('item-tab'), 400);
         }
@@ -968,17 +989,17 @@ export default function ExportHistoryPage() {
         }}
       />
       <OnboardingTourOverlay
-        steps={EXPORT_RECEIPT_TAB_TOUR}
+        steps={(receipts?.length ?? 0) > 0 ? EXPORT_RECEIPT_TAB_TOUR : EXPORT_RECEIPT_TAB_TOUR_INFO}
         isActive={activeTour === 'receipt-tab' || (manualTourActive && activeTab === 'receipts')}
-        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeReceiptTour(); completeHistoryTour(); }}
-        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeReceiptTour(); completeHistoryTour(); }}
+        onComplete={() => { setActiveTour(null); setManualTourActive(false); if ((receipts?.length ?? 0) > 0) { completeReceiptTour(); completeHistoryTour(); } }}
+        onSkip={() => { setActiveTour(null); setManualTourActive(false); if ((receipts?.length ?? 0) > 0) { completeReceiptTour(); completeHistoryTour(); } }}
         tourKey="export_receipt_tab"
       />
       <OnboardingTourOverlay
-        steps={EXPORT_ITEM_TAB_TOUR}
+        steps={(items?.length ?? 0) > 0 ? EXPORT_ITEM_TAB_TOUR : EXPORT_ITEM_TAB_TOUR_INFO}
         isActive={activeTour === 'item-tab' || (manualTourActive && activeTab === 'items')}
-        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeItemTour(); completeHistoryTour(); }}
-        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeItemTour(); completeHistoryTour(); }}
+        onComplete={() => { setActiveTour(null); setManualTourActive(false); if ((items?.length ?? 0) > 0) { completeItemTour(); completeHistoryTour(); } }}
+        onSkip={() => { setActiveTour(null); setManualTourActive(false); if ((items?.length ?? 0) > 0) { completeItemTour(); completeHistoryTour(); } }}
         tourKey="export_item_tab"
       />
     </MainLayout>
