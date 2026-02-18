@@ -100,8 +100,7 @@ const dashboardTourSteps: TourStep[] = [
 const Index = () => {
   const [productTab, setProductTab] = useState<'imported' | 'sold'>('imported');
   const [showInstallment, setShowInstallment] = useState(false);
-  const [tourDismissed, setTourDismissed] = useState(false);
-  const { isCompleted: dashTourDone, isLoading: dashTourLoading, completeTour: completeDashTour } = useOnboardingTour('dashboard_overview');
+  const { isCompleted: dashTourDone, isLoading: dashTourLoading, completeTour: completeDashTour } = useOnboardingTour('dashboard_overview', { reshowAfterDays: 7 });
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
@@ -113,8 +112,7 @@ const Index = () => {
   const recentProducts = recentProductsData || [];
   const recentReceipts = recentReceiptsData || [];
 
-  // Tour: bỏ qua → chỉ ẩn tạm, hoàn thành tất cả bước → lưu vĩnh viễn
-  const showDashTour = !dashTourLoading && !dashTourDone && !tourDismissed;
+  const showDashTour = !dashTourLoading && !dashTourDone;
 
   return (
     <MainLayout>
@@ -375,7 +373,7 @@ const Index = () => {
         steps={dashboardTourSteps}
         isActive={showDashTour}
         onComplete={completeDashTour}
-        onSkip={() => setTourDismissed(true)}
+        onSkip={completeDashTour}
         tourKey="dashboard_overview"
       />
     </MainLayout>
