@@ -90,6 +90,8 @@ const IMPORT_PRODUCT_TAB_TOUR: TourStep[] = [
 
 export default function ImportHistoryPage() {
   const { completeTour } = useOnboardingTour('import_history');
+  const { isCompleted: receiptTourDone, completeTour: completeReceiptTour } = useOnboardingTour('import_receipt_tab');
+  const { isCompleted: productTourDone, completeTour: completeProductTour } = useOnboardingTour('import_product_tab');
   const [activeTab, setActiveTab] = useState<'receipts' | 'products'>('receipts');
   // Tour: track which tab tour has been shown this session
   const [receiptTabTourSeen, setReceiptTabTourSeen] = useState(false);
@@ -688,11 +690,11 @@ export default function ImportHistoryPage() {
         <Tabs value={activeTab} onValueChange={(v) => {
           const tab = v as 'receipts' | 'products';
           setActiveTab(tab);
-          // Trigger tab tour on first switch
-          if (tab === 'receipts' && !receiptTabTourSeen) {
+          // Trigger tab tour on first visit (only if not done in DB)
+          if (tab === 'receipts' && !receiptTabTourSeen && !receiptTourDone) {
             setReceiptTabTourSeen(true);
             setTimeout(() => setActiveTour('receipt-tab'), 400);
-          } else if (tab === 'products' && !productTabTourSeen) {
+          } else if (tab === 'products' && !productTabTourSeen && !productTourDone) {
             setProductTabTourSeen(true);
             setTimeout(() => setActiveTour('product-tab'), 400);
           }
@@ -1374,15 +1376,15 @@ export default function ImportHistoryPage() {
       <OnboardingTourOverlay
         steps={IMPORT_RECEIPT_TAB_TOUR}
         isActive={activeTour === 'receipt-tab' || (manualTourActive && activeTab === 'receipts')}
-        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeTour(); }}
-        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeTour(); }}
+        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeReceiptTour(); completeTour(); }}
+        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeReceiptTour(); completeTour(); }}
         tourKey="import_receipt_tab"
       />
       <OnboardingTourOverlay
         steps={IMPORT_PRODUCT_TAB_TOUR}
         isActive={activeTour === 'product-tab' || (manualTourActive && activeTab === 'products')}
-        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeTour(); }}
-        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeTour(); }}
+        onComplete={() => { setActiveTour(null); setManualTourActive(false); completeProductTour(); completeTour(); }}
+        onSkip={() => { setActiveTour(null); setManualTourActive(false); completeProductTour(); completeTour(); }}
         tourKey="import_product_tab"
       />
     </MainLayout>
