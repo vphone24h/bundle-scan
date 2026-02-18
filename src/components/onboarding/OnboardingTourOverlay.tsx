@@ -37,21 +37,24 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
     }
 
     // Auto-open mobile sidebar if target is inside it
-    if (step.targetSelector.startsWith('[data-tour="sidebar-')) {
+    const isSidebarTarget = step.targetSelector.startsWith('[data-tour="sidebar-');
+    if (isSidebarTarget) {
       const menuBtn = document.querySelector('[data-tour="mobile-menu-btn"]') as HTMLElement | null;
       if (menuBtn && window.innerWidth < 1024) {
         const sidebar = document.querySelector('aside.fixed.z-40') as HTMLElement | null;
         const isOpen = sidebar && !sidebar.classList.contains('-translate-x-full');
         if (!isOpen) {
           menuBtn.click();
-          // Wait for sidebar animation
           setTimeout(() => {
             const el = document.querySelector(step.targetSelector!);
             if (el) {
-              setTargetRect(el.getBoundingClientRect());
-              el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+              // Scroll within sidebar nav container
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              setTimeout(() => {
+                setTargetRect(el.getBoundingClientRect());
+              }, 300);
             }
-          }, 350);
+          }, 400);
           return;
         }
       }
@@ -59,9 +62,16 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
 
     const el = document.querySelector(step.targetSelector);
     if (el) {
-      const rect = el.getBoundingClientRect();
-      setTargetRect(rect);
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      // For sidebar items, scroll within the sidebar container
+      if (isSidebarTarget) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => {
+          setTargetRect(el.getBoundingClientRect());
+        }, 300);
+      } else {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        setTargetRect(el.getBoundingClientRect());
+      }
     } else {
       setTargetRect(null);
     }
@@ -134,8 +144,21 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    // On mobile, position popup near the top (close to menu button) for first step
+    // On mobile: sidebar items → show popup to the right of sidebar
     if (vw < 640) {
+      const isSidebarItem = step.targetSelector?.startsWith('[data-tour="sidebar-');
+      if (isSidebarItem) {
+        // Position popup next to target, overlapping the main content area
+        const topPos = Math.max(16, Math.min(targetRect.top - 20, vh - 250));
+        return {
+          position: 'fixed',
+          top: topPos,
+          left: Math.min(targetRect.right + 8, vw - 200),
+          right: 8,
+          zIndex: 10002,
+        };
+      }
+      // Non-sidebar items: position near target
       return {
         position: 'fixed',
         top: Math.max(80, targetRect.bottom + gap),
