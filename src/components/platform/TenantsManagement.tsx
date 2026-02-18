@@ -520,7 +520,7 @@ export function TenantsManagement() {
                             setSetDaysValue(String(calculateRemainingDays(tenant)));
                             setActionDialog('set_days');
                           }}>
-                            <CalendarPlus className="h-4 w-4 mr-2 text-orange-500" />
+                            <CalendarPlus className="h-4 w-4 mr-2" />
                             Chỉnh ngày còn lại
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -693,6 +693,19 @@ export function TenantsManagement() {
                   >
                     <CalendarPlus className="h-4 w-4 mr-2" />
                     Gia hạn
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => {
+                      setSelectedTenant(tenant);
+                      setSetDaysValue(String(calculateRemainingDays(tenant)));
+                      setActionDialog('set_days');
+                    }}
+                  >
+                    <CalendarPlus className="h-4 w-4 mr-2" />
+                    Chỉnh ngày
                   </Button>
                 </div>
               </CardContent>
