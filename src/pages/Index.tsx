@@ -5,7 +5,7 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { useDashboardStats, useTodaySoldProducts, useRecentProducts, useRecentImportReceipts } from '@/hooks/useDashboardStats';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
-import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator } from 'lucide-react';
+import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator, PlayCircle } from 'lucide-react';
 import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { Button } from '@/components/ui/button';
@@ -100,6 +100,7 @@ const dashboardTourSteps: TourStep[] = [
 const Index = () => {
   const [productTab, setProductTab] = useState<'imported' | 'sold'>('imported');
   const [showInstallment, setShowInstallment] = useState(false);
+  const [manualTourActive, setManualTourActive] = useState(false);
   const { isCompleted: dashTourDone, isLoading: dashTourLoading, completeTour: completeDashTour } = useOnboardingTour('dashboard_overview', { reshowAfterDays: 7 });
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
   const { data: permissions } = usePermissions();
@@ -112,7 +113,7 @@ const Index = () => {
   const recentProducts = recentProductsData || [];
   const recentReceipts = recentReceiptsData || [];
 
-  const showDashTour = !dashTourLoading && !dashTourDone;
+  const showDashTour = manualTourActive || (!dashTourLoading && !dashTourDone);
 
   return (
     <MainLayout>
@@ -128,6 +129,16 @@ const Index = () => {
                 Đang cập nhật…
               </div>
             )}
+            <Button
+              variant={manualTourActive ? "default" : "outline"}
+              size="sm"
+              onClick={() => setManualTourActive(v => !v)}
+              className="h-8 text-xs sm:text-sm"
+            >
+              <PlayCircle className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
+              <span className="sm:hidden">{manualTourActive ? 'Tắt HD' : 'Xem HD'}</span>
+            </Button>
             <Button 
               variant="outline" 
               size="sm" 
@@ -372,8 +383,8 @@ const Index = () => {
       <OnboardingTourOverlay
         steps={dashboardTourSteps}
         isActive={showDashTour}
-        onComplete={completeDashTour}
-        onSkip={completeDashTour}
+        onComplete={() => { completeDashTour(); setManualTourActive(false); }}
+        onSkip={() => { completeDashTour(); setManualTourActive(false); }}
         tourKey="dashboard_overview"
       />
     </MainLayout>
