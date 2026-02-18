@@ -59,23 +59,36 @@ import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/Onboard
 
 const IMPORT_HISTORY_TOUR_STEPS: TourStep[] = [
   {
-    title: 'Lịch sử nhập hàng 📋',
-    description: 'Đây là nơi xem tất cả **phiếu nhập** đã tạo. Bạn có thể **lọc** và **tìm kiếm** phiếu nhập.',
+    title: '📋 Lịch sử nhập hàng',
+    description: 'Đây là nơi xem tất cả **phiếu nhập** và **sản phẩm đã nhập**. Bạn có thể lọc, tìm kiếm, xem chi tiết hoặc thực hiện các thao tác trực tiếp.',
     isInfo: true,
   },
   {
-    title: 'Tab "Theo phiếu nhập"',
-    description: 'Tab này hiển thị **danh sách phiếu nhập**. Nhấn vào **mã phiếu** để xem chi tiết sản phẩm trong phiếu.',
+    title: '📄 Tab "Theo phiếu nhập"',
+    description: 'Tab này liệt kê từng **phiếu nhập hàng**. Nhấn vào **mã phiếu** để xem sản phẩm bên trong, hoặc nhấn nút **"⋯"** để thao tác.',
     targetSelector: '[data-tour="import-history-receipts-tab"]',
     position: 'bottom',
   },
   {
-    title: 'Tab "Theo sản phẩm"',
-    description: 'Chuyển sang tab này để xem tất cả **sản phẩm đã nhập**. Bạn có thể **chỉnh sửa**, **trả hàng**, hoặc **chuyển kho** từ đây.',
+    title: '⚙️ Thao tác với phiếu nhập',
+    description: 'Nhấn nút **"⋯"** ở cuối mỗi phiếu để mở menu:\n• **Xem chi tiết** — xem danh sách sản phẩm trong phiếu\n• **Chỉnh sửa** — sửa thông tin phiếu như ngày, NCC, ghi chú\n• **Trả hàng** — tạo phiếu trả lại cho nhà cung cấp',
+    targetSelector: '[data-tour="import-receipt-menu"]',
+    position: 'left',
+  },
+  {
+    title: '📦 Tab "Theo sản phẩm"',
+    description: 'Chuyển sang tab này để xem từng **sản phẩm đã nhập** với đầy đủ thông tin IMEI, giá, trạng thái. Có thể lọc theo danh mục, trạng thái...',
     targetSelector: '[data-tour="import-history-products-tab"]',
     position: 'bottom',
   },
+  {
+    title: '🔧 Thao tác với từng sản phẩm',
+    description: 'Mỗi dòng sản phẩm có các nút thao tác:\n• ✏️ **Sửa** — chỉnh sửa thông tin sản phẩm\n• 🔄 **Trả** — trả sản phẩm về nhà cung cấp\n• 🔑 **BH** — đánh dấu bảo hành\n• 🔀 **Chuyển kho** — chuyển sản phẩm sang chi nhánh khác',
+    targetSelector: '[data-tour="import-product-actions"]',
+    position: 'left',
+  },
 ];
+
 
 export default function ImportHistoryPage() {
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('import_history');
@@ -750,8 +763,8 @@ export default function ImportHistoryPage() {
                       </td>
                       <td>
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                           <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" data-tour="import-receipt-menu">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>

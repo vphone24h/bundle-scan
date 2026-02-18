@@ -85,27 +85,32 @@ const paymentLabels: Record<string, string> = {
 const exportHistoryTourSteps: TourStep[] = [
   {
     title: '📋 Lịch sử xuất hàng',
-    description: 'Đây là nơi xem lại tất cả **phiếu bán hàng** đã tạo. Bạn có thể **lọc**, xem **chi tiết**, **in hóa đơn** hoặc **trả hàng**.',
+    description: 'Đây là nơi xem lại tất cả **phiếu bán hàng** đã tạo. Bạn có thể **lọc**, **in hóa đơn**, **xem chi tiết** hoặc **trả hàng** cho khách.',
     isInfo: true,
-    position: 'center',
   },
   {
-    title: '① Xem theo phiếu xuất',
-    description: 'Tab này hiển thị **danh sách từng phiếu xuất**. Nhấn vào phiếu để xem **chi tiết sản phẩm**, **in hóa đơn** hoặc **trả hàng**.',
+    title: '📄 Tab "Theo phiếu xuất"',
+    description: 'Tab này liệt kê từng **phiếu bán hàng**. Nhấn vào **mã phiếu** để xem chi tiết, hoặc dùng các nút thao tác ở bên phải.',
     targetSelector: '[data-tour="export-tab-receipts"]',
     position: 'bottom',
   },
   {
-    title: '② Xem theo chi tiết sản phẩm',
-    description: 'Tab này liệt kê từng **sản phẩm đã bán**. Tiện lợi khi cần tìm nhanh **IMEI**, xem **giá bán** từng món hoặc thống kê.',
+    title: '⚙️ Thao tác với phiếu xuất',
+    description: 'Mỗi phiếu xuất có 3 nút thao tác:\n• 👁️ **Xem chi tiết** — xem sản phẩm, khách hàng, thanh toán\n• 🖨️ **In hóa đơn** — in hóa đơn theo mẫu đã cài đặt\n• 🔄 **Trả hàng** — xử lý trả toàn bộ đơn hàng',
+    targetSelector: '[data-tour="export-receipt-actions"]',
+    position: 'left',
+  },
+  {
+    title: '📦 Tab "Theo chi tiết SP"',
+    description: 'Tab này liệt kê từng **sản phẩm đã bán** với IMEI, giá bán, khách hàng. Tiện để tìm nhanh một sản phẩm cụ thể hoặc **trả từng món hàng** lẻ.',
     targetSelector: '[data-tour="export-tab-items"]',
     position: 'bottom',
   },
   {
-    title: '✓ Đã hiểu!',
-    description: 'Sử dụng **bộ lọc** để tìm kiếm nhanh theo **ngày**, **trạng thái**, **chi nhánh**. Nhấn **"Xuất Excel"** để tải báo cáo.',
-    isInfo: true,
-    position: 'center',
+    title: '🔄 Trả hàng từng món',
+    description: 'Trong tab chi tiết SP, mỗi dòng có nút **"Trả"** (mũi tên tròn) để xử lý trả hàng cho từng sản phẩm riêng lẻ. Sản phẩm đã trả sẽ hiển thị badge **"Đã trả"**.',
+    targetSelector: '[data-tour="export-item-return"]',
+    position: 'left',
   },
 ];
 
