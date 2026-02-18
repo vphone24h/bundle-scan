@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
+import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
+import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -108,7 +110,38 @@ const saveCustomPaymentSources = (sources: { id: string; name: string }[]) => {
   localStorage.setItem('customPaymentSources', JSON.stringify(sources));
 };
 
+const cashBookTourSteps: TourStep[] = [
+  {
+    title: '📒 Sổ quỹ dùng để làm gì?',
+    description: 'Đây là nơi quản lý toàn bộ tiền mặt và chuyển khoản. Mỗi lần thu tiền – chi tiền, hệ thống sẽ tự cập nhật số dư.',
+    isInfo: true,
+    position: 'center',
+  },
+  {
+    title: '② Thêm phiếu thu',
+    description: 'Khi khách thanh toán tiền, hãy tạo Phiếu Thu để ghi nhận khoản tiền vào.',
+    targetSelector: '[data-tour="cashbook-income"]',
+    position: 'bottom',
+  },
+  {
+    title: '③ Thêm phiếu chi',
+    description: 'Khi trả tiền nhập hàng, chi phí, lương… hãy tạo Phiếu Chi để ghi nhận khoản tiền ra.',
+    targetSelector: '[data-tour="cashbook-expense"]',
+    position: 'bottom',
+  },
+  {
+    title: '🎉 Số dư cập nhật tự động!',
+    description: 'Mỗi khi tạo phiếu thu/chi, số dư quỹ sẽ được cập nhật tự động theo thời gian thực. Bạn có thể theo dõi dòng tiền bất cứ lúc nào.',
+    isInfo: true,
+    position: 'center',
+  },
+];
+
 export default function CashBookPage() {
+  // Onboarding tour
+  const { isCompleted: cashTourDone, isLoading: cashTourLoading, completeTour: completeCashTour } = useOnboardingTour('cashbook_guide');
+  const showCashTour = !cashTourLoading && !cashTourDone;
+
   // Main view tabs: by branch or total
   const [viewMode, setViewMode] = useState<'branch' | 'total'>('total');
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
@@ -789,11 +822,11 @@ export default function CashBookPage() {
                <span className="hidden sm:inline">Quỹ kỳ đầu</span>
                <span className="sm:hidden">Kỳ đầu</span>
              </Button>
-             <Button variant="outline" size="sm" onClick={() => handleOpenAdd('income')} className="text-green-600 border-green-600 hover:bg-green-50 text-xs sm:text-sm px-2 sm:px-3">
-               <TrendingUp className="h-4 w-4 mr-1 sm:mr-2" />
-               Thu
-             </Button>
-             <Button size="sm" onClick={() => handleOpenAdd('expense')} className="bg-destructive hover:bg-destructive/90 text-xs sm:text-sm px-2 sm:px-3">
+              <Button data-tour="cashbook-income" variant="outline" size="sm" onClick={() => handleOpenAdd('income')} className="text-green-600 border-green-600 hover:bg-green-50 text-xs sm:text-sm px-2 sm:px-3">
+                <TrendingUp className="h-4 w-4 mr-1 sm:mr-2" />
+                Thu
+              </Button>
+              <Button data-tour="cashbook-expense" size="sm" onClick={() => handleOpenAdd('expense')} className="bg-destructive hover:bg-destructive/90 text-xs sm:text-sm px-2 sm:px-3">
                <TrendingDown className="h-4 w-4 mr-1 sm:mr-2" />
                Chi
              </Button>
@@ -2074,6 +2107,13 @@ export default function CashBookPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <OnboardingTourOverlay
+        steps={cashBookTourSteps}
+        isActive={showCashTour}
+        onComplete={completeCashTour}
+        onSkip={completeCashTour}
+        tourKey="cashbook_guide"
+      />
     </MainLayout>
   );
 }

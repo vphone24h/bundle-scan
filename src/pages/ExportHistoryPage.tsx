@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
+import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
+import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -79,7 +81,38 @@ const paymentLabels: Record<string, string> = {
   debt: 'Công nợ',
 };
 
+const exportHistoryTourSteps: TourStep[] = [
+  {
+    title: '📋 Lịch sử xuất hàng',
+    description: 'Đây là nơi xem lại tất cả phiếu bán hàng đã tạo. Bạn có thể lọc, xem chi tiết, in hóa đơn hoặc trả hàng.',
+    isInfo: true,
+    position: 'center',
+  },
+  {
+    title: '① Xem theo phiếu xuất',
+    description: 'Tab này hiển thị danh sách từng phiếu xuất. Nhấn vào phiếu để xem chi tiết sản phẩm, in hóa đơn hoặc trả hàng.',
+    targetSelector: '[data-tour="export-tab-receipts"]',
+    position: 'bottom',
+  },
+  {
+    title: '② Xem theo chi tiết sản phẩm',
+    description: 'Tab này liệt kê từng sản phẩm đã bán. Tiện lợi khi cần tìm nhanh IMEI, xem giá bán từng món hoặc thống kê.',
+    targetSelector: '[data-tour="export-tab-items"]',
+    position: 'bottom',
+  },
+  {
+    title: '✓ Đã hiểu!',
+    description: 'Sử dụng bộ lọc để tìm kiếm nhanh theo ngày, trạng thái, chi nhánh. Nhấn "Xuất Excel" để tải báo cáo.',
+    isInfo: true,
+    position: 'center',
+  },
+];
+
 export default function ExportHistoryPage() {
+  // Onboarding tour
+  const { isCompleted: historyTourDone, isLoading: historyTourLoading, completeTour: completeHistoryTour } = useOnboardingTour('export_history');
+  const showHistoryTour = !historyTourLoading && !historyTourDone;
+
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
@@ -436,11 +469,11 @@ export default function ExportHistoryPage() {
       {/* Tabs */}
       <Tabs defaultValue="receipts" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="receipts" className="gap-2">
+          <TabsTrigger data-tour="export-tab-receipts" value="receipts" className="gap-2">
             <FileText className="h-4 w-4" />
             Theo phiếu xuất
           </TabsTrigger>
-          <TabsTrigger value="items" className="gap-2">
+          <TabsTrigger data-tour="export-tab-items" value="items" className="gap-2">
             <Package className="h-4 w-4" />
             Theo chi tiết SP
           </TabsTrigger>
@@ -891,6 +924,13 @@ export default function ExportHistoryPage() {
           setShowReturnDialog(false);
           setReturnReceipt(null);
         }}
+      />
+      <OnboardingTourOverlay
+        steps={exportHistoryTourSteps}
+        isActive={showHistoryTour}
+        onComplete={completeHistoryTour}
+        onSkip={completeHistoryTour}
+        tourKey="export_history"
       />
     </MainLayout>
   );

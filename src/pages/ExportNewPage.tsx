@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
+import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -75,7 +77,44 @@ interface CartItem extends ExportReceiptItem {
   warranty?: string;
 }
 
+const exportNewTourSteps: TourStep[] = [
+  {
+    title: '📦 Chào mừng đến trang Xuất hàng!',
+    description: 'Đây là nơi bạn tạo phiếu bán hàng. Hãy cùng tìm hiểu các bước cơ bản.',
+    isInfo: true,
+    position: 'center',
+  },
+  {
+    title: '① Quét mã vạch',
+    description: 'Quét mã vạch sản phẩm (IMEI/SKU) để tự động thêm vào giỏ hàng. Nếu mã có chứa giá → sản phẩm được thêm ngay.',
+    targetSelector: '[data-tour="export-barcode"]',
+    position: 'bottom',
+  },
+  {
+    title: '② Tìm thủ công',
+    description: 'Không có mã vạch? Tìm sản phẩm theo IMEI hoặc tên, nhập giá bán rồi thêm vào giỏ.',
+    targetSelector: '[data-tour="export-manual-search"]',
+    position: 'bottom',
+  },
+  {
+    title: '③ Giỏ hàng & Thanh toán',
+    description: 'Xem danh sách sản phẩm đã chọn, nhập thông tin khách hàng, sau đó nhấn "Thanh toán" để hoàn tất.',
+    targetSelector: '[data-tour="export-cart"]',
+    position: 'left',
+  },
+  {
+    title: '✓ Sẵn sàng bán hàng!',
+    description: 'Bạn đã nắm được quy trình. Bắt đầu quét mã hoặc tìm sản phẩm để tạo phiếu xuất đầu tiên!',
+    isInfo: true,
+    position: 'center',
+  },
+];
+
 export default function ExportNewPage() {
+  // Onboarding tour
+  const { isCompleted: exportTourDone, isLoading: exportTourLoading, completeTour: completeExportTour } = useOnboardingTour('export_new');
+  const showExportTour = !exportTourLoading && !exportTourDone;
+
   // Form states
   const [imeiSearch, setImeiSearch] = useState('');
   const [nameSearch, setNameSearch] = useState('');
@@ -674,7 +713,7 @@ export default function ExportNewPage() {
         {/* Left: Product form */}
         <div className="lg:col-span-2 space-y-6">
           {/* Search product */}
-          <Card>
+          <Card data-tour="export-barcode">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <ScanBarcode className="h-5 w-5" />
@@ -697,7 +736,7 @@ export default function ExportNewPage() {
           </Card>
 
           {/* Manual Search */}
-          <Card>
+          <Card data-tour="export-manual-search">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Search className="h-5 w-5" />
@@ -822,7 +861,7 @@ export default function ExportNewPage() {
           </Card>
 
           {/* Cart */}
-          <Card>
+          <Card data-tour="export-cart">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5" />
@@ -1162,6 +1201,13 @@ export default function ExportNewPage() {
 
       {/* Installment Calculator */}
       <InstallmentCalculatorDialog open={showInstallment} onOpenChange={setShowInstallment} />
+      <OnboardingTourOverlay
+        steps={exportNewTourSteps}
+        isActive={showExportTour}
+        onComplete={completeExportTour}
+        onSkip={completeExportTour}
+        tourKey="export_new"
+      />
     </MainLayout>
   );
 }
