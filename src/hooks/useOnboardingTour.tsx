@@ -42,19 +42,15 @@ export function useOnboardingTour(tourKey: string, options?: { reshowAfterDays?:
   const completeTour = useMutation({
     mutationFn: async () => {
       if (!user?.id) return;
-      // Upsert: delete old then insert fresh
-      await supabase
-        .from('onboarding_tours')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('tour_key', tourKey);
-      await supabase.from('onboarding_tours').insert({
+      // Use upsert to save in a single round-trip
+      await supabase.from('onboarding_tours').upsert({
         user_id: user.id,
         tour_key: tourKey,
         tenant_id: null,
-      });
+      }, { onConflict: 'user_id,tour_key' });
     },
-    onSuccess: () => {
+    onMutate: () => {
+      // Optimistic update: mark as done immediately so UI closes instantly
       queryClient.setQueryData(['onboarding-tour', tourKey, user?.id], true);
     },
   });
