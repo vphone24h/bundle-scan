@@ -4936,7 +4936,9 @@ export type Database = {
       }
       cleanup_rate_limits: { Args: never; Returns: undefined }
       create_care_reminder_notifications: { Args: never; Returns: undefined }
+      decrypt_api_key: { Args: { _ciphertext: string }; Returns: string }
       delete_branch_safe: { Args: { _branch_id: string }; Returns: undefined }
+      encrypt_api_key: { Args: { _plaintext: string }; Returns: string }
       generate_affiliate_code: { Args: never; Returns: string }
       generate_domain_verification_token: { Args: never; Returns: string }
       get_current_tenant: { Args: never; Returns: string }
