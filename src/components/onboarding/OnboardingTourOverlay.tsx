@@ -272,7 +272,7 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
   };
 
   return (
-    <>
+    <div data-tour-active="true" style={{ display: 'contents' }}>
       {/* Backdrop: cutout when we have a target, solid overlay otherwise */}
       {targetRect ? (
         buildBackdropSvg()
@@ -392,6 +392,6 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

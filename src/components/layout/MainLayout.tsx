@@ -44,13 +44,18 @@ function useAdGate() {
     const handleClick = (e: MouseEvent) => {
       // Don't count clicks inside the ad modal itself
       if ((e.target as Element)?.closest('[data-ad-modal]')) return;
+      // Don't count clicks while onboarding tour is active
+      if (document.querySelector('[data-tour-active="true"]')) return;
 
       const current = parseInt(sessionStorage.getItem(AD_CLICK_COUNT_KEY) || '0', 10);
       const next = current + 1;
 
       if (next >= clicksPerAd) {
         sessionStorage.setItem(AD_CLICK_COUNT_KEY, '0');
-        setShowAdGate(true);
+        // Only show ad gate if tour is not active
+        if (!document.querySelector('[data-tour-active="true"]')) {
+          setShowAdGate(true);
+        }
       } else {
         sessionStorage.setItem(AD_CLICK_COUNT_KEY, String(next));
       }
