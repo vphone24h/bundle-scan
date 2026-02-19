@@ -114,8 +114,8 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
           width: 'calc(100dvh * 9 / 16)',
         }}
       >
-        {/* Ad Content — fills entire 9:16 container */}
-        <div className="absolute inset-0 cursor-pointer" onClick={handleAdClick}>
+        {/* Ad Content — fills entire 9:16 container, NOT clickable */}
+        <div className="absolute inset-0">
           {isVideo && videoUrl ? (
             <>
               {embedUrl ? (
@@ -141,7 +141,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
                   {/* Mute toggle */}
                   <button
                     onClick={(e) => { e.stopPropagation(); setMuted(!muted); }}
-                    className="absolute bottom-8 left-4 bg-black/60 text-white rounded-full p-2.5 hover:bg-black/80 transition z-10"
+                    className="absolute bottom-28 left-4 bg-black/60 text-white rounded-full p-2.5 hover:bg-black/80 transition z-10"
                   >
                     {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
                   </button>
@@ -162,20 +162,6 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
                   <span className="text-3xl font-bold text-white drop-shadow-lg">{currentAd.title}</span>
                 </div>
               )}
-
-              {/* Text overlay at bottom */}
-              <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                <h3 className="font-bold text-xl text-white">{currentAd.title}</h3>
-                {currentAd.description && (
-                  <p className="text-sm text-white/80 mt-1 line-clamp-2">{currentAd.description}</p>
-                )}
-                {currentAd.link_url && (
-                  <div className="flex items-center gap-1.5 mt-2 text-white/70 text-xs">
-                    <ExternalLink className="h-3 w-3" />
-                    <span>Nhấn để xem chi tiết</span>
-                  </div>
-                )}
-              </div>
             </>
           )}
 
@@ -183,7 +169,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
         </div>
 
-        {/* ── Top-right controls ── */}
+        {/* ── Top controls: countdown + nâng cấp + bỏ qua ── */}
         <div
           className="absolute top-4 right-4 flex items-center gap-2 z-20"
           style={{ pointerEvents: 'all' }}
@@ -220,20 +206,70 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
           ) : null}
         </div>
 
-        {/* ── Progress bar at bottom ── */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20">
+        {/* ── Bottom action bar ── */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-8 pb-3 px-4">
+          {/* Ad info */}
+          <div className="mb-3">
+            <h3 className="font-bold text-base text-white line-clamp-1">{currentAd.title}</h3>
+            {currentAd.description && (
+              <p className="text-xs text-white/70 mt-0.5 line-clamp-1">{currentAd.description}</p>
+            )}
+          </div>
+
+          {/* 3 action buttons */}
+          <div className="flex gap-2 mb-2">
+            {/* View ad detail */}
+            {currentAd.link_url && (
+              <button
+                type="button"
+                onClick={handleAdClick}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-white/15 backdrop-blur-sm border border-white/20 text-white text-xs font-medium rounded-full px-3 py-2 hover:bg-white/25 active:scale-95 transition"
+              >
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                Xem chi tiết
+              </button>
+            )}
+
+            {/* Upgrade */}
+            <button
+              type="button"
+              onClick={handleUpgrade}
+              className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-full px-3 py-2 hover:bg-primary/90 active:scale-95 transition shadow-lg"
+            >
+              <ArrowUpCircle className="h-3.5 w-3.5 shrink-0" />
+              Nâng cấp
+            </button>
+
+            {/* Skip */}
+            {canSkip ? (
+              <button
+                type="button"
+                onClick={handleSkip}
+                className="flex-1 flex items-center justify-center gap-1 bg-white/20 backdrop-blur-sm border border-white/30 text-white text-xs font-semibold rounded-full px-3 py-2 hover:bg-white/30 active:scale-95 transition shadow-lg"
+              >
+                <X className="h-3.5 w-3.5 shrink-0" />
+                Bỏ qua
+              </button>
+            ) : settings.is_skippable ? (
+              <div className="flex-1 flex items-center justify-center bg-black/40 backdrop-blur-sm text-white/50 text-xs rounded-full px-3 py-2">
+                Bỏ qua sau {skipAfterRemaining}s
+              </div>
+            ) : null}
+          </div>
+
+          {/* Footer note */}
+          <p className="text-center text-white/40 text-[10px]">
+            Nâng cấp để không còn quảng cáo
+          </p>
+        </div>
+
+        {/* ── Progress bar ── */}
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20 z-30">
           <div
             className="h-full bg-primary transition-all duration-1000"
             style={{ width: `${progress}%` }}
           />
         </div>
-
-        {/* Ad label bottom-left for video */}
-        {isVideo && videoUrl && (
-          <div className="absolute bottom-3 right-4 text-white/50 text-xs z-10 pointer-events-none">
-            📢 Quảng cáo
-          </div>
-        )}
       </div>
     </div>
   );
