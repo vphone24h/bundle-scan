@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, ExternalLink, Volume2, VolumeX, ArrowUpCircle } from 'lucide-react';
+import { X, ExternalLink, Volume2, VolumeX, ArrowUpCircle, Play } from 'lucide-react';
 import { useActiveAdvertisements, useTrackAdvertisementClick } from '@/hooks/useAdvertisements';
 import { AdGateSettings } from '@/hooks/useAdGate';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,111 @@ interface AdGateModalProps {
   open: boolean;
   onClose: () => void;
   settings: AdGateSettings;
+}
+
+/** Extract YouTube video ID */
+function getYouTubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function getVimeoId(url: string): string | null {
+  const m = url.match(/vimeo\.com\/(\d+)/);
+  return m ? m[1] : null;
+}
+
+/**
+ * EmbedVideoPlayer — shows thumbnail + Play button first.
+ * On tap, replaces with iframe so autoplay works on iOS Safari.
+ */
+function EmbedVideoPlayer({
+  videoUrl,
+}: {
+  videoUrl: string;
+}) {
+  const [started, setStarted] = useState(false);
+  const [muted, setMuted] = useState(true);
+
+  const ytId = getYouTubeId(videoUrl);
+  const vimeoId = getVimeoId(videoUrl);
+
+  const getIframeSrc = (muteVal: boolean) => {
+    if (ytId) return `https://www.youtube.com/embed/${ytId}?autoplay=1&mute=${muteVal ? 1 : 0}&playsinline=1&rel=0&modestbranding=1`;
+    if (vimeoId) return `https://player.vimeo.com/video/${vimeoId}?autoplay=1&muted=${muteVal ? 1 : 0}&playsinline=1`;
+    return videoUrl;
+  };
+
+  const thumbnailUrl = ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : null;
+
+  const handlePlay = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setStarted(true);
+  };
+
+  const handleUnmute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMuted(false);
+  };
+
+  if (!started) {
+    return (
+      <div className="relative w-full h-full bg-black">
+        {thumbnailUrl && (
+          <img
+            src={thumbnailUrl}
+            alt="Video thumbnail"
+            className="w-full h-full object-cover"
+          />
+        )}
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/40" />
+        {/* Play button */}
+        <button
+          onClick={handlePlay}
+          className="absolute inset-0 flex flex-col items-center justify-center gap-3"
+        >
+          <div className="bg-red-600 rounded-full p-5 shadow-2xl">
+            <Play className="h-10 w-10 text-white fill-white" />
+          </div>
+          <span className="text-white text-sm font-semibold bg-black/60 rounded-full px-4 py-1.5">
+            Nhấn để xem video
+          </span>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-full">
+      <iframe
+        key={`embed-${muted}`}
+        src={getIframeSrc(muted)}
+        className="w-full h-full"
+        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+        allowFullScreen
+        frameBorder="0"
+        style={{ display: 'block' }}
+      />
+      {/* Unmute overlay — only when muted */}
+      {muted && (
+        <button
+          onClick={handleUnmute}
+          className="absolute bottom-28 left-4 flex items-center gap-2 bg-black/70 backdrop-blur-sm text-white text-xs font-semibold rounded-full px-3 py-2 z-10 hover:bg-black/90 transition"
+        >
+          <Volume2 className="h-4 w-4" />
+          Bật âm thanh
+        </button>
+      )}
+      {!muted && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setMuted(true); }}
+          className="absolute bottom-28 left-4 bg-black/60 text-white rounded-full p-2.5 hover:bg-black/80 transition z-10"
+        >
+          <VolumeX className="h-5 w-5" />
+        </button>
+      )}
+    </div>
+  );
 }
 
 export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
@@ -20,7 +125,6 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
   const [canSkip, setCanSkip] = useState(false);
   const [muted, setMuted] = useState(true);
   const [hasUnmuted, setHasUnmuted] = useState(false);
-  const [embedMuted, setEmbedMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -64,7 +168,6 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
     if (!open) {
       setCurrentAdIndex(0);
       setCanSkip(false);
-      setEmbedMuted(true);
       setHasUnmuted(false);
       setMuted(true);
       if (timerRef.current) clearInterval(timerRef.current);
@@ -75,17 +178,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
 
   const isVideo = currentAd.ad_type === 'video' || !!(currentAd as any).video_url;
   const videoUrl = (currentAd as any).video_url as string | undefined;
-
-  const getEmbedUrl = (url: string, muteEmbed: boolean): string | null => {
-    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=${muteEmbed ? 1 : 0}&playsinline=1&rel=0&modestbranding=1`;
-    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&muted=${muteEmbed ? 1 : 0}&playsinline=1`;
-    return null;
-  };
-
-  const embedUrl = videoUrl ? getEmbedUrl(videoUrl, embedMuted) : null;
-  const isEmbedVideo = !!embedUrl;
+  const isEmbedVideo = videoUrl ? (!!getYouTubeId(videoUrl) || !!getVimeoId(videoUrl)) : false;
 
   const handleAdClick = () => {
     if (currentAd.link_url) {
@@ -126,43 +219,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
           {isVideo && videoUrl ? (
             <>
               {isEmbedVideo ? (
-                <>
-                  <iframe
-                    key={`${videoUrl}-${embedMuted}`}
-                    src={embedUrl!}
-                    className="w-full h-full"
-                    allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-                    allowFullScreen
-                    frameBorder="0"
-                    style={{ display: 'block' }}
-                  />
-                  {/* Unmute overlay for embed — shown until user taps */}
-                  {embedMuted && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEmbedMuted(false);
-                      }}
-                      className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/20 z-10"
-                    >
-                      <div className="bg-black/70 backdrop-blur-sm rounded-full p-4">
-                        <Volume2 className="h-8 w-8 text-white" />
-                      </div>
-                      <span className="text-white text-sm font-semibold bg-black/60 rounded-full px-4 py-1.5">
-                        Nhấn để bật âm thanh
-                      </span>
-                    </button>
-                  )}
-                  {/* Mute toggle after unmuted */}
-                  {!embedMuted && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setEmbedMuted(true); }}
-                      className="absolute bottom-28 left-4 bg-black/60 text-white rounded-full p-2.5 hover:bg-black/80 transition z-10"
-                    >
-                      <Volume2 className="h-5 w-5" />
-                    </button>
-                  )}
-                </>
+                <EmbedVideoPlayer videoUrl={videoUrl} />
               ) : (
                 <>
                   <video
@@ -174,7 +231,6 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
                     playsInline
                     className="w-full h-full object-cover"
                   />
-                  {/* Unmute overlay for direct video */}
                   {!hasUnmuted && (
                     <button
                       onClick={(e) => {
@@ -204,7 +260,6 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
               )}
             </>
           ) : (
-            /* Banner — full bleed */
             <>
               {currentAd.image_url ? (
                 <img
