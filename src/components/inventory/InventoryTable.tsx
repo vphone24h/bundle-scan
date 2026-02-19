@@ -139,18 +139,18 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
                     variant="outline"
                     size="sm"
                     onClick={() => handleViewDetail(item)}
-                    className="gap-1 text-xs sm:text-sm sm:gap-2"
+                    className="flex-col gap-0.5 h-auto py-1.5 px-2 sm:flex-row sm:gap-2 sm:py-2 sm:px-3 text-xs"
                     {...(index === 0 ? { 'data-tour': 'inventory-detail-btn' } : {})}
                   >
                     {item.hasImei ? (
                       <>
-                        <Smartphone className="h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="hidden sm:inline">IMEI</span>
+                        <Smartphone className="h-4 w-4" />
+                        <span className="text-[10px] sm:text-xs leading-none">IMEI</span>
                       </>
                     ) : (
                       <>
-                        <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="hidden sm:inline">Chi tiết</span>
+                        <FileText className="h-4 w-4" />
+                        <span className="text-[10px] sm:text-xs leading-none">Chi tiết</span>
                       </>
                     )}
                   </Button>
