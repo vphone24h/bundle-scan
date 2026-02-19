@@ -18,7 +18,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [countdown, setCountdown] = useState(settings.display_duration_seconds);
   const [canSkip, setCanSkip] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
