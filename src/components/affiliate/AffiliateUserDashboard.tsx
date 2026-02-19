@@ -100,16 +100,14 @@ export function AffiliateUserDashboard() {
 
   const isLoading = settingsLoading || affiliateLoading;
 
-  // Kiểm tra điều kiện: đã dùng dịch vụ ít nhất 3 tháng (90 ngày)
+  // Kiểm tra điều kiện: đăng ký gói từ 3 tháng trở lên (không phải gói tháng)
+  // Các gói hợp lệ: yearly, lifetime và bất kỳ gói nào không phải 'monthly'
   const meetsSubscriptionRequirement = (() => {
     if (!tenant) return false;
-    // Lifetime luôn đủ điều kiện
-    if (tenant.subscription_plan === 'lifetime') return true;
-    // Kiểm tra ngày bắt đầu đăng ký (subscription hoặc trial)
-    const startDate = tenant.subscription_start_date || tenant.trial_start_date;
-    if (!startDate) return false;
-    const daysSinceStart = (Date.now() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24);
-    return daysSinceStart >= 90;
+    const plan = tenant.subscription_plan;
+    if (!plan) return false;
+    // Chỉ loại trừ gói tháng (monthly)
+    return plan !== 'monthly';
   })();
 
   if (isLoading) {
@@ -218,9 +216,9 @@ export function AffiliateUserDashboard() {
             <div className="flex items-start gap-3 p-4 rounded-lg border border-destructive/30 bg-destructive/5">
               <CheckCircle2 className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-destructive">Yêu cầu sử dụng dịch vụ ít nhất 3 tháng</p>
+                <p className="text-sm font-semibold text-destructive">Yêu cầu đăng ký gói từ 3 tháng trở lên</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Để tham gia chương trình Affiliate, tài khoản của bạn cần đã sử dụng dịch vụ ít nhất <strong>3 tháng</strong>. Vui lòng quay lại sau khi đủ thời gian.
+                  Để tham gia chương trình Affiliate, bạn cần đăng ký <strong>gói 3 tháng, 6 tháng, 12 tháng, 24 tháng hoặc Vĩnh viễn</strong>. Gói tháng không đủ điều kiện.
                 </p>
               </div>
             </div>
@@ -267,7 +265,7 @@ export function AffiliateUserDashboard() {
             </Button>
             {!meetsSubscriptionRequirement && (
               <p className="text-xs text-muted-foreground">
-                Cần sử dụng dịch vụ ít nhất <strong>3 tháng</strong> để tham gia
+                Cần đăng ký <strong>gói từ 3 tháng trở lên</strong> để tham gia
               </p>
             )}
           </div>
