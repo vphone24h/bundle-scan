@@ -138,17 +138,19 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
   const progress = ((settings.display_duration_seconds - countdown) / settings.display_duration_seconds) * 100;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black">
-      {/* 9:16 container — thu nhỏ để tránh bị Safari che */}
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85"
+      style={{ padding: 'max(16px, env(safe-area-inset-top, 16px)) 12px max(16px, env(safe-area-inset-bottom, 16px)) 12px' }}
+    >
+      {/* Popup-style: có margin 4 bên, bo góc như popup */}
       <div
-        className="relative bg-black overflow-hidden"
+        className="relative bg-black overflow-hidden rounded-2xl shadow-2xl"
         style={{
           aspectRatio: '9/16',
-          maxHeight: 'calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
-          height: 'calc(100svh - 56px)',
-          width: 'calc((100svh - 56px) * 9 / 16)',
-          maxWidth: '100vw',
-          marginTop: 'env(safe-area-inset-top, 0px)',
+          height: '100%',
+          maxHeight: '100%',
+          width: 'auto',
+          maxWidth: '100%',
         }}
       >
         {/* Ad Content */}
