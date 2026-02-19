@@ -18,8 +18,9 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [countdown, setCountdown] = useState(settings.display_duration_seconds);
   const [canSkip, setCanSkip] = useState(false);
-  const [muted, setMuted] = useState(true); // start muted for autoplay, user taps to unmute
+  const [muted, setMuted] = useState(true);
   const [hasUnmuted, setHasUnmuted] = useState(false);
+  const [embedMuted, setEmbedMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -63,6 +64,9 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
     if (!open) {
       setCurrentAdIndex(0);
       setCanSkip(false);
+      setEmbedMuted(true);
+      setHasUnmuted(false);
+      setMuted(true);
       if (timerRef.current) clearInterval(timerRef.current);
     }
   }, [open]);
@@ -72,14 +76,16 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
   const isVideo = currentAd.ad_type === 'video' || !!(currentAd as any).video_url;
   const videoUrl = (currentAd as any).video_url as string | undefined;
 
-  const getEmbedUrl = (url: string): string | null => {
+  const getEmbedUrl = (url: string, muteEmbed: boolean): string | null => {
     const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1`;
+    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=${muteEmbed ? 1 : 0}`;
     const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&muted=1`;
+    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&muted=${muteEmbed ? 1 : 0}`;
     return null;
   };
-  const embedUrl = videoUrl ? getEmbedUrl(videoUrl) : null;
+
+  const embedUrl = videoUrl ? getEmbedUrl(videoUrl, embedMuted) : null;
+  const isEmbedVideo = !!embedUrl;
 
   const handleAdClick = () => {
     if (currentAd.link_url) {
@@ -115,19 +121,48 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
           width: 'calc(100dvh * 9 / 16)',
         }}
       >
-        {/* Ad Content — fills entire 9:16 container, NOT clickable */}
+        {/* Ad Content */}
         <div className="absolute inset-0">
           {isVideo && videoUrl ? (
             <>
-              {embedUrl ? (
-                <iframe
-                  src={embedUrl}
-                  className="w-full h-full"
-                  allow="autoplay; fullscreen"
-                  allowFullScreen
-                  frameBorder="0"
-                  style={{ display: 'block' }}
-                />
+              {isEmbedVideo ? (
+                <>
+                  <iframe
+                    key={`${videoUrl}-${embedMuted}`}
+                    src={embedUrl!}
+                    className="w-full h-full"
+                    allow="autoplay; fullscreen"
+                    allowFullScreen
+                    frameBorder="0"
+                    style={{ display: 'block' }}
+                  />
+                  {/* Unmute overlay for embed — shown until user taps */}
+                  {embedMuted && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEmbedMuted(false);
+                      }}
+                      className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/20 z-10"
+                    >
+                      <div className="bg-black/70 backdrop-blur-sm rounded-full p-4">
+                        <Volume2 className="h-8 w-8 text-white" />
+                      </div>
+                      <span className="text-white text-sm font-semibold bg-black/60 rounded-full px-4 py-1.5">
+                        Nhấn để bật âm thanh
+                      </span>
+                    </button>
+                  )}
+                  {/* Mute toggle after unmuted */}
+                  {!embedMuted && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEmbedMuted(true); }}
+                      className="absolute bottom-28 left-4 bg-black/60 text-white rounded-full p-2.5 hover:bg-black/80 transition z-10"
+                    >
+                      <Volume2 className="h-5 w-5" />
+                    </button>
+                  )}
+                </>
               ) : (
                 <>
                   <video
@@ -139,7 +174,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
                     playsInline
                     className="w-full h-full object-cover"
                   />
-                  {/* Unmute overlay — shown until user taps */}
+                  {/* Unmute overlay for direct video */}
                   {!hasUnmuted && (
                     <button
                       onClick={(e) => {
@@ -147,7 +182,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
                         setMuted(false);
                         setHasUnmuted(true);
                       }}
-                      className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30 z-10"
+                      className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/20 z-10"
                     >
                       <div className="bg-black/70 backdrop-blur-sm rounded-full p-4">
                         <Volume2 className="h-8 w-8 text-white" />
@@ -157,7 +192,6 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
                       </span>
                     </button>
                   )}
-                  {/* Mute toggle — shown after unmuted */}
                   {hasUnmuted && (
                     <button
                       onClick={(e) => { e.stopPropagation(); setMuted(!muted); }}
@@ -186,21 +220,19 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
             </>
           )}
 
-          {/* Dark top gradient for readability of top controls */}
+          {/* Dark top gradient */}
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
         </div>
 
-        {/* ── Top controls: countdown + nâng cấp + bỏ qua ── */}
+        {/* ── Top controls ── */}
         <div
           className="absolute top-4 right-4 flex items-center gap-2 z-20"
           style={{ pointerEvents: 'all' }}
         >
-          {/* Countdown badge */}
           <div className="bg-black/60 text-white text-xs font-semibold rounded-full px-2.5 py-1 tabular-nums">
             {countdown}s
           </div>
 
-          {/* Upgrade button */}
           <button
             type="button"
             onClick={handleUpgrade}
@@ -210,7 +242,6 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
             Nâng cấp
           </button>
 
-          {/* Skip button — shown when eligible */}
           {canSkip ? (
             <button
               type="button"
@@ -218,7 +249,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
               className="flex items-center gap-1 bg-white/20 backdrop-blur-sm border border-white/30 text-white text-xs font-semibold rounded-full px-3 py-1.5 hover:bg-white/30 active:scale-95 transition shadow-lg"
             >
               <X className="h-3.5 w-3.5" />
-              Bỏ qua
+              Trở lại VKho
             </button>
           ) : settings.is_skippable ? (
             <div className="bg-black/50 backdrop-blur-sm text-white/70 text-xs rounded-full px-3 py-1.5">
@@ -229,7 +260,6 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
 
         {/* ── Bottom action bar ── */}
         <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-8 pb-3 px-4">
-          {/* Ad info */}
           <div className="mb-3">
             <h3 className="font-bold text-base text-white line-clamp-1">{currentAd.title}</h3>
             {currentAd.description && (
@@ -237,9 +267,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
             )}
           </div>
 
-          {/* 3 action buttons */}
           <div className="flex gap-2 mb-2">
-            {/* View ad detail */}
             {currentAd.link_url && (
               <button
                 type="button"
@@ -251,7 +279,6 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
               </button>
             )}
 
-            {/* Upgrade */}
             <button
               type="button"
               onClick={handleUpgrade}
@@ -261,7 +288,6 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
               Nâng cấp
             </button>
 
-            {/* Skip */}
             {canSkip ? (
               <button
                 type="button"
@@ -269,7 +295,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
                 className="flex-1 flex items-center justify-center gap-1 bg-white/20 backdrop-blur-sm border border-white/30 text-white text-xs font-semibold rounded-full px-3 py-2 hover:bg-white/30 active:scale-95 transition shadow-lg"
               >
                 <X className="h-3.5 w-3.5 shrink-0" />
-                Bỏ qua
+                Trở lại VKho
               </button>
             ) : settings.is_skippable ? (
               <div className="flex-1 flex items-center justify-center bg-black/40 backdrop-blur-sm text-white/50 text-xs rounded-full px-3 py-2">
@@ -278,7 +304,6 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
             ) : null}
           </div>
 
-          {/* Footer note */}
           <p className="text-center text-white/40 text-[10px]">
             Nâng cấp để không còn quảng cáo
           </p>
