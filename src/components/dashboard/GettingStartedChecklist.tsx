@@ -18,6 +18,14 @@ interface ChecklistStep {
 
 const STEPS: ChecklistStep[] = [
   {
+    key: 'import',
+    label: 'Tạo phiếu nhập hàng đầu tiên',
+    description: 'Nhập hàng vào kho để bắt đầu quản lý tồn kho',
+    icon: <FileDown className="h-4 w-4" />,
+    link: '/import/new',
+    linkLabel: 'Nhập hàng',
+  },
+  {
     key: 'category',
     label: 'Tạo danh mục sản phẩm',
     description: 'Phân loại sản phẩm để dễ quản lý (VD: iPhone, Samsung, Phụ kiện...)',
@@ -32,14 +40,6 @@ const STEPS: ChecklistStep[] = [
     icon: <Users className="h-4 w-4" />,
     link: '/suppliers',
     linkLabel: 'Thêm NCC',
-  },
-  {
-    key: 'import',
-    label: 'Tạo phiếu nhập hàng đầu tiên',
-    description: 'Nhập hàng vào kho để bắt đầu quản lý tồn kho',
-    icon: <FileDown className="h-4 w-4" />,
-    link: '/import/new',
-    linkLabel: 'Nhập hàng',
   },
   {
     key: 'product',
