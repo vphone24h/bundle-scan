@@ -22,11 +22,9 @@ function getVimeoId(url: string): string | null {
 }
 
 /**
- * EmbedVideoPlayer — iframe autoplay muted, small unmute button.
+ * EmbedVideoPlayer — iframe autoplay muted. Mute state controlled by parent.
  */
-function EmbedVideoPlayer({ videoUrl }: { videoUrl: string }) {
-  const [muted, setMuted] = useState(true);
-
+function EmbedVideoPlayer({ videoUrl, muted }: { videoUrl: string; muted: boolean }) {
   const ytId = getYouTubeId(videoUrl);
   const vimeoId = getVimeoId(videoUrl);
 
@@ -37,34 +35,15 @@ function EmbedVideoPlayer({ videoUrl }: { videoUrl: string }) {
   };
 
   return (
-    <div className="relative w-full h-full">
-      <iframe
-        key={`embed-${muted}`}
-        src={getIframeSrc(muted)}
-        className="w-full h-full"
-        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-        allowFullScreen
-        frameBorder="0"
-        style={{ display: 'block' }}
-      />
-      {/* Small unmute button — bottom left, above action bar */}
-      {muted ? (
-        <button
-          onClick={(e) => { e.stopPropagation(); setMuted(false); }}
-          className="absolute bottom-28 left-4 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm text-white text-xs font-semibold rounded-full px-3 py-2 z-10 hover:bg-black/90 transition"
-        >
-          <Volume2 className="h-4 w-4" />
-          Bật tiếng
-        </button>
-      ) : (
-        <button
-          onClick={(e) => { e.stopPropagation(); setMuted(true); }}
-          className="absolute bottom-28 left-4 bg-black/60 text-white rounded-full p-2.5 z-10 hover:bg-black/80 transition"
-        >
-          <VolumeX className="h-5 w-5" />
-        </button>
-      )}
-    </div>
+    <iframe
+      key={`embed-${muted}`}
+      src={getIframeSrc(muted)}
+      className="w-full h-full"
+      allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+      allowFullScreen
+      frameBorder="0"
+      style={{ display: 'block' }}
+    />
   );
 }
 
@@ -77,6 +56,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
   const [countdown, setCountdown] = useState(settings.display_duration_seconds);
   const [canSkip, setCanSkip] = useState(false);
   const [muted, setMuted] = useState(true);
+  const [embedMuted, setEmbedMuted] = useState(true);
   const [hasUnmuted, setHasUnmuted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -123,6 +103,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
       setCanSkip(false);
       setHasUnmuted(false);
       setMuted(true);
+      setEmbedMuted(true);
       if (timerRef.current) clearInterval(timerRef.current);
     }
   }, [open]);
@@ -172,7 +153,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
           {isVideo && videoUrl ? (
             <>
               {isEmbedVideo ? (
-                <EmbedVideoPlayer videoUrl={videoUrl} />
+                <EmbedVideoPlayer videoUrl={videoUrl} muted={embedMuted} />
               ) : (
                 <>
                   <video
@@ -184,29 +165,20 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
                     playsInline
                     className="w-full h-full object-cover"
                   />
-                  {!hasUnmuted && (
+                  {muted && (
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMuted(false);
-                        setHasUnmuted(true);
-                      }}
-                      className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/20 z-10"
-                    >
-                      <div className="bg-black/70 backdrop-blur-sm rounded-full p-4">
-                        <Volume2 className="h-8 w-8 text-white" />
-                      </div>
-                      <span className="text-white text-sm font-semibold bg-black/60 rounded-full px-4 py-1.5">
-                        Nhấn để bật âm thanh
-                      </span>
-                    </button>
-                  )}
-                  {hasUnmuted && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setMuted(!muted); }}
+                      onClick={(e) => { e.stopPropagation(); setMuted(false); setHasUnmuted(true); }}
                       className="absolute bottom-28 left-4 bg-black/60 text-white rounded-full p-2.5 hover:bg-black/80 transition z-10"
                     >
-                      {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                      <VolumeX className="h-5 w-5" />
+                    </button>
+                  )}
+                  {!muted && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setMuted(true); }}
+                      className="absolute bottom-28 left-4 bg-black/60 text-white rounded-full p-2.5 hover:bg-black/80 transition z-10"
+                    >
+                      <Volume2 className="h-5 w-5" />
                     </button>
                   )}
                 </>
@@ -240,6 +212,29 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
           <div className="bg-black/60 text-white text-xs font-semibold rounded-full px-2.5 py-1 tabular-nums">
             {countdown}s
           </div>
+
+          {/* Mute toggle for embed video */}
+          {isEmbedVideo && (
+            <button
+              type="button"
+              onClick={() => setEmbedMuted(v => !v)}
+              className="bg-black/60 text-white rounded-full p-1.5 hover:bg-black/80 transition"
+              title={embedMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+            >
+              {embedMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+            </button>
+          )}
+          {/* Mute toggle for direct video */}
+          {isVideo && videoUrl && !isEmbedVideo && (
+            <button
+              type="button"
+              onClick={() => { setMuted(v => !v); setHasUnmuted(true); }}
+              className="bg-black/60 text-white rounded-full p-1.5 hover:bg-black/80 transition"
+              title={muted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+            >
+              {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+            </button>
+          )}
 
           <button
             type="button"
