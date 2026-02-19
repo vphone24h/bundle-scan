@@ -139,18 +139,18 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85"
-      style={{ padding: 'max(16px, env(safe-area-inset-top, 16px)) 12px max(16px, env(safe-area-inset-bottom, 16px)) 12px' }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60"
+      style={{ padding: 'max(24px, env(safe-area-inset-top, 24px)) 20px max(24px, env(safe-area-inset-bottom, 24px)) 20px' }}
     >
-      {/* Popup-style: có margin 4 bên, bo góc như popup */}
+      {/* Popup nhỏ: chiếm ~72% chiều cao, thấy app phía sau */}
       <div
         className="relative bg-black overflow-hidden rounded-2xl shadow-2xl"
         style={{
           aspectRatio: '9/16',
-          height: '100%',
-          maxHeight: '100%',
+          height: '72%',
+          maxHeight: 'calc(100dvh - 120px)',
           width: 'auto',
-          maxWidth: '100%',
+          maxWidth: 'calc(100vw - 40px)',
         }}
       >
         {/* Ad Content */}
