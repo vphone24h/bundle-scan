@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, ExternalLink, Volume2, VolumeX } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { X, ExternalLink, Volume2, VolumeX, ArrowUpCircle } from 'lucide-react';
 import { useActiveAdvertisements, useTrackAdvertisementClick } from '@/hooks/useAdvertisements';
 import { AdGateSettings } from '@/hooks/useAdGate';
 import { useNavigate } from 'react-router-dom';
@@ -24,7 +23,6 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const pinnedAdId = (settings as any).pinned_ad_id as string | null;
-  // Nếu có pinned_ad_id thì dùng quảng cáo đó, ngược lại lấy ngẫu nhiên theo index
   const currentAd = pinnedAdId
     ? (ads?.find(a => a.id === pinnedAdId) ?? ads?.[0] ?? null)
     : (ads?.[currentAdIndex] ?? null);
@@ -73,7 +71,6 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
   const isVideo = currentAd.ad_type === 'video' || !!(currentAd as any).video_url;
   const videoUrl = (currentAd as any).video_url as string | undefined;
 
-  // Convert YouTube/Vimeo links to embed URLs
   const getEmbedUrl = (url: string): string | null => {
     const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1`;
@@ -90,48 +87,39 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (timerRef.current) clearInterval(timerRef.current);
     onClose();
   };
 
-  const handleUpgrade = () => {
+  const handleUpgrade = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (timerRef.current) clearInterval(timerRef.current);
     onClose();
     navigate('/subscription');
   };
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg mx-4 rounded-2xl overflow-hidden shadow-2xl bg-background">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2 bg-muted/80 border-b text-xs text-muted-foreground">
-          <span className="font-medium">📢 Quảng cáo</span>
-          <div className="flex items-center gap-2">
-            <span className="text-primary font-semibold">{countdown}s</span>
-            {canSkip && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); handleSkip(); }}
-                style={{ position: 'relative', zIndex: 10001, pointerEvents: 'all' }}
-                className="flex items-center gap-1 bg-background border border-border rounded-md px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted active:bg-muted/80 cursor-pointer select-none min-h-[36px] min-w-[80px] justify-center"
-              >
-                <X className="h-3.5 w-3.5" />
-                Bỏ qua
-              </button>
-            )}
-            {!canSkip && settings.is_skippable && (
-              <span className="text-muted-foreground text-xs">
-                Bỏ qua sau {Math.max(0, settings.skip_after_seconds - (settings.display_duration_seconds - countdown))}s
-              </span>
-            )}
-          </div>
-        </div>
+  const skipAfterRemaining = Math.max(0, settings.skip_after_seconds - (settings.display_duration_seconds - countdown));
+  const progress = ((settings.display_duration_seconds - countdown) / settings.display_duration_seconds) * 100;
 
-        {/* Ad Content */}
-        <div className="relative cursor-pointer" onClick={handleAdClick}>
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black">
+      {/* 9:16 container */}
+      <div
+        className="relative bg-black overflow-hidden"
+        style={{
+          aspectRatio: '9/16',
+          height: '100%',
+          maxHeight: '100dvh',
+          maxWidth: 'calc(100dvh * 9 / 16)',
+          width: '100%',
+        }}
+      >
+        {/* Ad Content — fills entire 9:16 container */}
+        <div className="absolute inset-0 cursor-pointer" onClick={handleAdClick}>
           {isVideo && videoUrl ? (
-            <div className="relative aspect-video bg-black">
+            <>
               {embedUrl ? (
                 <iframe
                   src={embedUrl}
@@ -139,6 +127,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
                   allow="autoplay; fullscreen"
                   allowFullScreen
                   frameBorder="0"
+                  style={{ display: 'block' }}
                 />
               ) : (
                 <>
@@ -149,72 +138,104 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
                     muted={muted}
                     loop={false}
                     playsInline
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
+                  {/* Mute toggle */}
                   <button
                     onClick={(e) => { e.stopPropagation(); setMuted(!muted); }}
-                    className="absolute bottom-3 right-3 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition"
+                    className="absolute bottom-8 left-4 bg-black/60 text-white rounded-full p-2.5 hover:bg-black/80 transition z-10"
                   >
-                    {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                    {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
                   </button>
                 </>
               )}
-            </div>
+            </>
           ) : (
-            <div className="relative aspect-video bg-muted overflow-hidden">
+            /* Banner — full bleed */
+            <>
               {currentAd.image_url ? (
                 <img
                   src={currentAd.image_url}
                   alt={currentAd.title}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                  <span className="text-2xl font-bold text-primary">{currentAd.title}</span>
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/30 to-primary/5">
+                  <span className="text-3xl font-bold text-white drop-shadow-lg">{currentAd.title}</span>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                <h3 className="font-bold text-lg">{currentAd.title}</h3>
+
+              {/* Text overlay at bottom */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+                <h3 className="font-bold text-xl text-white">{currentAd.title}</h3>
                 {currentAd.description && (
-                  <p className="text-sm opacity-90 line-clamp-2">{currentAd.description}</p>
+                  <p className="text-sm text-white/80 mt-1 line-clamp-2">{currentAd.description}</p>
+                )}
+                {currentAd.link_url && (
+                  <div className="flex items-center gap-1.5 mt-2 text-white/70 text-xs">
+                    <ExternalLink className="h-3 w-3" />
+                    <span>Nhấn để xem chi tiết</span>
+                  </div>
                 )}
               </div>
-            </div>
+            </>
           )}
 
-          {/* Click overlay hint */}
-          {currentAd.link_url && (
-            <div className="absolute top-3 right-3 flex items-center gap-1 bg-black/50 text-white text-xs rounded-full px-2 py-1">
-              <ExternalLink className="h-3 w-3" />
-              <span>Nhấn để xem</span>
-            </div>
-          )}
+          {/* Dark top gradient for readability of top controls */}
+          <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
         </div>
 
-        {/* Footer CTA */}
-        <div className="px-4 py-3 bg-muted/50 border-t flex items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">
-            Nâng cấp gói để loại bỏ quảng cáo
-          </p>
-          <Button
-            size="sm"
+        {/* ── Top-right controls ── */}
+        <div
+          className="absolute top-4 right-4 flex items-center gap-2 z-20"
+          style={{ pointerEvents: 'all' }}
+        >
+          {/* Countdown badge */}
+          <div className="bg-black/60 text-white text-xs font-semibold rounded-full px-2.5 py-1 tabular-nums">
+            {countdown}s
+          </div>
+
+          {/* Upgrade button */}
+          <button
+            type="button"
             onClick={handleUpgrade}
-            className="shrink-0 text-xs h-8"
+            className="flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-full px-3 py-1.5 hover:bg-primary/90 active:scale-95 transition shadow-lg"
           >
-            Nâng cấp ngay
-          </Button>
+            <ArrowUpCircle className="h-3.5 w-3.5" />
+            Nâng cấp
+          </button>
+
+          {/* Skip button — shown when eligible */}
+          {canSkip ? (
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="flex items-center gap-1 bg-white/20 backdrop-blur-sm border border-white/30 text-white text-xs font-semibold rounded-full px-3 py-1.5 hover:bg-white/30 active:scale-95 transition shadow-lg"
+            >
+              <X className="h-3.5 w-3.5" />
+              Bỏ qua
+            </button>
+          ) : settings.is_skippable ? (
+            <div className="bg-black/50 backdrop-blur-sm text-white/70 text-xs rounded-full px-3 py-1.5">
+              Bỏ qua sau {skipAfterRemaining}s
+            </div>
+          ) : null}
         </div>
 
-        {/* Progress bar */}
-        <div className="h-1 bg-muted">
+        {/* ── Progress bar at bottom ── */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20">
           <div
             className="h-full bg-primary transition-all duration-1000"
-            style={{
-              width: `${((settings.display_duration_seconds - countdown) / settings.display_duration_seconds) * 100}%`,
-            }}
+            style={{ width: `${progress}%` }}
           />
         </div>
+
+        {/* Ad label bottom-left for video */}
+        {isVideo && videoUrl && (
+          <div className="absolute bottom-3 right-4 text-white/50 text-xs z-10 pointer-events-none">
+            📢 Quảng cáo
+          </div>
+        )}
       </div>
     </div>
   );
