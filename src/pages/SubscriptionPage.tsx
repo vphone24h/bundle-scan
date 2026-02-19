@@ -383,6 +383,9 @@ export default function SubscriptionPage() {
                     Gói miễn phí trọn đời
                   </CardTitle>
                   <CardDescription>Dùng không giới hạn thời gian</CardDescription>
+                  <p className="text-xs text-muted-foreground/70 italic mt-1">
+                    📌 Gói mặc định — hết gói dùng thử sẽ chuyển qua gói này
+                  </p>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-muted-foreground mb-4">0đ</div>
