@@ -100,6 +100,13 @@ export function AffiliateUserDashboard() {
 
   const isLoading = settingsLoading || affiliateLoading;
 
+  // Kiểm tra điều kiện gói tối thiểu 3 tháng
+  // Chỉ gói yearly (12 tháng), lifetime mới đủ điều kiện
+  // monthly (1 tháng) KHÔNG đủ điều kiện
+  const subscriptionPlan = tenant?.subscription_plan;
+  const meetsSubscriptionRequirement =
+    subscriptionPlan === 'yearly' || subscriptionPlan === 'lifetime';
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -200,6 +207,19 @@ export function AffiliateUserDashboard() {
               <p className="text-sm whitespace-pre-wrap">{description}</p>
             </div>
           )}
+
+          {/* Thông báo điều kiện chưa đủ */}
+          {!meetsSubscriptionRequirement && (
+            <div className="flex items-start gap-3 p-4 rounded-lg border border-destructive/30 bg-destructive/5">
+              <CheckCircle2 className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-destructive">Yêu cầu gói đăng ký tối thiểu 3 tháng</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Để tham gia chương trình Affiliate, bạn cần đăng ký gói <strong>3 tháng trở lên</strong> (gói Năm hoặc Trọn đời). Gói tháng không đủ điều kiện.
+                </p>
+              </div>
+            </div>
+          )}
           
           <div className="grid gap-4 md:grid-cols-3">
             <div className="flex items-start gap-3 p-4 rounded-lg border">
@@ -231,11 +251,20 @@ export function AffiliateUserDashboard() {
             </div>
           </div>
 
-          <div className="flex justify-center pt-4">
-            <Button size="lg" onClick={handleRegister} disabled={createAffiliate.isPending}>
+          <div className="flex flex-col items-center gap-2 pt-4">
+            <Button
+              size="lg"
+              onClick={handleRegister}
+              disabled={createAffiliate.isPending || !meetsSubscriptionRequirement}
+            >
               {createAffiliate.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Đăng ký làm Affiliate
             </Button>
+            {!meetsSubscriptionRequirement && (
+              <p className="text-xs text-muted-foreground">
+                Cần đăng ký gói <strong>Năm</strong> hoặc <strong>Trọn đời</strong> để tham gia
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
