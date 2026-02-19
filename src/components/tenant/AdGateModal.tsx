@@ -256,7 +256,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
             </button>
           ) : settings.is_skippable ? (
             <div className="bg-black/50 backdrop-blur-sm text-white/70 text-xs rounded-full px-3 py-1.5">
-              Bỏ qua sau {skipAfterRemaining}s
+              Trở về VKho sau {skipAfterRemaining}s
             </div>
           ) : null}
         </div>
@@ -302,7 +302,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
               </button>
             ) : settings.is_skippable ? (
               <div className="flex-1 flex items-center justify-center bg-black/40 backdrop-blur-sm text-white/50 text-xs rounded-full px-3 py-2">
-                Bỏ qua sau {skipAfterRemaining}s
+                Trở về VKho sau {skipAfterRemaining}s
               </div>
             ) : null}
           </div>
