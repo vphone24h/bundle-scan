@@ -140,17 +140,17 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60"
-      style={{ padding: 'max(24px, env(safe-area-inset-top, 24px)) 20px max(24px, env(safe-area-inset-bottom, 24px)) 20px' }}
+      style={{ padding: 'max(20px, env(safe-area-inset-top, 20px)) 16px max(20px, env(safe-area-inset-bottom, 20px)) 16px' }}
     >
-      {/* Popup nhỏ: chiếm ~72% chiều cao, thấy app phía sau */}
+      {/* Popup: 82% chiều cao, thấy app VKho phía sau */}
       <div
         className="relative bg-black overflow-hidden rounded-2xl shadow-2xl"
         style={{
           aspectRatio: '9/16',
-          height: '72%',
-          maxHeight: 'calc(100dvh - 120px)',
+          height: '82%',
+          maxHeight: 'calc(100dvh - 100px)',
           width: 'auto',
-          maxWidth: 'calc(100vw - 40px)',
+          maxWidth: 'calc(100vw - 32px)',
         }}
       >
         {/* Ad Content */}
@@ -267,22 +267,22 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
         </div>
 
         {/* ── Bottom action bar ── */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-8 pb-3 px-4">
-          <div className="mb-3">
-            <h3 className="font-bold text-base text-white line-clamp-1">{currentAd.title}</h3>
+        <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-6 pb-2 px-3">
+          <div className="mb-2">
+            <h3 className="font-bold text-sm text-white line-clamp-1">{currentAd.title}</h3>
             {currentAd.description && (
-              <p className="text-xs text-white/70 mt-0.5 line-clamp-1">{currentAd.description}</p>
+              <p className="text-[11px] text-white/70 mt-0.5 line-clamp-1">{currentAd.description}</p>
             )}
           </div>
 
-          <div className="flex gap-2 mb-2">
+          <div className="flex gap-1.5 mb-1.5">
             {currentAd.link_url && (
               <button
                 type="button"
                 onClick={handleAdClick}
-                className="flex-1 flex items-center justify-center gap-1.5 bg-white/15 backdrop-blur-sm border border-white/20 text-white text-xs font-medium rounded-full px-3 py-2 hover:bg-white/25 active:scale-95 transition"
+                className="flex-1 flex items-center justify-center gap-1 bg-white/15 backdrop-blur-sm border border-white/20 text-white text-[11px] font-medium rounded-full px-2 py-1.5 hover:bg-white/25 active:scale-95 transition whitespace-nowrap"
               >
-                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                <ExternalLink className="h-3 w-3 shrink-0" />
                 Xem chi tiết
               </button>
             )}
@@ -290,9 +290,9 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
             <button
               type="button"
               onClick={handleUpgrade}
-              className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold rounded-full px-3 py-2 hover:bg-primary/90 active:scale-95 transition shadow-lg"
+              className="flex-1 flex items-center justify-center gap-1 bg-primary text-primary-foreground text-[11px] font-semibold rounded-full px-2 py-1.5 hover:bg-primary/90 active:scale-95 transition shadow-lg whitespace-nowrap"
             >
-              <ArrowUpCircle className="h-3.5 w-3.5 shrink-0" />
+              <ArrowUpCircle className="h-3 w-3 shrink-0" />
               Nâng cấp
             </button>
 
@@ -300,19 +300,19 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
               <button
                 type="button"
                 onClick={handleSkip}
-                className="flex-1 flex items-center justify-center gap-1 bg-white/20 backdrop-blur-sm border border-white/30 text-white text-xs font-semibold rounded-full px-3 py-2 hover:bg-white/30 active:scale-95 transition shadow-lg"
+                className="flex-1 flex items-center justify-center gap-1 bg-white/20 backdrop-blur-sm border border-white/30 text-white text-[11px] font-semibold rounded-full px-2 py-1.5 hover:bg-white/30 active:scale-95 transition shadow-lg whitespace-nowrap"
               >
-                <X className="h-3.5 w-3.5 shrink-0" />
+                <X className="h-3 w-3 shrink-0" />
                 Trở lại VKho
               </button>
             ) : settings.is_skippable ? (
-              <div className="flex-1 flex items-center justify-center bg-black/40 backdrop-blur-sm text-white/50 text-xs rounded-full px-3 py-2">
-                Trở về VKho sau {skipAfterRemaining}s
+              <div className="flex-1 flex items-center justify-center bg-black/40 backdrop-blur-sm text-white/50 text-[10px] rounded-full px-2 py-1.5 whitespace-nowrap">
+                VKho sau {skipAfterRemaining}s
               </div>
             ) : null}
           </div>
 
-          <p className="text-center text-white/40 text-[10px]">
+          <p className="text-center text-white/40 text-[9px]">
             Nâng cấp để không còn quảng cáo
           </p>
         </div>
