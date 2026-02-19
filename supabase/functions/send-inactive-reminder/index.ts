@@ -40,7 +40,7 @@ function buildEmailHtml(params: {
               Chào <strong>${adminName || businessName || 'anh/chị'}</strong>,
             </p>
             <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.7">
-              Em thấy anh/chị đã đăng ký <strong>vKho</strong> được 3 ngày, nhưng có vẻ mình chưa bắt đầu sử dụng.
+              Em thấy anh/chị đã đăng ký <strong>vKho</strong> được 15 ngày, nhưng có vẻ mình chưa bắt đầu sử dụng.
             </p>
             <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.7">
               Không biết anh/chị có gặp khó khăn trong quá trình cài đặt hay chưa rõ cách sử dụng phần nào không ạ?
@@ -145,9 +145,9 @@ Deno.serve(async (req) => {
     const zalo = configs?.find(c => c.config_key === 'feedback_zalo_url')?.config_value
       || '0396 793 883'
 
-    // Tìm tenants đăng ký đúng 3 ngày trước, chưa có sản phẩm
-    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
-    const fourDaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000)
+    // Tìm tenants đăng ký đúng 15 ngày trước, chưa có sản phẩm
+    const threeDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
+    const fourDaysAgo = new Date(Date.now() - 16 * 24 * 60 * 60 * 1000)
 
     const { data: tenants } = await supabaseAdmin
       .from('tenants')
@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
           .from('email_queue')
           .select('id', { count: 'exact', head: true })
           .eq('tenant_id', tenant.id)
-          .eq('email_type', 'inactive_reminder_3d')
+          .eq('email_type', 'inactive_reminder_15d')
 
         if ((emailSentCount || 0) > 0) {
           skipped++
@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
           tenant_id: tenant.id,
           recipient_email: tenantUser.email,
           recipient_user_id: platformUser.user_id,
-          email_type: 'inactive_reminder_3d',
+          email_type: 'inactive_reminder_15d',
           subject,
           body_html: html,
           status: 'sent',
