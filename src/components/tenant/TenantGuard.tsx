@@ -20,11 +20,8 @@ function getEffectiveStatus(tenant: {
   subscription_end_date: string | null;
 }): 'trial' | 'active' | 'expired' | 'locked' {
   if (tenant.status === 'locked') return 'locked';
-  const now = new Date();
-  if (tenant.subscription_end_date) {
-    return new Date(tenant.subscription_end_date) > now ? 'active' : 'expired';
-  }
-  return new Date(tenant.trial_end_date) > now ? 'trial' : 'expired';
+  // Miễn phí trọn đời - không bao giờ hết hạn
+  return 'active';
 }
 
 export function TenantGuard({ children, allowExpired = false }: TenantGuardProps) {
