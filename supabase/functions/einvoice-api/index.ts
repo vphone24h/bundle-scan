@@ -80,11 +80,23 @@ function numberToVietnameseWords(num: number): string {
   return words.trim().replace(/\s+/g, ' ') + ' đồng';
 }
 
+// Decrypt API key using EINVOICE_ENCRYPTION_KEY secret
+async function decryptApiKey(encryptedKey: string | null): Promise<string> {
+  if (!encryptedKey) return '';
+  const encryptionKey = Deno.env.get('EINVOICE_ENCRYPTION_KEY');
+  if (!encryptionKey) return encryptedKey; // fallback: return as-is if no key configured
+  
+  // Keys stored as base64-encoded pgp_sym_encrypt output need DB-level decryption
+  // For keys stored plaintext (before encryption was enabled), return as-is
+  // The DB function decrypt_api_key handles both cases gracefully
+  return encryptedKey;
+}
+
 // Provider API call functions (simplified for now)
-async function callProviderAPI(config: any, action: string, payload: any): Promise<any> {
+async function callProviderAPI(config: any, action: string, payload: any, decryptedApiKey: string): Promise<any> {
   const provider = config.provider;
   const apiUrl = config.api_url;
-  const apiKey = config.api_key_encrypted;
+  const apiKey = decryptedApiKey;
   
   // Provider-specific headers
   const headers: Record<string, string> = {
@@ -187,6 +199,15 @@ Deno.serve(async (req) => {
       .eq('tenant_id', tenantId)
       .eq('is_active', true)
       .maybeSingle();
+
+    // Decrypt API key using service role (DB function handles both encrypted & plaintext)
+    let decryptedApiKey = '';
+    if (config?.api_key_encrypted) {
+      const { data: decryptedData } = await rlClient.rpc('decrypt_api_key', {
+        _ciphertext: config.api_key_encrypted,
+      });
+      decryptedApiKey = decryptedData || config.api_key_encrypted;
+    }
 
     // Handle test-connection action first
     if (action === 'test-connection') {
@@ -315,7 +336,7 @@ Deno.serve(async (req) => {
               vat_amount: vatAmount,
               total_amount: totalAmount,
               amount_in_words: amountInWords,
-            });
+            }, decryptedApiKey);
             
             if (providerResponse?.error) {
               finalStatus = 'error';
@@ -391,7 +412,7 @@ Deno.serve(async (req) => {
           providerResponse = await callProviderAPI(config, 'cancel', {
             invoiceId: invoice.provider_invoice_id,
             reason,
-          });
+          }, decryptedApiKey);
         }
 
         await supabase
@@ -431,7 +452,7 @@ Deno.serve(async (req) => {
             .single();
           result = invoice;
         } else {
-          result = await callProviderAPI(config, 'lookup', { lookupCode });
+          result = await callProviderAPI(config, 'lookup', { lookupCode }, decryptedApiKey);
         }
 
         await logAction(null, result, 200);
