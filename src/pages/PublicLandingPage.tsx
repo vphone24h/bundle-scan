@@ -128,7 +128,7 @@ export default function PublicLandingPage() {
             </p>
             <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/30 px-4 py-2 text-sm font-semibold text-primary">
               <CheckCircle2 className="h-4 w-4 text-primary" />
-              Sử dụng miễn phí trọn đời — không cần thẻ tín dụng
+              Sử dụng miễn phí trọn đời
             </div>
             <div className="mt-6 flex justify-center">
               <Button size="lg" className="gap-2 text-base" onClick={() => navigate('/register')}>
@@ -216,14 +216,14 @@ export default function PublicLandingPage() {
                       <Store className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground">Dùng thử miễn phí</p>
-                      <p className="text-sm text-muted-foreground">Đầy đủ tính năng</p>
-                    </div>
+                  <p className="font-semibold text-foreground">Dùng miễn phí</p>
+                  <p className="text-sm text-muted-foreground">Đầy đủ tính năng</p>
+                </div>
                   </div>
                   <ul className="space-y-3 mb-6">
                     <li className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="h-4 w-4 text-primary" />
-                      Không cần thẻ tín dụng
+                      Miễn phí trọn đời
                     </li>
                     <li className="flex items-center gap-2 text-sm">
                       <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -258,7 +258,7 @@ export default function PublicLandingPage() {
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 <Button size="lg" variant="secondary" className="gap-2" onClick={() => navigate('/register')}>
-                  Dùng thử miễn phí
+                  Dùng miễn phí
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
