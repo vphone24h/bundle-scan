@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, ExternalLink, Volume2, VolumeX, ArrowUpCircle, Play } from 'lucide-react';
+import { X, ExternalLink, Volume2, VolumeX, ArrowUpCircle } from 'lucide-react';
 import { useActiveAdvertisements, useTrackAdvertisementClick } from '@/hooks/useAdvertisements';
 import { AdGateSettings } from '@/hooks/useAdGate';
 import { useNavigate } from 'react-router-dom';
@@ -22,15 +22,9 @@ function getVimeoId(url: string): string | null {
 }
 
 /**
- * EmbedVideoPlayer — shows thumbnail + Play button first.
- * On tap, replaces with iframe so autoplay works on iOS Safari.
+ * EmbedVideoPlayer — iframe autoplay muted, small unmute button.
  */
-function EmbedVideoPlayer({
-  videoUrl,
-}: {
-  videoUrl: string;
-}) {
-  const [started, setStarted] = useState(false);
+function EmbedVideoPlayer({ videoUrl }: { videoUrl: string }) {
   const [muted, setMuted] = useState(true);
 
   const ytId = getYouTubeId(videoUrl);
@@ -41,46 +35,6 @@ function EmbedVideoPlayer({
     if (vimeoId) return `https://player.vimeo.com/video/${vimeoId}?autoplay=1&muted=${muteVal ? 1 : 0}&playsinline=1`;
     return videoUrl;
   };
-
-  const thumbnailUrl = ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : null;
-
-  const handlePlay = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setStarted(true);
-  };
-
-  const handleUnmute = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setMuted(false);
-  };
-
-  if (!started) {
-    return (
-      <div className="relative w-full h-full bg-black">
-        {thumbnailUrl && (
-          <img
-            src={thumbnailUrl}
-            alt="Video thumbnail"
-            className="w-full h-full object-cover"
-          />
-        )}
-        {/* Dark overlay */}
-        <div className="absolute inset-0 bg-black/40" />
-        {/* Play button */}
-        <button
-          onClick={handlePlay}
-          className="absolute inset-0 flex flex-col items-center justify-center gap-3"
-        >
-          <div className="bg-red-600 rounded-full p-5 shadow-2xl">
-            <Play className="h-10 w-10 text-white fill-white" />
-          </div>
-          <span className="text-white text-sm font-semibold bg-black/60 rounded-full px-4 py-1.5">
-            Nhấn để xem video
-          </span>
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="relative w-full h-full">
@@ -93,20 +47,19 @@ function EmbedVideoPlayer({
         frameBorder="0"
         style={{ display: 'block' }}
       />
-      {/* Unmute overlay — only when muted */}
-      {muted && (
+      {/* Small unmute button — bottom left, above action bar */}
+      {muted ? (
         <button
-          onClick={handleUnmute}
-          className="absolute bottom-28 left-4 flex items-center gap-2 bg-black/70 backdrop-blur-sm text-white text-xs font-semibold rounded-full px-3 py-2 z-10 hover:bg-black/90 transition"
+          onClick={(e) => { e.stopPropagation(); setMuted(false); }}
+          className="absolute bottom-28 left-4 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm text-white text-xs font-semibold rounded-full px-3 py-2 z-10 hover:bg-black/90 transition"
         >
           <Volume2 className="h-4 w-4" />
-          Bật âm thanh
+          Bật tiếng
         </button>
-      )}
-      {!muted && (
+      ) : (
         <button
           onClick={(e) => { e.stopPropagation(); setMuted(true); }}
-          className="absolute bottom-28 left-4 bg-black/60 text-white rounded-full p-2.5 hover:bg-black/80 transition z-10"
+          className="absolute bottom-28 left-4 bg-black/60 text-white rounded-full p-2.5 z-10 hover:bg-black/80 transition"
         >
           <VolumeX className="h-5 w-5" />
         </button>
