@@ -217,15 +217,15 @@ export function AdvertisementFormDialog({
             />
           </div>
 
-          {/* Image Upload - Facebook-like aspect ratio (1.91:1) */}
+          {/* Image Upload - 9:16 mobile vertical */}
           <div className="space-y-2">
-            <Label>Ảnh banner (Tỷ lệ như Facebook: 1200x628)</Label>
+            <Label>Ảnh banner (Tỷ lệ 9:16 — dọc mobile)</Label>
             {imageUrl ? (
-              <div className="relative">
+              <div className="relative mx-auto" style={{ maxWidth: 180 }}>
                 <img
                   src={imageUrl}
                   alt="Preview"
-                  className="w-full aspect-[1.91/1] object-cover rounded-lg"
+                  className="w-full aspect-[9/16] object-cover rounded-lg"
                 />
                 <Button
                   type="button"
@@ -238,7 +238,10 @@ export function AdvertisementFormDialog({
                 </Button>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center w-full aspect-[1.91/1] border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50">
+              <label
+                className="flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50"
+                style={{ aspectRatio: '9/16', maxWidth: 180, margin: '0 auto' }}
+              >
                 <input
                   type="file"
                   accept="image/*"
@@ -251,10 +254,12 @@ export function AdvertisementFormDialog({
                 ) : (
                   <>
                     <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                    <span className="text-sm text-muted-foreground text-center px-4">
-                      Bấm để upload ảnh (tối đa 5MB)
+                    <span className="text-sm text-muted-foreground text-center px-3">
+                      Bấm để upload ảnh
                       <br />
-                      <span className="text-xs">Khuyến nghị: 1200x628 pixels</span>
+                      <span className="text-xs">Tỷ lệ 9:16 (dọc mobile)</span>
+                      <br />
+                      <span className="text-xs text-muted-foreground/70">VD: 1080×1920px</span>
                     </span>
                   </>
                 )}
