@@ -110,15 +110,15 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
           <div className="flex items-center gap-2">
             <span className="text-primary font-semibold">{countdown}s</span>
             {canSkip && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleSkip}
-                className="h-6 px-2 text-xs"
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); handleSkip(); }}
+                style={{ position: 'relative', zIndex: 10001, pointerEvents: 'all' }}
+                className="flex items-center gap-1 bg-background border border-border rounded-md px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted active:bg-muted/80 cursor-pointer select-none min-h-[36px] min-w-[80px] justify-center"
               >
-                <X className="h-3 w-3 mr-1" />
+                <X className="h-3.5 w-3.5" />
                 Bỏ qua
-              </Button>
+              </button>
             )}
             {!canSkip && settings.is_skippable && (
               <span className="text-muted-foreground text-xs">
