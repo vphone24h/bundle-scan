@@ -18,7 +18,8 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [countdown, setCountdown] = useState(settings.display_duration_seconds);
   const [canSkip, setCanSkip] = useState(false);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(true); // start muted for autoplay, user taps to unmute
+  const [hasUnmuted, setHasUnmuted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -138,13 +139,33 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
                     playsInline
                     className="w-full h-full object-cover"
                   />
-                  {/* Mute toggle */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setMuted(!muted); }}
-                    className="absolute bottom-28 left-4 bg-black/60 text-white rounded-full p-2.5 hover:bg-black/80 transition z-10"
-                  >
-                    {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-                  </button>
+                  {/* Unmute overlay — shown until user taps */}
+                  {!hasUnmuted && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMuted(false);
+                        setHasUnmuted(true);
+                      }}
+                      className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30 z-10"
+                    >
+                      <div className="bg-black/70 backdrop-blur-sm rounded-full p-4">
+                        <Volume2 className="h-8 w-8 text-white" />
+                      </div>
+                      <span className="text-white text-sm font-semibold bg-black/60 rounded-full px-4 py-1.5">
+                        Nhấn để bật âm thanh
+                      </span>
+                    </button>
+                  )}
+                  {/* Mute toggle — shown after unmuted */}
+                  {hasUnmuted && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setMuted(!muted); }}
+                      className="absolute bottom-28 left-4 bg-black/60 text-white rounded-full p-2.5 hover:bg-black/80 transition z-10"
+                    >
+                      {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                    </button>
+                  )}
                 </>
               )}
             </>
