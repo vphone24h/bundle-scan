@@ -78,9 +78,9 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
 
   const getEmbedUrl = (url: string, muteEmbed: boolean): string | null => {
     const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=${muteEmbed ? 1 : 0}`;
+    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=${muteEmbed ? 1 : 0}&playsinline=1&rel=0&modestbranding=1`;
     const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&muted=${muteEmbed ? 1 : 0}`;
+    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&muted=${muteEmbed ? 1 : 0}&playsinline=1`;
     return null;
   };
 
@@ -131,7 +131,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
                     key={`${videoUrl}-${embedMuted}`}
                     src={embedUrl!}
                     className="w-full h-full"
-                    allow="autoplay; fullscreen"
+                    allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
                     allowFullScreen
                     frameBorder="0"
                     style={{ display: 'block' }}
