@@ -14,17 +14,10 @@ interface ChecklistStep {
   icon: React.ReactNode;
   link: string;
   linkLabel: string;
+  highlight?: boolean;
 }
 
 const STEPS: ChecklistStep[] = [
-  {
-    key: 'import',
-    label: 'Tạo phiếu nhập hàng đầu tiên',
-    description: 'Nhập hàng vào kho để bắt đầu quản lý tồn kho',
-    icon: <FileDown className="h-4 w-4" />,
-    link: '/import/new',
-    linkLabel: 'Nhập hàng',
-  },
   {
     key: 'category',
     label: 'Tạo danh mục sản phẩm',
@@ -34,12 +27,30 @@ const STEPS: ChecklistStep[] = [
     linkLabel: 'Tạo danh mục',
   },
   {
-    key: 'supplier',
-    label: 'Thêm nhà cung cấp',
-    description: 'Thêm thông tin nhà cung cấp để theo dõi nguồn hàng và công nợ',
+    key: 'import',
+    label: 'Tạo phiếu nhập hàng đầu tiên',
+    description: 'Nhập hàng vào kho để bắt đầu quản lý tồn kho',
+    icon: <FileDown className="h-4 w-4" />,
+    link: '/import/new',
+    linkLabel: '📦 Nhập hàng',
+    highlight: true,
+  },
+  {
+    key: 'export',
+    label: 'Tạo phiếu xuất (bán hàng)',
+    description: 'Bán hàng cho khách và in phiếu xuất kho',
+    icon: <ShoppingCart className="h-4 w-4" />,
+    link: '/export/new',
+    linkLabel: '🛒 Bán hàng',
+    highlight: true,
+  },
+  {
+    key: 'customer',
+    label: 'Thêm khách hàng',
+    description: 'Lưu thông tin khách hàng để theo dõi lịch sử mua hàng',
     icon: <Users className="h-4 w-4" />,
-    link: '/suppliers',
-    linkLabel: 'Thêm NCC',
+    link: '/customers',
+    linkLabel: 'Thêm KH',
   },
   {
     key: 'product',
@@ -50,20 +61,12 @@ const STEPS: ChecklistStep[] = [
     linkLabel: 'Xem kho',
   },
   {
-    key: 'customer',
-    label: 'Thêm khách hàng',
-    description: 'Lưu thông tin khách hàng để theo dõi lịch sử mua hàng',
-    icon: <ShoppingCart className="h-4 w-4" />,
-    link: '/customers',
-    linkLabel: 'Thêm KH',
-  },
-  {
-    key: 'export',
-    label: 'Tạo phiếu xuất (bán hàng)',
-    description: 'Bán hàng cho khách và in phiếu xuất kho',
-    icon: <ShoppingCart className="h-4 w-4" />,
-    link: '/export/new',
-    linkLabel: 'Bán hàng',
+    key: 'supplier',
+    label: 'Thêm nhà cung cấp',
+    description: 'Thêm thông tin nhà cung cấp để theo dõi nguồn hàng và công nợ',
+    icon: <Users className="h-4 w-4" />,
+    link: '/suppliers',
+    linkLabel: 'Thêm NCC',
   },
   {
     key: 'landing',
@@ -183,11 +186,15 @@ export function GettingStartedChecklist() {
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
                 </div>
-                {!done && (
+                {!done && step.highlight ? (
+                  <Button asChild className="shrink-0 h-9 px-4 text-sm font-bold bg-green-600 hover:bg-green-700 text-white shadow-md">
+                    <Link to={step.link}>{step.linkLabel}</Link>
+                  </Button>
+                ) : !done ? (
                   <Button variant="outline" size="sm" asChild className="shrink-0 h-7 text-xs">
                     <Link to={step.link}>{step.linkLabel}</Link>
                   </Button>
-                )}
+                ) : null}
               </div>
             );
           })}
