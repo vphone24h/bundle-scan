@@ -139,13 +139,16 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black">
-      {/* 9:16 container */}
+      {/* 9:16 container — thu nhỏ để tránh bị Safari che */}
       <div
         className="relative bg-black overflow-hidden"
         style={{
           aspectRatio: '9/16',
-          height: '100dvh',
-          width: 'calc(100dvh * 9 / 16)',
+          maxHeight: 'calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+          height: 'calc(100svh - 56px)',
+          width: 'calc((100svh - 56px) * 9 / 16)',
+          maxWidth: '100vw',
+          marginTop: 'env(safe-area-inset-top, 0px)',
         }}
       >
         {/* Ad Content */}

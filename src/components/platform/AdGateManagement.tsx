@@ -208,7 +208,7 @@ export function AdGateManagement() {
               <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div>
                   <p className="font-medium">Cho phép bỏ qua quảng cáo</p>
-                  <p className="text-xs text-muted-foreground">Hiện nút "Bỏ qua" sau một khoảng thời gian</p>
+                  <p className="text-xs text-muted-foreground">Hiện nút "Trở về VKho" sau một khoảng thời gian</p>
                 </div>
                 <Switch
                   checked={form.is_skippable}
@@ -219,7 +219,7 @@ export function AdGateManagement() {
               {form.is_skippable && (
                 <div className="space-y-3">
                   <Label className="text-base font-medium">
-                    Hiện nút "Bỏ qua" sau: <span className="text-primary font-bold">{form.skip_after_seconds}s</span>
+                    Hiện nút "Trở về VKho" sau: <span className="text-primary font-bold">{form.skip_after_seconds}s</span>
                   </Label>
                   <Slider
                     min={3}
@@ -256,7 +256,7 @@ export function AdGateManagement() {
                 <li>• Quảng cáo: <strong>{pinnedAd ? pinnedAd.title : 'Ngẫu nhiên'}</strong></li>
                 <li>• Hiện sau mỗi: <strong>{form.clicks_per_ad} lần thao tác</strong></li>
                 <li>• Thời gian xem: <strong>{form.display_duration_seconds} giây</strong></li>
-                <li>• Bỏ qua: <strong>{form.is_skippable ? `Sau ${form.skip_after_seconds}s` : 'Không cho phép'}</strong></li>
+                <li>• Trở về VKho: <strong>{form.is_skippable ? `Sau ${form.skip_after_seconds}s` : 'Không cho phép'}</strong></li>
               </>
             )}
           </ul>
