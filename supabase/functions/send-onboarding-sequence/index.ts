@@ -107,9 +107,19 @@ function buildDay5Email(adminName: string): string {
             </table>
           </td></tr>
         </table>
+        <!-- YouTube thumbnail clickable -->
         <div style="text-align:center;margin:0 0 24px">
-          <a href="${loginUrl}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;padding:14px 40px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;letter-spacing:0.3px">
-            🎬 Xem video hướng dẫn →
+          <a href="https://youtu.be/jtrKkNYT_38?si=Q0r_Gr4sa5sjcF_e" target="_blank" style="display:block;text-decoration:none">
+            <div style="position:relative;display:inline-block;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.15)">
+              <img src="https://img.youtube.com/vi/jtrKkNYT_38/hqdefault.jpg" alt="Video hướng dẫn vKho" width="480" style="display:block;max-width:100%;border-radius:12px" />
+              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(220,38,38,0.92);border-radius:50%;width:64px;height:64px;display:flex;align-items:center;justify-content:center">
+                <span style="color:#fff;font-size:28px;line-height:1;margin-left:4px">▶</span>
+              </div>
+            </div>
+          </a>
+          <p style="margin:12px 0 0;font-size:13px;color:#7c3aed;font-weight:600">▶ Nhấn để xem video (3 phút)</p>
+          <a href="https://youtu.be/jtrKkNYT_38?si=Q0r_Gr4sa5sjcF_e" style="display:inline-block;margin-top:12px;background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;padding:12px 32px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px">
+            🎬 Xem trên YouTube →
           </a>
         </div>
         <div style="background:#fefce8;border:1px solid #fde68a;border-radius:12px;padding:16px 20px;margin:0 0 20px">
