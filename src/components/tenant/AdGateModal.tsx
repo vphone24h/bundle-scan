@@ -110,10 +110,8 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
         className="relative bg-black overflow-hidden"
         style={{
           aspectRatio: '9/16',
-          height: '100%',
-          maxHeight: '100dvh',
-          maxWidth: 'calc(100dvh * 9 / 16)',
-          width: '100%',
+          height: '100dvh',
+          width: 'calc(100dvh * 9 / 16)',
         }}
       >
         {/* Ad Content — fills entire 9:16 container */}
