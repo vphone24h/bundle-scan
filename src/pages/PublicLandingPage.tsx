@@ -102,7 +102,7 @@ export default function PublicLandingPage() {
               Đăng nhập
             </Button>
             <Button size="sm" className="text-xs sm:text-sm px-2 sm:px-3 h-8 sm:h-9 whitespace-nowrap" onClick={() => navigate('/register')}>
-              <span className="hidden xs:inline">Dùng thử miễn phí</span>
+              <span className="hidden xs:inline">Dùng Miễn phí</span>
               <span className="xs:hidden">Đăng ký</span>
             </Button>
           </div>
@@ -115,7 +115,7 @@ export default function PublicLandingPage() {
           <div className="mx-auto max-w-4xl text-center">
             <Badge variant="secondary" className="mb-4 gap-1">
               <Zap className="h-3 w-3" />
-              Dùng thử miễn phí
+              Dùng Miễn phí
             </Badge>
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl">
               Nền tảng quản lý kho
@@ -126,7 +126,11 @@ export default function PublicLandingPage() {
               Quản lý tồn kho theo IMEI, mã vạch.
               Website miễn phí, tra cứu bảo hành & giữ chân khách hàng.
             </p>
-            <div className="mt-8 flex justify-center">
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/30 px-4 py-2 text-sm font-semibold text-primary">
+              <CheckCircle2 className="h-4 w-4 text-primary" />
+              Sử dụng miễn phí trọn đời — không cần thẻ tín dụng
+            </div>
+            <div className="mt-6 flex justify-center">
               <Button size="lg" className="gap-2 text-base" onClick={() => navigate('/register')}>
                 Bắt đầu miễn phí
                 <ArrowRight className="h-4 w-4" />
