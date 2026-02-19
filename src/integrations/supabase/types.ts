@@ -3178,6 +3178,38 @@ export type Database = {
           },
         ]
       }
+      onboarding_email_logs: {
+        Row: {
+          email_type: string
+          id: string
+          recipient_email: string
+          sent_at: string
+          tenant_id: string
+        }
+        Insert: {
+          email_type: string
+          id?: string
+          recipient_email: string
+          sent_at?: string
+          tenant_id: string
+        }
+        Update: {
+          email_type?: string
+          id?: string
+          recipient_email?: string
+          sent_at?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_email_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_tours: {
         Row: {
           completed_at: string

@@ -67,6 +67,127 @@ async function sendRegistrationNotification(businessName: string, subdomain: str
   }
 }
 
+// Email Ngày 0 – Action email: Hướng dẫn 3 bước bắt đầu
+async function sendDay0ActionEmail(toEmail: string, adminName: string, tenantId: string, supabaseAdmin: any) {
+  try {
+    const smtpUser = Deno.env.get('SMTP_USER')
+    const smtpPassword = Deno.env.get('SMTP_PASSWORD')
+    if (!smtpUser || !smtpPassword) return
+
+    const name = adminName || 'anh/chị'
+    const loginUrl = 'https://vkho.vn'
+
+    const html = `<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f0f4ff;font-family:Arial,Helvetica,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4ff;padding:32px 16px">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)">
+        <tr>
+          <td style="background:linear-gradient(135deg,#1a56db 0%,#1e40af 100%);padding:36px 32px;text-align:center">
+            <p style="margin:0 0 8px;font-size:28px">⚡</p>
+            <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700">Cách quản lý kho trong 1 phút trên vKho</h1>
+            <p style="margin:8px 0 0;color:#bfdbfe;font-size:14px">3 bước đơn giản để bắt đầu ngay hôm nay</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px 32px 28px">
+            <p style="margin:0 0 20px;font-size:16px;color:#374151;line-height:1.6">Chào <strong>${name}</strong>, chào mừng đến với vKho!</p>
+            <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.7">
+              Để bắt đầu ngay, anh/chị chỉ cần làm <strong>3 bước đơn giản</strong>:
+            </p>
+
+            <!-- Step 1 -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border:1.5px solid #bfdbfe;border-radius:12px;overflow:hidden">
+              <tr>
+                <td style="background:#1a56db;padding:14px 20px;width:48px;text-align:center;vertical-align:top">
+                  <span style="color:#fff;font-size:20px;font-weight:bold">1</span>
+                </td>
+                <td style="padding:14px 20px;background:#eff6ff">
+                  <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#1e40af">📦 Thêm sản phẩm</p>
+                  <p style="margin:0;font-size:13px;color:#374151;line-height:1.5">Thêm iPhone, Samsung, phụ kiện... vào danh sách sản phẩm của bạn</p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Step 2 -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border:1.5px solid #bbf7d0;border-radius:12px;overflow:hidden">
+              <tr>
+                <td style="background:#16a34a;padding:14px 20px;width:48px;text-align:center;vertical-align:top">
+                  <span style="color:#fff;font-size:20px;font-weight:bold">2</span>
+                </td>
+                <td style="padding:14px 20px;background:#f0fdf4">
+                  <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#166534">📥 Nhập hàng vào kho</p>
+                  <p style="margin:0;font-size:13px;color:#374151;line-height:1.5">Tạo phiếu nhập để ghi nhận tồn kho ban đầu – có thể import từ Excel!</p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Step 3 - Highlighted -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;border:2px solid #dc2626;border-radius:12px;overflow:hidden">
+              <tr>
+                <td style="background:#dc2626;padding:14px 20px;width:48px;text-align:center;vertical-align:top">
+                  <span style="color:#fff;font-size:20px;font-weight:bold">3</span>
+                </td>
+                <td style="padding:14px 20px;background:#fff1f2">
+                  <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#b91c1c">🛒 Bán đơn đầu tiên ⭐ (Quan trọng nhất!)</p>
+                  <p style="margin:0;font-size:13px;color:#374151;line-height:1.5">Tạo phiếu xuất, hệ thống tự tính lãi lỗ, cập nhật tồn kho và in phiếu ngay!</p>
+                </td>
+              </tr>
+            </table>
+
+            <div style="text-align:center;margin:0 0 24px">
+              <a href="${loginUrl}" style="display:inline-block;background:linear-gradient(135deg,#1a56db,#1e40af);color:#fff;padding:14px 40px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;letter-spacing:0.3px">
+                🚀 Bắt đầu ngay →
+              </a>
+            </div>
+
+            <p style="margin:0;font-size:14px;color:#374151;line-height:1.7">
+              Cần hỗ trợ? Phản hồi email này hoặc nhắn Zalo – em sẽ giúp ngay ạ!
+            </p>
+            <p style="margin:16px 0 0;font-size:14px;color:#374151">
+              Trân trọng,<br><strong>Đội ngũ vKho.vn</strong><br>
+              <span style="color:#6b7280">Zalo: <a href="https://zalo.me/0396793883" style="color:#1a56db;text-decoration:none">0396-793-883</a></span>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#1e3a8a;padding:16px 32px;text-align:center">
+            <p style="margin:0;font-size:12px;color:#93c5fd">© 2026 vKho – Hệ thống quản lý kho hàng thông minh</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com', port: 465, secure: true,
+      auth: { user: smtpUser, pass: smtpPassword },
+    })
+
+    await transporter.sendMail({
+      from: `"vKho" <${smtpUser}>`,
+      to: toEmail,
+      subject: `⚡ Cách quản lý kho trong 1 phút – 3 bước bắt đầu với vKho`,
+      html,
+    })
+
+    // Ghi nhận đã gửi
+    await supabaseAdmin.from('onboarding_email_logs').insert({
+      tenant_id: tenantId,
+      email_type: 'day_0_action',
+      recipient_email: toEmail,
+    })
+
+    console.log('Day 0 action email sent to:', toEmail)
+  } catch (err) {
+    console.error('Day 0 action email failed:', err)
+  }
+}
+
 async function sendWelcomeEmail(toEmail: string, adminName: string, subdomain: string, supabaseAdmin: any) {
   try {
     const smtpUser = Deno.env.get('SMTP_USER')
@@ -450,6 +571,10 @@ Deno.serve(async (req) => {
     // Send welcome email to new user (non-blocking)
     sendWelcomeEmail(email, adminName, subdomain, supabaseAdmin)
       .catch(err => console.error('Welcome email error:', err))
+
+    // Send Day 0 action email – hướng dẫn 3 bước bắt đầu (non-blocking)
+    sendDay0ActionEmail(email, adminName, tenant.id, supabaseAdmin)
+      .catch(err => console.error('Day 0 action email error:', err))
 
     return new Response(
       JSON.stringify({ 
