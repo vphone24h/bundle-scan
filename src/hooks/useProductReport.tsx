@@ -25,6 +25,7 @@ export interface StockProductRaw {
   categoryName: string;
   importPrice: number;
   status: string;
+  monthlySoldCount: number;
 }
 
 export function useProductReport(filters?: {
@@ -48,6 +49,11 @@ export function useProductReport(filters?: {
       const endDate = filters?.endDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const startISO = new Date(startDate + 'T00:00:00').toISOString();
       const endISO = new Date(endDate + 'T23:59:59.999').toISOString();
+
+      // Current month range for reorder suggestions
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01T00:00:00`;
+      const monthStartISO = new Date(monthStart).toISOString();
+      const monthEndISO = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
 
       // Get sold items
       let soldQuery = supabase
@@ -101,6 +107,29 @@ export function useProductReport(filters?: {
 
       const { data: soldDeletedItems } = await soldDeletedQuery;
 
+      // Get monthly sold counts for reorder suggestions
+      let monthlySoldQuery = supabase
+        .from('export_receipt_items')
+        .select('product_name, sku, export_receipts!inner(branch_id, export_date, status)')
+        .eq('status', 'sold')
+        .neq('export_receipts.status', 'cancelled')
+        .gte('export_receipts.export_date', monthStartISO)
+        .lte('export_receipts.export_date', monthEndISO);
+
+      if (effectiveBranchId) {
+        monthlySoldQuery = monthlySoldQuery.eq('export_receipts.branch_id', effectiveBranchId);
+      }
+
+      const { data: monthlySoldItems } = await monthlySoldQuery;
+
+      // Build monthly sold count map: name||sku||branchId -> count
+      const monthlySoldMap: Record<string, number> = {};
+      monthlySoldItems?.forEach(item => {
+        const receipt = item.export_receipts as any;
+        const key = `${item.product_name}||${item.sku}||${receipt?.branch_id || ''}`;
+        monthlySoldMap[key] = (monthlySoldMap[key] || 0) + 1;
+      });
+
       // Aggregate sold data by product name+sku
       const productMap: Record<string, ProductReportItem> = {};
 
@@ -133,7 +162,7 @@ export function useProductReport(filters?: {
       const stockMap: Record<string, number> = {};
       const stockValueMap: Record<string, number> = {};
       stockItems?.forEach(item => {
-        if (item.status !== 'in_stock') return; // only count in_stock for sales report
+        if (item.status !== 'in_stock') return;
         const key = `${item.name}||${item.sku}||${item.branch_id || ''}`;
         const qty = item.quantity || 1;
         stockMap[key] = (stockMap[key] || 0) + qty;
@@ -167,6 +196,7 @@ export function useProductReport(filters?: {
           categoryName: (item.categories as any)?.name || 'Chưa phân loại',
           importPrice: Number(item.import_price) || 0,
           status: item.status || 'in_stock',
+          monthlySoldCount: monthlySoldMap[`${item.name}||${item.sku}||${item.branch_id || ''}`] || 0,
         })),
         ...(soldDeletedItems || []).map(item => ({
           name: item.name,
@@ -177,6 +207,7 @@ export function useProductReport(filters?: {
           categoryName: (item.categories as any)?.name || 'Chưa phân loại',
           importPrice: Number(item.import_price) || 0,
           status: item.status || 'sold',
+          monthlySoldCount: monthlySoldMap[`${item.name}||${item.sku}||${item.branch_id || ''}`] || 0,
         })),
       ];
 
