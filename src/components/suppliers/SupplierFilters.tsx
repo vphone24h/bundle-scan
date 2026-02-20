@@ -87,7 +87,7 @@ export function SupplierFilters({
             placeholder="Tìm theo tên hoặc số điện thoại..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10"
+            className="pl-10 search-input-highlight"
           />
         </div>
         <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>

@@ -133,7 +133,7 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
                  placeholder="Tìm theo tên, SĐT..."
                  value={search}
                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 h-9 text-sm"
+                  className="pl-9 h-9 text-sm search-input-highlight"
                />
              </div>
               <Button size="sm" onClick={() => setShowFormDialog(true)} className="h-9 px-3">

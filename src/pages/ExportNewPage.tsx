@@ -763,7 +763,7 @@ export default function ExportNewPage() {
                     value={imeiSearch}
                     onChange={(e) => setImeiSearch(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleImeiSearch()}
-                    className="border-primary/50 focus-visible:ring-primary/30 ring-1 ring-primary/20"
+                    className="search-input-highlight"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Nhập <strong>IMEI/Serial</strong> vào → sản phẩm tự xuất hiện
@@ -788,7 +788,7 @@ export default function ExportNewPage() {
                   placeholder="Nhập tên sản phẩm..."
                   value={nameSearch}
                   onChange={(e) => setNameSearch(e.target.value)}
-                  className="border-primary/50 focus-visible:ring-primary/30 ring-1 ring-primary/20"
+                  className="search-input-highlight"
                 />
                 {productSuggestions.length > 0 && (
                   <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">

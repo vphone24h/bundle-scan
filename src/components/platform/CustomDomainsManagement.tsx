@@ -117,7 +117,7 @@ export function CustomDomainsManagement() {
             placeholder="Tìm domain hoặc tên DN..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-10 search-input-highlight"
           />
         </div>
         <Button onClick={() => setShowAddDialog(true)}>

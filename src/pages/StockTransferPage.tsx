@@ -228,7 +228,7 @@ export default function StockTransferPage() {
             placeholder="Tìm theo chi nhánh, ghi chú..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 search-input-highlight"
           />
         </div>
 

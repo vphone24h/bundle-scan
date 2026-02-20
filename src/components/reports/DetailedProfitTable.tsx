@@ -328,7 +328,7 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
             placeholder="Tìm kiếm sản phẩm, SKU, IMEI..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-8"
+            className="pl-8 search-input-highlight"
           />
         </div>
       )}

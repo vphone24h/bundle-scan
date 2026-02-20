@@ -98,7 +98,7 @@ export function AffiliatesManagement() {
               placeholder="Tìm kiếm..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
+              className="pl-10 search-input-highlight"
             />
           </div>
         </div>

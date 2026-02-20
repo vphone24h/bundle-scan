@@ -71,7 +71,7 @@
            placeholder="Tìm theo tên hoặc SĐT..."
            value={searchQuery}
            onChange={(e) => setSearchQuery(e.target.value)}
-           className="pl-9 h-9 text-base"
+           className="pl-9 h-9 text-base search-input-highlight"
          />
        </div>
  
