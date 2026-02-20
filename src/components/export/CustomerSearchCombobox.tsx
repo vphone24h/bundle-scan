@@ -175,7 +175,7 @@ export function CustomerSearchCombobox({
         </Label>
         <div className="relative">
           <Input
-            placeholder="Nhập SĐT (≥3 số để tìm kiếm)"
+            placeholder="Nhập số điện thoại"
             value={customerPhone}
             onChange={(e) => {
               setCustomerPhone(e.target.value);
@@ -191,6 +191,9 @@ export function CustomerSearchCombobox({
             </div>
           )}
         </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          Nếu là khách cũ, nhập SĐT sẽ tự hiện thông tin. Nếu là khách mới, vui lòng nhập đầy đủ thông tin.
+        </p>
         
         {/* Phone Suggestions Dropdown */}
         {showPhoneDropdown && phoneSuggestions.length > 0 && (
@@ -232,7 +235,7 @@ export function CustomerSearchCombobox({
         </Label>
         <div className="relative">
           <Input
-            placeholder="Nhập tên (≥3 chữ để tìm kiếm)"
+            placeholder="Nhập tên khách mới hoặc tìm tên khách cũ"
             value={customerName}
             onChange={(e) => {
               setCustomerName(e.target.value);
