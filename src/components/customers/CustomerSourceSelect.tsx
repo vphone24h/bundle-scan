@@ -124,6 +124,9 @@ export function CustomerSourceSelect({
           </Button>
         </div>
       )}
+      <p className="text-xs text-muted-foreground">
+        Dùng để theo dõi nguồn khách và tăng hiệu quả marketing
+      </p>
     </div>
   );
 }
