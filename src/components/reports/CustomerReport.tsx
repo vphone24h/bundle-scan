@@ -245,7 +245,7 @@ export function CustomerReport() {
             <CardTitle className="text-base">Chi tiết khách hàng</CardTitle>
             <div className="relative w-64">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Tìm tên, SĐT..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
+              <Input placeholder="Tìm tên, SĐT..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 search-input-highlight" />
             </div>
           </div>
         </CardHeader>

@@ -102,7 +102,7 @@ export function EInvoiceList() {
               placeholder="Tìm theo số HĐ, khách hàng, MST..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
+              className="pl-10 search-input-highlight"
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>

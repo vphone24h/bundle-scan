@@ -374,7 +374,7 @@ export function CustomerSearchCombobox({
             placeholder="Nhập SĐT hoặc tên khách hàng..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 border-primary/50 focus-visible:ring-primary/30 ring-1 ring-primary/20"
+            className="pl-9 search-input-highlight"
           />
           {isSearching && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2">

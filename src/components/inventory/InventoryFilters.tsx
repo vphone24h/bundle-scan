@@ -95,7 +95,7 @@ export function InventoryFiltersComponent({ filters, onFiltersChange }: Inventor
             placeholder="Tìm theo tên, IMEI, SKU..."
             value={filters.search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-10 h-11 text-base border-2 border-primary bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary shadow-md ring-2 ring-primary/20"
+            className="pl-10 h-11 text-base search-input-highlight border-2 border-primary bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary shadow-md ring-2 ring-primary/20"
           />
         </div>
         <div className="flex gap-2">

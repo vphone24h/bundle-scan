@@ -204,7 +204,7 @@ export function StaffReviewsTab() {
                 placeholder="Tìm tên nhân viên..."
                 value={searchStaffName}
                 onChange={e => setSearchStaffName(e.target.value)}
-                className="pl-9"
+                className="pl-9 search-input-highlight"
               />
             </div>
           </div>

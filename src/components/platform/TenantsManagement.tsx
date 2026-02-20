@@ -277,7 +277,7 @@ export function TenantsManagement() {
               placeholder="Tìm doanh nghiệp..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
+              className="pl-10 search-input-highlight"
             />
           </div>
           {selectedIds.size > 0 && (

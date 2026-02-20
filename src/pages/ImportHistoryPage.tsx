@@ -596,7 +596,7 @@ export default function ImportHistoryPage() {
                     placeholder="Tìm theo tên sản phẩm, IMEI, mã phiếu..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 search-input-highlight"
                   />
                 </div>
                 <Button

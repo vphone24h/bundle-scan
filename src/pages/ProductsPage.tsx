@@ -286,7 +286,7 @@ export default function ProductsPage() {
                     placeholder="Tìm theo tên, SKU hoặc IMEI..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 search-input-highlight"
                   />
                 </div>
                 <div className="flex gap-2">
