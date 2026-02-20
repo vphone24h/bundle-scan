@@ -82,7 +82,7 @@ function AlertSection({
   columns: { header: string; render: (item: any) => React.ReactNode }[];
   emptyText: string;
 }) {
-  const [open, setOpen] = useState(items.length > 0);
+  const [open, setOpen] = useState(false);
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
