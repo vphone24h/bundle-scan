@@ -236,7 +236,7 @@ export function ProductSalesStockReport() {
       {/* Chart */}
       {chartData.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-lg">Top 10 sản phẩm</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-lg">Top 10 sản phẩm bán chạy</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData} layout="vertical">
