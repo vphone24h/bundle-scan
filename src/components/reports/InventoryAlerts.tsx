@@ -27,9 +27,11 @@ import {
   ChevronUp,
   ShoppingCart,
   Settings2,
+  Download,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/mockData';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, format } from 'date-fns';
+import { exportToExcel } from '@/lib/exportExcel';
 
 interface StockProduct {
   name: string;
@@ -284,22 +286,99 @@ export function InventoryAlerts({ products }: InventoryAlertsProps) {
     )},
   ];
 
+  const handleExportReorder = () => {
+    exportToExcel({
+      filename: `De_xuat_nhap_hang_${format(new Date(), 'dd-MM-yyyy')}`,
+      sheetName: 'Đề xuất nhập hàng',
+      columns: [
+        { header: 'Sản phẩm', key: 'name', width: 30 },
+        { header: 'SKU', key: 'sku', width: 25 },
+        { header: 'Danh mục', key: 'categoryName', width: 20 },
+        { header: 'Chi nhánh', key: 'branchName', width: 15 },
+        { header: 'Tồn hiện tại', key: 'quantity', width: 12, isNumeric: true },
+        { header: 'Đã bán (tháng)', key: 'monthlySoldCount', width: 15, isNumeric: true },
+        { header: 'Đề xuất nhập', key: 'suggestedQty', width: 12, isNumeric: true },
+        { header: 'Giá nhập', key: 'importPrice', width: 15, isNumeric: true },
+      ],
+      data: alerts.reorderSuggestions,
+    });
+  };
+
   if (!expanded) {
     return (
-      <Button
-        variant="outline"
-        className="relative w-full justify-start gap-2 h-12 text-base font-medium border-dashed"
-        onClick={() => setExpanded(true)}
-      >
-        <AlertTriangle className="h-5 w-5 text-amber-500" />
-        Cảnh báo tồn kho
-        {badgeCount > 0 && (
-          <Badge variant="destructive" className="ml-auto text-xs px-2 py-0.5">
-            {badgeCount}
-          </Badge>
+      <div className="space-y-3">
+        <Button
+          variant="outline"
+          className="relative w-full justify-start gap-2 h-12 text-base font-medium border-dashed"
+          onClick={() => setExpanded(true)}
+        >
+          <AlertTriangle className="h-5 w-5 text-amber-500" />
+          Cảnh báo tồn kho
+          {badgeCount > 0 && (
+            <Badge variant="destructive" className="ml-auto text-xs px-2 py-0.5">
+              {badgeCount}
+            </Badge>
+          )}
+          <ChevronDown className="h-4 w-4 ml-1" />
+        </Button>
+
+        {/* Reorder suggestions always visible */}
+        {alerts.reorderSuggestions.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-base">Đề xuất nhập hàng</CardTitle>
+                  <Badge variant="default">{alerts.reorderSuggestions.length}</Badge>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleExportReorder}>
+                  <Download className="h-4 w-4 mr-1" />
+                  Xuất Excel
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-auto max-h-[400px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead className="text-xs font-semibold">Sản phẩm</TableHead>
+                      <TableHead className="text-xs font-semibold">Chi nhánh</TableHead>
+                      <TableHead className="text-xs font-semibold">Tồn hiện tại</TableHead>
+                      <TableHead className="text-xs font-semibold">Đã bán (tháng)</TableHead>
+                      <TableHead className="text-xs font-semibold">Đề xuất nhập</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {alerts.reorderSuggestions.slice(0, 20).map((item, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="text-sm py-2">
+                          <div>
+                            <p className="font-medium">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">SKU: {item.sku} · {item.categoryName}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm py-2"><Badge variant="secondary">{item.branchName}</Badge></TableCell>
+                        <TableCell className="text-sm py-2"><Badge variant="destructive">{item.quantity}</Badge></TableCell>
+                        <TableCell className="text-sm py-2"><span className="font-medium text-primary">{item.monthlySoldCount} SP</span></TableCell>
+                        <TableCell className="text-sm py-2"><span className="font-medium text-primary">{item.suggestedQty} SP</span></TableCell>
+                      </TableRow>
+                    ))}
+                    {alerts.reorderSuggestions.length > 20 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-xs text-muted-foreground py-2">
+                          ... và {alerts.reorderSuggestions.length - 20} sản phẩm khác
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         )}
-        <ChevronDown className="h-4 w-4 ml-1" />
-      </Button>
+      </div>
     );
   }
 
@@ -415,9 +494,17 @@ export function InventoryAlerts({ products }: InventoryAlertsProps) {
             items={alerts.warrantyProducts} columns={warrantyColumns} emptyText="Không có hàng lỗi" />
 
           {alerts.reorderSuggestions.length > 0 && (
-            <AlertSection title="Đề xuất nhập hàng" icon={ShoppingCart}
-              iconColor="text-primary" bgColor="bg-primary/5" badgeVariant="default"
-              items={alerts.reorderSuggestions} columns={reorderColumns} emptyText="" />
+            <div className="space-y-1">
+              <div className="flex items-center justify-end">
+                <Button variant="outline" size="sm" onClick={handleExportReorder}>
+                  <Download className="h-4 w-4 mr-1" />
+                  Xuất Excel
+                </Button>
+              </div>
+              <AlertSection title="Đề xuất nhập hàng" icon={ShoppingCart}
+                iconColor="text-primary" bgColor="bg-primary/5" badgeVariant="default"
+                items={alerts.reorderSuggestions} columns={reorderColumns} emptyText="" />
+            </div>
           )}
         </div>
       </CardContent>
