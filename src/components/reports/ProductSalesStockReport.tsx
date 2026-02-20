@@ -29,6 +29,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Package, TrendingUp, Archive, DollarSign, Loader2, Search, Download } from 'lucide-react';
+import { InventoryAlerts } from './InventoryAlerts';
 import { format, startOfMonth, subDays, startOfWeek, subMonths } from 'date-fns';
 import { useProductReport } from '@/hooks/useProductReport';
 import { useBranches } from '@/hooks/useBranches';
@@ -226,6 +227,11 @@ export function ProductSalesStockReport() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Inventory Alerts */}
+      {data?.stockProductsRaw && data.stockProductsRaw.length > 0 && (
+        <InventoryAlerts products={data.stockProductsRaw} />
+      )}
 
       {/* Chart */}
       {chartData.length > 0 && (
