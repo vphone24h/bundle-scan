@@ -40,6 +40,7 @@ interface StockProduct {
   categoryName: string;
   importPrice: number;
   status: string;
+  monthlySoldCount: number;
 }
 
 interface InventoryAlertsProps {
@@ -51,6 +52,7 @@ interface AlertThresholds {
   slowSelling: number;
   longStock: number;
   dangerousStock: number;
+  minMonthlySold: number;
 }
 
 const DEFAULT_THRESHOLDS: AlertThresholds = {
@@ -58,6 +60,7 @@ const DEFAULT_THRESHOLDS: AlertThresholds = {
   slowSelling: 20,
   longStock: 45,
   dangerousStock: 90,
+  minMonthlySold: 2,
 };
 
 function AlertSection({
@@ -176,11 +179,14 @@ export function InventoryAlerts({ products }: InventoryAlertsProps) {
     const longStock = withAge.filter(p => p.daysInStock >= thresholds.longStock && p.daysInStock < thresholds.dangerousStock);
     const dangerousStock = withAge.filter(p => p.daysInStock >= thresholds.dangerousStock);
 
-    // Suggest reorder: products that are low stock or out of stock
-    const reorderSuggestions = [...outOfStock, ...lowStock].map(p => ({
-      ...p,
-      suggestedQty: Math.max(5, 10 - p.quantity), // simple suggestion
-    }));
+    // Suggest reorder: products that are low stock or out of stock AND sold >= minMonthlySold this month
+    const reorderCandidates = [...outOfStock, ...lowStock];
+    const reorderSuggestions = reorderCandidates
+      .filter(p => p.monthlySoldCount >= thresholds.minMonthlySold)
+      .map(p => ({
+        ...p,
+        suggestedQty: Math.max(5, 10 - p.quantity),
+      }));
 
     return { lowStock, outOfStock, slowSelling, longStock, dangerousStock, warrantyProducts, reorderSuggestions };
   }, [products, thresholds]);
@@ -242,6 +248,9 @@ export function InventoryAlerts({ products }: InventoryAlertsProps) {
     { header: 'Tồn hiện tại', render: (item: any) => (
       <Badge variant="destructive">{item.quantity}</Badge>
     )},
+    { header: 'Đã bán (tháng)', render: (item: any) => (
+      <span className="font-medium text-primary">{item.monthlySoldCount} SP</span>
+    )},
     { header: 'Đề xuất nhập', render: (item: any) => (
       <span className="font-medium text-primary">{item.suggestedQty} SP</span>
     )},
@@ -271,7 +280,7 @@ export function InventoryAlerts({ products }: InventoryAlertsProps) {
       <CardContent className="space-y-3">
         {/* Settings Panel */}
         {showSettings && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-lg border bg-muted/30">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-3 rounded-lg border bg-muted/30">
             <div>
               <Label className="text-xs">Sắp hết hàng (≤)</Label>
               <Input
@@ -309,6 +318,16 @@ export function InventoryAlerts({ products }: InventoryAlertsProps) {
                 min={1}
                 value={thresholds.dangerousStock}
                 onChange={(e) => setThresholds(t => ({ ...t, dangerousStock: parseInt(e.target.value) || 90 }))}
+                className="h-8 text-sm mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Đề xuất nhập (≥ bán/tháng)</Label>
+              <Input
+                type="number"
+                min={1}
+                value={thresholds.minMonthlySold}
+                onChange={(e) => setThresholds(t => ({ ...t, minMonthlySold: parseInt(e.target.value) || 2 }))}
                 className="h-8 text-sm mt-1"
               />
             </div>
