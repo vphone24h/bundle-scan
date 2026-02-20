@@ -16,6 +16,17 @@ export interface ProductReportItem {
   importPrice: number;
 }
 
+export interface StockProductRaw {
+  name: string;
+  sku: string;
+  quantity: number;
+  importDate: string | null;
+  branchName: string;
+  categoryName: string;
+  importPrice: number;
+  status: string;
+}
+
 export function useProductReport(filters?: {
   startDate?: string;
   endDate?: string;
@@ -69,8 +80,8 @@ export function useProductReport(filters?: {
       // Get current stock
       let stockQuery = supabase
         .from('products')
-        .select('name, sku, quantity, import_price, total_import_cost, branch_id, category_id, branches(name), categories(name)')
-        .eq('status', 'in_stock');
+        .select('name, sku, quantity, import_price, total_import_cost, branch_id, category_id, import_date, status, branches(name), categories(name)')
+        .in('status', ['in_stock', 'warranty']);
 
       if (effectiveBranchId) {
         stockQuery = stockQuery.eq('branch_id', effectiveBranchId);
@@ -110,14 +121,13 @@ export function useProductReport(filters?: {
       const stockMap: Record<string, number> = {};
       const stockValueMap: Record<string, number> = {};
       stockItems?.forEach(item => {
+        if (item.status !== 'in_stock') return; // only count in_stock for sales report
         const key = `${item.name}||${item.sku}||${item.branch_id || ''}`;
         const qty = item.quantity || 1;
         stockMap[key] = (stockMap[key] || 0) + qty;
-        // Use total_import_cost (accurate for averaged prices) or fallback to import_price * qty
         const itemCost = Number(item.total_import_cost || item.import_price) || 0;
         stockValueMap[key] = (stockValueMap[key] || 0) + itemCost;
 
-        // Also ensure products with stock but no sales appear
         if (!productMap[key]) {
           productMap[key] = {
             productName: item.name,
@@ -133,6 +143,18 @@ export function useProductReport(filters?: {
           };
         }
       });
+
+      // Build raw stock products for alerts
+      const stockProductsRaw: StockProductRaw[] = (stockItems || []).map(item => ({
+        name: item.name,
+        sku: item.sku,
+        quantity: item.quantity || 1,
+        importDate: item.import_date || null,
+        branchName: (item.branches as any)?.name || 'N/A',
+        categoryName: (item.categories as any)?.name || 'Chưa phân loại',
+        importPrice: Number(item.import_price) || 0,
+        status: item.status || 'in_stock',
+      }));
 
       Object.keys(productMap).forEach(key => {
         if (stockMap[key]) {
@@ -169,7 +191,7 @@ export function useProductReport(filters?: {
         totalStockValue,
       };
 
-      return { items, summary };
+      return { items, summary, stockProductsRaw };
     },
     enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
     refetchOnWindowFocus: false,
