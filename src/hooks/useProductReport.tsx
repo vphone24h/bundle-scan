@@ -77,7 +77,7 @@ export function useProductReport(filters?: {
         productsMap = (products || []).reduce((acc, p) => { acc[p.id] = Number(p.import_price); return acc; }, {} as Record<string, number>);
       }
 
-      // Get current stock
+      // Get current stock (in_stock + warranty)
       let stockQuery = supabase
         .from('products')
         .select('name, sku, quantity, import_price, total_import_cost, branch_id, category_id, import_date, status, branches(name), categories(name)')
@@ -88,6 +88,18 @@ export function useProductReport(filters?: {
       }
 
       const { data: stockItems } = await stockQuery;
+
+      // Get sold/deleted products to find "out of stock" items (products that existed but now have 0 in stock)
+      let soldDeletedQuery = supabase
+        .from('products')
+        .select('name, sku, import_price, branch_id, category_id, import_date, status, branches(name), categories(name)')
+        .in('status', ['sold', 'deleted']);
+
+      if (effectiveBranchId) {
+        soldDeletedQuery = soldDeletedQuery.eq('branch_id', effectiveBranchId);
+      }
+
+      const { data: soldDeletedItems } = await soldDeletedQuery;
 
       // Aggregate sold data by product name+sku
       const productMap: Record<string, ProductReportItem> = {};
@@ -144,17 +156,29 @@ export function useProductReport(filters?: {
         }
       });
 
-      // Build raw stock products for alerts
-      const stockProductsRaw: StockProductRaw[] = (stockItems || []).map(item => ({
-        name: item.name,
-        sku: item.sku,
-        quantity: item.quantity || 1,
-        importDate: item.import_date || null,
-        branchName: (item.branches as any)?.name || 'N/A',
-        categoryName: (item.categories as any)?.name || 'Chưa phân loại',
-        importPrice: Number(item.import_price) || 0,
-        status: item.status || 'in_stock',
-      }));
+      // Build raw stock products for alerts (include in_stock, warranty, sold, deleted)
+      const stockProductsRaw: StockProductRaw[] = [
+        ...(stockItems || []).map(item => ({
+          name: item.name,
+          sku: item.sku,
+          quantity: item.quantity || 1,
+          importDate: item.import_date || null,
+          branchName: (item.branches as any)?.name || 'N/A',
+          categoryName: (item.categories as any)?.name || 'Chưa phân loại',
+          importPrice: Number(item.import_price) || 0,
+          status: item.status || 'in_stock',
+        })),
+        ...(soldDeletedItems || []).map(item => ({
+          name: item.name,
+          sku: item.sku,
+          quantity: 0,
+          importDate: item.import_date || null,
+          branchName: (item.branches as any)?.name || 'N/A',
+          categoryName: (item.categories as any)?.name || 'Chưa phân loại',
+          importPrice: Number(item.import_price) || 0,
+          status: item.status || 'sold',
+        })),
+      ];
 
       Object.keys(productMap).forEach(key => {
         if (stockMap[key]) {

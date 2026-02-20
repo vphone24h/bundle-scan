@@ -141,9 +141,29 @@ export function InventoryAlerts({ products }: InventoryAlertsProps) {
   const alerts = useMemo(() => {
     const inStockProducts = products.filter(p => p.status === 'in_stock');
     const warrantyProducts = products.filter(p => p.status === 'warranty');
+    const soldDeletedProducts = products.filter(p => p.status === 'sold' || p.status === 'deleted');
 
     const lowStock = inStockProducts.filter(p => p.quantity <= thresholds.lowStock && p.quantity > 0);
-    const outOfStock = inStockProducts.filter(p => p.quantity === 0);
+    
+    // Out of stock: find product names that exist (sold/deleted) but have NO in_stock items
+    const inStockKeys = new Set(
+      inStockProducts.filter(p => p.quantity > 0).map(p => `${p.name}||${p.sku}||${p.branchName}`)
+    );
+    const outOfStockMap = new Map<string, StockProduct>();
+    soldDeletedProducts.forEach(p => {
+      const key = `${p.name}||${p.sku}||${p.branchName}`;
+      if (!inStockKeys.has(key) && !outOfStockMap.has(key)) {
+        outOfStockMap.set(key, { ...p, quantity: 0 });
+      }
+    });
+    // Also include in_stock items with quantity 0
+    inStockProducts.filter(p => p.quantity === 0).forEach(p => {
+      const key = `${p.name}||${p.sku}||${p.branchName}`;
+      if (!outOfStockMap.has(key)) {
+        outOfStockMap.set(key, p);
+      }
+    });
+    const outOfStock = Array.from(outOfStockMap.values());
 
     const withAge = inStockProducts
       .filter(p => p.importDate && p.quantity > 0)
