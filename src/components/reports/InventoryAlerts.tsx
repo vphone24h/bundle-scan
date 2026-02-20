@@ -135,9 +135,24 @@ function AlertSection({
   );
 }
 
+type AlertType = 'lowStock' | 'outOfStock' | 'slowSelling' | 'longStock' | 'dangerousStock' | 'warranty';
+
+const ALERT_TYPE_LABELS: Record<AlertType, string> = {
+  lowStock: 'Sắp hết hàng',
+  outOfStock: 'Hết hàng',
+  slowSelling: 'Bán chậm',
+  longStock: 'Tồn lâu',
+  dangerousStock: 'Tồn nguy hiểm',
+  warranty: 'Hàng lỗi',
+};
+
 export function InventoryAlerts({ products }: InventoryAlertsProps) {
   const [thresholds, setThresholds] = useState<AlertThresholds>(DEFAULT_THRESHOLDS);
   const [showSettings, setShowSettings] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [badgeAlertTypes, setBadgeAlertTypes] = useState<Set<AlertType>>(
+    new Set(['lowStock', 'outOfStock', 'dangerousStock', 'warranty'])
+  );
 
   const now = new Date();
 
@@ -148,7 +163,6 @@ export function InventoryAlerts({ products }: InventoryAlertsProps) {
 
     const lowStock = inStockProducts.filter(p => p.quantity <= thresholds.lowStock && p.quantity > 0);
     
-    // Out of stock: find product names that exist (sold/deleted) but have NO in_stock items
     const inStockKeys = new Set(
       inStockProducts.filter(p => p.quantity > 0).map(p => `${p.name}||${p.sku}||${p.branchName}`)
     );
@@ -159,7 +173,6 @@ export function InventoryAlerts({ products }: InventoryAlertsProps) {
         outOfStockMap.set(key, { ...p, quantity: 0 });
       }
     });
-    // Also include in_stock items with quantity 0
     inStockProducts.filter(p => p.quantity === 0).forEach(p => {
       const key = `${p.name}||${p.sku}||${p.branchName}`;
       if (!outOfStockMap.has(key)) {
@@ -179,7 +192,6 @@ export function InventoryAlerts({ products }: InventoryAlertsProps) {
     const longStock = withAge.filter(p => p.daysInStock >= thresholds.longStock && p.daysInStock < thresholds.dangerousStock);
     const dangerousStock = withAge.filter(p => p.daysInStock >= thresholds.dangerousStock);
 
-    // Suggest reorder: products that are low stock or out of stock AND sold >= minMonthlySold this month
     const reorderCandidates = [...outOfStock, ...lowStock];
     const reorderSuggestions = reorderCandidates
       .filter(p => p.monthlySoldCount >= thresholds.minMonthlySold)
@@ -191,9 +203,25 @@ export function InventoryAlerts({ products }: InventoryAlertsProps) {
     return { lowStock, outOfStock, slowSelling, longStock, dangerousStock, warrantyProducts, reorderSuggestions };
   }, [products, thresholds]);
 
-  const totalAlerts = alerts.lowStock.length + alerts.outOfStock.length +
-    alerts.slowSelling.length + alerts.longStock.length +
-    alerts.dangerousStock.length + alerts.warrantyProducts.length;
+  const alertCounts: Record<AlertType, number> = {
+    lowStock: alerts.lowStock.length,
+    outOfStock: alerts.outOfStock.length,
+    slowSelling: alerts.slowSelling.length,
+    longStock: alerts.longStock.length,
+    dangerousStock: alerts.dangerousStock.length,
+    warranty: alerts.warrantyProducts.length,
+  };
+
+  const badgeCount = Array.from(badgeAlertTypes).reduce((sum, type) => sum + alertCounts[type], 0);
+
+  const toggleBadgeType = (type: AlertType) => {
+    setBadgeAlertTypes(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  };
 
   const productColumns = [
     { header: 'Sản phẩm', render: (item: any) => (
@@ -256,6 +284,25 @@ export function InventoryAlerts({ products }: InventoryAlertsProps) {
     )},
   ];
 
+  if (!expanded) {
+    return (
+      <Button
+        variant="outline"
+        className="relative w-full justify-start gap-2 h-12 text-base font-medium border-dashed"
+        onClick={() => setExpanded(true)}
+      >
+        <AlertTriangle className="h-5 w-5 text-amber-500" />
+        Cảnh báo tồn kho
+        {badgeCount > 0 && (
+          <Badge variant="destructive" className="ml-auto text-xs px-2 py-0.5">
+            {badgeCount}
+          </Badge>
+        )}
+        <ChevronDown className="h-4 w-4 ml-1" />
+      </Button>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -263,171 +310,116 @@ export function InventoryAlerts({ products }: InventoryAlertsProps) {
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
             <CardTitle className="text-base">Cảnh báo tồn kho</CardTitle>
-            {totalAlerts > 0 && (
-              <Badge variant="destructive">{totalAlerts} cảnh báo</Badge>
+            {badgeCount > 0 && (
+              <Badge variant="destructive">{badgeCount} cảnh báo</Badge>
             )}
           </div>
-          <Button
-            variant={showSettings ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setShowSettings(!showSettings)}
-          >
-            <Settings2 className="h-4 w-4 mr-1" />
-            Tùy chỉnh
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant={showSettings ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setShowSettings(!showSettings)}
+            >
+              <Settings2 className="h-4 w-4 mr-1" />
+              Tùy chỉnh
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpanded(false)}
+            >
+              <ChevronUp className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Settings Panel */}
         {showSettings && (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-3 rounded-lg border bg-muted/30">
-            <div>
-              <Label className="text-xs">Sắp hết hàng (≤)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={thresholds.lowStock}
-                onChange={(e) => setThresholds(t => ({ ...t, lowStock: parseInt(e.target.value) || 0 }))}
-                className="h-8 text-sm mt-1"
-              />
+          <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div>
+                <Label className="text-xs">Sắp hết hàng (≤)</Label>
+                <Input type="number" min={0} value={thresholds.lowStock}
+                  onChange={(e) => setThresholds(t => ({ ...t, lowStock: parseInt(e.target.value) || 0 }))}
+                  className="h-8 text-sm mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs">Bán chậm (ngày)</Label>
+                <Input type="number" min={1} value={thresholds.slowSelling}
+                  onChange={(e) => setThresholds(t => ({ ...t, slowSelling: parseInt(e.target.value) || 20 }))}
+                  className="h-8 text-sm mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs">Tồn lâu (ngày)</Label>
+                <Input type="number" min={1} value={thresholds.longStock}
+                  onChange={(e) => setThresholds(t => ({ ...t, longStock: parseInt(e.target.value) || 45 }))}
+                  className="h-8 text-sm mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs">Nguy hiểm (ngày)</Label>
+                <Input type="number" min={1} value={thresholds.dangerousStock}
+                  onChange={(e) => setThresholds(t => ({ ...t, dangerousStock: parseInt(e.target.value) || 90 }))}
+                  className="h-8 text-sm mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs">Đề xuất nhập (≥ bán/tháng)</Label>
+                <Input type="number" min={1} value={thresholds.minMonthlySold}
+                  onChange={(e) => setThresholds(t => ({ ...t, minMonthlySold: parseInt(e.target.value) || 2 }))}
+                  className="h-8 text-sm mt-1" />
+              </div>
             </div>
             <div>
-              <Label className="text-xs">Bán chậm (ngày)</Label>
-              <Input
-                type="number"
-                min={1}
-                value={thresholds.slowSelling}
-                onChange={(e) => setThresholds(t => ({ ...t, slowSelling: parseInt(e.target.value) || 20 }))}
-                className="h-8 text-sm mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Tồn lâu (ngày)</Label>
-              <Input
-                type="number"
-                min={1}
-                value={thresholds.longStock}
-                onChange={(e) => setThresholds(t => ({ ...t, longStock: parseInt(e.target.value) || 45 }))}
-                className="h-8 text-sm mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Nguy hiểm (ngày)</Label>
-              <Input
-                type="number"
-                min={1}
-                value={thresholds.dangerousStock}
-                onChange={(e) => setThresholds(t => ({ ...t, dangerousStock: parseInt(e.target.value) || 90 }))}
-                className="h-8 text-sm mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Đề xuất nhập (≥ bán/tháng)</Label>
-              <Input
-                type="number"
-                min={1}
-                value={thresholds.minMonthlySold}
-                onChange={(e) => setThresholds(t => ({ ...t, minMonthlySold: parseInt(e.target.value) || 2 }))}
-                className="h-8 text-sm mt-1"
-              />
+              <Label className="text-xs mb-1.5 block">Loại cảnh báo hiện số đỏ:</Label>
+              <div className="flex flex-wrap gap-2">
+                {(Object.keys(ALERT_TYPE_LABELS) as AlertType[]).map(type => (
+                  <button
+                    key={type}
+                    onClick={() => toggleBadgeType(type)}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                      badgeAlertTypes.has(type)
+                        ? 'bg-destructive/10 border-destructive/30 text-destructive font-medium'
+                        : 'bg-muted border-border text-muted-foreground'
+                    }`}
+                  >
+                    {ALERT_TYPE_LABELS[type]} ({alertCounts[type]})
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {totalAlerts === 0 ? (
-          <div className="text-center py-6 text-muted-foreground">
-            <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">Không có cảnh báo nào. Tồn kho đang ổn!</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {/* Low Stock */}
-            <AlertSection
-              title={`Sắp hết hàng (≤${thresholds.lowStock})`}
-              icon={PackageMinus}
-              iconColor="text-amber-600"
-              bgColor="bg-amber-50 dark:bg-amber-950/30"
-              badgeVariant="secondary"
-              items={alerts.lowStock}
-              columns={productColumns}
-              emptyText="Không có sản phẩm sắp hết hàng"
-            />
+        <div className="space-y-2">
+          <AlertSection title={`Sắp hết hàng (≤${thresholds.lowStock})`} icon={PackageMinus}
+            iconColor="text-amber-600" bgColor="bg-amber-50 dark:bg-amber-950/30" badgeVariant="secondary"
+            items={alerts.lowStock} columns={productColumns} emptyText="Không có sản phẩm sắp hết hàng" />
 
-            {/* Out of Stock */}
-            <AlertSection
-              title="Hết hàng (0)"
-              icon={PackageMinus}
-              iconColor="text-destructive"
-              bgColor="bg-destructive/5"
-              badgeVariant="destructive"
-              items={alerts.outOfStock}
-              columns={productColumns}
-              emptyText="Không có sản phẩm hết hàng"
-            />
+          <AlertSection title="Hết hàng (0)" icon={PackageMinus}
+            iconColor="text-destructive" bgColor="bg-destructive/5" badgeVariant="destructive"
+            items={alerts.outOfStock} columns={productColumns} emptyText="Không có sản phẩm hết hàng" />
 
-            {/* Slow Selling */}
-            <AlertSection
-              title={`Bán chậm (${thresholds.slowSelling}-${thresholds.longStock - 1} ngày)`}
-              icon={Clock}
-              iconColor="text-yellow-600"
-              bgColor="bg-yellow-50 dark:bg-yellow-950/30"
-              badgeVariant="outline"
-              items={alerts.slowSelling}
-              columns={ageColumns}
-              emptyText="Không có hàng bán chậm"
-            />
+          <AlertSection title={`Bán chậm (${thresholds.slowSelling}-${thresholds.longStock - 1} ngày)`} icon={Clock}
+            iconColor="text-yellow-600" bgColor="bg-yellow-50 dark:bg-yellow-950/30" badgeVariant="outline"
+            items={alerts.slowSelling} columns={ageColumns} emptyText="Không có hàng bán chậm" />
 
-            {/* Long Stock */}
-            <AlertSection
-              title={`Tồn kho lâu (${thresholds.longStock}-${thresholds.dangerousStock - 1} ngày)`}
-              icon={Clock}
-              iconColor="text-orange-600"
-              bgColor="bg-orange-50 dark:bg-orange-950/30"
-              badgeVariant="secondary"
-              items={alerts.longStock}
-              columns={ageColumns}
-              emptyText="Không có hàng tồn lâu"
-            />
+          <AlertSection title={`Tồn kho lâu (${thresholds.longStock}-${thresholds.dangerousStock - 1} ngày)`} icon={Clock}
+            iconColor="text-orange-600" bgColor="bg-orange-50 dark:bg-orange-950/30" badgeVariant="secondary"
+            items={alerts.longStock} columns={ageColumns} emptyText="Không có hàng tồn lâu" />
 
-            {/* Dangerous Stock */}
-            <AlertSection
-              title={`Tồn kho nguy hiểm (≥${thresholds.dangerousStock} ngày)`}
-              icon={ShieldAlert}
-              iconColor="text-destructive"
-              bgColor="bg-destructive/10"
-              badgeVariant="destructive"
-              items={alerts.dangerousStock}
-              columns={ageColumns}
-              emptyText="Không có hàng tồn nguy hiểm"
-            />
+          <AlertSection title={`Tồn kho nguy hiểm (≥${thresholds.dangerousStock} ngày)`} icon={ShieldAlert}
+            iconColor="text-destructive" bgColor="bg-destructive/10" badgeVariant="destructive"
+            items={alerts.dangerousStock} columns={ageColumns} emptyText="Không có hàng tồn nguy hiểm" />
 
-            {/* Warranty / Defective */}
-            <AlertSection
-              title="Hàng lỗi / Bảo hành"
-              icon={Wrench}
-              iconColor="text-red-600"
-              bgColor="bg-red-50 dark:bg-red-950/30"
-              badgeVariant="destructive"
-              items={alerts.warrantyProducts}
-              columns={warrantyColumns}
-              emptyText="Không có hàng lỗi"
-            />
+          <AlertSection title="Hàng lỗi / Bảo hành" icon={Wrench}
+            iconColor="text-red-600" bgColor="bg-red-50 dark:bg-red-950/30" badgeVariant="destructive"
+            items={alerts.warrantyProducts} columns={warrantyColumns} emptyText="Không có hàng lỗi" />
 
-            {/* Reorder Suggestions */}
-            {alerts.reorderSuggestions.length > 0 && (
-              <AlertSection
-                title="Đề xuất nhập hàng"
-                icon={ShoppingCart}
-                iconColor="text-primary"
-                bgColor="bg-primary/5"
-                badgeVariant="default"
-                items={alerts.reorderSuggestions}
-                columns={reorderColumns}
-                emptyText=""
-              />
-            )}
-          </div>
-        )}
+          {alerts.reorderSuggestions.length > 0 && (
+            <AlertSection title="Đề xuất nhập hàng" icon={ShoppingCart}
+              iconColor="text-primary" bgColor="bg-primary/5" badgeVariant="default"
+              items={alerts.reorderSuggestions} columns={reorderColumns} emptyText="" />
+          )}
+        </div>
       </CardContent>
     </Card>
   );
