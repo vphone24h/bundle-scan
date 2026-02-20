@@ -688,15 +688,19 @@ export default function ImportNewPage() {
                   </p>
                 </div>
 
-                {/* IMEI */}
+                {/* IMEI / Serial */}
                 <div className="form-field">
-                  <Label htmlFor="imei">IMEI (nếu có)</Label>
+                  <Label htmlFor="imei">IMEI / Serial (nếu có)</Label>
                   <Input
                     id="imei"
                     value={form.imei}
                     onChange={(e) => setForm({ ...form, imei: e.target.value })}
-                    placeholder="Số IMEI"
+                    placeholder="Số IMEI / Serial"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Chỉ nhập đối với thiết bị có <strong>IMEI</strong> hoặc <strong>Serial</strong> (điện thoại, laptop, máy ảnh…).
+                    <br />Nếu là phụ kiện (cáp, sạc, linh kiện, phân bón…) → <strong>không</strong> cần nhập.
+                  </p>
                 </div>
 
                 {/* Category */}
@@ -780,11 +784,17 @@ export default function ImportNewPage() {
                     disabled={!!form.imei}
                     className={form.imei ? 'opacity-50' : ''}
                   />
-                  {!form.imei && form.importPrice && form.quantity && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Thành tiền: {(Number(form.importPrice) * Number(form.quantity)).toLocaleString('vi-VN')} VND
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {form.imei ? (
+                      <>Thiết bị có <strong>IMEI / Serial</strong> → mặc định 1 (mỗi cái 1 mã riêng).</>
+                    ) : form.importPrice && form.quantity ? (
+                      <>Phụ kiện <strong>không</strong> có IMEI / Serial → có thể nhập số lượng theo lô.
+                        <br />Thành tiền: {(Number(form.importPrice) * Number(form.quantity)).toLocaleString('vi-VN')} VND
+                      </>
+                    ) : (
+                      <>Phụ kiện <strong>không</strong> có IMEI / Serial → có thể nhập số lượng theo lô.</>
+                    )}
+                  </p>
                 </div>
 
                 {/* Note */}
