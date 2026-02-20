@@ -761,13 +761,16 @@ export default function ExportNewPage() {
               {/* IMEI Search */}
               <div className="flex gap-2">
                 <div className="flex-1">
-                  <Label>Tìm theo IMEI</Label>
+                  <Label>Tìm theo IMEI/Serial</Label>
                   <Input
-                    placeholder="Nhập IMEI và Enter"
+                    placeholder="Nhập IMEI/Serial và Enter"
                     value={imeiSearch}
                     onChange={(e) => setImeiSearch(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleImeiSearch()}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Nhập <strong>IMEI/Serial</strong> vào → sản phẩm tự xuất hiện
+                  </p>
                 </div>
                 <Button 
                   className="mt-6" 
@@ -781,6 +784,9 @@ export default function ExportNewPage() {
               {/* Name Search */}
               <div className="relative">
                 <Label>Hoặc tìm theo tên sản phẩm (không IMEI)</Label>
+                <p className="text-xs text-muted-foreground mb-1">
+                  Nhập 2-3 chữ đầu của sản phẩm → hiện gợi ý để chọn
+                </p>
                 <Input
                   placeholder="Nhập tên sản phẩm..."
                   value={nameSearch}
