@@ -28,13 +28,9 @@ import {
   Search, 
   Plus, 
   User, 
-  MapPin, 
-  Mail,
   CreditCard,
   Banknote,
   ScanBarcode,
-  CalendarIcon,
-  Cake,
   Percent,
   Calculator,
   PlayCircle,
@@ -50,7 +46,7 @@ import { ExportPaymentDialog } from '@/components/export/ExportPaymentDialog';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
 import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombobox';
-import { CustomerSourceSelect } from '@/components/customers/CustomerSourceSelect';
+
 import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/formatNumber';
 import { PriceInput } from '@/components/ui/price-input';
 import { cn } from '@/lib/utils';
@@ -1050,94 +1046,24 @@ export default function ExportNewPage() {
                 Thông tin khách hàng
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Customer Search Combobox */}
-              <CustomerSearchCombobox
-                selectedCustomer={selectedCustomer}
-                onSelect={setSelectedCustomer}
-                onCustomerInfoChange={() => {}}
-                customerName={customerName}
-                customerPhone={customerPhone}
-                customerAddress={customerAddress}
-                customerEmail={customerEmail}
-                customerSource={customerSource}
-                setCustomerName={setCustomerName}
-                setCustomerPhone={setCustomerPhone}
-                setCustomerAddress={setCustomerAddress}
-                setCustomerEmail={setCustomerEmail}
-                setCustomerSource={setCustomerSource}
-              />
-
-              {/* Additional fields - always show */}
-              <div>
-                <Label className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  Địa chỉ
-                </Label>
-                <Input
-                  placeholder="Địa chỉ (tùy chọn)"
-                  value={customerAddress}
-                  onChange={(e) => setCustomerAddress(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <Label className="flex items-center gap-1">
-                  <Mail className="h-3 w-3" />
-                  Email
-                </Label>
-                <Input
-                  type="email"
-                  placeholder="Email (tùy chọn)"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                />
-              </div>
-
-              <CustomerSourceSelect
-                value={customerSource}
-                onChange={setCustomerSource}
-              />
-
-              <div>
-                <Label className="flex items-center gap-1">
-                  <Cake className="h-3 w-3" />
-                  Ngày sinh
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !customerBirthday && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {customerBirthday ? (
-                        format(customerBirthday, "dd/MM/yyyy", { locale: vi })
-                      ) : (
-                        <span>Chọn ngày sinh (tùy chọn)</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={customerBirthday}
-                      onSelect={setCustomerBirthday}
-                      disabled={(date) =>
-                        date > new Date() || date < new Date("1900-01-01")
-                      }
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                      captionLayout="dropdown-buttons"
-                      fromYear={1920}
-                      toYear={new Date().getFullYear()}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+             <CardContent className="space-y-4">
+               <CustomerSearchCombobox
+                 selectedCustomer={selectedCustomer}
+                 onSelect={setSelectedCustomer}
+                 onCustomerInfoChange={() => {}}
+                 customerName={customerName}
+                 customerPhone={customerPhone}
+                 customerAddress={customerAddress}
+                 customerEmail={customerEmail}
+                 customerSource={customerSource}
+                 customerBirthday={customerBirthday}
+                 setCustomerName={setCustomerName}
+                 setCustomerPhone={setCustomerPhone}
+                 setCustomerAddress={setCustomerAddress}
+                 setCustomerEmail={setCustomerEmail}
+                 setCustomerSource={setCustomerSource}
+                 setCustomerBirthday={setCustomerBirthday}
+               />
             </CardContent>
           </Card>
 
