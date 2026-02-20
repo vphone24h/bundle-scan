@@ -306,79 +306,20 @@ export function InventoryAlerts({ products }: InventoryAlertsProps) {
 
   if (!expanded) {
     return (
-      <div className="space-y-3">
-        <Button
-          variant="outline"
-          className="relative w-full justify-start gap-2 h-12 text-base font-medium border-dashed"
-          onClick={() => setExpanded(true)}
-        >
-          <AlertTriangle className="h-5 w-5 text-amber-500" />
-          Cảnh báo tồn kho
-          {badgeCount > 0 && (
-            <Badge variant="destructive" className="ml-auto text-xs px-2 py-0.5">
-              {badgeCount}
-            </Badge>
-          )}
-          <ChevronDown className="h-4 w-4 ml-1" />
-        </Button>
-
-        {/* Reorder suggestions always visible */}
-        {alerts.reorderSuggestions.length > 0 && (
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5 text-primary" />
-                  <CardTitle className="text-base">Đề xuất nhập hàng</CardTitle>
-                  <Badge variant="default">{alerts.reorderSuggestions.length}</Badge>
-                </div>
-                <Button variant="outline" size="sm" onClick={handleExportReorder}>
-                  <Download className="h-4 w-4 mr-1" />
-                  Xuất Excel
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-auto max-h-[400px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead className="text-xs font-semibold">Sản phẩm</TableHead>
-                      <TableHead className="text-xs font-semibold">Chi nhánh</TableHead>
-                      <TableHead className="text-xs font-semibold">Tồn hiện tại</TableHead>
-                      <TableHead className="text-xs font-semibold">Đã bán (tháng)</TableHead>
-                      <TableHead className="text-xs font-semibold">Đề xuất nhập</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {alerts.reorderSuggestions.slice(0, 20).map((item, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="text-sm py-2">
-                          <div>
-                            <p className="font-medium">{item.name}</p>
-                            <p className="text-xs text-muted-foreground">SKU: {item.sku} · {item.categoryName}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm py-2"><Badge variant="secondary">{item.branchName}</Badge></TableCell>
-                        <TableCell className="text-sm py-2"><Badge variant="destructive">{item.quantity}</Badge></TableCell>
-                        <TableCell className="text-sm py-2"><span className="font-medium text-primary">{item.monthlySoldCount} SP</span></TableCell>
-                        <TableCell className="text-sm py-2"><span className="font-medium text-primary">{item.suggestedQty} SP</span></TableCell>
-                      </TableRow>
-                    ))}
-                    {alerts.reorderSuggestions.length > 20 && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-xs text-muted-foreground py-2">
-                          ... và {alerts.reorderSuggestions.length - 20} sản phẩm khác
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+      <Button
+        variant="outline"
+        className="relative w-full justify-start gap-2 h-12 text-base font-medium border-dashed"
+        onClick={() => setExpanded(true)}
+      >
+        <AlertTriangle className="h-5 w-5 text-amber-500" />
+        Cảnh báo tồn kho
+        {badgeCount > 0 && (
+          <Badge variant="destructive" className="ml-auto text-xs px-2 py-0.5">
+            {badgeCount}
+          </Badge>
         )}
-      </div>
+        <ChevronDown className="h-4 w-4 ml-1" />
+      </Button>
     );
   }
 
