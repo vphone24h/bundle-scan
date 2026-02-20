@@ -699,7 +699,7 @@ export default function ImportNewPage() {
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Chỉ nhập đối với thiết bị có <strong>IMEI</strong> hoặc <strong>Serial</strong> (điện thoại, laptop, máy ảnh…).
-                    <br />Nếu là phụ kiện (cáp, sạc, linh kiện, phân bón…) → <strong>không</strong> cần nhập.
+                    <br />Nếu là phụ kiện (cáp, sạc, linh kiện, sản phẩm khác…) → <strong>không</strong> cần nhập.
                   </p>
                 </div>
 
