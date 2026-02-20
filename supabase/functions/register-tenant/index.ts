@@ -88,47 +88,34 @@ async function sendDay0ActionEmail(toEmail: string, adminName: string, tenantId:
           <td style="background:linear-gradient(135deg,#1a56db 0%,#1e40af 100%);padding:36px 32px;text-align:center">
             <p style="margin:0 0 8px;font-size:28px">⚡</p>
             <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700">Cách quản lý kho trong 1 phút trên vKho</h1>
-            <p style="margin:8px 0 0;color:#bfdbfe;font-size:14px">3 bước đơn giản để bắt đầu ngay hôm nay</p>
+            <p style="margin:8px 0 0;color:#bfdbfe;font-size:14px">2 bước đơn giản để bắt đầu ngay hôm nay</p>
           </td>
         </tr>
         <tr>
           <td style="padding:32px 32px 28px">
             <p style="margin:0 0 20px;font-size:16px;color:#374151;line-height:1.6">Chào <strong>${name}</strong>, chào mừng đến với vKho!</p>
             <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.7">
-              Để bắt đầu ngay, anh/chị chỉ cần làm <strong>3 bước đơn giản</strong>:
+              Để bắt đầu ngay, anh/chị chỉ cần làm <strong>2 bước đơn giản</strong>:
             </p>
 
-            <!-- Step 1 -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border:1.5px solid #bfdbfe;border-radius:12px;overflow:hidden">
-              <tr>
-                <td style="background:#1a56db;padding:14px 20px;width:48px;text-align:center;vertical-align:top">
-                  <span style="color:#fff;font-size:20px;font-weight:bold">1</span>
-                </td>
-                <td style="padding:14px 20px;background:#eff6ff">
-                  <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#1e40af">📦 Thêm sản phẩm</p>
-                  <p style="margin:0;font-size:13px;color:#374151;line-height:1.5">Thêm iPhone, Samsung, phụ kiện... vào danh sách sản phẩm của bạn</p>
-                </td>
-              </tr>
-            </table>
-
-            <!-- Step 2 -->
+            <!-- Step 1 - Nhập hàng -->
             <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border:1.5px solid #bbf7d0;border-radius:12px;overflow:hidden">
               <tr>
                 <td style="background:#16a34a;padding:14px 20px;width:48px;text-align:center;vertical-align:top">
-                  <span style="color:#fff;font-size:20px;font-weight:bold">2</span>
+                  <span style="color:#fff;font-size:20px;font-weight:bold">1</span>
                 </td>
                 <td style="padding:14px 20px;background:#f0fdf4">
                   <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#166534">📥 Nhập hàng vào kho</p>
-                  <p style="margin:0;font-size:13px;color:#374151;line-height:1.5">Tạo phiếu nhập để ghi nhận tồn kho ban đầu – có thể import từ Excel!</p>
+                  <p style="margin:0;font-size:13px;color:#374151;line-height:1.5">Tạo phiếu nhập để ghi nhận tồn kho ban đầu – sản phẩm được tạo tự động, có thể import từ Excel!</p>
                 </td>
               </tr>
             </table>
 
-            <!-- Step 3 - Highlighted -->
+            <!-- Step 2 - Bán hàng (Highlighted) -->
             <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;border:2px solid #dc2626;border-radius:12px;overflow:hidden">
               <tr>
                 <td style="background:#dc2626;padding:14px 20px;width:48px;text-align:center;vertical-align:top">
-                  <span style="color:#fff;font-size:20px;font-weight:bold">3</span>
+                  <span style="color:#fff;font-size:20px;font-weight:bold">2</span>
                 </td>
                 <td style="padding:14px 20px;background:#fff1f2">
                   <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#b91c1c">🛒 Bán đơn đầu tiên ⭐ (Quan trọng nhất!)</p>
