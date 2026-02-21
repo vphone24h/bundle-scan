@@ -22,7 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle } from 'lucide-react';
+import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle, AlertCircle } from 'lucide-react';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
@@ -263,12 +264,30 @@ export default function ProductsPage() {
               <Plus className="mr-1.5 h-4 w-4" />
               Thêm sản phẩm
             </Button>
-            {selectedProducts.length > 0 && (
-              <Button onClick={handlePrintSelected} size="sm" variant="outline" data-tour="product-print-btn">
+            <div className="flex items-center gap-1" data-tour="product-print-btn">
+              <Button
+                onClick={handlePrintSelected}
+                size="sm"
+                variant="outline"
+                disabled={selectedProducts.length === 0}
+                className={selectedProducts.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
+              >
                 <Barcode className="mr-1.5 h-4 w-4" />
-                In mã vạch ({selectedProducts.length})
+                In mã vạch {selectedProducts.length > 0 ? `(${selectedProducts.length})` : ''}
               </Button>
-            )}
+              {selectedProducts.length === 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="text-muted-foreground hover:text-foreground transition-colors p-1">
+                      <AlertCircle className="h-4 w-4" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto px-3 py-2 text-sm">
+                    Chọn sản phẩm rồi mới in được
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
           </div>
         }
       />
