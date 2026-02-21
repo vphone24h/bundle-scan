@@ -33,7 +33,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen, PlayCircle } from 'lucide-react';
+import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen, PlayCircle, Search, Package, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { downloadImportTemplate } from '@/lib/excelTemplates';
@@ -110,6 +110,8 @@ export default function ImportNewPage() {
   const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
+  // 'search' = only product name visible, 'form' = full fields visible
+  const [productFormMode, setProductFormMode] = useState<'search' | 'form'>('search');
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
 
   // Receipt-level supplier (applies to entire receipt)
@@ -139,13 +141,38 @@ export default function ImportNewPage() {
     [cart]
   );
 
+  // Group products by name+SKU for aggregate stock display
+  const groupedProducts = useMemo(() => {
+    if (!products) return [];
+    const groups = new Map<string, { name: string; sku: string; category_id: string | null; import_price: number; sale_price: number | null; totalQty: number }>();
+    for (const p of products) {
+      if (p.status !== 'in_stock') continue;
+      const key = `${p.name}|||${p.sku}`;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.totalQty += p.quantity || 1;
+      } else {
+        groups.set(key, {
+          name: p.name,
+          sku: p.sku,
+          category_id: p.category_id,
+          import_price: p.import_price,
+          sale_price: p.sale_price,
+          totalQty: p.quantity || 1,
+        });
+      }
+    }
+    return Array.from(groups.values());
+  }, [products]);
+
   const handleProductNameChange = (value: string) => {
     setForm({ ...form, productName: value });
-    if (value.length >= 1 && products) {
-      const matches = products.filter((p) =>
-        p.name.toLowerCase().includes(value.toLowerCase())
+    if (value.length >= 3 && groupedProducts.length > 0) {
+      const lowerVal = value.toLowerCase();
+      const matches = groupedProducts.filter((p) =>
+        p.name.toLowerCase().includes(lowerVal) || p.sku.toLowerCase().includes(lowerVal)
       );
-      setSuggestions(matches.slice(0, 5));
+      setSuggestions(matches.slice(0, 8));
     } else {
       setSuggestions([]);
     }
@@ -156,8 +183,17 @@ export default function ImportNewPage() {
       ...form,
       productName: product.name,
       sku: product.sku,
-      categoryId: product.category_id || '',
+      categoryId: '', // Always require re-selecting category
+      importPrice: product.import_price ? String(product.import_price) : '',
+      salePrice: product.sale_price ? String(product.sale_price) : '',
     });
+    setSuggestions([]);
+    setProductFormMode('form');
+  };
+
+  const handleAddNewProduct = () => {
+    // Keep current productName, switch to full form
+    setProductFormMode('form');
     setSuggestions([]);
   };
 
@@ -252,6 +288,7 @@ export default function ImportNewPage() {
       quantity: '1',
       note: '',
     });
+    setProductFormMode('search');
     toast({
       title: 'Đã thêm vào giỏ',
       description: `${newItem.productName} x${quantity} đã được thêm vào giỏ nhập hàng`,
@@ -625,202 +662,256 @@ export default function ImportNewPage() {
             </div>
 
             <div className="bg-card border rounded-xl p-4 sm:p-6" data-tour="import-product-form">
-              <h3 className="font-semibold mb-3 sm:mb-4">Thông tin sản phẩm</h3>
-              
-              {/* Naming Tips */}
-              <ProductNamingTip />
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h3 className="font-semibold">Thông tin sản phẩm</h3>
+                {productFormMode === 'form' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setProductFormMode('search');
+                      setForm({ productName: '', sku: '', imei: '', categoryId: '', importPrice: '', salePrice: '', quantity: '1', note: '' });
+                      setSuggestions([]);
+                    }}
+                  >
+                    <ArrowLeft className="mr-1.5 h-4 w-4" />
+                    Tìm SP khác
+                  </Button>
+                )}
+              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                {/* Product Name */}
-                <div className="form-field md:col-span-2 relative">
-                  <Label htmlFor="productName">Tên sản phẩm *</Label>
+              {/* Product Name - always visible */}
+              <div className="form-field relative mb-4">
+                <Label htmlFor="productName">Tên sản phẩm *</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
                     id="productName"
                     value={form.productName}
                     onChange={(e) => handleProductNameChange(e.target.value)}
-                    placeholder="Nhập tên sản phẩm"
+                    placeholder="Nhập tên sản phẩm để tìm hoặc thêm mới"
+                    className="pl-9"
+                    autoComplete="off"
+                    disabled={productFormMode === 'form'}
                   />
-                  {suggestions.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                      {suggestions.map((s) => (
-                        <button
-                          key={s.id}
-                          onClick={() => handleSelectSuggestion(s)}
-                          className="w-full px-4 py-2 text-left hover:bg-muted text-sm"
-                        >
-                          <span className="font-medium">{s.name}</span>
-                          <span className="text-muted-foreground ml-2">({s.sku})</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tìm sản phẩm cũ trong kho hoặc thêm sản phẩm mới.
+                </p>
 
-                {/* SKU */}
-                <div className="form-field">
-                  <Label htmlFor="sku">SKU *</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="sku"
-                      value={form.sku}
-                      onChange={(e) => setForm({ ...form, sku: e.target.value })}
-                      placeholder="Mã viết tắt tên sản phẩm"
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      title="Copy tên sản phẩm làm SKU"
-                      onClick={() => {
-                        if (form.productName.trim()) {
-                          setForm({ ...form, sku: form.productName.trim() });
-                        }
-                      }}
-                      disabled={!form.productName.trim()}
-                    >
-                      <span className="text-xs font-medium">A→</span>
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Mã viết tắt của tên sản phẩm, để dễ nhớ và tìm kiếm.
-                    <br />Bạn copy tên sản phẩm xuống luôn cũng được (bấm nút <strong>A→</strong>)
-                  </p>
-                </div>
-
-                {/* IMEI / Serial */}
-                <div className="form-field">
-                  <Label htmlFor="imei">IMEI / Serial (nếu có)</Label>
-                  <Input
-                    id="imei"
-                    value={form.imei}
-                    onChange={(e) => setForm({ ...form, imei: e.target.value })}
-                    placeholder="Số IMEI / Serial"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Chỉ nhập đối với thiết bị có <strong>IMEI</strong> hoặc <strong>Serial</strong> (điện thoại, laptop, máy ảnh…).
-                    <br />Nếu là phụ kiện (cáp, sạc, linh kiện, sản phẩm khác…) → <strong>không</strong> cần nhập.
-                  </p>
-                </div>
-
-                {/* Category */}
-                <div className="form-field">
-                  <Label>Danh mục *</Label>
-                  <div className="flex gap-2">
-                    <Select
-                      value={form.categoryId}
-                      onValueChange={(v) => setForm({ ...form, categoryId: v })}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Chọn danh mục" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        {categories?.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.parent_id ? `— ${cat.name}` : cat.name}
-                          </SelectItem>
+                {/* Search Results Dropdown */}
+                {productFormMode === 'search' && form.productName.length >= 3 && (
+                  <div className="mt-2 bg-popover border rounded-lg shadow-lg overflow-hidden">
+                    {suggestions.length > 0 && (
+                      <div className="max-h-64 overflow-y-auto divide-y divide-border">
+                        {suggestions.map((s, idx) => (
+                          <button
+                            key={`${s.name}-${s.sku}-${idx}`}
+                            onClick={() => handleSelectSuggestion(s)}
+                            className="w-full px-4 py-3 text-left hover:bg-muted transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-sm truncate">{s.name}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  SKU: {s.sku} | Tồn kho: <span className="font-medium text-foreground">{s.totalQty}</span>
+                                </p>
+                              </div>
+                              <Package className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+                            </div>
+                          </button>
                         ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setCategoryDialogOpen(true)}
+                      </div>
+                    )}
+                    {suggestions.length === 0 && (
+                      <div className="px-4 py-3 text-sm text-muted-foreground">
+                        Không tìm thấy sản phẩm nào phù hợp.
+                      </div>
+                    )}
+                    <button
+                      onClick={handleAddNewProduct}
+                      className="w-full px-4 py-3 text-left hover:bg-muted border-t border-border transition-colors flex items-center gap-2 text-primary font-medium text-sm"
                     >
                       <Plus className="h-4 w-4" />
+                      Thêm sản phẩm mới{form.productName.trim() ? `: "${form.productName.trim()}"` : ''}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Naming Tips - only in form mode */}
+              {productFormMode === 'form' && <ProductNamingTip />}
+
+              {/* Full form fields - only visible in form mode */}
+              {productFormMode === 'form' && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                    {/* SKU */}
+                    <div className="form-field">
+                      <Label htmlFor="sku">SKU *</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="sku"
+                          value={form.sku}
+                          onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                          placeholder="Mã viết tắt tên sản phẩm"
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          title="Copy tên sản phẩm làm SKU"
+                          onClick={() => {
+                            if (form.productName.trim()) {
+                              setForm({ ...form, sku: form.productName.trim() });
+                            }
+                          }}
+                          disabled={!form.productName.trim()}
+                        >
+                          <span className="text-xs font-medium">A→</span>
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Mã viết tắt của tên sản phẩm, để dễ nhớ và tìm kiếm.
+                        <br />Bạn copy tên sản phẩm xuống luôn cũng được (bấm nút <strong>A→</strong>)
+                      </p>
+                    </div>
+
+                    {/* IMEI / Serial */}
+                    <div className="form-field">
+                      <Label htmlFor="imei">IMEI / Serial (nếu có)</Label>
+                      <Input
+                        id="imei"
+                        value={form.imei}
+                        onChange={(e) => setForm({ ...form, imei: e.target.value })}
+                        placeholder="Số IMEI / Serial"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Chỉ nhập đối với thiết bị có <strong>IMEI</strong> hoặc <strong>Serial</strong> (điện thoại, laptop, máy ảnh…).
+                        <br />Nếu là phụ kiện (cáp, sạc, linh kiện, sản phẩm khác…) → <strong>không</strong> cần nhập.
+                      </p>
+                    </div>
+
+                    {/* Category */}
+                    <div className="form-field">
+                      <Label>Danh mục *</Label>
+                      <div className="flex gap-2">
+                        <Select
+                          value={form.categoryId}
+                          onValueChange={(v) => setForm({ ...form, categoryId: v })}
+                        >
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Chọn danh mục" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover">
+                            {categories?.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.parent_id ? `— ${cat.name}` : cat.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setCategoryDialogOpen(true)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Import Price */}
+                    <div className="form-field">
+                      <Label htmlFor="importPrice">Giá nhập (đơn vị) *</Label>
+                      <PriceInput
+                        id="importPrice"
+                        value={form.importPrice}
+                        onChange={(val) => {
+                          const newImportPrice = val.toString();
+                          const numVal = Number(newImportPrice);
+                          let autoSalePrice = '';
+                          if (numVal > 0) {
+                            autoSalePrice = form.imei 
+                              ? String(numVal + 2000000) 
+                              : String(numVal * 2);
+                          }
+                          setForm({ ...form, importPrice: newImportPrice, salePrice: autoSalePrice });
+                        }}
+                        placeholder="VD: 28 000 000"
+                      />
+                    </div>
+
+                    {/* Sale Price */}
+                    <div className="form-field">
+                      <Label htmlFor="salePrice">Giá bán (gợi ý)</Label>
+                      <PriceInput
+                        id="salePrice"
+                        value={form.salePrice}
+                        onChange={(val) => setForm({ ...form, salePrice: val.toString() })}
+                        placeholder={form.imei ? 'Giá nhập + 2 triệu' : 'Giá nhập x2'}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {form.imei ? 'Mặc định: Giá nhập + 2.000.000đ' : 'Mặc định: Giá nhập x2'}. Có thể sửa.
+                      </p>
+                    </div>
+
+                    {/* Quantity */}
+                    <div className="form-field">
+                      <Label htmlFor="quantity">
+                        Số lượng {form.imei ? '(IMEI = 1)' : '*'}
+                      </Label>
+                      <Input
+                        id="quantity"
+                        type="number"
+                        min="1"
+                        value={form.imei ? '1' : form.quantity}
+                        onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                        placeholder="1"
+                        disabled={!!form.imei}
+                        className={form.imei ? 'opacity-50' : ''}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {form.imei ? (
+                          <>Thiết bị có <strong>IMEI / Serial</strong> → mặc định 1 (mỗi cái 1 mã riêng).</>
+                        ) : form.importPrice && form.quantity ? (
+                          <>Phụ kiện <strong>không</strong> có IMEI / Serial → có thể nhập số lượng theo lô.
+                            <br />Thành tiền: {(Number(form.importPrice) * Number(form.quantity)).toLocaleString('vi-VN')} VND
+                          </>
+                        ) : (
+                          <>Phụ kiện <strong>không</strong> có IMEI / Serial → có thể nhập số lượng theo lô.</>
+                        )}
+                      </p>
+                    </div>
+
+                    {/* Note */}
+                    <div className="form-field md:col-span-2">
+                      <Label htmlFor="note">Ghi chú</Label>
+                      <Textarea
+                        id="note"
+                        value={form.note}
+                        onChange={(e) => setForm({ ...form, note: e.target.value })}
+                        placeholder="Ghi chú (tuỳ chọn)"
+                        rows={1}
+                        className="min-h-[2.5rem] resize-y"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 sm:mt-6 flex justify-end">
+                    <Button onClick={handleAddToCart} disabled={isCheckingIMEI} className="w-full sm:w-auto" data-tour="import-add-to-cart">
+                      {isCheckingIMEI ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                      )}
+                      {isCheckingIMEI ? 'Đang kiểm tra IMEI...' : 'Thêm vào giỏ'}
                     </Button>
                   </div>
-                </div>
-
-                {/* Import Price */}
-                <div className="form-field">
-                  <Label htmlFor="importPrice">Giá nhập (đơn vị) *</Label>
-                  <PriceInput
-                    id="importPrice"
-                    value={form.importPrice}
-                    onChange={(val) => {
-                      const newImportPrice = val.toString();
-                      // Auto-calculate sale price when import price changes
-                      const numVal = Number(newImportPrice);
-                      let autoSalePrice = '';
-                      if (numVal > 0) {
-                        autoSalePrice = form.imei 
-                          ? String(numVal + 2000000) 
-                          : String(numVal * 2);
-                      }
-                      setForm({ ...form, importPrice: newImportPrice, salePrice: autoSalePrice });
-                    }}
-                    placeholder="VD: 28 000 000"
-                  />
-                </div>
-
-                {/* Sale Price */}
-                <div className="form-field">
-                  <Label htmlFor="salePrice">Giá bán (gợi ý)</Label>
-                  <PriceInput
-                    id="salePrice"
-                    value={form.salePrice}
-                    onChange={(val) => setForm({ ...form, salePrice: val.toString() })}
-                    placeholder={form.imei ? 'Giá nhập + 2 triệu' : 'Giá nhập x2'}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {form.imei ? 'Mặc định: Giá nhập + 2.000.000đ' : 'Mặc định: Giá nhập x2'}. Có thể sửa.
-                  </p>
-                </div>
-
-                {/* Quantity - only show for non-IMEI products */}
-                <div className="form-field">
-                  <Label htmlFor="quantity">
-                    Số lượng {form.imei ? '(IMEI = 1)' : '*'}
-                  </Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    min="1"
-                    value={form.imei ? '1' : form.quantity}
-                    onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                    placeholder="1"
-                    disabled={!!form.imei}
-                    className={form.imei ? 'opacity-50' : ''}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {form.imei ? (
-                      <>Thiết bị có <strong>IMEI / Serial</strong> → mặc định 1 (mỗi cái 1 mã riêng).</>
-                    ) : form.importPrice && form.quantity ? (
-                      <>Phụ kiện <strong>không</strong> có IMEI / Serial → có thể nhập số lượng theo lô.
-                        <br />Thành tiền: {(Number(form.importPrice) * Number(form.quantity)).toLocaleString('vi-VN')} VND
-                      </>
-                    ) : (
-                      <>Phụ kiện <strong>không</strong> có IMEI / Serial → có thể nhập số lượng theo lô.</>
-                    )}
-                  </p>
-                </div>
-
-                {/* Note */}
-                <div className="form-field md:col-span-2">
-                  <Label htmlFor="note">Ghi chú</Label>
-                  <Textarea
-                    id="note"
-                    value={form.note}
-                    onChange={(e) => setForm({ ...form, note: e.target.value })}
-                    placeholder="Ghi chú (tuỳ chọn)"
-                    rows={1}
-                    className="min-h-[2.5rem] resize-y"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4 sm:mt-6 flex justify-end">
-                <Button onClick={handleAddToCart} disabled={isCheckingIMEI} className="w-full sm:w-auto" data-tour="import-add-to-cart">
-                  {isCheckingIMEI ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                  )}
-                  {isCheckingIMEI ? 'Đang kiểm tra IMEI...' : 'Thêm vào giỏ'}
-                </Button>
-              </div>
+                </>
+              )}
             </div>
           </div>
 
