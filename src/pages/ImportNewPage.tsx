@@ -683,73 +683,100 @@ export default function ImportNewPage() {
               {/* Product Name - always visible */}
               <div className="form-field relative mb-4">
                 <Label htmlFor="productName">Tên sản phẩm *</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  <Input
-                    id="productName"
-                    value={form.productName}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setForm({ ...form, productName: val });
-                    }}
-                    placeholder="Nhập tên sản phẩm"
-                    className="pl-9"
-                    autoComplete="off"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Tìm sản phẩm cũ trong kho hoặc thêm sản phẩm mới.
-                </p>
+                {productFormMode === 'search' ? (
+                  <>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        id="productName"
+                        value={form.productName}
+                        onChange={(e) => handleProductNameChange(e.target.value)}
+                        placeholder="Nhập tên sản phẩm để tìm hoặc thêm mới"
+                        className="pl-9"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Tìm sản phẩm cũ trong kho hoặc thêm sản phẩm mới.
+                    </p>
 
-                {/* Search Results Dropdown */}
-                {productFormMode === 'search' && form.productName.length >= 2 && (
-                  <div className="mt-2 bg-popover border rounded-lg shadow-lg overflow-hidden">
+                    {/* Search Results Dropdown */}
+                    {form.productName.length >= 2 && (
+                      <div className="mt-2 bg-popover border rounded-lg shadow-lg overflow-hidden">
+                        {suggestions.length > 0 && (
+                          <div className="max-h-64 overflow-y-auto divide-y divide-border">
+                            {suggestions.map((s, idx) => (
+                              <button
+                                key={`${s.name}-${s.sku}-${idx}`}
+                                onClick={() => handleSelectSuggestion(s)}
+                                className="w-full px-4 py-3 text-left hover:bg-muted transition-colors"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-medium text-sm truncate">{s.name}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      SKU: {s.sku} | Tồn kho: <span className="font-medium text-foreground">{s.totalQty}</span>
+                                    </p>
+                                  </div>
+                                  <Package className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {suggestions.length === 0 && (
+                          <div className="px-4 py-3 text-sm text-muted-foreground">
+                            Không tìm thấy sản phẩm nào phù hợp.
+                          </div>
+                        )}
+                        <button
+                          onClick={handleAddNewProduct}
+                          className="w-full px-4 py-3 text-left hover:bg-muted border-t border-border transition-colors flex items-center gap-2 text-primary font-medium text-sm"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Thêm sản phẩm mới{form.productName.trim() ? `: "${form.productName.trim()}"` : ''}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Always-visible Add New Product button */}
+                    <Button
+                      variant="outline"
+                      className="w-full mt-3 border-dashed border-primary/50 text-primary hover:bg-primary/5"
+                      onClick={handleAddNewProduct}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Thêm sản phẩm mới
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Input
+                      id="productName"
+                      value={form.productName}
+                      onChange={(e) => handleProductNameChange(e.target.value)}
+                      placeholder="Nhập tên sản phẩm"
+                      autoComplete="off"
+                    />
+                    {/* Old-style simple suggestions in form mode */}
                     {suggestions.length > 0 && (
-                      <div className="max-h-64 overflow-y-auto divide-y divide-border">
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                         {suggestions.map((s, idx) => (
                           <button
                             key={`${s.name}-${s.sku}-${idx}`}
-                            onClick={() => handleSelectSuggestion(s)}
-                            className="w-full px-4 py-3 text-left hover:bg-muted transition-colors"
+                            onClick={() => {
+                              setForm({ ...form, productName: s.name, sku: s.sku });
+                              setSuggestions([]);
+                            }}
+                            className="w-full px-4 py-2 text-left hover:bg-muted text-sm"
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="min-w-0 flex-1">
-                                <p className="font-medium text-sm truncate">{s.name}</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  SKU: {s.sku} | Tồn kho: <span className="font-medium text-foreground">{s.totalQty}</span>
-                                </p>
-                              </div>
-                              <Package className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
-                            </div>
+                            <span className="font-medium">{s.name}</span>
+                            <span className="text-muted-foreground ml-2">({s.sku})</span>
                           </button>
                         ))}
                       </div>
                     )}
-                    {suggestions.length === 0 && (
-                      <div className="px-4 py-3 text-sm text-muted-foreground">
-                        Không tìm thấy sản phẩm nào phù hợp.
-                      </div>
-                    )}
-                    <button
-                      onClick={handleAddNewProduct}
-                      className="w-full px-4 py-3 text-left hover:bg-muted border-t border-border transition-colors flex items-center gap-2 text-primary font-medium text-sm"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Thêm sản phẩm mới{form.productName.trim() ? `: "${form.productName.trim()}"` : ''}
-                    </button>
-                  </div>
-                )}
-
-                {/* Always-visible Add New Product button in search mode */}
-                {productFormMode === 'search' && (
-                  <Button
-                    variant="outline"
-                    className="w-full mt-3 border-dashed border-primary/50 text-primary hover:bg-primary/5"
-                    onClick={handleAddNewProduct}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Thêm sản phẩm mới
-                  </Button>
+                  </>
                 )}
               </div>
 
