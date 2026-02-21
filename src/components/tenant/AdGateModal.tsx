@@ -275,7 +275,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
             )}
           </div>
 
-          <div className="flex gap-1.5 mb-1.5">
+          <div className="flex flex-wrap gap-1.5 mb-1.5">
             {currentAd.link_url && (
               <button
                 type="button"
