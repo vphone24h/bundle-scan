@@ -325,48 +325,53 @@ export default function ImportNewPage() {
     setPaymentOpen(true);
   };
 
-  const handlePaymentConfirm = async (payments: PaymentSource[]) => {
+  const handlePaymentConfirm = (payments: PaymentSource[]) => {
     // Prevent double submission
     if (isSubmitting) return;
     
-    setIsSubmitting(true);
-    try {
-      await createImportReceipt.mutateAsync({
-        products: cart.map(item => ({
-          name: item.productName,
-          sku: item.sku,
-          imei: item.imei || null,
-          category_id: item.categoryId || null,
-          import_price: item.importPrice,
-          sale_price: item.salePrice || null,
-          quantity: item.quantity,
-          supplier_id: selectedSupplierId || null,
-          note: item.note || null,
-        })),
-        payments: payments.map(p => ({
-          type: p.type as 'cash' | 'bank_card' | 'e_wallet' | 'debt',
-          amount: p.amount,
-        })),
-        supplierId: selectedSupplierId || null,
-        branchId: selectedBranchId || null,
-      });
+    const cartSnapshot = [...cart];
+    const totalSnapshot = totalAmount;
 
+    // Immediately close dialog, clear cart, and navigate (optimistic UI)
+    setPaymentOpen(false);
+    setCart([]);
+    navigate('/import/history');
+    toast({
+      title: 'Đang xử lý nhập hàng...',
+      description: `${cartSnapshot.length} sản phẩm đang được lưu vào hệ thống`,
+    });
+
+    // Process in background
+    createImportReceipt.mutateAsync({
+      products: cartSnapshot.map(item => ({
+        name: item.productName,
+        sku: item.sku,
+        imei: item.imei || null,
+        category_id: item.categoryId || null,
+        import_price: item.importPrice,
+        sale_price: item.salePrice || null,
+        quantity: item.quantity,
+        supplier_id: selectedSupplierId || null,
+        note: item.note || null,
+      })),
+      payments: payments.map(p => ({
+        type: p.type as 'cash' | 'bank_card' | 'e_wallet' | 'debt',
+        amount: p.amount,
+      })),
+      supplierId: selectedSupplierId || null,
+      branchId: selectedBranchId || null,
+    }).then(() => {
       toast({
         title: 'Nhập hàng thành công!',
-        description: `Đã nhập ${cart.length} sản phẩm với tổng giá trị ${totalAmount.toLocaleString('vi-VN')} VND`,
+        description: `Đã nhập ${cartSnapshot.length} sản phẩm với tổng giá trị ${totalSnapshot.toLocaleString('vi-VN')} VND`,
       });
-      setPaymentOpen(false);
-      setCart([]);
-      navigate('/import/history');
-    } catch (error: any) {
+    }).catch((error: any) => {
       toast({
         title: 'Lỗi nhập hàng',
         description: error.message,
         variant: 'destructive',
       });
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   };
 
   const handleExportTemplate = () => {
