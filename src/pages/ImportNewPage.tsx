@@ -737,6 +737,18 @@ export default function ImportNewPage() {
                     </button>
                   </div>
                 )}
+
+                {/* Always-visible Add New Product button in search mode */}
+                {productFormMode === 'search' && (
+                  <Button
+                    variant="outline"
+                    className="w-full mt-3 border-dashed border-primary/50 text-primary hover:bg-primary/5"
+                    onClick={handleAddNewProduct}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Thêm sản phẩm mới
+                  </Button>
+                )}
               </div>
 
               {/* Naming Tips - only in form mode */}
