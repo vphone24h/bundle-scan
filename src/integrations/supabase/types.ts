@@ -5061,6 +5061,15 @@ export type Database = {
           total_points_used: number
         }[]
       }
+      lookup_tenant_by_subdomain: {
+        Args: { _subdomain: string }
+        Returns: {
+          id: string
+          name: string
+          status: string
+          subdomain: string
+        }[]
+      }
       lookup_warranty_by_imei:
         | {
             Args: { _imei: string; _tenant_id: string }
