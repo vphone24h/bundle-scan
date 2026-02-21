@@ -26,6 +26,7 @@ interface ProductEdit {
   import_price: number;
   originalPrice: number;
   displayPrice: string;
+  quantity: number;
 }
 
 export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImportReceiptDialogProps) {
@@ -43,7 +44,6 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
       setSupplierId(receipt.supplier_id ?? '_none_');
       setProductEdits(
         details.productImports.map((item: any) => ({
-          // productImports can come from different sources (products vs product_imports)
           productId: item.product_id ?? item.id ?? item.products?.id,
           name: item.products?.name || item.name || '',
           sku: item.products?.sku || item.sku || '',
@@ -52,6 +52,7 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
           import_price: Number(item.import_price),
           originalPrice: Number(item.import_price),
           displayPrice: formatNumberWithSpaces(Number(item.import_price)),
+          quantity: Number(item.quantity) || 1,
         }))
       );
     }
@@ -111,7 +112,7 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
     }
   };
 
-  const totalAmount = productEdits.reduce((sum, p) => sum + p.import_price, 0);
+  const totalAmount = productEdits.reduce((sum, p) => sum + p.import_price * p.quantity, 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -192,6 +193,34 @@ export function EditImportReceiptDialog({ receipt, open, onOpenChange }: EditImp
                       />
                     </div>
                   </div>
+                  {/* Quantity editable for non-IMEI products */}
+                  {!product.imei && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Số lượng</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={product.quantity}
+                          onChange={(e) => {
+                            const qty = Math.max(1, parseInt(e.target.value) || 1);
+                            setProductEdits(prev => {
+                              const updated = [...prev];
+                              updated[index] = { ...updated[index], quantity: qty };
+                              return updated;
+                            });
+                          }}
+                          className="text-right"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Thành tiền</Label>
+                        <div className="h-10 flex items-center justify-end px-3 bg-muted/50 rounded-md text-sm font-medium">
+                          {formatCurrencyWithSpaces(product.import_price * product.quantity)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
