@@ -231,22 +231,24 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
         };
       }
       // Try to place below target, fallback to above, fallback to bottom of screen
+      // Use larger safe top for Dynamic Island / notch devices
+      const safeTop = 100;
       const topBelow = targetRect.bottom + gap;
       const topAbove = targetRect.top - gap - popupH;
       const fitsBelow = topBelow + popupH + safeBottom <= vh;
-      const fitsAbove = topAbove >= 60;
+      const fitsAbove = topAbove >= safeTop;
       let topPos: number;
       if (fitsBelow) {
         topPos = topBelow;
       } else if (fitsAbove) {
-        topPos = Math.max(60, topAbove);
+        topPos = Math.max(safeTop, topAbove);
       } else {
         // Place at bottom with enough room, scroll target into view
         topPos = vh - popupH - safeBottom;
       }
       return {
         position: 'fixed',
-        top: Math.max(60, Math.min(topPos, vh - popupH - safeBottom)),
+        top: Math.max(safeTop, Math.min(topPos, vh - popupH - safeBottom)),
         left: 16,
         right: 16,
         zIndex: 10002,
