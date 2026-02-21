@@ -311,27 +311,49 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
       <div
         ref={popupRef}
         style={getPopupStyle()}
-        className="w-auto max-w-[340px] sm:w-[360px] bg-card border border-border rounded-xl shadow-2xl p-4 sm:p-5"
+        className="w-auto max-w-[340px] sm:w-[360px] bg-card border border-border rounded-xl shadow-2xl p-4 sm:p-5 max-h-[80vh] overflow-y-auto"
       >
-        {/* Step indicator dots */}
-        <div className="flex items-center gap-1.5 mb-3">
-          {steps.map((_, i) => (
-            <div
-              key={i}
-              className={`h-1.5 rounded-full transition-all ${
-                i === currentStep
-                  ? 'w-6 bg-primary'
-                  : i < currentStep
-                  ? 'w-1.5 bg-primary/50'
-                  : 'w-1.5 bg-muted-foreground/30'
-              }`}
-            />
-          ))}
+        {/* Step indicator - compact on mobile for many steps */}
+        <div className="flex items-center gap-1 mb-3">
+          {steps.length <= 10 ? (
+            steps.map((_, i) => (
+              <div
+                key={i}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === currentStep
+                    ? 'w-6 bg-primary'
+                    : i < currentStep
+                    ? 'w-1.5 bg-primary/50'
+                    : 'w-1.5 bg-muted-foreground/30'
+                }`}
+              />
+            ))
+          ) : (
+            <div className="flex items-center gap-1 min-w-0 overflow-hidden flex-1">
+              {/* Show surrounding dots only for many steps */}
+              {Array.from({ length: Math.min(steps.length, 7) }, (_, idx) => {
+                const startOffset = Math.max(0, Math.min(currentStep - 3, steps.length - 7));
+                const i = startOffset + idx;
+                return (
+                  <div
+                    key={i}
+                    className={`h-1.5 rounded-full transition-all flex-shrink-0 ${
+                      i === currentStep
+                        ? 'w-5 bg-primary'
+                        : i < currentStep
+                        ? 'w-1.5 bg-primary/50'
+                        : 'w-1.5 bg-muted-foreground/30'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+          )}
           <div className="flex-1" />
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+            className="h-6 w-6 flex-shrink-0 text-muted-foreground hover:text-foreground"
             onClick={handleSkip}
           >
             <X className="h-3.5 w-3.5" />
