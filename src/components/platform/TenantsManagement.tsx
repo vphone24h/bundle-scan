@@ -373,6 +373,7 @@ export function TenantsManagement() {
                   />
                 </TableHead>
                 <TableHead>Doanh nghiệp</TableHead>
+                <TableHead>Ngành nghề</TableHead>
                 <TableHead>Store ID</TableHead>
                 <TableHead>Website</TableHead>
                 <TableHead>Email</TableHead>
@@ -414,6 +415,9 @@ export function TenantsManagement() {
                     </TableCell>
                     <TableCell>
                       <p className="font-medium">{tenant.name}</p>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-muted-foreground">{(tenant as any).business_type || '-'}</span>
                     </TableCell>
                     <TableCell>
                       <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
@@ -582,6 +586,9 @@ export function TenantsManagement() {
                     </div>
                     <div>
                       <p className="font-medium">{tenant.name}</p>
+                      {(tenant as any).business_type && (
+                        <p className="text-xs text-muted-foreground">{(tenant as any).business_type}</p>
+                      )}
                       <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
                         {tenant.subdomain}
                       </code>
