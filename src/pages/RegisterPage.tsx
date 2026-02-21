@@ -23,6 +23,7 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
     phone: '',
+    businessType: '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,6 +75,7 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           phone: formData.phone,
+          businessType: formData.businessType || null,
         },
       });
 
@@ -186,6 +188,17 @@ export default function RegisterPage() {
                 value={formData.businessName}
                 onChange={handleChange}
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="businessType">Ngành nghề</Label>
+              <Input
+                id="businessType"
+                name="businessType"
+                placeholder="VD: Điện thoại, Linh kiện, Thời trang..."
+                value={formData.businessType}
+                onChange={handleChange}
               />
             </div>
 

@@ -1,0 +1,1 @@
+ALTER TABLE public.tenants ADD COLUMN business_type text DEFAULT null;
