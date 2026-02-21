@@ -99,12 +99,11 @@ export function usePublicLandingSettings(subdomain: string | null) {
     queryFn: async () => {
       if (!subdomain) return null;
 
-      // Tìm tenant theo subdomain
-      const { data: tenant, error: tenantError } = await supabase
-        .from('tenants')
-        .select('id, name, subdomain')
-        .eq('subdomain', subdomain)
-        .maybeSingle();
+      // Tìm tenant theo subdomain using secure RPC
+      const { data: tenantData, error: tenantError } = await supabase
+        .rpc('lookup_tenant_by_subdomain', { _subdomain: subdomain });
+
+      const tenant = Array.isArray(tenantData) ? tenantData[0] : tenantData;
 
       if (tenantError || !tenant) return null;
 

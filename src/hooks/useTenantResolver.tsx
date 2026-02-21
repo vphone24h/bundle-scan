@@ -54,16 +54,15 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
     if (hostInfo.subdomain) {
       try {
         const { data, error } = await supabase
-          .from('tenants')
-          .select('id, name, subdomain, status')
-          .eq('subdomain', hostInfo.subdomain)
-          .maybeSingle();
+          .rpc('lookup_tenant_by_subdomain', { _subdomain: hostInfo.subdomain });
         
-        if (error || !data || data.status === 'locked') {
+        const tenant = Array.isArray(data) ? data[0] : data;
+        
+        if (error || !tenant) {
           const result: ResolvedTenant = {
             tenantId: null,
             subdomain: hostInfo.subdomain,
-            tenantName: data?.name || null,
+            tenantName: tenant?.name || null,
             status: 'not_found',
             isMainDomain: false,
           };
@@ -73,9 +72,9 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
         }
         
         const result: ResolvedTenant = {
-          tenantId: data.id,
-          subdomain: data.subdomain,
-          tenantName: data.name,
+          tenantId: tenant.id,
+          subdomain: tenant.subdomain,
+          tenantName: tenant.name,
           status: 'resolved',
           isMainDomain: false,
         };
@@ -99,14 +98,11 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
     
     // Custom domain case - resolve via custom_domains table
     try {
-      const { data, error } = await supabase
-        .from('custom_domains')
-        .select('tenant_id, tenants(id, name, subdomain, status)')
-        .eq('domain', hostInfo.hostname)
-        .eq('is_verified', true)
-        .maybeSingle();
+      // Use resolve_tenant_by_domain RPC for custom domains
+      const { data: tenantId, error } = await supabase
+        .rpc('resolve_tenant_by_domain', { _domain: hostInfo.hostname });
       
-      if (error || !data || !data.tenants) {
+      if (error || !tenantId) {
         const result: ResolvedTenant = {
           tenantId: null,
           subdomain: null,
@@ -119,12 +115,10 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
         return result;
       }
       
-      const tenantData = data.tenants as any;
-      
       const result: ResolvedTenant = {
-        tenantId: tenantData.id,
-        subdomain: tenantData.subdomain,
-        tenantName: tenantData.name,
+        tenantId: tenantId,
+        subdomain: null,
+        tenantName: null,
         status: 'resolved',
         isMainDomain: false,
       };
