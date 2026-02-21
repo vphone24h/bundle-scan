@@ -220,7 +220,47 @@ export function useInventory() {
       const { data: products, error } = await query;
 
       if (error) throw error;
-      return processProductsToInventory(products || []);
+
+      // Lấy chi phí thực từ product_imports cho non-IMEI products (fix lỗi products.total_import_cost không cập nhật)
+      const nonImeiProductIds = (products || [])
+        .filter(p => !p.imei && p.status === 'in_stock')
+        .map(p => p.id);
+
+      let piCostMap = new Map<string, { totalCost: number; totalQty: number }>();
+      if (nonImeiProductIds.length > 0) {
+        const { data: piData } = await supabase
+          .from('product_imports')
+          .select('product_id, import_price, quantity')
+          .in('product_id', nonImeiProductIds);
+
+        if (piData && piData.length > 0) {
+          for (const pi of piData) {
+            const existing = piCostMap.get(pi.product_id);
+            const cost = (pi.quantity || 1) * (pi.import_price || 0);
+            if (existing) {
+              existing.totalCost += cost;
+              existing.totalQty += (pi.quantity || 1);
+            } else {
+              piCostMap.set(pi.product_id, { totalCost: cost, totalQty: pi.quantity || 1 });
+            }
+          }
+        }
+      }
+
+      // Override total_import_cost cho products có dữ liệu trong product_imports
+      const correctedProducts = (products || []).map(p => {
+        if (!p.imei && piCostMap.has(p.id)) {
+          const piCost = piCostMap.get(p.id)!;
+          return {
+            ...p,
+            total_import_cost: piCost.totalCost,
+            import_price: piCost.totalQty > 0 ? piCost.totalCost / piCost.totalQty : p.import_price,
+          };
+        }
+        return p;
+      });
+
+      return processProductsToInventory(correctedProducts);
     },
     staleTime: 30000,
     gcTime: 5 * 60 * 1000,
