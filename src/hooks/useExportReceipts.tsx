@@ -354,7 +354,7 @@ export function useCreateExportReceipt() {
           // Lấy thông tin sản phẩm
           const { data: product } = await supabase
             .from('products')
-            .select('imei, quantity')
+            .select('imei, quantity, import_price, total_import_cost')
             .eq('id', item.product_id)
             .single();
 
@@ -379,20 +379,25 @@ export function useCreateExportReceipt() {
               },
             ]);
           } else {
-            // SẢN PHẨM KHÔNG IMEI: Giảm số lượng theo quantity đã bán
-            const newQuantity = (product?.quantity || qty) - qty;
+            // SẢN PHẨM KHÔNG IMEI: Giảm số lượng và giá trị kho theo quantity đã bán
+            const currentQty = product?.quantity || qty;
+            const newQuantity = currentQty - qty;
+            const currentTotalCost = Number(product?.total_import_cost || 0);
+            const avgPrice = currentQty > 0 ? currentTotalCost / currentQty : Number(product?.import_price || 0);
+            const costReduction = avgPrice * qty;
+            const newTotalCost = Math.max(0, currentTotalCost - costReduction);
             
             if (newQuantity <= 0) {
               // Hết hàng -> đánh dấu sold
               await supabase
                 .from('products')
-                .update({ status: 'sold', quantity: 0 })
+                .update({ status: 'sold', quantity: 0, total_import_cost: 0 })
                 .eq('id', item.product_id);
             } else {
-              // Còn hàng -> giảm quantity
+              // Còn hàng -> giảm quantity và total_import_cost
               await supabase
                 .from('products')
-                .update({ quantity: newQuantity })
+                .update({ quantity: newQuantity, total_import_cost: newTotalCost })
                 .eq('id', item.product_id);
             }
           }
