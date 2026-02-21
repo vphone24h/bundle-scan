@@ -5,6 +5,7 @@ import { useCurrentTenant, calculateRemainingDays } from '@/hooks/useTenant';
 import { useAdGateSettings } from '@/hooks/useAdGate';
 import { useActiveAdvertisements } from '@/hooks/useAdvertisements';
 import { AdGateModal } from '@/components/tenant/AdGateModal';
+import { usePlatformUser } from '@/hooks/useTenant';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -72,6 +73,9 @@ function useAdGate() {
 
 export const MainLayout = memo(function MainLayout({ children }: MainLayoutProps) {
   const { showAdGate, closeAdGate, adGateSettings } = useAdGate();
+  const { data: tenant } = useCurrentTenant();
+  const { data: platformUser } = usePlatformUser();
+  const needsBusinessType = !!tenant && !tenant.business_type && (platformUser?.platform_role as string) !== 'platform_admin';
 
   return (
     <div className="min-h-screen bg-background safe-x">
@@ -88,7 +92,7 @@ export const MainLayout = memo(function MainLayout({ children }: MainLayoutProps
       </main>
 
       {/* Ad Gate Modal */}
-      {showAdGate && adGateSettings && (
+      {showAdGate && adGateSettings && !needsBusinessType && (
         <div data-ad-modal>
           <AdGateModal
             open={showAdGate}
