@@ -300,7 +300,7 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
               <button
                 type="button"
                 onClick={handleSkip}
-                className="flex-1 flex items-center justify-center gap-1 bg-white/20 backdrop-blur-sm border border-white/30 text-white text-[11px] font-semibold rounded-full px-2 py-1.5 hover:bg-white/30 active:scale-95 transition shadow-lg whitespace-nowrap"
+                className="shrink-0 flex items-center justify-center gap-1 bg-white/20 backdrop-blur-sm border border-white/30 text-white text-[11px] font-semibold rounded-full px-3 py-1.5 hover:bg-white/30 active:scale-95 transition shadow-lg whitespace-nowrap"
               >
                 <X className="h-3 w-3 shrink-0" />
                 Trở lại VKho
