@@ -6,6 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import { getStoreIdFromSubdomain } from '@/lib/tenantResolver';
 import { useAdGateSettings } from '@/hooks/useAdGate';
 import { useActiveAdvertisements } from '@/hooks/useAdvertisements';
+import { BusinessTypeDialog } from '@/components/tenant/BusinessTypeDialog';
 
 const CURRENT_STORE_ID_KEY = 'current_store_id';
 
@@ -83,5 +84,12 @@ export function TenantGuard({ children, allowExpired = false }: TenantGuardProps
     return <Navigate to="/subscription" replace />;
   }
 
-  return <>{children}</>;
+  const showBusinessTypePrompt = !!tenant && !tenant.business_type && (platformUser?.platform_role as string) !== 'platform_admin';
+
+  return (
+    <>
+      {showBusinessTypePrompt && <BusinessTypeDialog open tenantId={tenant!.id} />}
+      {children}
+    </>
+  );
 }
