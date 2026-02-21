@@ -29,6 +29,7 @@ interface NonIMEIDetailDialogProps {
   sku: string;
   totalStock: number;
   avgImportPrice: number;
+  branchId?: string | null;
 }
 
 export function NonIMEIDetailDialog({
@@ -39,10 +40,11 @@ export function NonIMEIDetailDialog({
   sku,
   totalStock,
   avgImportPrice,
+  branchId,
 }: NonIMEIDetailDialogProps) {
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
-  const { data: importHistory, isLoading } = useProductImportHistory(open ? productId : null);
+  const { data: importHistory, isLoading } = useProductImportHistory(open ? productId : null, branchId);
 
   // FIFO: Tính số lượng còn lại cho từng phiếu nhập
   const fifoHistory = useMemo(() => {

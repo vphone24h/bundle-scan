@@ -182,6 +182,7 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
           sku={selectedItem.sku}
           totalStock={selectedItem.stock}
           avgImportPrice={selectedItem.avgImportPrice}
+          branchId={selectedItem.branchId}
         />
       )}
     </>
