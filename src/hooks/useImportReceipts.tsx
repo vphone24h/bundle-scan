@@ -131,6 +131,7 @@ export function useImportReceiptDetails(receiptId: string | null) {
           sku: p.sku,
           imei: p.imei,
           status: p.status,
+          category_id: p.category_id,
           categories: p.categories
         }
       }));
