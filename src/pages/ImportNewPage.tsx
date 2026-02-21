@@ -133,7 +133,9 @@ export default function ImportNewPage() {
   const [newSupplierForm, setNewSupplierForm] = useState({ name: '', phone: '', address: '' });
   const [newCategoryName, setNewCategoryName] = useState('');
 
-  // Suggestions
+  // Field-level validation errors
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   const [suggestions, setSuggestions] = useState<any[]>([]);
 
   const totalAmount = useMemo(
@@ -200,14 +202,20 @@ export default function ImportNewPage() {
   const [isCheckingIMEI, setIsCheckingIMEI] = useState(false);
 
   const handleAddToCart = async () => {
-    if (!form.productName || !form.sku || !form.categoryId || !form.importPrice) {
-      toast({
-        title: 'Thiếu thông tin',
-        description: 'Vui lòng điền đầy đủ các trường bắt buộc (Tên, SKU, Danh mục, Giá nhập)',
-        variant: 'destructive',
-      });
+    const errors: Record<string, string> = {};
+    if (!form.productName.trim()) errors.productName = 'Vui lòng nhập tên sản phẩm';
+    if (!form.sku.trim()) errors.sku = 'Vui lòng nhập SKU';
+    if (!form.categoryId) errors.categoryId = 'Vui lòng chọn danh mục';
+    if (!form.importPrice) errors.importPrice = 'Vui lòng nhập giá nhập';
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      // Scroll to first error
+      const firstErrorField = document.querySelector('[data-error="true"]');
+      firstErrorField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
+    setFieldErrors({});
 
     // Check IMEI uniqueness
     if (form.imei && form.imei.trim()) {
@@ -309,13 +317,11 @@ export default function ImportNewPage() {
       return;
     }
     if (!selectedSupplierId) {
-      toast({
-        title: 'Chưa chọn nhà cung cấp',
-        description: 'Vui lòng chọn nhà cung cấp cho phiếu nhập',
-        variant: 'destructive',
-      });
+      setFieldErrors(prev => ({ ...prev, supplier: 'Vui lòng chọn nhà cung cấp' }));
+      document.querySelector('[data-error="true"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
+    setFieldErrors(prev => { const { supplier, ...rest } = prev; return rest; });
     setPaymentOpen(true);
   };
 
@@ -630,14 +636,17 @@ export default function ImportNewPage() {
                 </div>
 
                 {/* Supplier Selection */}
-                <div className="form-field">
+                <div className="form-field" data-error={!!fieldErrors.supplier || undefined}>
                   <Label>Nhà cung cấp *</Label>
                   <div className="flex gap-2">
                     <Select
                       value={selectedSupplierId}
-                      onValueChange={setSelectedSupplierId}
+                      onValueChange={(val) => {
+                        setSelectedSupplierId(val);
+                        setFieldErrors(prev => { const { supplier, ...rest } = prev; return rest; });
+                      }}
                     >
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger className={`flex-1 ${fieldErrors.supplier ? 'border-destructive ring-destructive/30 ring-2' : ''}`}>
                         <SelectValue placeholder="Chọn nhà cung cấp" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
@@ -657,6 +666,7 @@ export default function ImportNewPage() {
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  {fieldErrors.supplier && <p className="text-xs text-destructive mt-1">{fieldErrors.supplier}</p>}
                 </div>
               </div>
             </div>
@@ -672,6 +682,7 @@ export default function ImportNewPage() {
                       setProductFormMode('search');
                       setForm({ productName: '', sku: '', imei: '', categoryId: '', importPrice: '', salePrice: '', quantity: '1', note: '' });
                       setSuggestions([]);
+                      setFieldErrors({});
                     }}
                   >
                     <ArrowLeft className="mr-1.5 h-4 w-4" />
@@ -754,10 +765,16 @@ export default function ImportNewPage() {
                     <Input
                       id="productName"
                       value={form.productName}
-                      onChange={(e) => handleProductNameChange(e.target.value)}
+                      onChange={(e) => {
+                        handleProductNameChange(e.target.value);
+                        if (fieldErrors.productName) setFieldErrors(prev => { const { productName, ...rest } = prev; return rest; });
+                      }}
                       placeholder="Nhập tên sản phẩm"
                       autoComplete="off"
+                      className={fieldErrors.productName ? 'border-destructive ring-destructive/30 ring-2' : ''}
+                      data-error={!!fieldErrors.productName || undefined}
                     />
+                    {fieldErrors.productName && <p className="text-xs text-destructive mt-1">{fieldErrors.productName}</p>}
                     {/* Old-style simple suggestions in form mode */}
                     {suggestions.length > 0 && (
                       <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
@@ -788,15 +805,18 @@ export default function ImportNewPage() {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     {/* SKU */}
-                    <div className="form-field">
+                    <div className="form-field" data-error={!!fieldErrors.sku || undefined}>
                       <Label htmlFor="sku">SKU *</Label>
                       <div className="flex gap-2">
                         <Input
                           id="sku"
                           value={form.sku}
-                          onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                          onChange={(e) => {
+                            setForm({ ...form, sku: e.target.value });
+                            if (fieldErrors.sku) setFieldErrors(prev => { const { sku, ...rest } = prev; return rest; });
+                          }}
                           placeholder="Mã viết tắt tên sản phẩm"
-                          className="flex-1"
+                          className={`flex-1 ${fieldErrors.sku ? 'border-destructive ring-destructive/30 ring-2' : ''}`}
                         />
                         <Button
                           type="button"
@@ -806,6 +826,7 @@ export default function ImportNewPage() {
                           onClick={() => {
                             if (form.productName.trim()) {
                               setForm({ ...form, sku: form.productName.trim() });
+                              if (fieldErrors.sku) setFieldErrors(prev => { const { sku, ...rest } = prev; return rest; });
                             }
                           }}
                           disabled={!form.productName.trim()}
@@ -813,10 +834,14 @@ export default function ImportNewPage() {
                           <span className="text-xs font-medium">A→</span>
                         </Button>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Mã viết tắt của tên sản phẩm, để dễ nhớ và tìm kiếm.
-                        <br />Bạn copy tên sản phẩm xuống luôn cũng được (bấm nút <strong>A→</strong>)
-                      </p>
+                      {fieldErrors.sku ? (
+                        <p className="text-xs text-destructive mt-1">{fieldErrors.sku}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Mã viết tắt của tên sản phẩm, để dễ nhớ và tìm kiếm.
+                          <br />Bạn copy tên sản phẩm xuống luôn cũng được (bấm nút <strong>A→</strong>)
+                        </p>
+                      )}
                     </div>
 
                     {/* IMEI / Serial */}
@@ -835,14 +860,17 @@ export default function ImportNewPage() {
                     </div>
 
                     {/* Category */}
-                    <div className="form-field">
+                    <div className="form-field" data-error={!!fieldErrors.categoryId || undefined}>
                       <Label>Danh mục *</Label>
                       <div className="flex gap-2">
                         <Select
                           value={form.categoryId}
-                          onValueChange={(v) => setForm({ ...form, categoryId: v })}
+                          onValueChange={(v) => {
+                            setForm({ ...form, categoryId: v });
+                            if (fieldErrors.categoryId) setFieldErrors(prev => { const { categoryId, ...rest } = prev; return rest; });
+                          }}
                         >
-                          <SelectTrigger className="flex-1">
+                          <SelectTrigger className={`flex-1 ${fieldErrors.categoryId ? 'border-destructive ring-destructive/30 ring-2' : ''}`}>
                             <SelectValue placeholder="Chọn danh mục" />
                           </SelectTrigger>
                           <SelectContent className="bg-popover">
@@ -862,10 +890,11 @@ export default function ImportNewPage() {
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
+                      {fieldErrors.categoryId && <p className="text-xs text-destructive mt-1">{fieldErrors.categoryId}</p>}
                     </div>
 
                     {/* Import Price */}
-                    <div className="form-field">
+                    <div className="form-field" data-error={!!fieldErrors.importPrice || undefined}>
                       <Label htmlFor="importPrice">Giá nhập (đơn vị) *</Label>
                       <PriceInput
                         id="importPrice"
@@ -880,9 +909,12 @@ export default function ImportNewPage() {
                               : String(numVal * 2);
                           }
                           setForm({ ...form, importPrice: newImportPrice, salePrice: autoSalePrice });
+                          if (fieldErrors.importPrice) setFieldErrors(prev => { const { importPrice, ...rest } = prev; return rest; });
                         }}
                         placeholder="VD: 28 000 000"
+                        className={fieldErrors.importPrice ? 'border-destructive ring-destructive/30 ring-2' : ''}
                       />
+                      {fieldErrors.importPrice && <p className="text-xs text-destructive mt-1">{fieldErrors.importPrice}</p>}
                     </div>
 
                     {/* Sale Price */}
