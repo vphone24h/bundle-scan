@@ -397,9 +397,13 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
                 Lùi
               </Button>
             )}
-            <Button size="sm" onClick={handleNext} className="h-8 text-xs">
+            <Button 
+              size="sm" 
+              onClick={handleNext} 
+              className="h-10 px-5 text-sm font-bold animate-pulse shadow-lg shadow-primary/30 ring-2 ring-primary/20"
+            >
               {isLast ? '✓ Xong' : 'Tiếp'}
-              {!isLast && <ChevronRight className="h-3.5 w-3.5 ml-1" />}
+              {!isLast && <ChevronRight className="h-4 w-4 ml-1" />}
             </Button>
           </div>
         </div>
