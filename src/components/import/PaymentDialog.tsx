@@ -71,6 +71,7 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
     const payments: PaymentSource[] = selectedTypes
       .filter((type) => amounts[type] > 0)
       .map((type) => ({ type, amount: amounts[type] }));
+    onClose();
     onConfirm(payments);
   };
 
@@ -160,18 +161,11 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+          <Button variant="outline" onClick={onClose}>
             Huỷ
           </Button>
-          <Button onClick={handleConfirm} disabled={!isValid || isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Đang xử lý...
-              </>
-            ) : (
-              'Xác nhận thanh toán'
-            )}
+          <Button onClick={handleConfirm} disabled={!isValid}>
+            Xác nhận thanh toán
           </Button>
         </DialogFooter>
       </DialogContent>

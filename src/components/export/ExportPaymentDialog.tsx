@@ -180,6 +180,7 @@ export function ExportPaymentDialog({
       }))
       .filter((p) => p.amount > 0);
 
+    onOpenChange(false);
     onConfirm(payments, usePoints ? actualPointsUsed : 0, usePoints ? actualPointsDiscount : 0);
   };
 
@@ -354,9 +355,9 @@ export function ExportPaymentDialog({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={isLoading || remaining > 0 || totalEntered === 0}
+            disabled={remaining > 0 || totalEntered === 0}
           >
-            {isLoading ? 'Đang xử lý...' : 'Hoàn tất xuất hàng'}
+            Hoàn tất xuất hàng
           </Button>
         </DialogFooter>
       </DialogContent>
