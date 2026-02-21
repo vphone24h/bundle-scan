@@ -688,11 +688,13 @@ export default function ImportNewPage() {
                   <Input
                     id="productName"
                     value={form.productName}
-                    onChange={(e) => handleProductNameChange(e.target.value)}
-                    placeholder="Nhập tên sản phẩm để tìm hoặc thêm mới"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setForm({ ...form, productName: val });
+                    }}
+                    placeholder="Nhập tên sản phẩm"
                     className="pl-9"
                     autoComplete="off"
-                    disabled={productFormMode === 'form'}
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
