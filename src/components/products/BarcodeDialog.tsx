@@ -2313,7 +2313,7 @@ export function BarcodeDialog({ open, onClose, products, onPrinted }: BarcodeDia
         </div>
       </div>
 
-      <Tabs defaultValue="barcode" className="w-full">
+      <Tabs defaultValue="qr-phone" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="barcode" className="flex items-center gap-1.5">
             <Barcode className="h-3.5 w-3.5" />
