@@ -257,9 +257,9 @@ export function useInventoryStats() {
 }
 
 // Hook để lấy lịch sử nhập hàng của một sản phẩm
-export function useProductImportHistory(productId: string | null) {
+export function useProductImportHistory(productId: string | null, branchId?: string | null) {
   return useQuery({
-    queryKey: ['product-import-history', productId],
+    queryKey: ['product-import-history', productId, branchId],
     queryFn: async () => {
       if (!productId) return [];
 
@@ -288,7 +288,7 @@ export function useProductImportHistory(productId: string | null) {
         return data || [];
       } else {
         // Sản phẩm không IMEI - lấy từ bảng products theo name + sku, lấy TẤT CẢ phiếu nhập
-        const { data: productRecords, error } = await supabase
+        let query = supabase
           .from('products')
           .select(`
             id,
@@ -298,6 +298,7 @@ export function useProductImportHistory(productId: string | null) {
             import_receipt_id,
             supplier_id,
             status,
+            branch_id,
             import_receipts(code, import_date),
             suppliers(name)
           `)
@@ -305,6 +306,13 @@ export function useProductImportHistory(productId: string | null) {
           .eq('sku', product.sku)
           .not('import_receipt_id', 'is', null)
           .order('import_date', { ascending: false });
+
+        // Lọc theo chi nhánh nếu có
+        if (branchId) {
+          query = query.eq('branch_id', branchId);
+        }
+
+        const { data: productRecords, error } = await query;
 
         if (error) throw error;
 
