@@ -611,60 +611,95 @@ export default function ExportNewPage() {
   const handlePaymentComplete = async (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number) => {
     if (isSubmitting) return; // Chống double-submit
     setIsSubmitting(true);
+
+    // Prepare optimistic receipt data for invoice display immediately
+    const optimisticCustomer = {
+      id: selectedCustomer?.id || '',
+      name: customerName,
+      phone: customerPhone,
+      address: customerAddress || null,
+      email: customerEmail || null,
+    };
+
+    const optimisticReceipt = {
+      code: `EX-${Date.now()}`,
+      customer: optimisticCustomer,
+      items: [...cart],
+      payments,
+      subtotal_amount: subtotalAmount,
+      tax_rate: taxEnabled ? effectiveTaxRate : 0,
+      tax_amount: taxEnabled ? taxAmount : 0,
+      total_amount: totalAmount,
+      points_redeemed: pointsRedeemed,
+      points_discount: pointsDiscount,
+      sale_date: new Date().toISOString(),
+    };
+
+    // Show invoice dialog IMMEDIATELY
+    setCreatedReceipt(optimisticReceipt);
+    setShowInvoiceDialog(true);
+
+    // Reset form immediately
+    const savedCart = [...cart];
+    const savedCustomerName = customerName;
+    const savedCustomerPhone = customerPhone;
+    const savedCustomerAddress = customerAddress;
+    const savedCustomerEmail = customerEmail;
+    const savedCustomerSource = customerSource;
+    const savedCustomerBirthday = customerBirthday;
+    const savedTaxEnabled = taxEnabled;
+    const savedEffectiveTaxRate = effectiveTaxRate;
+    const savedTaxAmount = taxAmount;
+    const savedSubtotalAmount = subtotalAmount;
+
+    setCart([]);
+    setCustomerName('');
+    setCustomerPhone('');
+    setCustomerAddress('');
+    setCustomerEmail('');
+    setCustomerSource('');
+    setCustomerBirthday(undefined);
+    setSelectedCustomer(null);
+    setTaxEnabled(false);
+    setTaxRate(null);
+    setCustomTaxRate('');
+
+    // Process in background
     try {
-      // Create or update customer
       const customer = await upsertCustomer.mutateAsync({
-        name: customerName,
-        phone: customerPhone,
-        address: customerAddress || null,
-        email: customerEmail || null,
-        birthday: customerBirthday ? format(customerBirthday, 'yyyy-MM-dd') : null,
-        source: customerSource || null,
+        name: savedCustomerName,
+        phone: savedCustomerPhone,
+        address: savedCustomerAddress || null,
+        email: savedCustomerEmail || null,
+        birthday: savedCustomerBirthday ? format(savedCustomerBirthday, 'yyyy-MM-dd') : null,
+        source: savedCustomerSource || null,
       });
 
-      // Get branch_id from first cart item
-      const branchId = cart.find(item => item.branch_id)?.branch_id || null;
+      const branchId = savedCart.find(item => item.branch_id)?.branch_id || null;
 
-      // Create export receipt with points, branch and VAT
       const receipt = await createReceipt.mutateAsync({
         customerId: customer.id,
-        items: cart.map(({ tempId, categoryName, branchName, ...item }) => item),
+        items: savedCart.map(({ tempId, categoryName, branchName, ...item }) => item),
         payments,
         pointsRedeemed,
         pointsDiscount,
         branchId,
-        vatRate: effectiveTaxRate,
-        vatAmount: taxAmount,
+        vatRate: savedEffectiveTaxRate,
+        vatAmount: savedTaxAmount,
       });
 
-      setCreatedReceipt({
+      // Update receipt with real data (code from server)
+      setCreatedReceipt(prev => ({
+        ...prev,
         ...receipt,
         customer,
-        items: cart,
+        items: savedCart,
         payments,
-        // Tax info for invoice
-        subtotal_amount: subtotalAmount,
-        tax_rate: taxEnabled ? effectiveTaxRate : 0,
-        tax_amount: taxEnabled ? taxAmount : 0,
-      });
-      
-      setShowPaymentDialog(false);
-      setShowInvoiceDialog(true);
+        subtotal_amount: savedSubtotalAmount,
+        tax_rate: savedTaxEnabled ? savedEffectiveTaxRate : 0,
+        tax_amount: savedTaxEnabled ? savedTaxAmount : 0,
+      }));
 
-      // Reset form
-      setCart([]);
-      setCustomerName('');
-      setCustomerPhone('');
-      setCustomerAddress('');
-      setCustomerEmail('');
-      setCustomerSource('');
-      setCustomerBirthday(undefined);
-      setSelectedCustomer(null);
-      setTaxEnabled(false);
-      setTaxRate(null);
-      setCustomTaxRate('');
-
-      // Build success message with points info
       let successMessage = `Phiếu xuất ${receipt.code} đã được tạo`;
       if (receipt.points_earned > 0) {
         successMessage += receipt.points_pending 
