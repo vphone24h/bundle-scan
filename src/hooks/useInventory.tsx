@@ -287,7 +287,7 @@ export function useProductImportHistory(productId: string | null) {
         if (error) throw error;
         return data || [];
       } else {
-        // Sản phẩm không IMEI - lấy từ bảng products theo name + sku, chỉ lấy status = 'in_stock'
+        // Sản phẩm không IMEI - lấy từ bảng products theo name + sku, lấy TẤT CẢ phiếu nhập
         const { data: productRecords, error } = await supabase
           .from('products')
           .select(`
@@ -303,7 +303,6 @@ export function useProductImportHistory(productId: string | null) {
           `)
           .eq('name', product.name)
           .eq('sku', product.sku)
-          .eq('status', 'in_stock')
           .not('import_receipt_id', 'is', null)
           .order('import_date', { ascending: false });
 

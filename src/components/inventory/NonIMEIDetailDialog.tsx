@@ -77,39 +77,57 @@ export function NonIMEIDetailDialog({
                   {canViewImportPrice && <TableHead className="text-right">Giá nhập</TableHead>}
                   <TableHead className="text-center">Số lượng</TableHead>
                   {canViewImportPrice && <TableHead className="text-right">Thành tiền</TableHead>}
+                  <TableHead>Trạng thái</TableHead>
                   <TableHead>Nhà cung cấp</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {importHistory.map((item, index) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="text-muted-foreground">
-                      {index + 1}
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(item.import_date), 'dd/MM/yyyy', {
-                        locale: vi,
-                      })}
-                    </TableCell>
-                    <TableCell className="font-mono text-primary">
-                      {item.import_receipts?.code || '-'}
-                    </TableCell>
-                    {canViewImportPrice && (
-                      <TableCell className="text-right font-medium">
-                        {formatCurrencyWithSpaces(item.import_price)}
+                {importHistory.map((item, index) => {
+                  const status = (item as any).status || 'in_stock';
+                  const statusLabel = status === 'in_stock' ? 'Tồn kho' 
+                    : status === 'sold' ? 'Đã bán' 
+                    : status === 'warranty' ? 'Bảo hành'
+                    : status === 'returned' ? 'Đã trả'
+                    : status === 'deleted' ? 'Đã xóa'
+                    : status;
+                  const statusVariant = status === 'in_stock' ? 'default' 
+                    : status === 'sold' ? 'secondary' 
+                    : 'outline';
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell className="text-muted-foreground">
+                        {index + 1}
                       </TableCell>
-                    )}
-                    <TableCell className="text-center">
-                      <Badge variant="outline">{item.quantity}</Badge>
-                    </TableCell>
-                    {canViewImportPrice && (
-                      <TableCell className="text-right">
-                        {formatCurrencyWithSpaces(item.import_price * item.quantity)}
+                      <TableCell>
+                        {format(new Date(item.import_date), 'dd/MM/yyyy', {
+                          locale: vi,
+                        })}
                       </TableCell>
-                    )}
-                    <TableCell>{item.suppliers?.name || '-'}</TableCell>
-                  </TableRow>
-                ))}
+                      <TableCell className="font-mono text-primary">
+                        {item.import_receipts?.code || '-'}
+                      </TableCell>
+                      {canViewImportPrice && (
+                        <TableCell className="text-right font-medium">
+                          {formatCurrencyWithSpaces(item.import_price)}
+                        </TableCell>
+                      )}
+                      <TableCell className="text-center">
+                        <Badge variant="outline">{item.quantity}</Badge>
+                      </TableCell>
+                      {canViewImportPrice && (
+                        <TableCell className="text-right">
+                          {formatCurrencyWithSpaces(item.import_price * item.quantity)}
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        <Badge variant={statusVariant as any} className="text-xs">
+                          {statusLabel}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{item.suppliers?.name || '-'}</TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
