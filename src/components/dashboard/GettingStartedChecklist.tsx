@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Check, ChevronDown, ChevronUp, Rocket, X, Package, Users, ShoppingCart, FileDown, FolderTree, Globe } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Rocket, X, Package, Users, ShoppingCart, FileDown, FolderTree, Globe, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,14 @@ interface ChecklistStep {
 }
 
 const STEPS: ChecklistStep[] = [
+  {
+    key: 'branch',
+    label: 'Thiết lập chi nhánh',
+    description: 'Tạo chi nhánh/cửa hàng để quản lý kho theo từng địa điểm',
+    icon: <Building2 className="h-4 w-4" />,
+    link: '/branches',
+    linkLabel: 'Thiết lập',
+  },
   {
     key: 'import',
     label: 'Tạo phiếu nhập hàng đầu tiên',
