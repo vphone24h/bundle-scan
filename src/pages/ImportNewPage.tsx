@@ -167,7 +167,7 @@ export default function ImportNewPage() {
 
   const handleProductNameChange = (value: string) => {
     setForm({ ...form, productName: value });
-    if (value.length >= 3 && groupedProducts.length > 0) {
+    if (value.length >= 2 && groupedProducts.length > 0) {
       const lowerVal = value.toLowerCase();
       const matches = groupedProducts.filter((p) =>
         p.name.toLowerCase().includes(lowerVal) || p.sku.toLowerCase().includes(lowerVal)
@@ -700,7 +700,7 @@ export default function ImportNewPage() {
                 </p>
 
                 {/* Search Results Dropdown */}
-                {productFormMode === 'search' && form.productName.length >= 3 && (
+                {productFormMode === 'search' && form.productName.length >= 2 && (
                   <div className="mt-2 bg-popover border rounded-lg shadow-lg overflow-hidden">
                     {suggestions.length > 0 && (
                       <div className="max-h-64 overflow-y-auto divide-y divide-border">
