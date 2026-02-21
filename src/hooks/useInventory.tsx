@@ -248,13 +248,16 @@ export function useInventory() {
       }
 
       // Override total_import_cost cho products có dữ liệu trong product_imports
+      // Tính giá trị kho = số lượng hiện tại × giá nhập trung bình (từ product_imports)
       const correctedProducts = (products || []).map(p => {
         if (!p.imei && piCostMap.has(p.id)) {
           const piCost = piCostMap.get(p.id)!;
+          const avgPrice = piCost.totalQty > 0 ? piCost.totalCost / piCost.totalQty : Number(p.import_price);
+          const currentQty = p.quantity || 0;
           return {
             ...p,
-            total_import_cost: piCost.totalCost,
-            import_price: piCost.totalQty > 0 ? piCost.totalCost / piCost.totalQty : p.import_price,
+            total_import_cost: currentQty * avgPrice,
+            import_price: avgPrice,
           };
         }
         return p;
