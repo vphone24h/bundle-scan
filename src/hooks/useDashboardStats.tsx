@@ -43,7 +43,7 @@ export function useDashboardStats() {
       // Get products stats - lấy thêm total_import_cost, name, sku, branch_id để tính đúng như Tồn kho
       let productsQuery = supabase
         .from('products')
-        .select('status, import_price, quantity, imei, total_import_cost, name, sku, branch_id');
+        .select('id, status, import_price, quantity, imei, total_import_cost, name, sku, branch_id');
 
       // Apply branch filter for non-Super Admin users
       if (shouldFilter && branchId) {
@@ -209,11 +209,48 @@ export function useDashboardStats() {
 
       if (receiptsError) throw receiptsError;
 
+      // Lấy chi phí thực từ product_imports cho non-IMEI (đồng bộ với useInventory)
+      const nonImeiProductIds = (products || [])
+        .filter(p => !p.imei && p.status === 'in_stock')
+        .map(p => p.id);
+
+      let piCostMap = new Map<string, { totalCost: number; totalQty: number }>();
+      if (nonImeiProductIds.length > 0) {
+        const { data: piData } = await supabase
+          .from('product_imports')
+          .select('product_id, import_price, quantity')
+          .in('product_id', nonImeiProductIds);
+
+        if (piData && piData.length > 0) {
+          for (const pi of piData) {
+            const existing = piCostMap.get(pi.product_id);
+            const cost = (pi.quantity || 1) * (pi.import_price || 0);
+            if (existing) {
+              existing.totalCost += cost;
+              existing.totalQty += (pi.quantity || 1);
+            } else {
+              piCostMap.set(pi.product_id, { totalCost: cost, totalQty: pi.quantity || 1 });
+            }
+          }
+        }
+      }
+
+      // Override total_import_cost = currentQty × avgPrice (đồng bộ useInventory)
+      const correctedProducts = (products || []).map(p => {
+        if (!p.imei && piCostMap.has(p.id)) {
+          const piCost = piCostMap.get(p.id)!;
+          const avgPrice = piCost.totalQty > 0 ? piCost.totalCost / piCost.totalQty : Number(p.import_price);
+          const currentQty = p.quantity || 0;
+          return { ...p, total_import_cost: currentQty * avgPrice, import_price: avgPrice };
+        }
+        return p;
+      });
+
       // Tính giá trị kho ĐÚNG như logic ở useInventory
       const inventoryMap = new Map<string, { stock: number; totalImportCost: number }>();
       const processedImeis = new Map<string, string>();
 
-      for (const product of (products || [])) {
+      for (const product of correctedProducts) {
         if (product.imei) {
           const existingStatus = processedImeis.get(product.imei);
           
