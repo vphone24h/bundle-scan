@@ -5,7 +5,9 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { useDashboardStats, useTodaySoldProducts, useRecentProducts, useRecentImportReceipts } from '@/hooks/useDashboardStats';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
-import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator, PlayCircle } from 'lucide-react';
+import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator, PlayCircle, Crown } from 'lucide-react';
+import { usePlatformUser } from '@/hooks/useTenant';
+import { Navigate } from 'react-router-dom';
 import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { Button } from '@/components/ui/button';
@@ -135,6 +137,8 @@ const Index = () => {
   const { mutate: resetAllTours } = useResetAllTours();
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
   const { data: permissions } = usePermissions();
+  const { data: platformUser } = usePlatformUser();
+  const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
   const { data: recentProductsData } = useRecentProducts(5);
   const { data: recentReceiptsData } = useRecentImportReceipts(3);
@@ -145,6 +149,11 @@ const Index = () => {
   const recentReceipts = recentReceiptsData || [];
 
   const showDashTour = manualTourActive || (!dashTourLoading && !dashTourDone);
+
+  // Platform Admin: redirect to platform admin page
+  if (isPlatformAdmin) {
+    return <Navigate to="/platform-admin" replace />;
+  }
 
   return (
     <MainLayout>
