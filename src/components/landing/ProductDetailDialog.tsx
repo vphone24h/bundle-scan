@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
+import DOMPurify from 'dompurify';
 import { LandingProduct, LandingProductVariant } from '@/hooks/useLandingProducts';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { toast } from 'sonner';
@@ -206,7 +207,7 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
 
           {/* Description */}
           {product.description && (
-            <div className="text-sm text-muted-foreground prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: product.description }} />
+            <div className="text-sm text-muted-foreground prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.description) }} />
           )}
 
           {/* Variants */}

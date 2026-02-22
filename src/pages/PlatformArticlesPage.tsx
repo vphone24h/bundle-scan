@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, ArrowLeft, FolderOpen } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import {
   usePublishedPlatformArticles,
   usePlatformArticleCategories,
@@ -113,7 +114,7 @@ export default function PlatformArticlesPage() {
           {selectedArticle?.content && (
             <div
               className="prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: selectedArticle.content }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedArticle.content) }}
             />
           )}
         </DialogContent>
