@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { Badge } from '@/components/ui/badge';
 import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
@@ -280,16 +280,16 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
 
               <div>
                 <Label className="text-xs">Chi nhánh nhận hàng <span className="text-destructive">*</span></Label>
-                <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Chọn chi nhánh" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[9999]">
-                    {branches.map(b => (
-                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={selectedBranch}
+                  onChange={e => setSelectedBranch(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">Chọn chi nhánh</option>
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
