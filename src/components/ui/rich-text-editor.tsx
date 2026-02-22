@@ -1,4 +1,5 @@
 import React, { useRef, useCallback, useState } from 'react';
+import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -116,11 +117,11 @@ export function RichTextEditor({
   }, [onChange]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
-    // Allow pasting HTML content
     const html = e.clipboardData.getData('text/html');
     if (html) {
       e.preventDefault();
-      document.execCommand('insertHTML', false, html);
+      const sanitizedHtml = DOMPurify.sanitize(html);
+      document.execCommand('insertHTML', false, sanitizedHtml);
       if (editorRef.current) {
         onChange(editorRef.current.innerHTML);
       }
@@ -129,8 +130,17 @@ export function RichTextEditor({
 
   const insertLink = useCallback(() => {
     if (linkUrl) {
+      const sanitizedUrl = linkUrl.trim();
+      try {
+        const url = new URL(sanitizedUrl);
+        if (!['http:', 'https:', 'mailto:'].includes(url.protocol)) {
+          return;
+        }
+      } catch {
+        return;
+      }
       restoreSelection();
-      execCommand('createLink', linkUrl);
+      execCommand('createLink', sanitizedUrl);
       const selection = window.getSelection();
       if (selection && selection.anchorNode) {
         const link = (selection.anchorNode as HTMLElement).closest?.('a') ||
@@ -148,7 +158,20 @@ export function RichTextEditor({
 
   const insertImage = useCallback(() => {
     if (imageUrl) {
-      execCommand('insertHTML', `<img src="${imageUrl}" alt="image" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;" />`);
+      const sanitizedUrl = imageUrl.trim();
+      try {
+        const url = new URL(sanitizedUrl);
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          return;
+        }
+      } catch {
+        return;
+      }
+      const img = document.createElement('img');
+      img.src = sanitizedUrl;
+      img.alt = 'image';
+      img.style.cssText = 'max-width:100%;height:auto;border-radius:8px;margin:8px 0;';
+      execCommand('insertHTML', DOMPurify.sanitize(img.outerHTML));
       setImageUrl('');
       setImageOpen(false);
     }

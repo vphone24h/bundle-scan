@@ -8,13 +8,9 @@ export function useVapidPublicKey() {
   return useQuery({
     queryKey: ['vapid-public-key'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('push_vapid_keys')
-        .select('public_key')
-        .limit(1)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc('get_vapid_public_key');
       if (error) throw error;
-      return data?.public_key || null;
+      return (data as string) || null;
     },
   });
 }
