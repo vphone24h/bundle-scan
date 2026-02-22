@@ -128,13 +128,9 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
 
       if (error) return null;
 
-      // Luôn lấy danh sách chi nhánh (dùng cho form đặt hàng + hiển thị)
+      // Luôn lấy danh sách chi nhánh qua RPC (cho phép anonymous truy cập)
       const { data: branchesData } = await supabase
-        .from('branches')
-        .select('id, name, address, phone')
-        .eq('tenant_id', tenantInfo.id)
-        .order('is_default', { ascending: false })
-        .order('name', { ascending: true });
+        .rpc('get_tenant_branches', { _tenant_id: tenantInfo.id });
       
       const branches: BranchInfo[] = (branchesData || []) as BranchInfo[];
       const settings = data as unknown as TenantLandingSettings | null;
