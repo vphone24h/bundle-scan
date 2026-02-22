@@ -2982,7 +2982,10 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          assigned_staff_id: string | null
+          assigned_staff_name: string | null
           branch_id: string
+          call_status: string
           cancelled_reason: string | null
           created_at: string
           customer_address: string | null
@@ -3004,7 +3007,10 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          assigned_staff_id?: string | null
+          assigned_staff_name?: string | null
           branch_id: string
+          call_status?: string
           cancelled_reason?: string | null
           created_at?: string
           customer_address?: string | null
@@ -3026,7 +3032,10 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          assigned_staff_id?: string | null
+          assigned_staff_name?: string | null
           branch_id?: string
+          call_status?: string
           cancelled_reason?: string | null
           created_at?: string
           customer_address?: string | null
