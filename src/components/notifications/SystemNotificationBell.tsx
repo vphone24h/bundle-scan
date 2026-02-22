@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, CheckCheck, Pin, ExternalLink, Info, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,10 +17,45 @@ import {
   type SystemNotification,
 } from '@/hooks/useSystemNotifications';
 import { NotificationDetailDialog } from './NotificationDetailDialog';
-import { PushNotificationToggle } from './PushNotificationToggle';
+import {
+  useVapidPublicKey,
+  usePushSubscriptionStatus,
+  useSubscribePush,
+  useGenerateVapidKeys,
+} from '@/hooks/usePushNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+
+function AutoPushSubscriber() {
+  const { data: vapidKey } = useVapidPublicKey();
+  const { data: isSubscribed } = usePushSubscriptionStatus();
+  const subscribePush = useSubscribePush();
+  const generateKeys = useGenerateVapidKeys();
+  const [attempted, setAttempted] = useState(false);
+
+  useEffect(() => {
+    if (attempted || isSubscribed || subscribePush.isPending || generateKeys.isPending) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    const autoSubscribe = async () => {
+      setAttempted(true);
+      try {
+        if (!vapidKey) {
+          const result = await generateKeys.mutateAsync();
+          if (result?.public_key) {
+            subscribePush.mutate(result.public_key);
+          }
+        } else {
+          subscribePush.mutate(vapidKey);
+        }
+      } catch {}
+    };
+    autoSubscribe();
+  }, [vapidKey, isSubscribed, attempted]);
+
+  return null;
+}
 
 export function SystemNotificationBell() {
   const [open, setOpen] = useState(false);
@@ -135,9 +170,7 @@ export function SystemNotificationBell() {
             </div>
           </div>
           
-          <div className="px-3 py-2 border-b">
-            <PushNotificationToggle className="w-full" />
-          </div>
+          <AutoPushSubscriber />
 
           <Tabs defaultValue="pinned" className="w-full">
             <TabsList className="w-full rounded-none border-b h-9">
