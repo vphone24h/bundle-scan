@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
       for (const user of users) {
         // Check if already executed (for recurring triggers like low_stock, check today only)
-        const isRecurring = ['low_stock', 'trial_expiring'].includes(auto.trigger_type);
+        const isRecurring = ['low_stock', 'trial_expiring', 'inactive_1d', 'inactive_3d', 'inactive_7d'].includes(auto.trigger_type);
         let execQuery = supabase
           .from('automation_execution_logs')
           .select('id')
