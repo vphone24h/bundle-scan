@@ -284,7 +284,7 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
                   <SelectTrigger className="h-10">
                     <SelectValue placeholder="Chọn chi nhánh" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[9999]">
                     {branches.map(b => (
                       <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                     ))}
