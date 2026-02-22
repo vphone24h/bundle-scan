@@ -17,6 +17,8 @@ import {
 } from '@/hooks/usePushNotifications';
 import { useAuth } from '@/hooks/useAuth';
 
+const PUSH_ENABLED_KEY = 'push_notification_enabled';
+
 export function PushPermissionPopup() {
   const { user } = useAuth();
   const { data: vapidKey, isLoading: vapidLoading } = useVapidPublicKey();
@@ -32,19 +34,26 @@ export function PushPermissionPopup() {
     }
   }, []);
 
-  // Also check if browser already granted permission
-  const browserGranted = supported && 'Notification' in window && Notification.permission === 'granted';
+  const alreadyEnabled =
+    localStorage.getItem(PUSH_ENABLED_KEY) === 'true' ||
+    (supported && 'Notification' in window && Notification.permission === 'granted');
 
   useEffect(() => {
-    // Show popup after a delay if user is logged in, push is supported, and not yet subscribed
     if (!user || !supported || statusLoading || vapidLoading) return;
-    if (isSubscribed || browserGranted) return;
+    if (isSubscribed || alreadyEnabled) return;
 
     const timer = setTimeout(() => setOpen(true), 2000);
     return () => clearTimeout(timer);
-  }, [user, supported, isSubscribed, statusLoading, vapidLoading, browserGranted]);
+  }, [user, supported, isSubscribed, statusLoading, vapidLoading, alreadyEnabled]);
 
-  if (!supported || !user || isSubscribed || browserGranted) return null;
+  // Sync: if DB says subscribed, persist flag
+  useEffect(() => {
+    if (isSubscribed) {
+      localStorage.setItem(PUSH_ENABLED_KEY, 'true');
+    }
+  }, [isSubscribed]);
+
+  if (!supported || !user || isSubscribed || alreadyEnabled) return null;
 
   const isLoading = subscribePush.isPending || generateKeys.isPending;
 
@@ -58,15 +67,18 @@ export function PushPermissionPopup() {
       } else {
         await subscribePush.mutateAsync(vapidKey);
       }
+      localStorage.setItem(PUSH_ENABLED_KEY, 'true');
     } catch {
-      // Permission denied or error - close popup, will ask again next session
+      // Permission denied - still mark so we don't keep asking
+      if ('Notification' in window && Notification.permission === 'denied') {
+        localStorage.setItem(PUSH_ENABLED_KEY, 'true');
+      }
     }
     setOpen(false);
   };
 
   const handleLater = () => {
     setOpen(false);
-    // Don't persist - will ask again next time they open the app
   };
 
   return (
