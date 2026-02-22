@@ -38,6 +38,10 @@ const TRIGGER_LABELS: Record<string, string> = {
   inactive_7d: 'Chưa dùng sau 7 ngày',
   trial_expiring: 'Sắp hết dùng thử',
   low_stock: 'Cảnh báo tồn kho thấp',
+  no_import: 'Chưa nhập hàng',
+  no_export: 'Chưa xuất hàng',
+  no_subscription: 'Chưa mua gói',
+  all_accounts: 'Tất cả tài khoản',
 };
 
 const CHANNEL_LABELS: Record<string, { label: string; icon: typeof Bell }> = {

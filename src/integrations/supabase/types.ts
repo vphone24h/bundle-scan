@@ -4741,6 +4741,7 @@ export type Database = {
           message: string
           notification_type: string
           scheduled_at: string | null
+          send_frequency: string
           show_as_startup_popup: boolean
           target_audience: string
           target_tenant_ids: string[] | null
@@ -4758,6 +4759,7 @@ export type Database = {
           message: string
           notification_type?: string
           scheduled_at?: string | null
+          send_frequency?: string
           show_as_startup_popup?: boolean
           target_audience?: string
           target_tenant_ids?: string[] | null
@@ -4775,6 +4777,7 @@ export type Database = {
           message?: string
           notification_type?: string
           scheduled_at?: string | null
+          send_frequency?: string
           show_as_startup_popup?: boolean
           target_audience?: string
           target_tenant_ids?: string[] | null
