@@ -15,13 +15,20 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   useNotificationAutomations,
   useUpdateAutomation,
   useCreateAutomation,
   useDeleteAutomation,
   type NotificationAutomation,
 } from '@/hooks/useNotificationAutomations';
-import { Plus, Pencil, Trash2, Zap, Clock, Bell, Mail, MonitorSmartphone } from 'lucide-react';
+import { Plus, Pencil, Trash2, Zap, Clock, Bell, Mail, MonitorSmartphone, Repeat, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const TRIGGER_LABELS: Record<string, string> = {
@@ -37,6 +44,21 @@ const CHANNEL_LABELS: Record<string, { label: string; icon: typeof Bell }> = {
   bell: { label: 'Chuông', icon: Bell },
   popup: { label: 'Popup', icon: MonitorSmartphone },
   email: { label: 'Email', icon: Mail },
+};
+
+const FREQUENCY_LABELS: Record<string, string> = {
+  once: '1 lần duy nhất',
+  daily: 'Mỗi ngày',
+  weekly: 'Mỗi tuần',
+  monthly: 'Mỗi tháng',
+};
+
+const AUDIENCE_LABELS: Record<string, string> = {
+  all: 'Tất cả tài khoản',
+  active: 'Đang hoạt động',
+  trial: 'Dùng thử',
+  free: 'Miễn phí (hết hạn)',
+  paid: 'Đã mua gói',
 };
 
 export function AutomationNotificationsManagement() {
@@ -55,6 +77,8 @@ export function AutomationNotificationsManagement() {
   const [triggerType, setTriggerType] = useState('new_signup');
   const [delayMinutes, setDelayMinutes] = useState(0);
   const [channels, setChannels] = useState<string[]>(['bell']);
+  const [sendFrequency, setSendFrequency] = useState('daily');
+  const [targetAudience, setTargetAudience] = useState('all');
 
   const resetForm = () => {
     setTitle('');
@@ -64,6 +88,8 @@ export function AutomationNotificationsManagement() {
     setTriggerType('new_signup');
     setDelayMinutes(0);
     setChannels(['bell']);
+    setSendFrequency('daily');
+    setTargetAudience('all');
     setEditing(null);
   };
 
@@ -76,6 +102,8 @@ export function AutomationNotificationsManagement() {
     setTriggerType(a.trigger_type);
     setDelayMinutes(a.delay_minutes);
     setChannels(a.channels || ['bell']);
+    setSendFrequency(a.send_frequency || 'daily');
+    setTargetAudience(a.target_audience || 'all');
     setDialogOpen(true);
   };
 
@@ -104,6 +132,8 @@ export function AutomationNotificationsManagement() {
       trigger_type: triggerType,
       delay_minutes: delayMinutes,
       channels,
+      send_frequency: sendFrequency,
+      target_audience: targetAudience,
     };
 
     try {
@@ -183,12 +213,18 @@ export function AutomationNotificationsManagement() {
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{a.message}</p>
-                    <div className="flex items-center gap-3 mt-1.5">
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                       {a.delay_minutes > 0 && (
                         <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                           <Clock className="h-3 w-3" /> Sau {formatDelay(a.delay_minutes)}
                         </span>
                       )}
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5">
+                        <Repeat className="h-3 w-3" /> {FREQUENCY_LABELS[a.send_frequency] || a.send_frequency}
+                      </Badge>
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5">
+                        <Users className="h-3 w-3" /> {AUDIENCE_LABELS[a.target_audience] || a.target_audience}
+                      </Badge>
                       <div className="flex gap-1">
                         {(a.channels || []).map(ch => {
                           const info = CHANNEL_LABELS[ch];
@@ -227,24 +263,28 @@ export function AutomationNotificationsManagement() {
           <div className="space-y-4">
             <div>
               <Label>Trigger</Label>
-              <select
-                className="w-full border rounded-md px-3 py-2 text-sm bg-background"
-                value={triggerType}
-                onChange={e => setTriggerType(e.target.value)}
-              >
-                {Object.entries(TRIGGER_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
+              <Select value={triggerType} onValueChange={setTriggerType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(TRIGGER_LABELS).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
             <div>
               <Label>Tiêu đề *</Label>
               <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Tiêu đề thông báo" />
             </div>
+
             <div>
               <Label>Nội dung *</Label>
               <Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Nội dung thông báo" rows={3} />
             </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Nút bấm</Label>
@@ -255,11 +295,46 @@ export function AutomationNotificationsManagement() {
                 <Input value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="/import/new" />
               </div>
             </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="flex items-center gap-1.5">
+                  <Repeat className="h-3.5 w-3.5" /> Tần suất gửi
+                </Label>
+                <Select value={sendFrequency} onValueChange={setSendFrequency}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(FREQUENCY_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5" /> Đối tượng
+                </Label>
+                <Select value={targetAudience} onValueChange={setTargetAudience}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(AUDIENCE_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div>
               <Label>Độ trễ (phút)</Label>
               <Input type="number" value={delayMinutes} onChange={e => setDelayMinutes(Number(e.target.value))} min={0} />
               <p className="text-[10px] text-muted-foreground mt-1">0 = gửi ngay khi điều kiện thỏa</p>
             </div>
+
             <div>
               <Label>Kênh gửi</Label>
               <div className="flex gap-4 mt-2">

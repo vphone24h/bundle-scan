@@ -12,6 +12,8 @@ export interface NotificationAutomation {
   delay_minutes: number;
   is_enabled: boolean;
   channels: string[];
+  send_frequency: string;
+  target_audience: string;
   display_order: number;
   created_at: string;
   updated_at: string;
