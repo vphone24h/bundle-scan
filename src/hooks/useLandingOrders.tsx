@@ -42,13 +42,11 @@ export function usePlaceLandingOrder() {
       customer_address?: string;
       note?: string;
     }) => {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('landing_orders' as any)
-        .insert([order])
-        .select()
-        .single();
+        .insert([order]);
       if (error) throw error;
-      return data;
+      return order;
     },
   });
 }
