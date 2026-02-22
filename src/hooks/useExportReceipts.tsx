@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
+import { sendBusinessPush, formatVND } from '@/lib/pushNotify';
 
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
@@ -533,6 +534,17 @@ export function useCreateExportReceipt() {
         },
         description: `Tạo phiếu xuất ${code} - ${items.length} sản phẩm - Tổng: ${totalAmount.toLocaleString('vi-VN')}đ`,
       }]);
+
+      // Send push notification to other staff (fire-and-forget)
+      const itemNames = items.slice(0, 3).map(i => i.product_name).join(', ');
+      const moreText = items.length > 3 ? ` và ${items.length - 3} SP khác` : '';
+      sendBusinessPush({
+        title: `🛒 Xuất hàng: ${code}`,
+        message: `${itemNames}${moreText} - Tổng: ${formatVND(totalAmount)}`,
+        url: '/export-history',
+        tenantId,
+        excludeUserId: user?.id,
+      });
 
       return { ...receipt, points_earned: pointsToEarn, points_pending: pointsArePending };
     },
