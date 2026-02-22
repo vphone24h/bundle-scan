@@ -3225,6 +3225,8 @@ export type Database = {
           is_enabled: boolean
           link_url: string | null
           message: string
+          send_frequency: string
+          target_audience: string
           title: string
           trigger_type: string
           updated_at: string
@@ -3240,6 +3242,8 @@ export type Database = {
           is_enabled?: boolean
           link_url?: string | null
           message: string
+          send_frequency?: string
+          target_audience?: string
           title: string
           trigger_type: string
           updated_at?: string
@@ -3255,6 +3259,8 @@ export type Database = {
           is_enabled?: boolean
           link_url?: string | null
           message?: string
+          send_frequency?: string
+          target_audience?: string
           title?: string
           trigger_type?: string
           updated_at?: string
