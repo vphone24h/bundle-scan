@@ -30,7 +30,6 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Pencil, Trash2, Pin, Eye, EyeOff, Megaphone, Repeat, Users } from 'lucide-react';
 import { APP_ROUTES } from '@/lib/appRoutes';
-import { ManualNotificationHistoryTable } from './NotificationSendHistory';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
@@ -253,8 +252,6 @@ export function SystemNotificationsManagement() {
         </div>
       )}
 
-      {/* Send History */}
-      <ManualNotificationHistoryTable />
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(v) => { if (!v) { setDialogOpen(false); resetForm(); } }}>

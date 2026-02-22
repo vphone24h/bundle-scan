@@ -31,7 +31,7 @@ import {
 import { Plus, Pencil, Trash2, Zap, Clock, Bell, Mail, MonitorSmartphone, Repeat, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { APP_ROUTES } from '@/lib/appRoutes';
-import { AutomationHistoryTable } from './NotificationSendHistory';
+
 
 const TRIGGER_LABELS: Record<string, string> = {
   new_signup: 'Đăng ký mới',
@@ -261,8 +261,6 @@ export function AutomationNotificationsManagement() {
         </div>
       )}
 
-      {/* Send History */}
-      <AutomationHistoryTable />
 
       <Dialog open={dialogOpen} onOpenChange={(v) => { if (!v) { setDialogOpen(false); resetForm(); } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">

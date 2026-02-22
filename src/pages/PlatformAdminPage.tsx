@@ -21,6 +21,8 @@ import { Navigate } from 'react-router-dom';
  import { Loader2, Users, Megaphone, FileText, Mail, Globe, MailPlus, Bell, Zap } from 'lucide-react';
 import { SystemNotificationsManagement } from '@/components/platform/SystemNotificationsManagement';
 import { AutomationNotificationsManagement } from '@/components/platform/AutomationNotificationsManagement';
+import { ManualNotificationHistoryTable, AutomationHistoryTable } from '@/components/platform/NotificationSendHistory';
+import { History } from 'lucide-react';
 
 export default function PlatformAdminPage() {
   const { data: platformUser, isLoading } = usePlatformUser();
@@ -145,25 +147,35 @@ export default function PlatformAdminPage() {
            </TabsContent>
 
            <TabsContent value="system-notifications" className="mt-6">
-             <Tabs defaultValue="manual" className="w-full">
-               <TabsList className="mb-4">
-                 <TabsTrigger value="manual" className="text-xs sm:text-sm">
-                   <Bell className="h-3 w-3 mr-1" />
-                   Thông báo thủ công
-                 </TabsTrigger>
-                 <TabsTrigger value="automation" className="text-xs sm:text-sm">
-                   <Zap className="h-3 w-3 mr-1" />
-                   Automation
-                 </TabsTrigger>
-               </TabsList>
-               <TabsContent value="manual">
-                 <SystemNotificationsManagement />
-               </TabsContent>
-               <TabsContent value="automation">
-                 <AutomationNotificationsManagement />
-               </TabsContent>
-             </Tabs>
-           </TabsContent>
+              <Tabs defaultValue="manual" className="w-full">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="manual" className="text-xs sm:text-sm">
+                    <Bell className="h-3 w-3 mr-1" />
+                    Thông báo thủ công
+                  </TabsTrigger>
+                  <TabsTrigger value="automation" className="text-xs sm:text-sm">
+                    <Zap className="h-3 w-3 mr-1" />
+                    Automation
+                  </TabsTrigger>
+                  <TabsTrigger value="send-history" className="text-xs sm:text-sm">
+                    <History className="h-3 w-3 mr-1" />
+                    Lịch sử gửi
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="manual">
+                  <SystemNotificationsManagement />
+                </TabsContent>
+                <TabsContent value="automation">
+                  <AutomationNotificationsManagement />
+                </TabsContent>
+                <TabsContent value="send-history">
+                  <div className="space-y-6">
+                    <ManualNotificationHistoryTable />
+                    <AutomationHistoryTable />
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </TabsContent>
         </Tabs>
       </div>
     </MainLayout>
