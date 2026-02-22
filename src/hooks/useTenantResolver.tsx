@@ -115,16 +115,38 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
         return result;
       }
       
-      const result: ResolvedTenant = {
-        tenantId: tenantId,
-        subdomain: null,
-        tenantName: null,
-        status: 'resolved',
-        isMainDomain: false,
-      };
-      cachedResult = result;
-      cacheHostname = hostname;
-      return result;
+      // Fetch tenant name for custom domain
+      let tenantName: string | null = null;
+      try {
+        const { data: tenantData } = await supabase
+          .from('tenants')
+          .select('name, subdomain')
+          .eq('id', tenantId)
+          .maybeSingle();
+        tenantName = tenantData?.name || null;
+        
+        const result: ResolvedTenant = {
+          tenantId: tenantId,
+          subdomain: tenantData?.subdomain || null,
+          tenantName,
+          status: 'resolved',
+          isMainDomain: false,
+        };
+        cachedResult = result;
+        cacheHostname = hostname;
+        return result;
+      } catch {
+        const result: ResolvedTenant = {
+          tenantId: tenantId,
+          subdomain: null,
+          tenantName: null,
+          status: 'resolved',
+          isMainDomain: false,
+        };
+        cachedResult = result;
+        cacheHostname = hostname;
+        return result;
+      }
     } catch (err) {
       console.error('Error resolving custom domain:', err);
       const result: ResolvedTenant = {
