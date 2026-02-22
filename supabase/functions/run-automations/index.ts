@@ -275,6 +275,85 @@ async function getTargetUsers(supabase: any, automation: any): Promise<TargetUse
     return await enrichUsersWithTenantStatus(supabase, users || []);
   }
 
+  if (trigger === 'no_import') {
+    // Tenants that have NEVER imported
+    const { data: allUsers } = await supabase
+      .from('platform_users')
+      .select('user_id, tenant_id')
+      .eq('is_active', true);
+
+    const results: TargetUser[] = [];
+    const checkedTenants: Record<string, boolean> = {};
+    for (const u of allUsers || []) {
+      if (!u.tenant_id) continue;
+      if (checkedTenants[u.tenant_id] === undefined) {
+        const { count } = await supabase
+          .from('import_receipts')
+          .select('id', { count: 'exact', head: true })
+          .eq('tenant_id', u.tenant_id);
+        checkedTenants[u.tenant_id] = (count || 0) === 0;
+      }
+      if (checkedTenants[u.tenant_id]) {
+        results.push({ user_id: u.user_id, tenant_id: u.tenant_id });
+      }
+    }
+    return await enrichUsersWithTenantStatus(supabase, results);
+  }
+
+  if (trigger === 'no_export') {
+    // Tenants that have NEVER exported
+    const { data: allUsers } = await supabase
+      .from('platform_users')
+      .select('user_id, tenant_id')
+      .eq('is_active', true);
+
+    const results: TargetUser[] = [];
+    const checkedTenants: Record<string, boolean> = {};
+    for (const u of allUsers || []) {
+      if (!u.tenant_id) continue;
+      if (checkedTenants[u.tenant_id] === undefined) {
+        const { count } = await supabase
+          .from('export_receipts')
+          .select('id', { count: 'exact', head: true })
+          .eq('tenant_id', u.tenant_id);
+        checkedTenants[u.tenant_id] = (count || 0) === 0;
+      }
+      if (checkedTenants[u.tenant_id]) {
+        results.push({ user_id: u.user_id, tenant_id: u.tenant_id });
+      }
+    }
+    return await enrichUsersWithTenantStatus(supabase, results);
+  }
+
+  if (trigger === 'no_subscription') {
+    // Tenants without a paid subscription
+    const { data: tenants } = await supabase
+      .from('tenants')
+      .select('id')
+      .is('subscription_start_date', null);
+
+    if (!tenants || tenants.length === 0) return [];
+    const tenantIds = tenants.map((t: any) => t.id);
+
+    const { data: users } = await supabase
+      .from('platform_users')
+      .select('user_id, tenant_id')
+      .in('tenant_id', tenantIds)
+      .eq('is_active', true);
+
+    return await enrichUsersWithTenantStatus(supabase, users || []);
+  }
+
+  if (trigger === 'all_accounts') {
+    // All active platform users
+    const { data: users } = await supabase
+      .from('platform_users')
+      .select('user_id, tenant_id')
+      .eq('is_active', true);
+
+    return await enrichUsersWithTenantStatus(supabase, users || []);
+  }
+
   return [];
 }
 

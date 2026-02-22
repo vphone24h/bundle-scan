@@ -28,11 +28,26 @@ import {
   type SystemNotification,
 } from '@/hooks/useSystemNotifications';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Pencil, Trash2, Pin, Eye, EyeOff, Megaphone } from 'lucide-react';
+import { Plus, Pencil, Trash2, Pin, Eye, EyeOff, Megaphone, Repeat, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
+
+const FREQUENCY_LABELS: Record<string, string> = {
+  once: '1 lần duy nhất',
+  daily: 'Mỗi ngày',
+  weekly: 'Mỗi tuần',
+  monthly: 'Mỗi tháng',
+};
+
+const AUDIENCE_LABELS: Record<string, string> = {
+  all: 'Tất cả tài khoản',
+  active: 'Đang hoạt động',
+  trial: 'Dùng thử',
+  free: 'Miễn phí (hết hạn)',
+  paid: 'Đã mua gói',
+};
 
 const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
   info: 'Thông tin',
@@ -59,6 +74,8 @@ export function SystemNotificationsManagement() {
   const [isActive, setIsActive] = useState(true);
   const [showAsStartup, setShowAsStartup] = useState(false);
   const [sendPush, setSendPush] = useState(true);
+  const [sendFrequency, setSendFrequency] = useState('once');
+  const [targetAudience, setTargetAudience] = useState('all');
 
   const resetForm = () => {
     setTitle('');
@@ -70,6 +87,8 @@ export function SystemNotificationsManagement() {
     setIsActive(true);
     setShowAsStartup(false);
     setSendPush(true);
+    setSendFrequency('once');
+    setTargetAudience('all');
     setEditingNotification(null);
   };
 
@@ -88,6 +107,8 @@ export function SystemNotificationsManagement() {
     setIsPinned(n.is_pinned);
     setIsActive(n.is_active);
     setShowAsStartup(n.show_as_startup_popup);
+    setSendFrequency((n as any).send_frequency || 'once');
+    setTargetAudience((n as any).target_audience || 'all');
     setDialogOpen(true);
   };
 
@@ -106,6 +127,8 @@ export function SystemNotificationsManagement() {
       is_pinned: isPinned,
       is_active: isActive,
       show_as_startup_popup: showAsStartup,
+      send_frequency: sendFrequency,
+      target_audience: targetAudience,
     };
 
     try {
@@ -266,6 +289,34 @@ export function SystemNotificationsManagement() {
                 <Textarea value={fullContent} onChange={e => setFullContent(e.target.value)} placeholder="Nội dung HTML..." rows={4} />
               </div>
             )}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="flex items-center gap-1.5">
+                  <Repeat className="h-3.5 w-3.5" /> Tần suất gửi
+                </Label>
+                <Select value={sendFrequency} onValueChange={setSendFrequency}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(FREQUENCY_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5" /> Đối tượng
+                </Label>
+                <Select value={targetAudience} onValueChange={setTargetAudience}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(AUDIENCE_LABELS).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <Switch checked={isPinned} onCheckedChange={setIsPinned} />
