@@ -67,13 +67,11 @@ export function PushPermissionPopup() {
       } else {
         await subscribePush.mutateAsync(vapidKey);
       }
-      localStorage.setItem(PUSH_ENABLED_KEY, 'true');
     } catch {
-      // Permission denied - still mark so we don't keep asking
-      if ('Notification' in window && Notification.permission === 'denied') {
-        localStorage.setItem(PUSH_ENABLED_KEY, 'true');
-      }
+      // Ignore errors
     }
+    // Always mark as handled so we never ask again
+    localStorage.setItem(PUSH_ENABLED_KEY, 'true');
     setOpen(false);
   };
 
