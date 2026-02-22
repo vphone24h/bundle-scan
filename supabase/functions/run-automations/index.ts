@@ -33,31 +33,38 @@ Deno.serve(async (req) => {
     for (const auto of automations) {
       const users = await getTargetUsers(supabase, auto);
 
+      // Filter users by audience and dedup
+      const eligibleUsers: TargetUser[] = [];
       for (const user of users) {
-        // Check audience filter
         if (!matchesAudience(user, auto.target_audience)) continue;
-
-        // Check frequency-based dedup
         const alreadySent = await checkAlreadySent(supabase, auto, user.user_id);
         if (alreadySent) continue;
+        eligibleUsers.push(user);
+      }
 
-        // Send bell notification
-        if ((auto.channels as string[]).includes('bell')) {
-          await supabase.from('system_notifications').insert({
-            title: replaceVars(auto.title, user),
-            message: replaceVars(auto.message, user),
-            full_content: auto.full_content || null,
-            notification_type: auto.link_url ? 'article' : 'info',
-            link_url: auto.link_url || null,
-            is_pinned: false,
-            is_active: true,
-            show_as_startup_popup: (auto.channels as string[]).includes('popup'),
-            target_audience: 'group',
-            target_tenant_ids: user.tenant_id ? [user.tenant_id] : [],
-          });
-        }
+      if (eligibleUsers.length === 0) continue;
 
-        // Send push
+      // Collect unique tenant IDs for targeting
+      const tenantIds = [...new Set(eligibleUsers.map(u => u.tenant_id).filter(Boolean))] as string[];
+
+      // Create ONE bell notification per automation run (not per user)
+      if ((auto.channels as string[]).includes('bell')) {
+        await supabase.from('system_notifications').insert({
+          title: auto.title,
+          message: auto.message,
+          full_content: auto.full_content || null,
+          notification_type: auto.link_url ? 'article' : 'info',
+          link_url: auto.link_url || null,
+          is_pinned: false,
+          is_active: true,
+          show_as_startup_popup: (auto.channels as string[]).includes('popup'),
+          target_audience: tenantIds.length > 0 ? 'group' : 'all',
+          target_tenant_ids: tenantIds,
+        });
+      }
+
+      // Send push and log per user
+      for (const user of eligibleUsers) {
         if ((auto.channels as string[]).includes('push') || (auto.channels as string[]).includes('bell')) {
           try {
             const pushUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-push`;
@@ -78,7 +85,7 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Log execution
+        // Log execution per user for dedup tracking
         await supabase.from('automation_execution_logs').insert({
           automation_id: auto.id,
           user_id: user.user_id,
