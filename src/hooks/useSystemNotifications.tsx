@@ -30,6 +30,14 @@ export function useSystemNotifications() {
     queryKey: ['system-notifications', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
+
+      // Get user's tenant_id for filtering
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      const tenantId = profile?.tenant_id;
       
       const { data: notifications, error } = await supabase
         .from('system_notifications')
@@ -39,6 +47,13 @@ export function useSystemNotifications() {
         .order('created_at', { ascending: false });
       if (error) throw error;
 
+      // Filter: show only notifications targeting 'all' or user's tenant
+      const filtered = (notifications || []).filter(n => {
+        if (n.target_audience === 'all') return true;
+        if (!n.target_tenant_ids || n.target_tenant_ids.length === 0) return true;
+        return tenantId && (n.target_tenant_ids as string[]).includes(tenantId);
+      });
+
       // Get read status
       const { data: reads } = await supabase
         .from('system_notification_reads')
@@ -47,7 +62,7 @@ export function useSystemNotifications() {
 
       const readIds = new Set((reads || []).map(r => r.notification_id));
 
-      return (notifications || []).map(n => ({
+      return filtered.map(n => ({
         ...n,
         is_read: readIds.has(n.id),
       })) as SystemNotification[];
