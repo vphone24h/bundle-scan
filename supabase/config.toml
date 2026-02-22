@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.send-guide-email]
 verify_jwt = false
+
+[functions.run-automations]
+verify_jwt = false

@@ -590,6 +590,41 @@ export type Database = {
           },
         ]
       }
+      automation_execution_logs: {
+        Row: {
+          automation_id: string
+          channel: string
+          executed_at: string
+          id: string
+          tenant_id: string | null
+          user_id: string
+        }
+        Insert: {
+          automation_id: string
+          channel?: string
+          executed_at?: string
+          id?: string
+          tenant_id?: string | null
+          user_id: string
+        }
+        Update: {
+          automation_id?: string
+          channel?: string
+          executed_at?: string
+          id?: string
+          tenant_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_execution_logs_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "notification_automations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bank_accounts: {
         Row: {
           account_holder: string
@@ -3177,6 +3212,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_automations: {
+        Row: {
+          button_text: string | null
+          channels: string[]
+          created_at: string
+          delay_minutes: number
+          display_order: number | null
+          full_content: string | null
+          id: string
+          is_enabled: boolean
+          link_url: string | null
+          message: string
+          title: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          button_text?: string | null
+          channels?: string[]
+          created_at?: string
+          delay_minutes?: number
+          display_order?: number | null
+          full_content?: string | null
+          id?: string
+          is_enabled?: boolean
+          link_url?: string | null
+          message: string
+          title: string
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          button_text?: string | null
+          channels?: string[]
+          created_at?: string
+          delay_minutes?: number
+          display_order?: number | null
+          full_content?: string | null
+          id?: string
+          is_enabled?: boolean
+          link_url?: string | null
+          message?: string
+          title?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       onboarding_email_logs: {
         Row: {
