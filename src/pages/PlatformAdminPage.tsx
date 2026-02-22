@@ -18,7 +18,8 @@ import { PlatformArticlesManagement } from '@/components/platform/PlatformArticl
 import { WelcomeEmailConfig } from '@/components/platform/WelcomeEmailConfig';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate } from 'react-router-dom';
- import { Loader2, Users, Megaphone, FileText, Mail, Globe, MailPlus } from 'lucide-react';
+ import { Loader2, Users, Megaphone, FileText, Mail, Globe, MailPlus, Bell } from 'lucide-react';
+import { SystemNotificationsManagement } from '@/components/platform/SystemNotificationsManagement';
 
 export default function PlatformAdminPage() {
   const { data: platformUser, isLoading } = usePlatformUser();
@@ -74,6 +75,10 @@ export default function PlatformAdminPage() {
              <TabsTrigger value="guides" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                <span className="hidden sm:inline">Bài viết</span>
+             </TabsTrigger>
+             <TabsTrigger value="system-notifications" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
+               <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
+               <span className="hidden sm:inline">Thông báo</span>
              </TabsTrigger>
           </TabsList>
 
@@ -136,6 +141,10 @@ export default function PlatformAdminPage() {
 
            <TabsContent value="guides" className="mt-6">
              <PlatformArticlesManagement />
+           </TabsContent>
+
+           <TabsContent value="system-notifications" className="mt-6">
+             <SystemNotificationsManagement />
            </TabsContent>
         </Tabs>
       </div>
