@@ -35,14 +35,22 @@ Deno.serve(async (req) => {
       const users = await getTargetUsers(supabase, auto);
 
       for (const user of users) {
-        // Check if already executed
-        const { data: existing } = await supabase
+        // Check if already executed (for recurring triggers like low_stock, check today only)
+        const isRecurring = ['low_stock', 'trial_expiring'].includes(auto.trigger_type);
+        let execQuery = supabase
           .from('automation_execution_logs')
           .select('id')
           .eq('automation_id', auto.id)
           .eq('user_id', user.user_id)
-          .eq('channel', 'bell')
-          .maybeSingle();
+          .eq('channel', 'bell');
+
+        if (isRecurring) {
+          const todayStart = new Date();
+          todayStart.setHours(0, 0, 0, 0);
+          execQuery = execQuery.gte('executed_at', todayStart.toISOString());
+        }
+
+        const { data: existing } = await execQuery.maybeSingle();
 
         if (existing) continue;
 
