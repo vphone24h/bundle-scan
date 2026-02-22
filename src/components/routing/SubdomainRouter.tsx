@@ -24,18 +24,25 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
   const location = useLocation();
   
   const routerState = useMemo(() => {
+    console.log('[SubdomainRouter]', {
+      status: resolvedTenant.status,
+      isMainDomain: resolvedTenant.isMainDomain,
+      tenantId: resolvedTenant.tenantId,
+      subdomain: resolvedTenant.subdomain,
+      authLoading,
+      hasUser: !!user,
+      pathname: location.pathname,
+    });
+    
     // OPTIMIZATION: For main domains, skip loading state entirely
     // as tenant resolution is synchronous
     if (resolvedTenant.isMainDomain && resolvedTenant.status !== 'loading') {
-      // Auth still loading but on main domain - don't block, let children handle auth
       if (authLoading) {
-        // Return app immediately - AuthPage and ProtectedRoute will handle auth loading
         return 'app';
       }
       
       if (user) return 'app';
       
-      // Main domain + not logged in + at root
       if (location.pathname === '/' && publicLandingPage) {
         return 'public_landing';
       }
@@ -43,17 +50,14 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
     }
     
     // For subdomains/custom domains, don't block with spinner
-    // Let the app render immediately, data will load in background
     if (resolvedTenant.status === 'loading') {
       return 'app';
     }
     
-    // Auth loading on subdomain - render app shell immediately
     if (authLoading) {
       return 'app';
     }
     
-    // Đã đăng nhập → luôn hiển thị app
     if (user) {
       return 'app';
     }
