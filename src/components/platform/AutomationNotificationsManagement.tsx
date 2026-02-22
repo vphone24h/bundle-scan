@@ -30,6 +30,7 @@ import {
 } from '@/hooks/useNotificationAutomations';
 import { Plus, Pencil, Trash2, Zap, Clock, Bell, Mail, MonitorSmartphone, Repeat, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { APP_ROUTES } from '@/lib/appRoutes';
 
 const TRIGGER_LABELS: Record<string, string> = {
   new_signup: 'Đăng ký mới',
@@ -296,7 +297,15 @@ export function AutomationNotificationsManagement() {
               </div>
               <div>
                 <Label>Link</Label>
-                <Input value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="/import/new" />
+                <Select value={linkUrl || '__none__'} onValueChange={(v) => setLinkUrl(v === '__none__' ? '' : v)}>
+                  <SelectTrigger><SelectValue placeholder="Chọn trang" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">-- Không có --</SelectItem>
+                    {APP_ROUTES.map(r => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

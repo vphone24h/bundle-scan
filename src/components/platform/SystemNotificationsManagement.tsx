@@ -29,6 +29,7 @@ import {
 } from '@/hooks/useSystemNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Pencil, Trash2, Pin, Eye, EyeOff, Megaphone, Repeat, Users } from 'lucide-react';
+import { APP_ROUTES } from '@/lib/appRoutes';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
@@ -280,7 +281,15 @@ export function SystemNotificationsManagement() {
             {(notificationType === 'article') && (
               <div>
                 <Label>Link URL</Label>
-                <Input value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="https://..." />
+                <Select value={linkUrl || '__none__'} onValueChange={(v) => setLinkUrl(v === '__none__' ? '' : v)}>
+                  <SelectTrigger><SelectValue placeholder="Chọn trang" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">-- Không có --</SelectItem>
+                    {APP_ROUTES.map(r => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
             {notificationType === 'popup' && (
@@ -334,7 +343,15 @@ export function SystemNotificationsManagement() {
             {showAsStartup && (
               <div>
                 <Label>Link khi nhấn "Xem ngay"</Label>
-                <Input value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="https://..." />
+                <Select value={linkUrl || '__none__'} onValueChange={(v) => setLinkUrl(v === '__none__' ? '' : v)}>
+                  <SelectTrigger><SelectValue placeholder="Chọn trang" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">-- Không có --</SelectItem>
+                    {APP_ROUTES.map(r => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
             {!editingNotification && (
