@@ -7,6 +7,7 @@ import { useActiveAdvertisements } from '@/hooks/useAdvertisements';
 import { AdGateModal } from '@/components/tenant/AdGateModal';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { StartupNotificationPopup } from '@/components/notifications/StartupNotificationPopup';
+import { PushPermissionPopup } from '@/components/notifications/PushPermissionPopup';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -94,6 +95,9 @@ export const MainLayout = memo(function MainLayout({ children }: MainLayoutProps
 
       {/* Startup Notification Popup */}
       <StartupNotificationPopup />
+
+      {/* Push Permission Popup - ask every session until enabled */}
+      <PushPermissionPopup />
 
       {/* Ad Gate Modal */}
       {showAdGate && adGateSettings && !needsBusinessType && (
