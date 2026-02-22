@@ -5320,6 +5320,15 @@ export type Database = {
           total_points_used: number
         }[]
       }
+      lookup_tenant_by_id: {
+        Args: { _tenant_id: string }
+        Returns: {
+          id: string
+          name: string
+          status: string
+          subdomain: string
+        }[]
+      }
       lookup_tenant_by_subdomain: {
         Args: { _subdomain: string }
         Returns: {

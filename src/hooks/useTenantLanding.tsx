@@ -108,14 +108,12 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
         if (tenantError || !tenant) return null;
         tenantInfo = tenant;
       } else if (tenantIdFromDomain) {
-        // Custom domain → đã có tenantId, chỉ cần lấy thông tin cơ bản
-        const { data: tenant, error } = await supabase
-          .from('tenants')
-          .select('id, name, subdomain, status')
-          .eq('id', tenantIdFromDomain)
-          .maybeSingle();
-        if (error || !tenant) return null;
-        tenantInfo = tenant as any;
+        // Custom domain → dùng RPC lookup_tenant_by_id (SECURITY DEFINER, anon-safe)
+        const { data: tenantData, error: tenantError } = await supabase
+          .rpc('lookup_tenant_by_id', { _tenant_id: tenantIdFromDomain });
+        const tenant = Array.isArray(tenantData) ? tenantData[0] : tenantData;
+        if (tenantError || !tenant) return null;
+        tenantInfo = tenant;
       }
 
       if (!tenantInfo) return null;

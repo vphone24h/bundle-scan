@@ -115,38 +115,19 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
         return result;
       }
       
-      // Fetch tenant name for custom domain
-      let tenantName: string | null = null;
-      try {
-        const { data: tenantData } = await supabase
-          .from('tenants')
-          .select('name, subdomain')
-          .eq('id', tenantId)
-          .maybeSingle();
-        tenantName = tenantData?.name || null;
-        
-        const result: ResolvedTenant = {
-          tenantId: tenantId,
-          subdomain: tenantData?.subdomain || null,
-          tenantName,
-          status: 'resolved',
-          isMainDomain: false,
-        };
-        cachedResult = result;
-        cacheHostname = hostname;
-        return result;
-      } catch {
-        const result: ResolvedTenant = {
-          tenantId: tenantId,
-          subdomain: null,
-          tenantName: null,
-          status: 'resolved',
-          isMainDomain: false,
-        };
-        cachedResult = result;
-        cacheHostname = hostname;
-        return result;
-      }
+      // Custom domain resolved - return with tenantId
+      // Don't query tenants table directly (RLS blocks anon users)
+      // usePublicLandingSettings will fetch tenant info via SECURITY DEFINER RPC
+      const result: ResolvedTenant = {
+        tenantId: tenantId,
+        subdomain: null,
+        tenantName: null,
+        status: 'resolved',
+        isMainDomain: false,
+      };
+      cachedResult = result;
+      cacheHostname = hostname;
+      return result;
     } catch (err) {
       console.error('Error resolving custom domain:', err);
       const result: ResolvedTenant = {
