@@ -92,26 +92,39 @@ export function useTenantLandingSettings() {
   });
 }
 
-// Hook để lấy landing settings công khai từ subdomain
-export function usePublicLandingSettings(subdomain: string | null) {
+// Hook để lấy landing settings công khai từ subdomain hoặc tenantId (custom domain)
+export function usePublicLandingSettings(subdomain: string | null, tenantIdFromDomain?: string | null) {
   return useQuery({
-    queryKey: ['public-landing-settings', subdomain],
+    queryKey: ['public-landing-settings', subdomain, tenantIdFromDomain],
     queryFn: async () => {
-      if (!subdomain) return null;
+      let tenantInfo: { id: string; name: string; subdomain: string; status: string } | null = null;
 
-      // Tìm tenant theo subdomain using secure RPC
-      const { data: tenantData, error: tenantError } = await supabase
-        .rpc('lookup_tenant_by_subdomain', { _subdomain: subdomain });
+      // Nếu có subdomain, tra cứu theo subdomain
+      if (subdomain) {
+        const { data: tenantData, error: tenantError } = await supabase
+          .rpc('lookup_tenant_by_subdomain', { _subdomain: subdomain });
 
-      const tenant = Array.isArray(tenantData) ? tenantData[0] : tenantData;
+        const tenant = Array.isArray(tenantData) ? tenantData[0] : tenantData;
+        if (tenantError || !tenant) return null;
+        tenantInfo = tenant;
+      } else if (tenantIdFromDomain) {
+        // Custom domain → đã có tenantId, chỉ cần lấy thông tin cơ bản
+        const { data: tenant, error } = await supabase
+          .from('tenants')
+          .select('id, name, subdomain, status')
+          .eq('id', tenantIdFromDomain)
+          .maybeSingle();
+        if (error || !tenant) return null;
+        tenantInfo = tenant as any;
+      }
 
-      if (tenantError || !tenant) return null;
+      if (!tenantInfo) return null;
 
       // Lấy landing settings
       const { data, error } = await supabase
         .from('tenant_landing_settings' as any)
         .select('*')
-        .eq('tenant_id', tenant.id)
+        .eq('tenant_id', tenantInfo.id)
         .eq('is_enabled', true)
         .maybeSingle();
 
@@ -121,7 +134,7 @@ export function usePublicLandingSettings(subdomain: string | null) {
       const { data: branchesData } = await supabase
         .from('branches')
         .select('id, name, address, phone')
-        .eq('tenant_id', tenant.id)
+        .eq('tenant_id', tenantInfo.id)
         .order('is_default', { ascending: false })
         .order('name', { ascending: true });
       
@@ -130,12 +143,12 @@ export function usePublicLandingSettings(subdomain: string | null) {
       
       // Trả về kết hợp tenant info + settings + branches
       return {
-        tenant,
+        tenant: tenantInfo,
         settings,
         branches,
       };
     },
-    enabled: !!subdomain,
+    enabled: !!subdomain || !!tenantIdFromDomain,
   });
 }
 

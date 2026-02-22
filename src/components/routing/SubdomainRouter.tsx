@@ -58,13 +58,13 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
       return 'app';
     }
     
-    // Có subdomain + tenant tồn tại + chưa đăng nhập → landing page cửa hàng
-    if (resolvedTenant.status === 'resolved' && resolvedTenant.subdomain) {
+    // Có subdomain hoặc custom domain + tenant tồn tại + chưa đăng nhập → landing page cửa hàng
+    if (resolvedTenant.status === 'resolved' && (resolvedTenant.subdomain || resolvedTenant.tenantId)) {
       return 'store_landing';
     }
     
-    // Subdomain không tồn tại → landing page sẽ hiển thị "không tìm thấy"
-    if (resolvedTenant.status === 'not_found' && resolvedTenant.subdomain) {
+    // Subdomain/custom domain không tồn tại → landing page sẽ hiển thị "không tìm thấy"
+    if (resolvedTenant.status === 'not_found' && (resolvedTenant.subdomain || !resolvedTenant.isMainDomain)) {
       return 'store_landing';
     }
     

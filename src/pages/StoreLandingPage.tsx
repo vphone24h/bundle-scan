@@ -83,7 +83,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const { storeId: storeIdFromParams } = useParams<{ storeId: string }>();
   const resolvedTenant = useTenantResolver();
   const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain;
-  const { data: landingData, isLoading } = usePublicLandingSettings(storeId);
+  const { data: landingData, isLoading } = usePublicLandingSettings(storeId, resolvedTenant.tenantId);
   const queryClient = useQueryClient();
 
   const [pageView, setPageView] = useState<PageView>('home');
