@@ -17,6 +17,9 @@ export interface LandingOrder {
   customer_address: string | null;
   note: string | null;
   status: 'pending' | 'approved' | 'cancelled';
+  call_status: 'none' | 'called' | 'unreachable';
+  assigned_staff_id: string | null;
+  assigned_staff_name: string | null;
   approved_by: string | null;
   approved_at: string | null;
   cancelled_reason: string | null;

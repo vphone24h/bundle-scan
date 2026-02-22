@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLandingOrders, useUpdateLandingOrder, LandingOrder } from '@/hooks/useLandingOrders';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useBranches } from '@/hooks/useBranches';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -10,11 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Phone, CheckCircle, XCircle, Clock, Search, Package, Loader2 } from 'lucide-react';
+import { Phone, CheckCircle, XCircle, Clock, Search, Package, Loader2, PhoneCall, PhoneOff, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: 'Chờ duyệt', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
@@ -22,27 +24,51 @@ const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = 
   cancelled: { label: 'Đã hủy', color: 'bg-red-100 text-red-800', icon: XCircle },
 };
 
+const CALL_STATUS_MAP: Record<string, { label: string; color: string }> = {
+  none: { label: 'Chưa gọi', color: 'bg-muted text-muted-foreground' },
+  called: { label: 'Đã gọi', color: 'bg-green-100 text-green-700' },
+  unreachable: { label: 'Không liên hệ được', color: 'bg-red-100 text-red-700' },
+};
+
+function useStaffList() {
+  return useQuery({
+    queryKey: ['staff-list-for-orders'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, display_name')
+        .order('display_name');
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
+
 export function LandingOrdersTab() {
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
+  const { data: staffList } = useStaffList();
   const isSuperAdmin = permissions?.role === 'super_admin';
   const userBranchId = permissions?.branchId;
 
-  // Super Admin xem tất cả, Branch Admin và Staff chỉ xem đơn chi nhánh mình
   const filterBranchId = isSuperAdmin ? null : userBranchId;
   const { data: orders, isLoading } = useLandingOrders(filterBranchId);
   const updateOrder = useUpdateLandingOrder();
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [callStatusFilter, setCallStatusFilter] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
   const [cancelDialogOrder, setCancelDialogOrder] = useState<LandingOrder | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [detailOrder, setDetailOrder] = useState<LandingOrder | null>(null);
+  const [assignDialogOrder, setAssignDialogOrder] = useState<LandingOrder | null>(null);
+  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
 
   const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
 
   const filtered = (orders || []).filter(o => {
     if (statusFilter !== 'all' && o.status !== statusFilter) return false;
+    if (callStatusFilter !== 'all' && o.call_status !== callStatusFilter) return false;
     if (searchText) {
       const s = searchText.toLowerCase();
       return o.customer_name.toLowerCase().includes(s) ||
@@ -69,6 +95,39 @@ export function LandingOrdersTab() {
     } catch { toast.error('Lỗi khi hủy đơn'); }
   };
 
+  const handleToggleCallStatus = async (e: React.MouseEvent, order: LandingOrder) => {
+    e.stopPropagation();
+    const nextStatus = order.call_status === 'called' ? 'none' : 'called';
+    try {
+      await updateOrder.mutateAsync({ id: order.id, call_status: nextStatus } as any);
+      toast.success(nextStatus === 'called' ? 'Đã đánh dấu: Đã gọi' : 'Đã bỏ đánh dấu gọi');
+    } catch { toast.error('Lỗi cập nhật'); }
+  };
+
+  const handleUnreachable = async (e: React.MouseEvent, order: LandingOrder) => {
+    e.stopPropagation();
+    const nextStatus = order.call_status === 'unreachable' ? 'none' : 'unreachable';
+    try {
+      await updateOrder.mutateAsync({ id: order.id, call_status: nextStatus } as any);
+      toast.success(nextStatus === 'unreachable' ? 'Đánh dấu: Không liên hệ được' : 'Đã bỏ đánh dấu');
+    } catch { toast.error('Lỗi cập nhật'); }
+  };
+
+  const handleAssignStaff = async () => {
+    if (!assignDialogOrder) return;
+    const staff = staffList?.find(s => s.id === selectedStaffId);
+    try {
+      await updateOrder.mutateAsync({
+        id: assignDialogOrder.id,
+        assigned_staff_id: selectedStaffId || null,
+        assigned_staff_name: staff?.display_name || null,
+      } as any);
+      setAssignDialogOrder(null);
+      setSelectedStaffId('');
+      toast.success('Đã phân công nhân viên');
+    } catch { toast.error('Lỗi phân công'); }
+  };
+
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
@@ -82,7 +141,7 @@ export function LandingOrdersTab() {
           <Input placeholder="Tìm theo tên, SĐT, sản phẩm..." value={searchText} onChange={e => setSearchText(e.target.value)} className="pl-9 search-input-highlight" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -90,6 +149,17 @@ export function LandingOrdersTab() {
             <SelectItem value="pending">Chờ duyệt</SelectItem>
             <SelectItem value="approved">Đã duyệt</SelectItem>
             <SelectItem value="cancelled">Đã hủy</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={callStatusFilter} onValueChange={setCallStatusFilter}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Trạng thái gọi" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả (gọi)</SelectItem>
+            <SelectItem value="none">Chưa gọi</SelectItem>
+            <SelectItem value="called">Đã gọi</SelectItem>
+            <SelectItem value="unreachable">Không liên hệ được</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -131,12 +201,15 @@ export function LandingOrdersTab() {
                   <TableHead>Sản phẩm</TableHead>
                   <TableHead>Chi nhánh</TableHead>
                   <TableHead>Trạng thái</TableHead>
+                  <TableHead>Liên hệ</TableHead>
+                  <TableHead>Phân công</TableHead>
                   <TableHead className="text-right">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map(order => {
                   const st = STATUS_MAP[order.status] || STATUS_MAP.pending;
+                  const cs = CALL_STATUS_MAP[order.call_status] || CALL_STATUS_MAP.none;
                   return (
                     <TableRow key={order.id} className="cursor-pointer" onClick={() => setDetailOrder(order)}>
                       <TableCell className="text-xs whitespace-nowrap">
@@ -157,6 +230,41 @@ export function LandingOrdersTab() {
                       <TableCell className="text-xs">{branchMap.get(order.branch_id) || '—'}</TableCell>
                       <TableCell>
                         <Badge className={`${st.color} text-[10px]`} variant="secondary">{st.label}</Badge>
+                      </TableCell>
+                      <TableCell onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className={`h-7 w-7 ${order.call_status === 'called' ? 'text-green-600 bg-green-50 hover:bg-green-100' : ''}`}
+                            title={order.call_status === 'called' ? 'Bỏ đánh dấu đã gọi' : 'Đánh dấu đã gọi'}
+                            onClick={e => handleToggleCallStatus(e, order)}
+                          >
+                            <PhoneCall className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className={`h-7 w-7 ${order.call_status === 'unreachable' ? 'text-red-600 bg-red-50 hover:bg-red-100' : ''}`}
+                            title={order.call_status === 'unreachable' ? 'Bỏ đánh dấu' : 'Không liên hệ được'}
+                            onClick={e => handleUnreachable(e, order)}
+                          >
+                            <PhoneOff className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell onClick={e => e.stopPropagation()}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => { setAssignDialogOrder(order); setSelectedStaffId(order.assigned_staff_id || ''); }}
+                        >
+                          <UserPlus className="h-3 w-3" />
+                          <span className="max-w-[60px] truncate">
+                            {order.assigned_staff_name || 'Phân công'}
+                          </span>
+                        </Button>
                       </TableCell>
                       <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
@@ -199,6 +307,43 @@ export function LandingOrdersTab() {
             <Button variant="destructive" onClick={handleCancel} disabled={updateOrder.isPending}>
               {updateOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
               Xác nhận hủy
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign staff dialog */}
+      <Dialog open={!!assignDialogOrder} onOpenChange={v => { if (!v) { setAssignDialogOrder(null); setSelectedStaffId(''); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Phân công nhân viên</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Đơn hàng: <span className="font-medium text-foreground">{assignDialogOrder?.customer_name}</span> — {assignDialogOrder?.product_name}
+            </p>
+            <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Chọn nhân viên..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassign">— Bỏ phân công —</SelectItem>
+                {(staffList || []).map(s => (
+                  <SelectItem key={s.id} value={s.id}>{s.display_name || s.id}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setAssignDialogOrder(null); setSelectedStaffId(''); }}>Đóng</Button>
+            <Button onClick={() => {
+              if (selectedStaffId === 'unassign') {
+                setSelectedStaffId('');
+              }
+              handleAssignStaff();
+            }} disabled={updateOrder.isPending}>
+              {updateOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Xác nhận
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -251,6 +396,16 @@ export function LandingOrdersTab() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Ngày đặt:</span>
                   <span>{format(new Date(detailOrder.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Liên hệ:</span>
+                  <Badge className={`${CALL_STATUS_MAP[detailOrder.call_status]?.color} text-[10px]`} variant="secondary">
+                    {CALL_STATUS_MAP[detailOrder.call_status]?.label}
+                  </Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Phân công:</span>
+                  <span className="font-medium">{detailOrder.assigned_staff_name || '—'}</span>
                 </div>
                 {detailOrder.note && (
                   <div>
