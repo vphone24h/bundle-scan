@@ -91,7 +91,7 @@ const allNavItems: NavItem[] = [
     ],
   },
   {
-    title: 'Xuất hàng',
+    title: 'Xuất hàng / Bán hàng',
     href: '/export',
     icon: FileUp,
     permission: 'canExportProducts',
@@ -128,7 +128,7 @@ export function AppSidebar() {
   const { data: permissions, isLoading: permissionsLoading } = usePermissions();
   const { data: platformUser } = usePlatformUser();
   const { data: currentTenant } = useCurrentTenant();
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Nhập hàng', 'Xuất hàng']);
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Nhập hàng', 'Xuất hàng / Bán hàng']);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const { data: pendingTransferCount } = usePendingTransferCount();
