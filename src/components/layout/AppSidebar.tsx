@@ -314,20 +314,27 @@ export function AppSidebar() {
 
   return (
     <>
-      {/* Mobile toggle - optimized for PWA standalone mode with safe-area */}
-      <Button
-        variant="outline"
-        size="icon"
-        data-tour="mobile-menu-btn"
-        className="fixed z-50 lg:hidden h-12 w-12 bg-card shadow-lg border-2 touch-target"
+      {/* Mobile top bar - menu button + notification bell */}
+      <div
+        className="fixed z-50 lg:hidden flex items-center gap-1"
         style={{
           top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))',
           left: 'max(1rem, calc(env(safe-area-inset-left) + 0.5rem))',
         }}
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
       >
-        {isMobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-      </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          data-tour="mobile-menu-btn"
+          className="h-12 w-12 bg-card shadow-lg border-2 touch-target"
+          onClick={() => setIsMobileOpen(!isMobileOpen)}
+        >
+          {isMobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </Button>
+        <div className="bg-card shadow-lg border-2 rounded-md">
+          <SystemNotificationBell />
+        </div>
+      </div>
 
       {/* Mobile overlay */}
       {isMobileOpen && (
