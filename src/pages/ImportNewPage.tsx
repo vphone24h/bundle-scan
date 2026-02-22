@@ -520,12 +520,16 @@ export default function ImportNewPage() {
     if (!newSupplierForm.name.trim()) return;
     try {
       // Auto-assign to current selected branch
-      await createSupplier.mutateAsync({
+      const newSupplier = await createSupplier.mutateAsync({
         name: newSupplierForm.name.trim(),
         phone: newSupplierForm.phone.trim() || null,
         address: newSupplierForm.address.trim() || null,
         branch_id: selectedBranchId || null,
       });
+      // Auto-select the newly created supplier
+      if (newSupplier?.id) {
+        setSelectedSupplierId(newSupplier.id);
+      }
       toast({ title: 'Đã thêm nhà cung cấp', description: newSupplierForm.name });
       setSupplierDialogOpen(false);
       setNewSupplierForm({ name: '', phone: '', address: '' });
@@ -537,7 +541,11 @@ export default function ImportNewPage() {
   const handleAddNewCategory = async () => {
     if (!newCategoryName.trim()) return;
     try {
-      await createCategory.mutateAsync({ name: newCategoryName.trim() });
+      const newCat = await createCategory.mutateAsync({ name: newCategoryName.trim() });
+      // Auto-select the newly created category
+      if (newCat?.id) {
+        setForm(prev => ({ ...prev, categoryId: newCat.id }));
+      }
       toast({ title: 'Đã thêm danh mục', description: newCategoryName });
       setCategoryDialogOpen(false);
       setNewCategoryName('');
