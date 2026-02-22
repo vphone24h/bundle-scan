@@ -32,16 +32,19 @@ export function PushPermissionPopup() {
     }
   }, []);
 
+  // Also check if browser already granted permission
+  const browserGranted = supported && 'Notification' in window && Notification.permission === 'granted';
+
   useEffect(() => {
     // Show popup after a delay if user is logged in, push is supported, and not yet subscribed
     if (!user || !supported || statusLoading || vapidLoading) return;
-    if (isSubscribed) return;
+    if (isSubscribed || browserGranted) return;
 
     const timer = setTimeout(() => setOpen(true), 2000);
     return () => clearTimeout(timer);
-  }, [user, supported, isSubscribed, statusLoading, vapidLoading]);
+  }, [user, supported, isSubscribed, statusLoading, vapidLoading, browserGranted]);
 
-  if (!supported || !user || isSubscribed) return null;
+  if (!supported || !user || isSubscribed || browserGranted) return null;
 
   const isLoading = subscribePush.isPending || generateKeys.isPending;
 
