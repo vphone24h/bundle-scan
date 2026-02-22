@@ -43,6 +43,7 @@ import { usePermissions, UserRole } from '@/hooks/usePermissions';
 import { usePlatformUser, useCurrentTenant } from '@/hooks/useTenant';
 import { Badge } from '@/components/ui/badge';
 import { NotificationBell } from '@/components/crm/NotificationBell';
+import { SystemNotificationBell } from '@/components/notifications/SystemNotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -195,7 +196,8 @@ export function AppSidebar() {
           <span className="text-lg font-bold text-sidebar-foreground">{currentTenant?.name || 'vkho.vn'}</span>
           <span className="text-xs text-sidebar-muted">{currentTenant?.subdomain ? `${currentTenant.subdomain}.vkho.vn` : 'Quản lý thông minh'}</span>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1">
+          <SystemNotificationBell />
           <NotificationBell />
         </div>
       </div>

@@ -4528,6 +4528,118 @@ export type Database = {
           },
         ]
       }
+      system_notification_dismissals: {
+        Row: {
+          dismissed_at: string
+          id: string
+          notification_id: string
+          user_id: string
+        }
+        Insert: {
+          dismissed_at?: string
+          id?: string
+          notification_id: string
+          user_id: string
+        }
+        Update: {
+          dismissed_at?: string
+          id?: string
+          notification_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_notification_dismissals_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "system_notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_notification_reads: {
+        Row: {
+          id: string
+          notification_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notification_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notification_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_notification_reads_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "system_notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_notifications: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          full_content: string | null
+          id: string
+          is_active: boolean
+          is_pinned: boolean
+          link_url: string | null
+          message: string
+          notification_type: string
+          scheduled_at: string | null
+          show_as_startup_popup: boolean
+          target_audience: string
+          target_tenant_ids: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          full_content?: string | null
+          id?: string
+          is_active?: boolean
+          is_pinned?: boolean
+          link_url?: string | null
+          message: string
+          notification_type?: string
+          scheduled_at?: string | null
+          show_as_startup_popup?: boolean
+          target_audience?: string
+          target_tenant_ids?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          full_content?: string | null
+          id?: string
+          is_active?: boolean
+          is_pinned?: boolean
+          link_url?: string | null
+          message?: string
+          notification_type?: string
+          scheduled_at?: string | null
+          show_as_startup_popup?: boolean
+          target_audience?: string
+          target_tenant_ids?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tax_policy_articles: {
         Row: {
           content: string | null

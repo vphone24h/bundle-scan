@@ -6,6 +6,7 @@ import { useAdGateSettings } from '@/hooks/useAdGate';
 import { useActiveAdvertisements } from '@/hooks/useAdvertisements';
 import { AdGateModal } from '@/components/tenant/AdGateModal';
 import { usePlatformUser } from '@/hooks/useTenant';
+import { StartupNotificationPopup } from '@/components/notifications/StartupNotificationPopup';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -90,6 +91,9 @@ export const MainLayout = memo(function MainLayout({ children }: MainLayoutProps
           {children}
         </div>
       </main>
+
+      {/* Startup Notification Popup */}
+      <StartupNotificationPopup />
 
       {/* Ad Gate Modal */}
       {showAdGate && adGateSettings && !needsBusinessType && (
