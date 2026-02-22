@@ -89,6 +89,9 @@ export function useSubscribePush() {
       const p256dh = arrayBufferToBase64Url(subscription.getKey('p256dh')!);
       const auth = arrayBufferToBase64Url(subscription.getKey('auth')!);
 
+      // Get tenant_id
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+
       // Save to DB
       const { error } = await supabase
         .from('push_subscriptions')
@@ -97,6 +100,7 @@ export function useSubscribePush() {
           endpoint: subscription.endpoint,
           p256dh,
           auth_key: auth,
+          tenant_id: tenantId || null,
         }, { onConflict: 'user_id,endpoint' });
 
       if (error) throw error;

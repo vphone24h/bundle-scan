@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
+import { sendBusinessPush, formatVND } from '@/lib/pushNotify';
 
 type ReceiptStatus = Database['public']['Enums']['receipt_status'];
 type PaymentType = Database['public']['Enums']['payment_type'];
@@ -495,6 +496,17 @@ export function useCreateImportReceipt() {
         },
         description: `Tạo phiếu nhập ${code} - ${products.length} sản phẩm - Tổng: ${totalAmount.toLocaleString('vi-VN')}đ`,
       }]);
+
+      // Send push notification to other staff (fire-and-forget)
+      const prodNames = products.slice(0, 3).map(p => p.name).join(', ');
+      const moreText = products.length > 3 ? ` và ${products.length - 3} SP khác` : '';
+      sendBusinessPush({
+        title: `📦 Nhập hàng: ${code}`,
+        message: `${prodNames}${moreText} - Tổng: ${formatVND(totalAmount)}`,
+        url: '/import-history',
+        tenantId,
+        excludeUserId: user.id,
+      });
 
       return receipt;
     },

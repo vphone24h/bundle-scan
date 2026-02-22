@@ -15,6 +15,7 @@ import { Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { sendBusinessPush } from '@/lib/pushNotify';
 
 interface DeleteProductDialogProps {
   open: boolean;
@@ -98,6 +99,17 @@ export function DeleteProductDialog({
           deleted_at: new Date().toISOString(),
         },
       });
+
+      // Send push notification (fire-and-forget)
+      if (tenantId) {
+        sendBusinessPush({
+          title: '🗑️ Xóa sản phẩm',
+          message: `${productName} (${sku}) - IMEI: ${imei} đã bị xóa`,
+          url: '/import-history',
+          tenantId,
+          excludeUserId: user?.id,
+        });
+      }
 
       return product;
     },

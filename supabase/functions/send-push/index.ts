@@ -5,7 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-// Web Push helpers using Web Crypto API (no npm dependencies)
+// Web Push helpers - ported from Mozilla examples
+// https://github.com/mozilla-developer-demos/webpush-encryption-examples/blob/main/src/script.js
 async function generatePushHeaders(endpoint: string, vapidPublicKey: string, vapidPrivateKey: string, subject: string) {
   const urlObj = new URL(endpoint);
   const audience = `${urlObj.protocol}//${urlObj.host}`;
@@ -22,7 +23,6 @@ async function generatePushHeaders(endpoint: string, vapidPublicKey: string, vap
   const payloadB64 = base64urlEncode(new TextEncoder().encode(JSON.stringify(jwtPayload)));
   const unsignedToken = `${headerB64}.${payloadB64}`;
 
-  // Import private key
   const privateKeyBytes = base64urlDecode(vapidPrivateKey);
   const cryptoKey = await crypto.subtle.importKey(
     'pkcs8',
@@ -63,34 +63,31 @@ function base64urlDecode(str: string): Uint8Array {
   return bytes;
 }
 
-// Convert raw 32-byte private key + 65-byte public key to PKCS8 DER format
 function convertRawPrivateKeyToPKCS8(rawPrivate: Uint8Array, rawPublic: Uint8Array): ArrayBuffer {
-  // Build the ECPrivateKey structure
   const ecPrivateKey = new Uint8Array([
-    0x30, 0x77, // SEQUENCE
-    0x02, 0x01, 0x01, // INTEGER version = 1
-    0x04, 0x20, // OCTET STRING (32 bytes)
+    0x30, 0x77,
+    0x02, 0x01, 0x01,
+    0x04, 0x20,
     ...rawPrivate,
-    0xa0, 0x0a, // [0] OID
-    0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, // P-256 OID
-    0xa1, 0x44, // [1] BIT STRING
-    0x03, 0x42, 0x00, // BIT STRING header
+    0xa0, 0x0a,
+    0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07,
+    0xa1, 0x44,
+    0x03, 0x42, 0x00,
     ...rawPublic,
   ]);
 
-  // Wrap in PKCS8 PrivateKeyInfo
   const pkcs8 = new Uint8Array([
-    0x30, 0x81, 0x87, // SEQUENCE
-    0x02, 0x01, 0x00, // INTEGER version = 0
-    0x30, 0x13, // SEQUENCE (AlgorithmIdentifier)
-    0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, // EC OID
-    0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, // P-256 OID
-    0x04, 0x6d, // OCTET STRING wrapping ECPrivateKey
-    0x30, 0x6b, // SEQUENCE (ECPrivateKey without curve OID)
-    0x02, 0x01, 0x01, // INTEGER version = 1
-    0x04, 0x20, // OCTET STRING (32 bytes private key)
+    0x30, 0x81, 0x87,
+    0x02, 0x01, 0x00,
+    0x30, 0x13,
+    0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01,
+    0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07,
+    0x04, 0x6d,
+    0x30, 0x6b,
+    0x02, 0x01, 0x01,
+    0x04, 0x20,
     ...rawPrivate,
-    0xa1, 0x44, // [1] public key
+    0xa1, 0x44,
     0x03, 0x42, 0x00,
     ...rawPublic,
   ]);
@@ -98,23 +95,16 @@ function convertRawPrivateKeyToPKCS8(rawPrivate: Uint8Array, rawPublic: Uint8Arr
   return pkcs8.buffer;
 }
 
-// Convert DER ECDSA signature to raw r||s format
 function convertDERToRaw(der: Uint8Array): Uint8Array {
-  // DER: 0x30 <len> 0x02 <rlen> <r> 0x02 <slen> <s>
-  let offset = 2; // skip SEQUENCE header
-  
-  // Read r
-  offset++; // skip 0x02
+  let offset = 2;
+  offset++;
   const rLen = der[offset++];
   let r = der.slice(offset, offset + rLen);
   offset += rLen;
-  
-  // Read s
-  offset++; // skip 0x02
+  offset++;
   const sLen = der[offset++];
   let s = der.slice(offset, offset + sLen);
   
-  // Trim leading zeros and pad to 32 bytes
   if (r.length > 32) r = r.slice(r.length - 32);
   if (s.length > 32) s = s.slice(s.length - 32);
   
@@ -124,7 +114,6 @@ function convertDERToRaw(der: Uint8Array): Uint8Array {
   return raw;
 }
 
-// Encrypt push payload using RFC 8291 (simplified - using aes128gcm)
 async function encryptPayload(
   payload: string,
   p256dhKey: string,
@@ -133,7 +122,6 @@ async function encryptPayload(
   const subscriberPublicKey = base64urlDecode(p256dhKey);
   const subscriberAuth = base64urlDecode(authSecret);
 
-  // Generate local ECDH key pair
   const localKeyPair = await crypto.subtle.generateKey(
     { name: 'ECDH', namedCurve: 'P-256' },
     true,
@@ -144,7 +132,6 @@ async function encryptPayload(
     await crypto.subtle.exportKey('raw', localKeyPair.publicKey)
   );
 
-  // Import subscriber public key
   const subscriberKey = await crypto.subtle.importKey(
     'raw',
     subscriberPublicKey,
@@ -153,7 +140,6 @@ async function encryptPayload(
     []
   );
 
-  // ECDH shared secret
   const sharedSecret = new Uint8Array(
     await crypto.subtle.deriveBits(
       { name: 'ECDH', public: subscriberKey },
@@ -162,27 +148,11 @@ async function encryptPayload(
     )
   );
 
-  // Generate salt
   const salt = crypto.getRandomValues(new Uint8Array(16));
 
-  // HKDF-based key derivation (simplified for aes128gcm)
   const authInfo = new TextEncoder().encode('Content-Encoding: auth\0');
-  const ikmKey = await crypto.subtle.importKey('raw', sharedSecret, { name: 'HKDF' }, false, ['deriveBits']);
-  
-  // PRK = HKDF-Extract(auth_secret, shared_secret)
-  const prkKey = await crypto.subtle.importKey('raw', subscriberAuth, { name: 'HKDF' }, false, ['deriveBits']);
-  
-  // Simplified: use HKDF to derive the content encryption key
-  const keyInfo = concatBuffers(
-    new TextEncoder().encode('Content-Encoding: aes128gcm\0'),
-    new Uint8Array([0]),
-    subscriberPublicKey,
-    localPublicKeyRaw
-  );
-
   const ikm = await crypto.subtle.importKey('raw', sharedSecret, { name: 'HKDF' }, false, ['deriveBits']);
   
-  // Use a simpler approach: derive key material
   const keyMaterial = await crypto.subtle.deriveBits(
     { name: 'HKDF', hash: 'SHA-256', salt: subscriberAuth, info: authInfo },
     ikm,
@@ -215,10 +185,7 @@ async function encryptPayload(
     96
   );
 
-  // Encrypt with AES-128-GCM
   const cek = await crypto.subtle.importKey('raw', new Uint8Array(cekBits), { name: 'AES-GCM' }, false, ['encrypt']);
-  
-  // Pad the payload with a delimiter
   const paddedPayload = concatBuffers(new TextEncoder().encode(payload), new Uint8Array([2]));
   
   const ciphertext = new Uint8Array(
@@ -229,7 +196,6 @@ async function encryptPayload(
     )
   );
 
-  // Build aes128gcm header: salt(16) + rs(4) + idlen(1) + keyid(65) + ciphertext
   const rs = new Uint8Array(4);
   new DataView(rs.buffer).setUint32(0, 4096);
   
@@ -266,7 +232,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { notification_id, title, message, url } = await req.json();
+    const { notification_id, title, message, url, tenant_id, exclude_user_id } = await req.json();
 
     // Get VAPID keys
     const { data: vapidKeys } = await supabase
@@ -282,13 +248,26 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get all push subscriptions
-    const { data: subscriptions } = await supabase
-      .from('push_subscriptions')
-      .select('*');
+    // Get push subscriptions - filter by tenant_id if provided
+    let query = supabase.from('push_subscriptions').select('*');
+    if (tenant_id) {
+      query = query.eq('tenant_id', tenant_id);
+    }
+    const { data: subscriptions } = await query;
 
     if (!subscriptions || subscriptions.length === 0) {
       return new Response(JSON.stringify({ message: 'No subscriptions', sent: 0 }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Filter out the user who triggered the action
+    const targetSubs = exclude_user_id 
+      ? subscriptions.filter(s => s.user_id !== exclude_user_id)
+      : subscriptions;
+
+    if (targetSubs.length === 0) {
+      return new Response(JSON.stringify({ message: 'No target subscriptions', sent: 0 }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -304,7 +283,7 @@ Deno.serve(async (req) => {
     let failed = 0;
     const staleEndpoints: string[] = [];
 
-    for (const sub of subscriptions) {
+    for (const sub of targetSubs) {
       try {
         const encrypted = await encryptPayload(payload, sub.p256dh, sub.auth_key);
         
@@ -327,7 +306,6 @@ Deno.serve(async (req) => {
         if (response.status === 201 || response.status === 200) {
           sent++;
         } else if (response.status === 410 || response.status === 404) {
-          // Subscription expired, mark for cleanup
           staleEndpoints.push(sub.endpoint);
           failed++;
         } else {
@@ -348,7 +326,7 @@ Deno.serve(async (req) => {
         .in('endpoint', staleEndpoints);
     }
 
-    return new Response(JSON.stringify({ sent, failed, total: subscriptions.length }), {
+    return new Response(JSON.stringify({ sent, failed, total: targetSubs.length }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {

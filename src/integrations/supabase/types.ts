@@ -3911,6 +3911,7 @@ export type Database = {
           endpoint: string
           id: string
           p256dh: string
+          tenant_id: string | null
           updated_at: string
           user_id: string
         }
@@ -3920,6 +3921,7 @@ export type Database = {
           endpoint: string
           id?: string
           p256dh: string
+          tenant_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -3929,6 +3931,7 @@ export type Database = {
           endpoint?: string
           id?: string
           p256dh?: string
+          tenant_id?: string | null
           updated_at?: string
           user_id?: string
         }
