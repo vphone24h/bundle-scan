@@ -27,10 +27,12 @@ import {
   useDeleteSystemNotification,
   type SystemNotification,
 } from '@/hooks/useSystemNotifications';
+import { supabase } from '@/integrations/supabase/client';
 import { Plus, Pencil, Trash2, Pin, Eye, EyeOff, Megaphone } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
   info: 'Thông tin',
@@ -56,6 +58,7 @@ export function SystemNotificationsManagement() {
   const [isPinned, setIsPinned] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [showAsStartup, setShowAsStartup] = useState(false);
+  const [sendPush, setSendPush] = useState(true);
 
   const resetForm = () => {
     setTitle('');
@@ -66,6 +69,7 @@ export function SystemNotificationsManagement() {
     setIsPinned(false);
     setIsActive(true);
     setShowAsStartup(false);
+    setSendPush(true);
     setEditingNotification(null);
   };
 
@@ -109,8 +113,25 @@ export function SystemNotificationsManagement() {
         await updateMutation.mutateAsync({ id: editingNotification.id, ...payload });
         toast({ title: 'Đã cập nhật thông báo' });
       } else {
-        await createMutation.mutateAsync(payload);
+        const created = await createMutation.mutateAsync(payload);
         toast({ title: 'Đã tạo thông báo mới' });
+        
+        // Send push notification if enabled
+        if (sendPush && created) {
+          try {
+            await supabase.functions.invoke('send-push', {
+              body: {
+                notification_id: created.id,
+                title: payload.title,
+                message: payload.message,
+                url: payload.link_url || '/',
+              },
+            });
+            toast({ title: 'Đã gửi push notification' });
+          } catch (pushErr) {
+            console.error('Push send error:', pushErr);
+          }
+        }
       }
       setDialogOpen(false);
       resetForm();
@@ -263,6 +284,14 @@ export function SystemNotificationsManagement() {
               <div>
                 <Label>Link khi nhấn "Xem ngay"</Label>
                 <Input value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="https://..." />
+              </div>
+            )}
+            {!editingNotification && (
+              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                <Checkbox checked={sendPush} onCheckedChange={(v) => setSendPush(!!v)} id="send-push" />
+                <Label htmlFor="send-push" className="text-sm cursor-pointer">
+                  Gửi push notification đến tất cả thiết bị đã đăng ký
+                </Label>
               </div>
             )}
           </div>

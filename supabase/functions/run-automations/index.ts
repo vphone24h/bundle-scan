@@ -62,6 +62,27 @@ Deno.serve(async (req) => {
           });
         }
 
+        // Send push notification if push channel is enabled
+        if ((auto.channels as string[]).includes('push') || (auto.channels as string[]).includes('bell')) {
+          try {
+            const pushUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-push`;
+            await fetch(pushUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              },
+              body: JSON.stringify({
+                title: replaceVars(auto.title, user),
+                message: replaceVars(auto.message, user),
+                url: auto.link_url || '/',
+              }),
+            });
+          } catch (pushErr) {
+            console.error('Push send error in automation:', pushErr);
+          }
+        }
+
         // Log execution
         await supabase.from('automation_execution_logs').insert({
           automation_id: auto.id,

@@ -17,6 +17,7 @@ import {
   type SystemNotification,
 } from '@/hooks/useSystemNotifications';
 import { NotificationDetailDialog } from './NotificationDetailDialog';
+import { PushNotificationToggle } from './PushNotificationToggle';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -118,18 +119,24 @@ export function SystemNotificationBell() {
         <PopoverContent className="w-80 sm:w-96 p-0" align="end">
           <div className="flex items-center justify-between p-3 border-b">
             <h4 className="font-semibold text-sm">Thông báo hệ thống</h4>
-            {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => markAllRead.mutate()}
-                disabled={markAllRead.isPending}
-              >
-                <CheckCheck className="h-3.5 w-3.5 mr-1" />
-                Đọc tất cả
-              </Button>
-            )}
+            <div className="flex items-center gap-1">
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => markAllRead.mutate()}
+                  disabled={markAllRead.isPending}
+                >
+                  <CheckCheck className="h-3.5 w-3.5 mr-1" />
+                  Đọc tất cả
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          <div className="px-3 py-2 border-b">
+            <PushNotificationToggle className="w-full" />
           </div>
 
           <Tabs defaultValue="pinned" className="w-full">
