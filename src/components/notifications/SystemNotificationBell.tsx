@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, CheckCheck, Pin, ExternalLink, Info, Megaphone } from 'lucide-react';
+import { Bell, CheckCheck, Pin, ExternalLink, Info, Megaphone, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -67,6 +67,9 @@ export function SystemNotificationBell() {
 
   const pinnedNotifications = notifications.filter(n => n.is_pinned);
   const otherNotifications = notifications.filter(n => !n.is_pinned);
+  const readNotifications = notifications.filter(n => n.is_read).sort((a, b) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 
   const handleClick = (notification: SystemNotification) => {
     if (!notification.is_read) {
@@ -179,7 +182,11 @@ export function SystemNotificationBell() {
                 Quan trọng {pinnedNotifications.length > 0 && `(${pinnedNotifications.length})`}
               </TabsTrigger>
               <TabsTrigger value="other" className="flex-1 text-xs">
-                Thông báo khác {otherNotifications.length > 0 && `(${otherNotifications.length})`}
+                Khác {otherNotifications.length > 0 && `(${otherNotifications.length})`}
+              </TabsTrigger>
+              <TabsTrigger value="history" className="flex-1 text-xs">
+                <History className="h-3 w-3 mr-1" />
+                Lịch sử
               </TabsTrigger>
             </TabsList>
 
@@ -202,6 +209,21 @@ export function SystemNotificationBell() {
                 ) : (
                   <div className="divide-y">
                     {otherNotifications.map(renderNotification)}
+                  </div>
+                )}
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="history" className="mt-0">
+              <ScrollArea className="h-[300px]">
+                {readNotifications.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Chưa có lịch sử</p>
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {readNotifications.map(renderNotification)}
                   </div>
                 )}
               </ScrollArea>
