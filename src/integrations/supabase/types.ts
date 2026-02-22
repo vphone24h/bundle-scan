@@ -5271,6 +5271,15 @@ export type Database = {
           total_revenue: number
         }[]
       }
+      get_tenant_branches: {
+        Args: { _tenant_id: string }
+        Returns: {
+          address: string
+          id: string
+          name: string
+          phone: string
+        }[]
+      }
       get_tenant_enrichment: {
         Args: never
         Returns: {
