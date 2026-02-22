@@ -83,6 +83,8 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const { storeId: storeIdFromParams } = useParams<{ storeId: string }>();
   const resolvedTenant = useTenantResolver();
   const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain;
+  // For custom domains: storeId may be null but tenantId is available
+  const hasIdentifier = !!storeId || !!resolvedTenant.tenantId;
   const { data: landingData, isLoading } = usePublicLandingSettings(storeId, resolvedTenant.tenantId);
   const queryClient = useQueryClient();
 
@@ -158,7 +160,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
   // Loading / error states
-  if (isLoading || (!storeId && resolvedTenant.status === 'loading')) {
+  if (isLoading || (!hasIdentifier && resolvedTenant.status === 'loading')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
         <div className="text-center space-y-3">
@@ -168,7 +170,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       </div>
     );
   }
-  if (!storeId) {
+  if (!hasIdentifier) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
         <Card className="max-w-sm w-full"><CardContent className="pt-6 text-center">
