@@ -55,8 +55,8 @@ function useAdGate() {
 
       if (next >= clicksPerAd) {
         sessionStorage.setItem(AD_CLICK_COUNT_KEY, '0');
-        // Only show ad gate if tour is not active
-        if (!document.querySelector('[data-tour-active="true"]')) {
+        // Only show ad gate if tour is not active and no notification popup is open
+        if (!document.querySelector('[data-tour-active="true"]') && !document.querySelector('[data-notification-popup="true"]')) {
           setShowAdGate(true);
         }
       } else {
