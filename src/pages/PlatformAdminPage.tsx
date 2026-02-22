@@ -81,10 +81,6 @@ export default function PlatformAdminPage() {
                <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
                <span className="hidden sm:inline">Thông báo</span>
              </TabsTrigger>
-             <TabsTrigger value="automation" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
-               <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
-               <span className="hidden sm:inline">Automation</span>
-             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
@@ -149,11 +145,24 @@ export default function PlatformAdminPage() {
            </TabsContent>
 
            <TabsContent value="system-notifications" className="mt-6">
-             <SystemNotificationsManagement />
-           </TabsContent>
-
-           <TabsContent value="automation" className="mt-6">
-             <AutomationNotificationsManagement />
+             <Tabs defaultValue="manual" className="w-full">
+               <TabsList className="mb-4">
+                 <TabsTrigger value="manual" className="text-xs sm:text-sm">
+                   <Bell className="h-3 w-3 mr-1" />
+                   Thông báo thủ công
+                 </TabsTrigger>
+                 <TabsTrigger value="automation" className="text-xs sm:text-sm">
+                   <Zap className="h-3 w-3 mr-1" />
+                   Automation
+                 </TabsTrigger>
+               </TabsList>
+               <TabsContent value="manual">
+                 <SystemNotificationsManagement />
+               </TabsContent>
+               <TabsContent value="automation">
+                 <AutomationNotificationsManagement />
+               </TabsContent>
+             </Tabs>
            </TabsContent>
         </Tabs>
       </div>
