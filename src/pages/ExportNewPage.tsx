@@ -487,7 +487,7 @@ export default function ExportNewPage() {
       return;
     }
 
-    if (!salePrice || parseFloat(salePrice) <= 0) {
+    if (salePrice === '' || salePrice === null || salePrice === undefined || parseFloat(salePrice) < 0) {
       toast({
         title: 'Lỗi',
         description: 'Vui lòng nhập giá bán hợp lệ',
