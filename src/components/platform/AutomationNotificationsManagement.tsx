@@ -297,15 +297,26 @@ export function AutomationNotificationsManagement() {
               </div>
               <div>
                 <Label>Link</Label>
-                <Select value={linkUrl || '__none__'} onValueChange={(v) => setLinkUrl(v === '__none__' ? '' : v)}>
+                <Select
+                  value={linkUrl && !APP_ROUTES.some(r => r.value === linkUrl) && linkUrl !== '' ? '__external__' : (linkUrl || '__none__')}
+                  onValueChange={(v) => {
+                    if (v === '__none__') setLinkUrl('');
+                    else if (v === '__external__') setLinkUrl('https://');
+                    else setLinkUrl(v);
+                  }}
+                >
                   <SelectTrigger><SelectValue placeholder="Chọn trang" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">-- Không có --</SelectItem>
                     {APP_ROUTES.map(r => (
                       <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
                     ))}
+                    <SelectItem value="__external__">🔗 Link ngoài (nhập URL)</SelectItem>
                   </SelectContent>
                 </Select>
+                {linkUrl && !APP_ROUTES.some(r => r.value === linkUrl) && linkUrl !== '' && (
+                  <Input className="mt-2" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="https://example.com" />
+                )}
               </div>
             </div>
 
