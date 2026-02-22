@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import { useParams, useLocation } from 'react-router-dom';
 import { usePublicLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo } from '@/hooks/useTenantLanding';
 import { usePublicLandingProducts, LandingProduct } from '@/hooks/useLandingProducts';
@@ -597,7 +598,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                 {selectedArticle.content && (
                   <div
                     className="prose prose-sm max-w-none [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_a]:text-primary [&_a]:underline"
-                    dangerouslySetInnerHTML={{ __html: selectedArticle.content }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedArticle.content) }}
                   />
                 )}
               </CardContent>

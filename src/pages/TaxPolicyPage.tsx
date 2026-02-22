@@ -1,7 +1,8 @@
  import { MainLayout } from '@/components/layout/MainLayout';
  import { PageHeader } from '@/components/layout/PageHeader';
  import { useTaxPolicyArticle } from '@/hooks/useTaxPolicyArticle';
- import { Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import DOMPurify from 'dompurify';
  import { Card, CardContent } from '@/components/ui/card';
  
  export default function TaxPolicyPage() {
@@ -24,7 +25,7 @@
                  className="prose prose-sm sm:prose max-w-none dark:prose-invert
                    [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:mx-auto
                    [&_.text-center]:text-center [&_.text-right]:text-right [&_.text-left]:text-left"
-                 dangerouslySetInnerHTML={{ __html: article.content }}
+                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.content) }}
                />
              ) : (
                <div className="text-center text-muted-foreground py-12">
