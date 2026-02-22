@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { usePendingTransferCount } from '@/hooks/useStockTransfers';
+import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import {
   LayoutDashboard,
   Package,
@@ -133,6 +134,7 @@ export function AppSidebar() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const { data: pendingTransferCount } = usePendingTransferCount();
+  const { data: pendingOrderCount } = usePendingOrderCount();
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -274,7 +276,12 @@ export function AppSidebar() {
                 )}
               >
                 <item.icon className="h-5 w-5" />
-                {item.title}
+                <span className="flex-1">{item.title}</span>
+                {item.href === '/landing-settings' && (pendingOrderCount || 0) > 0 && (
+                  <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+                    {pendingOrderCount}
+                  </span>
+                )}
               </Link>
             )}
           </div>
