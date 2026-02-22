@@ -30,16 +30,26 @@ const CALL_STATUS_MAP: Record<string, { label: string; color: string }> = {
   unreachable: { label: 'Không liên hệ được', color: 'bg-red-100 text-red-700' },
 };
 
-function useStaffList() {
+function useStaffList(branchId?: string | null, isSuperAdmin?: boolean) {
   return useQuery({
-    queryKey: ['staff-list-for-orders'],
+    queryKey: ['staff-list-for-orders', branchId, isSuperAdmin],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, display_name')
-        .order('display_name');
+      let query = supabase
+        .from('user_roles')
+        .select('user_id, user_role, branch_id, profiles!user_roles_user_id_fkey(id, display_name)')
+        .in('user_role', ['staff']);
+
+      // Branch admin: only see staff in their branch
+      if (!isSuperAdmin && branchId) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+      return (data || []).map(r => ({
+        id: (r.profiles as any)?.id || r.user_id,
+        display_name: (r.profiles as any)?.display_name || 'Không tên',
+      })).sort((a, b) => a.display_name.localeCompare(b.display_name));
     },
   });
 }
@@ -47,9 +57,9 @@ function useStaffList() {
 export function LandingOrdersTab() {
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
-  const { data: staffList } = useStaffList();
   const isSuperAdmin = permissions?.role === 'super_admin';
   const userBranchId = permissions?.branchId;
+  const { data: staffList } = useStaffList(userBranchId, isSuperAdmin);
 
   const filterBranchId = isSuperAdmin ? null : userBranchId;
   const { data: orders, isLoading } = useLandingOrders(filterBranchId);
