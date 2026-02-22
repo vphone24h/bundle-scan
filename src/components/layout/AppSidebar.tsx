@@ -96,8 +96,8 @@ const allNavItems: NavItem[] = [
     icon: FileUp,
     permission: 'canExportProducts',
     children: [
-      { title: 'Tạo phiếu xuất', href: '/export/new', permission: 'canCreateExportReceipt' },
-      { title: 'Lịch sử xuất', href: '/export/history' },
+      { title: 'Bán Hàng', href: '/export/new', permission: 'canCreateExportReceipt' },
+      { title: 'Lịch sử Bán hàng', href: '/export/history' },
       { title: 'Mẫu in hóa đơn', href: '/export/template', permission: 'canManageInvoiceTemplates' },
       { title: 'Hoá đơn điện tử', href: '/einvoice', permission: 'canManageInvoiceTemplates' },
        { title: 'Mức Thuế 2026', href: '/export/tax-policy' },
