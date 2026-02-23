@@ -198,7 +198,7 @@ export function AppSidebar() {
           <span className="text-lg font-bold text-sidebar-foreground">{currentTenant?.name || 'vkho.vn'}</span>
           <span className="text-xs text-sidebar-muted">{currentTenant?.subdomain ? `${currentTenant.subdomain}.vkho.vn` : 'Quản lý thông minh'}</span>
         </div>
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto hidden lg:flex items-center gap-1">
           <SystemNotificationBell />
           <NotificationBell />
         </div>
@@ -321,7 +321,7 @@ export function AppSidebar() {
 
   return (
     <>
-      {/* Mobile top bar - menu button + notification bell */}
+      {/* Mobile top bar - menu button + notification bells */}
       <div
         className="fixed z-50 lg:hidden flex items-center gap-1"
         style={{
@@ -338,8 +338,9 @@ export function AppSidebar() {
         >
           {isMobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
-        <div className="bg-card shadow-lg border-2 rounded-md">
+        <div className="bg-card shadow-lg border-2 rounded-md flex items-center">
           <SystemNotificationBell />
+          <NotificationBell />
         </div>
       </div>
 
