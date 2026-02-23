@@ -44,12 +44,14 @@ export function useSystemNotifications() {
         .from('system_notifications')
         .select('*')
         .eq('is_active', true)
+        .neq('source', 'automation')
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false });
       if (error) throw error;
 
       // Filter: show only notifications targeting 'all' or user's tenant
       const filtered = (notifications || []).filter(n => {
+        if (n.is_pinned) return true;
         if (n.target_audience === 'all') return true;
         if (!n.target_tenant_ids || n.target_tenant_ids.length === 0) return true;
         return tenantId && (n.target_tenant_ids as string[]).includes(tenantId);
