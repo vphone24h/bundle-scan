@@ -321,7 +321,7 @@ export function AppSidebar() {
 
   return (
     <>
-      {/* Mobile top bar - menu button + notification bells */}
+      {/* Mobile top bar - menu button */}
       <div
         className="fixed z-50 lg:hidden flex items-center gap-1"
         style={{
@@ -338,10 +338,13 @@ export function AppSidebar() {
         >
           {isMobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
-        <div className="bg-card shadow-lg border-2 rounded-md flex items-center">
-          <SystemNotificationBell />
-          <NotificationBell />
-        </div>
+        {/* Bells fly out next to X button when sidebar is open */}
+        {isMobileOpen && (
+          <div className="bg-card shadow-lg border-2 rounded-md flex items-center animate-fade-in">
+            <SystemNotificationBell />
+            <NotificationBell />
+          </div>
+        )}
       </div>
 
       {/* Mobile overlay */}
