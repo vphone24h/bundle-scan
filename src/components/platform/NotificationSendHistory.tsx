@@ -1,11 +1,22 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { History, User, Bell, Mail, MonitorSmartphone } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { History, User, Bell, Mail, MonitorSmartphone, Pin, PinOff, Search, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const CHANNEL_ICONS: Record<string, { icon: typeof Bell; label: string }> = {
   bell: { icon: Bell, label: 'Chuông' },
@@ -13,171 +24,184 @@ const CHANNEL_ICONS: Record<string, { icon: typeof Bell; label: string }> = {
   email: { icon: Mail, label: 'Email' },
 };
 
-// ===== MANUAL NOTIFICATION READ HISTORY TABLE =====
-export function ManualNotificationHistoryTable() {
-  const { data: reads = [], isLoading } = useQuery({
-    queryKey: ['all-notification-read-history'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('system_notification_reads')
-        .select('notification_id, user_id, read_at')
-        .order('read_at', { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      if (!data || data.length === 0) return [];
-
-      const userIds = [...new Set(data.map(r => r.user_id))];
-      const notifIds = [...new Set(data.map(r => r.notification_id))];
-
-      const [{ data: profiles }, { data: notifs }] = await Promise.all([
-        supabase.from('profiles').select('user_id, display_name, tenant_id').in('user_id', userIds),
-        supabase.from('system_notifications').select('id, title').in('id', notifIds),
-      ]);
-
-      const tenantIds = [...new Set((profiles || []).map(p => p.tenant_id).filter(Boolean))];
-      let tenantMap: Record<string, string> = {};
-      if (tenantIds.length > 0) {
-        const { data: tenants } = await supabase.from('tenants').select('id, name').in('id', tenantIds);
-        tenantMap = Object.fromEntries((tenants || []).map(t => [t.id, t.name]));
-      }
-
-      const profileMap = Object.fromEntries(
-        (profiles || []).map(p => [p.user_id, { name: p.display_name, tenant: tenantMap[p.tenant_id || ''] || null }])
-      );
-      const notifMap = Object.fromEntries((notifs || []).map(n => [n.id, n.title]));
-
-      return data.map(r => ({
-        user_id: r.user_id,
-        display_name: profileMap[r.user_id]?.name || 'N/A',
-        tenant_name: profileMap[r.user_id]?.tenant || null,
-        notification_title: notifMap[r.notification_id] || 'N/A',
-        read_at: r.read_at,
-      }));
-    },
-  });
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <History className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-sm font-semibold">Lịch sử đọc thông báo</h3>
-        <Badge variant="secondary" className="text-[10px]">{reads.length}</Badge>
-      </div>
-
-      <Card>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <p className="text-xs text-muted-foreground p-4">Đang tải...</p>
-          ) : reads.length === 0 ? (
-            <p className="text-xs text-muted-foreground p-4 text-center">Chưa có lịch sử</p>
-          ) : (
-            <ScrollArea className="h-[250px]">
-              <div className="divide-y">
-                {reads.map((r, i) => (
-                  <div key={i} className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/30">
-                    <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <span className="font-medium">{r.display_name}</span>
-                      {r.tenant_name && (
-                        <span className="text-muted-foreground ml-1">({r.tenant_name})</span>
-                      )}
-                      <p className="text-[10px] text-muted-foreground truncate">📢 {r.notification_title}</p>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground shrink-0">
-                      {format(new Date(r.read_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
+// ===== COMBINED NOTIFICATION HISTORY =====
+interface HistoryItem {
+  id: string;
+  title: string;
+  message: string;
+  source: 'manual' | 'automation';
+  is_pinned: boolean;
+  is_active: boolean;
+  notification_type: string;
+  created_at: string;
+  target_audience: string;
+  read_count: number;
 }
 
-// ===== AUTOMATION SEND HISTORY TABLE =====
-export function AutomationHistoryTable() {
-  const { data: logs = [], isLoading } = useQuery({
-    queryKey: ['all-automation-send-history'],
+function useNotificationHistory() {
+  return useQuery({
+    queryKey: ['notification-send-history'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('automation_execution_logs')
-        .select('id, automation_id, user_id, channel, executed_at, tenant_id')
-        .order('executed_at', { ascending: false })
-        .limit(100);
+      // Get all sent notifications (both manual and automation)
+      const { data: notifications, error } = await supabase
+        .from('system_notifications')
+        .select('id, title, message, source, is_pinned, is_active, notification_type, created_at, target_audience')
+        .order('created_at', { ascending: false })
+        .limit(200);
       if (error) throw error;
-      if (!data || data.length === 0) return [];
 
-      const userIds = [...new Set(data.map(r => r.user_id))];
-      const autoIds = [...new Set(data.map(r => r.automation_id))];
-
-      const [{ data: profiles }, { data: automations }] = await Promise.all([
-        supabase.from('profiles').select('user_id, display_name').in('user_id', userIds),
-        supabase.from('notification_automations').select('id, title').in('id', autoIds),
-      ]);
-
-      const tenantIds = [...new Set(data.map(r => r.tenant_id).filter(Boolean))];
-      let tenantMap: Record<string, string> = {};
-      if (tenantIds.length > 0) {
-        const { data: tenants } = await supabase.from('tenants').select('id, name').in('id', tenantIds as string[]);
-        tenantMap = Object.fromEntries((tenants || []).map(t => [t.id, t.name]));
+      // Get read counts per notification
+      const notifIds = (notifications || []).map(n => n.id);
+      let readCounts: Record<string, number> = {};
+      if (notifIds.length > 0) {
+        const { data: reads } = await supabase
+          .from('system_notification_reads')
+          .select('notification_id');
+        if (reads) {
+          for (const r of reads) {
+            readCounts[r.notification_id] = (readCounts[r.notification_id] || 0) + 1;
+          }
+        }
       }
 
-      const profileMap = Object.fromEntries((profiles || []).map(p => [p.user_id, p.display_name]));
-      const autoMap = Object.fromEntries((automations || []).map(a => [a.id, a.title]));
-
-      return data.map(r => ({
-        user_id: r.user_id,
-        display_name: profileMap[r.user_id] || 'N/A',
-        tenant_name: tenantMap[r.tenant_id || ''] || null,
-        automation_title: autoMap[r.automation_id] || 'N/A',
-        channel: r.channel,
-        executed_at: r.executed_at,
-      }));
+      return (notifications || []).map(n => ({
+        ...n,
+        source: (n.source || 'manual') as 'manual' | 'automation',
+        read_count: readCounts[n.id] || 0,
+      })) as HistoryItem[];
     },
+  });
+}
+
+function useTogglePin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, pin }: { id: string; pin: boolean }) => {
+      const updateData: any = { is_pinned: pin };
+      // Khi ghim: áp dụng cho tất cả tài khoản
+      if (pin) {
+        updateData.target_audience = 'all';
+        updateData.target_tenant_ids = [];
+      }
+      const { error } = await supabase
+        .from('system_notifications')
+        .update(updateData)
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_, { pin }) => {
+      queryClient.invalidateQueries({ queryKey: ['notification-send-history'] });
+      queryClient.invalidateQueries({ queryKey: ['system-notifications-admin'] });
+      toast.success(pin ? 'Đã ghim thông báo (áp dụng tất cả TK)' : 'Đã bỏ ghim');
+    },
+  });
+}
+
+// ===== MANUAL NOTIFICATION READ HISTORY TABLE =====
+export function ManualNotificationHistoryTable() {
+  return <UnifiedNotificationHistory />;
+}
+
+// ===== AUTOMATION SEND HISTORY TABLE (kept for backwards compat) =====
+export function AutomationHistoryTable() {
+  return null; // Merged into ManualNotificationHistoryTable
+}
+
+// ===== UNIFIED COMPONENT =====
+function UnifiedNotificationHistory() {
+  const { data: items = [], isLoading } = useNotificationHistory();
+  const togglePin = useTogglePin();
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'manual' | 'automation'>('all');
+  const [search, setSearch] = useState('');
+
+  const filtered = items.filter(item => {
+    if (sourceFilter !== 'all' && item.source !== sourceFilter) return false;
+    if (search && !item.title.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
   });
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="flex items-center gap-2">
         <History className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-sm font-semibold">Lịch sử gửi tự động</h3>
-        <Badge variant="secondary" className="text-[10px]">{logs.length}</Badge>
+        <h3 className="text-sm font-semibold">Lịch sử gửi thông báo</h3>
+        <Badge variant="secondary" className="text-[10px]">{filtered.length}</Badge>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Tìm theo tên thông báo..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-9 text-sm"
+          />
+        </div>
+        <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as any)}>
+          <SelectTrigger className="w-full sm:w-[160px] h-9">
+            <Filter className="h-3.5 w-3.5 mr-1.5" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả</SelectItem>
+            <SelectItem value="manual">Thủ công</SelectItem>
+            <SelectItem value="automation">Tự động</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
             <p className="text-xs text-muted-foreground p-4">Đang tải...</p>
-          ) : logs.length === 0 ? (
-            <p className="text-xs text-muted-foreground p-4 text-center">Chưa có lịch sử</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-xs text-muted-foreground p-4 text-center">Không có thông báo nào</p>
           ) : (
-            <ScrollArea className="h-[250px]">
+            <ScrollArea className="h-[400px]">
               <div className="divide-y">
-                {logs.map((r, i) => {
-                  const chInfo = CHANNEL_ICONS[r.channel];
-                  const Icon = chInfo?.icon || Bell;
-                  return (
-                    <div key={i} className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted/30">
-                      <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <span className="font-medium">{r.display_name}</span>
-                        {r.tenant_name && (
-                          <span className="text-muted-foreground ml-1">({r.tenant_name})</span>
+                {filtered.map((item) => (
+                  <div key={item.id} className="flex items-center gap-2 px-3 py-2.5 text-xs hover:bg-muted/30">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-medium truncate max-w-[200px]">{item.title}</span>
+                        {item.is_pinned && (
+                          <Badge variant="default" className="text-[9px] px-1 py-0 bg-amber-500 hover:bg-amber-600">
+                            📌 Ghim
+                          </Badge>
                         )}
-                        <p className="text-[10px] text-muted-foreground truncate">⚡ {r.automation_title}</p>
+                        <Badge
+                          variant={item.source === 'automation' ? 'secondary' : 'outline'}
+                          className="text-[9px] px-1 py-0"
+                        >
+                          {item.source === 'automation' ? '⚡ Tự động' : '✏️ Thủ công'}
+                        </Badge>
                       </div>
-                      <Badge variant="secondary" className="text-[9px] px-1 py-0 shrink-0">
-                        {chInfo?.label || r.channel}
-                      </Badge>
-                      <span className="text-[10px] text-muted-foreground shrink-0">
-                        {format(new Date(r.executed_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
-                      </span>
+                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">{item.message}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-muted-foreground">
+                          {format(new Date(item.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          👁 {item.read_count} đã đọc
+                        </span>
+                        <Badge variant="outline" className="text-[9px] px-1 py-0">
+                          {item.target_audience === 'all' ? 'Tất cả' : 'Nhóm'}
+                        </Badge>
+                      </div>
                     </div>
-                  );
-                })}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-7 w-7 shrink-0 ${item.is_pinned ? 'text-amber-500' : 'text-muted-foreground'}`}
+                      onClick={() => togglePin.mutate({ id: item.id, pin: !item.is_pinned })}
+                      title={item.is_pinned ? 'Bỏ ghim' : 'Ghim (áp dụng tất cả TK)'}
+                    >
+                      {item.is_pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+                    </Button>
+                  </div>
+                ))}
               </div>
             </ScrollArea>
           )}
