@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { sendActivityAlert } from '@/lib/activityAlert';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
 
@@ -192,6 +193,19 @@ export function useCreateCashBookEntry() {
         .single();
 
       if (error) throw error;
+
+      // Send email alert to admin (fire-and-forget)
+      sendActivityAlert('cashbook', tenantId, {
+        type: entry.type,
+        category: entry.category,
+        description: entry.description,
+        amount: entry.amount,
+        paymentSource: entry.payment_source,
+        recipientName: entry.recipient_name || undefined,
+        recipientPhone: entry.recipient_phone || undefined,
+        note: entry.note || undefined,
+      });
+
       return data as CashBookEntry;
     },
     onSuccess: () => {

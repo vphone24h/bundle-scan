@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { sendActivityAlert } from '@/lib/activityAlert';
 
 export type StockCountStatus = 'draft' | 'confirmed';
 export type StockCountScope = 'all' | 'category' | 'product';
@@ -388,6 +389,15 @@ export function useCreateStockCount() {
         },
         description: `Tạo phiếu kiểm kho ${stockCount.code} - ${stockCountItems.length} sản phẩm`,
       }]);
+
+      // Send email alert to admin (fire-and-forget)
+      sendActivityAlert('stockcount', tenantId, {
+        code: stockCount.code,
+        branchName: data.branchId ? undefined : undefined, // Will be resolved server-side if needed
+        totalItems: stockCountItems.length,
+        scope: data.scope,
+        note: data.note || undefined,
+      });
 
       return stockCount;
     },
