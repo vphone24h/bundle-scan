@@ -65,7 +65,7 @@ export function OverdueDaysDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Cài đặt quá hạn - {customerName}</DialogTitle>
+          <DialogTitle>Cài đặt thời gian trả nợ - {customerName}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 rounded-lg border p-3">
           <div className="flex items-center justify-between">
