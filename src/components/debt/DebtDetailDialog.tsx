@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useDebtDetail, useDebtPaymentHistory } from '@/hooks/useDebt';
 import { formatNumber } from '@/lib/formatNumber';
 import { format } from 'date-fns';
@@ -24,7 +24,14 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, History, Phone, Building2 } from 'lucide-react';
+import { FileText, History, Phone, Building2, Filter } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface DebtDetailDialogProps {
   open: boolean;
@@ -52,21 +59,43 @@ export function DebtDetailDialog({
   remainingAmount,
 }: DebtDetailDialogProps) {
   const [showOnlyUnpaid, setShowOnlyUnpaid] = useState(true);
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'addition' | 'payment'>('all');
   const { data: receipts, isLoading: receiptsLoading } = useDebtDetail(entityType, entityId);
   const { data: paymentHistory, isLoading: historyLoading } = useDebtPaymentHistory(entityType, entityId);
 
-  // Calculate totals from payment history
-  const historyTotals = paymentHistory?.reduce(
-    (acc, payment) => {
-      if (payment.payment_type === 'payment') {
-        acc.totalPaid += Number(payment.amount);
+  // Filter and enrich payment history with running balance
+  const enrichedHistory = useMemo(() => {
+    if (!paymentHistory) return [];
+
+    // Sort ascending by time to calculate running balance
+    const sorted = [...paymentHistory].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+
+    let runningTotal = 0;
+    let runningPaid = 0;
+    const enriched = sorted.map(payment => {
+      if (payment.payment_type === 'addition') {
+        runningTotal += Number(payment.amount);
       } else {
-        acc.totalAdded += Number(payment.amount);
+        runningPaid += Number(payment.amount);
       }
-      return acc;
-    },
-    { totalPaid: 0, totalAdded: 0 }
-  ) || { totalPaid: 0, totalAdded: 0 };
+      return {
+        ...payment,
+        balance_after: runningTotal - runningPaid,
+      };
+    });
+
+    // Reverse to show newest first
+    enriched.reverse();
+
+    // Apply filter
+    if (historyFilter === 'all') return enriched;
+    return enriched.filter(p => p.payment_type === historyFilter);
+  }, [paymentHistory, historyFilter]);
+
+  const additionCount = paymentHistory?.filter(p => p.payment_type === 'addition').length || 0;
+  const paymentCount = paymentHistory?.filter(p => p.payment_type === 'payment').length || 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -213,84 +242,113 @@ export function DebtDetailDialog({
 
           {/* Payment History Tab */}
           <TabsContent value="history" className="flex-1 mt-4 min-h-0">
+            {/* Filter */}
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={historyFilter} onValueChange={(v) => setHistoryFilter(v as any)}>
+                <SelectTrigger className="w-[180px] h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả ({(additionCount + paymentCount)})</SelectItem>
+                  <SelectItem value="addition">Lịch sử thêm nợ ({additionCount})</SelectItem>
+                  <SelectItem value="payment">Lịch sử trả nợ ({paymentCount})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <ScrollArea className="h-[300px]">
               {historyLoading ? (
                 <div className="space-y-2">
                   {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
+                    <Skeleton key={i} className="h-16 w-full" />
                   ))}
                 </div>
-              ) : !paymentHistory || paymentHistory.length === 0 ? (
+              ) : enrichedHistory.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Chưa có lịch sử {entityType === 'customer' ? 'thu' : 'trả'} nợ
+                  {historyFilter === 'all'
+                    ? `Chưa có lịch sử ${entityType === 'customer' ? 'thu' : 'trả'} nợ`
+                    : historyFilter === 'addition'
+                    ? 'Chưa có lịch sử thêm nợ'
+                    : 'Chưa có lịch sử trả nợ'}
                 </div>
               ) : (
-                <>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Ngày</TableHead>
-                        <TableHead>Nội dung</TableHead>
-                        <TableHead className="text-right">Số tiền</TableHead>
-                        <TableHead className="hidden md:table-cell">Nguồn tiền</TableHead>
-                        <TableHead className="hidden lg:table-cell">Nhân viên</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paymentHistory.map((payment) => (
-                        <TableRow key={payment.id}>
-                          <TableCell className="whitespace-nowrap">
-                            {format(new Date(payment.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="text-sm">{payment.description}</p>
-                              {payment.payment_type === 'addition' && (
-                                <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 mt-1">
-                                  Cộng thêm nợ
-                                </Badge>
-                              )}
+                <div className="space-y-3">
+                  {enrichedHistory.map((payment) => {
+                    const isAddition = payment.payment_type === 'addition';
+                    return (
+                      <div
+                        key={payment.id}
+                        className={`rounded-lg border p-3 ${
+                          isAddition
+                            ? 'border-orange-200 bg-orange-50/50 dark:border-orange-900 dark:bg-orange-950/30'
+                            : 'border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/30'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge
+                                variant="outline"
+                                className={`text-xs shrink-0 ${
+                                  isAddition
+                                    ? 'bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300'
+                                    : 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/50 dark:text-green-300'
+                                }`}
+                              >
+                                {isAddition ? 'Cộng nợ' : 'Trả nợ'}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(payment.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                              </span>
                             </div>
-                          </TableCell>
-                          <TableCell className="text-right whitespace-nowrap">
-                            <span className={payment.payment_type === 'payment' ? 'text-green-600' : 'text-destructive'}>
-                              {payment.payment_type === 'payment' ? '-' : '+'}
-                              {formatNumber(payment.amount)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {payment.payment_source || '-'}
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            {payment.profiles?.display_name || '-'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
 
-                  {/* Summary */}
-                  <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Tổng nợ</p>
-                        <p className="font-semibold">{formatNumber(totalAmount)}</p>
+                            <p className="text-sm truncate">{payment.description}</p>
+
+                            {payment.profiles?.display_name && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {isAddition ? 'Người tạo' : 'Người thu'}: {payment.profiles.display_name}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <p className={`font-semibold ${isAddition ? 'text-orange-600' : 'text-green-600'}`}>
+                              {isAddition ? '+' : '-'}{formatNumber(payment.amount)}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Còn nợ: <span className="font-medium text-destructive">{formatNumber(payment.balance_after)}</span>
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Đã {entityType === 'customer' ? 'thu' : 'trả'}
-                        </p>
-                        <p className="font-semibold text-green-600">{formatNumber(paidAmount)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Còn lại</p>
-                        <p className="font-semibold text-destructive">{formatNumber(remainingAmount)}</p>
-                      </div>
-                    </div>
-                  </div>
-                </>
+                    );
+                  })}
+                </div>
               )}
             </ScrollArea>
+
+            {/* Summary */}
+            {paymentHistory && paymentHistory.length > 0 && (
+              <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Tổng nợ</p>
+                    <p className="font-semibold">{formatNumber(totalAmount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Đã {entityType === 'customer' ? 'thu' : 'trả'}
+                    </p>
+                    <p className="font-semibold text-green-600">{formatNumber(paidAmount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Còn lại</p>
+                    <p className="font-semibold text-destructive">{formatNumber(remainingAmount)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>
