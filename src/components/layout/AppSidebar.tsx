@@ -338,14 +338,28 @@ export function AppSidebar() {
         >
           {isMobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </Button>
-        {/* Bells fly out next to X button when sidebar is open */}
-        {isMobileOpen && (
-          <div className="bg-card shadow-lg border-2 rounded-md flex items-center animate-fade-in">
+        {!isMobileOpen && (
+          <div className="bg-card shadow-lg border-2 rounded-md flex items-center">
             <SystemNotificationBell />
-            <NotificationBell />
           </div>
         )}
       </div>
+
+      {/* Mobile notification bells - float outside sidebar when open */}
+      {isMobileOpen && (
+        <div
+          className="fixed z-50 lg:hidden flex items-center gap-1 animate-fade-in"
+          style={{
+            top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))',
+            left: '17rem',
+          }}
+        >
+          <div className="bg-card shadow-lg border-2 rounded-md flex items-center">
+            <SystemNotificationBell />
+            <NotificationBell />
+          </div>
+        </div>
+      )}
 
       {/* Mobile overlay */}
       {isMobileOpen && (
