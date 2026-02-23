@@ -345,7 +345,7 @@ export function AppSidebar() {
         )}
       </div>
 
-      {/* Mobile notification bells - float outside sidebar when open */}
+      {/* Mobile notification bell - float outside sidebar when open */}
       {isMobileOpen && (
         <div
           className="fixed z-50 lg:hidden flex items-center gap-1 animate-fade-in"
@@ -356,7 +356,6 @@ export function AppSidebar() {
         >
           <div className="bg-card shadow-lg border-2 rounded-md flex items-center">
             <SystemNotificationBell />
-            <NotificationBell />
           </div>
         </div>
       )}
