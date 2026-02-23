@@ -3,17 +3,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Loader2 } from 'lucide-react';
 
 interface EditCustomerDebtDialogProps {
@@ -23,7 +18,6 @@ interface EditCustomerDebtDialogProps {
   customerName: string;
   customerPhone: string | null;
   branchName?: string | null;
-  globalOverdueDays?: number;
 }
 
 export function EditCustomerDebtDialog({
@@ -33,14 +27,11 @@ export function EditCustomerDebtDialog({
   customerName,
   customerPhone,
   branchName,
-  globalOverdueDays = 15,
 }: EditCustomerDebtDialogProps) {
   const queryClient = useQueryClient();
   const [name, setName] = useState(customerName);
   const [phone, setPhone] = useState(customerPhone || '');
   const [note, setNote] = useState('');
-  const [debtDueDays, setDebtDueDays] = useState<number | null>(null);
-  const [useCustomDays, setUseCustomDays] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -50,18 +41,15 @@ export function EditCustomerDebtDialog({
       setLoading(true);
       supabase
         .from('customers')
-        .select('note, debt_due_days')
+        .select('note')
         .eq('id', customerId)
         .single()
         .then(({ data }) => {
           setNote(data?.note || '');
-          const days = data?.debt_due_days;
-          setDebtDueDays(days ?? globalOverdueDays);
-          setUseCustomDays(days !== null && days !== undefined);
           setLoading(false);
         });
     }
-  }, [open, customerId, customerName, customerPhone, globalOverdueDays]);
+  }, [open, customerId, customerName, customerPhone]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -73,7 +61,6 @@ export function EditCustomerDebtDialog({
           name: name.trim(),
           phone: phone.trim() || customerPhone,
           note: note.trim() || null,
-          debt_due_days: useCustomDays ? debtDueDays : null,
         })
         .eq('id', customerId);
 
@@ -137,39 +124,6 @@ export function EditCustomerDebtDialog({
               rows={2}
               disabled={loading}
             />
-          </div>
-
-          {/* Custom overdue days */}
-          <div className="space-y-3 rounded-lg border p-3">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="use-custom-days" className="text-sm font-medium cursor-pointer">
-                Cài đặt ngày quá hạn riêng
-              </Label>
-              <Switch
-                id="use-custom-days"
-                checked={useCustomDays}
-                onCheckedChange={setUseCustomDays}
-              />
-            </div>
-            {useCustomDays ? (
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min={1}
-                    max={365}
-                    value={debtDueDays ?? ''}
-                    onChange={(e) => setDebtDueDays(parseInt(e.target.value) || null)}
-                    className="w-24"
-                  />
-                  <span className="text-sm text-muted-foreground">ngày</span>
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Đang dùng cài đặt chung: <span className="font-medium">{globalOverdueDays} ngày</span>
-              </p>
-            )}
           </div>
         </div>
 
