@@ -4,6 +4,7 @@ import { Database } from '@/integrations/supabase/types';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
 import { sendBusinessPush, formatVND } from '@/lib/pushNotify';
+import { sendActivityAlert } from '@/lib/activityAlert';
 
 type ReceiptStatus = Database['public']['Enums']['receipt_status'];
 type PaymentType = Database['public']['Enums']['payment_type'];
@@ -506,6 +507,16 @@ export function useCreateImportReceipt() {
         url: '/import-history',
         tenantId,
         excludeUserId: user.id,
+      });
+
+      // Send email alert to admin (fire-and-forget)
+      sendActivityAlert('import', tenantId, {
+        code,
+        supplierName: supplierName || 'Không xác định',
+        items: products.map(p => ({ name: p.name, imei: p.imei || undefined, price: p.import_price, qty: p.quantity })),
+        totalAmount,
+        paidAmount,
+        debtAmount,
       });
 
       return receipt;

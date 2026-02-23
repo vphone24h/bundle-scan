@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
 import { sendBusinessPush, formatVND } from '@/lib/pushNotify';
+import { sendActivityAlert } from '@/lib/activityAlert';
 
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
@@ -544,6 +545,17 @@ export function useCreateExportReceipt() {
         url: '/export-history',
         tenantId,
         excludeUserId: user?.id,
+      });
+
+      // Send email alert to admin (fire-and-forget)
+      sendActivityAlert('export', tenantId, {
+        code,
+        customerName: customer?.name || 'Khách lẻ',
+        customerPhone: customer?.phone || '',
+        items: items.map(i => ({ name: i.product_name, imei: i.imei || undefined, price: i.sale_price, qty: i.quantity || 1 })),
+        totalAmount,
+        paidAmount,
+        debtAmount,
       });
 
       return { ...receipt, points_earned: pointsToEarn, points_pending: pointsArePending };

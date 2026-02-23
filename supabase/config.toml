@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.send-debt-alert]
 verify_jwt = false
+
+[functions.send-activity-alert]
+verify_jwt = false
