@@ -24,7 +24,9 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, History, Phone, Building2, Filter } from 'lucide-react';
+import { FileText, History, Phone, Building2, Filter, Pencil } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { EditCustomerDebtDialog } from './EditCustomerDebtDialog';
 import {
   Select,
   SelectContent,
@@ -60,6 +62,7 @@ export function DebtDetailDialog({
 }: DebtDetailDialogProps) {
   const [showOnlyUnpaid, setShowOnlyUnpaid] = useState(true);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'addition' | 'payment'>('all');
+  const [showEditCustomer, setShowEditCustomer] = useState(false);
   const { data: receipts, isLoading: receiptsLoading } = useDebtDetail(entityType, entityId);
   const { data: paymentHistory, isLoading: historyLoading } = useDebtPaymentHistory(entityType, entityId);
 
@@ -107,7 +110,16 @@ export function DebtDetailDialog({
         </DialogHeader>
 
         {/* Header Summary */}
-        <Card className="bg-muted/50">
+        <Card className="bg-muted/50 relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 h-8 w-8"
+            onClick={() => setShowEditCustomer(true)}
+            title="Sửa thông tin"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
           <CardContent className="p-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="flex items-center gap-2">
@@ -352,6 +364,16 @@ export function DebtDetailDialog({
           </TabsContent>
         </Tabs>
       </DialogContent>
+      {entityType === 'customer' && (
+        <EditCustomerDebtDialog
+          open={showEditCustomer}
+          onOpenChange={setShowEditCustomer}
+          customerId={entityId}
+          customerName={entityName}
+          customerPhone={entityPhone}
+          branchName={branchName}
+        />
+      )}
     </Dialog>
   );
 }
