@@ -561,15 +561,34 @@ export default function CashBookPage() {
     setShowDeleteDialog(true);
   };
 
+  // Tính số dư theo nguồn tiền CHO MỘT chi nhánh cụ thể
+  const getBalanceBySourceForBranch = (source: string, branchId: string) => {
+    if (!allEntries) return 0;
+    const openingBalance = latestOpeningBalances?.[source];
+    // Khi xem theo chi nhánh, opening balance không chia theo branch nên chỉ tính giao dịch
+    let balance = 0;
+    allEntries.forEach(entry => {
+      if (entry.payment_source === source && entry.branch_id === branchId) {
+        balance += entry.type === 'income' ? Number(entry.amount) : -Number(entry.amount);
+      }
+    });
+    return balance;
+  };
+
   const handleOpenAdjustBalance = (source: string) => {
     // Non-Super Admin: always use their branch
     const defaultBranch = !isSuperAdmin && permissions?.branchId
       ? permissions.branchId
       : (branches?.find(b => b.is_default) || branches?.[0])?.id || '';
 
+    // Trong chế độ "Tổng số quỹ", tính số dư cho chi nhánh được chọn (không phải tổng)
+    const currentBalance = viewMode === 'total' && defaultBranch
+      ? getBalanceBySourceForBranch(source, defaultBranch)
+      : balanceBySource[source] || 0;
+
     setAdjustBalanceData({
       source,
-      currentBalance: balanceBySource[source] || 0,
+      currentBalance,
       newBalance: '',
       reason: '',
       includeInAccounting: false,
@@ -1983,7 +2002,11 @@ export default function CashBookPage() {
                 </p>
                 <Select
                   value={adjustBalanceData.branchId}
-                  onValueChange={(v) => setAdjustBalanceData({ ...adjustBalanceData, branchId: v })}
+                  onValueChange={(v) => {
+                    // Cập nhật số dư hiện tại theo chi nhánh mới được chọn
+                    const newBalance = getBalanceBySourceForBranch(adjustBalanceData.source, v);
+                    setAdjustBalanceData({ ...adjustBalanceData, branchId: v, currentBalance: newBalance, newBalance: '' });
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn chi nhánh" />
