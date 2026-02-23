@@ -1427,6 +1427,7 @@ export type Database = {
           created_at: string
           crm_status: string | null
           current_points: number
+          debt_due_days: number | null
           email: string | null
           id: string
           last_care_date: string | null
@@ -1452,6 +1453,7 @@ export type Database = {
           created_at?: string
           crm_status?: string | null
           current_points?: number
+          debt_due_days?: number | null
           email?: string | null
           id?: string
           last_care_date?: string | null
@@ -1477,6 +1479,7 @@ export type Database = {
           created_at?: string
           crm_status?: string | null
           current_points?: number
+          debt_due_days?: number | null
           email?: string | null
           id?: string
           last_care_date?: string | null
@@ -1564,6 +1567,38 @@ export type Database = {
             foreignKeyName: "debt_payments_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      debt_settings: {
+        Row: {
+          created_at: string
+          id: string
+          overdue_days: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          overdue_days?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          overdue_days?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debt_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
@@ -4634,6 +4669,7 @@ export type Database = {
           address: string | null
           branch_id: string | null
           created_at: string
+          debt_due_days: number | null
           id: string
           name: string
           note: string | null
@@ -4645,6 +4681,7 @@ export type Database = {
           address?: string | null
           branch_id?: string | null
           created_at?: string
+          debt_due_days?: number | null
           id?: string
           name: string
           note?: string | null
@@ -4656,6 +4693,7 @@ export type Database = {
           address?: string | null
           branch_id?: string | null
           created_at?: string
+          debt_due_days?: number | null
           id?: string
           name?: string
           note?: string | null

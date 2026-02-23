@@ -11,23 +11,34 @@ import { Button } from '@/components/ui/button';
 import { CustomerDebtTable } from '@/components/debt/CustomerDebtTable';
 import { SupplierDebtTable } from '@/components/debt/SupplierDebtTable';
 import { DebtTagManager } from '@/components/debt/DebtTagManager';
+import { DebtSettingsDialog } from '@/components/debt/DebtSettingsDialog';
+import { DebtDueListDialog } from '@/components/debt/DebtDueListDialog';
 import { useCustomerDebts, useSupplierDebts } from '@/hooks/useDebt';
 import { useDebtTags } from '@/hooks/useDebtTags';
+import { useDebtSettings } from '@/hooks/useDebtSettings';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatNumber } from '@/lib/formatNumber';
-import { Users, Truck, TrendingUp, TrendingDown, Building2, Hash, Settings } from 'lucide-react';
+import { Users, Truck, TrendingUp, TrendingDown, Building2, Hash, Settings, AlertTriangle, CalendarClock, UserCheck, Settings2 } from 'lucide-react';
+
+type QuickFilter = 'all' | 'due_today' | 'overdue' | 'hard_collect';
 
 export default function DebtPage() {
   const [showSettled, setShowSettled] = useState(false);
   const [branchFilter, setBranchFilter] = useState('_all_');
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
   const [showTagManager, setShowTagManager] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showDueToday, setShowDueToday] = useState(false);
+  const [showOverdue, setShowOverdue] = useState(false);
   
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
   const { data: tags } = useDebtTags();
+  const { data: debtSettings } = useDebtSettings();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
+  const overdueDays = debtSettings?.overdue_days ?? 15;
   
   useEffect(() => {
     if (!isSuperAdmin && permissions?.branchId) {
@@ -49,9 +60,32 @@ export default function DebtPage() {
     if (branchFilter === '_all_') return supplierDebts;
     return supplierDebts.filter(d => d.branch_id === branchFilter);
   }, [supplierDebts, branchFilter]);
-  
+
+  // Derived stats
   const totalCustomerDebt = filteredCustomerDebts.reduce((sum, d) => sum + d.remaining_amount, 0);
   const totalSupplierDebt = filteredSupplierDebts.reduce((sum, d) => sum + d.remaining_amount, 0);
+  const activeCustomerDebtors = filteredCustomerDebts.filter(d => d.remaining_amount > 0).length;
+  
+  const dueTodayDebts = useMemo(() => {
+    return filteredCustomerDebts.filter(d => {
+      if (d.remaining_amount <= 0) return false;
+      return d.days_overdue === overdueDays || d.days_overdue === overdueDays - 1;
+    });
+  }, [filteredCustomerDebts, overdueDays]);
+
+  const overdueDebts = useMemo(() => {
+    return filteredCustomerDebts.filter(d => {
+      if (d.remaining_amount <= 0) return false;
+      return d.days_overdue >= overdueDays;
+    });
+  }, [filteredCustomerDebts, overdueDays]);
+
+  const dueTodayAmount = dueTodayDebts.reduce((sum, d) => sum + d.remaining_amount, 0);
+  const overdueAmount = overdueDebts.reduce((sum, d) => sum + d.remaining_amount, 0);
+
+  // Quick filter tags for the debt tables
+  const effectiveTagFilter = tagFilter;
+  const effectiveQuickFilter = quickFilter;
 
   return (
     <MainLayout>
@@ -62,32 +96,82 @@ export default function DebtPage() {
       />
 
       <div className="space-y-4">
-        {/* Summary Cards */}
+        {/* Summary Cards - Row 1 */}
         <div className="grid grid-cols-2 gap-3">
-          <Card className="border-green-200 bg-green-50/50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
+          <Card className="border-green-200 bg-green-50/50 cursor-pointer hover:shadow-md transition-shadow" onClick={() => {}}>
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-7 w-7 rounded-full bg-green-100 flex items-center justify-center">
+                  <TrendingUp className="h-3.5 w-3.5 text-green-600" />
                 </div>
-                <span className="text-sm text-muted-foreground">Khách nợ mình</span>
+                <span className="text-xs text-muted-foreground">Khách nợ mình</span>
               </div>
-              <p className="text-lg sm:text-xl font-bold text-green-600">
+              <p className="text-base sm:text-xl font-bold text-green-600">
                 {formatNumber(totalCustomerDebt)}đ
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                <UserCheck className="h-3 w-3 inline mr-0.5" />
+                {activeCustomerDebtors} khách đang nợ
               </p>
             </CardContent>
           </Card>
           
           <Card className="border-red-200 bg-red-50/50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
-                  <TrendingDown className="h-4 w-4 text-red-600" />
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-7 w-7 rounded-full bg-red-100 flex items-center justify-center">
+                  <TrendingDown className="h-3.5 w-3.5 text-red-600" />
                 </div>
-                <span className="text-sm text-muted-foreground">Mình nợ NCC</span>
+                <span className="text-xs text-muted-foreground">Mình nợ NCC</span>
               </div>
-              <p className="text-lg sm:text-xl font-bold text-destructive">
+              <p className="text-base sm:text-xl font-bold text-destructive">
                 {formatNumber(totalSupplierDebt)}đ
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {filteredSupplierDebts.filter(d => d.remaining_amount > 0).length} NCC
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Summary Cards - Row 2: Due Today & Overdue */}
+        <div className="grid grid-cols-2 gap-3">
+          <Card
+            className="border-orange-200 bg-orange-50/50 cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => setShowDueToday(true)}
+          >
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-7 w-7 rounded-full bg-orange-100 flex items-center justify-center">
+                  <CalendarClock className="h-3.5 w-3.5 text-orange-600" />
+                </div>
+                <span className="text-xs text-muted-foreground">Cần thu hôm nay</span>
+              </div>
+              <p className="text-base sm:text-xl font-bold text-orange-600">
+                {formatNumber(dueTodayAmount)}đ
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {dueTodayDebts.length} khoản
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card
+            className={`cursor-pointer hover:shadow-md transition-shadow ${overdueDebts.length > 0 ? 'border-red-300 bg-red-50/70' : 'border-muted bg-muted/30'}`}
+            onClick={() => setShowOverdue(true)}
+          >
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className={`h-7 w-7 rounded-full flex items-center justify-center ${overdueDebts.length > 0 ? 'bg-red-100' : 'bg-muted'}`}>
+                  <AlertTriangle className={`h-3.5 w-3.5 ${overdueDebts.length > 0 ? 'text-red-600' : 'text-muted-foreground'}`} />
+                </div>
+                <span className="text-xs text-muted-foreground">Quá hạn</span>
+              </div>
+              <p className={`text-base sm:text-xl font-bold ${overdueDebts.length > 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
+                {formatNumber(overdueAmount)}đ
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {overdueDebts.length > 0 ? `${overdueDebts.length} khoản · >${overdueDays} ngày` : 'Không có'}
               </p>
             </CardContent>
           </Card>
@@ -122,10 +206,44 @@ export default function DebtPage() {
               <span className="sm:hidden">Đã trả hết</span>
             </Label>
           </div>
-          <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1 text-xs sm:text-sm ml-auto" onClick={() => setShowTagManager(true)}>
-            <Settings className="h-3.5 w-3.5" />
-            Hashtag
-          </Button>
+          <div className="flex gap-1 ml-auto">
+            <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1 text-xs sm:text-sm" onClick={() => setShowSettings(true)}>
+              <Settings2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Cài đặt</span>
+            </Button>
+            <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1 text-xs sm:text-sm" onClick={() => setShowTagManager(true)}>
+              <Settings className="h-3.5 w-3.5" />
+              Hashtag
+            </Button>
+          </div>
+        </div>
+
+        {/* Quick Filters */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {([
+            { key: 'all' as QuickFilter, label: 'Tất cả', color: '' },
+            { key: 'due_today' as QuickFilter, label: `Hôm nay (${dueTodayDebts.length})`, color: 'bg-orange-500' },
+            { key: 'overdue' as QuickFilter, label: `Quá hạn (${overdueDebts.length})`, color: 'bg-red-500' },
+            { key: 'hard_collect' as QuickFilter, label: 'Khó đòi', color: 'bg-gray-500' },
+          ]).map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => setQuickFilter(quickFilter === f.key ? 'all' : f.key)}
+              className="focus:outline-none shrink-0"
+            >
+              <Badge
+                variant="outline"
+                className={`cursor-pointer transition-all whitespace-nowrap ${
+                  quickFilter === f.key
+                    ? f.color ? `text-white border-0 ${f.color}` : 'bg-foreground text-background'
+                    : 'hover:bg-muted'
+                }`}
+              >
+                {f.label}
+              </Badge>
+            </button>
+          ))}
         </div>
 
         {/* Tag filter */}
@@ -179,16 +297,43 @@ export default function DebtPage() {
           </TabsList>
 
           <TabsContent value="customer" className="mt-4">
-            <CustomerDebtTable showSettled={showSettled} branchFilter={branchFilter} tagFilter={tagFilter} />
+            <CustomerDebtTable
+              showSettled={showSettled}
+              branchFilter={branchFilter}
+              tagFilter={tagFilter}
+              quickFilter={effectiveQuickFilter}
+              overdueDays={overdueDays}
+            />
           </TabsContent>
 
           <TabsContent value="supplier" className="mt-4">
-            <SupplierDebtTable showSettled={showSettled} branchFilter={branchFilter} tagFilter={tagFilter} />
+            <SupplierDebtTable
+              showSettled={showSettled}
+              branchFilter={branchFilter}
+              tagFilter={tagFilter}
+              quickFilter={effectiveQuickFilter}
+              overdueDays={overdueDays}
+            />
           </TabsContent>
         </Tabs>
       </div>
 
       <DebtTagManager open={showTagManager} onOpenChange={setShowTagManager} />
+      <DebtSettingsDialog open={showSettings} onOpenChange={setShowSettings} />
+      <DebtDueListDialog
+        open={showDueToday}
+        onOpenChange={setShowDueToday}
+        title="Công nợ cần thu hôm nay"
+        debts={dueTodayDebts}
+        overdueDays={overdueDays}
+      />
+      <DebtDueListDialog
+        open={showOverdue}
+        onOpenChange={setShowOverdue}
+        title="Công nợ quá hạn"
+        debts={overdueDebts}
+        overdueDays={overdueDays}
+      />
     </MainLayout>
   );
 }

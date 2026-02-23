@@ -14,20 +14,30 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus, Hash } from 'lucide-react';
+import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus, Hash, Phone, MessageSquare } from 'lucide-react';
 import { DebtDetailDialog } from './DebtDetailDialog';
 import { DebtPaymentDialog } from './DebtPaymentDialog';
 import { DebtAdditionDialog } from './DebtAdditionDialog';
 import { CreateDebtDialog } from './CreateDebtDialog';
 import { DebtTagAssignDialog } from './DebtTagAssignDialog';
 
+function getDebtStatusBadge(daysOverdue: number, remaining: number, overdueDays: number) {
+  if (remaining <= 0) return { label: 'Đã tất toán', className: 'bg-green-50 text-green-700 border-green-200' };
+  if (daysOverdue >= overdueDays) return { label: 'Quá hạn', className: 'bg-red-100 text-red-700 border-red-200' };
+  if (daysOverdue >= overdueDays - 1) return { label: 'Đến hạn', className: 'bg-orange-100 text-orange-700 border-orange-200' };
+  if (daysOverdue >= overdueDays - 3) return { label: 'Sắp hạn', className: 'bg-yellow-50 text-yellow-700 border-yellow-200' };
+  return { label: 'Đang nợ', className: 'bg-blue-50 text-blue-700 border-blue-200' };
+}
+
 interface CustomerDebtTableProps {
   showSettled: boolean;
   branchFilter: string;
   tagFilter: string | null;
+  quickFilter?: 'all' | 'due_today' | 'overdue' | 'hard_collect';
+  overdueDays?: number;
 }
 
-export function CustomerDebtTable({ showSettled, branchFilter, tagFilter }: CustomerDebtTableProps) {
+export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickFilter = 'all', overdueDays = 15 }: CustomerDebtTableProps) {
   const { data: allDebts, isLoading } = useCustomerDebts(showSettled);
   const { data: tags } = useDebtTags();
   const { data: assignments } = useDebtTagAssignments('customer');
@@ -40,8 +50,17 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter }: Cust
       const entityIds = new Set(assignments.filter(a => a.tag_id === tagFilter).map(a => a.entity_id));
       filtered = filtered.filter(d => entityIds.has(d.entity_id));
     }
+    // Quick filters
+    if (quickFilter === 'due_today') {
+      filtered = filtered.filter(d => d.remaining_amount > 0 && (d.days_overdue === overdueDays || d.days_overdue === overdueDays - 1));
+    } else if (quickFilter === 'overdue') {
+      filtered = filtered.filter(d => d.remaining_amount > 0 && d.days_overdue >= overdueDays);
+    } else if (quickFilter === 'hard_collect') {
+      // Hard collect = overdue > 2x overdue days
+      filtered = filtered.filter(d => d.remaining_amount > 0 && d.days_overdue >= overdueDays * 2);
+    }
     return filtered;
-  }, [allDebts, branchFilter, tagFilter, assignments]);
+  }, [allDebts, branchFilter, tagFilter, assignments, quickFilter, overdueDays]);
 
   const [selectedDebt, setSelectedDebt] = useState<DebtSummary | null>(null);
   const [showDetail, setShowDetail] = useState(false);
@@ -78,6 +97,16 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter }: Cust
         <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowTagAssign(true); }}>
           <Hash className="mr-2 h-4 w-4" /> Gắn hashtag
         </DropdownMenuItem>
+        {debt.entity_phone && (
+          <>
+            <DropdownMenuItem onClick={() => window.open(`tel:${debt.entity_phone}`, '_self')}>
+              <Phone className="mr-2 h-4 w-4" /> Gọi nhắc nợ
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.open(`sms:${debt.entity_phone}?body=Xin chào ${debt.entity_name}, nhắc nhở thanh toán công nợ ${formatNumber(debt.remaining_amount)}đ. Cảm ơn!`, '_self')}>
+              <MessageSquare className="mr-2 h-4 w-4" /> SMS nhắc nợ
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuItem onClick={() => console.log('Print', debt.entity_name)}>
           <Printer className="mr-2 h-4 w-4" /> In công nợ
         </DropdownMenuItem>
@@ -160,11 +189,10 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter }: Cust
                   </div>
                   <div>
                     <span className="text-muted-foreground">{debt.days_overdue} ngày</span>
-                    {debt.remaining_amount > 0 ? (
-                      <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 h-4 bg-yellow-50 text-yellow-700 border-yellow-200">Đang nợ</Badge>
-                    ) : (
-                      <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 h-4 bg-green-50 text-green-700 border-green-200">Đã tất toán</Badge>
-                    )}
+                    {(() => {
+                      const status = getDebtStatusBadge(debt.days_overdue, debt.remaining_amount, overdueDays);
+                      return <Badge variant="outline" className={`ml-2 text-[10px] px-1.5 py-0 h-4 ${status.className}`}>{status.label}</Badge>;
+                    })()}
                   </div>
                 </div>
               </div>
@@ -216,11 +244,10 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter }: Cust
                       <span className={debt.days_overdue > 30 ? 'text-destructive font-semibold' : ''}>{debt.days_overdue} ngày</span>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
-                      {debt.remaining_amount > 0 ? (
-                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Đang nợ</Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Đã tất toán</Badge>
-                      )}
+                      {(() => {
+                        const status = getDebtStatusBadge(debt.days_overdue, debt.remaining_amount, overdueDays);
+                        return <Badge variant="outline" className={status.className}>{status.label}</Badge>;
+                      })()}
                     </TableCell>
                     <TableCell className="text-right">
                       <ActionMenu debt={debt} />
