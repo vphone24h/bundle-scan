@@ -192,7 +192,6 @@ export function useAllSystemNotifications() {
       const { data, error } = await supabase
         .from('system_notifications')
         .select('*')
-        .neq('source', 'automation')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as SystemNotification[];
