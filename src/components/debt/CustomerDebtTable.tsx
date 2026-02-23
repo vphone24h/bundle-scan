@@ -93,14 +93,14 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
             <Wallet className="mr-2 h-4 w-4" /> Thu nợ
           </DropdownMenuItem>
         )}
+        <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowEditCustomer(true); }}>
+          <Pencil className="mr-2 h-4 w-4" /> Cài đặt quá hạn / Sửa thông tin
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowAddition(true); }}>
           <Plus className="mr-2 h-4 w-4" /> Cộng thêm nợ
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowTagAssign(true); }}>
           <Hash className="mr-2 h-4 w-4" /> Gắn hashtag
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowEditCustomer(true); }}>
-          <Pencil className="mr-2 h-4 w-4" /> Sửa thông tin
         </DropdownMenuItem>
         {debt.entity_phone && (
           <>
