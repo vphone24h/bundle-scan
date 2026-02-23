@@ -14,13 +14,13 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus, Hash, Phone, MessageSquare, Pencil, Settings } from 'lucide-react';
+import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus, Hash, Phone, MessageSquare, Settings } from 'lucide-react';
 import { DebtDetailDialog } from './DebtDetailDialog';
 import { DebtPaymentDialog } from './DebtPaymentDialog';
 import { DebtAdditionDialog } from './DebtAdditionDialog';
 import { CreateDebtDialog } from './CreateDebtDialog';
 import { DebtTagAssignDialog } from './DebtTagAssignDialog';
-import { EditCustomerDebtDialog } from './EditCustomerDebtDialog';
+
 import { OverdueDaysDialog } from './OverdueDaysDialog';
 
 function getDebtStatusBadge(daysOverdue: number, remaining: number, overdueDays: number) {
@@ -70,7 +70,7 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
   const [showAddition, setShowAddition] = useState(false);
   const [showCreateDebt, setShowCreateDebt] = useState(false);
   const [showTagAssign, setShowTagAssign] = useState(false);
-  const [showEditCustomer, setShowEditCustomer] = useState(false);
+  
   const [showOverdueDays, setShowOverdueDays] = useState(false);
   const pagination = usePagination(debts || [], { storageKey: 'customer-debt' });
 
@@ -102,9 +102,6 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowTagAssign(true); }}>
           <Hash className="mr-2 h-4 w-4" /> Gắn hashtag
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowEditCustomer(true); }}>
-          <Pencil className="mr-2 h-4 w-4" /> Sửa thông tin
         </DropdownMenuItem>
         {debt.entity_phone && (
           <>
@@ -293,9 +290,6 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
             remainingAmount={selectedDebt.remaining_amount} branchId={selectedDebt.branch_id} />
           <DebtTagAssignDialog open={showTagAssign} onOpenChange={setShowTagAssign}
             entityId={selectedDebt.entity_id} entityType="customer" entityName={selectedDebt.entity_name} />
-          <EditCustomerDebtDialog open={showEditCustomer} onOpenChange={setShowEditCustomer}
-            customerId={selectedDebt.entity_id} customerName={selectedDebt.entity_name}
-            customerPhone={selectedDebt.entity_phone} branchName={selectedDebt.branch_name} />
           <OverdueDaysDialog open={showOverdueDays} onOpenChange={setShowOverdueDays}
             customerId={selectedDebt.entity_id} customerName={selectedDebt.entity_name}
             globalOverdueDays={overdueDays} />
