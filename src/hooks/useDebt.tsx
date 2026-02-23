@@ -582,7 +582,7 @@ export function useCreateDebtPayment() {
       // If it's a payment (not addition), also create cash book entry
       // Note: is_business_accounting = false because this is just cash flow from debt collection/payment
       // The actual revenue/expense was already recorded when the original sale/purchase was made
-      if (payment.payment_type === 'payment' && payment.payment_source) {
+      if (payment.payment_type === 'payment') {
         const cashBookType = payment.entity_type === 'customer' ? 'income' as const : 'expense' as const;
         
         // Fetch staff name for cash book
@@ -593,12 +593,12 @@ export function useCreateDebtPayment() {
           .maybeSingle();
         const staffName = staffProfile?.display_name || user?.email || null;
 
-        await supabase.from('cash_book').insert([{
+        const { error: cashBookError } = await supabase.from('cash_book').insert([{
           type: cashBookType,
           category: payment.entity_type === 'customer' ? 'Thu nợ khách hàng' : 'Trả nợ nhà cung cấp',
           description: payment.description,
           amount: payment.amount,
-          payment_source: payment.payment_source,
+          payment_source: payment.payment_source || 'cash',
           is_business_accounting: false, // Không tính hạch toán kinh doanh - chỉ là dòng tiền
           branch_id: payment.branch_id || null,
           reference_id: data.id,
@@ -608,6 +608,10 @@ export function useCreateDebtPayment() {
           created_by_name: staffName,
           recipient_name: payment.entity_name || null,
         }]);
+        
+        if (cashBookError) {
+          console.error('Lỗi ghi sổ quỹ khi thu/trả nợ:', cashBookError);
+        }
       }
 
       // Audit log with before/after debt info
