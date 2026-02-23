@@ -95,7 +95,7 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
           </DropdownMenuItem>
         )}
         <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowOverdueDays(true); }}>
-          <Settings className="mr-2 h-4 w-4" /> Cài đặt quá hạn
+          <Settings className="mr-2 h-4 w-4" /> Cài đặt thời gian trả nợ
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowAddition(true); }}>
           <Plus className="mr-2 h-4 w-4" /> Cộng thêm nợ
