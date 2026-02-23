@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
           show_as_startup_popup: (auto.channels as string[]).includes('popup'),
           target_audience: tenantIds.length > 0 ? 'group' : 'all',
           target_tenant_ids: tenantIds,
+          source: 'automation',
         });
       }
 

@@ -4752,6 +4752,7 @@ export type Database = {
           scheduled_at: string | null
           send_frequency: string
           show_as_startup_popup: boolean
+          source: string
           target_audience: string
           target_tenant_ids: string[] | null
           title: string
@@ -4770,6 +4771,7 @@ export type Database = {
           scheduled_at?: string | null
           send_frequency?: string
           show_as_startup_popup?: boolean
+          source?: string
           target_audience?: string
           target_tenant_ids?: string[] | null
           title: string
@@ -4788,6 +4790,7 @@ export type Database = {
           scheduled_at?: string | null
           send_frequency?: string
           show_as_startup_popup?: boolean
+          source?: string
           target_audience?: string
           target_tenant_ids?: string[] | null
           title?: string

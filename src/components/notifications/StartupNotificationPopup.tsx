@@ -21,6 +21,21 @@ export function StartupNotificationPopup() {
 
   useEffect(() => {
     if (notification) {
+      // Check localStorage dismissal (more reliable than DB for mobile/PWA)
+      const dismissKey = `startup_popup_dismissed_${notification.id}`;
+      const lastDismissed = localStorage.getItem(dismissKey);
+      if (lastDismissed) {
+        const dismissedDate = new Date(lastDismissed);
+        const today = new Date();
+        if (
+          dismissedDate.getFullYear() === today.getFullYear() &&
+          dismissedDate.getMonth() === today.getMonth() &&
+          dismissedDate.getDate() === today.getDate()
+        ) {
+          return; // Already dismissed today
+        }
+      }
+
       // Small delay so it doesn't pop immediately
       const timer = setTimeout(() => {
         // Don't show if onboarding tour is active
@@ -35,6 +50,9 @@ export function StartupNotificationPopup() {
 
   const handleClose = () => {
     setOpen(false);
+    // Save to localStorage for reliable cross-session tracking
+    const dismissKey = `startup_popup_dismissed_${notification.id}`;
+    localStorage.setItem(dismissKey, new Date().toISOString());
     dismiss.mutate(notification.id);
   };
 
