@@ -152,7 +152,7 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
           {pagination.paginatedData.map((debt) => {
             const entityTags = getEntityTags(debt.entity_id);
             return (
-              <div key={debt.entity_id} className="rounded-lg border bg-card p-3 space-y-2">
+              <div key={debt.entity_id} className="rounded-lg border bg-card p-3 space-y-2 cursor-pointer active:bg-muted/50" onClick={() => { setSelectedDebt(debt); setShowDetail(true); }}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-sm truncate">{debt.entity_name}</p>
@@ -161,7 +161,7 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
                     )}
                     <p className="text-[11px] text-muted-foreground">{debt.branch_name || 'Chưa phân CN'}</p>
                   </div>
-                  <ActionMenu debt={debt} />
+                  <div onClick={(e) => e.stopPropagation()}><ActionMenu debt={debt} /></div>
                 </div>
                 {entityTags.length > 0 && (
                   <div className="flex flex-wrap gap-1">
@@ -218,7 +218,7 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
               {pagination.paginatedData.map((debt) => {
                 const entityTags = getEntityTags(debt.entity_id);
                 return (
-                  <TableRow key={debt.entity_id}>
+                  <TableRow key={debt.entity_id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedDebt(debt); setShowDetail(true); }}>
                     <TableCell>
                       <div>
                         <p className="font-medium">{debt.entity_name}</p>
@@ -249,7 +249,7 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
                         return <Badge variant="outline" className={status.className}>{status.label}</Badge>;
                       })()}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <ActionMenu debt={debt} />
                     </TableCell>
                   </TableRow>
