@@ -32,12 +32,13 @@ export function useSystemNotifications() {
       if (!user?.id) return [];
 
       // Get user's tenant_id for filtering
-      const { data: profile } = await supabase
-        .from('profiles')
+      // Lấy tenant_id từ platform_users (chính xác hơn profiles)
+      const { data: pu } = await supabase
+        .from('platform_users')
         .select('tenant_id')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .maybeSingle();
-      const tenantId = profile?.tenant_id;
+      const tenantId = pu?.tenant_id;
       
       const { data: notifications, error } = await supabase
         .from('system_notifications')
