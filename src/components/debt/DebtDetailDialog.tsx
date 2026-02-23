@@ -280,7 +280,7 @@ export function DebtDetailDialog({
                         <p className="text-sm text-muted-foreground">
                           Đã {entityType === 'customer' ? 'thu' : 'trả'}
                         </p>
-                        <p className="font-semibold text-green-600">{formatNumber(historyTotals.totalPaid)}</p>
+                        <p className="font-semibold text-green-600">{formatNumber(paidAmount)}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Còn lại</p>
