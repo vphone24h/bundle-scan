@@ -621,7 +621,7 @@ export function LandingPageSettings() {
                   variant="link"
                   size="sm"
                   className="text-xs h-auto p-0 gap-1"
-                  onClick={() => navigate('/customers?tab=voucher-settings')}
+                  onClick={() => navigate('/customers?tab=list&openSettings=voucher')}
                 >
                   <Plus className="h-3 w-3" />
                   Thêm mẫu voucher
@@ -635,7 +635,7 @@ export function LandingPageSettings() {
                     variant="outline"
                     size="sm"
                     className="text-xs gap-1"
-                    onClick={() => navigate('/customers?tab=voucher-settings')}
+                    onClick={() => navigate('/customers?tab=list&openSettings=voucher')}
                   >
                     <Plus className="h-3 w-3" />
                     Tạo mẫu voucher
