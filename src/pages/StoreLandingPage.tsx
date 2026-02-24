@@ -93,22 +93,46 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<LandingProduct | null>(null);
 
-  // Warranty search state - restore from localStorage
-  const warrantyStorageKey = storeId ? `warranty_session_${storeId}` : null;
-  const savedSession = warrantyStorageKey ? (() => {
-    try {
-      const raw = localStorage.getItem(warrantyStorageKey);
-      return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
-  })() : null;
+  // Warranty search state - persist per store/tenant and restore reliably
+  const warrantySessionId = storeId || resolvedTenant.tenantId || null;
+  const warrantyStorageKey = warrantySessionId ? `warranty_session_${warrantySessionId}` : null;
+  const [restoredSessionKey, setRestoredSessionKey] = useState<string | null>(null);
 
-  const [searchValue, setSearchValue] = useState(savedSession?.searchValue || '');
-  const [submittedValue, setSubmittedValue] = useState(savedSession?.searchValue || '');
+  const [searchValue, setSearchValue] = useState('');
+  const [submittedValue, setSubmittedValue] = useState('');
 
   const tenantId = landingData?.tenant?.id || null;
   const { data: warrantyResults, isLoading: isSearching, isFetched, error: warrantyError } = useWarrantyLookup(submittedValue, tenantId);
   const { data: productsData } = usePublicLandingProducts(tenantId);
   const { data: articlesData } = usePublicLandingArticles(tenantId);
+
+  // Restore persisted warranty session as soon as key is available
+  useEffect(() => {
+    if (!warrantyStorageKey || restoredSessionKey === warrantyStorageKey) return;
+
+    try {
+      const raw = localStorage.getItem(warrantyStorageKey);
+      const parsed = raw ? JSON.parse(raw) : null;
+      const restoredSearch = typeof parsed?.searchValue === 'string' ? parsed.searchValue.trim() : '';
+
+      if (restoredSearch) {
+        setSearchValue(restoredSearch);
+        setSubmittedValue(restoredSearch);
+        setPageView('warranty');
+      }
+    } catch {
+      // Ignore corrupted localStorage payload
+    } finally {
+      setRestoredSessionKey(warrantyStorageKey);
+    }
+  }, [warrantyStorageKey, restoredSessionKey]);
+
+  // Save warranty search to localStorage when results arrive
+  useEffect(() => {
+    if (warrantyStorageKey && submittedValue && warrantyResults && warrantyResults.length > 0) {
+      localStorage.setItem(warrantyStorageKey, JSON.stringify({ searchValue: submittedValue }));
+    }
+  }, [warrantyStorageKey, submittedValue, warrantyResults]);
 
   const isPhoneSearch = /^0\d{9,10}$/.test(submittedValue.replace(/\s/g, ''));
   const firstResult = warrantyResults?.[0];
@@ -122,20 +146,6 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const handlePointsAwarded = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['customer-points-public'] });
   }, [queryClient]);
-
-  // Save warranty search to localStorage when results arrive
-  useEffect(() => {
-    if (warrantyStorageKey && submittedValue && warrantyResults && warrantyResults.length > 0) {
-      localStorage.setItem(warrantyStorageKey, JSON.stringify({ searchValue: submittedValue }));
-    }
-  }, [warrantyStorageKey, submittedValue, warrantyResults]);
-
-  // Auto-navigate to warranty page if saved session exists
-  useEffect(() => {
-    if (savedSession?.searchValue && pageView === 'home') {
-      setPageView('warranty');
-    }
-  }, []);
 
   const handleWarrantyLogout = () => {
     if (warrantyStorageKey) {
