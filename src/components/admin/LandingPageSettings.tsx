@@ -82,6 +82,7 @@ export function LandingPageSettings() {
   const { data: settings, isLoading } = useTenantLandingSettings();
   const { data: customDomains } = useCustomDomains();
   const updateSettings = useUpdateTenantLandingSettings();
+  const navigate = useNavigate();
 
   const { data: voucherTemplates } = useVoucherTemplates();
   const activeTemplates = (voucherTemplates || []).filter(t => t.is_active);
@@ -613,9 +614,36 @@ export function LandingPageSettings() {
           </div>
           {(formData as any).voucher_enabled && (
             <div className="space-y-2 pl-1">
-              <Label className="text-xs">Chọn mẫu Voucher tặng khách</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Chọn mẫu Voucher tặng khách</Label>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="text-xs h-auto p-0 gap-1"
+                  onClick={() => navigate('/customers?tab=voucher-settings')}
+                >
+                  <Plus className="h-3 w-3" />
+                  Thêm mẫu voucher
+                </Button>
+              </div>
               {activeTemplates.length === 0 ? (
-                <p className="text-xs text-destructive">Chưa có mẫu voucher nào. Vui lòng tạo mẫu trong tab Voucher trước.</p>
+                <div className="rounded-lg border border-dashed p-3 text-center space-y-1">
+                  <p className="text-xs text-muted-foreground">Chưa có mẫu voucher nào.</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs gap-1"
+                    onClick={() => navigate('/customers?tab=voucher-settings')}
+                  >
+                    <Plus className="h-3 w-3" />
+                    Tạo mẫu voucher
+                  </Button>
+                  <p className="text-[10px] text-muted-foreground">
+                    Menu → Khách hàng & CRM → Cài đặt: Voucher
+                  </p>
+                </div>
               ) : (
                 <Select
                   value={(formData as any).voucher_template_id || ''}
@@ -633,6 +661,9 @@ export function LandingPageSettings() {
                   </SelectContent>
                 </Select>
               )}
+              <p className="text-[10px] text-muted-foreground">
+                💡 Quản lý mẫu voucher tại: Menu → Khách hàng & CRM → Cài đặt: Voucher
+              </p>
             </div>
           )}
           
