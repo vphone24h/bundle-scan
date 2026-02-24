@@ -496,6 +496,15 @@ export default function ExportNewPage() {
       return;
     }
 
+    if (!itemWarranty.trim()) {
+      toast({
+        title: 'Lỗi',
+        description: 'Vui lòng nhập thời gian bảo hành',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // ⛔ Safety check: block export from other branches
     if (!canExportFromBranch(selectedProduct.branch_id)) {
       toast({
@@ -887,7 +896,7 @@ export default function ExportNewPage() {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>Bảo hành</Label>
+                      <Label>Bảo hành <span className="text-destructive">*</span></Label>
                       <Input
                         placeholder="VD: 12 tháng"
                         value={itemWarranty}
