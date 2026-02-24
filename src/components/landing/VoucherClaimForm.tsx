@@ -16,8 +16,7 @@ interface VoucherClaimFormProps {
 }
 
 export function VoucherClaimForm({ tenantId, branches, primaryColor }: VoucherClaimFormProps) {
-  const [bannerVisible, setBannerVisible] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(true);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -76,40 +75,9 @@ export function VoucherClaimForm({ tenantId, branches, primaryColor }: VoucherCl
     }
   };
 
-  if (!bannerVisible) return null;
-
   return (
     <>
-      {/* Promotional Banner */}
-      <div
-        className="relative rounded-xl p-4 flex items-center gap-3 shadow-md cursor-pointer animate-in fade-in slide-in-from-bottom-2"
-        style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)` }}
-        onClick={() => setDialogOpen(true)}
-      >
-        <button
-          className="absolute top-2 right-2 p-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-          onClick={(e) => { e.stopPropagation(); setBannerVisible(false); }}
-        >
-          <X className="h-3.5 w-3.5 text-white" />
-        </button>
-        <div className="p-2.5 rounded-full bg-white/20 shrink-0">
-          <Gift className="h-6 w-6 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-white text-sm">🎁 Bạn được tặng Voucher!</p>
-          <p className="text-white/80 text-xs mt-0.5">Nhấn để nhận voucher ưu đãi miễn phí</p>
-        </div>
-        <Button
-          size="sm"
-          className="shrink-0 bg-white hover:bg-white/90 font-semibold text-xs px-4"
-          style={{ color: primaryColor }}
-          onClick={(e) => { e.stopPropagation(); setDialogOpen(true); }}
-        >
-          Nhận ngay
-        </Button>
-      </div>
-
-      {/* Dialog */}
+      {/* Dialog - auto open */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           {result ? (
