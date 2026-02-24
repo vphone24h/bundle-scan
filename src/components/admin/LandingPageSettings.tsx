@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useCustomDomainArticlePublic } from '@/hooks/useAppConfig';
 import { useNavigate } from 'react-router-dom';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings, TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
+import { useVoucherTemplates } from '@/hooks/useVouchers';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCustomDomains } from '@/hooks/useCustomDomains';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,6 +82,9 @@ export function LandingPageSettings() {
   const { data: settings, isLoading } = useTenantLandingSettings();
   const { data: customDomains } = useCustomDomains();
   const updateSettings = useUpdateTenantLandingSettings();
+
+  const { data: voucherTemplates } = useVoucherTemplates();
+  const activeTemplates = (voucherTemplates || []).filter(t => t.is_active);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -606,6 +611,30 @@ export function LandingPageSettings() {
               onCheckedChange={(checked) => handleChange('voucher_enabled' as any, checked)}
             />
           </div>
+          {(formData as any).voucher_enabled && (
+            <div className="space-y-2 pl-1">
+              <Label className="text-xs">Chọn mẫu Voucher tặng khách</Label>
+              {activeTemplates.length === 0 ? (
+                <p className="text-xs text-destructive">Chưa có mẫu voucher nào. Vui lòng tạo mẫu trong tab Voucher trước.</p>
+              ) : (
+                <Select
+                  value={(formData as any).voucher_template_id || ''}
+                  onValueChange={(val) => handleChange('voucher_template_id' as any, val)}
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Chọn mẫu voucher" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeTemplates.map(t => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name} — {t.discount_type === 'percentage' ? `${t.discount_value}%` : `${t.discount_value.toLocaleString()}đ`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
           
           {formData.show_warranty_lookup && (
             <>
