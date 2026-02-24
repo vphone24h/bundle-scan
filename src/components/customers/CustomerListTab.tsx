@@ -1,4 +1,4 @@
- import { useState, useEffect } from 'react';
+ import { useState } from 'react';
  import { Card, CardContent } from '@/components/ui/card';
  import { usePagination } from '@/hooks/usePagination';
  import { TablePagination } from '@/components/ui/table-pagination';
@@ -38,7 +38,7 @@
  import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog';
  import { PointSettingsDialog } from '@/components/customers/PointSettingsDialog';
  import { CustomerMergeDialog } from '@/components/customers/CustomerMergeDialog';
- import { useNavigate, useSearchParams } from 'react-router-dom';
+ import { useNavigate } from 'react-router-dom';
  import { usePermissions } from '@/hooks/usePermissions';
  
 interface CustomerListTabProps {
@@ -50,7 +50,6 @@ interface CustomerListTabProps {
 
 export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBranchFilterChange }: CustomerListTabProps) {
     const navigate = useNavigate();
-    const [searchParams, setSearchParams] = useSearchParams();
     const { data: permissions } = usePermissions();
     const isSuperAdmin = permissions?.canViewAllBranches === true;
     const [search, setSearch] = useState('');
@@ -65,7 +64,6 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
     const [showDetailDialog, setShowDetailDialog] = useState(false);
     const [showFormDialog, setShowFormDialog] = useState(false);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-    const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'tiers' | 'voucher'>('general');
     const [showMergeDialog, setShowMergeDialog] = useState(false);
 
     // Helper: check if a customer belongs to current user's branch (for edit permission)
@@ -121,20 +119,6 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
      setShowFormDialog(open);
      if (!open) setEditingCustomer(null);
    };
-
-   useEffect(() => {
-     const openSettings = searchParams.get('openSettings');
-     if (openSettings !== 'voucher') return;
-
-     if (permissions?.role === 'super_admin') {
-       setSettingsInitialTab('voucher');
-       setShowSettingsDialog(true);
-     }
-
-     const params = new URLSearchParams(searchParams);
-     params.delete('openSettings');
-     setSearchParams(params, { replace: true });
-   }, [searchParams, setSearchParams, permissions?.role]);
  
    return (
     <div className="space-y-3 sm:space-y-4">
