@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { useCheckProductForSale, useSearchProductsByName, useCreateExportReceipt, type ExportReceiptItem, type ExportPayment } from '@/hooks/useExportReceipts';
+import { useIssueVoucher } from '@/hooks/useVouchers';
 import { useUpsertCustomer } from '@/hooks/useCustomers';
 import { useInvoiceTemplateByBranch } from '@/hooks/useInvoiceTemplates';
 import { useBranches } from '@/hooks/useBranches';
@@ -152,6 +153,7 @@ export default function ExportNewPage() {
   const searchProducts = useSearchProductsByName();
   const upsertCustomer = useUpsertCustomer();
   const createReceipt = useCreateExportReceipt();
+  const issueVoucher = useIssueVoucher();
   const { data: pointSettings } = usePointSettings();
   const { data: branches } = useBranches();
   const { data: permissions } = usePermissions();
@@ -617,7 +619,7 @@ export default function ExportNewPage() {
   };
 
   // Handle payment completion
-  const handlePaymentComplete = async (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number) => {
+  const handlePaymentComplete = async (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number, giftVoucherTemplateId?: string) => {
     if (isSubmitting) return; // Chống double-submit
     setIsSubmitting(true);
 
@@ -714,6 +716,25 @@ export default function ExportNewPage() {
         successMessage += receipt.points_pending 
           ? `. Khách được ${receipt.points_earned} điểm (treo - chờ thanh toán đủ)`
           : `. Khách được cộng ${receipt.points_earned} điểm`;
+      }
+
+      // Issue voucher if selected
+      if (giftVoucherTemplateId && customer.id) {
+        try {
+          await issueVoucher.mutateAsync({
+            customer_id: customer.id,
+            customer_name: savedCustomerName,
+            customer_phone: savedCustomerPhone,
+            customer_email: savedCustomerEmail || undefined,
+            voucher_template_id: giftVoucherTemplateId,
+            branch_id: branchId || undefined,
+            source: 'export',
+          });
+          successMessage += '. Đã tặng voucher cho khách';
+        } catch {
+          // Non-critical, don't block
+          successMessage += '. Lỗi tặng voucher';
+        }
       }
 
       toast({
@@ -1180,6 +1201,7 @@ export default function ExportNewPage() {
           use_percentage_limit: pointSettings.use_percentage_limit,
           max_redeem_percentage: pointSettings.max_redeem_percentage,
         } : null}
+        hasCustomer={!!customerPhone}
       />
 
       {/* Invoice Print Dialog */}
