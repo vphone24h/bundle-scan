@@ -3,12 +3,13 @@ import { useState, useMemo, useEffect } from 'react';
  import { PageHeader } from '@/components/layout/PageHeader';
  import { Card, CardContent } from '@/components/ui/card';
  import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
- import { Users, Calendar, History, BarChart3, FileText, ShoppingCart, Wallet } from 'lucide-react';
+ import { Users, Calendar, History, BarChart3, FileText, ShoppingCart, Wallet, Ticket } from 'lucide-react';
  import { CustomerListTab } from '@/components/customers/CustomerListTab';
  import { CareScheduleTab } from '@/components/customers/CareScheduleTab';
  import { CareTimelineTab } from '@/components/customers/CareTimelineTab';
  import { CRMDashboardTab } from '@/components/customers/CRMDashboardTab';
- import { CRMReportsTab } from '@/components/customers/CRMReportsTab';
+  import { CRMReportsTab } from '@/components/customers/CRMReportsTab';
+  import { VoucherHistoryTab } from '@/components/voucher/VoucherHistoryTab';
   import { useCustomerDetail } from '@/hooks/useCustomerPoints';
   import { useCustomersWithPoints, MEMBERSHIP_TIER_NAMES, MEMBERSHIP_TIER_COLORS } from '@/hooks/useCustomerPoints';
   import { formatNumber } from '@/lib/formatNumber';
@@ -137,29 +138,33 @@ import { useState, useMemo, useEffect } from 'react';
        </div>
  
        {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-3 sm:space-y-4">
-        <TabsList className="grid w-full grid-cols-5 h-auto">
-          <TabsTrigger value="list" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
-            <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Danh sách</span>
-           </TabsTrigger>
-          <TabsTrigger value="care" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
-            <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Chăm sóc</span>
-           </TabsTrigger>
-          <TabsTrigger value="timeline" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
-            <History className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Nhật ký</span>
-           </TabsTrigger>
-          <TabsTrigger value="dashboard" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
-            <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Hiệu suất</span>
-           </TabsTrigger>
-          <TabsTrigger value="reports" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
-            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Báo cáo</span>
-           </TabsTrigger>
-         </TabsList>
+       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-3 sm:space-y-4">
+         <TabsList className="grid w-full grid-cols-6 h-auto">
+           <TabsTrigger value="list" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
+             <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+             <span className="hidden sm:inline">Danh sách</span>
+            </TabsTrigger>
+           <TabsTrigger value="care" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
+             <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+             <span className="hidden sm:inline">Chăm sóc</span>
+            </TabsTrigger>
+           <TabsTrigger value="timeline" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
+             <History className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+             <span className="hidden sm:inline">Nhật ký</span>
+            </TabsTrigger>
+           <TabsTrigger value="vouchers" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
+             <Ticket className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+             <span className="hidden sm:inline">Voucher</span>
+            </TabsTrigger>
+           <TabsTrigger value="dashboard" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
+             <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+             <span className="hidden sm:inline">Hiệu suất</span>
+            </TabsTrigger>
+           <TabsTrigger value="reports" className="text-xs sm:text-sm py-2 px-1 sm:px-3 gap-1 sm:gap-2">
+             <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+             <span className="hidden sm:inline">Báo cáo</span>
+            </TabsTrigger>
+          </TabsList>
  
           <TabsContent value="list">
             <CustomerListTab 
@@ -186,10 +191,14 @@ import { useState, useMemo, useEffect } from 'react';
            />
          </TabsContent>
  
+         <TabsContent value="vouchers">
+           <VoucherHistoryTab />
+         </TabsContent>
+
          <TabsContent value="dashboard">
            <CRMDashboardTab />
          </TabsContent>
- 
+
          <TabsContent value="reports">
            <CRMReportsTab />
          </TabsContent>

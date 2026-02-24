@@ -1,4 +1,4 @@
- import { useState } from 'react';
+ import { useState, useEffect } from 'react';
  import { Card, CardContent } from '@/components/ui/card';
  import { usePagination } from '@/hooks/usePagination';
  import { TablePagination } from '@/components/ui/table-pagination';
@@ -38,7 +38,7 @@
  import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog';
  import { PointSettingsDialog } from '@/components/customers/PointSettingsDialog';
  import { CustomerMergeDialog } from '@/components/customers/CustomerMergeDialog';
- import { useNavigate } from 'react-router-dom';
+ import { useNavigate, useSearchParams } from 'react-router-dom';
  import { usePermissions } from '@/hooks/usePermissions';
  
 interface CustomerListTabProps {
@@ -50,6 +50,7 @@ interface CustomerListTabProps {
 
 export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBranchFilterChange }: CustomerListTabProps) {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { data: permissions } = usePermissions();
     const isSuperAdmin = permissions?.canViewAllBranches === true;
     const [search, setSearch] = useState('');
@@ -64,7 +65,21 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
     const [showDetailDialog, setShowDetailDialog] = useState(false);
     const [showFormDialog, setShowFormDialog] = useState(false);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+    const [settingsDefaultTab, setSettingsDefaultTab] = useState<string | undefined>(undefined);
     const [showMergeDialog, setShowMergeDialog] = useState(false);
+
+    // Auto-open settings dialog from URL param
+    useEffect(() => {
+      const openSettings = searchParams.get('openSettings');
+      if (openSettings) {
+        setSettingsDefaultTab(openSettings);
+        setShowSettingsDialog(true);
+        // Clear param
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('openSettings');
+        setSearchParams(newParams, { replace: true });
+      }
+    }, [searchParams, setSearchParams]);
 
     // Helper: check if a customer belongs to current user's branch (for edit permission)
     const canEditCustomer = (customerBranchId: string | null | undefined): boolean => {
@@ -372,7 +387,8 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
  
        <PointSettingsDialog
          open={showSettingsDialog}
-         onOpenChange={setShowSettingsDialog}
+         onOpenChange={(v) => { setShowSettingsDialog(v); if (!v) setSettingsDefaultTab(undefined); }}
+         defaultTab={settingsDefaultTab}
        />
  
        <CustomerMergeDialog

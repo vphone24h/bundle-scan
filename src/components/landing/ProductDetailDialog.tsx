@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,11 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 import { Badge } from '@/components/ui/badge';
-import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Gift, Star, Ticket } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
 import { LandingProduct, LandingProductVariant } from '@/hooks/useLandingProducts';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
+import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
+import { useCustomerPointsPublic } from '@/hooks/useTenantLanding';
 import { toast } from 'sonner';
 
 interface BranchOption {
@@ -39,8 +41,31 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
   const [selectedVariantIndex, setSelectedVariantIndex] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
+  const [usePoints, setUsePoints] = useState(false);
 
   const placeOrder = usePlaceLandingOrder();
+
+  // Debounce phone for lookup
+  const [debouncedPhone, setDebouncedPhone] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (customerPhone.replace(/\s/g, '').length >= 10) {
+        setDebouncedPhone(customerPhone.trim());
+      } else {
+        setDebouncedPhone('');
+      }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [customerPhone]);
+
+  const { data: customerVouchers } = usePublicCustomerVouchers(debouncedPhone, tenantId || null);
+  const { data: customerPoints } = useCustomerPointsPublic(debouncedPhone, tenantId || null);
+
+  const unusedVouchers = useMemo(() => 
+    (customerVouchers || []).filter((v: any) => v.status === 'unused'),
+    [customerVouchers]
+  );
 
   // Parse variants
   const variants: LandingProductVariant[] = useMemo(() => {
@@ -56,17 +81,15 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
     return [];
   }, [product?.variants]);
 
-  // Collect all images: product images + variant images
+  // Collect all images
   const allImages = useMemo(() => {
     if (!product) return [];
     const imgs: string[] = [];
-    // Product images array
     if (Array.isArray(product.images) && product.images.length > 0) {
       imgs.push(...product.images);
     } else if (product.image_url) {
       imgs.push(product.image_url);
     }
-    // Variant images
     variants.forEach(v => {
       if (v.image_url && !imgs.includes(v.image_url)) {
         imgs.push(v.image_url);
@@ -77,9 +100,35 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
 
   const selectedVariant = selectedVariantIndex !== null ? variants[selectedVariantIndex] : null;
 
-  const displayPrice = selectedVariant && selectedVariant.price > 0
+  const basePrice = selectedVariant && selectedVariant.price > 0
     ? selectedVariant.price
     : (product?.sale_price || product?.price || 0);
+
+  // Calculate discount from voucher or points
+  const selectedVoucher = useMemo(() => {
+    if (!selectedVoucherId) return null;
+    return unusedVouchers.find((v: any) => v.id === selectedVoucherId) || null;
+  }, [selectedVoucherId, unusedVouchers]);
+
+  const voucherDiscount = useMemo(() => {
+    if (!selectedVoucher) return 0;
+    if (selectedVoucher.discount_type === 'percentage') {
+      return Math.floor(basePrice * selectedVoucher.discount_value / 100);
+    }
+    return Math.min(selectedVoucher.discount_value, basePrice);
+  }, [selectedVoucher, basePrice]);
+
+  const pointsDiscount = useMemo(() => {
+    if (!usePoints || !customerPoints || !customerPoints.is_points_enabled) return 0;
+    if (customerPoints.current_points <= 0 || customerPoints.redeem_points <= 0 || customerPoints.point_value <= 0) return 0;
+    const rawDiscount = Math.floor(customerPoints.current_points / customerPoints.redeem_points) * customerPoints.point_value;
+    const hasMaxLimit = customerPoints.max_redemption_enabled && customerPoints.max_redemption_amount > 0;
+    const cappedDiscount = hasMaxLimit ? Math.min(rawDiscount, customerPoints.max_redemption_amount) : rawDiscount;
+    return Math.min(cappedDiscount, basePrice);
+  }, [usePoints, customerPoints, basePrice]);
+
+  const totalDiscount = selectedVoucherId ? voucherDiscount : (usePoints ? pointsDiscount : 0);
+  const displayPrice = Math.max(0, basePrice - totalDiscount);
 
   // When variant selected, jump to its image
   const handleSelectVariant = (i: number) => {
@@ -105,6 +154,9 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
     setSelectedVariantIndex(null);
     setQuantity(1);
     setCurrentImageIndex(0);
+    setSelectedVoucherId(null);
+    setUsePoints(false);
+    setDebouncedPhone('');
   };
 
   const handleClose = (val: boolean) => {
@@ -122,6 +174,13 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
       return;
     }
     try {
+      const discountNote = selectedVoucher 
+        ? `[Voucher: ${selectedVoucher.code} - Giảm ${formatNumber(voucherDiscount)}đ]` 
+        : usePoints && pointsDiscount > 0 
+          ? `[Điểm tích lũy: Giảm ${formatNumber(pointsDiscount)}đ]`
+          : '';
+      const fullNote = [discountNote, note.trim()].filter(Boolean).join(' ');
+      
       await placeOrder.mutateAsync({
         tenant_id: tenantId,
         branch_id: selectedBranch,
@@ -134,7 +193,7 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
         customer_address: customerAddress.trim() || undefined,
-        note: note.trim() || undefined,
+        note: fullNote || undefined,
       });
       setOrderSuccess(true);
     } catch (err) {
@@ -169,7 +228,6 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
-                {/* Thumbnails */}
                 <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 px-4">
                   {allImages.map((img, idx) => (
                     <button
@@ -200,7 +258,10 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
           {/* Price */}
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold" style={{ color: primaryColor }}>{formatNumber(displayPrice)}đ</span>
-            {product.sale_price && !selectedVariant && (
+            {totalDiscount > 0 && (
+              <span className="text-sm text-muted-foreground line-through">{formatNumber(basePrice)}đ</span>
+            )}
+            {!totalDiscount && product.sale_price && !selectedVariant && (
               <span className="text-sm text-muted-foreground line-through">{formatNumber(product.price)}đ</span>
             )}
           </div>
@@ -292,6 +353,69 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
                 </select>
               </div>
 
+              {/* Voucher & Points section - appears when phone is entered */}
+              {debouncedPhone && (unusedVouchers.length > 0 || (customerPoints?.is_points_enabled && customerPoints.current_points > 0)) && (
+                <div className="space-y-2 border rounded-lg p-3 bg-muted/30">
+                  <p className="text-xs font-medium flex items-center gap-1.5">
+                    <Gift className="h-3.5 w-3.5" style={{ color: primaryColor }} />
+                    Ưu đãi của bạn
+                  </p>
+                  
+                  {/* Voucher selection */}
+                  {unusedVouchers.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs flex items-center gap-1">
+                        <Ticket className="h-3 w-3" />
+                        Voucher ({unusedVouchers.length})
+                      </Label>
+                      <select
+                        value={selectedVoucherId || ''}
+                        onChange={e => {
+                          setSelectedVoucherId(e.target.value || null);
+                          if (e.target.value) setUsePoints(false);
+                        }}
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      >
+                        <option value="">Không sử dụng voucher</option>
+                        {unusedVouchers.map((v: any) => (
+                          <option key={v.id} value={v.id}>
+                            {v.voucher_name} - {v.discount_type === 'percentage' ? `${v.discount_value}%` : `${formatNumber(v.discount_value)}đ`} ({v.code})
+                          </option>
+                        ))}
+                      </select>
+                      {selectedVoucher && voucherDiscount > 0 && (
+                        <p className="text-xs text-green-600 font-medium">Giảm: {formatNumber(voucherDiscount)}đ</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Points redemption */}
+                  {customerPoints?.is_points_enabled && customerPoints.current_points > 0 && customerPoints.redeem_points > 0 && (
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={usePoints}
+                          onChange={e => {
+                            setUsePoints(e.target.checked);
+                            if (e.target.checked) setSelectedVoucherId(null);
+                          }}
+                          className="rounded border-input"
+                          disabled={!!selectedVoucherId}
+                        />
+                        <span className="text-xs flex items-center gap-1">
+                          <Star className="h-3 w-3 text-amber-500" />
+                          Dùng {formatNumber(customerPoints.current_points)} điểm tích lũy
+                          {pointsDiscount > 0 && !selectedVoucherId && (
+                            <span className="text-green-600 font-medium">(Giảm {formatNumber(pointsDiscount)}đ)</span>
+                          )}
+                        </span>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
                 <Label className="text-xs">Địa chỉ</Label>
                 <Input value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="Nhập địa chỉ (không bắt buộc)" className="h-10" />
@@ -313,6 +437,18 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
                     <span>Phiên bản:</span>
                     <span>{selectedVariant.name}</span>
                   </div>
+                )}
+                {totalDiscount > 0 && (
+                  <>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Giá gốc:</span>
+                      <span>{formatNumber(basePrice)}đ</span>
+                    </div>
+                    <div className="flex justify-between text-green-600">
+                      <span>{selectedVoucher ? `Voucher (${selectedVoucher.code})` : 'Điểm tích lũy'}:</span>
+                      <span>-{formatNumber(totalDiscount)}đ</span>
+                    </div>
+                  </>
                 )}
                 <div className="flex justify-between font-bold pt-1 border-t">
                   <span>Tổng:</span>
