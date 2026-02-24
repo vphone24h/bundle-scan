@@ -64,9 +64,10 @@ type SettingsFormData = z.infer<typeof settingsSchema>;
 interface PointSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultTab?: string;
 }
 
-export function PointSettingsDialog({ open, onOpenChange }: PointSettingsDialogProps) {
+export function PointSettingsDialog({ open, onOpenChange, defaultTab }: PointSettingsDialogProps) {
   const { data: settings, isLoading } = usePointSettings();
   const { data: tiers } = useMembershipTiers();
   const updateSettings = useUpdatePointSettings();
@@ -180,7 +181,7 @@ export function PointSettingsDialog({ open, onOpenChange }: PointSettingsDialogP
           <DialogDescription>Cấu hình quy tắc tích điểm và hạng thành viên</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="general" className="w-full">
+        <Tabs defaultValue={defaultTab || "general"} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="general">Cài đặt chung</TabsTrigger>
             <TabsTrigger value="tiers">Hạng thành viên</TabsTrigger>
