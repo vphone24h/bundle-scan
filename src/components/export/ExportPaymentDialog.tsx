@@ -12,9 +12,11 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, Wallet, FileText, Star, Gift } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Banknote, CreditCard, Wallet, FileText, Star, Gift, Ticket } from 'lucide-react';
 import { formatNumber, formatInputNumber, parseFormattedNumber } from '@/lib/formatNumber';
 import type { ExportPayment } from '@/hooks/useExportReceipts';
+import { useVoucherTemplates, VoucherTemplate } from '@/hooks/useVouchers';
 
 interface CustomerPointInfo {
   current_points: number;
@@ -36,10 +38,11 @@ interface ExportPaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   totalAmount: number;
-  onConfirm: (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number) => void;
+  onConfirm: (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number, giftVoucherTemplateId?: string) => void;
   isLoading?: boolean;
   customerPoints?: CustomerPointInfo | null;
   pointSettings?: PointSettings | null;
+  hasCustomer?: boolean;
 }
 
 const paymentTypes = [
@@ -64,7 +67,11 @@ export function ExportPaymentDialog({
   isLoading,
   customerPoints,
   pointSettings,
+  hasCustomer,
 }: ExportPaymentDialogProps) {
+  const { data: voucherTemplates } = useVoucherTemplates();
+  const activeTemplates = (voucherTemplates || []).filter(t => t.is_active);
+
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['cash']);
   const [amounts, setAmounts] = useState<Record<string, string>>({
     cash: '',
@@ -76,6 +83,10 @@ export function ExportPaymentDialog({
   // Points redemption
   const [usePoints, setUsePoints] = useState(false);
   const [pointsToRedeem, setPointsToRedeem] = useState('');
+
+  // Voucher gifting
+  const [giftVoucher, setGiftVoucher] = useState(false);
+  const [selectedVoucherTemplateId, setSelectedVoucherTemplateId] = useState('');
 
   // Calculate max points that can be redeemed
   // First, calculate max discount by percentage
@@ -122,6 +133,8 @@ export function ExportPaymentDialog({
       });
       setUsePoints(false);
       setPointsToRedeem('');
+      setGiftVoucher(false);
+      setSelectedVoucherTemplateId('');
     }
   }, [open, totalAmount]);
 
@@ -181,7 +194,7 @@ export function ExportPaymentDialog({
       .filter((p) => p.amount > 0);
 
     onOpenChange(false);
-    onConfirm(payments, usePoints ? actualPointsUsed : 0, usePoints ? actualPointsDiscount : 0);
+    onConfirm(payments, usePoints ? actualPointsUsed : 0, usePoints ? actualPointsDiscount : 0, giftVoucher && selectedVoucherTemplateId ? selectedVoucherTemplateId : undefined);
   };
 
   const canUsePoints = pointSettings?.is_enabled && (customerPoints?.current_points || 0) > 0;
@@ -290,6 +303,40 @@ export function ExportPaymentDialog({
                     </div>
                   )}
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* Voucher gifting */}
+          {hasCustomer && activeTemplates.length > 0 && (
+            <div className="p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
+              <div className="flex items-center space-x-2 mb-3">
+                <Checkbox
+                  id="gift-voucher"
+                  checked={giftVoucher}
+                  onCheckedChange={(checked) => {
+                    setGiftVoucher(checked === true);
+                    if (!checked) setSelectedVoucherTemplateId('');
+                  }}
+                />
+                <Label htmlFor="gift-voucher" className="cursor-pointer flex items-center gap-2">
+                  <Ticket className="h-4 w-4 text-purple-500" />
+                  Tặng voucher cho lần mua sau
+                </Label>
+              </div>
+              {giftVoucher && (
+                <Select value={selectedVoucherTemplateId} onValueChange={setSelectedVoucherTemplateId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn voucher mẫu..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeTemplates.map(t => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name} — {t.discount_type === 'percentage' ? `${t.discount_value}%` : `${formatNumber(t.discount_value)}đ`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             </div>
           )}
