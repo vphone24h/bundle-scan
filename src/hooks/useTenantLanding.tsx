@@ -28,6 +28,8 @@ export interface TenantLandingSettings {
   tiktok_url: string | null;
   custom_domain_article: string | null;
   show_custom_domain_cta: boolean;
+  voucher_enabled: boolean;
+  voucher_template_id: string | null;
   created_at: string;
   updated_at: string;
 }

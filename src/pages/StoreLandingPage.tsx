@@ -15,14 +15,16 @@ import {
   Store, Loader2, Building2, Headphones, Calendar, Package,
   Clock, Users, ExternalLink, Star, Gift, User, Globe,
   ChevronDown, ChevronUp, ShoppingBag, Newspaper, ArrowLeft,
-  Download, Smartphone, Share, Plus, Apple, MoreVertical
+  Download, Smartphone, Share, Plus, Apple, MoreVertical, Ticket
 } from 'lucide-react';
 import { format, addMonths, isAfter, differenceInDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
 import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { ProductDetailDialog } from '@/components/landing/ProductDetailDialog';
+import { VoucherClaimForm } from '@/components/landing/VoucherClaimForm';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
+import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 
 // === PWA Manifest Hook ===
 function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?: string | null) {
@@ -142,6 +144,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const customerName = firstResult?.customer_name || customerPoints?.customer_name || '';
   const customerId = firstResult?.customer_id || customerPoints?.customer_id || null;
   const reviewRewardPoints = customerPoints?.review_reward_points || 0;
+  const { data: customerVouchers } = usePublicCustomerVouchers(phoneForPoints, tenantId);
 
   const handlePointsAwarded = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['customer-points-public'] });
@@ -449,6 +452,15 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                   </button>
                 </CardContent>
               </Card>
+            )}
+
+            {/* Voucher Claim */}
+            {(settings as any)?.voucher_enabled && tenantId && (
+              <VoucherClaimForm
+                tenantId={tenantId}
+                branches={branches.map(b => ({ id: b.id, name: b.name }))}
+                primaryColor={primaryColor}
+              />
             )}
 
             {/* Install App Guide */}
@@ -798,6 +810,26 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                                 </div>
                               );
                             })()}
+                          </div>
+                        )}
+                        {/* Voucher display */}
+                        {customerVouchers && customerVouchers.length > 0 && (
+                          <div className="border rounded-xl p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <div className="p-2 rounded-full bg-purple-100"><Gift className="h-5 w-5 text-purple-600" /></div>
+                              <p className="font-bold text-purple-800">Voucher của bạn</p>
+                            </div>
+                            {customerVouchers.map((v: any) => (
+                              <div key={v.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/80">
+                                <div>
+                                  <p className="text-sm font-medium text-purple-700">{v.voucher_name}</p>
+                                  <code className="text-xs font-mono">{v.code}</code>
+                                </div>
+                                <Badge className="bg-purple-100 text-purple-700 border-0">
+                                  {v.discount_type === 'percentage' ? `${v.discount_value}%` : `${formatNumber(v.discount_value)}đ`}
+                                </Badge>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </>
