@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,7 @@ import {
 export function StartupNotificationPopup() {
   const { data: notification } = useStartupNotification();
   const dismiss = useDismissStartupNotification();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -58,7 +60,11 @@ export function StartupNotificationPopup() {
 
   const handleAction = () => {
     if (notification.link_url) {
-      window.open(notification.link_url, '_blank');
+      if (notification.link_url.startsWith('/')) {
+        navigate(notification.link_url);
+      } else {
+        window.open(notification.link_url, '_blank');
+      }
     }
     handleClose();
   };
