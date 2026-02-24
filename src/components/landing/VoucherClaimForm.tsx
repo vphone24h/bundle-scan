@@ -79,7 +79,7 @@ export function VoucherClaimForm({ tenantId, branches, primaryColor }: VoucherCl
     <>
       {/* Dialog - auto open */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-sm max-w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto">
           {result ? (
             <div className="text-center space-y-4 py-2">
               <div className="p-3 rounded-full inline-flex" style={{ backgroundColor: `${primaryColor}15` }}>
