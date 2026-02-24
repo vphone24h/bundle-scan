@@ -106,7 +106,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const [submittedValue, setSubmittedValue] = useState(savedSession?.searchValue || '');
 
   const tenantId = landingData?.tenant?.id || null;
-  const { data: warrantyResults, isLoading: isSearching, isFetched } = useWarrantyLookup(submittedValue, tenantId);
+  const { data: warrantyResults, isLoading: isSearching, isFetched, error: warrantyError } = useWarrantyLookup(submittedValue, tenantId);
   const { data: productsData } = usePublicLandingProducts(tenantId);
   const { data: articlesData } = usePublicLandingArticles(tenantId);
 
@@ -674,7 +674,15 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                 {/* Warranty results */}
                 {submittedValue && isFetched && (
                   <div className="space-y-3 pt-2">
-                    {warrantyResults && warrantyResults.length > 0 ? (
+                    {warrantyError ? (
+                      <div className="text-center py-8 border rounded-xl bg-destructive/5 border-destructive/30">
+                        <XCircle className="h-12 w-12 mx-auto text-destructive/70 mb-3" />
+                        <p className="text-sm text-destructive font-medium">Tra cứu thất bại</p>
+                        <p className="text-xs text-destructive/80 mt-1">
+                          {(warrantyError as Error)?.message || 'Không thể tra cứu bảo hành, vui lòng thử lại'}
+                        </p>
+                      </div>
+                    ) : warrantyResults && warrantyResults.length > 0 ? (
                       <>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Package className="h-3.5 w-3.5" />
