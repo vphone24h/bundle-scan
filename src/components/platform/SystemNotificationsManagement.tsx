@@ -28,7 +28,7 @@ import {
   type SystemNotification,
 } from '@/hooks/useSystemNotifications';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Pencil, Trash2, Pin, Eye, EyeOff, Megaphone, Repeat, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, Pin, Eye, EyeOff, Megaphone, Repeat, Users, Send } from 'lucide-react';
 import { APP_ROUTES } from '@/lib/appRoutes';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -139,23 +139,7 @@ export function SystemNotificationsManagement() {
       } else {
         const created = await createMutation.mutateAsync(payload);
         toast({ title: 'Đã tạo thông báo mới' });
-        
-        // Send push notification if enabled
-        if (sendPush && created) {
-          try {
-            await supabase.functions.invoke('send-push', {
-              body: {
-                notification_id: created.id,
-                title: payload.title,
-                message: payload.message,
-                url: payload.link_url || '/',
-              },
-            });
-            toast({ title: 'Đã gửi push notification' });
-          } catch (pushErr) {
-            console.error('Push send error:', pushErr);
-          }
-        }
+        // No longer auto-send on create; user uses Send button instead
       }
       setDialogOpen(false);
       resetForm();
@@ -180,6 +164,24 @@ export function SystemNotificationsManagement() {
 
   const handleTogglePin = async (n: SystemNotification) => {
     await updateMutation.mutateAsync({ id: n.id, is_pinned: !n.is_pinned });
+  };
+
+  const handleSend = async (n: SystemNotification) => {
+    if (!confirm(`Gửi thông báo "${n.title}" đến đối tượng đã chọn?`)) return;
+    try {
+      await supabase.functions.invoke('send-push', {
+        body: {
+          notification_id: n.id,
+          title: n.title,
+          message: n.message,
+          url: n.link_url || '/',
+        },
+      });
+      toast({ title: 'Đã gửi thông báo thành công' });
+    } catch (err: any) {
+      console.error('Push send error:', err);
+      toast({ title: 'Lỗi gửi thông báo', description: err.message, variant: 'destructive' });
+    }
   };
 
   return (
@@ -232,6 +234,9 @@ export function SystemNotificationsManagement() {
                     
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSend(n)} title="Gửi thông báo">
+                      <Send className="h-4 w-4 text-primary" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleTogglePin(n)} title={n.is_pinned ? 'Bỏ ghim' : 'Ghim'}>
                       <Pin className={`h-4 w-4 ${n.is_pinned ? 'text-amber-500' : ''}`} />
                     </Button>
@@ -378,14 +383,9 @@ export function SystemNotificationsManagement() {
                 )}
               </div>
             )}
-            {!editingNotification && (
-              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-                <Checkbox checked={sendPush} onCheckedChange={(v) => setSendPush(!!v)} id="send-push" />
-                <Label htmlFor="send-push" className="text-sm cursor-pointer">
-                  Gửi push notification đến tất cả thiết bị đã đăng ký
-                </Label>
-              </div>
-            )}
+            <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+              💡 Sau khi lưu mẫu, nhấn nút <Send className="h-3.5 w-3.5 inline text-primary" /> trên thẻ thông báo để gửi đến đối tượng đã chọn.
+            </div>
           </div>
 
           <DialogFooter>
