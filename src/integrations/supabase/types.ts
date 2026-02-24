@@ -5403,6 +5403,9 @@ export type Database = {
           branch_id: string
           branch_name: string
           created_at: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
           export_date: string
           id: string
           imei: string
@@ -5414,42 +5417,26 @@ export type Database = {
           warranty: string
         }[]
       }
-      lookup_warranty_by_phone:
-        | {
-            Args: { _phone: string; _tenant_id: string }
-            Returns: {
-              branch_id: string
-              branch_name: string
-              created_at: string
-              customer_id: string
-              customer_name: string
-              customer_phone: string
-              export_date: string
-              id: string
-              imei: string
-              product_name: string
-              sale_price: number
-              sku: string
-              staff_name: string
-              staff_user_id: string
-              warranty: string
-            }[]
-          }
-        | {
-            Args: { _ip_address?: string; _phone: string; _tenant_id: string }
-            Returns: {
-              branch_id: string
-              branch_name: string
-              created_at: string
-              export_date: string
-              id: string
-              imei: string
-              product_name: string
-              sale_price: number
-              sku: string
-              warranty: string
-            }[]
-          }
+      lookup_warranty_by_phone: {
+        Args: { _ip_address?: string; _phone: string; _tenant_id: string }
+        Returns: {
+          branch_id: string
+          branch_name: string
+          created_at: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          export_date: string
+          id: string
+          imei: string
+          product_name: string
+          sale_price: number
+          sku: string
+          staff_name: string
+          staff_user_id: string
+          warranty: string
+        }[]
+      }
       merge_suppliers: {
         Args: { _duplicate_ids: string[]; _primary_id: string }
         Returns: undefined
