@@ -2,6 +2,7 @@ import { ReactNode, useMemo } from 'react';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'react-router-dom';
+import { detectTenantFromHostname } from '@/lib/tenantResolver';
 
 interface SubdomainRouterProps {
   /** Component hiển thị khi là landing page của store (subdomain) */
@@ -22,6 +23,7 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
   const resolvedTenant = useTenantResolver();
   const { user, loading: authLoading } = useAuth();
   const location = useLocation();
+  const hostInfo = useMemo(() => detectTenantFromHostname(), []);
   
   const routerState = useMemo(() => {
     console.log('[SubdomainRouter]', {
@@ -32,7 +34,13 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
       authLoading,
       hasUser: !!user,
       pathname: location.pathname,
+      hostIsMainDomain: hostInfo.isMainDomain,
     });
+
+    // Không cho custom domain/subdomain rơi vào /auth khi đang loading
+    if (!user && !hostInfo.isMainDomain && location.pathname === '/' && (resolvedTenant.status === 'loading' || authLoading)) {
+      return 'store_landing';
+    }
     
     // OPTIMIZATION: For main domains, skip loading state entirely
     // as tenant resolution is synchronous
@@ -73,7 +81,7 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
     }
     
     return 'app';
-  }, [resolvedTenant, user, authLoading, location.pathname, publicLandingPage]);
+  }, [resolvedTenant, user, authLoading, location.pathname, publicLandingPage, hostInfo.isMainDomain]);
 
   // No loading spinner - app shell renders immediately
 
