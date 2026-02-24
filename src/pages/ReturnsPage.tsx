@@ -36,6 +36,7 @@ import {
   ArrowLeft,
   Eye,
   List,
+  Trash2,
 } from 'lucide-react';
 import { format, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -43,12 +44,23 @@ import { useBranches } from '@/hooks/useBranches';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useProducts } from '@/hooks/useProducts';
 import { useExportReceiptItems, type ExportReceiptItemDetail } from '@/hooks/useExportReceipts';
-import { useImportReturns, useExportReturns, useAllProfiles, type ImportReturn, type ExportReturn } from '@/hooks/useReturns';
+import { useImportReturns, useExportReturns, useAllProfiles, useDeleteImportReturn, useDeleteExportReturn, type ImportReturn, type ExportReturn } from '@/hooks/useReturns';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatNumberWithSpaces } from '@/lib/formatNumber';
 import { ImportReturnForm } from '@/components/returns/ImportReturnForm';
 import { ExportReturnForm } from '@/components/returns/ExportReturnForm';
 import { ReturnDetailDialog } from '@/components/returns/ReturnDetailDialog';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { Product } from '@/hooks/useProducts';
 
 type ViewMode = 'history' | 'import-return' | 'export-return';
@@ -85,6 +97,11 @@ export default function ReturnsPage() {
   // Detail dialog
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedReturnItem, setSelectedReturnItem] = useState<CombinedReturn | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<CombinedReturn | null>(null);
+
+  const deleteImportReturn = useDeleteImportReturn();
+  const deleteExportReturn = useDeleteExportReturn();
 
   const { data: permissions } = usePermissions();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
@@ -262,6 +279,28 @@ export default function ReturnsPage() {
     setDetailDialogOpen(true);
   };
 
+  const openDeleteDialog = (item: CombinedReturn) => {
+    setItemToDelete(item);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    try {
+      if (itemToDelete.returnType === 'import') {
+        await deleteImportReturn.mutateAsync(itemToDelete as ImportReturn);
+      } else {
+        await deleteExportReturn.mutateAsync(itemToDelete as ExportReturn);
+      }
+      toast.success('Đã xóa phiếu trả hàng thành công');
+    } catch (error: any) {
+      toast.error('Lỗi xóa phiếu trả hàng: ' + (error?.message || 'Không xác định'));
+    } finally {
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+    }
+  };
+
   // Render form for creating return
   if (viewMode === 'import-return') {
     return (
@@ -420,13 +459,23 @@ export default function ReturnsPage() {
                 <TableCell>{r.branches?.name || '-'}</TableCell>
                 <TableCell>{getEmployeeName(r.created_by)}</TableCell>
                 <TableCell>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => openDetailDialog(r)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => openDetailDialog(r)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={(e) => { e.stopPropagation(); openDeleteDialog(r); }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             );
@@ -703,6 +752,36 @@ export default function ReturnsPage() {
         onOpenChange={setDetailDialogOpen}
         profiles={profiles}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa phiếu trả hàng</AlertDialogTitle>
+            <AlertDialogDescription>
+              {itemToDelete && (
+                <>
+                  Bạn có chắc muốn xóa phiếu <strong>{itemToDelete.code}</strong> ({itemToDelete.product_name})?
+                  <br />
+                  Hệ thống sẽ hoàn tác trạng thái sản phẩm, sổ quỹ và ghi nhận vào lịch sử thao tác.
+                  <br />
+                  <span className="text-destructive font-medium">Thao tác này không thể hoàn tác.</span>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteImportReturn.isPending || deleteExportReturn.isPending}
+            >
+              {(deleteImportReturn.isPending || deleteExportReturn.isPending) ? 'Đang xóa...' : 'Xóa'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }

@@ -681,3 +681,203 @@ export function useCreateExportReturn() {
     },
   });
 }
+
+export function useDeleteImportReturn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (returnItem: ImportReturn) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
+      // 1. Delete return payments
+      await supabase
+        .from('return_payments')
+        .delete()
+        .eq('return_id', returnItem.id)
+        .eq('return_type', 'import_return');
+
+      // 2. Delete related cash_book entries
+      await supabase
+        .from('cash_book')
+        .delete()
+        .eq('reference_id', returnItem.id)
+        .eq('reference_type', 'import_return');
+
+      // 3. Restore product status back to in_stock
+      if (returnItem.product_id) {
+        await supabase
+          .from('products')
+          .update({ status: 'in_stock' })
+          .eq('id', returnItem.product_id);
+      }
+
+      // 4. Delete the import return record
+      const { error } = await supabase
+        .from('import_returns')
+        .delete()
+        .eq('id', returnItem.id);
+
+      if (error) throw error;
+
+      // 5. Audit log
+      await supabase.from('audit_logs').insert([{
+        user_id: user.id,
+        action_type: 'DELETE_IMPORT_RETURN',
+        table_name: 'import_returns',
+        record_id: returnItem.id,
+        branch_id: returnItem.branch_id || null,
+        tenant_id: tenantId,
+        old_data: {
+          code: returnItem.code,
+          product_name: returnItem.product_name,
+          sku: returnItem.sku,
+          imei: returnItem.imei,
+          import_price: returnItem.import_price,
+          total_refund_amount: returnItem.total_refund_amount,
+          supplier: returnItem.suppliers?.name,
+        },
+        description: `Xóa phiếu trả hàng nhập: ${returnItem.product_name} (${returnItem.code}) - ${returnItem.total_refund_amount.toLocaleString('vi-VN')}đ`,
+      }]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['import-returns'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+    },
+  });
+}
+
+export function useDeleteExportReturn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (returnItem: ExportReturn) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
+      // 1. Delete return payments
+      await supabase
+        .from('return_payments')
+        .delete()
+        .eq('return_id', returnItem.id)
+        .eq('return_type', 'export_return');
+
+      // 2. Delete related cash_book entries (refund + fee)
+      await supabase
+        .from('cash_book')
+        .delete()
+        .eq('reference_id', returnItem.id)
+        .in('reference_type', ['export_return', 'export_return_fee']);
+
+      // 3. Restore export_receipt_item status back to 'sold'
+      if (returnItem.export_receipt_item_id) {
+        await supabase
+          .from('export_receipt_items')
+          .update({ status: 'sold' })
+          .eq('id', returnItem.export_receipt_item_id);
+      }
+
+      // 4. If had fee (new product was created), delete new product + import receipt
+      if (returnItem.new_import_receipt_id) {
+        // Delete products created from this return
+        await supabase
+          .from('products')
+          .delete()
+          .eq('import_receipt_id', returnItem.new_import_receipt_id);
+
+        // Delete the auto-created import receipt
+        await supabase
+          .from('import_receipts')
+          .delete()
+          .eq('id', returnItem.new_import_receipt_id);
+      } else if (returnItem.product_id) {
+        // No fee return: product was restored to in_stock, revert to sold
+        const { data: prod } = await supabase
+          .from('products')
+          .select('imei, quantity')
+          .eq('id', returnItem.product_id)
+          .single();
+
+        if (prod?.imei) {
+          await supabase
+            .from('products')
+            .update({ status: 'sold' })
+            .eq('id', returnItem.product_id);
+        } else {
+          await supabase
+            .from('products')
+            .update({ quantity: Math.max((prod?.quantity || 1) - 1, 0) })
+            .eq('id', returnItem.product_id);
+        }
+      }
+
+      // 5. Re-evaluate export receipt status
+      if (returnItem.export_receipt_id) {
+        const { data: allItems } = await supabase
+          .from('export_receipt_items')
+          .select('id, status')
+          .eq('receipt_id', returnItem.export_receipt_id);
+
+        if (allItems) {
+          const returnedCount = allItems.filter(i => i.status === 'returned' && i.id !== returnItem.export_receipt_item_id).length;
+          const totalItems = allItems.length;
+          let newStatus = 'completed';
+          if (returnedCount >= totalItems) newStatus = 'full_return';
+          else if (returnedCount > 0) newStatus = 'partial_return';
+
+          await supabase
+            .from('export_receipts')
+            .update({ status: newStatus })
+            .eq('id', returnItem.export_receipt_id);
+        }
+      }
+
+      // 6. Delete the export return record
+      const { error } = await supabase
+        .from('export_returns')
+        .delete()
+        .eq('id', returnItem.id);
+
+      if (error) throw error;
+
+      // 7. Audit log
+      await supabase.from('audit_logs').insert([{
+        user_id: user.id,
+        action_type: 'DELETE_EXPORT_RETURN',
+        table_name: 'export_returns',
+        record_id: returnItem.id,
+        branch_id: returnItem.branch_id || null,
+        tenant_id: tenantId,
+        old_data: {
+          code: returnItem.code,
+          product_name: returnItem.product_name,
+          sku: returnItem.sku,
+          imei: returnItem.imei,
+          sale_price: returnItem.sale_price,
+          refund_amount: returnItem.refund_amount,
+          store_keep_amount: returnItem.store_keep_amount,
+          fee_type: returnItem.fee_type,
+          customer: returnItem.customers?.name,
+        },
+        description: `Xóa phiếu trả hàng bán: ${returnItem.product_name} (${returnItem.code}) - Hoàn: ${returnItem.refund_amount.toLocaleString('vi-VN')}đ`,
+      }]);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['export-returns'] });
+      queryClient.invalidateQueries({ queryKey: ['export-receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['export-receipt-items'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-book'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['report-stats'] });
+    },
+  });
+}
