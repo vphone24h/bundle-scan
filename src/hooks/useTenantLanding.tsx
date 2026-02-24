@@ -199,24 +199,30 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
     queryFn: async (): Promise<WarrantyResult[] | null> => {
       if (!searchValue || !tenantId) return null;
 
-      // Get client IP for rate limiting
-      let clientIp = 'unknown';
+      const normalizedSearch = searchValue.trim();
+      const compactSearch = normalizedSearch.replace(/\s+/g, '');
+
+      // Get client IP for rate limiting (fallback null to avoid invalid value)
+      let clientIp: string | null = null;
       try {
         const response = await fetch('https://api.ipify.org?format=json');
         const data = await response.json();
-        clientIp = data.ip || 'unknown';
+        const ipCandidate = typeof data?.ip === 'string' ? data.ip.trim() : '';
+        if (ipCandidate && ipCandidate.toLowerCase() !== 'unknown') {
+          clientIp = ipCandidate;
+        }
       } catch {
-        // If IP detection fails, continue without it
+        // Continue without IP when detection fails
       }
 
-      const isPhoneNumber = /^0\d{9,10}$/.test(searchValue.replace(/\s/g, ''));
+      const isPhoneNumber = /^0\d{9,10}$/.test(compactSearch);
       
       if (isPhoneNumber) {
         // Sử dụng RPC function bảo mật để tra cứu theo SĐT
         // Rate limiting enforced server-side per IP address
         const { data, error } = await supabase
           .rpc('lookup_warranty_by_phone', {
-            _phone: searchValue,
+            _phone: compactSearch,
             _tenant_id: tenantId,
             _ip_address: clientIp
           });
@@ -246,7 +252,7 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
         // Rate limiting enforced server-side per IP address
         const { data, error } = await supabase
           .rpc('lookup_warranty_by_imei', {
-            _imei: searchValue,
+            _imei: compactSearch,
             _tenant_id: tenantId,
             _ip_address: clientIp
           });
