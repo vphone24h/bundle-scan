@@ -1,0 +1,1 @@
+ALTER TABLE public.voucher_templates ADD COLUMN IF NOT EXISTS min_order_value numeric DEFAULT 0;

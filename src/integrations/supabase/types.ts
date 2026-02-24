@@ -5275,6 +5275,7 @@ export type Database = {
           discount_value: number
           id: string
           is_active: boolean
+          min_order_value: number | null
           name: string
           tenant_id: string
           updated_at: string
@@ -5287,6 +5288,7 @@ export type Database = {
           discount_value?: number
           id?: string
           is_active?: boolean
+          min_order_value?: number | null
           name: string
           tenant_id: string
           updated_at?: string
@@ -5299,6 +5301,7 @@ export type Database = {
           discount_value?: number
           id?: string
           is_active?: boolean
+          min_order_value?: number | null
           name?: string
           tenant_id?: string
           updated_at?: string

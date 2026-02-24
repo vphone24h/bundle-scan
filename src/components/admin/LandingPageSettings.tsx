@@ -138,6 +138,8 @@ export function LandingPageSettings() {
         facebook_url: settings.facebook_url || '',
         zalo_url: settings.zalo_url || '',
         tiktok_url: settings.tiktok_url || '',
+        voucher_enabled: settings.voucher_enabled ?? false,
+        voucher_template_id: settings.voucher_template_id || null,
       });
     } else if (tenant) {
       setFormData(prev => ({

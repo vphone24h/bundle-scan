@@ -33,7 +33,7 @@ export function VoucherSettingsTab() {
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<VoucherTemplate | null>(null);
-  const [form, setForm] = useState({ name: '', discount_type: 'amount' as 'amount' | 'percentage', discount_value: '', description: '', conditions: '' });
+  const [form, setForm] = useState({ name: '', discount_type: 'amount' as 'amount' | 'percentage', discount_value: '', description: '', conditions: '', min_order_value: '' });
 
   const voucherEnabled = (pointSettings as any)?.voucher_system_enabled ?? false;
 
@@ -46,7 +46,7 @@ export function VoucherSettingsTab() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ name: '', discount_type: 'amount', discount_value: '', description: '', conditions: '' });
+    setForm({ name: '', discount_type: 'amount', discount_value: '', description: '', conditions: '', min_order_value: '' });
     setShowForm(true);
   };
 
@@ -58,6 +58,7 @@ export function VoucherSettingsTab() {
       discount_value: formatNumber(t.discount_value),
       description: t.description || '',
       conditions: t.conditions || '',
+      min_order_value: (t as any).min_order_value ? formatNumber((t as any).min_order_value) : '',
     });
     setShowForm(true);
   };
@@ -68,6 +69,7 @@ export function VoucherSettingsTab() {
     if (value <= 0) { toast.error('Giá trị giảm phải > 0'); return; }
 
     try {
+      const minOrder = parseFormattedNumber(form.min_order_value);
       if (editing) {
         await updateTemplate.mutateAsync({
           id: editing.id,
@@ -76,7 +78,8 @@ export function VoucherSettingsTab() {
           discount_value: value,
           description: form.description.trim() || null,
           conditions: form.conditions.trim() || null,
-        });
+          min_order_value: minOrder || 0,
+        } as any);
         toast.success('Cập nhật voucher mẫu thành công');
       } else {
         await createTemplate.mutateAsync({
@@ -86,7 +89,8 @@ export function VoucherSettingsTab() {
           description: form.description.trim() || null,
           conditions: form.conditions.trim() || null,
           is_active: true,
-        });
+          min_order_value: minOrder || 0,
+        } as any);
         toast.success('Tạo voucher mẫu thành công');
       }
       setShowForm(false);
@@ -162,9 +166,14 @@ export function VoucherSettingsTab() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary">
-                              {t.discount_type === 'percentage' ? `${t.discount_value}%` : `${formatNumber(t.discount_value)}đ`}
-                            </Badge>
+                            <div>
+                              <Badge variant="secondary">
+                                {t.discount_type === 'percentage' ? `${t.discount_value}%` : `${formatNumber(t.discount_value)}đ`}
+                              </Badge>
+                              {(t as any).min_order_value > 0 && (
+                                <p className="text-xs text-muted-foreground mt-1">Đơn tối thiểu: {formatNumber((t as any).min_order_value)}đ</p>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Switch checked={t.is_active} onCheckedChange={() => handleToggleActive(t)} />
@@ -229,6 +238,16 @@ export function VoucherSettingsTab() {
             <div>
               <Label>Điều kiện áp dụng</Label>
               <Textarea value={form.conditions} onChange={e => setForm(f => ({ ...f, conditions: e.target.value }))} placeholder="VD: Áp dụng cho đơn từ 500K" rows={2} />
+            </div>
+            <div>
+              <Label>Giá trị đơn hàng tối thiểu</Label>
+              <Input
+                value={form.min_order_value}
+                onChange={e => setForm(f => ({ ...f, min_order_value: formatInputNumber(e.target.value) }))}
+                placeholder="VD: 4,000,000 (để trống = không giới hạn)"
+                inputMode="numeric"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Voucher chỉ áp dụng cho đơn hàng có giá trị ≥ số tiền này</p>
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setShowForm(false)}>Hủy</Button>
