@@ -241,7 +241,7 @@ const Index = () => {
           )}
           {canViewImportPrice && (
             <StatCard
-              title="Công nợ"
+              title="Đơn đặt hàng"
               value={formatCurrency(stats?.pendingDebt || 0)}
               icon={<AlertCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
               className={(stats?.pendingDebt || 0) > 0 ? 'border-warning/50' : ''}
