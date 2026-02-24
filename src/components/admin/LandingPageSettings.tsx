@@ -109,6 +109,8 @@ export function LandingPageSettings() {
     facebook_url: '',
     zalo_url: '',
     tiktok_url: '',
+    voucher_enabled: false,
+    voucher_template_id: null,
   });
 
   useEffect(() => {
@@ -587,6 +589,19 @@ export function LandingPageSettings() {
             <Switch
               checked={formData.show_warranty_lookup}
               onCheckedChange={(checked) => handleChange('show_warranty_lookup', checked)}
+            />
+          </div>
+
+          {/* Voucher */}
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-sm">Tặng Voucher cho khách</p>
+              <p className="text-xs text-muted-foreground">Khách điền thông tin trên website để nhận voucher</p>
+            </div>
+            <Switch
+              checked={(formData as any).voucher_enabled}
+              onCheckedChange={(checked) => handleChange('voucher_enabled' as any, checked)}
             />
           </div>
           

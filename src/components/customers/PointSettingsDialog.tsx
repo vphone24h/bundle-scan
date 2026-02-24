@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { VoucherSettingsTab } from '@/components/voucher/VoucherSettingsTab';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -180,9 +181,10 @@ export function PointSettingsDialog({ open, onOpenChange }: PointSettingsDialogP
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="general">Cài đặt chung</TabsTrigger>
             <TabsTrigger value="tiers">Hạng thành viên</TabsTrigger>
+            <TabsTrigger value="voucher">Voucher</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="mt-4">
@@ -541,6 +543,10 @@ export function PointSettingsDialog({ open, onOpenChange }: PointSettingsDialogP
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="voucher" className="mt-4">
+            <VoucherSettingsTab />
           </TabsContent>
         </Tabs>
       </DialogContent>

@@ -1419,6 +1419,98 @@ export type Database = {
           },
         ]
       }
+      customer_vouchers: {
+        Row: {
+          branch_id: string | null
+          code: string
+          created_at: string
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string
+          customer_phone: string
+          discount_type: string
+          discount_value: number
+          id: string
+          source: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          used_at: string | null
+          used_by: string | null
+          voucher_name: string
+          voucher_template_id: string | null
+        }
+        Insert: {
+          branch_id?: string | null
+          code: string
+          created_at?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name: string
+          customer_phone: string
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          source?: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          used_at?: string | null
+          used_by?: string | null
+          voucher_name: string
+          voucher_template_id?: string | null
+        }
+        Update: {
+          branch_id?: string | null
+          code?: string
+          created_at?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          customer_phone?: string
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          source?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          used_at?: string | null
+          used_by?: string | null
+          voucher_name?: string
+          voucher_template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_vouchers_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_vouchers_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_vouchers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_vouchers_voucher_template_id_fkey"
+            columns: ["voucher_template_id"]
+            isOneToOne: false
+            referencedRelation: "voucher_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
@@ -3606,6 +3698,7 @@ export type Database = {
           updated_by: string | null
           use_max_amount_limit: boolean | null
           use_percentage_limit: boolean | null
+          voucher_system_enabled: boolean
         }
         Insert: {
           earn_points?: number
@@ -3625,6 +3718,7 @@ export type Database = {
           updated_by?: string | null
           use_max_amount_limit?: boolean | null
           use_percentage_limit?: boolean | null
+          voucher_system_enabled?: boolean
         }
         Update: {
           earn_points?: number
@@ -3644,6 +3738,7 @@ export type Database = {
           updated_by?: string | null
           use_max_amount_limit?: boolean | null
           use_percentage_limit?: boolean | null
+          voucher_system_enabled?: boolean
         }
         Relationships: [
           {
@@ -4905,6 +5000,8 @@ export type Database = {
           tenant_id: string
           tiktok_url: string | null
           updated_at: string
+          voucher_enabled: boolean
+          voucher_template_id: string | null
           warranty_hotline: string | null
           zalo_url: string | null
         }
@@ -4935,6 +5032,8 @@ export type Database = {
           tenant_id: string
           tiktok_url?: string | null
           updated_at?: string
+          voucher_enabled?: boolean
+          voucher_template_id?: string | null
           warranty_hotline?: string | null
           zalo_url?: string | null
         }
@@ -4965,6 +5064,8 @@ export type Database = {
           tenant_id?: string
           tiktok_url?: string | null
           updated_at?: string
+          voucher_enabled?: boolean
+          voucher_template_id?: string | null
           warranty_hotline?: string | null
           zalo_url?: string | null
         }
@@ -4974,6 +5075,13 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: true
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_landing_settings_voucher_template_id_fkey"
+            columns: ["voucher_template_id"]
+            isOneToOne: false
+            referencedRelation: "voucher_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -5158,6 +5266,53 @@ export type Database = {
           },
         ]
       }
+      voucher_templates: {
+        Row: {
+          conditions: string | null
+          created_at: string
+          description: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          conditions?: string | null
+          created_at?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          conditions?: string | null
+          created_at?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       warranty_lookup_logs: {
         Row: {
           created_at: string | null
@@ -5277,6 +5432,16 @@ export type Database = {
         Args: { _ip_address: string }
         Returns: boolean
       }
+      claim_website_voucher: {
+        Args: {
+          _branch_id?: string
+          _customer_email: string
+          _customer_name: string
+          _customer_phone: string
+          _tenant_id: string
+        }
+        Returns: Json
+      }
       cleanup_rate_limits: { Args: never; Returns: undefined }
       create_care_reminder_notifications: { Args: never; Returns: undefined }
       decrypt_api_key: { Args: { _ciphertext: string }; Returns: string }
@@ -5284,6 +5449,7 @@ export type Database = {
       encrypt_api_key: { Args: { _plaintext: string }; Returns: string }
       generate_affiliate_code: { Args: never; Returns: string }
       generate_domain_verification_token: { Args: never; Returns: string }
+      generate_voucher_code: { Args: never; Returns: string }
       get_current_tenant: { Args: never; Returns: string }
       get_public_reviews:
         | {
@@ -5377,6 +5543,19 @@ export type Database = {
           review_reward_points: number
           total_points_earned: number
           total_points_used: number
+        }[]
+      }
+      lookup_customer_vouchers_public: {
+        Args: { _phone: string; _tenant_id: string }
+        Returns: {
+          code: string
+          created_at: string
+          discount_type: string
+          discount_value: number
+          id: string
+          source: string
+          status: string
+          voucher_name: string
         }[]
       }
       lookup_tenant_by_id: {
