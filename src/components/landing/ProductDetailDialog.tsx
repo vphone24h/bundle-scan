@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 import { Badge } from '@/components/ui/badge';
-import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Gift, Star, Ticket } from 'lucide-react';
+import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Gift, Star, Ticket, Link2 } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
 import { LandingProduct, LandingProductVariant } from '@/hooks/useLandingProducts';
@@ -28,9 +28,10 @@ interface ProductDetailDialogProps {
   branches: BranchOption[];
   primaryColor: string;
   warrantyHotline?: string | null;
+  onShare?: () => void;
 }
 
-export function ProductDetailDialog({ product, open, onOpenChange, tenantId, branches, primaryColor, warrantyHotline }: ProductDetailDialogProps) {
+export function ProductDetailDialog({ product, open, onOpenChange, tenantId, branches, primaryColor, warrantyHotline, onShare }: ProductDetailDialogProps) {
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [customerName, setCustomerName] = useState('');
@@ -252,7 +253,14 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
 
         <div className="p-4 space-y-4">
           <DialogHeader className="text-left p-0">
-            <DialogTitle className="text-lg">{product.name}</DialogTitle>
+            <div className="flex items-start justify-between gap-2">
+              <DialogTitle className="text-lg">{product.name}</DialogTitle>
+              {onShare && (
+                <Button variant="outline" size="sm" className="gap-1 text-xs shrink-0" onClick={onShare}>
+                  <Link2 className="h-3.5 w-3.5" /> Chia sẻ
+                </Button>
+              )}
+            </div>
           </DialogHeader>
 
           {/* Price */}
