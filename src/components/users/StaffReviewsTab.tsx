@@ -50,11 +50,17 @@ export function StaffReviewsTab() {
 
   const isSuperAdmin = permissions?.role === 'super_admin';
   const isBranchAdmin = permissions?.role === 'branch_admin';
+  const isStaff = permissions?.role === 'staff';
 
   // Default branch filter for branch admin
   const effectiveBranchId = isBranchAdmin
     ? permissions?.branchId || null
     : filterBranch !== 'all' ? filterBranch : null;
+
+  // Staff only sees their own reviews
+  const effectiveStaffId = isStaff 
+    ? user?.id || null
+    : filterStaff !== 'all' ? filterStaff : null;
 
   // Fetch staff list for filter dropdown
   const { data: staffList } = useQuery({
@@ -95,9 +101,9 @@ export function StaffReviewsTab() {
   const { data: reviews, isLoading } = useStaffReviews({
     tenantId: currentTenant?.id || null,
     branchId: effectiveBranchId,
-    staffUserId: filterStaff !== 'all' ? filterStaff : null,
+    staffUserId: effectiveStaffId,
     rating: filterRating !== 'all' ? parseInt(filterRating) : null,
-    searchStaffName: searchStaffName.trim() || undefined,
+    searchStaffName: isStaff ? undefined : searchStaffName.trim() || undefined,
   });
 
   // Stats
@@ -167,20 +173,22 @@ export function StaffReviewsTab() {
               </Select>
             )}
 
-            {/* Staff filter */}
-            <Select value={filterStaff} onValueChange={setFilterStaff}>
-              <SelectTrigger>
-                <SelectValue placeholder="Nhân viên" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả nhân viên</SelectItem>
-                {filteredStaffList.map(s => (
-                  <SelectItem key={s.user_id} value={s.user_id}>
-                    {s.display_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Staff filter - not for staff role */}
+            {!isStaff && (
+              <Select value={filterStaff} onValueChange={setFilterStaff}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Nhân viên" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả nhân viên</SelectItem>
+                  {filteredStaffList.map(s => (
+                    <SelectItem key={s.user_id} value={s.user_id}>
+                      {s.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
             {/* Rating filter */}
             <Select value={filterRating} onValueChange={setFilterRating}>
@@ -197,16 +205,18 @@ export function StaffReviewsTab() {
               </SelectContent>
             </Select>
 
-            {/* Staff name search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Tìm tên nhân viên..."
-                value={searchStaffName}
-                onChange={e => setSearchStaffName(e.target.value)}
-                className="pl-9 search-input-highlight"
-              />
-            </div>
+            {/* Staff name search - not for staff role */}
+            {!isStaff && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm tên nhân viên..."
+                  value={searchStaffName}
+                  onChange={e => setSearchStaffName(e.target.value)}
+                  className="pl-9 search-input-highlight"
+                />
+              </div>
+            )}
           </div>
 
           {isLoading ? (

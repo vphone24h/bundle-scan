@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -25,6 +25,7 @@ import { DataManagementSection } from '@/components/admin/DataManagementSection'
 import { StaffReviewsTab } from '@/components/users/StaffReviewsTab';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useUsersGuideUrl } from '@/hooks/useAppConfig';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UserWithRole {
   id: string;
@@ -124,6 +125,7 @@ export default function UsersPage() {
   const { data: branches } = useBranches();
   const { data: currentTenant } = useCurrentTenant();
   const usersGuideUrl = useUsersGuideUrl();
+  const { user } = useAuth();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
@@ -200,15 +202,18 @@ export default function UsersPage() {
     setIsEditOpen(true);
   };
 
-  if (!permissions?.canManageUsers && !permissions?.canManageBranchStaff) {
-    return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-96">
-          <p className="text-muted-foreground">Bạn không có quyền truy cập trang này</p>
-        </div>
-      </MainLayout>
-    );
-  }
+  // Staff/Cashier chỉ xem tab Đánh giá, không xem danh sách người dùng
+  const isStaffOnly = !permissions?.canManageUsers && !permissions?.canManageBranchStaff;
+
+  // Force reviews tab for staff-only access
+  const effectiveTab = isStaffOnly ? 'reviews' : activeTab;
+
+  // Mark reviews as viewed (clear red dot)
+  useEffect(() => {
+    if (effectiveTab === 'reviews' && user?.id) {
+      localStorage.setItem(`reviews_last_viewed_${user.id}`, new Date().toISOString());
+    }
+  }, [effectiveTab, user?.id]);
 
   const isSuperAdmin = permissions?.role === 'super_admin';
   const isBranchAdmin = permissions?.role === 'branch_admin';
@@ -225,11 +230,11 @@ export default function UsersPage() {
     <MainLayout>
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <PageHeader 
-          title="Quản lý người dùng" 
-          description="Phân quyền và quản lý tài khoản nhân viên"
-          helpText="Tạo tài khoản cho nhân viên, phân quyền (Admin, Kế toán, Nhân viên). Mỗi vai trò có quyền truy cập khác nhau: nhân viên chỉ thấy chức năng được cấp phép."
+          title={isStaffOnly ? "Đánh giá nhân viên" : "Quản lý người dùng"}
+          description={isStaffOnly ? "Xem đánh giá từ khách hàng" : "Phân quyền và quản lý tài khoản nhân viên"}
+          helpText={isStaffOnly ? "Xem các đánh giá mà khách hàng đã gửi sau khi tra cứu bảo hành." : "Tạo tài khoản cho nhân viên, phân quyền (Admin, Kế toán, Nhân viên). Mỗi vai trò có quyền truy cập khác nhau: nhân viên chỉ thấy chức năng được cấp phép."}
         />
-        {usersGuideUrl && (
+        {usersGuideUrl && !isStaffOnly && (
           <Button
             variant="outline"
             size="sm"
@@ -241,17 +246,19 @@ export default function UsersPage() {
         )}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="users" className="flex items-center gap-1.5">
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Danh sách</span>
-          </TabsTrigger>
-          <TabsTrigger value="reviews" className="flex items-center gap-1.5">
-            <Star className="h-4 w-4" />
-            <span className="hidden sm:inline">Đánh giá</span>
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={effectiveTab} onValueChange={setActiveTab} className="space-y-4">
+        {!isStaffOnly && (
+          <TabsList>
+            <TabsTrigger value="users" className="flex items-center gap-1.5">
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">Danh sách</span>
+            </TabsTrigger>
+            <TabsTrigger value="reviews" className="flex items-center gap-1.5">
+              <Star className="h-4 w-4" />
+              <span className="hidden sm:inline">Đánh giá</span>
+            </TabsTrigger>
+          </TabsList>
+        )}
 
         <TabsContent value="users" className="space-y-4">
           {/* Role Description Section */}
