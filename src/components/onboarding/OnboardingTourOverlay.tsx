@@ -255,21 +255,22 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
       };
     }
 
-    // Desktop positioning
+    // Desktop positioning — ensure popup stays within viewport
     const pos = step.position || 'bottom';
     const left = Math.max(16, Math.min(targetRect.left, vw - popupW - 16));
+    const clampTop = (t: number) => Math.max(16, Math.min(t, vh - popupH - 16));
 
     switch (pos) {
       case 'bottom':
-        return { position: 'fixed', top: Math.min(targetRect.bottom + gap, vh - 280), left, zIndex: 10002 };
+        return { position: 'fixed', top: clampTop(targetRect.bottom + gap), left, maxWidth: popupW, zIndex: 10002 };
       case 'top':
-        return { position: 'fixed', bottom: vh - targetRect.top + gap, left, zIndex: 10002 };
+        return { position: 'fixed', top: clampTop(targetRect.top - gap - popupH), left, maxWidth: popupW, zIndex: 10002 };
       case 'right':
-        return { position: 'fixed', top: Math.max(16, targetRect.top - 20), left: Math.min(targetRect.right + gap, vw - popupW - 16), zIndex: 10002 };
+        return { position: 'fixed', top: clampTop(targetRect.top - 20), left: Math.min(targetRect.right + gap, vw - popupW - 16), maxWidth: popupW, zIndex: 10002 };
       case 'left':
-        return { position: 'fixed', top: Math.max(16, targetRect.top - 20), right: vw - targetRect.left + gap, zIndex: 10002 };
+        return { position: 'fixed', top: clampTop(targetRect.top - 20), left: Math.max(16, targetRect.left - gap - popupW), maxWidth: popupW, zIndex: 10002 };
       default:
-        return { position: 'fixed', top: targetRect.bottom + gap, left, zIndex: 10002 };
+        return { position: 'fixed', top: clampTop(targetRect.bottom + gap), left, maxWidth: popupW, zIndex: 10002 };
     }
   };
 
