@@ -24,7 +24,10 @@ import {
   Undo,
   Redo,
   Type,
+  Upload,
+  Loader2,
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RichTextEditorProps {
   value: string;
@@ -85,6 +88,8 @@ export function RichTextEditor({
   const [imageUrl, setImageUrl] = useState('');
   const [linkOpen, setLinkOpen] = useState(false);
   const [imageOpen, setImageOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const saveSelection = useCallback(() => {
     const sel = window.getSelection();
@@ -156,26 +161,47 @@ export function RichTextEditor({
     }
   }, [linkUrl, execCommand, onChange, restoreSelection]);
 
+  const insertImageFromUrl = useCallback((url: string) => {
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = 'image';
+    img.style.cssText = 'max-width:100%;height:auto;border-radius:8px;margin:8px 0;';
+    restoreSelection();
+    execCommand('insertHTML', DOMPurify.sanitize(img.outerHTML));
+  }, [execCommand, restoreSelection]);
+
   const insertImage = useCallback(() => {
     if (imageUrl) {
       const sanitizedUrl = imageUrl.trim();
       try {
         const url = new URL(sanitizedUrl);
-        if (!['http:', 'https:'].includes(url.protocol)) {
-          return;
-        }
-      } catch {
-        return;
-      }
-      const img = document.createElement('img');
-      img.src = sanitizedUrl;
-      img.alt = 'image';
-      img.style.cssText = 'max-width:100%;height:auto;border-radius:8px;margin:8px 0;';
-      execCommand('insertHTML', DOMPurify.sanitize(img.outerHTML));
+        if (!['http:', 'https:'].includes(url.protocol)) return;
+      } catch { return; }
+      insertImageFromUrl(sanitizedUrl);
       setImageUrl('');
       setImageOpen(false);
     }
-  }, [imageUrl, execCommand]);
+  }, [imageUrl, insertImageFromUrl]);
+
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `editor/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from('tenant-assets').upload(path, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('tenant-assets').getPublicUrl(path);
+      insertImageFromUrl(urlData.publicUrl);
+      setImageOpen(false);
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }, [insertImageFromUrl]);
 
   // Set initial content
   const handleRef = useCallback((el: HTMLDivElement | null) => {
@@ -314,18 +340,44 @@ export function RichTextEditor({
             </button>
           </PopoverTrigger>
           <PopoverContent className="w-72 p-3" align="start">
-            <div className="space-y-2">
-              <p className="text-xs font-medium">Chèn ảnh (URL)</p>
-              <Input
-                placeholder="https://example.com/image.jpg"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && insertImage()}
-                className="h-8 text-sm"
-              />
-              <Button size="sm" onClick={insertImage} className="w-full h-7 text-xs">
-                Chèn
-              </Button>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-medium mb-1.5">Tải ảnh từ máy</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full h-8 text-xs"
+                >
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
+                  {uploading ? 'Đang tải...' : 'Chọn ảnh từ máy'}
+                </Button>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                <div className="relative flex justify-center text-xs"><span className="bg-popover px-2 text-muted-foreground">hoặc</span></div>
+              </div>
+              <div>
+                <p className="text-xs font-medium mb-1.5">Chèn từ URL</p>
+                <Input
+                  placeholder="https://example.com/image.jpg"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && insertImage()}
+                  className="h-8 text-sm"
+                />
+                <Button size="sm" onClick={insertImage} className="w-full h-7 text-xs mt-1.5">
+                  Chèn
+                </Button>
+              </div>
             </div>
           </PopoverContent>
         </Popover>
