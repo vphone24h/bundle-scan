@@ -175,6 +175,7 @@ const App = () => (
                 <Route path="/store/:storeId" element={<StoreLandingPage />} />
                 
                 {/* Public routes */}
+                <Route path="/public/guides" element={<PlatformArticlesPage />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/admin" element={<PlatformAuthPage />} />
                 <Route path="/register" element={<RegisterPage />} />

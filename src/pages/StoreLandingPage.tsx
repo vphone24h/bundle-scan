@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import DOMPurify from 'dompurify';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useSearchParams } from 'react-router-dom';
 import { usePublicLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo } from '@/hooks/useTenantLanding';
 import { usePublicLandingProducts, LandingProduct } from '@/hooks/useLandingProducts';
 import { usePublicLandingArticles, LandingArticle } from '@/hooks/useLandingArticles';
@@ -15,7 +15,7 @@ import {
   Store, Loader2, Building2, Headphones, Calendar, Package,
   Clock, Users, ExternalLink, Star, Gift, User, Globe,
   ChevronDown, ChevronUp, ShoppingBag, Newspaper, ArrowLeft,
-  Download, Smartphone, Share, Plus, Apple, MoreVertical, Ticket
+  Download, Smartphone, Share, Plus, Apple, MoreVertical, Ticket, Copy, Link2
 } from 'lucide-react';
 import { format, addMonths, isAfter, differenceInDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -89,6 +89,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const hasIdentifier = !!storeId || !!resolvedTenant.tenantId;
   const { data: landingData, isLoading } = usePublicLandingSettings(storeId, resolvedTenant.tenantId);
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [pageView, setPageView] = useState<PageView>('home');
   const [selectedArticle, setSelectedArticle] = useState<LandingArticle | null>(null);
@@ -135,6 +136,20 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       localStorage.setItem(warrantyStorageKey, JSON.stringify({ searchValue: submittedValue }));
     }
   }, [warrantyStorageKey, submittedValue, warrantyResults]);
+
+  // Deep-link: open product or article from URL params
+  useEffect(() => {
+    const productId = searchParams.get('product');
+    const articleId = searchParams.get('article');
+    if (productId && productsData?.products) {
+      const p = productsData.products.find(x => x.id === productId);
+      if (p) { setSelectedProduct(p); setPageView('products'); }
+    }
+    if (articleId && articlesData?.articles) {
+      const a = articlesData.articles.find(x => x.id === articleId);
+      if (a) { setSelectedArticle(a); setPageView('article-detail'); }
+    }
+  }, [searchParams, productsData, articlesData]);
 
   const isPhoneSearch = /^0\d{9,10}$/.test(submittedValue.replace(/\s/g, ''));
   const firstResult = warrantyResults?.[0];
@@ -227,13 +242,39 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     setPageView(view);
     setSelectedArticle(null);
     setSelectedCategoryId(null);
+    // Clear deep-link params
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('product');
+    newParams.delete('article');
+    setSearchParams(newParams, { replace: true });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const openArticle = (article: LandingArticle) => {
     setSelectedArticle(article);
     setPageView('article-detail');
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('article', article.id);
+    newParams.delete('product');
+    setSearchParams(newParams, { replace: true });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const copyShareLink = (type: 'product' | 'article', id: string) => {
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.searchParams.set(type, id);
+    navigator.clipboard.writeText(url.toString()).then(() => {
+      import('sonner').then(({ toast }) => toast.success('Đã sao chép link chia sẻ'));
+    }).catch(() => {});
+  };
+
+  const openProduct = (p: LandingProduct) => {
+    setSelectedProduct(p);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('product', p.id);
+    newParams.delete('article');
+    setSearchParams(newParams, { replace: true });
   };
 
   return (
@@ -365,7 +406,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {featuredProducts.slice(0, 4).map(p => (
-                    <Card key={p.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedProduct(p)}>
+                    <Card key={p.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => openProduct(p)}>
                       {p.image_url ? (
                         <img src={p.image_url} alt={p.name} className="w-full aspect-square object-cover" />
                       ) : (
@@ -510,7 +551,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
             )}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {filteredProducts.map(p => (
-                <Card key={p.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedProduct(p)}>
+                <Card key={p.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => openProduct(p)}>
                   {p.image_url ? (
                     <img src={p.image_url} alt={p.name} className="w-full aspect-square object-cover" />
                   ) : (
@@ -608,9 +649,14 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
         {/* ARTICLE DETAIL */}
         {pageView === 'article-detail' && selectedArticle && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => navigateTo('news')} className="h-8 w-8"><ArrowLeft className="h-4 w-4" /></Button>
-              <span className="text-sm text-muted-foreground">Quay lại tin tức</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" onClick={() => navigateTo('news')} className="h-8 w-8"><ArrowLeft className="h-4 w-4" /></Button>
+                <span className="text-sm text-muted-foreground">Quay lại tin tức</span>
+              </div>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => copyShareLink('article', selectedArticle.id)}>
+                <Link2 className="h-3.5 w-3.5" /> Chia sẻ
+              </Button>
             </div>
             <Card className="shadow-md">
               <CardContent className="p-4 sm:p-6">
@@ -872,11 +918,19 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       <ProductDetailDialog
         product={selectedProduct}
         open={!!selectedProduct}
-        onOpenChange={v => !v && setSelectedProduct(null)}
+        onOpenChange={v => {
+          if (!v) {
+            setSelectedProduct(null);
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('product');
+            setSearchParams(newParams, { replace: true });
+          }
+        }}
         tenantId={tenantId || ''}
         branches={branches.map(b => ({ id: b.id, name: b.name }))}
         primaryColor={primaryColor}
         warrantyHotline={warrantyHotline}
+        onShare={() => selectedProduct && copyShareLink('product', selectedProduct.id)}
       />
     </div>
   );
