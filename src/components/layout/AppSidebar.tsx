@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { usePendingTransferCount } from '@/hooks/useStockTransfers';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
+import { useUnreadReviewCount } from '@/hooks/useUnreadReviews';
 import {
   LayoutDashboard,
   Package,
@@ -33,6 +34,7 @@ import {
   HeartHandshake,
   Bell,
    Percent,
+   Star,
 } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { cn } from '@/lib/utils';
@@ -113,6 +115,7 @@ const allNavItems: NavItem[] = [
   { title: 'Sổ quỹ', href: '/cash-book', icon: Wallet, permission: 'canViewCashBook' },
   { title: 'Quản lý chi nhánh', href: '/branches', icon: Building2, permission: 'canManageBranches' },
   { title: 'Quản lý người dùng', href: '/users', icon: Shield, permission: 'canManageBranchStaff' },
+  { title: 'Đánh giá nhân viên', href: '/users', icon: Star, permission: 'canViewStaffReviews' },
   { title: 'Lịch sử thao tác', href: '/audit-logs', icon: History, permission: 'canViewAuditLogs' },
   { title: 'Website bán hàng', href: '/landing-settings', icon: Globe, permission: 'canViewProducts' },
   { title: 'Ứng dụng', href: '/applications', icon: AppWindow },
@@ -135,6 +138,7 @@ export function AppSidebar() {
   const [isStandalone, setIsStandalone] = useState(false);
   const { data: pendingTransferCount } = usePendingTransferCount();
   const { data: pendingOrderCount } = usePendingOrderCount();
+  const { data: unreadReviewCount } = useUnreadReviewCount();
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -281,6 +285,9 @@ export function AppSidebar() {
                   <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
                     {pendingOrderCount}
                   </span>
+                )}
+                {item.title === 'Đánh giá nhân viên' && (unreadReviewCount || 0) > 0 && (
+                  <span className="h-2.5 w-2.5 rounded-full bg-destructive animate-pulse" />
                 )}
               </Link>
             )}

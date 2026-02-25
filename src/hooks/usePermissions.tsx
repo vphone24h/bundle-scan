@@ -15,6 +15,7 @@ export interface UserPermissions {
   canViewAuditLogs: boolean;
   canViewProducts: boolean;
   canViewInventory: boolean;
+  canViewStaffReviews: boolean;
   // Quyền thao tác
   canManageUsers: boolean; // Super Admin: quản lý tất cả user
   canManageBranchStaff: boolean; // Branch Admin: quản lý nhân viên chi nhánh
@@ -45,6 +46,7 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
   canViewAuditLogs: false,
   canViewProducts: true,
   canViewInventory: true,
+  canViewStaffReviews: true,
   canManageUsers: false,
   canManageBranchStaff: false,
   canManageBranches: false,
@@ -78,6 +80,7 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
         canViewAuditLogs: true,
         canViewProducts: true,
         canViewInventory: true,
+        canViewStaffReviews: false, // Super Admin xem qua tab Quản lý người dùng
         canManageUsers: true,
         canManageBranchStaff: true,
         canManageBranches: true,
@@ -107,6 +110,7 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
         canViewAuditLogs: true,
         canViewProducts: true,
         canViewInventory: true,
+        canViewStaffReviews: false, // Branch Admin xem qua tab Quản lý người dùng
         canManageUsers: false,
         canManageBranchStaff: true,
         canManageBranches: false,
@@ -136,6 +140,7 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
         canViewAuditLogs: false,        // ❌ Không xem audit logs
         canViewProducts: true,          // ✅ Xem sản phẩm
         canViewInventory: true,         // ✅ Xem tồn kho
+        canViewStaffReviews: false,     // Cashier không cần xem đánh giá
         canManageUsers: false,          // ❌ Không quản lý tài khoản
         canManageBranchStaff: false,    // ❌ Không quản lý nhân viên
         canManageBranches: false,       // ❌ Không quản lý chi nhánh
@@ -166,6 +171,7 @@ function getPermissionsForRole(role: UserRole, branchId: string | null): UserPer
         canViewAuditLogs: false,
         canViewProducts: true,
         canViewInventory: true,
+        canViewStaffReviews: true, // ✅ Nhân viên xem đánh giá của mình
         canManageUsers: false,
         canManageBranchStaff: false,
         canManageBranches: false,
