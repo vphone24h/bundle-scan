@@ -195,6 +195,7 @@ export function useCreateExportReceipt() {
       branchId,
       vatRate = 0,
       vatAmount = 0,
+      salesStaffId,
     }: {
       customerId: string;
       items: ExportReceiptItem[];
@@ -205,6 +206,7 @@ export function useCreateExportReceipt() {
       branchId?: string | null;
       vatRate?: number;
       vatAmount?: number;
+      salesStaffId?: string | null;
     }) => {
       // Calculate total amount considering quantity
       const totalAmount = items.reduce((sum, item) => sum + (item.sale_price * (item.quantity || 1)), 0);
@@ -287,6 +289,7 @@ export function useCreateExportReceipt() {
             vat_amount: vatAmount,
             note,
             created_by: user?.id,
+            sales_staff_id: salesStaffId || user?.id,
             tenant_id: tenantId,
           },
         ])

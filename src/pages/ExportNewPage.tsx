@@ -43,10 +43,13 @@ import { useInvoiceTemplateByBranch } from '@/hooks/useInvoiceTemplates';
 import { useBranches } from '@/hooks/useBranches';
 import { usePointSettings } from '@/hooks/useCustomerPoints';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useStaffList } from '@/hooks/useCRM';
+import { useAuth } from '@/hooks/useAuth';
 import { ExportPaymentDialog } from '@/components/export/ExportPaymentDialog';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
 import { CustomerSearchCombobox } from '@/components/export/CustomerSearchCombobox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/formatNumber';
 import { PriceInput } from '@/components/ui/price-input';
@@ -141,6 +144,9 @@ export default function ExportNewPage() {
   const [customerBirthday, setCustomerBirthday] = useState<Date | undefined>(undefined);
   const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer | null>(null);
 
+  // Sales staff
+  const [salesStaffId, setSalesStaffId] = useState<string | null>(null);
+
   // Payment dialog
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
@@ -149,6 +155,7 @@ export default function ExportNewPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Hooks
+  const { user } = useAuth();
   const checkProduct = useCheckProductForSale();
   const searchProducts = useSearchProductsByName();
   const upsertCustomer = useUpsertCustomer();
@@ -157,6 +164,8 @@ export default function ExportNewPage() {
   const { data: pointSettings } = usePointSettings();
   const { data: branches } = useBranches();
   const { data: permissions } = usePermissions();
+  const { data: staffList } = useStaffList();
+  const isSuperAdmin = permissions?.role === 'super_admin';
   
   // Get branch_id from first cart item for invoice template
   const cartBranchId = cart.find(item => item.branch_id)?.branch_id || null;
@@ -615,6 +624,16 @@ export default function ExportNewPage() {
       return;
     }
 
+    // Super Admin must select sales staff
+    if (isSuperAdmin && !salesStaffId) {
+      toast({
+        title: 'Thiếu thông tin',
+        description: 'Vui lòng chọn nhân viên bán hàng',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setShowPaymentDialog(true);
   };
 
@@ -662,6 +681,7 @@ export default function ExportNewPage() {
     const savedEffectiveTaxRate = effectiveTaxRate;
     const savedTaxAmount = taxAmount;
     const savedSubtotalAmount = subtotalAmount;
+    const savedSalesStaffId = isSuperAdmin ? salesStaffId : user?.id || null;
 
     setCart([]);
     setCustomerName('');
@@ -671,6 +691,7 @@ export default function ExportNewPage() {
     setCustomerSource('');
     setCustomerBirthday(undefined);
     setSelectedCustomer(null);
+    setSalesStaffId(null);
     setTaxEnabled(false);
     setTaxRate(null);
     setCustomTaxRate('');
@@ -697,6 +718,7 @@ export default function ExportNewPage() {
         branchId,
         vatRate: savedEffectiveTaxRate,
         vatAmount: savedTaxAmount,
+        salesStaffId: savedSalesStaffId,
       });
 
       // Update receipt with real data (code from server)
@@ -1131,6 +1153,36 @@ export default function ExportNewPage() {
                  setCustomerSource={setCustomerSource}
                  setCustomerBirthday={setCustomerBirthday}
                />
+
+               {/* Sales Staff Selector - only for Super Admin */}
+               {isSuperAdmin && (
+                 <div className="space-y-2 pt-2 border-t">
+                   <Label className="flex items-center gap-2">
+                     <User className="h-4 w-4" />
+                     Nhân viên bán hàng <span className="text-destructive">*</span>
+                   </Label>
+                   <Select
+                     value={salesStaffId || ''}
+                     onValueChange={(v) => setSalesStaffId(v || null)}
+                   >
+                     <SelectTrigger>
+                       <SelectValue placeholder="Chọn nhân viên bán..." />
+                     </SelectTrigger>
+                     <SelectContent>
+                       {staffList?.map((staff) => (
+                         <SelectItem key={staff.user_id} value={staff.user_id}>
+                           {staff.display_name || 'Nhân viên'}
+                           {staff.user_role === 'super_admin' && ' (Admin)'}
+                           {staff.user_role === 'branch_admin' && ' (QL)'}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                   <p className="text-xs text-muted-foreground">
+                     Doanh số đơn hàng sẽ được tính cho nhân viên này
+                   </p>
+                 </div>
+               )}
             </CardContent>
           </Card>
 

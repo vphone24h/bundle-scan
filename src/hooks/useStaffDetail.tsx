@@ -45,11 +45,13 @@ export function useStaffExportReceipts(userId: string | null, startDate: string,
       const tenantId = await getCurrentTenantId();
       if (!tenantId) return [];
 
+      // Use sales_staff_id (nhân viên bán) instead of created_by
+      // Fallback: also match created_by for old records without sales_staff_id
       const { data, error } = await supabase
         .from('export_receipts')
         .select('id, code, export_date, total_amount, status, customer_id, customers(name)')
         .eq('tenant_id', tenantId)
-        .eq('created_by', userId)
+        .or(`sales_staff_id.eq.${userId},and(sales_staff_id.is.null,created_by.eq.${userId})`)
         .eq('status', 'completed')
         .gte('export_date', startDate)
         .lte('export_date', endDate + 'T23:59:59')

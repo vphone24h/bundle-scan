@@ -2348,6 +2348,7 @@ export type Database = {
           points_discount: number | null
           points_earned: number | null
           points_redeemed: number | null
+          sales_staff_id: string | null
           status: string
           tenant_id: string | null
           total_amount: number
@@ -2369,6 +2370,7 @@ export type Database = {
           points_discount?: number | null
           points_earned?: number | null
           points_redeemed?: number | null
+          sales_staff_id?: string | null
           status?: string
           tenant_id?: string | null
           total_amount?: number
@@ -2390,6 +2392,7 @@ export type Database = {
           points_discount?: number | null
           points_earned?: number | null
           points_redeemed?: number | null
+          sales_staff_id?: string | null
           status?: string
           tenant_id?: string | null
           total_amount?: number
