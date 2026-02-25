@@ -324,10 +324,17 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   };
 
   const copyShareLink = (type: 'product' | 'article', id: string) => {
-    const url = new URL(window.location.href);
-    url.search = '';
-    url.searchParams.set(type, id);
-    navigator.clipboard.writeText(url.toString()).then(() => {
+    // Build the direct SPA URL for user navigation
+    const spaUrl = new URL(window.location.href);
+    spaUrl.search = '';
+    spaUrl.searchParams.set(type, id);
+    const directUrl = spaUrl.toString();
+
+    // Build OG proxy URL for rich link previews (Zalo, Facebook, iMessage)
+    const ogProxyBase = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-meta`;
+    const ogUrl = `${ogProxyBase}?type=${type}&id=${id}&tenant_id=${tenantId || ''}&url=${encodeURIComponent(directUrl)}`;
+
+    navigator.clipboard.writeText(ogUrl).then(() => {
       import('sonner').then(({ toast }) => toast.success('Đã sao chép link chia sẻ'));
     }).catch(() => {});
   };
