@@ -362,7 +362,7 @@ export function CustomerSearchCombobox({
 
   // === DEFAULT: SEARCH VIEW ===
   return (
-    <div className="space-y-3" ref={searchRef}>
+    <div className="space-y-3 relative" ref={searchRef}>
       <div>
         <Label className="flex items-center gap-1 mb-1.5">
           <Search className="h-3.5 w-3.5" />
@@ -389,7 +389,7 @@ export function CustomerSearchCombobox({
 
       {/* Suggestions Dropdown */}
       {showDropdown && suggestions.length > 0 && (
-        <div className="absolute z-20 left-0 right-0 mx-4 bg-popover border rounded-lg shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-20 left-0 right-0 bg-popover border rounded-lg shadow-lg max-h-60 overflow-auto">
           {suggestions.map((customer) => {
             const config = TIER_CONFIG[customer.membership_tier];
             const Icon = config.icon;
