@@ -181,12 +181,12 @@ export default function ExportHistoryPage() {
   const { data: template } = useInvoiceTemplateByBranch(printBranchId);
   const printBranch = printBranchId ? branches?.find(b => b.id === printBranchId) : null;
 
-  // Fetch staff names from profiles for both tabs
+  // Fetch staff names from profiles for both tabs (use sales_staff_id for NV bán)
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
   useEffect(() => {
-    // Collect all created_by IDs from both receipts and items
-    const receiptUserIds = receipts?.map(r => r.created_by).filter(Boolean) || [];
-    const itemUserIds = items?.map(i => i.export_receipts?.created_by).filter(Boolean) || [];
+    // Collect sales_staff_id (preferred) and created_by as fallback
+    const receiptUserIds = receipts?.map(r => (r as any).sales_staff_id || r.created_by).filter(Boolean) || [];
+    const itemUserIds = items?.map(i => (i.export_receipts as any)?.sales_staff_id || i.export_receipts?.created_by).filter(Boolean) || [];
     const userIds = [...new Set([...receiptUserIds, ...itemUserIds])] as string[];
     if (userIds.length === 0) return;
     supabase
@@ -374,7 +374,7 @@ export default function ExportHistoryPage() {
         debt_amount: r.debt_amount,
         status: r.status,
         branch_name: branches?.find(b => b.id === r.branch_id)?.name || '',
-        staff_name: r.created_by ? (staffNames[r.created_by] || '') : '',
+        staff_name: (() => { const sid = (r as any).sales_staff_id || r.created_by; return sid ? (staffNames[sid] || '') : ''; })(),
       })),
     });
 
@@ -616,7 +616,10 @@ export default function ExportHistoryPage() {
                           {receipt.debt_amount > 0 ? `${receipt.debt_amount.toLocaleString('vi-VN')}đ` : '-'}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {receipt.created_by ? (staffNames[receipt.created_by] || '-') : '-'}
+                          {(() => {
+                            const staffId = (receipt as any).sales_staff_id || receipt.created_by;
+                            return staffId ? (staffNames[staffId] || '-') : '-';
+                          })()}
                         </TableCell>
                         <TableCell>
                           <Badge variant={statusLabels[receipt.status]?.variant || 'default'}>
@@ -747,7 +750,10 @@ export default function ExportHistoryPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {item.export_receipts?.created_by ? staffNames[item.export_receipts.created_by] || '-' : '-'}
+                            {(() => {
+                              const staffId = (item.export_receipts as any)?.sales_staff_id || item.export_receipts?.created_by;
+                              return staffId ? (staffNames[staffId] || '-') : '-';
+                            })()}
                           </TableCell>
                           <TableCell>
                             {item.export_receipts?.export_date ? 
