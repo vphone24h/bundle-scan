@@ -65,6 +65,43 @@ function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?:
   }, [storeId, storeName, logoUrl, location.pathname]);
 }
 
+// === Dynamic OG Meta Tags ===
+function useDynamicOGMeta(title?: string, description?: string, imageUrl?: string) {
+  useEffect(() => {
+    if (!title) return;
+    const prev = {
+      title: document.title,
+      ogTitle: document.querySelector('meta[property="og:title"]')?.getAttribute('content') || '',
+      ogDesc: document.querySelector('meta[property="og:description"]')?.getAttribute('content') || '',
+      ogImage: document.querySelector('meta[property="og:image"]')?.getAttribute('content') || '',
+      desc: document.querySelector('meta[name="description"]')?.getAttribute('content') || '',
+    };
+
+    document.title = title;
+    const setMeta = (selector: string, attr: string, value: string) => {
+      let el = document.querySelector(selector);
+      if (!el) { el = document.createElement('meta'); const [a, v] = attr === 'property' ? ['property', selector.match(/"([^"]+)"/)?.[1] || ''] : ['name', selector.match(/"([^"]+)"/)?.[1] || '']; el.setAttribute(a, v); document.head.appendChild(el); }
+      el.setAttribute('content', value);
+    };
+    setMeta('meta[property="og:title"]', 'property', title);
+    if (description) {
+      setMeta('meta[property="og:description"]', 'property', description);
+      setMeta('meta[name="description"]', 'name', description);
+    }
+    if (imageUrl) {
+      setMeta('meta[property="og:image"]', 'property', imageUrl);
+    }
+
+    return () => {
+      document.title = prev.title;
+      setMeta('meta[property="og:title"]', 'property', prev.ogTitle);
+      setMeta('meta[property="og:description"]', 'property', prev.ogDesc);
+      setMeta('meta[name="description"]', 'name', prev.desc);
+      if (prev.ogImage) setMeta('meta[property="og:image"]', 'property', prev.ogImage);
+    };
+  }, [title, description, imageUrl]);
+}
+
 // === Warranty Status ===
 interface WarrantyStatus { valid: boolean; message: string; endDate: Date | null; startDate: Date; months: number; daysLeft?: number; }
 function calculateWarrantyStatus(item: WarrantyResult): WarrantyStatus | null {
@@ -160,6 +197,32 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const customerId = firstResult?.customer_id || customerPoints?.customer_id || null;
   const reviewRewardPoints = customerPoints?.review_reward_points || 0;
   const { data: customerVouchers } = usePublicCustomerVouchers(phoneForPoints, tenantId);
+
+  // Dynamic OG meta tags for store / product / article
+  const ogData = (() => {
+    const sName = landingData?.settings?.store_name || landingData?.tenant?.name || storeId || '';
+    const sDesc = landingData?.settings?.store_description || '';
+    if (selectedProduct) {
+      return {
+        title: `${selectedProduct.name} - ${sName}`,
+        description: selectedProduct.description || `Sản phẩm tại ${sName}`,
+        image: selectedProduct.image_url || undefined,
+      };
+    }
+    if (selectedArticle) {
+      return {
+        title: `${selectedArticle.title} - ${sName}`,
+        description: selectedArticle.summary || `Bài viết tại ${sName}`,
+        image: selectedArticle.thumbnail_url || undefined,
+      };
+    }
+    return {
+      title: sName ? `${sName}` : undefined,
+      description: sDesc || undefined,
+      image: landingData?.settings?.store_logo_url || undefined,
+    };
+  })();
+  useDynamicOGMeta(ogData.title, ogData.description, ogData.image);
 
   const handlePointsAwarded = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['customer-points-public'] });
