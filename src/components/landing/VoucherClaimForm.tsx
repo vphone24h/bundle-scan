@@ -16,7 +16,9 @@ interface VoucherClaimFormProps {
 }
 
 export function VoucherClaimForm({ tenantId, branches, primaryColor }: VoucherClaimFormProps) {
-  const [dialogOpen, setDialogOpen] = useState(true);
+  const storageKey = `voucher_claimed_${tenantId}`;
+  const alreadyClaimed = localStorage.getItem(storageKey) === '1';
+  const [dialogOpen, setDialogOpen] = useState(!alreadyClaimed);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -56,6 +58,7 @@ export function VoucherClaimForm({ tenantId, branches, primaryColor }: VoucherCl
         branch_id: branchId || undefined,
       });
       setResult(data);
+      localStorage.setItem(storageKey, '1');
       if (data.already_claimed) {
         toast.info('Mỗi số điện thoại chỉ được nhận 1 lần!');
       } else {
