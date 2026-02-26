@@ -921,68 +921,79 @@ export default function ExportNewPage() {
             </CardContent>
           </Card>
 
-          {/* Manual Search */}
+          {/* Manual Search - Combined */}
           <Card data-tour="export-manual-search">
-            <CardHeader>
+            <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Search className="h-5 w-5" />
-                Tìm thủ công
+                Tìm sản phẩm
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* IMEI Search */}
-              <div className="flex gap-2">
+            <CardContent className="space-y-3">
+              <div className="relative flex gap-2">
                 <div className="flex-1">
-                  <Label>Tìm theo IMEI/Serial</Label>
                   <Input
-                    placeholder="Nhập IMEI/Serial và Enter"
-                    value={imeiSearch}
-                    onChange={(e) => setImeiSearch(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleImeiSearch()}
+                    placeholder="Nhập IMEI/Serial hoặc tên sản phẩm..."
+                    value={imeiSearch || nameSearch}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      // If input looks like IMEI/Serial (digits, no spaces, >= 6 chars), use imeiSearch
+                      // Otherwise treat as name search for suggestions
+                      if (/^\d{6,}$/.test(val.trim())) {
+                        setImeiSearch(val);
+                        setNameSearch('');
+                      } else {
+                        setNameSearch(val);
+                        setImeiSearch('');
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const val = (imeiSearch || nameSearch).trim();
+                        if (val) {
+                          setImeiSearch(val);
+                          setNameSearch('');
+                          handleImeiSearch();
+                        }
+                      }
+                    }}
                     className="search-input-highlight"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Nhập <strong>IMEI/Serial</strong> vào → sản phẩm tự xuất hiện
-                  </p>
+                  {productSuggestions.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto top-full left-0">
+                      {productSuggestions.map((product) => (
+                        <button
+                          key={product.id}
+                          className="w-full px-4 py-2 text-left hover:bg-accent text-sm"
+                          onClick={() => handleSelectProduct(product)}
+                        >
+                          <div className="font-medium">{product.name}</div>
+                          <div className="text-muted-foreground text-xs">
+                            SKU: {product.sku} | {product.categories?.name || 'Chưa phân loại'}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Button 
-                  className="mt-6" 
-                  onClick={handleImeiSearch}
+                  onClick={() => {
+                    const val = (imeiSearch || nameSearch).trim();
+                    if (val) {
+                      setImeiSearch(val);
+                      setNameSearch('');
+                      handleImeiSearch();
+                    }
+                  }}
                   disabled={checkProduct.isPending}
                 >
                   Tìm
                 </Button>
               </div>
-
-              {/* Name Search */}
-              <div className="relative">
-                <Label>Hoặc tìm theo tên sản phẩm (không IMEI)</Label>
-                <p className="text-xs text-muted-foreground mb-1">
-                  Nhập 2-3 chữ đầu của sản phẩm → hiện gợi ý để chọn
-                </p>
-                <Input
-                  placeholder="Nhập tên sản phẩm..."
-                  value={nameSearch}
-                  onChange={(e) => setNameSearch(e.target.value)}
-                  className="search-input-highlight"
-                />
-                {productSuggestions.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
-                    {productSuggestions.map((product) => (
-                      <button
-                        key={product.id}
-                        className="w-full px-4 py-2 text-left hover:bg-accent text-sm"
-                        onClick={() => handleSelectProduct(product)}
-                      >
-                        <div className="font-medium">{product.name}</div>
-                        <div className="text-muted-foreground text-xs">
-                          SKU: {product.sku} | {product.categories?.name || 'Chưa phân loại'}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <p className="text-xs text-muted-foreground">
+                <strong>IMEI/Serial:</strong> Nhập đúng mã → Enter → sản phẩm tự xuất hiện &nbsp;|&nbsp; 
+                <strong>Tên:</strong> Nhập 2-3 chữ đầu → hiện gợi ý để chọn
+              </p>
 
               {/* Selected product info */}
               {selectedProduct && (
