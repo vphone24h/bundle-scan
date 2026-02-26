@@ -57,6 +57,27 @@ export function useAddCustomPaymentSource() {
   });
 }
 
+export function useUpdateCustomPaymentSource() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ sourceKey, newName }: { sourceKey: string; newName: string }) => {
+      const { data, error } = await supabase
+        .from('custom_payment_sources')
+        .update({ name: newName })
+        .eq('source_key', sourceKey)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['custom-payment-sources'] });
+    },
+  });
+}
+
 export function useDeleteCustomPaymentSource() {
   const queryClient = useQueryClient();
 
