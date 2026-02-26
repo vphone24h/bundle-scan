@@ -356,9 +356,14 @@ export default function ExportNewPage() {
     }
 
     // Check if already in cart OR currently being processed (race condition guard)
+    // For IMEI products: check by IMEI only (same product can have multiple IMEIs)
+    // For non-IMEI products: check by product_id
     const productKey = result.imei || result.id;
+    const alreadyInCart = result.imei
+      ? cart.some(item => item.imei && item.imei === result.imei)
+      : cart.some(item => item.product_id === result.id);
     if (
-      cart.some(item => item.imei === result.imei || item.product_id === result.id) ||
+      alreadyInCart ||
       pendingProductIdsRef.current.has(productKey)
     ) {
       toast({
@@ -392,9 +397,10 @@ export default function ExportNewPage() {
 
       setCart(prevCart => {
         // Double-check inside updater to prevent race condition
-        if (prevCart.some(item => item.imei === result.imei || item.product_id === result.id)) {
-          return prevCart;
-        }
+        const duplicate = result.imei
+          ? prevCart.some(item => item.imei && item.imei === result.imei)
+          : prevCart.some(item => item.product_id === result.id);
+        if (duplicate) return prevCart;
         return [...prevCart, newItem];
       });
       pendingProductIdsRef.current.delete(productKey);
@@ -433,9 +439,10 @@ export default function ExportNewPage() {
       };
 
       setCart(prevCart => {
-        if (prevCart.some(item => item.imei === result.imei || item.product_id === result.id)) {
-          return prevCart;
-        }
+        const duplicate = result.imei
+          ? prevCart.some(item => item.imei && item.imei === result.imei)
+          : prevCart.some(item => item.product_id === result.id);
+        if (duplicate) return prevCart;
         return [...prevCart, newItem];
       });
       pendingProductIdsRef.current.delete(productKey);
