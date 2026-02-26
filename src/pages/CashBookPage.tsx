@@ -191,6 +191,8 @@ export default function CashBookPage() {
   const updateCustomSource = useUpdateCustomPaymentSource();
   const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
   const [editingSourceName, setEditingSourceName] = useState('');
+  const [deleteSourceTarget, setDeleteSourceTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleteSourceConfirmText, setDeleteSourceConfirmText] = useState('');
   
   // All payment sources (built-in + custom)
   const allPaymentSources = useMemo(() => {
@@ -1082,9 +1084,8 @@ export default function CashBookPage() {
                             size="icon" 
                             className="h-8 w-8 text-destructive hover:text-destructive"
                             onClick={() => {
-                              deleteCustomSource.mutate(source.id, {
-                                onSuccess: () => toast({ title: 'Đã xóa nguồn tiền', description: source.name }),
-                              });
+                              setDeleteSourceTarget({ id: source.id, name: source.name });
+                              setDeleteSourceConfirmText('');
                             }}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -2171,6 +2172,57 @@ export default function CashBookPage() {
               disabled={!newSourceName.trim()}
             >
               Thêm nguồn tiền
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Custom Payment Source Confirmation Dialog */}
+      <Dialog open={!!deleteSourceTarget} onOpenChange={(open) => { if (!open) setDeleteSourceTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Xóa nguồn tiền
+            </DialogTitle>
+            <DialogDescription>
+              Bạn có chắc chắn muốn xóa nguồn tiền <strong className="text-foreground">{deleteSourceTarget?.name}</strong>? 
+              Hành động này không thể hoàn tác. Các giao dịch đã ghi nhận với nguồn tiền này sẽ không bị xóa nhưng sẽ không còn hiển thị đúng tên.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <Label>Gõ <strong>"đồng ý"</strong> để xác nhận xóa</Label>
+            <Input
+              placeholder="đồng ý"
+              value={deleteSourceConfirmText}
+              onChange={(e) => setDeleteSourceConfirmText(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteSourceTarget(null)}>
+              Hủy
+            </Button>
+            <Button 
+              variant="destructive"
+              disabled={deleteSourceConfirmText.trim().toLowerCase() !== 'đồng ý'}
+              onClick={() => {
+                if (deleteSourceTarget) {
+                  deleteCustomSource.mutate(deleteSourceTarget.id, {
+                    onSuccess: () => {
+                      toast({ title: 'Đã xóa nguồn tiền', description: deleteSourceTarget.name });
+                      setDeleteSourceTarget(null);
+                    },
+                    onError: (err: any) => {
+                      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+                    },
+                  });
+                }
+              }}
+            >
+              Xóa nguồn tiền
             </Button>
           </DialogFooter>
         </DialogContent>
