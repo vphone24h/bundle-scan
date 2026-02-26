@@ -278,15 +278,13 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false }: C
     scanCooldownRef.current = false;
     
     if (isOpen) {
-      // Bump key to force fresh DOM element
-      setScannerKey(k => k + 1);
-      // Delay start to ensure DOM is ready
-      const timer = setTimeout(() => {
-        startScannerRef.current(facingModeRef.current);
-      }, 300);
+      // Stop any previous scanner instance first
+      stopScannerRef.current().then(() => {
+        // Bump key to force fresh DOM element AFTER cleanup
+        setScannerKey(k => k + 1);
+      });
       
       return () => {
-        clearTimeout(timer);
         isMountedRef.current = false;
         stopScannerRef.current();
       };
@@ -297,6 +295,18 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false }: C
       };
     }
   }, [isOpen]); // Only depend on isOpen
+
+  // Start scanner when scannerKey changes (meaning fresh DOM is ready)
+  useEffect(() => {
+    if (scannerKey > 0 && isOpen) {
+      const timer = setTimeout(() => {
+        if (isMountedRef.current) {
+          startScannerRef.current(facingModeRef.current);
+        }
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [scannerKey, isOpen]);
 
   // Handle camera switch
   const toggleCamera = useCallback(async () => {
