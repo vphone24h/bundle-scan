@@ -377,86 +377,38 @@ export default function ExportNewPage() {
     // Mark as pending to prevent duplicate from concurrent scans
     pendingProductIdsRef.current.add(productKey);
 
-    // If barcode has encoded price -> AUTO ADD TO CART (IMEI products only)
+    // If barcode has encoded price -> fill form for warranty input
     if (encodedPrice !== null && encodedPrice > 0) {
-      const newItem: CartItem = {
-        tempId: Date.now().toString(),
-        product_id: result.id,
-        product_name: result.name,
-        sku: result.sku,
-        imei: result.imei,
-        category_id: result.category_id,
-        categoryName: result.categories?.name,
-        branch_id: result.branch_id,
-        branchName: result.branches?.name,
-        sale_price: encodedPrice,
-        note: null,
-        quantity: 1,
-        warranty: null,
-      };
-
-      setCart(prevCart => {
-        // Double-check inside updater to prevent race condition
-        const duplicate = result.imei
-          ? prevCart.some(item => item.imei && item.imei === result.imei)
-          : prevCart.some(item => item.product_id === result.id);
-        if (duplicate) return prevCart;
-        return [...prevCart, newItem];
-      });
       pendingProductIdsRef.current.delete(productKey);
-      
-      // Clear form for next scan
-      setSelectedProduct(null);
-      setSalePrice('');
-      setItemNote('');
+      setSelectedProduct(result);
+      setSalePrice(encodedPrice.toString());
       setItemQuantity(1);
       setItemWarranty('');
-      setImeiSearch('');
+      setItemNote('');
+      setNameSearch('');
+      setProductSuggestions([]);
       
       toast({
-        title: 'Đã thêm vào giỏ',
-        description: `${result.name} - ${encodedPrice.toLocaleString('vi-VN')}đ`,
+        title: 'Đã quét thành công',
+        description: `${result.name} - Vui lòng nhập bảo hành và nhấn "Thêm vào giỏ"`,
       });
       return;
     }
 
-    // No encoded price but product has sale_price in DB -> AUTO ADD TO CART
+    // No encoded price but product has sale_price in DB -> fill form for warranty input
     if (result.sale_price && result.sale_price > 0) {
-      const newItem: CartItem = {
-        tempId: Date.now().toString(),
-        product_id: result.id,
-        product_name: result.name,
-        sku: result.sku,
-        imei: result.imei,
-        category_id: result.category_id,
-        categoryName: result.categories?.name,
-        branch_id: result.branch_id,
-        branchName: result.branches?.name,
-        sale_price: result.sale_price,
-        note: null,
-        quantity: 1,
-        warranty: null,
-      };
-
-      setCart(prevCart => {
-        const duplicate = result.imei
-          ? prevCart.some(item => item.imei && item.imei === result.imei)
-          : prevCart.some(item => item.product_id === result.id);
-        if (duplicate) return prevCart;
-        return [...prevCart, newItem];
-      });
       pendingProductIdsRef.current.delete(productKey);
-      
-      setSelectedProduct(null);
-      setSalePrice('');
-      setItemNote('');
+      setSelectedProduct(result);
+      setSalePrice(result.sale_price.toString());
       setItemQuantity(1);
       setItemWarranty('');
-      setImeiSearch('');
+      setItemNote('');
+      setNameSearch('');
+      setProductSuggestions([]);
       
       toast({
-        title: 'Đã thêm vào giỏ',
-        description: `${result.name} - ${result.sale_price.toLocaleString('vi-VN')}đ`,
+        title: 'Đã quét thành công',
+        description: `${result.name} - Vui lòng nhập bảo hành và nhấn "Thêm vào giỏ"`,
       });
       return;
     }
