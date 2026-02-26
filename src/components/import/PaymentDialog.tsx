@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { PaymentSource } from '@/types/warehouse';
 import { formatCurrency } from '@/lib/mockData';
 import {
@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Banknote, CreditCard, Wallet, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 
 interface PaymentDialogProps {
   open: boolean;
@@ -23,9 +24,9 @@ interface PaymentDialogProps {
   isSubmitting?: boolean;
 }
 
-type PaymentType = 'cash' | 'bank_card' | 'e_wallet' | 'debt';
+type PaymentType = string;
 
-const paymentOptions: { type: PaymentType; label: string; icon: React.ReactNode }[] = [
+const builtInPaymentOptions: { type: string; label: string; icon: React.ReactNode }[] = [
   { type: 'cash', label: 'Tiền mặt', icon: <Banknote className="h-5 w-5" /> },
   { type: 'bank_card', label: 'Thẻ ngân hàng', icon: <CreditCard className="h-5 w-5" /> },
   { type: 'e_wallet', label: 'Ví điện tử', icon: <Wallet className="h-5 w-5" /> },
@@ -33,6 +34,17 @@ const paymentOptions: { type: PaymentType; label: string; icon: React.ReactNode 
 ];
 
 export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitting = false }: PaymentDialogProps) {
+  const { data: customPaymentSources = [] } = useCustomPaymentSources();
+
+  const paymentOptions = useMemo(() => {
+    const custom = customPaymentSources.map(s => ({
+      type: s.id,
+      label: s.name,
+      icon: <Wallet className="h-5 w-5" />,
+    }));
+    return [...builtInPaymentOptions, ...custom];
+  }, [customPaymentSources]);
+
   const [selectedTypes, setSelectedTypes] = useState<PaymentType[]>(['cash']);
   const [addToCashBook, setAddToCashBook] = useState(true);
   const [amounts, setAmounts] = useState<Record<PaymentType, number>>({

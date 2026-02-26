@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useCreateDebtPayment } from '@/hooks/useDebt';
 import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Trash2, Wallet } from 'lucide-react';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 
 interface PaymentSource {
   id: string;
@@ -40,7 +41,7 @@ interface DebtPaymentDialogProps {
   branchId: string | null;
 }
 
-const PAYMENT_SOURCES = [
+const BUILT_IN_PAYMENT_SOURCES = [
   { value: 'cash', label: 'Tiền mặt' },
   { value: 'bank_card', label: 'Thẻ ngân hàng' },
   { value: 'e_wallet', label: 'Ví điện tử' },
@@ -55,6 +56,16 @@ export function DebtPaymentDialog({
   remainingAmount,
   branchId,
 }: DebtPaymentDialogProps) {
+  const { data: customPaymentSources = [] } = useCustomPaymentSources();
+
+  const allPaymentSources = useMemo(() => {
+    const custom = customPaymentSources.map(s => ({
+      value: s.id,
+      label: s.name,
+    }));
+    return [...BUILT_IN_PAYMENT_SOURCES, ...custom];
+  }, [customPaymentSources]);
+
   const [paymentSources, setPaymentSources] = useState<PaymentSource[]>([
     { id: '1', source: 'cash', amount: '' },
   ]);
@@ -190,7 +201,7 @@ export function DebtPaymentDialog({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        {PAYMENT_SOURCES.map((source) => (
+                        {allPaymentSources.map((source) => (
                           <SelectItem key={source.value} value={source.value}>
                             {source.label}
                           </SelectItem>
