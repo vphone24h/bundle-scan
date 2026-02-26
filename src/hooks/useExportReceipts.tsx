@@ -672,6 +672,8 @@ export function useReturnProduct() {
 export function useCheckProductForSale() {
   return useMutation({
     mutationFn: async (imei: string) => {
+      // When a product is imported -> returned -> re-imported, multiple records
+      // share the same IMEI. We must pick the one currently in_stock first.
       const { data, error } = await supabase
         .from('products')
         .select(`
@@ -688,10 +690,15 @@ export function useCheckProductForSale() {
           branches(name)
         `)
         .eq('imei', imei)
-        .maybeSingle();
+        .order('import_date', { ascending: false })
+        .limit(10);
 
       if (error) throw error;
-      return data;
+      if (!data || data.length === 0) return null;
+
+      // Prefer in_stock record, then most recent
+      const inStock = data.find(p => p.status === 'in_stock');
+      return inStock || data[0];
     },
   });
 }
