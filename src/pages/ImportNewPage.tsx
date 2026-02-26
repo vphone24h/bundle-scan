@@ -982,6 +982,9 @@ export default function ImportNewPage() {
                         rows={1}
                         className="min-h-[2.5rem] resize-y"
                       />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Ghi cụ thể tình trạng SP để dễ tư vấn, nhìn vào kho biết ngay (VD: pin 95%, sạc 300 lần, mất Face ID...)
+                      </p>
                     </div>
                   </div>
 
