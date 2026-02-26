@@ -978,7 +978,7 @@ export default function ImportNewPage() {
                         id="note"
                         value={form.note}
                         onChange={(e) => setForm({ ...form, note: e.target.value })}
-                        placeholder="Ghi chú (tuỳ chọn)"
+                        placeholder="VD: pin 95%, sạc 300 lần, mất Face ID..."
                         rows={1}
                         className="min-h-[2.5rem] resize-y"
                       />
