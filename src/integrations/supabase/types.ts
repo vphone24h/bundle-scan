@@ -1120,6 +1120,33 @@ export type Database = {
           },
         ]
       }
+      custom_payment_sources: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          source_key: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          source_key: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          source_key?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       customer_care_logs: {
         Row: {
           action_type: string

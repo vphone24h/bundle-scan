@@ -84,6 +84,7 @@ import { OpeningBalanceDialog } from '@/components/cashbook/OpeningBalanceDialog
 import { useLatestOpeningBalances } from '@/hooks/useOpeningBalance';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProfile } from '@/hooks/useProfile';
+import { useCustomPaymentSources, useAddCustomPaymentSource, useDeleteCustomPaymentSource } from '@/hooks/useCustomPaymentSources';
 
 const defaultPaymentSourceLabels: Record<string, string> = {
   cash: 'Tiền mặt',
@@ -97,19 +98,7 @@ const builtInPaymentSources = [
   { id: 'e_wallet', name: 'Ví điện tử', icon: 'wallet', color: 'purple' },
 ];
 
-// Load custom payment sources from localStorage
-const getCustomPaymentSources = (): { id: string; name: string }[] => {
-  try {
-    const stored = localStorage.getItem('customPaymentSources');
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-};
-
-const saveCustomPaymentSources = (sources: { id: string; name: string }[]) => {
-  localStorage.setItem('customPaymentSources', JSON.stringify(sources));
-};
+// Custom payment sources are now stored in the database (see useCustomPaymentSources hook)
 
 const cashBookTourSteps: TourStep[] = [
   {
@@ -195,8 +184,10 @@ export default function CashBookPage() {
   const [deleteReason, setDeleteReason] = useState('');
   const [newSourceName, setNewSourceName] = useState('');
   
-  // Custom payment sources state
-  const [customPaymentSources, setCustomPaymentSources] = useState<{ id: string; name: string }[]>(getCustomPaymentSources());
+  // Custom payment sources from database
+  const { data: customPaymentSources = [] } = useCustomPaymentSources();
+  const addCustomSource = useAddCustomPaymentSource();
+  const deleteCustomSource = useDeleteCustomPaymentSource();
   
   // All payment sources (built-in + custom)
   const allPaymentSources = useMemo(() => {
@@ -1040,10 +1031,9 @@ export default function CashBookPage() {
                           size="icon" 
                           className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={() => {
-                            const updated = customPaymentSources.filter(s => s.id !== source.id);
-                            setCustomPaymentSources(updated);
-                            saveCustomPaymentSources(updated);
-                            toast({ title: 'Đã xóa nguồn tiền', description: source.name });
+                            deleteCustomSource.mutate(source.id, {
+                              onSuccess: () => toast({ title: 'Đã xóa nguồn tiền', description: source.name }),
+                            });
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -2113,16 +2103,18 @@ export default function CashBookPage() {
                 }
                 
                 // Create unique ID
-                const id = newSourceName.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now();
-                const newSource = { id, name: newSourceName.trim() };
+                const sourceKey = newSourceName.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now();
                 
-                const updated = [...customPaymentSources, newSource];
-                setCustomPaymentSources(updated);
-                saveCustomPaymentSources(updated);
-                
-                setShowAddSourceDialog(false);
-                setNewSourceName('');
-                toast({ title: 'Đã thêm nguồn tiền', description: newSourceName.trim() });
+                addCustomSource.mutate({ sourceKey, name: newSourceName.trim() }, {
+                  onSuccess: () => {
+                    setShowAddSourceDialog(false);
+                    setNewSourceName('');
+                    toast({ title: 'Đã thêm nguồn tiền', description: newSourceName.trim() });
+                  },
+                  onError: (err: any) => {
+                    toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+                  },
+                });
               }}
               disabled={!newSourceName.trim()}
             >
