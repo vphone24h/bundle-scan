@@ -638,7 +638,7 @@ export default function ExportNewPage() {
   };
 
   // Handle payment completion
-  const handlePaymentComplete = async (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number, giftVoucherTemplateId?: string) => {
+  const handlePaymentComplete = async (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number, giftVoucherTemplateId?: string, skipCashBook?: boolean) => {
     if (isSubmitting) return; // Chống double-submit
     setIsSubmitting(true);
 
@@ -719,6 +719,7 @@ export default function ExportNewPage() {
         vatRate: savedEffectiveTaxRate,
         vatAmount: savedTaxAmount,
         salesStaffId: savedSalesStaffId,
+        skipCashBook,
       });
 
       // Update receipt with real data (code from server)

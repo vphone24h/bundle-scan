@@ -19,7 +19,7 @@ interface PaymentDialogProps {
   open: boolean;
   onClose: () => void;
   totalAmount: number;
-  onConfirm: (payments: PaymentSource[]) => void;
+  onConfirm: (payments: PaymentSource[], skipCashBook?: boolean) => void;
   isSubmitting?: boolean;
 }
 
@@ -34,6 +34,7 @@ const paymentOptions: { type: PaymentType; label: string; icon: React.ReactNode 
 
 export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitting = false }: PaymentDialogProps) {
   const [selectedTypes, setSelectedTypes] = useState<PaymentType[]>(['cash']);
+  const [addToCashBook, setAddToCashBook] = useState(true);
   const [amounts, setAmounts] = useState<Record<PaymentType, number>>({
     cash: totalAmount,
     bank_card: 0,
@@ -44,6 +45,7 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
   useEffect(() => {
     if (open) {
       setSelectedTypes(['cash']);
+      setAddToCashBook(true);
       setAmounts({
         cash: totalAmount,
         bank_card: 0,
@@ -72,7 +74,7 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
       .filter((type) => amounts[type] > 0)
       .map((type) => ({ type, amount: amounts[type] }));
     onClose();
-    onConfirm(payments);
+    onConfirm(payments, !addToCashBook);
   };
 
   return (
@@ -158,6 +160,24 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
               </div>
             )}
           </div>
+
+          {/* Cash book toggle */}
+          <div className="flex items-center space-x-2 pt-2 border-t">
+            <Checkbox
+              id="add-to-cashbook"
+              checked={addToCashBook}
+              onCheckedChange={(checked) => setAddToCashBook(checked === true)}
+            />
+            <Label htmlFor="add-to-cashbook" className="cursor-pointer text-sm">
+              Ghi dòng tiền vào sổ quỹ
+            </Label>
+          </div>
+          {!addToCashBook && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              Giao dịch này sẽ không ảnh hưởng đến sổ quỹ
+            </p>
+          )}
         </div>
 
         <DialogFooter>

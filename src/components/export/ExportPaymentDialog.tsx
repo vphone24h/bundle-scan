@@ -38,7 +38,7 @@ interface ExportPaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   totalAmount: number;
-  onConfirm: (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number, giftVoucherTemplateId?: string) => void;
+  onConfirm: (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number, giftVoucherTemplateId?: string, skipCashBook?: boolean) => void;
   isLoading?: boolean;
   customerPoints?: CustomerPointInfo | null;
   pointSettings?: PointSettings | null;
@@ -83,6 +83,7 @@ export function ExportPaymentDialog({
   // Points redemption
   const [usePoints, setUsePoints] = useState(false);
   const [pointsToRedeem, setPointsToRedeem] = useState('');
+  const [addToCashBook, setAddToCashBook] = useState(true);
 
   // Voucher gifting
   const [giftVoucher, setGiftVoucher] = useState(false);
@@ -135,6 +136,7 @@ export function ExportPaymentDialog({
       setPointsToRedeem('');
       setGiftVoucher(false);
       setSelectedVoucherTemplateId('');
+      setAddToCashBook(true);
     }
   }, [open, totalAmount]);
 
@@ -194,7 +196,7 @@ export function ExportPaymentDialog({
       .filter((p) => p.amount > 0);
 
     onOpenChange(false);
-    onConfirm(payments, usePoints ? actualPointsUsed : 0, usePoints ? actualPointsDiscount : 0, giftVoucher && selectedVoucherTemplateId ? selectedVoucherTemplateId : undefined);
+    onConfirm(payments, usePoints ? actualPointsUsed : 0, usePoints ? actualPointsDiscount : 0, giftVoucher && selectedVoucherTemplateId ? selectedVoucherTemplateId : undefined, !addToCashBook);
   };
 
   const canUsePoints = pointSettings?.is_enabled && (customerPoints?.current_points || 0) > 0;
@@ -394,6 +396,24 @@ export function ExportPaymentDialog({
               </Button>
             )}
           </div>
+
+          {/* Cash book toggle */}
+          <div className="flex items-center space-x-2 pt-2 border-t">
+            <Checkbox
+              id="add-to-cashbook-export"
+              checked={addToCashBook}
+              onCheckedChange={(checked) => setAddToCashBook(checked === true)}
+            />
+            <Label htmlFor="add-to-cashbook-export" className="cursor-pointer text-sm">
+              Ghi dòng tiền vào sổ quỹ
+            </Label>
+          </div>
+          {!addToCashBook && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+              <FileText className="h-3 w-3" />
+              Giao dịch này sẽ không ảnh hưởng đến sổ quỹ
+            </p>
+          )}
         </div>
 
         <DialogFooter>
