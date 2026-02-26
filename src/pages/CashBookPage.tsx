@@ -367,16 +367,33 @@ export default function CashBookPage() {
   });
 
   // Calculate totals
+  const openingTotal = useMemo(() => {
+    return latestOpeningBalances 
+      ? Object.values(latestOpeningBalances).reduce((sum, ob) => sum + Number(ob.amount), 0) 
+      : 0;
+  }, [latestOpeningBalances]);
+
   const totalBalance = useMemo(() => {
     if (!allEntries) return 0;
     const income = allEntries.filter(e => e.type === 'income').reduce((sum, e) => sum + Number(e.amount), 0);
     const expense = allEntries.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.amount), 0);
-    // Cộng thêm tổng số dư đầu kỳ từ tất cả nguồn tiền
-    const openingTotal = latestOpeningBalances 
-      ? Object.values(latestOpeningBalances).reduce((sum, ob) => sum + Number(ob.amount), 0) 
-      : 0;
     return openingTotal + income - expense;
-  }, [allEntries, latestOpeningBalances]);
+  }, [allEntries, openingTotal]);
+
+  // Running balance per entry (computed chronologically, oldest first)
+  const runningBalanceMap = useMemo(() => {
+    if (!allEntries?.length) return new Map<string, number>();
+    // allEntries is sorted desc, reverse for chronological order
+    const chronological = [...allEntries].reverse();
+    const map = new Map<string, number>();
+    let balance = openingTotal;
+    chronological.forEach(entry => {
+      const amount = Number(entry.amount);
+      balance += entry.type === 'income' ? amount : -amount;
+      map.set(entry.id, balance);
+    });
+    return map;
+  }, [allEntries, openingTotal]);
 
   // Calculate balance by payment source (including custom sources)
   const balanceBySource = useMemo(() => {
@@ -1403,6 +1420,7 @@ export default function CashBookPage() {
                       <TableHead>Danh mục</TableHead>
                       <TableHead>Mô tả</TableHead>
                       <TableHead className="text-right">Số tiền</TableHead>
+                      <TableHead className="text-right">Số dư</TableHead>
                       <TableHead>Nguồn tiền</TableHead>
                       <TableHead>Nhân viên</TableHead>
                       <TableHead>Người nhận</TableHead>
@@ -1454,6 +1472,12 @@ export default function CashBookPage() {
                           entry.type === 'expense' ? 'text-destructive' : 'text-green-600'
                         )}>
                           {entry.type === 'expense' ? '-' : '+'}{formatCurrency(Number(entry.amount))}
+                        </TableCell>
+                        <TableCell className={cn(
+                          "text-right font-medium whitespace-nowrap",
+                          (runningBalanceMap.get(entry.id) ?? 0) >= 0 ? 'text-foreground' : 'text-destructive'
+                        )}>
+                          {formatCurrency(runningBalanceMap.get(entry.id) ?? 0)}
                         </TableCell>
                         <TableCell>{paymentSourceLabels[entry.payment_source] || entry.payment_source}</TableCell>
                         <TableCell className="text-sm">{entry.created_by_name || '-'}</TableCell>
