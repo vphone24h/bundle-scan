@@ -67,6 +67,7 @@ import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCategories } from '@/hooks/useCategories';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   completed: { label: 'Hoàn tất', variant: 'default' },
@@ -147,8 +148,11 @@ export default function ExportHistoryPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [dateFromFilter, setDateFromFilter] = useState('');
+  const [dateToFilter, setDateToFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('_all_');
   const [branchFilter, setBranchFilter] = useState('_all_');
+  const [paymentSourceFilter, setPaymentSourceFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('_all_');
   
@@ -174,6 +178,7 @@ export default function ExportHistoryPage() {
   const { data: categories } = useCategories();
   const returnProduct = useReturnProduct();
   const { data: permissions } = usePermissions();
+  const { data: customPaymentSources = [] } = useCustomPaymentSources();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
   
   // Get template based on the print receipt's branch
@@ -209,21 +214,29 @@ export default function ExportHistoryPage() {
     
     const matchesStatus = statusFilter === '_all_' || receipt.status === statusFilter;
     
-    const matchesDate = !dateFilter || 
-      format(new Date(receipt.export_date), 'yyyy-MM-dd') === dateFilter;
+    const exportDateStr = format(new Date(receipt.export_date), 'yyyy-MM-dd');
+    const matchesDate = !dateFilter || exportDateStr === dateFilter;
+    const matchesDateFrom = !dateFromFilter || exportDateStr >= dateFromFilter;
+    const matchesDateTo = !dateToFilter || exportDateStr <= dateToFilter;
     
     const matchesBranch = branchFilter === '_all_' || receipt.branch_id === branchFilter;
 
-    return matchesSearch && matchesStatus && matchesDate && matchesBranch;
+    const matchesPaymentSource = paymentSourceFilter === '_all_' || 
+      receipt.export_receipt_payments?.some(p => p.payment_type === paymentSourceFilter);
+
+    return matchesSearch && matchesStatus && matchesDate && matchesDateFrom && matchesDateTo && matchesBranch && matchesPaymentSource;
   });
 
-  const hasActiveFilters = dateFilter || statusFilter !== '_all_' || branchFilter !== '_all_' || categoryFilter !== '_all_';
+  const hasActiveFilters = dateFilter || dateFromFilter || dateToFilter || statusFilter !== '_all_' || branchFilter !== '_all_' || categoryFilter !== '_all_' || paymentSourceFilter !== '_all_';
 
   const clearFilters = () => {
     setDateFilter('');
+    setDateFromFilter('');
+    setDateToFilter('');
     setStatusFilter('_all_');
     setBranchFilter('_all_');
     setCategoryFilter('_all_');
+    setPaymentSourceFilter('_all_');
   };
 
   // Filter items
@@ -239,12 +252,17 @@ export default function ExportHistoryPage() {
 
     const matchesStatus = statusFilter === '_all_' || item.export_receipts?.status === statusFilter;
 
-    const matchesDate = !dateFilter || 
-      (item.export_receipts?.export_date && format(new Date(item.export_receipts.export_date), 'yyyy-MM-dd') === dateFilter);
+    const exportDateStr = item.export_receipts?.export_date ? format(new Date(item.export_receipts.export_date), 'yyyy-MM-dd') : '';
+    const matchesDate = !dateFilter || exportDateStr === dateFilter;
+    const matchesDateFrom = !dateFromFilter || exportDateStr >= dateFromFilter;
+    const matchesDateTo = !dateToFilter || exportDateStr <= dateToFilter;
 
     const matchesBranch = branchFilter === '_all_' || item.export_receipts?.branch_id === branchFilter;
 
-    return matchesSearch && matchesCategory && matchesStatus && matchesDate && matchesBranch;
+    const matchesPaymentSource = paymentSourceFilter === '_all_' || 
+      item.export_receipts?.export_receipt_payments?.some(p => p.payment_type === paymentSourceFilter);
+
+    return matchesSearch && matchesCategory && matchesStatus && matchesDate && matchesDateFrom && matchesDateTo && matchesBranch && matchesPaymentSource;
   }) || [];
 
   // Group non-IMEI items by: product_name + branch + receipt_id + sale_price
@@ -454,11 +472,19 @@ export default function ExportHistoryPage() {
             {showFilters && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t">
                 <div className="space-y-2">
-                  <Label className="text-xs">Ngày</Label>
+                  <Label className="text-xs">Từ ngày</Label>
                   <Input
                     type="date"
-                    value={dateFilter}
-                    onChange={(e) => setDateFilter(e.target.value)}
+                    value={dateFromFilter}
+                    onChange={(e) => setDateFromFilter(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Đến ngày</Label>
+                  <Input
+                    type="date"
+                    value={dateToFilter}
+                    onChange={(e) => setDateToFilter(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -505,6 +531,26 @@ export default function ExportHistoryPage() {
                       {categories?.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id}>
                           {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Nguồn tiền</Label>
+                  <Select value={paymentSourceFilter} onValueChange={setPaymentSourceFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tất cả" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="_all_">Tất cả nguồn tiền</SelectItem>
+                      <SelectItem value="cash">Tiền mặt</SelectItem>
+                      <SelectItem value="bank_card">Thẻ ngân hàng</SelectItem>
+                      <SelectItem value="e_wallet">Ví điện tử</SelectItem>
+                      <SelectItem value="debt">Công nợ</SelectItem>
+                      {customPaymentSources.map((src) => (
+                        <SelectItem key={src.id} value={src.id}>
+                          {src.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
