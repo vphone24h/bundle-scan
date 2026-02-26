@@ -238,11 +238,12 @@ export default function ExportNewPage() {
         encodedPrice = parseInt(priceStr);
       }
     } 
-    // Fallback to "|" delimiter (legacy format)
+    // Fallback to "|" delimiter (supports IMEI|Price and IMEI|Name|Price formats)
     else if (barcode.includes('|')) {
       const parts = barcode.split('|');
       searchCode = parts[0];
-      const priceStr = parts[1];
+      // Price is always the LAST part (handles both 2-part and 3-part formats)
+      const priceStr = parts[parts.length - 1];
       if (priceStr && !isNaN(parseInt(priceStr))) {
         encodedPrice = parseInt(priceStr);
       }
