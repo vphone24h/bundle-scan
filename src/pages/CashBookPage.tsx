@@ -84,7 +84,7 @@ import { OpeningBalanceDialog } from '@/components/cashbook/OpeningBalanceDialog
 import { useLatestOpeningBalances } from '@/hooks/useOpeningBalance';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProfile } from '@/hooks/useProfile';
-import { useCustomPaymentSources, useAddCustomPaymentSource, useDeleteCustomPaymentSource } from '@/hooks/useCustomPaymentSources';
+import { useCustomPaymentSources, useAddCustomPaymentSource, useDeleteCustomPaymentSource, useUpdateCustomPaymentSource } from '@/hooks/useCustomPaymentSources';
 
 const defaultPaymentSourceLabels: Record<string, string> = {
   cash: 'Tiền mặt',
@@ -188,6 +188,9 @@ export default function CashBookPage() {
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
   const addCustomSource = useAddCustomPaymentSource();
   const deleteCustomSource = useDeleteCustomPaymentSource();
+  const updateCustomSource = useUpdateCustomPaymentSource();
+  const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
+  const [editingSourceName, setEditingSourceName] = useState('');
   
   // All payment sources (built-in + custom)
   const allPaymentSources = useMemo(() => {
@@ -973,10 +976,12 @@ export default function CashBookPage() {
                 <Wallet className="h-5 w-5" />
                 Số dư theo nguồn tiền
               </CardTitle>
-              <Button variant="outline" size="sm" onClick={() => setShowAddSourceDialog(true)}>
-                <Plus className="h-4 w-4 mr-1" />
-                Thêm nguồn tiền
-              </Button>
+              {isSuperAdmin && (
+                <Button variant="outline" size="sm" onClick={() => setShowAddSourceDialog(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Thêm nguồn tiền
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -1005,7 +1010,41 @@ export default function CashBookPage() {
                         )}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground">{source.name}</p>
+                        <p className="text-sm font-medium text-muted-foreground">
+                          {editingSourceId === source.id ? (
+                            <Input
+                              value={editingSourceName}
+                              onChange={(e) => setEditingSourceName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && editingSourceName.trim()) {
+                                  updateCustomSource.mutate(
+                                    { sourceKey: source.id, newName: editingSourceName.trim() },
+                                    {
+                                      onSuccess: () => {
+                                        toast({ title: 'Đã cập nhật nguồn tiền' });
+                                        setEditingSourceId(null);
+                                      },
+                                    }
+                                  );
+                                } else if (e.key === 'Escape') {
+                                  setEditingSourceId(null);
+                                }
+                              }}
+                              onBlur={() => {
+                                if (editingSourceName.trim() && editingSourceName.trim() !== source.name) {
+                                  updateCustomSource.mutate(
+                                    { sourceKey: source.id, newName: editingSourceName.trim() },
+                                    { onSuccess: () => { toast({ title: 'Đã cập nhật nguồn tiền' }); setEditingSourceId(null); } }
+                                  );
+                                } else {
+                                  setEditingSourceId(null);
+                                }
+                              }}
+                              autoFocus
+                              className="h-6 text-sm px-1 py-0 w-28"
+                            />
+                          ) : source.name}
+                        </p>
                         <p className={cn("text-lg font-bold", balance >= 0 ? 'text-green-600' : 'text-destructive')}>
                           {formatCurrency(balance)}
                         </p>
@@ -1025,19 +1064,32 @@ export default function CashBookPage() {
                       >
                         <Settings className="h-4 w-4" />
                       </Button>
-                      {!isBuiltIn && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => {
-                            deleteCustomSource.mutate(source.id, {
-                              onSuccess: () => toast({ title: 'Đã xóa nguồn tiền', description: source.name }),
-                            });
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      {!isBuiltIn && isSuperAdmin && (
+                        <>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => {
+                              setEditingSourceId(source.id);
+                              setEditingSourceName(source.name);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => {
+                              deleteCustomSource.mutate(source.id, {
+                                onSuccess: () => toast({ title: 'Đã xóa nguồn tiền', description: source.name }),
+                              });
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
