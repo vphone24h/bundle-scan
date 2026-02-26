@@ -24,6 +24,8 @@ interface QRSettings {
   showIMEI: boolean;
   showStoreName: boolean;
   storeName: string;
+  showNote: boolean;
+  note: string;
 }
 
 interface QRPhoneLabelTabProps {
@@ -58,6 +60,8 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
     showIMEI: true,
     showStoreName: true,
     storeName: defaultStoreName,
+    showNote: false,
+    note: '',
   });
   const [isExporting, setIsExporting] = useState(false);
   const [previewQrUrl, setPreviewQrUrl] = useState<string>('');
@@ -178,6 +182,15 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
             color: #000;
             line-height: 1.3;
           }
+          .note {
+            font-size: 5.5pt;
+            color: #333;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-style: italic;
+          }
         </style>
       </head>
       <body>
@@ -190,6 +203,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
               ${settings.showStoreName && settings.storeName ? `<div class="store-name">${settings.storeName}</div>` : ''}
               ${settings.showProductName ? `<div class="product-name">${entry.name}</div>` : ''}
               ${settings.showIMEI && entry.imei ? `<div class="imei">${entry.imei}</div>` : ''}
+              ${settings.showNote && settings.note ? `<div class="note">${settings.note}</div>` : ''}
               ${settings.showPrice ? `<div class="price">${formatNumberWithSpaces(entry.printPrice)} đ</div>` : ''}
             </div>
           </div>
@@ -381,6 +395,26 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
               />
             </div>
           )}
+
+          <div className="flex items-center space-x-3">
+            <Checkbox
+              id="qr-showNote"
+              checked={settings.showNote}
+              onCheckedChange={(checked) => setSettings({ ...settings, showNote: checked as boolean })}
+            />
+            <Label htmlFor="qr-showNote" className="font-normal cursor-pointer">Ghi chú (tình trạng máy)</Label>
+          </div>
+
+          {settings.showNote && (
+            <div className="ml-7">
+              <Input
+                value={settings.note}
+                onChange={(e) => setSettings({ ...settings, note: e.target.value })}
+                placeholder="VD: Pin 95%, màn zin, lưng xước nhẹ..."
+                className="max-w-xs"
+              />
+            </div>
+          )}
         </div>
 
         {/* Preview */}
@@ -409,6 +443,9 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
                   )}
                   {settings.showIMEI && sampleEntry.imei && (
                     <p className="text-[7px] font-bold text-foreground truncate">{sampleEntry.imei}</p>
+                  )}
+                  {settings.showNote && settings.note && (
+                    <p className="text-[6px] italic text-muted-foreground truncate">{settings.note}</p>
                   )}
                   {settings.showPrice && (
                     <p className="text-[10px] font-bold text-foreground">
