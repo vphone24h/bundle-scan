@@ -97,7 +97,7 @@ export function EditProductDialog({ product, open, onOpenChange }: EditProductDi
           .select('id, name, sku')
           .eq('imei', updates.imei)
           .neq('id', productId)
-          .in('status', ['in_stock', 'sold', 'returned'])
+          .in('status', ['in_stock', 'warranty'])
           .limit(1);
 
         if (existing && existing.length > 0) {
