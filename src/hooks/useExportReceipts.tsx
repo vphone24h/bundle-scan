@@ -25,7 +25,7 @@ export interface ExportReceiptItem {
 }
 
 export interface ExportPayment {
-  payment_type: 'cash' | 'bank_card' | 'e_wallet' | 'debt';
+  payment_type: 'cash' | 'bank_card' | 'e_wallet' | 'debt' | (string & {});
   amount: number;
 }
 

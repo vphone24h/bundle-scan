@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import { Banknote, CreditCard, Wallet, FileText, Star, Gift, Ticket } from 'luci
 import { formatNumber, formatInputNumber, parseFormattedNumber } from '@/lib/formatNumber';
 import type { ExportPayment } from '@/hooks/useExportReceipts';
 import { useVoucherTemplates, VoucherTemplate } from '@/hooks/useVouchers';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 
 interface CustomerPointInfo {
   current_points: number;
@@ -45,7 +46,7 @@ interface ExportPaymentDialogProps {
   hasCustomer?: boolean;
 }
 
-const paymentTypes = [
+const builtInPaymentTypes = [
   { type: 'cash' as const, label: 'Tiền mặt', icon: Banknote },
   { type: 'bank_card' as const, label: 'Thẻ ngân hàng', icon: CreditCard },
   { type: 'e_wallet' as const, label: 'Ví điện tử', icon: Wallet },
@@ -71,6 +72,17 @@ export function ExportPaymentDialog({
 }: ExportPaymentDialogProps) {
   const { data: voucherTemplates } = useVoucherTemplates();
   const activeTemplates = (voucherTemplates || []).filter(t => t.is_active);
+  const { data: customPaymentSources = [] } = useCustomPaymentSources();
+
+  // Merge built-in + custom payment types
+  const paymentTypes = useMemo(() => {
+    const custom = customPaymentSources.map(s => ({
+      type: s.id,
+      label: s.name,
+      icon: Wallet,
+    }));
+    return [...builtInPaymentTypes, ...custom];
+  }, [customPaymentSources]);
 
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['cash']);
   const [amounts, setAmounts] = useState<Record<string, string>>({

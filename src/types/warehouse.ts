@@ -53,7 +53,7 @@ export interface ImportReceiptItem {
 }
 
 export interface PaymentSource {
-  type: 'cash' | 'bank_card' | 'e_wallet' | 'debt';
+  type: 'cash' | 'bank_card' | 'e_wallet' | 'debt' | (string & {});
   amount: number;
 }
 
