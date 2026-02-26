@@ -177,14 +177,14 @@ export function useCheckIMEI() {
       const tenantId = await getCurrentTenantId();
       if (!tenantId) throw new Error('Không tìm thấy tenant');
 
-      // Kiểm tra IMEI trong phạm vi TENANT với các status: in_stock, sold, returned
-      // Sử dụng .select() thay vì .maybeSingle() vì có thể có nhiều bản ghi cùng IMEI
+      // Chỉ chặn IMEI đang tồn kho hoặc đang bảo hành
+      // Cho phép nhập lại IMEI đã bán (sold) hoặc đã trả NCC (returned)
       const { data, error } = await supabase
         .from('products')
         .select('id, name, sku, status')
         .eq('imei', imei)
         .eq('tenant_id', tenantId)
-        .in('status', ['in_stock', 'sold', 'returned'])
+        .in('status', ['in_stock', 'warranty'])
         .limit(1);
 
       if (error) throw error;
@@ -216,7 +216,7 @@ export function useBatchCheckIMEI() {
           .select('imei')
           .in('imei', batch)
           .eq('tenant_id', tenantId)
-          .in('status', ['in_stock', 'sold', 'returned']);
+          .in('status', ['in_stock', 'warranty']);
 
         if (error) throw error;
         

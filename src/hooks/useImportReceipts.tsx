@@ -239,13 +239,12 @@ export function useCreateImportReceipt() {
           .select('imei, name, sku, status')
           .in('imei', imeis)
           .eq('tenant_id', tenantId)
-          .in('status', ['in_stock', 'sold', 'returned']);
+          .in('status', ['in_stock', 'warranty']);
 
         if (existingIMEIs && existingIMEIs.length > 0) {
           const existing = existingIMEIs[0];
-          const statusText = existing.status === 'in_stock' ? 'tồn kho' : 
-                             existing.status === 'sold' ? 'đã bán' : 'đã trả hàng';
-          throw new Error(`IMEI "${existing.imei}" đã tồn tại trong kho (${existing.name} - ${existing.sku}, trạng thái: ${statusText}). Vui lòng kiểm tra lịch sử nhập/bán/trả hàng.`);
+          const statusText = existing.status === 'in_stock' ? 'tồn kho' : 'đang bảo hành';
+          throw new Error(`IMEI "${existing.imei}" đã tồn tại trong kho (${existing.name} - ${existing.sku}, trạng thái: ${statusText}). Không thể nhập trùng.`);
         }
       }
 

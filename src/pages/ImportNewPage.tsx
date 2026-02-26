@@ -235,8 +235,7 @@ export default function ImportNewPage() {
         setIsCheckingIMEI(true);
         const existingProduct = await checkIMEI.mutateAsync(form.imei.trim());
         if (existingProduct) {
-          const statusText = existingProduct.status === 'in_stock' ? 'tồn kho' : 
-                             existingProduct.status === 'sold' ? 'đã bán' : 'đã trả hàng';
+          const statusText = existingProduct.status === 'in_stock' ? 'tồn kho' : 'đang bảo hành';
           toast({
             title: 'IMEI đã tồn tại trong kho',
             description: `Sản phẩm "${existingProduct.name}" (${existingProduct.sku}) đang có IMEI "${form.imei}" với trạng thái: ${statusText}. Không thể nhập trùng.`,
