@@ -158,6 +158,7 @@ export function useCreateImportReceipt() {
       supplierId,
       branchId,
       note,
+      skipCashBook,
     }: {
       products: {
         name: string;
@@ -174,6 +175,7 @@ export function useCreateImportReceipt() {
       supplierId: string | null;
       branchId?: string | null;
       note?: string | null;
+      skipCashBook?: boolean;
     }) => {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -471,7 +473,7 @@ export function useCreateImportReceipt() {
           recipient_name: supplierName,
         }));
 
-      if (cashBookEntries.length > 0) {
+      if (cashBookEntries.length > 0 && !skipCashBook) {
         const { error: cashBookError } = await supabase
           .from('cash_book')
           .insert(cashBookEntries);

@@ -324,7 +324,7 @@ export default function ImportNewPage() {
     setPaymentOpen(true);
   };
 
-  const handlePaymentConfirm = (payments: PaymentSource[]) => {
+  const handlePaymentConfirm = (payments: PaymentSource[], skipCashBook?: boolean) => {
     // Prevent double submission
     if (isSubmitting) return;
     
@@ -359,6 +359,7 @@ export default function ImportNewPage() {
       })),
       supplierId: selectedSupplierId || null,
       branchId: selectedBranchId || null,
+      skipCashBook,
     }).then(() => {
       toast({
         title: 'Nhập hàng thành công!',

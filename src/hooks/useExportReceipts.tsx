@@ -196,6 +196,7 @@ export function useCreateExportReceipt() {
       vatRate = 0,
       vatAmount = 0,
       salesStaffId,
+      skipCashBook,
     }: {
       customerId: string;
       items: ExportReceiptItem[];
@@ -207,6 +208,7 @@ export function useCreateExportReceipt() {
       vatRate?: number;
       vatAmount?: number;
       salesStaffId?: string | null;
+      skipCashBook?: boolean;
     }) => {
       // Calculate total amount considering quantity
       const totalAmount = items.reduce((sum, item) => sum + (item.sale_price * (item.quantity || 1)), 0);
@@ -438,7 +440,7 @@ export function useCreateExportReceipt() {
           recipient_phone: customer?.phone || null,
         }));
 
-      if (cashBookEntries.length > 0) {
+      if (cashBookEntries.length > 0 && !skipCashBook) {
         const { error: cashBookError } = await supabase
           .from('cash_book')
           .insert(cashBookEntries);
