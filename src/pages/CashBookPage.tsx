@@ -1427,6 +1427,12 @@ export default function CashBookPage() {
                         )}>
                           {entry.type === 'expense' ? '-' : '+'}{formatCurrency(Number(entry.amount))}
                         </p>
+                        <p className={cn(
+                          "text-[11px] mt-0.5",
+                          (runningBalanceMap.get(entry.id) ?? 0) >= 0 ? 'text-muted-foreground' : 'text-destructive'
+                        )}>
+                          SD: {formatCurrency(runningBalanceMap.get(entry.id) ?? 0)}
+                        </p>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="icon" className="h-7 w-7 mt-1">
