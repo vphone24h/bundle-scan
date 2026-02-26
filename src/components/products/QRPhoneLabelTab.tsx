@@ -54,14 +54,17 @@ async function generateQRDataUrl(data: string): Promise<string> {
 }
 
 export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, onPrinted }: QRPhoneLabelTabProps) {
-  const [settings, setSettings] = useState<QRSettings>({
-    showPrice: true,
-    showProductName: true,
-    showIMEI: true,
-    showStoreName: true,
-    storeName: defaultStoreName,
-    showNote: false,
-    note: '',
+  const [settings, setSettings] = useState<QRSettings>(() => {
+    const saved = localStorage.getItem('qr_label_store_name');
+    return {
+      showPrice: true,
+      showProductName: true,
+      showIMEI: true,
+      showStoreName: true,
+      storeName: saved || defaultStoreName,
+      showNote: false,
+      note: '',
+    };
   });
   const [isExporting, setIsExporting] = useState(false);
   const [previewQrUrl, setPreviewQrUrl] = useState<string>('');
@@ -183,13 +186,13 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
             line-height: 1.3;
           }
           .note {
-            font-size: 5.5pt;
-            color: #333;
+            font-size: 6pt;
+            color: #000;
+            font-weight: bold;
             line-height: 1.2;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            font-style: italic;
           }
         </style>
       </head>
@@ -389,7 +392,11 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
             <div className="ml-7">
               <Input
                 value={settings.storeName}
-                onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSettings({ ...settings, storeName: val });
+                  localStorage.setItem('qr_label_store_name', val);
+                }}
                 placeholder="Tên cửa hàng"
                 className="max-w-xs"
               />
@@ -445,7 +452,7 @@ export function QRPhoneLabelTab({ productEntries, storeName: defaultStoreName, o
                     <p className="text-[7px] font-bold text-foreground truncate">{sampleEntry.imei}</p>
                   )}
                   {settings.showNote && settings.note && (
-                    <p className="text-[6px] italic text-muted-foreground truncate">{settings.note}</p>
+                    <p className="text-[7px] font-bold text-foreground truncate">{settings.note}</p>
                   )}
                   {settings.showPrice && (
                     <p className="text-[10px] font-bold text-foreground">
