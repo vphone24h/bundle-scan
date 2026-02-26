@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
@@ -129,7 +129,8 @@ export default function ExportNewPage() {
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
-
+  // Ref to track product IDs being processed (prevents race condition on fast scans)
+  const pendingProductIdsRef = useRef<Set<string>>(new Set());
   // Tax state
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxRate, setTaxRate] = useState<number | null>(null);
@@ -353,8 +354,12 @@ export default function ExportNewPage() {
       return;
     }
 
-    // Check if already in cart
-    if (cart.some(item => item.imei === result.imei || item.product_id === result.id)) {
+    // Check if already in cart OR currently being processed (race condition guard)
+    const productKey = result.imei || result.id;
+    if (
+      cart.some(item => item.imei === result.imei || item.product_id === result.id) ||
+      pendingProductIdsRef.current.has(productKey)
+    ) {
       toast({
         title: 'Đã có trong giỏ',
         description: 'Sản phẩm này đã được thêm vào giỏ hàng',
@@ -362,6 +367,9 @@ export default function ExportNewPage() {
       });
       return;
     }
+
+    // Mark as pending to prevent duplicate from concurrent scans
+    pendingProductIdsRef.current.add(productKey);
 
     // If barcode has encoded price -> AUTO ADD TO CART (IMEI products only)
     if (encodedPrice !== null && encodedPrice > 0) {
@@ -381,7 +389,14 @@ export default function ExportNewPage() {
         warranty: null,
       };
 
-      setCart(prevCart => [...prevCart, newItem]);
+      setCart(prevCart => {
+        // Double-check inside updater to prevent race condition
+        if (prevCart.some(item => item.imei === result.imei || item.product_id === result.id)) {
+          return prevCart;
+        }
+        return [...prevCart, newItem];
+      });
+      pendingProductIdsRef.current.delete(productKey);
       
       // Clear form for next scan
       setSelectedProduct(null);
@@ -416,7 +431,13 @@ export default function ExportNewPage() {
         warranty: null,
       };
 
-      setCart(prevCart => [...prevCart, newItem]);
+      setCart(prevCart => {
+        if (prevCart.some(item => item.imei === result.imei || item.product_id === result.id)) {
+          return prevCart;
+        }
+        return [...prevCart, newItem];
+      });
+      pendingProductIdsRef.current.delete(productKey);
       
       setSelectedProduct(null);
       setSalePrice('');
@@ -433,6 +454,7 @@ export default function ExportNewPage() {
     }
 
     // No price at all -> Fill form for manual entry (don't reveal import price)
+    pendingProductIdsRef.current.delete(productKey);
     setSelectedProduct(result);
     setSalePrice('');
     setItemQuantity(result.imei ? 1 : 1);

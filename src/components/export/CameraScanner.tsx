@@ -22,6 +22,7 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false }: C
   const isMountedRef = useRef(true);
   const lastScannedRef = useRef<string | null>(null);
   const scanCooldownRef = useRef(false);
+  const [scannerKey, setScannerKey] = useState(0);
 
   const playBeep = useCallback(() => {
     try {
@@ -261,6 +262,14 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false }: C
     }
   }, [onClose, onScan, playBeep, stopScanner]);
 
+  // Use refs to avoid stale closures in the effect
+  const startScannerRef = useRef(startScanner);
+  startScannerRef.current = startScanner;
+  const stopScannerRef = useRef(stopScanner);
+  stopScannerRef.current = stopScanner;
+  const facingModeRef = useRef(facingMode);
+  facingModeRef.current = facingMode;
+
   // Handle open/close
   useEffect(() => {
     isMountedRef.current = true;
@@ -269,18 +278,20 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false }: C
     scanCooldownRef.current = false;
     
     if (isOpen) {
+      // Bump key to force fresh DOM element
+      setScannerKey(k => k + 1);
       // Delay start to ensure DOM is ready
       const timer = setTimeout(() => {
-        startScanner(facingMode);
-      }, 200);
+        startScannerRef.current(facingModeRef.current);
+      }, 300);
       
       return () => {
         clearTimeout(timer);
         isMountedRef.current = false;
-        stopScanner();
+        stopScannerRef.current();
       };
     } else {
-      stopScanner();
+      stopScannerRef.current();
       return () => {
         isMountedRef.current = false;
       };
@@ -324,7 +335,7 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false }: C
             className="relative bg-muted rounded-lg overflow-hidden"
             style={{ minHeight: '300px' }}
           >
-            <div id="qr-reader" className="w-full" />
+            <div id="qr-reader" key={scannerKey} className="w-full" />
             
             {isStarting && (
               <div className="absolute inset-0 flex items-center justify-center bg-background/50">
