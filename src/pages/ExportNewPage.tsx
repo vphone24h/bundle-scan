@@ -899,7 +899,7 @@ export default function ExportNewPage() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Bảo hành khi quét</Label>
                 <div className="flex flex-wrap gap-2">
-                  {['30 Ngày', '3 Tháng', '6 Tháng', '12 Tháng'].map((opt) => (
+                  {['Không BH', '30 Ngày', '3 Tháng', '6 Tháng', '12 Tháng'].map((opt) => (
                     <Button
                       key={opt}
                       type="button"
@@ -913,7 +913,7 @@ export default function ExportNewPage() {
                 </div>
                 <Input
                   placeholder="Hoặc nhập tùy chỉnh..."
-                  value={!['30 Ngày', '3 Tháng', '6 Tháng', '12 Tháng'].includes(scanWarranty) ? scanWarranty : ''}
+                  value={!['Không BH', '30 Ngày', '3 Tháng', '6 Tháng', '12 Tháng'].includes(scanWarranty) ? scanWarranty : ''}
                   onChange={(e) => setScanWarranty(e.target.value)}
                   className="max-w-xs"
                 />
