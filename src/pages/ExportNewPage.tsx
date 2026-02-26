@@ -126,6 +126,7 @@ export default function ExportNewPage() {
   const [itemNote, setItemNote] = useState('');
   const [itemQuantity, setItemQuantity] = useState(1);
   const [itemWarranty, setItemWarranty] = useState('');
+  const [scanWarranty, setScanWarranty] = useState('6 Tháng'); // Default warranty for barcode scan
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -377,38 +378,84 @@ export default function ExportNewPage() {
     // Mark as pending to prevent duplicate from concurrent scans
     pendingProductIdsRef.current.add(productKey);
 
-    // If barcode has encoded price -> fill form for warranty input
+    // If barcode has encoded price -> AUTO ADD TO CART with scan warranty
     if (encodedPrice !== null && encodedPrice > 0) {
+      const newItem: CartItem = {
+        tempId: Date.now().toString(),
+        product_id: result.id,
+        product_name: result.name,
+        sku: result.sku,
+        imei: result.imei,
+        category_id: result.category_id,
+        categoryName: result.categories?.name,
+        branch_id: result.branch_id,
+        branchName: result.branches?.name,
+        sale_price: encodedPrice,
+        note: null,
+        quantity: 1,
+        warranty: scanWarranty || null,
+      };
+
+      setCart(prevCart => {
+        const duplicate = result.imei
+          ? prevCart.some(item => item.imei && item.imei === result.imei)
+          : prevCart.some(item => item.product_id === result.id);
+        if (duplicate) return prevCart;
+        return [...prevCart, newItem];
+      });
       pendingProductIdsRef.current.delete(productKey);
-      setSelectedProduct(result);
-      setSalePrice(encodedPrice.toString());
+      
+      setSelectedProduct(null);
+      setSalePrice('');
+      setItemNote('');
       setItemQuantity(1);
       setItemWarranty('');
-      setItemNote('');
-      setNameSearch('');
-      setProductSuggestions([]);
+      setImeiSearch('');
       
       toast({
-        title: 'Đã quét thành công',
-        description: `${result.name} - Vui lòng nhập bảo hành và nhấn "Thêm vào giỏ"`,
+        title: 'Đã thêm vào giỏ',
+        description: `${result.name} - ${encodedPrice.toLocaleString('vi-VN')}đ (BH: ${scanWarranty})`,
       });
       return;
     }
 
-    // No encoded price but product has sale_price in DB -> fill form for warranty input
+    // No encoded price but product has sale_price in DB -> AUTO ADD TO CART with scan warranty
     if (result.sale_price && result.sale_price > 0) {
+      const newItem: CartItem = {
+        tempId: Date.now().toString(),
+        product_id: result.id,
+        product_name: result.name,
+        sku: result.sku,
+        imei: result.imei,
+        category_id: result.category_id,
+        categoryName: result.categories?.name,
+        branch_id: result.branch_id,
+        branchName: result.branches?.name,
+        sale_price: result.sale_price,
+        note: null,
+        quantity: 1,
+        warranty: scanWarranty || null,
+      };
+
+      setCart(prevCart => {
+        const duplicate = result.imei
+          ? prevCart.some(item => item.imei && item.imei === result.imei)
+          : prevCart.some(item => item.product_id === result.id);
+        if (duplicate) return prevCart;
+        return [...prevCart, newItem];
+      });
       pendingProductIdsRef.current.delete(productKey);
-      setSelectedProduct(result);
-      setSalePrice(result.sale_price.toString());
+      
+      setSelectedProduct(null);
+      setSalePrice('');
+      setItemNote('');
       setItemQuantity(1);
       setItemWarranty('');
-      setItemNote('');
-      setNameSearch('');
-      setProductSuggestions([]);
+      setImeiSearch('');
       
       toast({
-        title: 'Đã quét thành công',
-        description: `${result.name} - Vui lòng nhập bảo hành và nhấn "Thêm vào giỏ"`,
+        title: 'Đã thêm vào giỏ',
+        description: `${result.name} - ${result.sale_price.toLocaleString('vi-VN')}đ (BH: ${scanWarranty})`,
       });
       return;
     }
@@ -429,11 +476,46 @@ export default function ExportNewPage() {
     });
   };
 
-  // Search by IMEI (manual)
+  // Search by IMEI (manual) - shows form with warranty input instead of auto-add
   const handleImeiSearch = async () => {
     if (!imeiSearch.trim()) return;
-    await handleBarcodeScan(imeiSearch.trim());
+    const code = imeiSearch.trim();
     setImeiSearch('');
+    
+    const result = await checkProduct.mutateAsync(code);
+    if (!result) {
+      toast({ title: 'Không tìm thấy', description: `IMEI "${code}" không tồn tại`, variant: 'destructive' });
+      return;
+    }
+    if (result.status !== 'in_stock') {
+      toast({ title: 'Không thể bán', description: `Sản phẩm đang ở trạng thái "${result.status === 'sold' ? 'Đã bán' : result.status}"`, variant: 'destructive' });
+      return;
+    }
+    if (!canExportFromBranch(result.branch_id)) {
+      toast({ title: 'Không thể xuất hàng', description: getBlockedExportMessage(result.branches?.name), variant: 'destructive' });
+      return;
+    }
+    const alreadyInCart = result.imei
+      ? cart.some(item => item.imei && item.imei === result.imei)
+      : cart.some(item => item.product_id === result.id);
+    if (alreadyInCart) {
+      toast({ title: 'Đã có trong giỏ', description: 'Sản phẩm này đã được thêm vào giỏ hàng', variant: 'destructive' });
+      return;
+    }
+    
+    // Always show form for manual IMEI search (so user can enter warranty)
+    setSelectedProduct(result);
+    setSalePrice(result.sale_price && result.sale_price > 0 ? result.sale_price.toString() : '');
+    setItemQuantity(1);
+    setItemWarranty('');
+    setItemNote('');
+    setNameSearch('');
+    setProductSuggestions([]);
+    
+    toast({
+      title: 'Đã tìm thấy',
+      description: `${result.name} - Vui lòng nhập bảo hành và nhấn "Thêm vào giỏ"`,
+    });
   };
 
   // Search by name (debounced)
@@ -810,8 +892,32 @@ export default function ExportNewPage() {
               />
               
               <p className="text-xs text-muted-foreground">
-                Quét mã vạch có giá → tự động thêm vào giỏ. Quét mã không có giá → điền form để nhập giá bán.
+                Quét mã vạch có giá → tự động thêm vào giỏ kèm bảo hành bên dưới.
               </p>
+
+              {/* Warranty preset for barcode scan */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Bảo hành khi quét</Label>
+                <div className="flex flex-wrap gap-2">
+                  {['30 Ngày', '3 Tháng', '6 Tháng', '12 Tháng'].map((opt) => (
+                    <Button
+                      key={opt}
+                      type="button"
+                      size="sm"
+                      variant={scanWarranty === opt ? 'default' : 'outline'}
+                      onClick={() => setScanWarranty(opt)}
+                    >
+                      {opt}
+                    </Button>
+                  ))}
+                </div>
+                <Input
+                  placeholder="Hoặc nhập tùy chỉnh..."
+                  value={!['30 Ngày', '3 Tháng', '6 Tháng', '12 Tháng'].includes(scanWarranty) ? scanWarranty : ''}
+                  onChange={(e) => setScanWarranty(e.target.value)}
+                  className="max-w-xs"
+                />
+              </div>
             </CardContent>
           </Card>
 
