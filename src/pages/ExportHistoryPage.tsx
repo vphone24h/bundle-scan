@@ -301,12 +301,17 @@ export default function ExportHistoryPage() {
     setPrintReceipt({
       code: receipt.code,
       export_date: receipt.export_date,
+      branch_id: receipt.branch_id,
       customer: receipt.customers,
       items: receipt.export_receipt_items,
       payments: receipt.export_receipt_payments,
       total_amount: receipt.total_amount,
       paid_amount: receipt.paid_amount,
       debt_amount: receipt.debt_amount,
+      points_earned: (receipt as any).points_earned || 0,
+      tax_amount: (receipt as any).tax_amount || 0,
+      tax_rate: (receipt as any).tax_rate || 0,
+      subtotal_amount: (receipt as any).subtotal_amount || 0,
     });
     setShowPrintDialog(true);
   };
