@@ -80,6 +80,7 @@ export interface ExportReceiptItemDetail {
     status: string;
     customers?: { name: string; phone: string } | null;
     branches?: { name: string } | null;
+    export_receipt_payments?: { payment_type: string; amount: number }[];
   } | null;
 }
 
@@ -158,7 +159,8 @@ export function useExportReceiptItems() {
             created_by,
             status,
             customers(name, phone),
-            branches(name)
+            branches(name),
+            export_receipt_payments(payment_type, amount)
           )
         `)
         .order('created_at', { ascending: false });
