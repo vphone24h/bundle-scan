@@ -1456,6 +1456,9 @@ export default function CashBookPage() {
                             {entry.recipient_name && ` • NN: ${entry.recipient_name}`}
                           </span>
                         </div>
+                        {entry.note && (
+                          <p className="text-[11px] text-muted-foreground/70 italic mt-0.5 line-clamp-1">📝 {entry.note}</p>
+                        )}
                       </div>
                       <div className="text-right shrink-0">
                         <p className={cn(
