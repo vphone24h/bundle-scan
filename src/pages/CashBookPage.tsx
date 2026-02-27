@@ -77,6 +77,7 @@ import { useCashBookGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency } from '@/lib/mockData';
 import { formatNumberWithSpaces, parseFormattedNumber } from '@/lib/formatNumber';
 import { cn } from '@/lib/utils';
+import { toVietnamDate, toVietnamDateTimeInputValue, toVietnamTimestampInput } from '@/lib/vietnamTime';
 import { TransferFundsDialog } from '@/components/cashbook/TransferFundsDialog';
 import { BalanceHistorySection } from '@/components/cashbook/BalanceHistorySection';
 import { CashBookDetailDialog } from '@/components/cashbook/CashBookDetailDialog';
@@ -247,7 +248,7 @@ export default function CashBookPage() {
     is_business_accounting: true,
     branch_id: '',
     note: '',
-    transaction_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+    transaction_date: toVietnamDateTimeInputValue(),
     recipient_name: '',
     recipient_phone: '',
   });
@@ -544,7 +545,7 @@ export default function CashBookPage() {
       is_business_accounting: true,
       branch_id: defaultBranchId,
       note: '',
-      transaction_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+      transaction_date: toVietnamDateTimeInputValue(),
       recipient_name: '',
       recipient_phone: '',
     });
@@ -561,7 +562,7 @@ export default function CashBookPage() {
       is_business_accounting: entry.is_business_accounting ?? true,
       branch_id: entry.branch_id || '',
       note: entry.note || '',
-      transaction_date: format(new Date(entry.transaction_date), "yyyy-MM-dd'T'HH:mm"),
+      transaction_date: format(toVietnamDate(entry.transaction_date), "yyyy-MM-dd'T'HH:mm"),
       recipient_name: entry.recipient_name || '',
       recipient_phone: entry.recipient_phone || '',
     });
@@ -732,7 +733,7 @@ export default function CashBookPage() {
         is_business_accounting: formData.is_business_accounting,
         branch_id: formData.branch_id || null,
         note: formData.note || undefined,
-        transaction_date: formData.transaction_date + ':00+07:00',
+        transaction_date: toVietnamTimestampInput(formData.transaction_date),
         recipient_name: formData.recipient_name || null,
         recipient_phone: formData.recipient_phone || null,
         created_by_name: currentProfile?.display_name || null,
@@ -1409,7 +1410,7 @@ export default function CashBookPage() {
                             );
                           })()}
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(entry.transaction_date), 'dd/MM HH:mm', { locale: vi })}
+                            {format(toVietnamDate(entry.transaction_date), 'dd/MM HH:mm', { locale: vi })}
                           </span>
                         </div>
                         <p className="font-medium text-sm line-clamp-2">{entry.description}</p>
@@ -1489,7 +1490,7 @@ export default function CashBookPage() {
                         }}
                       >
                         <TableCell className="whitespace-nowrap">
-                          {format(new Date(entry.transaction_date), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                          {format(toVietnamDate(entry.transaction_date), 'dd/MM/yyyy HH:mm', { locale: vi })}
                         </TableCell>
                         <TableCell>
                           {(() => {

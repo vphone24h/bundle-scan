@@ -12,6 +12,7 @@ import { vi } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/mockData';
 import { cn } from '@/lib/utils';
+import { toVietnamDate } from '@/lib/vietnamTime';
 import type { CashBookEntry } from '@/hooks/useCashBook';
 
 interface ExportReceiptItem {
@@ -94,7 +95,7 @@ export function CashBookDetailDialog({
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Thời gian</span>
               <span className="text-sm font-medium">
-                {format(new Date(entry.transaction_date), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                {format(toVietnamDate(entry.transaction_date), 'dd/MM/yyyy HH:mm', { locale: vi })}
               </span>
             </div>
             <div className="flex items-center justify-between">
