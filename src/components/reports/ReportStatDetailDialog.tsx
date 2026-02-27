@@ -300,13 +300,13 @@ export function ReportStatDetailDialog({ open, onOpenChange, type, salesDetails,
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[85vh]">
-          <DrawerHeader>
+        <DrawerContent className="max-h-[85vh] flex flex-col">
+          <DrawerHeader className="shrink-0">
             <DrawerTitle className="text-base">{TITLES[type]}</DrawerTitle>
           </DrawerHeader>
-          <ScrollArea className="px-4 pb-6 max-h-[70vh]">
+          <div className="flex-1 overflow-y-auto px-4 pb-6">
             {content}
-          </ScrollArea>
+          </div>
         </DrawerContent>
       </Drawer>
     );
