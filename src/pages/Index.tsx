@@ -251,7 +251,7 @@ const Index = () => {
               title="Đơn đặt hàng"
               value={formatCurrency(stats?.pendingDebt || 0)}
               icon={<AlertCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
-              onClick={() => navigate('/debt')}
+              onClick={() => navigate('/landing-admin?tab=orders')}
               className={`cursor-pointer hover:shadow-md transition-shadow ${(stats?.pendingDebt || 0) > 0 ? 'border-warning/50' : ''}`}
             />
           )}
