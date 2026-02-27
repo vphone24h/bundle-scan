@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { LandingPageSettings } from '@/components/admin/LandingPageSettings';
@@ -91,6 +92,12 @@ export default function LandingPageAdminPage() {
   const showOrders = true;
 
   const defaultTab = isSuperAdmin ? 'settings' : (isStaff ? 'products' : 'articles');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || defaultTab;
+
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value }, { replace: true });
+  };
 
   return (
     <MainLayout>
@@ -111,7 +118,7 @@ export default function LandingPageAdminPage() {
           </div>
         )}
         <div className="mt-4">
-          <Tabs defaultValue={defaultTab}>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList className="mb-4">
               {showSettings && <TabsTrigger value="settings" data-tour="landing-tab-settings">Cấu hình</TabsTrigger>}
               {showProducts && <TabsTrigger value="products" data-tour="landing-tab-products">Sản phẩm</TabsTrigger>}
