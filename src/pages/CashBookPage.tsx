@@ -101,6 +101,32 @@ const builtInPaymentSources = [
 
 // Custom payment sources are now stored in the database (see useCustomPaymentSources hook)
 
+// Helper: get source origin label & color based on reference_type and category
+function getSourceOrigin(entry: CashBookEntry): { label: string; className: string } | null {
+  const cat = entry.category;
+  if (cat === 'Chuyển tiền nội bộ' || cat === 'Chuyển tiền liên chi nhánh') {
+    return { label: '🔄 Chuyển tiền', className: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300' };
+  }
+  switch (entry.reference_type) {
+    case 'export_receipt':
+      return { label: '🛒 Bán hàng', className: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300' };
+    case 'import_receipt':
+      return { label: '📦 Nhập hàng', className: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300' };
+    case 'import_return':
+      return { label: '↩️ Trả hàng nhập', className: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300' };
+    case 'export_return':
+      return { label: '↩️ Trả hàng xuất', className: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300' };
+    case 'export_return_fee':
+      return { label: '💰 Phí trả hàng', className: 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300' };
+    case 'debt_payment':
+      return { label: '💳 Thu nợ', className: 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300' };
+    case 'defective_return':
+      return { label: '⚠️ Trả lỗi', className: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300' };
+    default:
+      return { label: '✏️ Thủ công', className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300' };
+  }
+}
+
 const cashBookTourSteps: TourStep[] = [
   {
     title: '📒 Sổ quỹ dùng để làm gì?',
@@ -1414,12 +1440,22 @@ export default function CashBookPage() {
                           </span>
                         </div>
                         <p className="font-medium text-sm line-clamp-2">{entry.description}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {entry.category} • {paymentSourceLabels[entry.payment_source] || entry.payment_source}
-                          {entry.branches?.name && ` • ${entry.branches.name}`}
-                          {entry.created_by_name && ` • NV: ${entry.created_by_name}`}
-                          {entry.recipient_name && ` • NN: ${entry.recipient_name}`}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-1 mt-1">
+                          {(() => {
+                            const origin = getSourceOrigin(entry);
+                            return origin ? (
+                              <Badge variant="outline" className={cn("text-[9px] px-1 py-0 font-medium", origin.className)}>
+                                {origin.label}
+                              </Badge>
+                            ) : null;
+                          })()}
+                          <span className="text-xs text-muted-foreground">
+                            {entry.category} • {paymentSourceLabels[entry.payment_source] || entry.payment_source}
+                            {entry.branches?.name && ` • ${entry.branches.name}`}
+                            {entry.created_by_name && ` • NV: ${entry.created_by_name}`}
+                            {entry.recipient_name && ` • NN: ${entry.recipient_name}`}
+                          </span>
+                        </div>
                       </div>
                       <div className="text-right shrink-0">
                         <p className={cn(
@@ -1467,6 +1503,7 @@ export default function CashBookPage() {
                     <TableRow>
                       <TableHead>Ngày / Giờ</TableHead>
                       <TableHead>Loại</TableHead>
+                      <TableHead>Nguồn gốc</TableHead>
                       <TableHead>Danh mục</TableHead>
                       <TableHead>Mô tả</TableHead>
                       <TableHead className="text-right">Số tiền</TableHead>
@@ -1511,6 +1548,16 @@ export default function CashBookPage() {
                                 {entry.type === 'expense' ? 'Chi' : 'Thu'}
                               </Badge>
                             );
+                          })()}
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const origin = getSourceOrigin(entry);
+                            return origin ? (
+                              <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 font-medium whitespace-nowrap", origin.className)}>
+                                {origin.label}
+                              </Badge>
+                            ) : null;
                           })()}
                         </TableCell>
                         <TableCell>
