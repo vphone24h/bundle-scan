@@ -10,16 +10,17 @@ interface StatCardProps {
     isPositive: boolean;
   };
   className?: string;
+  onClick?: () => void;
 }
 
 export const StatCard = forwardRef<HTMLDivElement, StatCardProps>(
-  ({ title, value, icon, trend, className }, ref) => {
+  ({ title, value, icon, trend, className, onClick }, ref) => {
     // Check if value is a long currency string (for mobile optimization)
     const valueStr = String(value);
     const isLongValue = valueStr.length > 10;
 
     return (
-      <div ref={ref} className={cn('stat-card p-3 sm:p-4 lg:p-6', className)}>
+      <div ref={ref} className={cn('stat-card p-3 sm:p-4 lg:p-6', className)} onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}>
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-xs lg:text-sm font-medium text-muted-foreground line-clamp-1">{title}</p>

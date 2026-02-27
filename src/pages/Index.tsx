@@ -7,7 +7,7 @@ import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
 import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator, PlayCircle, Crown } from 'lucide-react';
 import { usePlatformUser } from '@/hooks/useTenant';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { Button } from '@/components/ui/button';
@@ -133,6 +133,7 @@ const Index = () => {
   const [productTab, setProductTab] = useState<'imported' | 'sold'>('imported');
   const [showInstallment, setShowInstallment] = useState(false);
   const [manualTourActive, setManualTourActive] = useState(false);
+  const navigate = useNavigate();
   const { isCompleted: dashTourDone, isLoading: dashTourLoading, completeTour: completeDashTour } = useOnboardingTour('dashboard_overview');
   const { mutate: resetAllTours } = useResetAllTours();
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
@@ -223,6 +224,8 @@ const Index = () => {
               title="Tổng sản phẩm"
               value={stats?.totalProducts || 0}
               icon={<Package className="h-5 w-5 sm:h-6 sm:w-6" />}
+              onClick={() => navigate('/products')}
+              className="cursor-pointer hover:shadow-md transition-shadow"
             />
           )}
           {canViewImportPrice && (
@@ -230,6 +233,8 @@ const Index = () => {
               title="Tồn kho"
               value={stats?.inStockProducts || 0}
               icon={<TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />}
+              onClick={() => navigate('/inventory')}
+              className="cursor-pointer hover:shadow-md transition-shadow"
             />
           )}
           {canViewImportPrice && (
@@ -237,6 +242,8 @@ const Index = () => {
               title="Giá trị kho"
               value={formatCurrency(stats?.totalImportValue || 0)}
               icon={<Wallet className="h-5 w-5 sm:h-6 sm:w-6" />}
+              onClick={() => navigate('/inventory')}
+              className="cursor-pointer hover:shadow-md transition-shadow"
             />
           )}
           {canViewImportPrice && (
@@ -244,7 +251,8 @@ const Index = () => {
               title="Đơn đặt hàng"
               value={formatCurrency(stats?.pendingDebt || 0)}
               icon={<AlertCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
-              className={(stats?.pendingDebt || 0) > 0 ? 'border-warning/50' : ''}
+              onClick={() => navigate('/debt')}
+              className={`cursor-pointer hover:shadow-md transition-shadow ${(stats?.pendingDebt || 0) > 0 ? 'border-warning/50' : ''}`}
             />
           )}
         </div>
@@ -252,20 +260,20 @@ const Index = () => {
         {/* Quick stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           {canViewImportPrice && (
-            <div className="bg-card border rounded-lg p-3 sm:p-4 text-center">
+            <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/reports')}>
               <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats?.todayProfit || 0)}</p>
               <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Lợi nhuận hôm nay</p>
             </div>
           )}
-          <div className="bg-card border rounded-lg p-3 sm:p-4 text-center">
+          <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/reports')}>
             <p className="text-2xl sm:text-3xl font-bold text-primary">{formatCurrency(stats?.todayRevenue || 0)}</p>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Doanh thu hôm nay</p>
           </div>
-          <div className="bg-card border rounded-lg p-3 sm:p-4 text-center">
+          <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/export/history')}>
             <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats?.todaySold || 0}</p>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Đã bán hôm nay</p>
           </div>
-          <div className="bg-card border rounded-lg p-3 sm:p-4 text-center">
+          <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/import/history')}>
             <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats?.todayImports || 0}</p>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Nhập hôm nay</p>
           </div>
