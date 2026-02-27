@@ -1,0 +1,2 @@
+-- Drop the restrictive CHECK constraint on export_receipt_payments to allow custom payment sources
+ALTER TABLE public.export_receipt_payments DROP CONSTRAINT IF EXISTS export_receipt_payments_payment_type_check;
