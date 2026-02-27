@@ -4138,21 +4138,21 @@ export type Database = {
           amount: number
           created_at: string
           id: string
-          payment_type: Database["public"]["Enums"]["payment_type"]
+          payment_type: string
           receipt_id: string
         }
         Insert: {
           amount: number
           created_at?: string
           id?: string
-          payment_type: Database["public"]["Enums"]["payment_type"]
+          payment_type: string
           receipt_id: string
         }
         Update: {
           amount?: number
           created_at?: string
           id?: string
-          payment_type?: Database["public"]["Enums"]["payment_type"]
+          payment_type?: string
           receipt_id?: string
         }
         Relationships: [
