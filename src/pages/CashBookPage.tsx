@@ -732,7 +732,7 @@ export default function CashBookPage() {
         is_business_accounting: formData.is_business_accounting,
         branch_id: formData.branch_id || null,
         note: formData.note || undefined,
-        transaction_date: formData.transaction_date,
+        transaction_date: formData.transaction_date + ':00+07:00',
         recipient_name: formData.recipient_name || null,
         recipient_phone: formData.recipient_phone || null,
         created_by_name: currentProfile?.display_name || null,
