@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DetailedProfitTable } from '@/components/reports/DetailedProfitTable';
+import { ReportStatDetailDialog, type DetailType } from '@/components/reports/ReportStatDetailDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -73,6 +74,7 @@ function StatCard({
   trend,
   description,
   className = '',
+  onClick,
 }: {
   title: string;
   value: string | number;
@@ -80,9 +82,10 @@ function StatCard({
   trend?: 'up' | 'down' | 'neutral';
   description?: string;
   className?: string;
+  onClick?: () => void;
 }) {
   return (
-    <Card className={className}>
+    <Card className={`${className} ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} onClick={onClick}>
       <CardContent className="pt-6">
         <div className="flex items-start justify-between">
           <div>
@@ -112,6 +115,7 @@ export function RevenueProfitReport() {
   const [branchId, setBranchId] = useState('_all_');
   const [categoryId, setCategoryId] = useState('_all_');
   const [chartGroupBy, setChartGroupBy] = useState<'day' | 'week' | 'month'>('day');
+  const [detailType, setDetailType] = useState<DetailType | null>(null);
 
   const { data: branches } = useBranches();
   const { data: categories } = useCategories();
@@ -278,16 +282,16 @@ export function RevenueProfitReport() {
 
       {/* Main Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatCard title="1. Tổng doanh thu bán hàng" value={formatCurrency(stats?.totalSalesRevenue || 0)} icon={<ShoppingCart className="h-5 w-5" />} description={`${stats?.productsSold || 0} sản phẩm đã bán`} />
-        <StatCard title="2. Doanh thu trả hàng" value={formatCurrency(stats?.totalReturnRevenue || 0)} icon={<RotateCcw className="h-5 w-5" />} trend="down" description={`${stats?.productsReturned || 0} sản phẩm trả`} className="border-destructive/20" />
-        <StatCard title="3. Doanh thu thuần" value={formatCurrency(stats?.netRevenue || 0)} icon={<DollarSign className="h-5 w-5" />} description="= DT bán hàng - DT trả hàng" />
-        <StatCard title="3.1 Lợi nhuận kinh doanh" value={formatCurrency(stats?.businessProfit || 0)} icon={<Calculator className="h-5 w-5" />} trend={stats?.businessProfit && stats.businessProfit > 0 ? 'up' : 'down'} description="Σ(Giá bán - Giá nhập) từng SP" className={(stats?.businessProfit || 0) > 0 ? 'border-green-500/30' : 'border-destructive/30'} />
-        <StatCard title="4. Chi phí" value={formatCurrency(stats?.totalExpenses || 0)} icon={<Wallet className="h-5 w-5" />} trend="down" description="Từ sổ quỹ (hạch toán KD)" />
-        <StatCard title="5. Thu nhập khác" value={formatCurrency(stats?.otherIncome || 0)} icon={<TrendingUp className="h-5 w-5" />} description="Bo, hỗ trợ, thu nhập ngoài" />
+        <StatCard title="1. Tổng doanh thu bán hàng" value={formatCurrency(stats?.totalSalesRevenue || 0)} icon={<ShoppingCart className="h-5 w-5" />} description={`${stats?.productsSold || 0} sản phẩm đã bán`} onClick={() => setDetailType('sales')} />
+        <StatCard title="2. Doanh thu trả hàng" value={formatCurrency(stats?.totalReturnRevenue || 0)} icon={<RotateCcw className="h-5 w-5" />} trend="down" description={`${stats?.productsReturned || 0} sản phẩm trả`} className="border-destructive/20" onClick={() => setDetailType('returns')} />
+        <StatCard title="3. Doanh thu thuần" value={formatCurrency(stats?.netRevenue || 0)} icon={<DollarSign className="h-5 w-5" />} description="= DT bán hàng - DT trả hàng" onClick={() => setDetailType('netRevenue')} />
+        <StatCard title="3.1 Lợi nhuận kinh doanh" value={formatCurrency(stats?.businessProfit || 0)} icon={<Calculator className="h-5 w-5" />} trend={stats?.businessProfit && stats.businessProfit > 0 ? 'up' : 'down'} description="Σ(Giá bán - Giá nhập) từng SP" className={(stats?.businessProfit || 0) > 0 ? 'border-green-500/30' : 'border-destructive/30'} onClick={() => setDetailType('businessProfit')} />
+        <StatCard title="4. Chi phí" value={formatCurrency(stats?.totalExpenses || 0)} icon={<Wallet className="h-5 w-5" />} trend="down" description="Từ sổ quỹ (hạch toán KD)" onClick={() => setDetailType('expenses')} />
+        <StatCard title="5. Thu nhập khác" value={formatCurrency(stats?.otherIncome || 0)} icon={<TrendingUp className="h-5 w-5" />} description="Bo, hỗ trợ, thu nhập ngoài" onClick={() => setDetailType('otherIncome')} />
       </div>
 
       {/* Net Profit */}
-      <Card className={`border-2 ${(stats?.netProfit || 0) >= 0 ? 'border-green-500 bg-green-50/50 dark:bg-green-950/20' : 'border-destructive bg-red-50/50 dark:bg-red-950/20'}`}>
+      <Card className={`border-2 cursor-pointer hover:shadow-md transition-shadow ${(stats?.netProfit || 0) >= 0 ? 'border-green-500 bg-green-50/50 dark:bg-green-950/20' : 'border-destructive bg-red-50/50 dark:bg-red-950/20'}`} onClick={() => setDetailType('netProfit')}>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div>
@@ -446,6 +450,18 @@ export function RevenueProfitReport() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Detail Popup */}
+      <ReportStatDetailDialog
+        open={!!detailType}
+        onOpenChange={(open) => !open && setDetailType(null)}
+        type={detailType || 'sales'}
+        salesDetails={stats?.salesDetails || []}
+        returnDetails={stats?.returnDetails || []}
+        expenseDetails={stats?.expenseDetails || []}
+        incomeDetails={stats?.incomeDetails || []}
+        stats={stats || null}
+      />
     </div>
   );
 }
