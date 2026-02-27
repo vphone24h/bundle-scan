@@ -1566,7 +1566,12 @@ export default function CashBookPage() {
                         <TableCell>
                           <Badge variant="secondary">{entry.category}</Badge>
                         </TableCell>
-                        <TableCell className="max-w-xs truncate">{entry.description}</TableCell>
+                        <TableCell className="max-w-xs">
+                          <div className="truncate">{entry.description}</div>
+                          {entry.note && (
+                            <p className="text-[11px] text-muted-foreground/70 italic mt-0.5 truncate">📝 {entry.note}</p>
+                          )}
+                        </TableCell>
                         <TableCell className={cn(
                           "text-right font-medium whitespace-nowrap",
                           entry.type === 'expense' ? 'text-destructive' : 'text-green-600'
