@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,7 @@ import { formatNumberWithSpaces, parseFormattedNumber, formatCurrencyWithSpaces 
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useCreateImportReturn } from '@/hooks/useReturns';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import type { Product } from '@/hooks/useProducts';
 
 interface PaymentLine {
@@ -18,7 +19,7 @@ interface PaymentLine {
   displayAmount: string;
 }
 
-const PAYMENT_SOURCES = [
+const BUILT_IN_PAYMENT_SOURCES = [
   { value: 'debt', label: 'Công nợ' },
   { value: 'cash', label: 'Tiền mặt' },
   { value: 'bank_card', label: 'Thẻ ngân hàng' },
@@ -38,6 +39,15 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
   ]);
 
   const createImportReturn = useCreateImportReturn();
+  const { data: customPaymentSources = [] } = useCustomPaymentSources();
+
+  const allPaymentSources = useMemo(() => {
+    const custom = customPaymentSources.map((s) => ({
+      value: s.id,
+      label: s.name,
+    }));
+    return [...BUILT_IN_PAYMENT_SOURCES, ...custom];
+  }, [customPaymentSources]);
 
   if (!product) {
     return (
@@ -185,7 +195,7 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
                     onChange={(e) => handlePaymentChange(payment.id, 'source', e.target.value)}
                     className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                   >
-                    {PAYMENT_SOURCES.map(src => (
+                    {allPaymentSources.map(src => (
                       <option key={src.value} value={src.value}>{src.label}</option>
                     ))}
                   </select>

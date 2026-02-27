@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ import { formatNumberWithSpaces, parseFormattedNumber, formatCurrencyWithSpaces 
 import { Plus, Trash2, Loader2, RotateCcw, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useCreateExportReturn } from '@/hooks/useReturns';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import type { ExportReceipt } from '@/hooks/useExportReceipts';
 
 interface PaymentLine {
@@ -28,7 +29,7 @@ interface PaymentLine {
   displayAmount: string;
 }
 
-const PAYMENT_SOURCES = [
+const BUILT_IN_PAYMENT_SOURCES = [
   { value: 'debt', label: 'Công nợ khách hàng' },
   { value: 'cash', label: 'Tiền mặt' },
   { value: 'bank_card', label: 'Thẻ ngân hàng' },
@@ -61,6 +62,15 @@ export function ReceiptReturnDialog({
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const createExportReturn = useCreateExportReturn();
+  const { data: customPaymentSources = [] } = useCustomPaymentSources();
+
+  const allPaymentSources = useMemo(() => {
+    const custom = customPaymentSources.map((s) => ({
+      value: s.id,
+      label: s.name,
+    }));
+    return [...BUILT_IN_PAYMENT_SOURCES, ...custom];
+  }, [customPaymentSources]);
 
   // Get returnable items (not already returned)
   const returnableItems = receipt?.export_receipt_items?.filter(
@@ -487,7 +497,7 @@ export function ReceiptReturnDialog({
                           <option value="" disabled>
                             Chọn nguồn tiền
                           </option>
-                          {PAYMENT_SOURCES.map(src => (
+                          {allPaymentSources.map(src => (
                             <option key={src.value} value={src.value}>{src.label}</option>
                           ))}
                         </select>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Plus, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useImportReceiptDetails, useReturnImportReceipt, ImportReceipt } from '@/hooks/useImportReceipts';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { formatNumberWithSpaces, parseFormattedNumber, formatCurrencyWithSpaces } from '@/lib/formatNumber';
 import { Badge } from '@/components/ui/badge';
 
@@ -23,7 +24,7 @@ interface PaymentLine {
   displayAmount: string;
 }
 
-const PAYMENT_SOURCES = [
+const BUILT_IN_PAYMENT_SOURCES = [
   { value: 'debt', label: 'Giảm công nợ' },
   { value: 'cash', label: 'Tiền mặt' },
   { value: 'bank_card', label: 'Thẻ ngân hàng' },
@@ -33,6 +34,15 @@ const PAYMENT_SOURCES = [
 export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: ReturnImportReceiptDialogProps) {
   const { data: details, isLoading: detailsLoading } = useImportReceiptDetails(receipt?.id || null);
   const returnReceipt = useReturnImportReceipt();
+  const { data: customPaymentSources = [] } = useCustomPaymentSources();
+
+  const allPaymentSources = useMemo(() => {
+    const custom = customPaymentSources.map((s) => ({
+      value: s.id,
+      label: s.name,
+    }));
+    return [...BUILT_IN_PAYMENT_SOURCES, ...custom];
+  }, [customPaymentSources]);
 
   const [note, setNote] = useState('');
   const [payments, setPayments] = useState<PaymentLine[]>([]);
@@ -209,7 +219,7 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
                       onChange={(e) => handlePaymentChange(payment.id, 'source', e.target.value)}
                       className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                     >
-                      {PAYMENT_SOURCES.map(src => (
+                      {allPaymentSources.map(src => (
                         <option key={src.value} value={src.value}>{src.label}</option>
                       ))}
                     </select>

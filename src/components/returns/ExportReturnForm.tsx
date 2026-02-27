@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,7 @@ import { formatNumberWithSpaces, parseFormattedNumber, formatCurrencyWithSpaces 
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useCreateExportReturn } from '@/hooks/useReturns';
+import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import type { ExportReceiptItemDetail } from '@/hooks/useExportReceipts';
 
 interface PaymentLine {
@@ -19,7 +20,7 @@ interface PaymentLine {
   displayAmount: string;
 }
 
-const PAYMENT_SOURCES = [
+const BUILT_IN_PAYMENT_SOURCES = [
   { value: 'debt', label: 'Công nợ khách hàng' },
   { value: 'cash', label: 'Tiền mặt' },
   { value: 'bank_card', label: 'Thẻ ngân hàng' },
@@ -42,7 +43,16 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
   const [payments, setPayments] = useState<PaymentLine[]>([]);
 
   const createExportReturn = useCreateExportReturn();
+  const { data: customPaymentSources = [] } = useCustomPaymentSources();
   const isSubmittingRef = useRef(false);
+
+  const allPaymentSources = useMemo(() => {
+    const custom = customPaymentSources.map((s) => ({
+      value: s.id,
+      label: s.name,
+    }));
+    return [...BUILT_IN_PAYMENT_SOURCES, ...custom];
+  }, [customPaymentSources]);
 
   // Calculate refund amount
   const calculateRefund = () => {
@@ -314,7 +324,7 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
                     onChange={(e) => handlePaymentChange(payment.id, 'source', e.target.value)}
                     className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
                   >
-                    {PAYMENT_SOURCES.map(src => (
+                    {allPaymentSources.map(src => (
                       <option key={src.value} value={src.value}>{src.label}</option>
                     ))}
                   </select>
