@@ -19,7 +19,8 @@ export function toVietnamDate(dateInput: string | Date): Date {
   const get = (type: Intl.DateTimeFormatPartTypes) =>
     parts.find((part) => part.type === type)?.value ?? '00';
 
-  return new Date(`${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}`);
+  // Gắn offset +07:00 để tránh trình duyệt diễn giải thành UTC/local TZ
+  return new Date(`${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}+07:00`);
 }
 
 export function toVietnamDateTimeInputValue(dateInput: string | Date = new Date()): string {
