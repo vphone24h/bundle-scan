@@ -18,7 +18,7 @@ export default function EInvoicePage() {
   // Shell-first: no spinner, render layout immediately
 
   // Check if e-invoice is enabled for this tenant
-  if (!tenant?.einvoice_enabled) {
+  if (!tenant?.einvoice_enabled || tenant?.business_mode === 'secret') {
     return (
       <MainLayout>
         <div className="p-4 sm:p-6 space-y-6">

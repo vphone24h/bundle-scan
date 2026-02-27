@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
+import { cn } from '@/lib/utils';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ export default function RegisterPage() {
     confirmPassword: '',
     phone: '',
     businessType: '',
+    businessMode: 'public' as 'public' | 'secret',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,6 +78,7 @@ export default function RegisterPage() {
           password: formData.password,
           phone: formData.phone,
           businessType: formData.businessType || null,
+          businessMode: formData.businessMode,
         },
       });
 
@@ -259,6 +262,52 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Hình thức quản lý *</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <label
+                  className={cn(
+                    'flex flex-col items-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition-all text-center',
+                    formData.businessMode === 'public'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-muted hover:border-primary/40'
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="businessMode"
+                    value="public"
+                    checked={formData.businessMode === 'public'}
+                    onChange={() => setFormData(prev => ({ ...prev, businessMode: 'public' }))}
+                    className="sr-only"
+                  />
+                  <span className="text-lg">🏪</span>
+                  <span className="font-medium text-sm">Công khai</span>
+                  <span className="text-[11px] text-muted-foreground leading-tight">Đầy đủ tính năng: thuế, HĐĐT, báo cáo thuế</span>
+                </label>
+                <label
+                  className={cn(
+                    'flex flex-col items-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition-all text-center',
+                    formData.businessMode === 'secret'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-muted hover:border-primary/40'
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="businessMode"
+                    value="secret"
+                    checked={formData.businessMode === 'secret'}
+                    onChange={() => setFormData(prev => ({ ...prev, businessMode: 'secret' }))}
+                    className="sr-only"
+                  />
+                  <span className="text-lg">🔒</span>
+                  <span className="font-medium text-sm">Bí mật</span>
+                  <span className="text-[11px] text-muted-foreground leading-tight">Ẩn thuế, HĐĐT và báo cáo thuế</span>
+                </label>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

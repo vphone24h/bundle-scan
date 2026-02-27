@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Shield, Edit2, UserPlus, Info, ChevronDown, ChevronUp, Star, ExternalLink } from 'lucide-react';
+import { Shield, Edit2, UserPlus, Info, ChevronDown, ChevronUp, Star, ExternalLink, Eye, EyeOff } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
@@ -26,6 +26,8 @@ import { StaffReviewsTab } from '@/components/users/StaffReviewsTab';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useUsersGuideUrl } from '@/hooks/useAppConfig';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface UserWithRole {
   id: string;
@@ -119,6 +121,96 @@ const roleDescriptions: Record<UserRole, { title: string; permissions: string[] 
     ],
   },
 };
+
+function BusinessModeSection({ tenantId, currentMode }: { tenantId: string; currentMode: string }) {
+  const queryClient = useQueryClient();
+  const [mode, setMode] = useState(currentMode);
+
+  useEffect(() => {
+    setMode(currentMode);
+  }, [currentMode]);
+
+  const updateMode = useMutation({
+    mutationFn: async (newMode: string) => {
+      const { error } = await supabase
+        .from('tenants')
+        .update({ business_mode: newMode } as any)
+        .eq('id', tenantId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'] });
+      toast.success('Đã cập nhật hình thức quản lý');
+    },
+    onError: () => {
+      setMode(currentMode);
+      toast.error('Lỗi khi cập nhật');
+    },
+  });
+
+  const handleChange = (newMode: string) => {
+    setMode(newMode);
+    updateMode.mutate(newMode);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          {mode === 'secret' ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          Hình thức quản lý
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-3 max-w-md">
+          <label
+            className={cn(
+              'flex flex-col items-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all text-center',
+              mode === 'public'
+                ? 'border-primary bg-primary/5'
+                : 'border-muted hover:border-primary/40'
+            )}
+          >
+            <input
+              type="radio"
+              name="businessMode"
+              value="public"
+              checked={mode === 'public'}
+              onChange={() => handleChange('public')}
+              className="sr-only"
+            />
+            <span className="text-2xl">🏪</span>
+            <span className="font-medium text-sm">Công khai</span>
+            <span className="text-[11px] text-muted-foreground leading-tight">Đầy đủ: thuế, HĐĐT, báo cáo thuế</span>
+          </label>
+          <label
+            className={cn(
+              'flex flex-col items-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all text-center',
+              mode === 'secret'
+                ? 'border-primary bg-primary/5'
+                : 'border-muted hover:border-primary/40'
+            )}
+          >
+            <input
+              type="radio"
+              name="businessMode"
+              value="secret"
+              checked={mode === 'secret'}
+              onChange={() => handleChange('secret')}
+              className="sr-only"
+            />
+            <span className="text-2xl">🔒</span>
+            <span className="font-medium text-sm">Bí mật</span>
+            <span className="text-[11px] text-muted-foreground leading-tight">Ẩn thuế, HĐĐT, báo cáo thuế</span>
+          </label>
+        </div>
+        <p className="text-xs text-muted-foreground mt-3">
+          Khi chọn "Bí mật", tất cả tài khoản trong cửa hàng sẽ không thấy các chức năng liên quan đến thuế và hoá đơn điện tử.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function UsersPage() {
   const { data: permissions } = usePermissions();
@@ -434,6 +526,11 @@ export default function UsersPage() {
           {/* Data Management Section - Only for Super Admin */}
           {isSuperAdmin && (
             <DataManagementSection />
+          )}
+
+          {/* Business Mode Section - Only for Super Admin */}
+          {isSuperAdmin && currentTenant && (
+            <BusinessModeSection tenantId={currentTenant.id} currentMode={currentTenant.business_mode || 'public'} />
           )}
         </TabsContent>
 

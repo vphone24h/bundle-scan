@@ -5120,6 +5120,7 @@ export type Database = {
         Row: {
           address: string | null
           allow_custom_domain: boolean | null
+          business_mode: string
           business_type: string | null
           created_at: string
           einvoice_enabled: boolean
@@ -5150,6 +5151,7 @@ export type Database = {
         Insert: {
           address?: string | null
           allow_custom_domain?: boolean | null
+          business_mode?: string
           business_type?: string | null
           created_at?: string
           einvoice_enabled?: boolean
@@ -5180,6 +5182,7 @@ export type Database = {
         Update: {
           address?: string | null
           allow_custom_domain?: boolean | null
+          business_mode?: string
           business_type?: string | null
           created_at?: string
           einvoice_enabled?: boolean

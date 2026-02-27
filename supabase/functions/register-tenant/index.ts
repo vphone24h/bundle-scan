@@ -323,6 +323,7 @@ Deno.serve(async (req) => {
     const password = body.password || ''
     const phone = body.phone ? sanitizeString(body.phone, 20) : null
     const businessType = body.businessType ? sanitizeString(body.businessType, 100) : null
+    const businessMode = body.businessMode === 'secret' ? 'secret' : 'public'
 
     // Validate required fields
     if (!businessName || !subdomain || !adminName || !email || !password) {
@@ -459,6 +460,7 @@ Deno.serve(async (req) => {
         phone,
         email,
         business_type: businessType,
+        business_mode: businessMode,
       })
       .select()
       .single()
