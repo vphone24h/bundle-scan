@@ -3,29 +3,27 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
 
+import type { SaleDetailItem, ReturnDetailItem, CashBookDetailItem } from '@/components/reports/ReportStatDetailDialog';
+
 export interface ReportStats {
-  totalSalesRevenue: number; // Tổng doanh thu bán hàng
-  totalReturnRevenue: number; // Tổng doanh thu trả hàng
-  netRevenue: number; // Doanh thu thuần
-  businessProfit: number; // Lợi nhuận kinh doanh (giá bán - giá nhập)
-  totalExpenses: number; // Tổng chi phí
-  otherIncome: number; // Thu nhập khác
-  netProfit: number; // Lợi nhuận thuần
-  // Chi tiết
+  totalSalesRevenue: number;
+  totalReturnRevenue: number;
+  netRevenue: number;
+  businessProfit: number;
+  totalExpenses: number;
+  otherIncome: number;
+  netProfit: number;
   salesCount: number;
   returnCount: number;
   productsSold: number;
   productsReturned: number;
-  // Theo nguồn tiền
   paymentsBySource: {
     cash: number;
     bank_card: number;
     e_wallet: number;
     debt: number;
   };
-  // Chi tiết chi phí
   expensesByCategory: Record<string, number>;
-  // Chi tiết theo danh mục sản phẩm
   profitByCategory: {
     categoryId: string;
     categoryName: string;
@@ -33,6 +31,11 @@ export interface ReportStats {
     profit: number;
     count: number;
   }[];
+  // Raw detail data for popup
+  salesDetails: SaleDetailItem[];
+  returnDetails: ReturnDetailItem[];
+  expenseDetails: CashBookDetailItem[];
+  incomeDetails: CashBookDetailItem[];
 }
 
 export function useReportStats(filters?: {
@@ -69,6 +72,10 @@ export function useReportStats(filters?: {
           paymentsBySource: { cash: 0, bank_card: 0, e_wallet: 0, debt: 0 },
           expensesByCategory: {},
           profitByCategory: [],
+          salesDetails: [],
+          returnDetails: [],
+          expenseDetails: [],
+          incomeDetails: [],
         } as ReportStats;
       }
 
@@ -98,6 +105,8 @@ export function useReportStats(filters?: {
           branch_id,
           export_receipt_items(
             id,
+            product_name,
+            sku,
             sale_price,
             status,
             product_id,
@@ -189,6 +198,10 @@ export function useReportStats(filters?: {
       let productsReturned = 0;
       const paymentsBySource = { cash: 0, bank_card: 0, e_wallet: 0, debt: 0 };
       const profitByCategoryMap: Record<string, { categoryName: string; revenue: number; profit: number; count: number }> = {};
+      const salesDetails: SaleDetailItem[] = [];
+      const returnDetails: ReturnDetailItem[] = [];
+      const expenseDetails: CashBookDetailItem[] = [];
+      const incomeDetails: CashBookDetailItem[] = [];
 
       // Tính lợi nhuận từ bán hàng
       exportReceipts?.forEach(receipt => {
@@ -207,6 +220,17 @@ export function useReportStats(filters?: {
               totalSalesRevenue += salePrice;
               businessProfit += (salePrice - importPrice);
               productsSold++;
+
+              salesDetails.push({
+                date: receipt.export_date,
+                productName: (item as any).product_name || 'SP',
+                sku: (item as any).sku || '',
+                salePrice,
+                importPrice,
+                profit: salePrice - importPrice,
+                branchName: '',
+                categoryName: item.categories?.name || 'Chưa phân loại',
+              });
 
               const catId = item.category_id || 'uncategorized';
               const catName = item.categories?.name || 'Chưa phân loại';
@@ -239,6 +263,14 @@ export function useReportStats(filters?: {
         businessProfit -= profit;
         productsReturned++;
         returnCount++;
+
+        returnDetails.push({
+          date: item.return_date,
+          salePrice,
+          importPrice,
+          profit,
+          branchName: '',
+        });
       });
 
       // Tính chi phí và thu nhập khác từ sổ quỹ
@@ -248,11 +280,21 @@ export function useReportStats(filters?: {
 
       cashBookEntries?.forEach(entry => {
         const amount = Number(entry.amount);
+        const detailItem: CashBookDetailItem = {
+          date: entry.transaction_date,
+          description: entry.description,
+          category: entry.category,
+          amount,
+          paymentSource: entry.payment_source,
+          branchName: '',
+        };
         if (entry.type === 'expense') {
           totalExpenses += amount;
           expensesByCategory[entry.category] = (expensesByCategory[entry.category] || 0) + amount;
+          expenseDetails.push(detailItem);
         } else if (entry.type === 'income') {
           otherIncome += amount;
+          incomeDetails.push(detailItem);
         }
       });
 
@@ -279,6 +321,10 @@ export function useReportStats(filters?: {
         paymentsBySource,
         expensesByCategory,
         profitByCategory,
+        salesDetails,
+        returnDetails,
+        expenseDetails,
+        incomeDetails,
       } as ReportStats;
     },
     enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
