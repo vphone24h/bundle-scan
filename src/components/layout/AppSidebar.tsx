@@ -58,7 +58,7 @@ interface NavItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  children?: { title: string; href: string; permission?: string; badgeKey?: string }[];
+  children?: { title: string; href: string; permission?: string; badgeKey?: string; hideInSecretMode?: boolean }[];
   permission?: string; // Tên permission cần để hiển thị menu này
 }
 
@@ -103,8 +103,8 @@ const allNavItems: NavItem[] = [
       { title: 'Bán Hàng', href: '/export/new', permission: 'canCreateExportReceipt' },
       { title: 'Lịch sử Bán hàng', href: '/export/history' },
       { title: 'Mẫu in hóa đơn', href: '/export/template', permission: 'canManageInvoiceTemplates' },
-      { title: 'Hoá đơn điện tử', href: '/einvoice', permission: 'canManageInvoiceTemplates' },
-       { title: 'Mức Thuế 2026', href: '/export/tax-policy' },
+      { title: 'Hoá đơn điện tử', href: '/einvoice', permission: 'canManageInvoiceTemplates', hideInSecretMode: true },
+       { title: 'Mức Thuế 2026', href: '/export/tax-policy', hideInSecretMode: true },
     ],
   },
   { title: 'Trả hàng', href: '/returns', icon: RotateCcw, permission: 'canImportProducts' },
@@ -148,6 +148,7 @@ export function AppSidebar() {
 
   const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
   const hasTenant = !!platformUser?.tenant_id;
+  const isSecretMode = currentTenant?.business_mode === 'secret';
 
   // Lọc menu theo quyền và loại user
   const navItems = useMemo(() => {
@@ -168,6 +169,7 @@ export function AppSidebar() {
         return {
           ...item,
           children: item.children.filter(child => {
+            if (isSecretMode && child.hideInSecretMode) return false;
             if (!child.permission) return true;
             return permissions[child.permission as keyof typeof permissions] === true;
           }),
@@ -175,7 +177,7 @@ export function AppSidebar() {
       }
       return item;
     });
-  }, [permissions, isPlatformAdmin, hasTenant, isStandalone]);
+  }, [permissions, isPlatformAdmin, hasTenant, isStandalone, isSecretMode]);
 
   const toggleExpand = useCallback((title: string) => {
     setExpandedItems((prev) =>

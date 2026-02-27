@@ -255,8 +255,9 @@ export default function ReportsPage() {
     return [...TOUR_STEPS.revenue, wowStep];
   };
 
-  // Chỉ super_admin và branch_admin mới thấy báo cáo thuế
-  const canViewTaxReport = permissions?.role === 'super_admin' || permissions?.role === 'branch_admin';
+  // Chỉ super_admin và branch_admin mới thấy báo cáo thuế, và không ở chế độ bí mật
+  const isSecretMode = tenant?.business_mode === 'secret';
+  const canViewTaxReport = !isSecretMode && (permissions?.role === 'super_admin' || permissions?.role === 'branch_admin');
   const reportTabs = canViewTaxReport ? [...baseReportTabs, taxTab] : baseReportTabs;
 
   const activeReport = reportTabs.find(t => t.id === activeTab);
