@@ -923,6 +923,7 @@ export default function ExportNewPage() {
                           <div className="font-medium">{product.name}</div>
                           <div className="text-muted-foreground text-xs">
                             SKU: {product.sku} | {product.categories?.name || 'Chưa phân loại'}
+                            {product.imei && <span className="ml-1 text-foreground/70">| IMEI: {product.imei}</span>}
                           </div>
                         </button>
                       ))}
