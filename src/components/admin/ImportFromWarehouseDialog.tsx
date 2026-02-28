@@ -108,6 +108,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
           description: aiContent?.description || null,
           price: salePrice || item.avgImportPrice,
           sale_price: null,
+          category_id: item.categoryId || null,
           image_url: null,
           images: [],
           is_featured: false,
