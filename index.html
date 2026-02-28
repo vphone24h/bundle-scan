@@ -44,7 +44,7 @@
           var anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZHBiaGVzcnd5a21weXdpaXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MjM4MDMsImV4cCI6MjA4NDk5OTgwM30.P7Kc0pxkUdyHi8AgDBlRmPqxg0MWr2C_J_EUqORQY_s';
           var hdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' };
           // Default title to storeId instead of "vkho"
-          var storeId = isStore ? p.split('/')[2] : h.split('.')[0];
+          var storeId = isStore ? p.split('/')[2] : (h.endsWith('.vkho.vn') ? h.replace('.vkho.vn','') : h.split('.').slice(0,-1).join('.') || h);
           var titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
           if (titleMeta) titleMeta.setAttribute('content', storeId || '');
           document.title = storeId || '';
