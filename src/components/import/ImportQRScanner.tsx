@@ -37,8 +37,9 @@ export function parseVKHOQR(raw: string): VKHOQRData | null {
         imei: obj.imei || undefined,
         productName: obj.name || obj.productName || undefined,
         sku: obj.sku || undefined,
-        importPrice: obj.import_price != null ? Number(obj.import_price) : (obj.importPrice != null ? Number(obj.importPrice) : undefined),
-        salePrice: obj.sale_price != null ? Number(obj.sale_price) : (obj.salePrice != null ? Number(obj.salePrice) : undefined),
+        // QR price = giá bán kho cũ → map to salePrice, NOT importPrice (tránh lộ giá vốn)
+        importPrice: undefined,
+        salePrice: obj.sale_price != null ? Number(obj.sale_price) : (obj.salePrice != null ? Number(obj.salePrice) : (obj.import_price != null ? Number(obj.import_price) : (obj.importPrice != null ? Number(obj.importPrice) : undefined))),
         note: obj.note || undefined,
       };
     } catch {
@@ -56,7 +57,8 @@ export function parseVKHOQR(raw: string): VKHOQRData | null {
   if (parts.length === 2) {
     const price = Number(parts[1]);
     if (!isNaN(price) && price > 0) {
-      return { imei: parts[0], importPrice: price };
+      // Price from QR = giá bán kho cũ → salePrice
+      return { imei: parts[0], salePrice: price };
     }
     return { imei: parts[0], productName: parts[1] };
   }
@@ -67,14 +69,14 @@ export function parseVKHOQR(raw: string): VKHOQRData | null {
 
   if (parts.length === 3) {
     if (!isNaN(price) && price > 0) {
-      return { imei: parts[0], productName: parts[1], importPrice: price };
+      return { imei: parts[0], productName: parts[1], salePrice: price };
     }
     return { imei: parts[0], productName: parts[1], sku: parts[2] };
   }
 
   if (parts.length >= 4) {
     if (!isNaN(price) && price > 0) {
-      return { imei: parts[0], productName: parts[1], sku: parts[2], importPrice: price };
+      return { imei: parts[0], productName: parts[1], sku: parts[2], salePrice: price };
     }
     return { imei: parts[0], productName: parts[1], sku: parts[2] };
   }
