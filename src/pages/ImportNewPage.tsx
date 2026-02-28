@@ -591,8 +591,8 @@ export default function ImportNewPage() {
 
       const productName = data.productName || matchedProduct?.name || data.imei || 'Sản phẩm QR';
       const sku = data.sku || (matchedProduct && 'sku' in matchedProduct ? matchedProduct.sku : '') || productName;
-      // QR price = giá bán kho cũ → dùng làm salePrice, importPrice để trống (user tự nhập)
-      const salePrice = data.salePrice || 0;
+      // QR price = giá kho cũ → không dùng, để trống cả importPrice và salePrice
+      const salePrice = 0;
 
       const newItem: ImportReceiptItem = {
         id: String(Date.now()),
@@ -629,8 +629,8 @@ export default function ImportNewPage() {
         productName: data.productName || prev.productName,
         sku: data.sku || prev.sku || data.productName || prev.productName,
         imei: data.imei || prev.imei,
-        importPrice: '', // Giá nhập để trống - user tự nhập (không lấy giá kho cũ)
-        salePrice: data.salePrice ? String(data.salePrice) : prev.salePrice,
+        importPrice: '', // Để trống - user tự nhập giá mua vào
+        salePrice: '',   // Để trống - không lấy giá kho cũ (tránh lộ giá)
         note: data.note || prev.note,
       }));
       setProductFormMode('form');
