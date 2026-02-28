@@ -403,20 +403,31 @@ export default function CashBookPage() {
     return openingTotal + income - expense;
   }, [allEntries, openingTotal]);
 
-  // Running balance per entry (computed chronologically, oldest first)
+  // Running balance per entry per payment source (computed chronologically, oldest first)
   const runningBalanceMap = useMemo(() => {
     if (!allEntries?.length) return new Map<string, number>();
     // allEntries is sorted desc, reverse for chronological order
     const chronological = [...allEntries].reverse();
     const map = new Map<string, number>();
-    let balance = openingTotal;
+    // Track balance per payment source
+    const sourceBalances: Record<string, number> = {};
+    // Initialize with opening balances per source
+    allPaymentSources.forEach(src => {
+      const openingBalance = latestOpeningBalances?.[src.id];
+      sourceBalances[src.id] = openingBalance ? Number(openingBalance.amount) : 0;
+    });
     chronological.forEach(entry => {
+      const source = entry.payment_source;
+      if (sourceBalances[source] === undefined) {
+        const openingBalance = latestOpeningBalances?.[source];
+        sourceBalances[source] = openingBalance ? Number(openingBalance.amount) : 0;
+      }
       const amount = Number(entry.amount);
-      balance += entry.type === 'income' ? amount : -amount;
-      map.set(entry.id, balance);
+      sourceBalances[source] += entry.type === 'income' ? amount : -amount;
+      map.set(entry.id, sourceBalances[source]);
     });
     return map;
-  }, [allEntries, openingTotal]);
+  }, [allEntries, allPaymentSources, latestOpeningBalances]);
 
   // Calculate balance by payment source (including custom sources)
   const balanceBySource = useMemo(() => {
