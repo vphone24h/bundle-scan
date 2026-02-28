@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -82,6 +82,15 @@ export default function SubscriptionPage() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentCode, setPaymentCode] = useState('');
   const [selectedAmount, setSelectedAmount] = useState(0);
+
+  // Scroll to feedback section if hash is #feedback
+  useEffect(() => {
+    if (window.location.hash === '#feedback') {
+      setTimeout(() => {
+        document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+  }, []);
 
   const { data: configs } = useQuery({
     queryKey: ['payment-config'],
@@ -175,7 +184,7 @@ export default function SubscriptionPage() {
 
         {/* Feedback - Only for super_admin */}
         {isSuperAdmin && (
-          <Card>
+          <Card id="feedback">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageCircle className="h-5 w-5" />
