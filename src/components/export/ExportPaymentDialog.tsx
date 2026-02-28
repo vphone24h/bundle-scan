@@ -355,60 +355,6 @@ export function ExportPaymentDialog({
             </div>
           )}
 
-          <Separator />
-
-          {/* Payment types */}
-          <div className="space-y-3">
-            {paymentTypes.map(({ type, label, icon: Icon }) => (
-              <div key={type} className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={type}
-                    checked={selectedTypes.includes(type)}
-                    onCheckedChange={() => togglePaymentType(type)}
-                  />
-                  <Label
-                    htmlFor={type}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <Icon className="h-4 w-4" />
-                    {label}
-                  </Label>
-                </div>
-                {selectedTypes.includes(type) && (
-                  <Input
-                    type="number"
-                    placeholder="Nhập số tiền"
-                    value={amounts[type]}
-                    onChange={(e) => handleAmountChange(type, e.target.value)}
-                    className="ml-6"
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Summary */}
-          <div className="pt-4 border-t space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Đã nhập:</span>
-              <span className="font-medium">{formatNumber(totalEntered)}đ</span>
-            </div>
-            {remaining !== 0 && (
-              <div className="flex justify-between text-sm">
-                <span>{remaining > 0 ? 'Còn thiếu:' : 'Thừa:'}</span>
-                <span className={remaining > 0 ? 'text-destructive font-medium' : 'text-green-600 font-medium'}>
-                  {formatNumber(Math.abs(remaining))}đ
-                </span>
-              </div>
-            )}
-            {remaining > 0 && (
-              <Button variant="outline" size="sm" onClick={handleAutoFill} className="w-full">
-                Điền tự động số còn thiếu
-              </Button>
-            )}
-          </div>
-
           {/* Cash book toggle */}
           <div className="flex items-center space-x-2 pt-2 border-t">
             <Checkbox
@@ -426,6 +372,64 @@ export function ExportPaymentDialog({
               Giao dịch này sẽ không ảnh hưởng đến sổ quỹ
             </p>
           )}
+
+          {addToCashBook && (
+            <>
+              <Separator />
+
+              {/* Payment types */}
+              <div className="space-y-3">
+                {paymentTypes.map(({ type, label, icon: Icon }) => (
+                  <div key={type} className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={type}
+                        checked={selectedTypes.includes(type)}
+                        onCheckedChange={() => togglePaymentType(type)}
+                      />
+                      <Label
+                        htmlFor={type}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <Icon className="h-4 w-4" />
+                        {label}
+                      </Label>
+                    </div>
+                    {selectedTypes.includes(type) && (
+                      <Input
+                        type="number"
+                        placeholder="Nhập số tiền"
+                        value={amounts[type]}
+                        onChange={(e) => handleAmountChange(type, e.target.value)}
+                        className="ml-6"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Summary */}
+              <div className="pt-4 border-t space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Đã nhập:</span>
+                  <span className="font-medium">{formatNumber(totalEntered)}đ</span>
+                </div>
+                {remaining !== 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span>{remaining > 0 ? 'Còn thiếu:' : 'Thừa:'}</span>
+                    <span className={remaining > 0 ? 'text-destructive font-medium' : 'text-green-600 font-medium'}>
+                      {formatNumber(Math.abs(remaining))}đ
+                    </span>
+                  </div>
+                )}
+                {remaining > 0 && (
+                  <Button variant="outline" size="sm" onClick={handleAutoFill} className="w-full">
+                    Điền tự động số còn thiếu
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         <DialogFooter>
@@ -434,7 +438,7 @@ export function ExportPaymentDialog({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={remaining > 0 || totalEntered === 0}
+            disabled={addToCashBook && (remaining > 0 || totalEntered === 0)}
           >
             Hoàn tất xuất hàng
           </Button>
