@@ -110,9 +110,8 @@ export function TemplatePreviewDialog({
               {editMode ? '✏️ Đang chỉnh sửa — nhấn vào nội dung để sửa' : 'Xem trước mẫu website'}
             </span>
             <Button
-              variant={editMode ? 'default' : 'outline'}
               size="sm"
-              className="h-7 text-xs gap-1.5"
+              className="h-7 text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={() => setEditMode(!editMode)}
             >
               {editMode ? <><X className="h-3 w-3" /> Xong</> : <><Pencil className="h-3 w-3" /> Chỉnh sửa</>}
