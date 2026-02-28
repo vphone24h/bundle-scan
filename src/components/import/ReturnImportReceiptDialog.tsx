@@ -103,7 +103,7 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
   const handleSubmit = async () => {
     if (!receipt) return;
 
-    if (totalPayment !== totalRefundAmount) {
+    if (recordToCashBook && totalPayment !== totalRefundAmount) {
       toast({
         title: 'Số tiền không khớp',
         description: `Tổng tiền hoàn trả phải bằng ${formatCurrencyWithSpaces(totalRefundAmount)}`,
@@ -115,10 +115,10 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
     try {
       const result = await returnReceipt.mutateAsync({
         receiptId: receipt.id,
-        payments: payments.filter(p => p.amount > 0).map(p => ({
+        payments: recordToCashBook ? payments.filter(p => p.amount > 0).map(p => ({
           source: p.source,
           amount: p.amount,
-        })),
+        })) : [],
         recordToCashBook,
         note: note || null,
       });
@@ -203,67 +203,6 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
               </div>
             </div>
 
-            {/* Payment Lines */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Dòng tiền hoàn trả</Label>
-                <Button variant="outline" size="sm" onClick={handleAddPayment}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Thêm
-                </Button>
-              </div>
-              
-              {payments.map((payment) => (
-                <div key={payment.id} className="flex gap-3 items-start">
-                  <div className="flex-1">
-                    <Label className="text-xs text-muted-foreground">Nguồn tiền</Label>
-                    <select
-                      value={payment.source}
-                      onChange={(e) => handlePaymentChange(payment.id, 'source', e.target.value)}
-                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                    >
-                      {allPaymentSources.map(src => (
-                        <option key={src.value} value={src.value}>{src.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex-1">
-                    <Label className="text-xs text-muted-foreground">Số tiền</Label>
-                    <Input
-                      value={payment.displayAmount}
-                      onChange={(e) => handlePaymentChange(payment.id, 'amount', e.target.value)}
-                      placeholder="0"
-                      className="text-right"
-                    />
-                  </div>
-                  {payments.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="mt-5"
-                      onClick={() => handleRemovePayment(payment.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-
-              {/* Summary */}
-              <div className="pt-3 border-t space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span>Tổng hoàn trả:</span>
-                  <span className="font-bold">{formatCurrencyWithSpaces(totalPayment)}</span>
-                </div>
-                {remaining !== 0 && (
-                  <div className="flex justify-between text-sm text-destructive">
-                    <span>{remaining > 0 ? 'Còn thiếu:' : 'Vượt quá:'}</span>
-                    <span className="font-bold">{formatCurrencyWithSpaces(Math.abs(remaining))}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Cash Book Toggle */}
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
@@ -286,6 +225,69 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
               )}
             </div>
 
+            {/* Payment Lines */}
+            {recordToCashBook && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Dòng tiền hoàn trả</Label>
+                  <Button variant="outline" size="sm" onClick={handleAddPayment}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Thêm
+                  </Button>
+                </div>
+                
+                {payments.map((payment) => (
+                  <div key={payment.id} className="flex gap-3 items-start">
+                    <div className="flex-1">
+                      <Label className="text-xs text-muted-foreground">Nguồn tiền</Label>
+                      <select
+                        value={payment.source}
+                        onChange={(e) => handlePaymentChange(payment.id, 'source', e.target.value)}
+                        className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                      >
+                        {allPaymentSources.map(src => (
+                          <option key={src.value} value={src.value}>{src.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex-1">
+                      <Label className="text-xs text-muted-foreground">Số tiền</Label>
+                      <Input
+                        value={payment.displayAmount}
+                        onChange={(e) => handlePaymentChange(payment.id, 'amount', e.target.value)}
+                        placeholder="0"
+                        className="text-right"
+                      />
+                    </div>
+                    {payments.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="mt-5"
+                        onClick={() => handleRemovePayment(payment.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+
+                {/* Summary */}
+                <div className="pt-3 border-t space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span>Tổng hoàn trả:</span>
+                    <span className="font-bold">{formatCurrencyWithSpaces(totalPayment)}</span>
+                  </div>
+                  {remaining !== 0 && (
+                    <div className="flex justify-between text-sm text-destructive">
+                      <span>{remaining > 0 ? 'Còn thiếu:' : 'Vượt quá:'}</span>
+                      <span className="font-bold">{formatCurrencyWithSpaces(Math.abs(remaining))}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Note */}
             <div className="space-y-2">
               <Label>Ghi chú</Label>
@@ -305,7 +307,7 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={returnReceipt.isPending || remaining !== 0}
+              disabled={returnReceipt.isPending || (recordToCashBook && remaining !== 0)}
               variant="destructive"
             >
               {returnReceipt.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

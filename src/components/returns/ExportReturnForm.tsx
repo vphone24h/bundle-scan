@@ -123,7 +123,7 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
       return;
     }
     
-    if (Math.abs(totalPayment - refundAmount) > 1) {
+    if (recordToCashBook && Math.abs(totalPayment - refundAmount) > 1) {
       toast({
         title: 'Số tiền không khớp',
         description: `Tổng tiền hoàn cho khách phải bằng ${formatCurrencyWithSpaces(refundAmount)}`,
@@ -153,10 +153,10 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
         feeType,
         feePercentage,
         feeAmount,
-        payments: payments.filter(p => p.amount > 0).map(p => ({
+        payments: recordToCashBook ? payments.filter(p => p.amount > 0).map(p => ({
           source: p.source,
           amount: p.amount,
-        })),
+        })) : [],
         isBusinessAccounting,
         recordToCashBook,
         note: note || null,
@@ -306,74 +306,6 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
         </CardContent>
       </Card>
 
-      {/* Payment Lines */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Dòng tiền hoàn cho khách</CardTitle>
-          <Button variant="outline" size="sm" onClick={handleAddPayment}>
-            <Plus className="h-4 w-4 mr-1" />
-            Thêm
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {payments.map((payment) => (
-              <div key={payment.id} className="flex gap-3 items-start">
-                <div className="flex-1">
-                  <Label className="text-xs text-muted-foreground">Nguồn tiền</Label>
-                  <select
-                    value={payment.source}
-                    onChange={(e) => handlePaymentChange(payment.id, 'source', e.target.value)}
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                  >
-                    {allPaymentSources.map(src => (
-                      <option key={src.value} value={src.value}>{src.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <Label className="text-xs text-muted-foreground">Số tiền</Label>
-                  <Input
-                    value={payment.displayAmount}
-                    onChange={(e) => handlePaymentChange(payment.id, 'amount', e.target.value)}
-                    placeholder="0"
-                    className="text-right"
-                  />
-                </div>
-                {payments.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="mt-5"
-                    onClick={() => handleRemovePayment(payment.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                )}
-              </div>
-            ))}
-
-            {/* Summary */}
-            <div className="pt-4 border-t space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Tổng hoàn trả:</span>
-                <span className="font-bold">{formatCurrencyWithSpaces(totalPayment)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Cần hoàn trả:</span>
-                <span className="font-bold">{formatCurrencyWithSpaces(refundAmount)}</span>
-              </div>
-              {Math.abs(remaining) > 1 && (
-                <div className="flex justify-between text-sm text-destructive">
-                  <span>{remaining > 0 ? 'Còn thiếu:' : 'Dư:'}</span>
-                  <span className="font-bold">{formatCurrencyWithSpaces(Math.abs(remaining))}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Cash Book & Business Accounting */}
       <Card>
         <CardContent className="pt-6 space-y-4">
@@ -395,7 +327,7 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
               ⚠️ Giao dịch này sẽ KHÔNG được ghi vào sổ quỹ
             </div>
           )}
-          {feeType !== 'none' && (
+          {feeType !== 'none' && recordToCashBook && (
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="business_accounting"
@@ -412,6 +344,76 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
           )}
         </CardContent>
       </Card>
+
+      {/* Payment Lines */}
+      {recordToCashBook && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Dòng tiền hoàn cho khách</CardTitle>
+            <Button variant="outline" size="sm" onClick={handleAddPayment}>
+              <Plus className="h-4 w-4 mr-1" />
+              Thêm
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {payments.map((payment) => (
+                <div key={payment.id} className="flex gap-3 items-start">
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground">Nguồn tiền</Label>
+                    <select
+                      value={payment.source}
+                      onChange={(e) => handlePaymentChange(payment.id, 'source', e.target.value)}
+                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                    >
+                      {allPaymentSources.map(src => (
+                        <option key={src.value} value={src.value}>{src.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground">Số tiền</Label>
+                    <Input
+                      value={payment.displayAmount}
+                      onChange={(e) => handlePaymentChange(payment.id, 'amount', e.target.value)}
+                      placeholder="0"
+                      className="text-right"
+                    />
+                  </div>
+                  {payments.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="mt-5"
+                      onClick={() => handleRemovePayment(payment.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+
+              {/* Summary */}
+              <div className="pt-4 border-t space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Tổng hoàn trả:</span>
+                  <span className="font-bold">{formatCurrencyWithSpaces(totalPayment)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Cần hoàn trả:</span>
+                  <span className="font-bold">{formatCurrencyWithSpaces(refundAmount)}</span>
+                </div>
+                {Math.abs(remaining) > 1 && (
+                  <div className="flex justify-between text-sm text-destructive">
+                    <span>{remaining > 0 ? 'Còn thiếu:' : 'Dư:'}</span>
+                    <span className="font-bold">{formatCurrencyWithSpaces(Math.abs(remaining))}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Note */}
       <Card>
@@ -433,7 +435,7 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={createExportReturn.isPending || Math.abs(remaining) > 1}
+          disabled={createExportReturn.isPending || (recordToCashBook && Math.abs(remaining) > 1)}
         >
           {createExportReturn.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Xác nhận trả hàng
