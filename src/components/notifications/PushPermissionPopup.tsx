@@ -16,6 +16,7 @@ import {
   useGenerateVapidKeys,
 } from '@/hooks/usePushNotifications';
 import { useAuth } from '@/hooks/useAuth';
+import { usePopupPriority } from '@/hooks/usePopupPriority';
 
 const PUSH_ENABLED_KEY = 'push_notification_enabled';
 
@@ -27,6 +28,8 @@ export function PushPermissionPopup() {
   const generateKeys = useGenerateVapidKeys();
   const [open, setOpen] = useState(false);
   const [supported, setSupported] = useState(true);
+  const [ready, setReady] = useState(false);
+  const { activeLayer, claim, release } = usePopupPriority();
 
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -42,7 +45,7 @@ export function PushPermissionPopup() {
     if (!user || !supported || statusLoading || vapidLoading) return;
     if (isSubscribed || alreadyEnabled) return;
 
-    const timer = setTimeout(() => setOpen(true), 2000);
+    const timer = setTimeout(() => setReady(true), 2000);
     return () => clearTimeout(timer);
   }, [user, supported, isSubscribed, statusLoading, vapidLoading, alreadyEnabled]);
 
@@ -52,6 +55,14 @@ export function PushPermissionPopup() {
       localStorage.setItem(PUSH_ENABLED_KEY, 'true');
     }
   }, [isSubscribed]);
+
+  // Try to claim when ready and no higher-priority popup is active
+  useEffect(() => {
+    if (ready && !open && (activeLayer === 'none' || activeLayer === 'push')) {
+      const granted = claim('push');
+      if (granted) setOpen(true);
+    }
+  }, [ready, open, activeLayer, claim]);
 
   if (!supported || !user || isSubscribed || alreadyEnabled) return null;
 
@@ -70,13 +81,14 @@ export function PushPermissionPopup() {
     } catch {
       // Ignore errors
     }
-    // Always mark as handled so we never ask again
     localStorage.setItem(PUSH_ENABLED_KEY, 'true');
     setOpen(false);
+    release('push');
   };
 
   const handleLater = () => {
     setOpen(false);
+    release('push');
   };
 
   return (

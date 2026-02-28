@@ -8,6 +8,7 @@ import { AdGateModal } from '@/components/tenant/AdGateModal';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { StartupNotificationPopup } from '@/components/notifications/StartupNotificationPopup';
 import { PushPermissionPopup } from '@/components/notifications/PushPermissionPopup';
+import { PopupPriorityProvider, usePopupPriority } from '@/hooks/usePopupPriority';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -21,6 +22,7 @@ function useAdGate() {
   const { data: activeAds } = useActiveAdvertisements();
   const [showAdGate, setShowAdGate] = useState(false);
   const location = useLocation();
+  const { activeLayer, claim, release } = usePopupPriority();
 
   const isExpired = tenant
     ? (() => {
@@ -35,19 +37,15 @@ function useAdGate() {
     adGateSettings?.is_enabled === true &&
     (activeAds?.length ?? 0) > 0;
 
-  // Không đếm click khi đang ở trang Gói dịch vụ
   const isSubscriptionPage = location.pathname === '/subscription';
 
-  // Count every click in the app — any interaction = 1 action
   useEffect(() => {
     if (!adGateActive || !adGateSettings || isSubscriptionPage) return;
 
     const clicksPerAd = adGateSettings.clicks_per_ad ?? 7;
 
     const handleClick = (e: MouseEvent) => {
-      // Don't count clicks inside the ad modal itself
       if ((e.target as Element)?.closest('[data-ad-modal]')) return;
-      // Don't count clicks while onboarding tour is active
       if (document.querySelector('[data-tour-active="true"]')) return;
 
       const current = parseInt(sessionStorage.getItem(AD_CLICK_COUNT_KEY) || '0', 10);
@@ -55,9 +53,10 @@ function useAdGate() {
 
       if (next >= clicksPerAd) {
         sessionStorage.setItem(AD_CLICK_COUNT_KEY, '0');
-        // Only show ad gate if tour is not active and no notification popup is open
-        if (!document.querySelector('[data-tour-active="true"]') && !document.querySelector('[data-notification-popup="true"]')) {
-          setShowAdGate(true);
+        // Only show if no higher-priority popup is active
+        if (activeLayer === 'none' || activeLayer === 'adgate') {
+          const granted = claim('adgate');
+          if (granted) setShowAdGate(true);
         }
       } else {
         sessionStorage.setItem(AD_CLICK_COUNT_KEY, String(next));
@@ -66,14 +65,17 @@ function useAdGate() {
 
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
-  }, [adGateActive, adGateSettings, isSubscriptionPage]);
+  }, [adGateActive, adGateSettings, isSubscriptionPage, activeLayer, claim]);
 
-  const closeAdGate = useCallback(() => setShowAdGate(false), []);
+  const closeAdGate = useCallback(() => {
+    setShowAdGate(false);
+    release('adgate');
+  }, [release]);
 
   return { showAdGate, closeAdGate, adGateSettings, adGateActive };
 }
 
-export const MainLayout = memo(function MainLayout({ children }: MainLayoutProps) {
+function MainLayoutInner({ children }: MainLayoutProps) {
   const { showAdGate, closeAdGate, adGateSettings } = useAdGate();
   const { data: tenant } = useCurrentTenant();
   const { data: platformUser } = usePlatformUser();
@@ -93,13 +95,10 @@ export const MainLayout = memo(function MainLayout({ children }: MainLayoutProps
         </div>
       </main>
 
-      {/* Startup Notification Popup */}
+      {/* Popup priority: tour → notification → push → adgate */}
       <StartupNotificationPopup />
-
-      {/* Push Permission Popup - ask every session until enabled */}
       <PushPermissionPopup />
 
-      {/* Ad Gate Modal */}
       {showAdGate && adGateSettings && !needsBusinessType && (
         <div data-ad-modal>
           <AdGateModal
@@ -110,5 +109,13 @@ export const MainLayout = memo(function MainLayout({ children }: MainLayoutProps
         </div>
       )}
     </div>
+  );
+}
+
+export const MainLayout = memo(function MainLayout({ children }: MainLayoutProps) {
+  return (
+    <PopupPriorityProvider>
+      <MainLayoutInner>{children}</MainLayoutInner>
+    </PopupPriorityProvider>
   );
 });
