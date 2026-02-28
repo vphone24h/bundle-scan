@@ -35,6 +35,7 @@ interface EmailOpen {
 export function EmailHistoryTable() {
   const [selectedEmail, setSelectedEmail] = useState<EmailRecord | null>(null);
   const [emailFilter, setEmailFilter] = useState<'all' | 'success' | 'failed'>('all');
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: emails, isLoading } = useQuery({
@@ -78,6 +79,7 @@ export function EmailHistoryTable() {
 
   const resendMutation = useMutation({
     mutationFn: async (record: EmailRecord) => {
+      setResendingId(record.id);
       // Chỉ gửi lại email thất bại, KHÔNG gửi lại toàn bộ để tránh spam
       const failedList = record.failed_emails && record.failed_emails.length > 0
         ? record.failed_emails
@@ -103,6 +105,9 @@ export function EmailHistoryTable() {
     },
     onError: (err: any) => {
       toast({ title: 'Lỗi gửi lại', description: err.message, variant: 'destructive' });
+    },
+    onSettled: () => {
+      setResendingId(null);
     },
   });
 
@@ -202,10 +207,10 @@ export function EmailHistoryTable() {
                           variant="ghost"
                           size="icon"
                           onClick={() => resendMutation.mutate(email)}
-                          disabled={resendMutation.isPending}
+                          disabled={resendingId === email.id}
                           title="Gửi lại email thất bại"
                         >
-                          <RefreshCw className={`h-4 w-4 ${resendMutation.isPending ? 'animate-spin' : ''}`} />
+                          <RefreshCw className={`h-4 w-4 ${resendingId === email.id ? 'animate-spin' : ''}`} />
                         </Button>
                       )}
                     </div>
@@ -273,9 +278,9 @@ export function EmailHistoryTable() {
                     e.stopPropagation();
                     resendMutation.mutate(email);
                   }}
-                  disabled={resendMutation.isPending}
+                  disabled={resendingId === email.id}
                 >
-                  <RefreshCw className={`h-3 w-3 mr-1 ${resendMutation.isPending ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-3 w-3 mr-1 ${resendingId === email.id ? 'animate-spin' : ''}`} />
                   Gửi lại
                 </Button>
               )}
