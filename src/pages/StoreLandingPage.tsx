@@ -7,7 +7,7 @@ import { usePublicLandingArticles, LandingArticle } from '@/hooks/useLandingArti
 import { useQueryClient } from '@tanstack/react-query';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
-import PhoneStoreTemplate from '@/components/website-templates/PhoneStoreTemplate';
+import UniversalStoreTemplate from '@/components/website-templates/UniversalStoreTemplate';
 import { Loader2, Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -98,7 +98,6 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const tenant = landingData?.tenant;
   const tenantId = tenant?.id || null;
   const storeName = settings?.store_name || tenant?.name || storeId || '';
-  const primaryColor = settings?.primary_color || '#0f766e';
   const template = settings?.website_template || 'phone_store';
 
   const { data: productsData } = usePublicLandingProducts(tenantId);
@@ -138,9 +137,9 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
 
   const branches: BranchInfo[] = landingData?.branches || [];
 
-  // All templates use the PhoneStoreTemplate for now (others coming soon)
+  // All templates now use UniversalStoreTemplate with industry-specific config
   return (
-    <PhoneStoreTemplate
+    <UniversalStoreTemplate
       settings={settings}
       tenant={tenant}
       tenantId={tenantId}
@@ -151,6 +150,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       searchParams={searchParams}
       setSearchParams={setSearchParams}
       queryClient={queryClient}
+      templateId={template}
     />
   );
 }
