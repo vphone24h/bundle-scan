@@ -33,6 +33,7 @@ export interface TenantLandingSettings {
   website_template: string;
   ai_description_enabled: boolean;
   auto_image_enabled: boolean;
+  custom_trust_badges: { icon: string; title: string; desc: string }[] | null;
   created_at: string;
   updated_at: string;
 }

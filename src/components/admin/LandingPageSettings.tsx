@@ -13,9 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon, Award, Truck, CreditCard, Clock, Star } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
+import { getIndustryConfig, IndustryTrustBadge } from '@/lib/industryConfig';
 
 import {
   Dialog,
@@ -78,6 +79,90 @@ function CustomDomainCTA() {
   );
 }
 
+const BADGE_ICON_OPTIONS = [
+  { value: 'Shield', label: 'Bảo vệ', icon: <Shield className="h-4 w-4" /> },
+  { value: 'Award', label: 'Chứng nhận', icon: <Award className="h-4 w-4" /> },
+  { value: 'Truck', label: 'Giao hàng', icon: <Truck className="h-4 w-4" /> },
+  { value: 'CreditCard', label: 'Thanh toán', icon: <CreditCard className="h-4 w-4" /> },
+  { value: 'Clock', label: 'Thời gian', icon: <Clock className="h-4 w-4" /> },
+  { value: 'Star', label: 'Sao', icon: <Star className="h-4 w-4" /> },
+];
+
+function TrustBadgeEditor({
+  badges,
+  defaultBadges,
+  onChange,
+}: {
+  badges: IndustryTrustBadge[] | null;
+  defaultBadges: IndustryTrustBadge[];
+  onChange: (badges: IndustryTrustBadge[] | null) => void;
+}) {
+  const currentBadges = badges || defaultBadges;
+  const isCustom = badges !== null;
+
+  const handleBadgeChange = (index: number, field: keyof IndustryTrustBadge, value: string) => {
+    const updated = [...currentBadges];
+    updated[index] = { ...updated[index], [field]: value };
+    onChange(updated);
+  };
+
+  const handleReset = () => onChange(null);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="flex items-center gap-2">
+          <Shield className="h-4 w-4" />
+          Biểu tượng cam kết (Trust Badges)
+        </Label>
+        {isCustom && (
+          <Button type="button" variant="ghost" size="sm" className="text-xs h-7" onClick={handleReset}>
+            Khôi phục mặc định
+          </Button>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        4 biểu tượng cam kết hiển thị bên dưới banner trên website
+      </p>
+      <div className="grid gap-3">
+        {currentBadges.slice(0, 4).map((badge, i) => (
+          <div key={i} className="flex items-start gap-2 rounded-lg border p-3">
+            <Select
+              value={badge.icon}
+              onValueChange={(val) => handleBadgeChange(i, 'icon', val)}
+            >
+              <SelectTrigger className="w-[120px] h-9 shrink-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BADGE_ICON_OPTIONS.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    <span className="flex items-center gap-2">{opt.icon} {opt.label}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex-1 space-y-1.5">
+              <Input
+                value={badge.title}
+                onChange={(e) => handleBadgeChange(i, 'title', e.target.value)}
+                placeholder="Tiêu đề"
+                className="h-9 text-sm"
+              />
+              <Input
+                value={badge.desc}
+                onChange={(e) => handleBadgeChange(i, 'desc', e.target.value)}
+                placeholder="Mô tả ngắn"
+                className="h-9 text-sm"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function LandingPageSettings() {
   const { data: tenant } = useCurrentTenant();
   const { data: settings, isLoading } = useTenantLandingSettings();
@@ -121,6 +206,7 @@ export function LandingPageSettings() {
     website_template: 'phone_store',
     ai_description_enabled: true,
     auto_image_enabled: true,
+    custom_trust_badges: null,
   });
 
   useEffect(() => {
@@ -153,6 +239,7 @@ export function LandingPageSettings() {
         website_template: settings.website_template || 'phone_store',
         ai_description_enabled: settings.ai_description_enabled ?? true,
         auto_image_enabled: settings.auto_image_enabled ?? true,
+        custom_trust_badges: (settings as any).custom_trust_badges || null,
       });
     } else if (tenant) {
       setFormData(prev => ({
@@ -810,7 +897,7 @@ export function LandingPageSettings() {
       </Card>
 
 
-      {/* Tuỳ chỉnh màu sắc */}
+      {/* Tuỳ chỉnh màu sắc & Trust Badges */}
       <Card data-tour="landing-color-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -818,7 +905,7 @@ export function LandingPageSettings() {
             Tuỳ chỉnh giao diện
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <div className="space-y-2">
             <Label>Màu chủ đạo</Label>
             <div className="flex items-center gap-3">
@@ -836,6 +923,15 @@ export function LandingPageSettings() {
               />
             </div>
           </div>
+
+          <Separator />
+
+          {/* Trust Badges */}
+          <TrustBadgeEditor
+            badges={(formData as any).custom_trust_badges}
+            defaultBadges={getIndustryConfig((formData as any).website_template || 'phone_store').trustBadges}
+            onChange={(badges) => handleChange('custom_trust_badges' as any, badges)}
+          />
         </CardContent>
       </Card>
 
