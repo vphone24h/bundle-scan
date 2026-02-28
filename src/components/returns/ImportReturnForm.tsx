@@ -34,6 +34,7 @@ interface ImportReturnFormProps {
 
 export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnFormProps) {
   const [note, setNote] = useState('');
+  const [recordToCashBook, setRecordToCashBook] = useState(true);
   const [payments, setPayments] = useState<PaymentLine[]>([
     { id: '1', source: 'cash', amount: product?.import_price || 0, displayAmount: formatNumberWithSpaces(product?.import_price || 0) }
   ]);
@@ -114,6 +115,7 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
           source: p.source,
           amount: p.amount,
         })),
+        recordToCashBook,
         note: note || null,
       });
 
@@ -240,6 +242,30 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
               )}
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Cash Book Toggle */}
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="record_to_cashbook_import"
+              checked={recordToCashBook}
+              onCheckedChange={(checked) => setRecordToCashBook(checked === true)}
+            />
+            <Label htmlFor="record_to_cashbook_import" className="cursor-pointer">
+              <span className="font-medium">Ghi dòng tiền vào sổ quỹ</span>
+              <p className="text-sm text-muted-foreground">
+                Bỏ tích nếu không muốn ảnh hưởng sổ quỹ (ví dụ: bảo hành)
+              </p>
+            </Label>
+          </div>
+          {!recordToCashBook && (
+            <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 text-sm text-warning">
+              ⚠️ Giao dịch này sẽ KHÔNG được ghi vào sổ quỹ
+            </div>
+          )}
         </CardContent>
       </Card>
 

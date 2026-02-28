@@ -40,6 +40,7 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
   const [feeDisplayAmount, setFeeDisplayAmount] = useState<string>('');
   const [note, setNote] = useState('');
   const [isBusinessAccounting, setIsBusinessAccounting] = useState(true);
+  const [recordToCashBook, setRecordToCashBook] = useState(true);
   const [payments, setPayments] = useState<PaymentLine[]>([]);
 
   const createExportReturn = useCreateExportReturn();
@@ -157,6 +158,7 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
           amount: p.amount,
         })),
         isBusinessAccounting,
+        recordToCashBook,
         note: note || null,
       });
 
@@ -372,10 +374,28 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
         </CardContent>
       </Card>
 
-      {/* Business Accounting */}
-      {feeType !== 'none' && (
-        <Card>
-          <CardContent className="pt-6">
+      {/* Cash Book & Business Accounting */}
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="record_to_cashbook"
+              checked={recordToCashBook}
+              onCheckedChange={(checked) => setRecordToCashBook(checked === true)}
+            />
+            <Label htmlFor="record_to_cashbook" className="cursor-pointer">
+              <span className="font-medium">Ghi dòng tiền vào sổ quỹ</span>
+              <p className="text-sm text-muted-foreground">
+                Bỏ tích nếu không muốn ảnh hưởng sổ quỹ (ví dụ: bảo hành)
+              </p>
+            </Label>
+          </div>
+          {!recordToCashBook && (
+            <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 text-sm text-warning">
+              ⚠️ Giao dịch này sẽ KHÔNG được ghi vào sổ quỹ
+            </div>
+          )}
+          {feeType !== 'none' && (
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="business_accounting"
@@ -389,9 +409,9 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
                 </p>
               </Label>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
       {/* Note */}
       <Card>
