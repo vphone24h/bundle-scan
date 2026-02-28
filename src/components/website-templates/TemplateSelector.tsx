@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { WEBSITE_TEMPLATES, TEMPLATE_CATEGORIES, WebsiteTemplate } from '@/lib/websiteTemplates';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { TemplatePreviewDialog } from './TemplatePreviewDialog';
 
 interface TemplateSelectorProps {
   selectedTemplate: string;
@@ -22,6 +23,7 @@ const tierLabels: Record<string, string> = {
 
 export function TemplateSelector({ selectedTemplate, onSelect }: TemplateSelectorProps) {
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<WebsiteTemplate | null>(null);
 
   const filtered = filterCategory
     ? WEBSITE_TEMPLATES.filter(t => t.category === filterCategory)
@@ -65,10 +67,19 @@ export function TemplateSelector({ selectedTemplate, onSelect }: TemplateSelecto
             key={template.id}
             template={template}
             isSelected={selectedTemplate === template.id}
-            onSelect={onSelect}
+            onPreview={() => setPreviewTemplate(template)}
           />
         ))}
       </div>
+
+      {/* Preview Dialog */}
+      <TemplatePreviewDialog
+        template={previewTemplate}
+        open={!!previewTemplate}
+        onOpenChange={(open) => !open && setPreviewTemplate(null)}
+        onSelect={onSelect}
+        isSelected={previewTemplate ? selectedTemplate === previewTemplate.id : false}
+      />
     </div>
   );
 }
@@ -76,18 +87,18 @@ export function TemplateSelector({ selectedTemplate, onSelect }: TemplateSelecto
 function TemplateCard({
   template,
   isSelected,
-  onSelect,
+  onPreview,
 }: {
   template: WebsiteTemplate;
   isSelected: boolean;
-  onSelect: (id: string) => void;
+  onPreview: () => void;
 }) {
   const isDisabled = !template.available;
 
   return (
     <button
       type="button"
-      onClick={() => !isDisabled && onSelect(template.id)}
+      onClick={() => !isDisabled && onPreview()}
       disabled={isDisabled}
       className={cn(
         'relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all',
