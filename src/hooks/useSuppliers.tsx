@@ -113,7 +113,12 @@ export function useDeleteSupplier() {
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('foreign key constraint')) {
+          throw new Error('Không thể xoá nhà cung cấp này vì đang có phiếu nhập, phiếu trả hàng hoặc sản phẩm liên kết. Hãy xoá các dữ liệu liên quan trước.');
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
