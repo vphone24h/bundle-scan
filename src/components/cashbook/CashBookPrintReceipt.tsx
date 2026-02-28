@@ -75,8 +75,8 @@ export function CashBookPrintReceipt({
 <html><head><meta charset="utf-8"/><title>${typeLabel} - ${receiptCode}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-@page{size:${width} auto;margin:0!important}
-html,body{font-family:Arial,sans-serif;width:${width};margin:0!important;padding:3mm;font-size:12px;color:#000}
+@page{size:${width};margin:0!important}
+html,body{font-family:Arial,sans-serif;width:${width};max-width:${width};margin:0!important;padding:3mm;font-size:12px;color:#000;overflow:hidden}
 .center{text-align:center}
 .bold{font-weight:bold}
 .sep{border-top:1px dashed #333;margin:6px 0}
