@@ -9,6 +9,7 @@ import { getIndustryConfig, IndustryTrustBadge } from '@/lib/industryConfig';
 import {
   Check, Shield, Award, Truck, CreditCard, Clock, Star,
   Phone, Store, MessageCircle, Pencil, X, RotateCcw,
+  Menu, Search, ChevronDown,
 } from 'lucide-react';
 
 interface EditableSettings {
@@ -122,84 +123,63 @@ export function TemplatePreviewDialog({
         {/* === Actual store template preview === */}
         <div className="flex-1 overflow-y-auto bg-white text-[#1d1d1f]" style={{ fontFamily: config.fontFamily }}>
 
-          {/* HEADER */}
+          {/* HEADER - matching new layout */}
           <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-black/5">
             <div className="px-4">
               <div className="flex items-center justify-between h-11">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: accent }}>
-                    <Store className="h-3.5 w-3.5 text-white" />
-                  </div>
+                <div className="flex items-center gap-2.5">
+                  <Menu className="h-4 w-4 text-[#86868b]" />
                   <span className="font-semibold text-xs tracking-tight">{template.name}</span>
                 </div>
-                <nav className="flex items-center gap-0.5">
-                  {[config.navLabels.home, config.navLabels.products, config.navLabels.warranty].map((label, i) => (
-                    <span
-                      key={label}
-                      className="px-2.5 py-1 text-[10px] font-medium rounded-full"
-                      style={i === 0 ? { backgroundColor: '#1d1d1f', color: 'white' } : { color: '#86868b' }}
-                    >
-                      {label}
-                    </span>
-                  ))}
-                </nav>
+                <Search className="h-4 w-4 text-[#86868b]" />
               </div>
             </div>
           </header>
 
-          {/* HERO BANNER */}
+          {/* HERO BANNER - left aligned */}
           <section className="relative overflow-hidden text-white" style={{ background: config.heroGradient }}>
-            <div className="px-6 py-12 text-center">
-              <p className="text-[10px] font-medium text-white/60 tracking-widest uppercase mb-2">
-                {template.name}
-              </p>
-
+            <div className="px-6 py-10">
               {editMode ? (
                 <input
-                  className="bg-white/10 border border-white/30 rounded-lg text-center text-xl font-bold tracking-tight mb-2 w-full px-2 py-1 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/40"
+                  className="bg-white/10 border border-white/30 rounded-lg text-xl font-bold tracking-tight mb-2 w-full px-2 py-1 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/40"
                   value={heroTitle}
                   onChange={(e) => updateSetting('hero_title', e.target.value)}
                   placeholder="Tiêu đề hero"
                 />
               ) : (
-                <h1 className="text-2xl font-bold tracking-tight mb-2">{heroTitle}</h1>
+                <h1 className="text-xl font-bold tracking-tight mb-2">{heroTitle}</h1>
               )}
 
               {editMode ? (
                 <input
-                  className="bg-white/10 border border-white/30 rounded-lg text-center text-xs mb-5 w-full px-2 py-1 text-white/70 placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-white/40"
+                  className="bg-white/10 border border-white/30 rounded-lg text-xs mb-4 w-full px-2 py-1 text-white/70 placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-white/40"
                   value={heroSubtitle}
                   onChange={(e) => updateSetting('hero_subtitle', e.target.value)}
                   placeholder="Mô tả phụ"
                 />
               ) : (
-                <p className="text-xs text-white/70 mb-5 max-w-xs mx-auto">{heroSubtitle}</p>
+                <p className="text-xs text-white/70 mb-4 max-w-xs">{heroSubtitle}</p>
               )}
 
-              <div className="flex items-center justify-center gap-2">
-                {editMode ? (
-                  <input
-                    className="bg-white/10 border border-white/30 rounded-full text-center text-xs font-medium px-6 py-2 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/40"
-                    value={heroCta}
-                    onChange={(e) => updateSetting('hero_cta', e.target.value)}
-                    placeholder="Nút CTA"
-                  />
-                ) : (
-                  <button
-                    className="text-white rounded-full px-6 py-2 text-xs font-medium"
-                    style={{ backgroundColor: accent }}
-                  >
-                    {heroCta}
-                  </button>
-                )}
-                <button className="border border-white/30 text-white rounded-full px-6 py-2 text-xs font-medium bg-transparent">
-                  Xem chi tiết
+              {editMode ? (
+                <input
+                  className="bg-white/10 border border-white/30 rounded-full text-xs font-medium px-6 py-2 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-white/40"
+                  value={heroCta}
+                  onChange={(e) => updateSetting('hero_cta', e.target.value)}
+                  placeholder="Nút CTA"
+                />
+              ) : (
+                <button
+                  className="text-white rounded-full px-6 py-2 text-xs font-medium"
+                  style={{ backgroundColor: accent }}
+                >
+                  {heroCta}
                 </button>
-              </div>
+              )}
             </div>
           </section>
 
-          {/* TRUST BADGES */}
+          {/* TRUST BADGES - horizontal layout */}
           <section className="border-b border-black/5">
             <div className="px-4 py-4">
               {editMode && (
@@ -213,9 +193,9 @@ export function TemplatePreviewDialog({
                   </button>
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 {trustBadges.slice(0, 4).map((badge, i) => (
-                  <div key={i} className="flex flex-col items-center text-center gap-1.5 p-2">
+                  <div key={i} className="flex items-center gap-2.5 p-2.5 rounded-xl">
                     {editMode ? (
                       <EditableBadge
                         badge={badge}
@@ -224,12 +204,12 @@ export function TemplatePreviewDialog({
                       />
                     ) : (
                       <>
-                        <div style={{ color: accent }}>
+                        <div className="shrink-0" style={{ color: accent }}>
                           {ICON_MAP[badge.icon] || <Shield className="h-5 w-5" />}
                         </div>
-                        <div>
-                          <p className="text-[10px] font-semibold">{badge.title}</p>
-                          <p className="text-[9px] text-[#86868b]">{badge.desc}</p>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-semibold leading-tight">{badge.title}</p>
+                          <p className="text-[9px] text-[#86868b] leading-tight">{badge.desc}</p>
                         </div>
                       </>
                     )}
@@ -240,24 +220,21 @@ export function TemplatePreviewDialog({
           </section>
 
           {/* FEATURED PRODUCTS */}
-          <section className="py-6 bg-white">
+          <section className="py-5 bg-white">
             <div className="px-4">
-              <div className="text-center mb-5">
-                <h2 className="text-base font-bold tracking-tight">{config.productSectionTitle}</h2>
-                <p className="text-[10px] text-[#86868b] mt-0.5">{config.productSectionSubtitle}</p>
+              <div className="flex items-end justify-between mb-4">
+                <div>
+                  <h2 className="text-sm font-bold tracking-tight">{config.productSectionTitle}</h2>
+                  <p className="text-[10px] text-[#86868b] mt-0.5">{config.productSectionSubtitle}</p>
+                </div>
+                <span className="text-[10px] font-medium flex items-center gap-0.5" style={{ color: accent }}>
+                  Xem tất cả <ChevronDown className="h-2.5 w-2.5 -rotate-90" />
+                </span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {sampleProducts.slice(0, 4).map((product, i) => (
                   <PreviewProductCard key={i} product={product} accentColor={accent} />
                 ))}
-              </div>
-              <div className="text-center mt-5">
-                <button
-                  className="rounded-full px-6 py-2 text-[10px] font-medium border"
-                  style={{ borderColor: accent, color: accent }}
-                >
-                  Xem tất cả sản phẩm →
-                </button>
               </div>
             </div>
           </section>
