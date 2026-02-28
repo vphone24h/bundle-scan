@@ -5033,6 +5033,7 @@ export type Database = {
           voucher_enabled: boolean
           voucher_template_id: string | null
           warranty_hotline: string | null
+          website_template: string | null
           zalo_url: string | null
         }
         Insert: {
@@ -5065,6 +5066,7 @@ export type Database = {
           voucher_enabled?: boolean
           voucher_template_id?: string | null
           warranty_hotline?: string | null
+          website_template?: string | null
           zalo_url?: string | null
         }
         Update: {
@@ -5097,6 +5099,7 @@ export type Database = {
           voucher_enabled?: boolean
           voucher_template_id?: string | null
           warranty_hotline?: string | null
+          website_template?: string | null
           zalo_url?: string | null
         }
         Relationships: [

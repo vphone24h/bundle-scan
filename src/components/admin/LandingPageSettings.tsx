@@ -13,8 +13,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
 
 import {
   Dialog,
@@ -117,6 +118,7 @@ export function LandingPageSettings() {
     tiktok_url: '',
     voucher_enabled: false,
     voucher_template_id: null,
+    website_template: 'phone_store',
   });
 
   useEffect(() => {
@@ -146,6 +148,7 @@ export function LandingPageSettings() {
         tiktok_url: settings.tiktok_url || '',
         voucher_enabled: settings.voucher_enabled ?? false,
         voucher_template_id: settings.voucher_template_id || null,
+        website_template: settings.website_template || 'phone_store',
       });
     } else if (tenant) {
       setFormData(prev => ({
@@ -404,6 +407,25 @@ export function LandingPageSettings() {
               onCheckedChange={(checked) => handleChange('is_enabled', checked)}
             />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Chọn mẫu website */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Layout className="h-4 w-4" />
+            Chọn mẫu Website
+          </CardTitle>
+          <CardDescription>
+            Chọn giao diện phù hợp với ngành nghề kinh doanh của bạn
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TemplateSelector
+            selectedTemplate={(formData as any).website_template || 'phone_store'}
+            onSelect={(id) => handleChange('website_template' as any, id)}
+          />
         </CardContent>
       </Card>
 
