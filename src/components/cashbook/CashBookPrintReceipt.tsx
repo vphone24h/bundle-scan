@@ -30,7 +30,7 @@ export function CashBookPrintReceipt({
     if (!printWindow) return;
 
     const contentHeightPx = printContent.scrollHeight + 40;
-    const width = '72mm';
+    const width = '80mm';
     const isIncome = entry.type === 'income';
     const typeLabel = isIncome ? 'PHIẾU THU' : 'PHIẾU CHI';
     const dateStr = format(toVietnamDate(entry.transaction_date), 'dd/MM/yyyy HH:mm', { locale: vi });
