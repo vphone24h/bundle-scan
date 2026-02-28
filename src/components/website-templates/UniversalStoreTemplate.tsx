@@ -299,7 +299,7 @@ export default function UniversalStoreTemplate({
               <section className="bg-white border-b border-black/5">
                 <div className="max-w-[1200px] mx-auto px-4 py-6">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {config.trustBadges.map((badge, i) => (
+                    {((settings as any)?.custom_trust_badges || config.trustBadges).map((badge: any, i: number) => (
                       <div key={i} className="flex flex-col items-center text-center gap-2 p-3">
                         <div style={{ color: accentColor }}>{ICON_MAP[badge.icon] || <Shield className="h-5 w-5" />}</div>
                         <div>
