@@ -18,9 +18,11 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   existingProducts: LandingProduct[];
+  aiDescriptionEnabled?: boolean;
+  autoImageEnabled?: boolean;
 }
 
-export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts }: Props) {
+export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts, aiDescriptionEnabled = true, autoImageEnabled = true }: Props) {
   const { data: inventory, isLoading } = useInventory();
   const { data: categories } = useCategories();
   const { data: tenant } = useCurrentTenant();
@@ -91,15 +93,15 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
 
     for (let idx = 0; idx < selectedItems.length; idx++) {
       const item = selectedItems[idx];
-      setAiProgress(`Đang xử lý ${idx + 1}/${selectedItems.length}: ${item.productName}`);
+      setAiProgress(`Đang xử lý ${idx + 1}/${selectedItems.length}: ${item.productName}${aiDescriptionEnabled ? ' (AI đang viết mô tả...)' : ''}`);
 
       try {
         // Get sale_price from the first product detail
         const firstProduct = item.products[0];
         let salePrice = firstProduct ? (await getSalePrice(firstProduct.id)) : item.avgImportPrice;
 
-        // Generate AI description
-        const aiContent = await generateAIDescription(item);
+        // Generate AI description only if enabled
+        const aiContent = aiDescriptionEnabled ? await generateAIDescription(item) : null;
 
         await createProduct.mutateAsync({
           name: item.productName,

@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Bot, ImageIcon } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { Separator } from '@/components/ui/separator';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
@@ -40,6 +40,8 @@ export function LandingProductsTab() {
 
   const [catName, setCatName] = useState('');
   const [warehouseDialog, setWarehouseDialog] = useState(false);
+  const [aiDescriptionEnabled, setAiDescriptionEnabled] = useState(true);
+  const [autoImageEnabled, setAutoImageEnabled] = useState(true);
   const [productDialog, setProductDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LandingProduct | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -240,6 +242,39 @@ export function LandingProductsTab() {
             {(!categories || categories.length === 0) && (
               <p className="text-sm text-muted-foreground">Chưa có danh mục nào</p>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Cài đặt AI & Ảnh tự động */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Bot className="h-4 w-4" />
+            Cài đặt tự động khi nhập từ kho
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <Bot className="h-3.5 w-3.5" />
+                AI tự viết mô tả sản phẩm
+              </Label>
+              <p className="text-xs text-muted-foreground">Tự động tạo mô tả, SEO bằng AI (tốn credit Lovable AI)</p>
+            </div>
+            <Switch checked={aiDescriptionEnabled} onCheckedChange={setAiDescriptionEnabled} />
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <ImageIcon className="h-3.5 w-3.5" />
+                Tự động lấy ảnh sản phẩm
+              </Label>
+              <p className="text-xs text-muted-foreground">Lấy ảnh từ kho (nếu có). Tính năng tìm ảnh internet chưa hỗ trợ.</p>
+            </div>
+            <Switch checked={autoImageEnabled} onCheckedChange={setAutoImageEnabled} />
           </div>
         </CardContent>
       </Card>
@@ -492,6 +527,8 @@ export function LandingProductsTab() {
         open={warehouseDialog}
         onOpenChange={setWarehouseDialog}
         existingProducts={products || []}
+        aiDescriptionEnabled={aiDescriptionEnabled}
+        autoImageEnabled={autoImageEnabled}
       />
     </div>
   );
