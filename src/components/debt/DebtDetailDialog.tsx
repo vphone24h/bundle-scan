@@ -63,7 +63,7 @@ export function DebtDetailDialog({
   const [showOnlyUnpaid, setShowOnlyUnpaid] = useState(true);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'addition' | 'payment'>('all');
   const [showEditCustomer, setShowEditCustomer] = useState(false);
-  const [expandedReceiptId, setExpandedReceiptId] = useState<string | null>(null);
+  const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const { data: allReceipts, isLoading: receiptsLoading } = useDebtDetail(entityType, entityId);
   const { data: paymentHistory, isLoading: historyLoading } = useDebtPaymentHistory(entityType, entityId);
 
@@ -232,7 +232,11 @@ export function DebtDetailDialog({
                   </TableHeader>
                   <TableBody>
                     {receipts.map((receipt: any) => (
-                      <TableRow key={receipt.id}>
+                      <TableRow
+                        key={receipt.id}
+                        className="cursor-pointer hover:bg-accent/50"
+                        onClick={() => setSelectedReceipt(receipt)}
+                      >
                         <TableCell>
                           {format(
                             new Date(entityType === 'customer' ? receipt.export_date : receipt.import_date),
@@ -382,6 +386,84 @@ export function DebtDetailDialog({
           branchName={branchName}
         />
       )}
+
+      {/* Receipt Detail Popup */}
+      <Dialog open={!!selectedReceipt} onOpenChange={(open) => !open && setSelectedReceipt(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Chi tiết phiếu {selectedReceipt?.code}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="text-sm text-muted-foreground mb-2">
+            {selectedReceipt && format(
+              new Date(entityType === 'customer' ? selectedReceipt.export_date : selectedReceipt.import_date),
+              'dd/MM/yyyy HH:mm',
+              { locale: vi }
+            )}
+            {' · '}Tổng: <span className="font-semibold text-foreground">{formatNumber(selectedReceipt?.total_amount || 0)}</span>
+            {selectedReceipt?.debt_amount > 0 && (
+              <span> · Nợ: <span className="font-semibold text-destructive">{formatNumber(selectedReceipt.debt_amount)}</span></span>
+            )}
+          </div>
+
+          <ScrollArea className="flex-1 max-h-[60vh]">
+            <div className="space-y-2 pr-2">
+              {(() => {
+                const items = entityType === 'customer'
+                  ? selectedReceipt?.export_receipt_items || []
+                  : selectedReceipt?.products || [];
+
+                if (items.length === 0) {
+                  return (
+                    <div className="text-center py-6 text-muted-foreground">
+                      Không có sản phẩm
+                    </div>
+                  );
+                }
+
+                return items.map((item: any, idx: number) => {
+                  const name = entityType === 'customer' ? item.product_name : item.name;
+                  const price = entityType === 'customer' ? item.sale_price : item.import_price;
+                  return (
+                    <div key={item.id || idx} className="border rounded-lg p-3 bg-card">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">{name}</p>
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                            {item.sku && (
+                              <span className="text-xs text-muted-foreground">SKU: {item.sku}</span>
+                            )}
+                            {item.imei && (
+                              <Badge variant="outline" className="text-xs font-mono">
+                                IMEI: {item.imei}
+                              </Badge>
+                            )}
+                          </div>
+                          {item.note && (
+                            <p className="text-xs text-muted-foreground mt-1 italic">{item.note}</p>
+                          )}
+                        </div>
+                        <p className="font-semibold text-sm shrink-0">
+                          {formatNumber(price || 0)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </ScrollArea>
+
+          {selectedReceipt?.note && (
+            <div className="mt-2 p-2 bg-muted/50 rounded text-sm text-muted-foreground">
+              <span className="font-medium">Ghi chú:</span> {selectedReceipt.note}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
