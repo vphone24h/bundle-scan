@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { HardDriveDownload, Loader2, Package, FileDown, FileUp, Users, Truck, Wallet } from 'lucide-react';
+import { HardDriveDownload, Loader2, Package, FileDown, FileUp, Users, Truck, Wallet, Database } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { toast } from 'sonner';
@@ -61,6 +61,7 @@ export function DataBackupSection() {
   const { data: tenant } = useCurrentTenant();
   const [selected, setSelected] = useState<Set<BackupTable>>(new Set(BACKUP_OPTIONS.map(o => o.key)));
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingSQL, setIsExportingSQL] = useState(false);
 
   const toggleOption = (key: BackupTable) => {
     setSelected(prev => {
@@ -324,6 +325,42 @@ export function DataBackupSection() {
     }
   };
 
+  const handleExportSQL = async () => {
+    if (!tenant?.id) {
+      toast.error('Không tìm thấy thông tin cửa hàng');
+      return;
+    }
+
+    setIsExportingSQL(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('export-tenant-data');
+
+      if (error) throw error;
+      if (!data) throw new Error('Không có dữ liệu trả về');
+
+      const jsonString = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      a.href = url;
+      a.download = `database_export_${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      const totalRows = data._metadata?.total_rows || 0;
+      const totalTables = data._metadata?.total_tables || 0;
+      toast.success(`Đã xuất ${totalRows.toLocaleString()} bản ghi từ ${totalTables} bảng`);
+    } catch (error) {
+      console.error('SQL export error:', error);
+      toast.error('Lỗi khi xuất dữ liệu: ' + (error as Error).message);
+    } finally {
+      setIsExportingSQL(false);
+    }
+  };
+
   const allSelected = selected.size === BACKUP_OPTIONS.length;
 
   return (
@@ -397,6 +434,35 @@ export function DataBackupSection() {
         <p className="text-xs text-muted-foreground text-center">
           💡 Khuyến nghị: Sao lưu dữ liệu định kỳ hàng tuần để đảm bảo an toàn
         </p>
+
+        {/* Full Database Export Section */}
+        <div className="border-t pt-4 mt-4">
+          <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
+            <Database className="h-4 w-4" />
+            Xuất toàn bộ Database (JSON)
+          </h4>
+          <p className="text-xs text-muted-foreground mb-3">
+            Xuất tất cả dữ liệu của cửa hàng thành 1 file JSON duy nhất, có thể import vào Supabase hoặc hệ thống khác.
+          </p>
+          <Button
+            onClick={handleExportSQL}
+            disabled={isExportingSQL}
+            variant="outline"
+            className="w-full"
+          >
+            {isExportingSQL ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Đang xuất toàn bộ dữ liệu...
+              </>
+            ) : (
+              <>
+                <Database className="h-4 w-4 mr-2" />
+                Tải file JSON toàn bộ Database
+              </>
+            )}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
