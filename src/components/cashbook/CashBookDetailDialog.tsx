@@ -7,6 +7,8 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Package, TrendingUp, TrendingDown } from 'lucide-react';
+import { CashBookPrintReceipt } from './CashBookPrintReceipt';
+import { useCurrentTenant } from '@/hooks/useTenant';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +38,7 @@ export function CashBookDetailDialog({
   onOpenChange,
   paymentSourceLabels,
 }: CashBookDetailDialogProps) {
+  const { data: tenant } = useCurrentTenant();
   const [items, setItems] = useState<ExportReceiptItem[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -65,14 +68,22 @@ export function CashBookDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {entry.type === 'income' ? (
-              <TrendingUp className="h-5 w-5 text-green-600" />
-            ) : (
-              <TrendingDown className="h-5 w-5 text-destructive" />
-            )}
-            Chi tiết giao dịch
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              {entry.type === 'income' ? (
+                <TrendingUp className="h-5 w-5 text-green-600" />
+              ) : (
+                <TrendingDown className="h-5 w-5 text-destructive" />
+              )}
+              Chi tiết giao dịch
+            </DialogTitle>
+            <CashBookPrintReceipt
+              entry={entry}
+              paymentSourceLabel={paymentSourceLabels[entry.payment_source] || entry.payment_source}
+              storeName={tenant?.name || undefined}
+              branchName={entry.branches?.name || undefined}
+            />
+          </div>
         </DialogHeader>
 
         <div className="space-y-4">
