@@ -30,6 +30,7 @@ export interface TenantLandingSettings {
   show_custom_domain_cta: boolean;
   voucher_enabled: boolean;
   voucher_template_id: string | null;
+  website_template: string;
   created_at: string;
   updated_at: string;
 }
