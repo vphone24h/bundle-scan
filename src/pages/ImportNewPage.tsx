@@ -591,8 +591,8 @@ export default function ImportNewPage() {
 
       const productName = data.productName || matchedProduct?.name || data.imei || 'Sản phẩm QR';
       const sku = data.sku || (matchedProduct && 'sku' in matchedProduct ? matchedProduct.sku : '') || productName;
-      const importPrice = data.importPrice || (matchedProduct && 'import_price' in matchedProduct ? matchedProduct.import_price : 0) || 0;
-      const salePrice = data.salePrice || (data.imei ? importPrice + 2000000 : importPrice * 2);
+      // QR price = giá bán kho cũ → dùng làm salePrice, importPrice để trống (user tự nhập)
+      const salePrice = data.salePrice || 0;
 
       const newItem: ImportReceiptItem = {
         id: String(Date.now()),
@@ -600,7 +600,7 @@ export default function ImportNewPage() {
         sku,
         imei: data.imei || undefined,
         categoryId: (matchedProduct && 'category_id' in matchedProduct ? matchedProduct.category_id : '') || '',
-        importPrice,
+        importPrice: 0, // User sẽ tự nhập giá nhập mới
         salePrice: salePrice || undefined,
         quantity: 1,
         supplierId: '',
@@ -609,7 +609,7 @@ export default function ImportNewPage() {
       };
 
       setCart(prev => [...prev, newItem]);
-      toast({ title: 'Đã thêm vào giỏ', description: `${productName}${data.imei ? ` (${data.imei})` : ''}` });
+      toast({ title: 'Đã thêm vào giỏ', description: `${productName}${data.imei ? ` (${data.imei})` : ''} - Cần nhập giá nhập` });
     } else {
       // Single scan mode: fill form
       if (data.productName) {
@@ -629,7 +629,7 @@ export default function ImportNewPage() {
         productName: data.productName || prev.productName,
         sku: data.sku || prev.sku || data.productName || prev.productName,
         imei: data.imei || prev.imei,
-        importPrice: data.importPrice ? String(data.importPrice) : prev.importPrice,
+        importPrice: '', // Giá nhập để trống - user tự nhập (không lấy giá kho cũ)
         salePrice: data.salePrice ? String(data.salePrice) : prev.salePrice,
         note: data.note || prev.note,
       }));
