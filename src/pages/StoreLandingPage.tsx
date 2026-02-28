@@ -16,8 +16,9 @@ function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?:
   const location = useLocation();
   useEffect(() => {
     if (!storeId) return;
-    const iconSrc = logoUrl || '/icons/icon-192x192.png';
-    const iconSrc512 = logoUrl || '/icons/icon-512x512.png';
+    const cacheBust = logoUrl ? `?v=${Date.now()}` : '';
+    const iconSrc = logoUrl ? `${logoUrl}${cacheBust}` : '/icons/icon-192x192.png';
+    const iconSrc512 = logoUrl ? `${logoUrl}${cacheBust}` : '/icons/icon-512x512.png';
     const manifest = {
       name: storeName || `${storeId} - vkho.vn`,
       short_name: storeName || storeId,
@@ -45,15 +46,29 @@ function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?:
     document.head.appendChild(manifestLink);
 
     // Apple touch icon (iOS uses this for home screen)
-    let appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]');
-    if (!appleTouchIcon) { appleTouchIcon = document.createElement('link'); appleTouchIcon.setAttribute('rel', 'apple-touch-icon'); document.head.appendChild(appleTouchIcon); }
-    appleTouchIcon.setAttribute('href', iconSrc);
-    appleTouchIcon.setAttribute('sizes', '180x180');
+    // Remove ALL existing apple-touch-icon links and create fresh ones to bypass iOS cache
+    const iconForApple = logoUrl || iconSrc;
+    
+    document.querySelectorAll('link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]').forEach(el => el.remove());
+    
+    const sizes = ['180x180', '152x152', '144x144', '120x120'];
+    sizes.forEach(size => {
+      const link = document.createElement('link');
+      link.rel = 'apple-touch-icon';
+      link.setAttribute('sizes', size);
+      link.href = iconForApple;
+      document.head.appendChild(link);
+    });
 
     // apple-touch-icon-precomposed (older iOS)
-    let appleTouchIconPre = document.querySelector('link[rel="apple-touch-icon-precomposed"]');
-    if (!appleTouchIconPre) { appleTouchIconPre = document.createElement('link'); appleTouchIconPre.setAttribute('rel', 'apple-touch-icon-precomposed'); document.head.appendChild(appleTouchIconPre); }
-    appleTouchIconPre.setAttribute('href', iconSrc);
+    const preLink = document.createElement('link');
+    preLink.rel = 'apple-touch-icon-precomposed';
+    preLink.href = iconForApple;
+    document.head.appendChild(preLink);
+    
+    // Also update favicon
+    const favicon = document.querySelector('link[rel="icon"]');
+    if (favicon) favicon.setAttribute('href', iconForApple);
 
     // Apple mobile web app title
     let appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
