@@ -21,11 +21,12 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { Separator } from '@/components/ui/separator';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { PriceInput } from '@/components/ui/price-input';
+import { ImportFromWarehouseDialog } from './ImportFromWarehouseDialog';
 
 export function LandingProductsTab() {
   const { data: tenant } = useCurrentTenant();
@@ -38,6 +39,7 @@ export function LandingProductsTab() {
   const deleteProduct = useDeleteLandingProduct();
 
   const [catName, setCatName] = useState('');
+  const [warehouseDialog, setWarehouseDialog] = useState(false);
   const [productDialog, setProductDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LandingProduct | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -250,10 +252,16 @@ export function LandingProductsTab() {
               <Package className="h-4 w-4" />
               Sản phẩm ({products?.length || 0})
             </CardTitle>
-            <Button onClick={openAddProduct} size="sm" className="gap-1" data-tour="landing-products-add-btn">
-              <Plus className="h-4 w-4" />
-              Thêm sản phẩm
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => setWarehouseDialog(true)} size="sm" variant="outline" className="gap-1">
+                <Warehouse className="h-4 w-4" />
+                Thêm từ kho
+              </Button>
+              <Button onClick={openAddProduct} size="sm" className="gap-1" data-tour="landing-products-add-btn">
+                <Plus className="h-4 w-4" />
+                Thêm sản phẩm
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -478,6 +486,13 @@ export function LandingProductsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog nhập từ kho */}
+      <ImportFromWarehouseDialog
+        open={warehouseDialog}
+        onOpenChange={setWarehouseDialog}
+        existingProducts={products || []}
+      />
     </div>
   );
 }
