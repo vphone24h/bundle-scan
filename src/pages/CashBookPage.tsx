@@ -989,24 +989,7 @@ export default function CashBookPage() {
           </div>
         )}
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Tổng số dư</p>
-                  <p className={cn("text-2xl font-bold", totalBalance >= 0 ? 'text-green-600' : 'text-destructive')}>
-                    {formatCurrency(totalBalance)}
-                  </p>
-                </div>
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Wallet className="h-5 w-5 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Balance by Payment Source is shown below */}
 
         {/* Balance by Payment Source */}
         <Card>
