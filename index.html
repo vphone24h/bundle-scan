@@ -17,18 +17,41 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="format-detection" content="telephone=no" />
     
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json" />
+    <!-- PWA Manifest - conditionally removed for store pages -->
+    <link rel="manifest" href="/manifest.json" id="static-manifest" />
     
     <!-- Preconnect to critical origins for faster loading -->
     <link rel="preconnect" href="https://rodpbhesrwykmpywiiyd.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://rodpbhesrwykmpywiiyd.supabase.co" />
     
     <!-- Icons -->
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="/favicon.png" id="static-favicon" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" id="static-apple-icon" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
+
+    <!-- Remove static VKho icons on store pages so dynamic store logo takes priority -->
+    <script>
+      (function(){
+        var p = location.pathname;
+        // Store pages: /store/xxx or subdomain-based (no /auth, /dashboard, etc.)
+        var isStore = p.indexOf('/store/') === 0;
+        // Subdomain detection: not the main app domain
+        var h = location.hostname;
+        var isSubdomain = h !== 'bundle-scan.lovable.app' && h !== 'localhost' && h !== 'vkho.vn' && h !== 'www.vkho.vn' && !h.endsWith('.lovable.app') && !h.endsWith('.lovableproject.com');
+        if (isStore || isSubdomain) {
+          var m = document.getElementById('static-manifest');
+          var a = document.getElementById('static-apple-icon');
+          var f = document.getElementById('static-favicon');
+          if (m) m.remove();
+          if (a) a.remove();
+          if (f) f.remove();
+          // Set apple-mobile-web-app-title to empty so JS can set store name
+          var t = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+          if (t) t.setAttribute('content', '');
+        }
+      })();
+    </script>
 
     <!-- Open Graph -->
     <meta property="og:title" content="Phần mềm quản lý kho chuyên nghiệp cho iPhone/phụ kiện" />
