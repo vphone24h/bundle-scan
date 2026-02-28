@@ -3,10 +3,20 @@ import { WEBSITE_TEMPLATES, TEMPLATE_CATEGORIES, WebsiteTemplate } from '@/lib/w
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { TemplatePreviewDialog } from './TemplatePreviewDialog';
+import { IndustryTrustBadge } from '@/lib/industryConfig';
+
+interface EditableSettings {
+  custom_trust_badges?: { icon: string; title: string; desc: string }[] | null;
+  hero_title?: string;
+  hero_subtitle?: string;
+  hero_cta?: string;
+}
 
 interface TemplateSelectorProps {
   selectedTemplate: string;
   onSelect: (templateId: string) => void;
+  editableSettings?: EditableSettings | null;
+  onSettingsChange?: (settings: EditableSettings) => void;
 }
 
 const tierColors: Record<string, string> = {
@@ -21,7 +31,7 @@ const tierLabels: Record<string, string> = {
   pro: 'Premium',
 };
 
-export function TemplateSelector({ selectedTemplate, onSelect }: TemplateSelectorProps) {
+export function TemplateSelector({ selectedTemplate, onSelect, editableSettings, onSettingsChange }: TemplateSelectorProps) {
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<WebsiteTemplate | null>(null);
 
@@ -79,6 +89,8 @@ export function TemplateSelector({ selectedTemplate, onSelect }: TemplateSelecto
         onOpenChange={(open) => !open && setPreviewTemplate(null)}
         onSelect={onSelect}
         isSelected={previewTemplate ? selectedTemplate === previewTemplate.id : false}
+        editableSettings={editableSettings}
+        onSettingsChange={onSettingsChange}
       />
     </div>
   );
@@ -109,23 +121,14 @@ function TemplateCard({
           : 'border-border hover:border-primary/40 hover:shadow-sm cursor-pointer'
       )}
     >
-      {/* Icon */}
       <span className="text-3xl">{template.icon}</span>
-
-      {/* Name */}
       <span className="text-xs font-semibold leading-tight">{template.name}</span>
-
-      {/* Tier badge */}
       <Badge variant="secondary" className={cn('text-[10px] px-1.5 py-0', tierColors[template.tier])}>
         {tierLabels[template.tier]}
       </Badge>
-
-      {/* Coming soon */}
       {isDisabled && (
         <span className="text-[10px] text-muted-foreground">Sắp ra mắt</span>
       )}
-
-      {/* Selected check */}
       {isSelected && (
         <div className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
