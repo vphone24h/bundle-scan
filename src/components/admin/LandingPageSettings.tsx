@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
 
@@ -119,6 +119,8 @@ export function LandingPageSettings() {
     voucher_enabled: false,
     voucher_template_id: null,
     website_template: 'phone_store',
+    ai_description_enabled: true,
+    auto_image_enabled: true,
   });
 
   useEffect(() => {
@@ -149,6 +151,8 @@ export function LandingPageSettings() {
         voucher_enabled: settings.voucher_enabled ?? false,
         voucher_template_id: settings.voucher_template_id || null,
         website_template: settings.website_template || 'phone_store',
+        ai_description_enabled: settings.ai_description_enabled ?? true,
+        auto_image_enabled: settings.auto_image_enabled ?? true,
       });
     } else if (tenant) {
       setFormData(prev => ({
@@ -831,6 +835,48 @@ export function LandingPageSettings() {
                 className="max-w-32"
               />
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Cài đặt AI & Ảnh tự động */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Bot className="h-4 w-4" />
+            Cài đặt AI tự động
+          </CardTitle>
+          <CardDescription>
+            Bật/tắt tính năng AI khi thêm sản phẩm từ kho lên website (có thể tốn credit Lovable AI)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <Bot className="h-3.5 w-3.5" />
+                AI tự viết mô tả sản phẩm
+              </Label>
+              <p className="text-xs text-muted-foreground">Tự động tạo mô tả chuyên nghiệp, SEO title, SEO description bằng AI</p>
+            </div>
+            <Switch
+              checked={formData.ai_description_enabled ?? true}
+              onCheckedChange={(checked) => handleChange('ai_description_enabled' as any, checked)}
+            />
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <ImageIcon className="h-3.5 w-3.5" />
+                Tự động lấy ảnh sản phẩm
+              </Label>
+              <p className="text-xs text-muted-foreground">Lấy ảnh có sẵn từ kho khi nhập sản phẩm lên website</p>
+            </div>
+            <Switch
+              checked={formData.auto_image_enabled ?? true}
+              onCheckedChange={(checked) => handleChange('auto_image_enabled' as any, checked)}
+            />
           </div>
         </CardContent>
       </Card>
