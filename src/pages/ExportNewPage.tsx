@@ -87,7 +87,7 @@ const exportNewTourSteps: TourStep[] = [
   },
   {
     title: '① Quét mã vạch',
-    description: 'Quét **mã vạch** sản phẩm (**IMEI/SKU**) để tự động thêm vào **giỏ hàng**. Nếu mã có chứa giá → sản phẩm được thêm ngay.',
+    description: 'Nhấn nút **quét mã vạch** bên cạnh ô tìm kiếm để mở camera quét **IMEI/SKU**. Sản phẩm được thêm tự động vào giỏ hàng.',
     targetSelector: '[data-tour="export-barcode"]',
     position: 'bottom',
   },
@@ -126,7 +126,8 @@ export default function ExportNewPage() {
   const [itemNote, setItemNote] = useState('');
   const [itemQuantity, setItemQuantity] = useState(1);
   const [itemWarranty, setItemWarranty] = useState('');
-  const [scanWarranty, setScanWarranty] = useState('6 Tháng'); // Default warranty for barcode scan
+  const [scanWarranty, setScanWarranty] = useState('6 Tháng');
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -874,52 +875,6 @@ export default function ExportNewPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Product form */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Search product */}
-          <Card data-tour="export-barcode">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <ScanBarcode className="h-5 w-5" />
-                Quét mã vạch
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Barcode Scanner */}
-              <BarcodeScannerInput
-                onScan={handleBarcodeScan}
-                placeholder="Quét mã vạch sản phẩm (IMEI/SKU)..."
-                disabled={checkProduct.isPending}
-                continuousCamera
-              />
-              
-              <p className="text-xs text-muted-foreground">
-                Quét mã vạch có giá → tự động thêm vào giỏ kèm bảo hành bên dưới.
-              </p>
-
-              {/* Warranty preset for barcode scan */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Bảo hành khi quét</Label>
-                <div className="flex flex-wrap gap-2">
-                  {['Không BH', '30 Ngày', '3 Tháng', '6 Tháng', '12 Tháng'].map((opt) => (
-                    <Button
-                      key={opt}
-                      type="button"
-                      size="sm"
-                      variant={scanWarranty === opt ? 'default' : 'outline'}
-                      onClick={() => setScanWarranty(opt)}
-                    >
-                      {opt}
-                    </Button>
-                  ))}
-                </div>
-                <Input
-                  placeholder="Hoặc nhập tùy chỉnh..."
-                  value={!['Không BH', '30 Ngày', '3 Tháng', '6 Tháng', '12 Tháng'].includes(scanWarranty) ? scanWarranty : ''}
-                  onChange={(e) => setScanWarranty(e.target.value)}
-                  className="max-w-xs"
-                />
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Manual Search - Combined */}
           <Card data-tour="export-manual-search">
@@ -937,8 +892,6 @@ export default function ExportNewPage() {
                     value={imeiSearch || nameSearch}
                     onChange={(e) => {
                       const val = e.target.value;
-                      // If input looks like IMEI/Serial (digits, no spaces, >= 6 chars), use imeiSearch
-                      // Otherwise treat as name search for suggestions
                       if (/^\d{6,}$/.test(val.trim())) {
                         setImeiSearch(val);
                         setNameSearch('');
@@ -989,11 +942,57 @@ export default function ExportNewPage() {
                 >
                   Tìm
                 </Button>
+                <Button
+                  variant={showBarcodeScanner ? 'default' : 'outline'}
+                  size="icon"
+                  onClick={() => setShowBarcodeScanner(v => !v)}
+                  title="Quét mã vạch / QR"
+                  data-tour="export-barcode"
+                >
+                  <ScanBarcode className="h-5 w-5" />
+                </Button>
               </div>
               <p className="text-xs text-muted-foreground">
                 <strong>IMEI/Serial:</strong> Nhập đúng mã → Enter → sản phẩm tự xuất hiện &nbsp;|&nbsp; 
                 <strong>Tên:</strong> Nhập 2-3 chữ đầu → hiện gợi ý để chọn
               </p>
+
+              {/* Collapsible Barcode Scanner */}
+              {showBarcodeScanner && (
+                <div className="p-4 border rounded-lg bg-muted/30 space-y-3 animate-fade-in">
+                  <BarcodeScannerInput
+                    onScan={handleBarcodeScan}
+                    placeholder="Quét mã vạch sản phẩm (IMEI/SKU)..."
+                    disabled={checkProduct.isPending}
+                    continuousCamera
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Quét mã vạch có giá → tự động thêm vào giỏ kèm bảo hành bên dưới.
+                  </p>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Bảo hành khi quét</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {['Không BH', '30 Ngày', '3 Tháng', '6 Tháng', '12 Tháng'].map((opt) => (
+                        <Button
+                          key={opt}
+                          type="button"
+                          size="sm"
+                          variant={scanWarranty === opt ? 'default' : 'outline'}
+                          onClick={() => setScanWarranty(opt)}
+                        >
+                          {opt}
+                        </Button>
+                      ))}
+                    </div>
+                    <Input
+                      placeholder="Hoặc nhập tùy chỉnh..."
+                      value={!['Không BH', '30 Ngày', '3 Tháng', '6 Tháng', '12 Tháng'].includes(scanWarranty) ? scanWarranty : ''}
+                      onChange={(e) => setScanWarranty(e.target.value)}
+                      className="max-w-xs"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Selected product info */}
               {selectedProduct && (
