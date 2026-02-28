@@ -516,6 +516,14 @@ export function LandingPageSettings() {
           <TemplateSelector
             selectedTemplate={(formData as any).website_template || 'phone_store'}
             onSelect={(id) => handleChange('website_template' as any, id)}
+            editableSettings={{
+              custom_trust_badges: (formData as any).custom_trust_badges || null,
+            }}
+            onSettingsChange={(editSettings) => {
+              if (editSettings.custom_trust_badges !== undefined) {
+                setFormData(prev => ({ ...prev, custom_trust_badges: editSettings.custom_trust_badges as any }));
+              }
+            }}
           />
         </CardContent>
       </Card>
