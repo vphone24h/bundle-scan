@@ -229,6 +229,7 @@ export function useCreateImportReturn() {
     mutationFn: async ({
       product,
       payments,
+      recordToCashBook = true,
       note,
     }: {
       product: {
@@ -243,6 +244,7 @@ export function useCreateImportReturn() {
         import_date?: string | null;
       };
       payments: { source: string; amount: number }[];
+      recordToCashBook?: boolean;
       note?: string | null;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -304,25 +306,27 @@ export function useCreateImportReturn() {
 
       if (productError) throw productError;
 
-      for (const payment of payments) {
-        if (payment.source !== 'debt') {
-          const { error: cashBookError } = await supabase
-            .from('cash_book')
-            .insert([{
-              type: 'income' as const,
-              category: 'Tra hang nhap',
-              description: `Tra hang nhap: ${product.name} (${code})`,
-              amount: payment.amount,
-              payment_source: payment.source,
-              is_business_accounting: false,
-              branch_id: product.branch_id,
-              reference_id: returnData.id,
-              reference_type: 'import_return',
-              created_by: user.id,
-              tenant_id: tenantId,
-            }]);
+      if (recordToCashBook) {
+        for (const payment of payments) {
+          if (payment.source !== 'debt') {
+            const { error: cashBookError } = await supabase
+              .from('cash_book')
+              .insert([{
+                type: 'income' as const,
+                category: 'Tra hang nhap',
+                description: `Tra hang nhap: ${product.name} (${code})`,
+                amount: payment.amount,
+                payment_source: payment.source,
+                is_business_accounting: false,
+                branch_id: product.branch_id,
+                reference_id: returnData.id,
+                reference_type: 'import_return',
+                created_by: user.id,
+                tenant_id: tenantId,
+              }]);
 
-          if (cashBookError) throw cashBookError;
+            if (cashBookError) throw cashBookError;
+          }
         }
       }
 
