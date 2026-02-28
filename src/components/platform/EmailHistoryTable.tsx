@@ -78,11 +78,11 @@ export function EmailHistoryTable() {
 
   const resendMutation = useMutation({
     mutationFn: async (record: EmailRecord) => {
-      // Nếu có failed_emails thì dùng, nếu không (bản ghi cũ) thì gửi lại tất cả
-      const failedList = (record.failed_emails && record.failed_emails.length > 0)
+      // Chỉ gửi lại email thất bại, KHÔNG gửi lại toàn bộ để tránh spam
+      const failedList = record.failed_emails && record.failed_emails.length > 0
         ? record.failed_emails
-        : record.recipients;
-      if (!failedList || failedList.length === 0) throw new Error('Không có email để gửi lại');
+        : null;
+      if (!failedList || failedList.length === 0) throw new Error('Không có danh sách email thất bại để gửi lại. Bản ghi cũ không lưu danh sách này.');
 
       const { data, error } = await supabase.functions.invoke('send-bulk-email', {
         body: {
@@ -197,7 +197,7 @@ export function EmailHistoryTable() {
                       <Button variant="ghost" size="icon" onClick={() => handleView(email)}>
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {email.fail_count > 0 && (
+                      {email.failed_emails && email.failed_emails.length > 0 && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -264,7 +264,7 @@ export function EmailHistoryTable() {
                   </span>
                 )}
               </div>
-              {email.fail_count > 0 && (
+              {email.failed_emails && email.failed_emails.length > 0 && (
                 <Button
                   variant="outline"
                   size="sm"
