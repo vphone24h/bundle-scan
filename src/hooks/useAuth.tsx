@@ -43,8 +43,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
+    // Auto-refresh session when app comes back to foreground (prevents expired token logout)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+          if (currentSession) {
+            // Session still valid, update state
+            setSession(currentSession);
+            setUser(currentSession.user);
+          }
+        });
+      }
+    };
+
+    // Also refresh on window focus (helps with PWA on iOS)
+    const handleFocus = () => {
+      supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+        if (currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+        }
+      });
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
     return () => {
       subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
     };
   }, []);
 
