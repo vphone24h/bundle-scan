@@ -30,22 +30,75 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
 
-    <!-- Remove static VKho icons on store pages so dynamic store logo takes priority -->
+    <!-- Dynamically set store icon for PWA on store pages -->
     <script>
       (function(){
         var p = location.pathname;
-        // Store pages: /store/xxx or subdomain-based (no /auth, /dashboard, etc.)
         var isStore = p.indexOf('/store/') === 0;
-        // Subdomain detection: not the main app domain
         var h = location.hostname;
         var isSubdomain = h !== 'bundle-scan.lovable.app' && h !== 'localhost' && h !== 'vkho.vn' && h !== 'www.vkho.vn' && !h.endsWith('.lovable.app') && !h.endsWith('.lovableproject.com');
         if (isStore || isSubdomain) {
+          // Remove static manifest so React can inject dynamic one
           var m = document.getElementById('static-manifest');
-          var a = document.getElementById('static-apple-icon');
-          var f = document.getElementById('static-favicon');
           if (m) m.remove();
-          if (a) a.remove();
-          if (f) f.remove();
+          // Fetch store logo from API and set apple-touch-icon ASAP
+          var storeId = isStore ? p.split('/')[2] : h.split('.')[0];
+          var supaUrl = 'https://rodpbhesrwykmpywiiyd.supabase.co';
+          var anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZHBiaGVzcnd5a21weXdpaXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MjM4MDMsImV4cCI6MjA4NDk5OTgwM30.P7Kc0pxkUdyHi8AgDBlRmPqxg0MWr2C_J_EUqORQY_s';
+          
+          function setIcon(url) {
+            // Update existing apple-touch-icon
+            var a = document.getElementById('static-apple-icon');
+            if (a) a.href = url;
+            // Update favicon
+            var f = document.getElementById('static-favicon');
+            if (f) f.href = url;
+            // Add no-size apple-touch-icon (iOS priority)
+            var noSize = document.createElement('link');
+            noSize.rel = 'apple-touch-icon';
+            noSize.href = url;
+            document.head.appendChild(noSize);
+          }
+          
+          // Try custom domain first, then subdomain as store_id
+          function tryCustomDomain() {
+            return fetch(supaUrl + '/rest/v1/custom_domains?domain=eq.' + encodeURIComponent(h) + '&select=tenant_id', {
+              headers: { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey }
+            }).then(function(r) { return r.json(); });
+          }
+          
+          function tryStoreId(sid) {
+            return fetch(supaUrl + '/rest/v1/tenants?store_id=eq.' + encodeURIComponent(sid) + '&is_active=eq.true&select=id', {
+              headers: { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey }
+            }).then(function(r) { return r.json(); });
+          }
+          
+          function fetchLogo(tenantId) {
+            return fetch(supaUrl + '/rest/v1/landing_page_settings?tenant_id=eq.' + tenantId + '&select=store_logo_url', {
+              headers: { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey }
+            }).then(function(r) { return r.json(); });
+          }
+          
+          // Execute: find tenant, then get logo
+          (isSubdomain ? tryCustomDomain() : Promise.resolve([]))
+            .then(function(domains) {
+              if (domains && domains.length > 0 && domains[0].tenant_id) {
+                return domains[0].tenant_id;
+              }
+              return tryStoreId(storeId).then(function(tenants) {
+                return tenants && tenants.length > 0 ? tenants[0].id : null;
+              });
+            })
+            .then(function(tenantId) {
+              if (!tenantId) return;
+              return fetchLogo(tenantId).then(function(settings) {
+                if (settings && settings.length > 0 && settings[0].store_logo_url) {
+                  setIcon(settings[0].store_logo_url);
+                }
+              });
+            })
+            .catch(function() {});
+          
           // Set apple-mobile-web-app-title to empty so JS can set store name
           var t = document.querySelector('meta[name="apple-mobile-web-app-title"]');
           if (t) t.setAttribute('content', '');
