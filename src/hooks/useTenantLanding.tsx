@@ -31,6 +31,8 @@ export interface TenantLandingSettings {
   voucher_enabled: boolean;
   voucher_template_id: string | null;
   website_template: string;
+  ai_description_enabled: boolean;
+  auto_image_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
