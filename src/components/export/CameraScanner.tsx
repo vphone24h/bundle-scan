@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Camera, X, SwitchCamera, Loader2 } from 'lucide-react';
 
@@ -8,20 +10,28 @@ interface CameraScannerProps {
   onClose: () => void;
   isOpen: boolean;
   continuous?: boolean;
+  /** Show built-in continuous toggle switch (default: true) */
+  showContinuousToggle?: boolean;
 }
 
-export function CameraScanner({ onScan, onClose, isOpen, continuous = false }: CameraScannerProps) {
+export function CameraScanner({ onScan, onClose, isOpen, continuous = false, showContinuousToggle = true }: CameraScannerProps) {
+  const [internalContinuous, setInternalContinuous] = useState(continuous);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [isScanning, setIsScanning] = useState(false);
   const [scanFeedback, setScanFeedback] = useState<string | null>(null);
+
+  // Use internal state if toggle is shown, otherwise use prop
+  const effectiveContinuous = showContinuousToggle ? internalContinuous : continuous;
   
   const scannerRef = useRef<any>(null);
   const html5QrcodeModuleRef = useRef<any>(null);
   const isMountedRef = useRef(true);
   const lastScannedRef = useRef<string | null>(null);
   const scanCooldownRef = useRef(false);
+  const effectiveContinuousRef = useRef(effectiveContinuous);
+  effectiveContinuousRef.current = effectiveContinuous;
   const [scannerKey, setScannerKey] = useState(0);
 
   const playBeep = useCallback(() => {
@@ -192,7 +202,7 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false }: C
             // Play beep sound
             playBeep();
 
-            if (continuous) {
+            if (effectiveContinuousRef.current) {
               // Continuous mode: don't close, show feedback, keep scanning
               onScan(normalized);
               setScanFeedback(normalized);
@@ -336,9 +346,23 @@ export function CameraScanner({ onScan, onClose, isOpen, continuous = false }: C
               <Camera className="h-5 w-5" />
               Quét mã QR / Barcode
             </h3>
-            <Button variant="ghost" size="icon" onClick={handleClose}>
-              <X className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {showContinuousToggle && (
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="cam-continuous" className="text-xs text-muted-foreground cursor-pointer">
+                    Quét liên tục
+                  </Label>
+                  <Switch
+                    id="cam-continuous"
+                    checked={internalContinuous}
+                    onCheckedChange={setInternalContinuous}
+                  />
+                </div>
+              )}
+              <Button variant="ghost" size="icon" onClick={handleClose}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
 
           <div 
