@@ -46,29 +46,44 @@ function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?:
     document.head.appendChild(manifestLink);
 
     // Apple touch icon (iOS uses this for home screen)
-    // Remove ALL existing apple-touch-icon links and create fresh ones to bypass iOS cache
-    const iconForApple = logoUrl || iconSrc;
+    // Remove ALL existing apple-touch-icon links and create fresh ones
+    const appleIcon = logoUrl || '/icons/apple-touch-icon.png';
     
     document.querySelectorAll('link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]').forEach(el => el.remove());
     
+    // iOS prefers apple-touch-icon WITHOUT sizes attribute first, then with sizes
+    const noSizeLink = document.createElement('link');
+    noSizeLink.rel = 'apple-touch-icon';
+    noSizeLink.href = appleIcon;
+    document.head.appendChild(noSizeLink);
+
     const sizes = ['180x180', '152x152', '144x144', '120x120'];
     sizes.forEach(size => {
       const link = document.createElement('link');
       link.rel = 'apple-touch-icon';
       link.setAttribute('sizes', size);
-      link.href = iconForApple;
+      link.href = appleIcon;
       document.head.appendChild(link);
     });
 
     // apple-touch-icon-precomposed (older iOS)
     const preLink = document.createElement('link');
     preLink.rel = 'apple-touch-icon-precomposed';
-    preLink.href = iconForApple;
+    preLink.href = appleIcon;
     document.head.appendChild(preLink);
     
+    // Preload the icon so iOS can access it immediately
+    if (logoUrl) {
+      const preload = document.createElement('link');
+      preload.rel = 'preload';
+      preload.as = 'image';
+      preload.href = appleIcon;
+      document.head.appendChild(preload);
+    }
+
     // Also update favicon
-    const favicon = document.querySelector('link[rel="icon"]');
-    if (favicon) favicon.setAttribute('href', iconForApple);
+    const allFavicons = document.querySelectorAll('link[rel="icon"]');
+    allFavicons.forEach(f => f.setAttribute('href', appleIcon));
 
     // Apple mobile web app title
     let appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
