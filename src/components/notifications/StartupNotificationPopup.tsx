@@ -14,16 +14,19 @@ import {
   useStartupNotification,
   useDismissStartupNotification,
 } from '@/hooks/useSystemNotifications';
+import { usePopupPriority } from '@/hooks/usePopupPriority';
 
 export function StartupNotificationPopup() {
   const { data: notification } = useStartupNotification();
   const dismiss = useDismissStartupNotification();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const { activeLayer, claim, release } = usePopupPriority();
+
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (notification) {
-      // Check localStorage dismissal (more reliable than DB for mobile/PWA)
       const dismissKey = `startup_popup_dismissed_${notification.id}`;
       const lastDismissed = localStorage.getItem(dismissKey);
       if (lastDismissed) {
@@ -34,25 +37,28 @@ export function StartupNotificationPopup() {
           dismissedDate.getMonth() === today.getMonth() &&
           dismissedDate.getDate() === today.getDate()
         ) {
-          return; // Already dismissed today
+          return;
         }
       }
-
-      // Small delay so it doesn't pop immediately
-      const timer = setTimeout(() => {
-        // Don't show if onboarding tour is active
-        if (document.querySelector('[data-tour-active="true"]')) return;
-        setOpen(true);
-      }, 1500);
+      const timer = setTimeout(() => setReady(true), 1500);
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  // Try to claim when ready and no higher-priority popup is active
+  useEffect(() => {
+    if (ready && !open && (activeLayer === 'none' || activeLayer === 'notification')) {
+      const granted = claim('notification');
+      if (granted) setOpen(true);
+    }
+  }, [ready, open, activeLayer, claim]);
 
   if (!notification) return null;
 
   const handleClose = () => {
     setOpen(false);
-    // Save to localStorage for reliable cross-session tracking
+    setReady(false);
+    release('notification');
     const dismissKey = `startup_popup_dismissed_${notification.id}`;
     localStorage.setItem(dismissKey, new Date().toISOString());
     dismiss.mutate(notification.id);
@@ -70,34 +76,32 @@ export function StartupNotificationPopup() {
   };
 
   return (
-    <div data-notification-popup={open ? "true" : "false"}>
-      <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-full bg-primary/10">
-                <Bell className="h-5 w-5 text-primary" />
-              </div>
-              <DialogTitle className="text-base">{notification.title}</DialogTitle>
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-full bg-primary/10">
+              <Bell className="h-5 w-5 text-primary" />
             </div>
-            <DialogDescription className="pt-2">
-              {notification.message}
-            </DialogDescription>
-          </DialogHeader>
+            <DialogTitle className="text-base">{notification.title}</DialogTitle>
+          </div>
+          <DialogDescription className="pt-2">
+            {notification.message}
+          </DialogDescription>
+        </DialogHeader>
 
-          <DialogFooter className="flex-row gap-2 sm:justify-end">
-            <Button variant="ghost" size="sm" onClick={handleClose}>
-              Đóng
+        <DialogFooter className="flex-row gap-2 sm:justify-end">
+          <Button variant="ghost" size="sm" onClick={handleClose}>
+            Đóng
+          </Button>
+          {notification.link_url && (
+            <Button size="sm" onClick={handleAction}>
+              <ExternalLink className="h-4 w-4 mr-1" />
+              Xem ngay
             </Button>
-            {notification.link_url && (
-              <Button size="sm" onClick={handleAction}>
-                <ExternalLink className="h-4 w-4 mr-1" />
-                Xem ngay
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
