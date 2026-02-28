@@ -30,7 +30,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
 
-    <!-- Dynamically set store icon for PWA on store pages -->
+    <!-- Dynamically set store icon + title for PWA on store pages -->
     <script>
       (function(){
         var p = location.pathname;
@@ -43,6 +43,11 @@
           var supaUrl = 'https://rodpbhesrwykmpywiiyd.supabase.co';
           var anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZHBiaGVzcnd5a21weXdpaXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MjM4MDMsImV4cCI6MjA4NDk5OTgwM30.P7Kc0pxkUdyHi8AgDBlRmPqxg0MWr2C_J_EUqORQY_s';
           var hdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' };
+          // Default title to storeId instead of "vkho"
+          var storeId = isStore ? p.split('/')[2] : h.split('.')[0];
+          var titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+          if (titleMeta) titleMeta.setAttribute('content', storeId || '');
+          document.title = storeId || '';
 
           function setIcon(url) {
             if (!url) return;
@@ -51,48 +56,46 @@
             var f = document.getElementById('static-favicon');
             if (f) f.href = url;
             var noSize = document.createElement('link');
-            noSize.rel = 'apple-touch-icon';
-            noSize.href = url;
+            noSize.rel = 'apple-touch-icon'; noSize.href = url;
             document.head.appendChild(noSize);
-            // Preload for iOS
             var pl = document.createElement('link');
             pl.rel = 'preload'; pl.as = 'image'; pl.href = url;
             document.head.appendChild(pl);
           }
+          function setTitle(name) {
+            if (!name) return;
+            document.title = name;
+            if (titleMeta) titleMeta.setAttribute('content', name);
+          }
 
-          // Step 1: Resolve tenant using SECURITY DEFINER RPCs (bypass RLS)
+          // Resolve tenant
           var resolvePromise;
           if (isSubdomain) {
-            // Try custom domain first via resolve_tenant_by_domain RPC
             resolvePromise = fetch(supaUrl + '/rest/v1/rpc/resolve_tenant_by_domain', {
               method: 'POST', headers: hdrs,
               body: JSON.stringify({ _domain: h })
             }).then(function(r) { return r.json(); });
           } else {
-            // /store/xxx path - use subdomain lookup
-            var storeId = p.split('/')[2];
             resolvePromise = fetch(supaUrl + '/rest/v1/rpc/lookup_tenant_by_subdomain', {
               method: 'POST', headers: hdrs,
               body: JSON.stringify({ _subdomain: storeId })
             }).then(function(r) { return r.json(); }).then(function(data) {
-              return data && data.length > 0 ? data[0].id : (data && data.id ? data.id : null);
+              if (data && data.length > 0) { setTitle(data[0].name); return data[0].id; }
+              return data && data.id ? (setTitle(data.name), data.id) : null;
             });
           }
 
           resolvePromise.then(function(tenantId) {
             if (!tenantId) return;
-            // Step 2: Get logo from tenant_landing_settings (has public SELECT policy)
-            return fetch(supaUrl + '/rest/v1/tenant_landing_settings?tenant_id=eq.' + tenantId + '&select=store_logo_url&is_enabled=eq.true', {
+            return fetch(supaUrl + '/rest/v1/tenant_landing_settings?tenant_id=eq.' + tenantId + '&select=store_logo_url,store_name&is_enabled=eq.true', {
               headers: { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey }
-            }).then(function(r) { return r.json(); }).then(function(settings) {
-              if (settings && settings.length > 0 && settings[0].store_logo_url) {
-                setIcon(settings[0].store_logo_url);
+            }).then(function(r) { return r.json(); }).then(function(s) {
+              if (s && s.length > 0) {
+                setIcon(s[0].store_logo_url);
+                setTitle(s[0].store_name);
               }
             });
-          }).catch(function(e) { console.warn('Icon fetch failed:', e); });
-
-          var t = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-          if (t) t.setAttribute('content', '');
+          }).catch(function(e) { console.warn('PWA init failed:', e); });
         }
       })();
     </script>
