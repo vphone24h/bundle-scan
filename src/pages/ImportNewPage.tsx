@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ImportCart } from '@/components/import/ImportCart';
@@ -34,6 +34,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen, PlayCircle, Search, Package, ArrowLeft } from 'lucide-react';
+import { ImportQRScanner, parseVKHOQR, type VKHOQRData } from '@/components/import/ImportQRScanner';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { downloadImportTemplate } from '@/lib/excelTemplates';
@@ -554,6 +555,89 @@ export default function ImportNewPage() {
     }
   };
 
+  // Handle QR scan from ImportQRScanner
+  const handleQRScanResult = useCallback((data: VKHOQRData, continuous: boolean) => {
+    if (continuous) {
+      // Continuous mode: auto-add to cart directly
+      // Try to find existing product in stock
+      const matchedProduct = data.imei
+        ? products?.find(p => p.imei === data.imei && p.status === 'in_stock')
+        : data.productName
+          ? groupedProducts.find(p => p.name.toLowerCase() === data.productName!.toLowerCase())
+          : null;
+
+      // Check if already in cart (by IMEI or name+sku)
+      if (data.imei) {
+        const inCart = cart.find(item => item.imei === data.imei);
+        if (inCart) {
+          toast({ title: 'Đã có trong giỏ', description: `IMEI "${data.imei}" đã được thêm trước đó` });
+          return;
+        }
+      } else if (data.productName) {
+        // Non-IMEI: increase quantity if already in cart
+        const existingCartItem = cart.find(
+          item => !item.imei && item.productName.toLowerCase() === data.productName!.toLowerCase()
+        );
+        if (existingCartItem) {
+          setCart(prev => prev.map(item =>
+            item.id === existingCartItem.id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          ));
+          toast({ title: 'Đã tăng số lượng', description: `${data.productName}: +1` });
+          return;
+        }
+      }
+
+      const productName = data.productName || matchedProduct?.name || data.imei || 'Sản phẩm QR';
+      const sku = data.sku || (matchedProduct && 'sku' in matchedProduct ? matchedProduct.sku : '') || productName;
+      const importPrice = data.importPrice || (matchedProduct && 'import_price' in matchedProduct ? matchedProduct.import_price : 0) || 0;
+      const salePrice = data.salePrice || (data.imei ? importPrice + 2000000 : importPrice * 2);
+
+      const newItem: ImportReceiptItem = {
+        id: String(Date.now()),
+        productName,
+        sku,
+        imei: data.imei || undefined,
+        categoryId: (matchedProduct && 'category_id' in matchedProduct ? matchedProduct.category_id : '') || '',
+        importPrice,
+        salePrice: salePrice || undefined,
+        quantity: 1,
+        supplierId: '',
+        supplierName: '',
+        note: data.note || undefined,
+      };
+
+      setCart(prev => [...prev, newItem]);
+      toast({ title: 'Đã thêm vào giỏ', description: `${productName}${data.imei ? ` (${data.imei})` : ''}` });
+    } else {
+      // Single scan mode: fill form
+      if (data.productName) {
+        // Try to find and select existing product
+        const match = groupedProducts.find(
+          p => p.name.toLowerCase() === data.productName!.toLowerCase()
+        );
+        if (match) {
+          handleSelectSuggestion(match);
+        } else {
+          setForm(prev => ({ ...prev, productName: data.productName || prev.productName }));
+          setProductFormMode('form');
+        }
+      }
+      setForm(prev => ({
+        ...prev,
+        productName: data.productName || prev.productName,
+        sku: data.sku || prev.sku || data.productName || prev.productName,
+        imei: data.imei || prev.imei,
+        importPrice: data.importPrice ? String(data.importPrice) : prev.importPrice,
+        salePrice: data.salePrice ? String(data.salePrice) : prev.salePrice,
+        note: data.note || prev.note,
+      }));
+      setProductFormMode('form');
+      setSuggestions([]);
+    }
+  }, [products, groupedProducts, cart, handleSelectSuggestion]);
+
   return (
     <MainLayout>
       <PageHeader
@@ -709,16 +793,19 @@ export default function ImportNewPage() {
                 <Label htmlFor="productName">Tên sản phẩm *</Label>
                 {productFormMode === 'search' ? (
                   <>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                      <Input
-                        id="productName"
-                        value={form.productName}
-                        onChange={(e) => handleProductNameChange(e.target.value)}
-                        placeholder="Nhập tên sản phẩm để tìm hoặc thêm mới"
-                        className="pl-9"
-                        autoComplete="off"
-                      />
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        <Input
+                          id="productName"
+                          value={form.productName}
+                          onChange={(e) => handleProductNameChange(e.target.value)}
+                          placeholder="Nhập tên sản phẩm để tìm hoặc thêm mới"
+                          className="pl-9"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <ImportQRScanner onScanResult={handleQRScanResult} />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       Tìm sản phẩm cũ trong kho hoặc thêm sản phẩm mới.
