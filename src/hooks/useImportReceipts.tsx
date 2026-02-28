@@ -695,10 +695,12 @@ export function useReturnImportReceipt() {
     mutationFn: async ({
       receiptId,
       payments,
+      recordToCashBook = true,
       note,
     }: {
       receiptId: string;
       payments: { source: string; amount: number }[];
+      recordToCashBook?: boolean;
       note?: string | null;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -783,7 +785,7 @@ export function useReturnImportReceipt() {
         }
 
         // Ghi sổ quỹ (thu tiền từ NCC)
-        if (payment.source !== 'debt') {
+        if (recordToCashBook && payment.source !== 'debt') {
           await supabase
             .from('cash_book')
             .insert([{

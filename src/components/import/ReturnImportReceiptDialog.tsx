@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Plus, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { useImportReceiptDetails, useReturnImportReceipt, ImportReceipt } from '@/hooks/useImportReceipts';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
@@ -45,6 +46,7 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
   }, [customPaymentSources]);
 
   const [note, setNote] = useState('');
+  const [recordToCashBook, setRecordToCashBook] = useState(true);
   const [payments, setPayments] = useState<PaymentLine[]>([]);
 
   // Count in-stock products
@@ -117,6 +119,7 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
           source: p.source,
           amount: p.amount,
         })),
+        recordToCashBook,
         note: note || null,
       });
 
@@ -259,6 +262,28 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Cash Book Toggle */}
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="record_to_cashbook_receipt"
+                  checked={recordToCashBook}
+                  onCheckedChange={(checked) => setRecordToCashBook(checked === true)}
+                />
+                <Label htmlFor="record_to_cashbook_receipt" className="cursor-pointer">
+                  <span className="font-medium">Ghi dòng tiền vào sổ quỹ</span>
+                  <p className="text-sm text-muted-foreground">
+                    Bỏ tích nếu không muốn ảnh hưởng sổ quỹ (ví dụ: bảo hành)
+                  </p>
+                </Label>
+              </div>
+              {!recordToCashBook && (
+                <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 text-sm text-warning">
+                  ⚠️ Giao dịch này sẽ KHÔNG được ghi vào sổ quỹ
+                </div>
+              )}
             </div>
 
             {/* Note */}
