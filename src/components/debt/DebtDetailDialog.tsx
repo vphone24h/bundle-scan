@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, History, Phone, Building2, Filter, Pencil } from 'lucide-react';
+import { FileText, History, Phone, Building2, Filter, Pencil, ChevronDown, ChevronRight, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EditCustomerDebtDialog } from './EditCustomerDebtDialog';
 import {
@@ -63,8 +63,16 @@ export function DebtDetailDialog({
   const [showOnlyUnpaid, setShowOnlyUnpaid] = useState(true);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'addition' | 'payment'>('all');
   const [showEditCustomer, setShowEditCustomer] = useState(false);
-  const { data: receipts, isLoading: receiptsLoading } = useDebtDetail(entityType, entityId);
+  const [expandedReceiptId, setExpandedReceiptId] = useState<string | null>(null);
+  const { data: allReceipts, isLoading: receiptsLoading } = useDebtDetail(entityType, entityId);
   const { data: paymentHistory, isLoading: historyLoading } = useDebtPaymentHistory(entityType, entityId);
+
+  // Filter receipts based on showOnlyUnpaid
+  const receipts = useMemo(() => {
+    if (!allReceipts) return [];
+    if (showOnlyUnpaid) return allReceipts.filter((r: any) => r.debt_amount > 0);
+    return allReceipts;
+  }, [allReceipts, showOnlyUnpaid]);
 
   // Filter and enrich payment history with running balance
   const enrichedHistory = useMemo(() => {

@@ -384,7 +384,7 @@ export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: str
             )
           `)
           .eq('customer_id', entityId)
-          .gt('debt_amount', 0)
+          .gte('debt_amount', 0)
           .order('export_date', { ascending: false });
 
         if (error) throw error;
@@ -412,7 +412,7 @@ export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: str
             )
           `)
           .eq('supplier_id', entityId)
-          .gt('debt_amount', 0)
+          .gte('debt_amount', 0)
           .order('import_date', { ascending: false });
 
         if (error) throw error;
