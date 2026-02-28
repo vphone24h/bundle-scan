@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import { SetURLSearchParams } from 'react-router-dom';
 import { QueryClient } from '@tanstack/react-query';
@@ -23,7 +23,7 @@ import {
   Store, Loader2, Building2, Headphones, Calendar, Package,
   Clock, Users, ExternalLink, Star, Gift, ChevronDown, ChevronUp,
   ShoppingBag, Newspaper, ArrowLeft, Download, Smartphone, Share,
-  Plus, MoreVertical, Link2, Truck, CreditCard, Award,
+  Plus, MoreVertical, Link2, Truck, CreditCard, Award, Menu, X,
 } from 'lucide-react';
 
 // Icon map for industry config
@@ -76,6 +76,8 @@ export default function UniversalStoreTemplate({
   const [selectedArticle, setSelectedArticle] = useState<LandingArticle | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<LandingProduct | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [productSearchQuery, setProductSearchQuery] = useState('');
 
   // Load Google Font if needed
   useEffect(() => {
@@ -150,7 +152,14 @@ export default function UniversalStoreTemplate({
 
   const featuredProducts = productsData?.products?.filter(p => p.is_featured) || [];
   const allProducts = productsData?.products || [];
-  const filteredProducts = selectedCategoryId ? allProducts.filter(p => p.category_id === selectedCategoryId) : allProducts;
+  const filteredProducts = useMemo(() => {
+    let products = selectedCategoryId ? allProducts.filter(p => p.category_id === selectedCategoryId) : allProducts;
+    if (productSearchQuery.trim()) {
+      const q = productSearchQuery.toLowerCase().trim();
+      products = products.filter(p => p.name.toLowerCase().includes(q));
+    }
+    return products;
+  }, [allProducts, selectedCategoryId, productSearchQuery]);
   const featuredArticles = articlesData?.articles?.filter(a => a.is_featured) || [];
 
   const handlePointsAwarded = useCallback(() => { queryClient.invalidateQueries({ queryKey: ['customer-points-public'] }); }, [queryClient]);
@@ -206,17 +215,24 @@ export default function UniversalStoreTemplate({
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/5">
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-12">
-            <button onClick={() => navigateTo('home')} className="flex items-center gap-2.5">
-              {settings?.store_logo_url ? (
-                <img src={settings.store_logo_url} alt={displayStoreName} className="h-7 w-7 rounded-lg object-cover" />
-              ) : (
-                <div className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: accentColor }}>
-                  <Store className="h-4 w-4 text-white" />
-                </div>
-              )}
-              <span className="font-semibold text-sm tracking-tight hidden sm:block">{displayStoreName}</span>
-            </button>
-            <nav className="flex items-center gap-1">
+            {/* Left: Hamburger + Store name */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-black/5 transition-colors sm:hidden"
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+              <button onClick={() => navigateTo('home')} className="flex items-center gap-2.5">
+                {settings?.store_logo_url ? (
+                  <img src={settings.store_logo_url} alt={displayStoreName} className="h-7 w-7 rounded-lg object-cover" />
+                ) : null}
+                <span className="font-semibold text-sm tracking-tight">{displayStoreName}</span>
+              </button>
+            </div>
+
+            {/* Desktop nav */}
+            <nav className="hidden sm:flex items-center gap-1">
               {navItems.map(item => (
                 <button
                   key={item.id}
@@ -232,8 +248,38 @@ export default function UniversalStoreTemplate({
                 </button>
               ))}
             </nav>
+
+            {/* Search icon */}
+            <button
+              onClick={() => { navigateTo('products'); setTimeout(() => document.getElementById('product-search-input')?.focus(), 100); }}
+              className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-black/5 transition-colors"
+            >
+              <Search className="h-5 w-5" />
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu dropdown */}
+        {mobileMenuOpen && (
+          <div className="sm:hidden border-t border-black/5 bg-white/95 backdrop-blur-xl">
+            <div className="px-4 py-3 space-y-1">
+              {navItems.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => { navigateTo(item.id); setMobileMenuOpen(false); }}
+                  className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-xl transition-all"
+                  style={
+                    pageView === item.id || (item.id === 'news' && pageView === 'article-detail')
+                      ? { backgroundColor: '#1d1d1f', color: 'white' }
+                      : {}
+                  }
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </header>
 
       <main>
@@ -254,57 +300,45 @@ export default function UniversalStoreTemplate({
             ) : (
               <section ref={heroRef} className="relative overflow-hidden text-white" style={{ background: config.heroGradient }}>
                 <div
-                  className="max-w-[1200px] mx-auto px-6 py-16 sm:py-24 text-center"
+                  className="max-w-[1200px] mx-auto px-6 py-12 sm:py-20"
                   style={{ transform: `translateY(${heroOffset}px)` }}
                 >
-                  <ScrollReveal animation="fade-in" delay={0}>
-                    <p className="text-sm font-medium text-white/60 tracking-widest uppercase mb-3">
-                      {displayStoreName}
-                    </p>
-                  </ScrollReveal>
                   <ScrollReveal animation="fade-up" delay={100}>
-                    <h1 className="text-4xl sm:text-6xl font-bold tracking-tight mb-4">
+                    <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-3">
                       {config.heroTitle}
                     </h1>
                   </ScrollReveal>
                   <ScrollReveal animation="fade-up" delay={200}>
-                    <p className="text-lg sm:text-xl text-white/70 mb-8 max-w-lg mx-auto">
+                    <p className="text-sm sm:text-base text-white/70 mb-6 max-w-md">
                       {config.heroSubtitle}
                     </p>
                   </ScrollReveal>
                   <ScrollReveal animation="scale-up" delay={300}>
-                    <div className="flex items-center justify-center gap-3 flex-wrap">
-                      <Button
-                        onClick={() => navigateTo('products')}
-                        className="text-white rounded-full px-8 h-11 text-sm font-medium"
-                        style={{ backgroundColor: accentColor }}
-                      >
-                        {config.heroCta}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => navigateTo('products')}
-                        className="border-white/30 text-white hover:bg-white/10 rounded-full px-8 h-11 text-sm font-medium bg-transparent"
-                      >
-                        Xem chi tiết
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={() => navigateTo('products')}
+                      className="text-white rounded-full px-8 h-11 text-sm font-medium"
+                      style={{ backgroundColor: accentColor }}
+                    >
+                      {config.heroCta}
+                    </Button>
                   </ScrollReveal>
                 </div>
               </section>
             )}
 
-            {/* TRUST BADGES */}
+            {/* TRUST BADGES - horizontal layout */}
             <ScrollReveal animation="fade-up" delay={100}>
               <section className="bg-white border-b border-black/5">
-                <div className="max-w-[1200px] mx-auto px-4 py-6">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="max-w-[1200px] mx-auto px-4 py-5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {((settings as any)?.custom_trust_badges || config.trustBadges).map((badge: any, i: number) => (
-                      <div key={i} className="flex flex-col items-center text-center gap-2 p-3">
-                        <div style={{ color: accentColor }}>{ICON_MAP[badge.icon] || <Shield className="h-5 w-5" />}</div>
-                        <div>
-                          <p className="text-xs font-semibold">{badge.title}</p>
-                          <p className="text-[10px] text-[#86868b]">{badge.desc}</p>
+                      <div key={i} className="flex items-center gap-3 p-3 rounded-xl">
+                        <div className="shrink-0" style={{ color: accentColor }}>
+                          {ICON_MAP[badge.icon] || <Shield className="h-5 w-5" />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold leading-tight">{badge.title}</p>
+                          <p className="text-[10px] text-[#86868b] leading-tight">{badge.desc}</p>
                         </div>
                       </div>
                     ))}
@@ -343,12 +377,21 @@ export default function UniversalStoreTemplate({
 
             {/* FEATURED PRODUCTS */}
             {featuredProducts.length > 0 && (
-              <section className="py-12 bg-white">
+              <section className="py-10 bg-white">
                 <div className="max-w-[1200px] mx-auto px-4">
                   <ScrollReveal animation="fade-up">
-                    <div className="text-center mb-8">
-                      <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{config.productSectionTitle}</h2>
-                      <p className="text-sm text-[#86868b] mt-1">{config.productSectionSubtitle}</p>
+                    <div className="flex items-end justify-between mb-6">
+                      <div>
+                        <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{config.productSectionTitle}</h2>
+                        <p className="text-xs text-[#86868b] mt-0.5">{config.productSectionSubtitle}</p>
+                      </div>
+                      <button
+                        onClick={() => navigateTo('products')}
+                        className="text-xs font-medium shrink-0 flex items-center gap-1"
+                        style={{ color: accentColor }}
+                      >
+                        Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
+                      </button>
                     </div>
                   </ScrollReveal>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -358,29 +401,28 @@ export default function UniversalStoreTemplate({
                       </ScrollReveal>
                     ))}
                   </div>
-                  <ScrollReveal animation="fade-up" delay={400}>
-                    <div className="text-center mt-8">
-                      <Button
-                        variant="outline"
-                        onClick={() => navigateTo('products')}
-                        className="rounded-full px-8 h-10 text-sm font-medium"
-                        style={{ borderColor: accentColor, color: accentColor }}
-                      >
-                        Xem tất cả sản phẩm →
-                      </Button>
-                    </div>
-                  </ScrollReveal>
                 </div>
               </section>
             )}
 
             {/* ALL PRODUCTS if no featured */}
             {featuredProducts.length === 0 && allProducts.length > 0 && (
-              <section className="py-12 bg-white">
+              <section className="py-10 bg-white">
                 <div className="max-w-[1200px] mx-auto px-4">
                   <ScrollReveal animation="fade-up">
-                    <div className="text-center mb-8">
-                      <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{config.productSectionTitle}</h2>
+                    <div className="flex items-end justify-between mb-6">
+                      <div>
+                        <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{config.productSectionTitle}</h2>
+                      </div>
+                      {allProducts.length > 8 && (
+                        <button
+                          onClick={() => navigateTo('products')}
+                          className="text-xs font-medium shrink-0 flex items-center gap-1"
+                          style={{ color: accentColor }}
+                        >
+                          Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
+                        </button>
+                      )}
                     </div>
                   </ScrollReveal>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -390,15 +432,6 @@ export default function UniversalStoreTemplate({
                       </ScrollReveal>
                     ))}
                   </div>
-                  {allProducts.length > 8 && (
-                    <ScrollReveal animation="fade-up" delay={400}>
-                      <div className="text-center mt-8">
-                        <Button variant="outline" onClick={() => navigateTo('products')} className="rounded-full px-8 h-10 text-sm font-medium" style={{ borderColor: accentColor, color: accentColor }}>
-                          Xem tất cả {allProducts.length} sản phẩm →
-                        </Button>
-                      </div>
-                    </ScrollReveal>
-                  )}
                 </div>
               </section>
             )}
@@ -543,12 +576,35 @@ export default function UniversalStoreTemplate({
         {/* === PRODUCTS PAGE === */}
         {pageView === 'products' && (
           <div className="max-w-[1200px] mx-auto px-4 py-8">
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-4">
               <button onClick={() => navigateTo('home')} className="h-8 w-8 rounded-full bg-[#f5f5f7] flex items-center justify-center hover:bg-black/10 transition-colors">
                 <ArrowLeft className="h-4 w-4" />
               </button>
-              <h2 className="text-2xl font-bold tracking-tight">{config.navLabels.products}</h2>
+              <h2 className="text-2xl font-bold tracking-tight flex-1">{config.navLabels.products}</h2>
             </div>
+
+            {/* Product search */}
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#86868b]" />
+              <input
+                id="product-search-input"
+                type="text"
+                placeholder="Tìm kiếm sản phẩm..."
+                value={productSearchQuery}
+                onChange={(e) => setProductSearchQuery(e.target.value)}
+                className="w-full h-10 pl-10 pr-4 text-sm rounded-xl border border-black/10 bg-[#f5f5f7] focus:outline-none focus:ring-2 focus:border-transparent"
+                style={{ '--tw-ring-color': accentColor } as any}
+              />
+              {productSearchQuery && (
+                <button
+                  onClick={() => setProductSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-black/10 flex items-center justify-center hover:bg-black/20"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+
             {productsData && productsData.categories.length > 0 && (
               <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
                 <button
