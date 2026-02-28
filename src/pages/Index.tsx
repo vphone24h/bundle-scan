@@ -5,7 +5,7 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { useDashboardStats, useTodaySoldProducts, useRecentProducts, useRecentImportReceipts } from '@/hooks/useDashboardStats';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
-import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator, PlayCircle, Crown } from 'lucide-react';
+import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator, PlayCircle, Crown, MessageCircle } from 'lucide-react';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
@@ -195,6 +195,16 @@ const Index = () => {
               <Calculator className="mr-1.5 sm:mr-2 h-4 w-4" />
               <span className="hidden sm:inline">Tính trả góp</span>
               <span className="sm:hidden">Trả góp</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/subscription#feedback')}
+              className="h-8 text-xs sm:text-sm"
+            >
+              <MessageCircle className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">Góp ý tính năng</span>
+              <span className="sm:hidden">Góp ý</span>
             </Button>
             {userGuideUrl && (
               <Button 
