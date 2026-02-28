@@ -16,9 +16,11 @@ function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?:
   const location = useLocation();
   useEffect(() => {
     if (!storeId) return;
+    const iconSrc = logoUrl || '/icons/icon-192x192.png';
+    const iconSrc512 = logoUrl || '/icons/icon-512x512.png';
     const manifest = {
       name: storeName || `${storeId} - vkho.vn`,
-      short_name: storeId,
+      short_name: storeName || storeId,
       description: `${storeName || storeId}`,
       start_url: window.location.href,
       display: 'standalone',
@@ -26,8 +28,11 @@ function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?:
       background_color: '#f8fafc',
       theme_color: '#1e3a5f',
       icons: [
-        { src: logoUrl || '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable any' },
-        { src: logoUrl || '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable any' }
+        { src: iconSrc, sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: iconSrc, sizes: '180x180', type: 'image/png', purpose: 'any' },
+        { src: iconSrc512, sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: iconSrc, sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+        { src: iconSrc512, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
       ]
     };
     const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
@@ -38,14 +43,28 @@ function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?:
     manifestLink.rel = 'manifest';
     manifestLink.href = manifestUrl;
     document.head.appendChild(manifestLink);
+
+    // Apple touch icon (iOS uses this for home screen)
+    let appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]');
+    if (!appleTouchIcon) { appleTouchIcon = document.createElement('link'); appleTouchIcon.setAttribute('rel', 'apple-touch-icon'); document.head.appendChild(appleTouchIcon); }
+    appleTouchIcon.setAttribute('href', iconSrc);
+    appleTouchIcon.setAttribute('sizes', '180x180');
+
+    // apple-touch-icon-precomposed (older iOS)
+    let appleTouchIconPre = document.querySelector('link[rel="apple-touch-icon-precomposed"]');
+    if (!appleTouchIconPre) { appleTouchIconPre = document.createElement('link'); appleTouchIconPre.setAttribute('rel', 'apple-touch-icon-precomposed'); document.head.appendChild(appleTouchIconPre); }
+    appleTouchIconPre.setAttribute('href', iconSrc);
+
+    // Apple mobile web app title
     let appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
     if (!appleTitle) { appleTitle = document.createElement('meta'); appleTitle.setAttribute('name', 'apple-mobile-web-app-title'); document.head.appendChild(appleTitle); }
     appleTitle.setAttribute('content', storeName || storeId);
-    if (logoUrl) {
-      let appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]');
-      if (!appleTouchIcon) { appleTouchIcon = document.createElement('link'); appleTouchIcon.setAttribute('rel', 'apple-touch-icon'); document.head.appendChild(appleTouchIcon); }
-      appleTouchIcon.setAttribute('href', logoUrl);
-    }
+
+    // Apple mobile web app capable
+    let appleCap = document.querySelector('meta[name="apple-mobile-web-app-capable"]');
+    if (!appleCap) { appleCap = document.createElement('meta'); appleCap.setAttribute('name', 'apple-mobile-web-app-capable'); document.head.appendChild(appleCap); }
+    appleCap.setAttribute('content', 'yes');
+
     return () => { URL.revokeObjectURL(manifestUrl); };
   }, [storeId, storeName, logoUrl, location.pathname]);
 }
