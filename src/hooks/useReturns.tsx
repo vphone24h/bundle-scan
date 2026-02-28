@@ -372,6 +372,7 @@ export function useCreateExportReturn() {
       feeAmount,
       payments,
       isBusinessAccounting,
+      recordToCashBook = true,
       note,
     }: {
       item: {
@@ -393,6 +394,7 @@ export function useCreateExportReturn() {
       feeAmount: number;
       payments: { source: string; amount: number }[];
       isBusinessAccounting: boolean;
+      recordToCashBook?: boolean;
       note?: string | null;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -487,24 +489,26 @@ export function useCreateExportReturn() {
           }]);
         }
 
-        // Phí trả hàng - KHÔNG tính vào hạch toán kinh doanh (không ảnh hưởng báo cáo)
-        const { error: incomeError } = await supabase
-          .from('cash_book')
-          .insert([{
-            type: 'income' as const,
-            category: 'Thu nhap khac',
-            description: `Phí trả hàng: ${item.product_name} (${code})`,
-            amount: storeKeepAmount,
-            payment_source: payments[0]?.source || 'cash',
-            is_business_accounting: false, // KHÔNG tính vào hạch toán - không ảnh hưởng báo cáo
-            branch_id: item.branch_id,
-            reference_id: null,
-            reference_type: 'export_return_fee',
-            created_by: user.id,
-            tenant_id: tenantId,
-          }]);
+        if (recordToCashBook) {
+          // Phí trả hàng
+          const { error: incomeError } = await supabase
+            .from('cash_book')
+            .insert([{
+              type: 'income' as const,
+              category: 'Thu nhap khac',
+              description: `Phí trả hàng: ${item.product_name} (${code})`,
+              amount: storeKeepAmount,
+              payment_source: payments[0]?.source || 'cash',
+              is_business_accounting: false,
+              branch_id: item.branch_id,
+              reference_id: null,
+              reference_type: 'export_return_fee',
+              created_by: user.id,
+              tenant_id: tenantId,
+            }]);
 
-        if (incomeError) throw incomeError;
+          if (incomeError) throw incomeError;
+        }
       } else {
         // Trả hàng không có phí - hoàn lại kho với giá nhập TB hiện tại
         if (item.product_id) {
@@ -626,27 +630,28 @@ export function useCreateExportReturn() {
         }
       }
 
-      // Ghi nhận tiền hoàn trả cho khách - KHÔNG tính vào hạch toán kinh doanh
-      // (Chỉ là đảo dòng tiền, không phải hoạt động kinh doanh mới)
-      for (const payment of payments) {
-        if (payment.source !== 'debt') {
-          const { error: cashBookError } = await supabase
-            .from('cash_book')
-            .insert([{
-              type: 'expense' as const,
-              category: 'Hoan tien khach hang',
-              description: `Hoan tien tra hang: ${item.product_name} (${code})`,
-              amount: payment.amount,
-              payment_source: payment.source,
-              is_business_accounting: false, // KHÔNG tính vào hạch toán - chỉ đảo dòng tiền
-              branch_id: item.branch_id,
-              reference_id: returnData.id,
-              reference_type: 'export_return',
-              created_by: user.id,
-              tenant_id: tenantId,
-            }]);
+      // Ghi nhận tiền hoàn trả cho khách
+      if (recordToCashBook) {
+        for (const payment of payments) {
+          if (payment.source !== 'debt') {
+            const { error: cashBookError } = await supabase
+              .from('cash_book')
+              .insert([{
+                type: 'expense' as const,
+                category: 'Hoan tien khach hang',
+                description: `Hoan tien tra hang: ${item.product_name} (${code})`,
+                amount: payment.amount,
+                payment_source: payment.source,
+                is_business_accounting: false,
+                branch_id: item.branch_id,
+                reference_id: returnData.id,
+                reference_type: 'export_return',
+                created_by: user.id,
+                tenant_id: tenantId,
+              }]);
 
-          if (cashBookError) throw cashBookError;
+            if (cashBookError) throw cashBookError;
+          }
         }
       }
 
