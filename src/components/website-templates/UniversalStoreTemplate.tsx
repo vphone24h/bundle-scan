@@ -25,10 +25,10 @@ import { format, addMonths, isAfter, differenceInDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import {
   Search, MapPin, Phone, Mail, Shield, CheckCircle, XCircle,
-  Store, Loader2, Building2, Headphones, Calendar, Package,
-  Clock, Users, ExternalLink, Star, Gift, ChevronDown, ChevronUp,
-  ShoppingBag, Newspaper, ArrowLeft, Download, Smartphone, Share,
-  Plus, MoreVertical, Link2, Truck, CreditCard, Award, Menu, X,
+  Loader2, Building2, Headphones, Calendar, Package,
+  Clock, Users, Star, Gift, ChevronDown,
+  ShoppingBag, Newspaper, ArrowLeft,
+  Link2, Menu, X,
 } from 'lucide-react';
 import { LayoutHero } from './layouts/HeroVariants';
 import { LayoutProductCard, getProductGridClass } from './layouts/ProductCardVariants';
