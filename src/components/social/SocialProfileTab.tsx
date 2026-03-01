@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Edit, Save, X, CheckCircle, MapPin, Phone, Users, Camera, Loader2, UserPlus, UserCheck } from 'lucide-react';
+import { Edit, Save, X, MapPin, Phone, Users, Camera, Loader2, UserPlus, UserCheck } from 'lucide-react';
+import { VerifiedBadge } from './VerifiedBadge';
 import { toast } from 'sonner';
 import { SocialPostCard } from './SocialPostCard';
 import { supabase } from '@/integrations/supabase/client';
@@ -142,9 +143,7 @@ export const SocialProfileTab = memo(function SocialProfileTab({ userId, onViewP
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xl font-bold">{profile?.display_name || 'Người dùng'}</h2>
-                {profile?.is_verified && (
-                  <CheckCircle className="h-5 w-5 text-blue-500 fill-blue-500" />
-                )}
+                {profile?.is_verified && <VerifiedBadge size="lg" />}
               </div>
               {profile?.bio && !editing && <p className="text-muted-foreground text-sm mt-1">{profile.bio}</p>}
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
