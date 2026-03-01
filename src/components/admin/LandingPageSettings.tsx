@@ -1136,6 +1136,8 @@ export function LandingPageSettings() {
             templateId={(formData as any).website_template || 'phone_store'}
             customSections={(formData as any).custom_home_sections || null}
             onChange={(sections) => setFormData(prev => ({ ...prev, custom_home_sections: sections as any }))}
+            customProductTabs={(formData as any).custom_product_tabs || []}
+            onTabsChange={(tabs) => setFormData(prev => ({ ...prev, custom_product_tabs: tabs as any }))}
           />
         </CardContent>
       </Card>

@@ -3272,6 +3272,7 @@ export type Database = {
           created_at: string
           description: string | null
           display_order: number | null
+          home_tab_ids: string[] | null
           id: string
           image_url: string | null
           images: Json | null
@@ -3289,6 +3290,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number | null
+          home_tab_ids?: string[] | null
           id?: string
           image_url?: string | null
           images?: Json | null
@@ -3306,6 +3308,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number | null
+          home_tab_ids?: string[] | null
           id?: string
           image_url?: string | null
           images?: Json | null

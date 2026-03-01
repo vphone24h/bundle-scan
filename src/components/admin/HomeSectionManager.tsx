@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronUp, ChevronDown, RotateCcw, Sparkles, Plus, Pencil, Trash2, X } from 'lucide-react';
+import { ChevronUp, ChevronDown, RotateCcw, Sparkles, Plus, Pencil, Trash2, X, Package } from 'lucide-react';
 import { HomeSection, getIndustryConfig } from '@/lib/industryConfig';
 
 export interface HomeSectionItem {
@@ -17,6 +17,7 @@ export interface CustomProductTab {
   name: string;
   displayStyle: 'grid' | 'slide' | 'list';
   enabled: boolean;
+  icon?: string;
 }
 
 // All available built-in sections with labels and icons
@@ -44,10 +45,9 @@ const PRESET_TABS: { name: string; icon: string }[] = [
 ];
 
 function getSectionMeta(id: string, customTabs: CustomProductTab[]) {
-  // Check if it's a custom product tab
   const customTab = customTabs.find(t => t.id === id);
   if (customTab) {
-    return { id, label: customTab.name, icon: '📦', description: `Tab sản phẩm tùy chỉnh • ${customTab.displayStyle === 'grid' ? 'Lưới' : customTab.displayStyle === 'slide' ? 'Trượt' : 'Danh sách'}` };
+    return { id, label: customTab.name, icon: customTab.icon || '📦', description: `Tab sản phẩm tùy chỉnh • ${customTab.displayStyle === 'grid' ? 'Lưới' : customTab.displayStyle === 'slide' ? 'Trượt' : 'Danh sách'}` };
   }
   return ALL_SECTIONS.find(s => s.id === id) || { id, label: id, icon: '📦', description: '' };
 }
@@ -58,9 +58,10 @@ interface HomeSectionManagerProps {
   onChange: (sections: HomeSectionItem[] | null) => void;
   customProductTabs?: CustomProductTab[];
   onTabsChange?: (tabs: CustomProductTab[]) => void;
+  onManageTabProducts?: (tabId: string, tabName: string) => void;
 }
 
-export function HomeSectionManager({ templateId, customSections, onChange, customProductTabs = [], onTabsChange }: HomeSectionManagerProps) {
+export function HomeSectionManager({ templateId, customSections, onChange, customProductTabs = [], onTabsChange, onManageTabProducts }: HomeSectionManagerProps) {
   const config = getIndustryConfig(templateId);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
@@ -112,9 +113,9 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
   const handleAutoSuggest = () => onChange(buildFromConfig());
 
   // Add a custom product tab
-  const addProductTab = (name: string) => {
+  const addProductTab = (name: string, icon?: string) => {
     const tabId = `productTab_${Date.now()}`;
-    const newTab: CustomProductTab = { id: tabId, name, displayStyle: 'grid', enabled: true };
+    const newTab: CustomProductTab = { id: tabId, name, displayStyle: 'grid', enabled: true, icon: icon || '📦' };
     const updatedTabs = [...customProductTabs, newTab];
     onTabsChange?.(updatedTabs);
 
@@ -225,6 +226,13 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
               {/* Actions for custom tabs */}
               {isCustom && !isEditing && (
                 <div className="flex items-center gap-0.5 shrink-0">
+                  {onManageTabProducts && (
+                    <button type="button" onClick={() => onManageTabProducts(item.id, meta.label)}
+                      className="h-6 px-1.5 flex items-center justify-center gap-0.5 rounded hover:bg-primary/10 text-primary text-[10px] font-medium">
+                      <Package className="h-3 w-3" />
+                      SP
+                    </button>
+                  )}
                   <button type="button" onClick={() => setEditingTabId(item.id)}
                     className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted text-muted-foreground">
                     <Pencil className="h-3 w-3" />
@@ -279,7 +287,7 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
                   key={preset.name}
                   type="button"
                   disabled={alreadyAdded}
-                  onClick={() => addProductTab(preset.name)}
+                  onClick={() => addProductTab(preset.name, preset.icon)}
                   className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-muted transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <span>{preset.icon}</span>

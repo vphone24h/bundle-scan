@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
@@ -50,6 +51,8 @@ export function LandingProductsTab() {
   const variantFileRef = useRef<HTMLInputElement>(null);
   const [pendingVariantIdx, setPendingVariantIdx] = useState<number | null>(null);
 
+  const customProductTabs = (landingSettings as any)?.custom_product_tabs || [];
+
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -61,6 +64,7 @@ export function LandingProductsTab() {
     is_featured: false,
     is_active: true,
     variants: [] as LandingProductVariant[],
+    home_tab_ids: [] as string[],
   });
 
   const handleAddCategory = async () => {
@@ -76,7 +80,7 @@ export function LandingProductsTab() {
 
   const openAddProduct = () => {
     setEditingProduct(null);
-    setForm({ name: '', description: '', price: 0, sale_price: null, category_id: '_none_', image_url: '', images: [], is_featured: false, is_active: true, variants: [] });
+    setForm({ name: '', description: '', price: 0, sale_price: null, category_id: '_none_', image_url: '', images: [], is_featured: false, is_active: true, variants: [], home_tab_ids: [] });
     setProductDialog(true);
   };
 
@@ -93,6 +97,7 @@ export function LandingProductsTab() {
       is_featured: p.is_featured,
       is_active: p.is_active,
       variants: Array.isArray(p.variants) ? p.variants : [],
+      home_tab_ids: Array.isArray((p as any).home_tab_ids) ? (p as any).home_tab_ids : [],
     });
     setProductDialog(true);
   };
@@ -177,6 +182,7 @@ export function LandingProductsTab() {
         is_featured: form.is_featured,
         is_active: form.is_active,
         variants: form.variants,
+        home_tab_ids: form.home_tab_ids,
       };
       if (editingProduct) {
         await updateProduct.mutateAsync({ id: editingProduct.id, ...payload });
@@ -471,6 +477,32 @@ export function LandingProductsTab() {
             </div>
 
             <Separator />
+
+            {/* Hiển thị trên trang chủ */}
+            {customProductTabs.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Hiển thị trên trang chủ</Label>
+                <div className="space-y-1.5">
+                  {customProductTabs.map(tab => (
+                    <label key={tab.id} className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={form.home_tab_ids.includes(tab.id)}
+                        onCheckedChange={(checked) => {
+                          setForm(p => ({
+                            ...p,
+                            home_tab_ids: checked
+                              ? [...p.home_tab_ids, tab.id]
+                              : p.home_tab_ids.filter(id => id !== tab.id)
+                          }));
+                        }}
+                      />
+                      <span className="text-sm">{tab.icon || '📦'} {tab.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <Label>Sản phẩm nổi bật</Label>
               <Switch checked={form.is_featured} onCheckedChange={v => setForm(p => ({ ...p, is_featured: v }))} />
