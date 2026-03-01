@@ -490,7 +490,7 @@ export function LandingPageSettings() {
             <div className="space-y-0.5">
               <Label>Bật Website bán hàng</Label>
               <p className="text-sm text-muted-foreground">
-                Cho phép khách hàng truy cập trang thông tin cửa hàng
+                Bật lên để khách hàng đặt hàng online, tắt sẽ không đặt hàng được
               </p>
             </div>
             <Switch
