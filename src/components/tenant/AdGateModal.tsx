@@ -296,20 +296,6 @@ export function AdGateModal({ open, onClose, settings }: AdGateModalProps) {
               Nâng cấp
             </button>
 
-            {canSkip ? (
-              <button
-                type="button"
-                onClick={handleSkip}
-                className="shrink-0 flex items-center justify-center gap-1 bg-white/20 backdrop-blur-sm border border-white/30 text-white text-[11px] font-semibold rounded-full px-3 py-1.5 hover:bg-white/30 active:scale-95 transition shadow-lg whitespace-nowrap"
-              >
-                <X className="h-3 w-3 shrink-0" />
-                Trở lại VKho
-              </button>
-            ) : settings.is_skippable ? (
-              <div className="flex-1 flex items-center justify-center bg-black/40 backdrop-blur-sm text-white/50 text-[10px] rounded-full px-2 py-1.5 whitespace-nowrap">
-                VKho sau {skipAfterRemaining}s
-              </div>
-            ) : null}
           </div>
 
           <p className="text-center text-white/40 text-[9px]">
