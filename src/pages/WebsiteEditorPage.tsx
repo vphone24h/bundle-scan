@@ -64,6 +64,7 @@ export default function WebsiteEditorPage() {
         hero_subtitle: (settings as any).hero_subtitle || null,
         hero_cta: (settings as any).hero_cta || null,
         custom_home_sections: (settings as any).custom_home_sections || null,
+        custom_product_tabs: (settings as any).custom_product_tabs || [],
         custom_font_family: (settings as any).custom_font_family || null,
         custom_layout_style: (settings as any).custom_layout_style || null,
       });
