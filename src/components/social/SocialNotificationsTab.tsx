@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useSocialNotifications, useMarkNotificationsRead, SocialNotification } from '@/hooks/useSocial';
@@ -34,12 +34,11 @@ const getNotifText = (notif: SocialNotification) => {
   }
 };
 
-export function SocialNotificationsTab({ onViewProfile, onGoToPost }: Props) {
+export const SocialNotificationsTab = memo(function SocialNotificationsTab({ onViewProfile, onGoToPost }: Props) {
   const { data: notifications, isLoading } = useSocialNotifications();
   const markRead = useMarkNotificationsRead();
 
   useEffect(() => {
-    // Mark all as read when opening this tab
     markRead.mutate();
   }, []);
 
@@ -83,4 +82,4 @@ export function SocialNotificationsTab({ onViewProfile, onGoToPost }: Props) {
       ))}
     </div>
   );
-}
+});

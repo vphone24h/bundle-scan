@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Home, Bell } from 'lucide-react';
-import { SocialProfileTab } from '@/components/social/SocialProfileTab';
-import { SocialFeedTab } from '@/components/social/SocialFeedTab';
-import { SocialNotificationsTab } from '@/components/social/SocialNotificationsTab';
 import { useUnreadSocialNotifCount } from '@/hooks/useSocial';
 import { PageHeader } from '@/components/layout/PageHeader';
+
+const SocialProfileTab = lazy(() => import('@/components/social/SocialProfileTab').then(m => ({ default: m.SocialProfileTab })));
+const SocialFeedTab = lazy(() => import('@/components/social/SocialFeedTab').then(m => ({ default: m.SocialFeedTab })));
+const SocialNotificationsTab = lazy(() => import('@/components/social/SocialNotificationsTab').then(m => ({ default: m.SocialNotificationsTab })));
+
+const TabFallback = () => <div className="text-center py-8 text-muted-foreground">Đang tải...</div>;
 
 const SocialPage = () => {
   const [activeTab, setActiveTab] = useState('feed');
@@ -49,14 +52,20 @@ const SocialPage = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile">
-          <SocialProfileTab userId={viewUserId} onViewProfile={handleViewProfile} />
+        <TabsContent value="profile" forceMount={activeTab === 'profile' ? undefined : true} className={activeTab !== 'profile' ? 'hidden' : ''}>
+          <Suspense fallback={<TabFallback />}>
+            <SocialProfileTab userId={viewUserId} onViewProfile={handleViewProfile} />
+          </Suspense>
         </TabsContent>
-        <TabsContent value="feed">
-          <SocialFeedTab onViewProfile={handleViewProfile} />
+        <TabsContent value="feed" forceMount={activeTab === 'feed' ? undefined : true} className={activeTab !== 'feed' ? 'hidden' : ''}>
+          <Suspense fallback={<TabFallback />}>
+            <SocialFeedTab onViewProfile={handleViewProfile} />
+          </Suspense>
         </TabsContent>
-        <TabsContent value="notifications">
-          <SocialNotificationsTab onViewProfile={handleViewProfile} onGoToPost={handleGoToPost} />
+        <TabsContent value="notifications" forceMount={activeTab === 'notifications' ? undefined : true} className={activeTab !== 'notifications' ? 'hidden' : ''}>
+          <Suspense fallback={<TabFallback />}>
+            <SocialNotificationsTab onViewProfile={handleViewProfile} onGoToPost={handleGoToPost} />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </MainLayout>

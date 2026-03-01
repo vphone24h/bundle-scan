@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, memo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocialProfile, useUpsertSocialProfile, useSocialFeed, useIsFollowing, useToggleFollow } from '@/hooks/useSocial';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,7 +21,7 @@ interface Props {
   onViewProfile: (userId: string) => void;
 }
 
-export function SocialProfileTab({ userId, onViewProfile }: Props) {
+export const SocialProfileTab = memo(function SocialProfileTab({ userId, onViewProfile }: Props) {
   const { user } = useAuth();
   const isOwnProfile = !userId || userId === user?.id;
   const targetId = isOwnProfile ? user?.id : userId;
@@ -36,6 +36,7 @@ export function SocialProfileTab({ userId, onViewProfile }: Props) {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
+    display_name: '',
     zalo_number: '',
     facebook_url: '',
     tiktok_url: '',
@@ -48,6 +49,7 @@ export function SocialProfileTab({ userId, onViewProfile }: Props) {
   const startEdit = () => {
     if (profile) {
       setForm({
+        display_name: profile.display_name || '',
         zalo_number: profile.zalo_number || '',
         facebook_url: profile.facebook_url || '',
         tiktok_url: profile.tiktok_url || '',
@@ -62,7 +64,13 @@ export function SocialProfileTab({ userId, onViewProfile }: Props) {
 
   const handleSave = async () => {
     try {
-      await upsert.mutateAsync(form as any);
+      const { display_name, ...socialData } = form;
+      // Update display_name in profiles table
+      if (display_name.trim() && display_name !== profile?.display_name) {
+        await updateProfile.mutateAsync({ display_name: display_name.trim() });
+      }
+      await upsert.mutateAsync(socialData as any);
+      queryClient.invalidateQueries({ queryKey: ['social-profile'] });
       setEditing(false);
       toast.success('Đã cập nhật trang cá nhân');
     } catch {
@@ -138,12 +146,12 @@ export function SocialProfileTab({ userId, onViewProfile }: Props) {
                   <CheckCircle className="h-5 w-5 text-blue-500 fill-blue-500" />
                 )}
               </div>
-              {profile?.bio && <p className="text-muted-foreground text-sm mt-1">{profile.bio}</p>}
+              {profile?.bio && !editing && <p className="text-muted-foreground text-sm mt-1">{profile.bio}</p>}
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {profile?.follower_count || 0} follower</span>
                 <span>{profile?.following_count || 0} đang theo dõi</span>
               </div>
-              {profile?.store_address && (
+              {profile?.store_address && !editing && (
                 <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5" /> {profile.store_address}
                 </p>
@@ -154,23 +162,25 @@ export function SocialProfileTab({ userId, onViewProfile }: Props) {
                 </p>
               )}
               {/* Social links */}
-              <div className="flex gap-2 mt-2">
-                {profile?.zalo_number && profile.show_zalo_button && (
-                  <a href={`https://zalo.me/${profile.zalo_number}`} target="_blank" rel="noopener noreferrer">
-                    <Badge variant="secondary" className="cursor-pointer hover:bg-blue-100">Zalo</Badge>
-                  </a>
-                )}
-                {profile?.facebook_url && profile.show_facebook_button && (
-                  <a href={profile.facebook_url.startsWith('http') ? profile.facebook_url : `https://facebook.com/${profile.facebook_url}`} target="_blank" rel="noopener noreferrer">
-                    <Badge variant="secondary" className="cursor-pointer hover:bg-blue-100">Facebook</Badge>
-                  </a>
-                )}
-                {profile?.tiktok_url && (
-                  <a href={profile.tiktok_url.startsWith('http') ? profile.tiktok_url : `https://tiktok.com/@${profile.tiktok_url}`} target="_blank" rel="noopener noreferrer">
-                    <Badge variant="secondary" className="cursor-pointer hover:bg-blue-100">TikTok</Badge>
-                  </a>
-                )}
-              </div>
+              {!editing && (
+                <div className="flex gap-2 mt-2">
+                  {profile?.zalo_number && profile.show_zalo_button && (
+                    <a href={`https://zalo.me/${profile.zalo_number}`} target="_blank" rel="noopener noreferrer">
+                      <Badge variant="secondary" className="cursor-pointer hover:bg-blue-100">Zalo</Badge>
+                    </a>
+                  )}
+                  {profile?.facebook_url && profile.show_facebook_button && (
+                    <a href={profile.facebook_url.startsWith('http') ? profile.facebook_url : `https://facebook.com/${profile.facebook_url}`} target="_blank" rel="noopener noreferrer">
+                      <Badge variant="secondary" className="cursor-pointer hover:bg-blue-100">Facebook</Badge>
+                    </a>
+                  )}
+                  {profile?.tiktok_url && (
+                    <a href={profile.tiktok_url.startsWith('http') ? profile.tiktok_url : `https://tiktok.com/@${profile.tiktok_url}`} target="_blank" rel="noopener noreferrer">
+                      <Badge variant="secondary" className="cursor-pointer hover:bg-blue-100">TikTok</Badge>
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Action buttons */}
@@ -198,6 +208,10 @@ export function SocialProfileTab({ userId, onViewProfile }: Props) {
           {/* Edit form */}
           {editing && (
             <div className="mt-4 space-y-3 border-t pt-4">
+              <div>
+                <Label className="text-xs">Tên hiển thị</Label>
+                <Input value={form.display_name} onChange={e => setForm({ ...form, display_name: e.target.value })} placeholder="Tên của bạn" />
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">Số Zalo</Label>
@@ -250,4 +264,4 @@ export function SocialProfileTab({ userId, onViewProfile }: Props) {
       )}
     </div>
   );
-}
+});
