@@ -479,29 +479,48 @@ export function LandingProductsTab() {
             <Separator />
 
             {/* Hiển thị trên trang chủ */}
-            {customProductTabs.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Hiển thị trên trang chủ</Label>
-                <div className="space-y-1.5">
-                  {customProductTabs.map(tab => (
-                    <label key={tab.id} className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox
-                        checked={form.home_tab_ids.includes(tab.id)}
-                        onCheckedChange={(checked) => {
-                          setForm(p => ({
-                            ...p,
-                            home_tab_ids: checked
-                              ? [...p.home_tab_ids, tab.id]
-                              : p.home_tab_ids.filter(id => id !== tab.id)
-                          }));
-                        }}
-                      />
-                      <span className="text-sm">{tab.icon || '📦'} {tab.name}</span>
-                    </label>
-                  ))}
-                </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Hiển thị trên trang chủ</Label>
+              <div className="space-y-1.5">
+                {/* Built-in sections */}
+                {[
+                  { id: 'flashSale', icon: '⚡', name: 'Flash Sale' },
+                  { id: 'combo', icon: '🎁', name: 'Combo ưu đãi' },
+                ].map(section => (
+                  <label key={section.id} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={form.home_tab_ids.includes(section.id)}
+                      onCheckedChange={(checked) => {
+                        setForm(p => ({
+                          ...p,
+                          home_tab_ids: checked
+                            ? [...p.home_tab_ids, section.id]
+                            : p.home_tab_ids.filter(id => id !== section.id)
+                        }));
+                      }}
+                    />
+                    <span className="text-sm">{section.icon} {section.name}</span>
+                  </label>
+                ))}
+                {/* Custom tabs */}
+                {customProductTabs.map(tab => (
+                  <label key={tab.id} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={form.home_tab_ids.includes(tab.id)}
+                      onCheckedChange={(checked) => {
+                        setForm(p => ({
+                          ...p,
+                          home_tab_ids: checked
+                            ? [...p.home_tab_ids, tab.id]
+                            : p.home_tab_ids.filter(id => id !== tab.id)
+                        }));
+                      }}
+                    />
+                    <span className="text-sm">{tab.icon || '📦'} {tab.name}</span>
+                  </label>
+                ))}
               </div>
-            )}
+            </div>
 
             <div className="flex items-center justify-between">
               <Label>Sản phẩm nổi bật</Label>
