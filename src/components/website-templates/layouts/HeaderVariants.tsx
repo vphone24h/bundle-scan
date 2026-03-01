@@ -1,5 +1,6 @@
 import { LayoutStyle } from '@/lib/industryConfig';
 import { Menu, X, Search, ShoppingBag } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 interface HeaderProps {
   storeName: string;
@@ -254,16 +255,16 @@ function MobileMenu({ mobileMenuOpen, navItems, onNavClick, isNavActive, onClose
   const borderClass = menuTextClass ? 'border-white/10' : 'border-black/10';
   const closeBtnHover = menuTextClass ? 'hover:bg-white/10' : 'hover:bg-black/5';
 
-  return (
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
-        className={`sm:hidden fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`sm:hidden fixed inset-0 z-[9998] bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onCloseMenu}
       />
       {/* Drawer */}
       <div
-        className={`sm:hidden fixed top-0 left-0 z-[70] h-full w-[280px] max-w-[80vw] shadow-2xl transition-transform duration-300 ease-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} ${menuBg || 'bg-white'}`}
+        className={`sm:hidden fixed top-0 left-0 z-[9999] h-full w-[280px] max-w-[80vw] shadow-2xl transition-transform duration-300 ease-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} ${menuBg || 'bg-white'}`}
       >
         {/* Header */}
         <div className={`flex items-center justify-between px-4 py-4 border-b ${borderClass}`}>
@@ -291,7 +292,8 @@ function MobileMenu({ mobileMenuOpen, navItems, onNavClick, isNavActive, onClose
           ))}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 
