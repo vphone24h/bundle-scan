@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -180,6 +181,126 @@ export function TradeInPage({ accentColor, storeName, storePhone, zaloUrl, pageI
   );
 }
 
+// === INSTALLMENT CALCULATOR SECTION ===
+function InstallmentCalculatorSection({ accentColor }: { accentColor: string }) {
+  const [totalAmount, setTotalAmount] = useState('');
+  const [downPayment, setDownPayment] = useState('');
+  const [months, setMonths] = useState(12);
+  const [rate, setRate] = useState(1.8);
+  const [showResult, setShowResult] = useState(false);
+
+  const PRESETS = [
+    { label: 'Home Credit', rate: 1.83 },
+    { label: 'FE Credit', rate: 2.07 },
+    { label: 'HD SAISON', rate: 1.75 },
+    { label: 'Mirae Asset', rate: 1.58 },
+  ];
+
+  const parseCurrency = (v: string) => Number(v.replace(/\D/g, '')) || 0;
+  const fmtCurrency = (v: string) => {
+    const num = v.replace(/\D/g, '');
+    return num ? Number(num).toLocaleString('vi-VN') : '';
+  };
+
+  const principal = parseCurrency(totalAmount) - parseCurrency(downPayment);
+  const totalInterest = principal > 0 ? principal * (rate / 100) * months : 0;
+  const monthlyPayment = principal > 0 ? Math.round((principal + totalInterest) / months) : 0;
+
+  const handleCalc = () => {
+    if (principal > 0) setShowResult(true);
+  };
+
+  return (
+    <div className="rounded-2xl border p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <DollarSign className="h-5 w-5" style={{ color: accentColor }} />
+        <h2 className="text-lg font-bold">Tính trả góp</h2>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">Tổng tiền sản phẩm</label>
+          <Input
+            value={totalAmount}
+            onChange={e => { setTotalAmount(fmtCurrency(e.target.value)); setShowResult(false); }}
+            placeholder="VD: 15,000,000"
+            className="text-sm"
+            inputMode="numeric"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">Trả trước</label>
+          <Input
+            value={downPayment}
+            onChange={e => { setDownPayment(fmtCurrency(e.target.value)); setShowResult(false); }}
+            placeholder="VD: 3,000,000"
+            className="text-sm"
+            inputMode="numeric"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">Kỳ hạn (tháng)</label>
+          <div className="flex flex-wrap gap-1.5">
+            {[6, 9, 12, 18, 24].map(m => (
+              <button
+                key={m}
+                onClick={() => { setMonths(m); setShowResult(false); }}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${months === m ? 'text-white border-transparent' : 'hover:bg-muted'}`}
+                style={months === m ? { backgroundColor: accentColor } : {}}
+              >
+                {m} tháng
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">Lãi suất / tháng</label>
+          <div className="flex flex-wrap gap-1.5">
+            {PRESETS.map(p => (
+              <button
+                key={p.label}
+                onClick={() => { setRate(p.rate); setShowResult(false); }}
+                className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${rate === p.rate ? 'text-white border-transparent' : 'hover:bg-muted'}`}
+                style={rate === p.rate ? { backgroundColor: accentColor } : {}}
+              >
+                {p.label} ({p.rate}%)
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <Button onClick={handleCalc} className="w-full rounded-full text-white" style={{ backgroundColor: accentColor }} disabled={principal <= 0}>
+        Tính ngay
+      </Button>
+
+      {showResult && principal > 0 && (
+        <div className="rounded-xl bg-muted/50 p-4 space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Số tiền góp/tháng</span>
+            <span className="font-bold" style={{ color: accentColor }}>{monthlyPayment.toLocaleString('vi-VN')}đ</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Gốc cần trả</span>
+            <span className="font-medium">{principal.toLocaleString('vi-VN')}đ</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Tổng lãi</span>
+            <span className="font-medium">{Math.round(totalInterest).toLocaleString('vi-VN')}đ</span>
+          </div>
+          <div className="flex justify-between border-t pt-2">
+            <span className="text-muted-foreground">Tổng thanh toán</span>
+            <span className="font-bold">{Math.round(principal + totalInterest).toLocaleString('vi-VN')}đ</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // === INSTALLMENT PAGE ===
 export function InstallmentPage({ accentColor, storeName, storePhone, zaloUrl, onNavigateProducts, pageItems }: SystemPageProps) {
   const items = pageItems && pageItems.length > 0 ? pageItems : DEFAULT_PAGE_ITEMS.installment;
@@ -217,6 +338,11 @@ export function InstallmentPage({ accentColor, storeName, storePhone, zaloUrl, o
             <div key={i} className="rounded-full border px-4 py-2 text-sm font-medium">{p}</div>
           ))}
         </div>
+      </ScrollReveal>
+
+      {/* Installment Calculator */}
+      <ScrollReveal animation="fade-up" delay={250}>
+        <InstallmentCalculatorSection accentColor={accentColor} />
       </ScrollReveal>
 
       {/* CTA */}
