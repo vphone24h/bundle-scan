@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { TenantLandingSettings } from '@/hooks/useTenantLanding';
-import { getIndustryConfig, LayoutStyle, HomeSection } from '@/lib/industryConfig';
+import { getIndustryConfig, getFullNavItems, LayoutStyle, HomeSection } from '@/lib/industryConfig';
 import { HomeSectionItem } from '@/components/admin/HomeSectionManager';
 import { Pencil } from 'lucide-react';
 
@@ -96,8 +96,11 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
     }
   };
 
+  // Build nav items
+  const navItems = (formData as any)?.custom_nav_items || getFullNavItems(templateId);
+
   return (
-    <div className="h-full overflow-y-auto bg-muted/30 flex justify-center" onClick={() => {}}>
+    <div className="min-h-full bg-muted/30 flex justify-center pb-4" onClick={() => {}}>
       <div
         className="bg-white shadow-xl mx-auto my-0 sm:my-4 sm:rounded-xl overflow-hidden"
         style={{ ...getFrameStyle(), width: '100%' }}
@@ -106,7 +109,7 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
         <div className="text-[#1d1d1f]" style={{ fontFamily: config.fontFamily }}>
           {/* HEADER */}
           <SectionOverlay sectionId="store-info" label="Header" onEdit={onEditSection}>
-            <header className="sticky top-0 z-10 border-b border-black/5 bg-white/80 backdrop-blur-xl">
+            <header className="border-b border-black/5 bg-white">
               <div className="px-4 flex items-center justify-between h-11">
                 <div className="flex items-center gap-2.5">
                   {formData.store_logo_url ? (
@@ -119,6 +122,22 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
                 <div className="h-4 w-4 text-[#86868b]">🔍</div>
               </div>
             </header>
+          </SectionOverlay>
+
+          {/* MENU / NAV */}
+          <SectionOverlay sectionId="menu" label="Menu" onEdit={onEditSection}>
+            <nav className="border-b border-black/5 bg-white overflow-x-auto">
+              <div className="flex items-center gap-1 px-3 py-2">
+                {navItems.slice(0, 6).map((item: any, i: number) => (
+                  <span
+                    key={i}
+                    className="shrink-0 px-3 py-1.5 rounded-full text-[10px] font-medium bg-muted/60 text-foreground/70 whitespace-nowrap"
+                  >
+                    {item.label || item}
+                  </span>
+                ))}
+              </div>
+            </nav>
           </SectionOverlay>
 
           {/* Render home sections */}
