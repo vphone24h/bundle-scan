@@ -452,6 +452,10 @@ export default function SubscriptionPage() {
                       <Check className="h-4 w-4 text-primary" />
                       Không quảng cáo
                     </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-primary" />
+                      Huy hiệu tích xanh mạng xã hội
+                    </li>
                   </ul>
                   <Button className="w-full" size="sm" onClick={(e) => { e.stopPropagation(); handleSelectPlan(plan.id); }}>
                     <CreditCard className="h-4 w-4 mr-2" />
