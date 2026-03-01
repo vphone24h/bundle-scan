@@ -44,6 +44,7 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
   const [usePoints, setUsePoints] = useState(false);
+  const [attempted, setAttempted] = useState(false);
 
   const placeOrder = usePlaceLandingOrder();
 
@@ -158,6 +159,7 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
     setSelectedVoucherId(null);
     setUsePoints(false);
     setDebouncedPhone('');
+    setAttempted(false);
   };
 
   const handleClose = (val: boolean) => {
@@ -166,6 +168,7 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
   };
 
   const handleSubmitOrder = async () => {
+    setAttempted(true);
     if (!product || !customerName.trim() || !customerPhone.trim() || !selectedBranch) {
       toast.error('Vui lòng điền đầy đủ thông tin bắt buộc');
       return;
@@ -283,7 +286,7 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
           {variants.length > 0 && (
             <div>
               <Label className="text-sm font-medium mb-2 block">Chọn phiên bản <span className="text-destructive">*</span></Label>
-              <div className="flex flex-wrap gap-2">
+              <div className={`flex flex-wrap gap-2 p-2 rounded-md ${attempted && selectedVariantIndex === null ? 'border-2 border-destructive' : ''}`}>
                 {variants.map((v, i) => (
                   <Badge
                     key={i}
@@ -339,12 +342,12 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
               
               <div>
                 <Label className="text-xs">Họ tên <span className="text-destructive">*</span></Label>
-                <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Nhập họ tên" className="h-10" />
+                <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Nhập họ tên" className={`h-10 ${attempted && !customerName.trim() ? 'border-destructive ring-destructive' : ''}`} />
               </div>
 
               <div>
                 <Label className="text-xs">Số điện thoại <span className="text-destructive">*</span></Label>
-                <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Nhập SĐT" inputMode="tel" className="h-10" />
+                <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Nhập SĐT" inputMode="tel" className={`h-10 ${attempted && !customerPhone.trim() ? 'border-destructive ring-destructive' : ''}`} />
               </div>
 
               <div>
@@ -352,7 +355,7 @@ export function ProductDetailDialog({ product, open, onOpenChange, tenantId, bra
                 <select
                   value={selectedBranch}
                   onChange={e => setSelectedBranch(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${attempted && !selectedBranch ? 'border-destructive ring-destructive' : 'border-input'}`}
                 >
                   <option value="">Chọn chi nhánh</option>
                   {branches.map(b => (
