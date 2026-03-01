@@ -13,10 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon, Award, Truck, CreditCard, Clock, Star } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon, Award, Truck, CreditCard, Clock, Star, Eye, EyeOff, Menu as MenuIcon, Sparkles, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
-import { getIndustryConfig, IndustryTrustBadge } from '@/lib/industryConfig';
+import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems } from '@/lib/industryConfig';
 
 import {
   Dialog,
@@ -163,6 +163,193 @@ function TrustBadgeEditor({
   );
 }
 
+function NavMenuEditor({
+  templateId,
+  customNavItems,
+  onChange,
+}: {
+  templateId: string;
+  customNavItems: NavItemConfig[] | null;
+  onChange: (items: NavItemConfig[] | null) => void;
+}) {
+  const config = getIndustryConfig(templateId);
+  const defaultItems = getDefaultNavItems(config);
+  const suggestedExtras = INDUSTRY_SUGGESTED_NAV[templateId] || [];
+
+  // Merge: use custom if set, otherwise defaults + suggested
+  const currentItems = customNavItems || [...defaultItems, ...suggestedExtras];
+
+  const handleToggle = (index: number) => {
+    const updated = [...currentItems];
+    // Don't allow disabling 'home'
+    if (updated[index].id === 'home') return;
+    updated[index] = { ...updated[index], enabled: !updated[index].enabled };
+    onChange(updated);
+  };
+
+  const handleLabelChange = (index: number, label: string) => {
+    const updated = [...currentItems];
+    updated[index] = { ...updated[index], label };
+    onChange(updated);
+  };
+
+  const handleUrlChange = (index: number, url: string) => {
+    const updated = [...currentItems];
+    updated[index] = { ...updated[index], url };
+    onChange(updated);
+  };
+
+  const handleRemove = (index: number) => {
+    // Don't remove core items
+    const item = currentItems[index];
+    if (['home', 'products', 'news', 'warranty'].includes(item.id)) return;
+    const updated = currentItems.filter((_, i) => i !== index);
+    onChange(updated);
+  };
+
+  const handleAdd = () => {
+    const newItem: NavItemConfig = {
+      id: `custom_${Date.now()}`,
+      label: 'Trang mới',
+      enabled: true,
+      type: 'link',
+      icon: '📄',
+      url: '',
+    };
+    onChange([...currentItems, newItem]);
+  };
+
+  const handleMoveUp = (index: number) => {
+    if (index <= 0) return;
+    const updated = [...currentItems];
+    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+    onChange(updated);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index >= currentItems.length - 1) return;
+    const updated = [...currentItems];
+    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+    onChange(updated);
+  };
+
+  const handleAutoSuggest = () => {
+    const full = getFullNavItems(templateId);
+    onChange(full);
+  };
+
+  const handleReset = () => onChange(null);
+
+  const isCoreItem = (id: string) => ['home', 'products', 'news', 'warranty'].includes(id);
+
+  return (
+    <div className="space-y-3">
+      {/* Auto-suggest button */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button type="button" variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handleAutoSuggest}>
+          <Sparkles className="h-3.5 w-3.5" />
+          Gợi ý menu theo ngành
+        </Button>
+        {customNavItems && (
+          <Button type="button" variant="ghost" size="sm" className="text-xs h-7" onClick={handleReset}>
+            Khôi phục mặc định
+          </Button>
+        )}
+      </div>
+
+      {/* Nav items list */}
+      <div className="space-y-2">
+        {currentItems.map((item, i) => (
+          <div
+            key={item.id + i}
+            className={`flex items-center gap-2 rounded-lg border p-2.5 transition-all ${
+              item.enabled ? 'bg-background' : 'bg-muted/50 opacity-60'
+            }`}
+          >
+            {/* Drag handle / order buttons */}
+            <div className="flex flex-col gap-0.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleMoveUp(i)}
+                disabled={i === 0}
+                className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
+              >
+                <ChevronUp className="h-3 w-3" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleMoveDown(i)}
+                disabled={i === currentItems.length - 1}
+                className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
+              >
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </div>
+
+            {/* Icon */}
+            <span className="text-lg shrink-0">{item.icon || '📄'}</span>
+
+            {/* Label input */}
+            <div className="flex-1 min-w-0 space-y-1">
+              <Input
+                value={item.label}
+                onChange={(e) => handleLabelChange(i, e.target.value)}
+                className="h-8 text-sm font-medium"
+                placeholder="Tên menu"
+              />
+              {item.type === 'link' && !isCoreItem(item.id) && (
+                <Input
+                  value={item.url || ''}
+                  onChange={(e) => handleUrlChange(i, e.target.value)}
+                  className="h-7 text-xs"
+                  placeholder="URL (tuỳ chọn, VD: https://...)"
+                />
+              )}
+            </div>
+
+            {/* Type badge */}
+            <span className="text-[10px] text-muted-foreground shrink-0">
+              {isCoreItem(item.id) ? 'Mặc định' : 'Tuỳ chỉnh'}
+            </span>
+
+            {/* Toggle visibility */}
+            <button
+              type="button"
+              onClick={() => handleToggle(i)}
+              disabled={item.id === 'home'}
+              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors disabled:opacity-30"
+              title={item.enabled ? 'Ẩn' : 'Hiện'}
+            >
+              {item.enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+            </button>
+
+            {/* Remove (only custom items) */}
+            {!isCoreItem(item.id) && (
+              <button
+                type="button"
+                onClick={() => handleRemove(i)}
+                className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Add new item */}
+      <Button type="button" variant="outline" size="sm" className="gap-1.5 text-xs w-full" onClick={handleAdd}>
+        <Plus className="h-3.5 w-3.5" />
+        Thêm trang mới
+      </Button>
+
+      <p className="text-[10px] text-muted-foreground">
+        💡 Các mục "Mặc định" là trang nội dung có sẵn. Mục "Tuỳ chỉnh" có thể gắn link ngoài hoặc dùng làm trang thông tin.
+      </p>
+    </div>
+  );
+}
+
 export function LandingPageSettings() {
   const { data: tenant } = useCurrentTenant();
   const { data: settings, isLoading } = useTenantLandingSettings();
@@ -207,6 +394,7 @@ export function LandingPageSettings() {
     ai_description_enabled: true,
     auto_image_enabled: true,
     custom_trust_badges: null,
+    custom_nav_items: null,
   });
 
   useEffect(() => {
@@ -240,6 +428,7 @@ export function LandingPageSettings() {
         ai_description_enabled: settings.ai_description_enabled ?? true,
         auto_image_enabled: settings.auto_image_enabled ?? true,
         custom_trust_badges: (settings as any).custom_trust_badges || null,
+        custom_nav_items: (settings as any).custom_nav_items || null,
       });
     } else if (tenant) {
       setFormData(prev => ({
@@ -528,7 +717,26 @@ export function LandingPageSettings() {
         </CardContent>
       </Card>
 
-      {/* Thông tin cửa hàng */}
+      {/* Menu Website */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <MenuIcon className="h-4 w-4" />
+            Menu Website
+          </CardTitle>
+          <CardDescription>
+            Tuỳ chỉnh các mục menu hiển thị trên website. Hệ thống tự gợi ý menu phù hợp theo ngành nghề.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <NavMenuEditor
+            templateId={(formData as any).website_template || 'phone_store'}
+            customNavItems={(formData as any).custom_nav_items}
+            onChange={(items) => setFormData(prev => ({ ...prev, custom_nav_items: items }))}
+          />
+        </CardContent>
+      </Card>
+
       <Card data-tour="landing-store-info-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">

@@ -5041,6 +5041,7 @@ export type Database = {
           banner_link_url: string | null
           created_at: string
           custom_domain_article: string | null
+          custom_nav_items: Json | null
           custom_trust_badges: Json | null
           facebook_url: string | null
           id: string
@@ -5077,6 +5078,7 @@ export type Database = {
           banner_link_url?: string | null
           created_at?: string
           custom_domain_article?: string | null
+          custom_nav_items?: Json | null
           custom_trust_badges?: Json | null
           facebook_url?: string | null
           id?: string
@@ -5113,6 +5115,7 @@ export type Database = {
           banner_link_url?: string | null
           created_at?: string
           custom_domain_article?: string | null
+          custom_nav_items?: Json | null
           custom_trust_badges?: Json | null
           facebook_url?: string | null
           id?: string

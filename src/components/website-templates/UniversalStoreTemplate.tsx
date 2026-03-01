@@ -11,7 +11,7 @@ import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { VoucherClaimForm } from '@/components/landing/VoucherClaimForm';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
 import { ScrollReveal, useParallax } from '@/hooks/useScrollReveal';
-import { IndustryConfig, getIndustryConfig, GOOGLE_FONTS } from '@/lib/industryConfig';
+import { IndustryConfig, getIndustryConfig, GOOGLE_FONTS, NavItemConfig, getDefaultNavItems } from '@/lib/industryConfig';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -202,12 +202,34 @@ export default function UniversalStoreTemplate({
     }).catch(() => {});
   };
 
-  const navItems = [
-    { id: 'home' as PageView, label: config.navLabels.home },
-    { id: 'products' as PageView, label: config.navLabels.products },
-    { id: 'news' as PageView, label: config.navLabels.news },
-    { id: 'warranty' as PageView, label: config.navLabels.warranty },
-  ];
+  // Build nav items from custom_nav_items or defaults
+  const customNavItems = (settings as any)?.custom_nav_items as NavItemConfig[] | null;
+  const navItems = useMemo(() => {
+    if (customNavItems && customNavItems.length > 0) {
+      return customNavItems.filter(item => item.enabled);
+    }
+    // Fallback to default 4 items
+    return getDefaultNavItems(config);
+  }, [customNavItems, config]);
+
+  const handleNavClick = (item: NavItemConfig) => {
+    if (item.type === 'page' && item.pageView) {
+      navigateTo(item.pageView as PageView);
+    } else if (item.type === 'link' && item.url) {
+      window.open(item.url, '_blank', 'noopener,noreferrer');
+    } else if (item.type === 'link') {
+      // Link type without URL - just scroll to top / show home
+      navigateTo('home');
+    }
+  };
+
+  const isNavActive = (item: NavItemConfig) => {
+    if (item.type === 'page' && item.pageView) {
+      if (item.pageView === 'news' && pageView === 'article-detail') return true;
+      return pageView === item.pageView;
+    }
+    return false;
+  };
 
   return (
     <div className="min-h-screen bg-white text-[#1d1d1f]" style={{ fontFamily: config.fontFamily }}>
@@ -236,10 +258,10 @@ export default function UniversalStoreTemplate({
               {navItems.map(item => (
                 <button
                   key={item.id}
-                  onClick={() => navigateTo(item.id)}
+                  onClick={() => handleNavClick(item)}
                   className="px-3 py-1.5 text-xs font-medium rounded-full transition-all"
                   style={
-                    pageView === item.id || (item.id === 'news' && pageView === 'article-detail')
+                    isNavActive(item)
                       ? { backgroundColor: '#1d1d1f', color: 'white' }
                       : {}
                   }
@@ -266,14 +288,15 @@ export default function UniversalStoreTemplate({
               {navItems.map(item => (
                 <button
                   key={item.id}
-                  onClick={() => { navigateTo(item.id); setMobileMenuOpen(false); }}
-                  className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-xl transition-all"
+                  onClick={() => { handleNavClick(item); setMobileMenuOpen(false); }}
+                  className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-xl transition-all flex items-center gap-2"
                   style={
-                    pageView === item.id || (item.id === 'news' && pageView === 'article-detail')
+                    isNavActive(item)
                       ? { backgroundColor: '#1d1d1f', color: 'white' }
                       : {}
                   }
                 >
+                  {item.icon && <span className="text-base">{item.icon}</span>}
                   {item.label}
                 </button>
               ))}

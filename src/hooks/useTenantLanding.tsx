@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { NavItemConfig } from '@/lib/industryConfig';
 
 export interface TenantLandingSettings {
   id: string;
@@ -34,6 +35,7 @@ export interface TenantLandingSettings {
   ai_description_enabled: boolean;
   auto_image_enabled: boolean;
   custom_trust_badges: { icon: string; title: string; desc: string }[] | null;
+  custom_nav_items: NavItemConfig[] | null;
   created_at: string;
   updated_at: string;
 }
