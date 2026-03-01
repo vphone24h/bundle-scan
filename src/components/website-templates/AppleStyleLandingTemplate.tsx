@@ -415,6 +415,17 @@ export default function AppleStyleLandingTemplate({
   // Categories for section banners
   const categories = productsData?.categories || [];
 
+  // Alternating background palettes for category banners (Apple-style)
+  const categoryPalettes = [
+    { bg: 'bg-[#fbfbfd]', text: 'text-[#1d1d1f]', sub: 'text-[#6e6e73]', btnBg: accentColor, btnText: 'text-white' },
+    { bg: 'bg-[#1d1d1f]', text: 'text-white', sub: 'text-[#86868b]', btnBg: accentColor, btnText: 'text-white' },
+    { bg: 'bg-[#f5f5f7]', text: 'text-[#1d1d1f]', sub: 'text-[#6e6e73]', btnBg: accentColor, btnText: 'text-white' },
+    { bg: 'bg-black', text: 'text-white', sub: 'text-[#a1a1a6]', btnBg: '#fff', btnText: 'text-[#1d1d1f]' },
+  ];
+
+  // Get products for a category
+  const getProductsForCategory = (catId: string) => allProducts.filter(p => p.category_id === catId);
+
   return (
     <div className="min-h-screen bg-white text-[#1d1d1f]" style={{ fontFamily }}>
       <AppleHeader
@@ -435,22 +446,22 @@ export default function AppleStyleLandingTemplate({
         {/* ============ HOME PAGE ============ */}
         {pageView === 'home' && (
           <div>
-            {/* Banner 1: Hero – iPhone nổi bật */}
+            {/* Hero Banner (custom banner or default hero) */}
             {settings?.show_banner && settings?.banner_image_url ? (
-              <section className="relative overflow-hidden bg-[#fbfbfd]">
+              <section className="relative overflow-hidden">
                 {settings.banner_link_url ? (
                   <a href={settings.banner_link_url} target="_blank" rel="noopener noreferrer">
-                    <img src={settings.banner_image_url} alt="Banner" className="w-full h-auto max-h-[600px] object-cover" />
+                    <img src={settings.banner_image_url} alt="Banner" className="w-full h-screen object-cover" />
                   </a>
                 ) : (
-                  <img src={settings.banner_image_url} alt="Banner" className="w-full h-auto max-h-[600px] object-cover" />
+                  <img src={settings.banner_image_url} alt="Banner" className="w-full h-screen object-cover" />
                 )}
               </section>
-            ) : (
+            ) : featuredProducts[0] ? (
               <FadeSection>
-                <section className="min-h-[85vh] sm:min-h-[90vh] flex flex-col items-center justify-center text-center px-6 bg-[#fbfbfd]">
+                <section className="h-screen flex flex-col items-center justify-center text-center px-6 bg-[#fbfbfd] relative overflow-hidden">
                   <p className="text-[#6e6e73] text-xs tracking-[0.2em] uppercase mb-3">Mới ra mắt</p>
-                  <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-[#1d1d1f] mb-3">
+                  <h1 className="text-4xl sm:text-6xl lg:text-[80px] font-bold tracking-tight text-[#1d1d1f] mb-3 leading-none">
                     {(settings as any)?.hero_title || config.heroTitle}
                   </h1>
                   <p className="text-lg sm:text-xl text-[#6e6e73] mb-8 max-w-md">
@@ -464,30 +475,134 @@ export default function AppleStyleLandingTemplate({
                       Mua ngay
                     </button>
                   </div>
-                  {/* Product image placeholder area */}
                   {featuredProducts[0]?.image_url && (
-                    <div className="mt-10 max-w-md mx-auto">
-                      <img src={featuredProducts[0].image_url} alt={featuredProducts[0].name} className="max-h-[300px] sm:max-h-[400px] object-contain mx-auto hover:scale-105 transition-transform duration-700" />
+                    <div className="mt-10 max-w-sm mx-auto">
+                      <img src={featuredProducts[0].image_url} alt={featuredProducts[0].name} className="max-h-[350px] object-contain mx-auto hover:scale-105 transition-transform duration-700" />
                     </div>
                   )}
                 </section>
               </FadeSection>
+            ) : (
+              <FadeSection>
+                <section className="h-screen flex flex-col items-center justify-center text-center px-6 bg-[#fbfbfd]">
+                  <h1 className="text-4xl sm:text-6xl lg:text-[80px] font-bold tracking-tight text-[#1d1d1f] mb-3 leading-none">
+                    {(settings as any)?.hero_title || config.heroTitle}
+                  </h1>
+                  <p className="text-lg sm:text-xl text-[#6e6e73] mb-8 max-w-md">
+                    {(settings as any)?.hero_subtitle || config.heroSubtitle}
+                  </p>
+                  <button onClick={() => navigateTo('products')} className="px-7 py-3 rounded-full text-sm font-medium text-white" style={{ backgroundColor: accentColor }}>
+                    Khám phá
+                  </button>
+                </section>
+              </FadeSection>
             )}
 
-            {/* Banner 2: Sản phẩm bán chạy – nền tối */}
-            {allProducts.length > 0 && (
+            {/* === CATEGORY BANNERS – each full screen, stacked vertically like Apple.com === */}
+            {categories.map((cat, idx) => {
+              const palette = categoryPalettes[idx % categoryPalettes.length];
+              const catProducts = getProductsForCategory(cat.id);
+              const isDark = palette.bg === 'bg-[#1d1d1f]' || palette.bg === 'bg-black';
+
+              return (
+                <FadeSection key={cat.id}>
+                  <section className={`min-h-screen ${palette.bg} flex flex-col items-center justify-center py-20 px-6 relative overflow-hidden`}>
+                    {/* Cover image as background if available */}
+                    {cat.image_url && (
+                      <div className="absolute inset-0 z-0">
+                        <img
+                          src={cat.image_url}
+                          alt={cat.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className={`absolute inset-0 ${isDark ? 'bg-black/50' : 'bg-white/60'}`} />
+                      </div>
+                    )}
+
+                    <div className="relative z-10 text-center max-w-[1024px] w-full">
+                      <p className={`text-xs tracking-[0.2em] uppercase mb-3 ${cat.image_url ? (isDark ? 'text-white/60' : 'text-[#6e6e73]') : palette.sub}`}>
+                        {catProducts.length > 0 ? `${catProducts.length} sản phẩm` : 'Bộ sưu tập'}
+                      </p>
+                      <h2 className={`text-4xl sm:text-6xl lg:text-[72px] font-bold tracking-tight mb-4 leading-none ${cat.image_url ? (isDark ? 'text-white' : 'text-[#1d1d1f]') : palette.text}`}>
+                        {cat.name}
+                      </h2>
+                      <div className="flex justify-center gap-3 mb-12">
+                        <button
+                          onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products'); }}
+                          className="px-7 py-3 rounded-full text-sm font-medium transition-all hover:opacity-90"
+                          style={{ backgroundColor: palette.btnBg, color: isDark && palette.btnBg === '#fff' ? '#1d1d1f' : '#fff' }}
+                        >
+                          Tìm hiểu thêm
+                        </button>
+                        <button
+                          onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products'); }}
+                          className={`px-7 py-3 rounded-full text-sm font-medium border transition-colors ${
+                            isDark || cat.image_url
+                              ? 'border-white/30 text-white hover:border-white/60'
+                              : 'border-[#1d1d1f]/20 text-[#1d1d1f] hover:border-[#1d1d1f]/50'
+                          }`}
+                        >
+                          Mua ngay
+                        </button>
+                      </div>
+
+                      {/* Show top 3 products of this category as a grid */}
+                      {catProducts.length > 0 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-3xl mx-auto">
+                          {catProducts.slice(0, 3).map(p => (
+                            <button
+                              key={p.id}
+                              onClick={() => openProduct(p)}
+                              className={`group rounded-2xl overflow-hidden text-left transition-all hover:shadow-xl ${
+                                isDark || cat.image_url ? 'bg-white/10 backdrop-blur-md hover:bg-white/20' : 'bg-white hover:shadow-lg'
+                              }`}
+                            >
+                              <div className="aspect-square flex items-center justify-center p-6 overflow-hidden">
+                                {p.image_url ? (
+                                  <img src={p.image_url} alt={p.name} className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-500" />
+                                ) : (
+                                  <ShoppingBag className={`h-12 w-12 ${isDark ? 'text-white/20' : 'text-[#d2d2d7]'}`} />
+                                )}
+                              </div>
+                              <div className="p-4 text-center">
+                                <p className={`text-sm font-medium line-clamp-1 mb-1 ${isDark || cat.image_url ? 'text-white' : 'text-[#1d1d1f]'}`}>
+                                  {p.name}
+                                </p>
+                                <p className="text-sm font-semibold" style={{ color: accentColor }}>
+                                  {formatNumber(p.price)}đ
+                                </p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* No cover image → show category image inline instead */}
+                      {!cat.image_url && catProducts.length === 0 && (
+                        <div className="mt-8">
+                          <ShoppingBag className={`h-20 w-20 mx-auto ${isDark ? 'text-white/10' : 'text-[#d2d2d7]'}`} />
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                </FadeSection>
+              );
+            })}
+
+            {/* If no categories exist, show featured products in dark section */}
+            {categories.length === 0 && allProducts.length > 0 && (
               <FadeSection>
-                <section className="min-h-[70vh] bg-[#1d1d1f] text-white flex flex-col items-center justify-center py-16 px-6">
+                <section className="min-h-screen bg-[#1d1d1f] text-white flex flex-col items-center justify-center py-20 px-6">
                   <p className="text-[#86868b] text-xs tracking-[0.2em] uppercase mb-3">Bán chạy nhất</p>
                   <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-12">Sản phẩm nổi bật</h2>
                   <div className="max-w-[1024px] w-full grid grid-cols-1 sm:grid-cols-3 gap-6">
                     {(featuredProducts.length > 0 ? featuredProducts : allProducts).slice(0, 3).map(p => (
-                      <button key={p.id} onClick={() => openProduct(p)} className="group bg-[#2d2d2d] rounded-2xl overflow-hidden text-left hover:bg-[#3a3a3a] transition-colors">
+                      <button key={p.id} onClick={() => openProduct(p)} className="group bg-white/10 backdrop-blur-md rounded-2xl overflow-hidden text-left hover:bg-white/20 transition-colors">
                         <div className="aspect-square flex items-center justify-center p-6">
                           {p.image_url ? (
                             <img src={p.image_url} alt={p.name} className="max-h-full object-contain group-hover:scale-105 transition-transform duration-500" />
                           ) : (
-                            <Smartphone className="h-16 w-16 text-[#555]" />
+                            <Smartphone className="h-16 w-16 text-white/20" />
                           )}
                         </div>
                         <div className="p-5 text-center">
@@ -504,54 +619,11 @@ export default function AppleStyleLandingTemplate({
               </FadeSection>
             )}
 
-            {/* Banner 3: Category Banner – gradient sáng */}
-            {categories.length > 0 && (
-              <FadeSection>
-                <section className="min-h-[60vh] flex flex-col items-center justify-center py-16 px-6" style={{ background: 'linear-gradient(180deg, #e8f4fd 0%, #d4ecfc 100%)' }}>
-                  <p className="text-[#1d7fc4] text-xs tracking-[0.2em] uppercase mb-3">Khám phá</p>
-                  <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#1d1d1f] mb-4">{categories[0]?.name || 'iPad'}</h2>
-                  <p className="text-[#6e6e73] text-base mb-8">Sức mạnh vượt trội. Thiết kế tuyệt đẹp.</p>
-                  <button onClick={() => { setSelectedCategoryId(categories[0]?.id || null); navigateTo('products'); }} className="px-7 py-3 rounded-full text-sm font-medium text-white" style={{ backgroundColor: accentColor }}>
-                    Khám phá ngay
-                  </button>
-                  {/* Category image */}
-                  {categories[0]?.image_url && (
-                    <div className="mt-10 max-w-lg">
-                      <img src={categories[0].image_url} alt={categories[0].name} className="max-h-[250px] object-contain mx-auto hover:scale-105 transition-transform duration-700" />
-                    </div>
-                  )}
-                </section>
-              </FadeSection>
-            )}
-
-            {/* Banner 4: Category 2 – nền tối sang trọng */}
-            {categories.length > 1 && (
-              <FadeSection>
-                <section className="min-h-[60vh] bg-black text-white flex flex-col items-center justify-center py-16 px-6">
-                  <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-3">{categories[1]?.name || 'MacBook'}</h2>
-                  <p className="text-[#86868b] text-base mb-8">Siêu mạnh. Siêu mỏng.</p>
-                  <div className="flex gap-3">
-                    <button onClick={() => { setSelectedCategoryId(categories[1]?.id || null); navigateTo('products'); }} className="px-7 py-3 rounded-full text-sm font-medium text-white" style={{ backgroundColor: accentColor }}>
-                      Tìm hiểu thêm
-                    </button>
-                    <button onClick={() => { setSelectedCategoryId(categories[1]?.id || null); navigateTo('products'); }} className="px-7 py-3 rounded-full text-sm font-medium border border-[#424245] text-[#d2d2d7] hover:border-[#6e6e73] transition-colors">
-                      Mua
-                    </button>
-                  </div>
-                  {categories[1]?.image_url && (
-                    <div className="mt-10 max-w-lg">
-                      <img src={categories[1].image_url} alt={categories[1].name} className="max-h-[250px] object-contain mx-auto hover:scale-105 transition-transform duration-700" />
-                    </div>
-                  )}
-                </section>
-              </FadeSection>
-            )}
-
-            {/* Banner 5: Super Sale – Khuyến mãi */}
+            {/* Super Sale Banner */}
             <FadeSection>
-              <section className="min-h-[50vh] flex flex-col items-center justify-center py-16 px-6" style={{ background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 50%, #f0932b 100%)' }}>
+              <section className="min-h-[70vh] flex flex-col items-center justify-center py-20 px-6" style={{ background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 50%, #f0932b 100%)' }}>
                 <p className="text-white/80 text-xs tracking-[0.2em] uppercase mb-3">Ưu đãi đặc biệt</p>
-                <h2 className="text-4xl sm:text-6xl font-bold tracking-tight text-white mb-3">Super Sale</h2>
+                <h2 className="text-4xl sm:text-6xl lg:text-[72px] font-bold tracking-tight text-white mb-3 leading-none">Super Sale</h2>
                 <p className="text-white/80 text-lg mb-8">Giảm giá đến 50% – Số lượng có hạn</p>
                 <button onClick={() => navigateTo('products')} className="px-8 py-3.5 rounded-full text-sm font-semibold bg-white text-[#1d1d1f] hover:bg-white/90 transition-colors">
                   Mua ngay <Zap className="inline h-4 w-4 ml-1" />
@@ -559,26 +631,9 @@ export default function AppleStyleLandingTemplate({
               </section>
             </FadeSection>
 
-            {/* Banner 6: Phụ kiện – grid */}
-            {allProducts.length > 3 && (
-              <FadeSection>
-                <section className="py-16 px-6 bg-[#fbfbfd]">
-                  <div className="max-w-[1024px] mx-auto text-center">
-                    <p className="text-[#6e6e73] text-xs tracking-[0.2em] uppercase mb-3">Phụ kiện</p>
-                    <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1d1d1f] mb-10">Hoàn thiện trải nghiệm</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      {allProducts.slice(0, 4).map(p => (
-                        <AppleProductCard key={p.id} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
-                      ))}
-                    </div>
-                  </div>
-                </section>
-              </FadeSection>
-            )}
-
             {/* Trust Badges */}
             <FadeSection>
-              <section className="py-12 bg-white">
+              <section className="py-16 bg-white">
                 <div className="max-w-[1024px] mx-auto px-6">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
                     {((settings as any)?.custom_trust_badges || config.trustBadges).map((b: any, i: number) => (
