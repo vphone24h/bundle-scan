@@ -13,10 +13,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon, Award, Truck, CreditCard, Clock, Star, Eye, EyeOff, Menu as MenuIcon, Sparkles, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon, Award, Truck, CreditCard, Clock, Star, Eye, EyeOff, Menu as MenuIcon, Sparkles, Trash2, ChevronUp, ChevronDown, Type, Layers, PanelTop } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
-import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, PageItemConfig, InstallmentRateConfig, DEFAULT_INSTALLMENT_RATES, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems, SYSTEM_PAGES, SYSTEM_PAGE_IDS, getSystemPageById, DEFAULT_PAGE_ITEMS } from '@/lib/industryConfig';
+import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, PageItemConfig, InstallmentRateConfig, DEFAULT_INSTALLMENT_RATES, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems, SYSTEM_PAGES, SYSTEM_PAGE_IDS, getSystemPageById, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
+import { HomeSectionManager, HomeSectionItem } from './HomeSectionManager';
 
 import {
   Dialog,
@@ -637,6 +638,12 @@ export function LandingPageSettings() {
     auto_image_enabled: true,
     custom_trust_badges: null,
     custom_nav_items: null,
+    hero_title: null,
+    hero_subtitle: null,
+    hero_cta: null,
+    custom_home_sections: null,
+    custom_font_family: null,
+    custom_layout_style: null,
   });
 
   useEffect(() => {
@@ -671,6 +678,12 @@ export function LandingPageSettings() {
         auto_image_enabled: settings.auto_image_enabled ?? true,
         custom_trust_badges: (settings as any).custom_trust_badges || null,
         custom_nav_items: (settings as any).custom_nav_items || null,
+        hero_title: (settings as any).hero_title || null,
+        hero_subtitle: (settings as any).hero_subtitle || null,
+        hero_cta: (settings as any).hero_cta || null,
+        custom_home_sections: (settings as any).custom_home_sections || null,
+        custom_font_family: (settings as any).custom_font_family || null,
+        custom_layout_style: (settings as any).custom_layout_style || null,
       });
     } else if (tenant) {
       setFormData(prev => ({
@@ -975,6 +988,149 @@ export function LandingPageSettings() {
             templateId={(formData as any).website_template || 'phone_store'}
             customNavItems={(formData as any).custom_nav_items}
             onChange={(items) => setFormData(prev => ({ ...prev, custom_nav_items: items }))}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Phase 3: Hero Text Customization */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <PanelTop className="h-4 w-4" />
+            Nội dung Banner chính
+          </CardTitle>
+          <CardDescription>
+            Tuỳ chỉnh tiêu đề, mô tả và nút CTA trên banner trang chủ. Để trống để dùng mặc định theo ngành.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {(() => {
+            const templateId = (formData as any).website_template || 'phone_store';
+            const config = getIndustryConfig(templateId);
+            return (
+              <>
+                <div className="space-y-2">
+                  <Label>Tiêu đề chính</Label>
+                  <Input
+                    value={(formData as any).hero_title || ''}
+                    onChange={(e) => handleChange('hero_title' as any, e.target.value || null)}
+                    placeholder={config.heroTitle}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Mô tả phụ</Label>
+                  <Input
+                    value={(formData as any).hero_subtitle || ''}
+                    onChange={(e) => handleChange('hero_subtitle' as any, e.target.value || null)}
+                    placeholder={config.heroSubtitle}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Nút kêu gọi hành động (CTA)</Label>
+                  <Input
+                    value={(formData as any).hero_cta || ''}
+                    onChange={(e) => handleChange('hero_cta' as any, e.target.value || null)}
+                    placeholder={config.heroCta}
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  💡 Để trống sẽ sử dụng nội dung mặc định: "{config.heroTitle}" / "{config.heroCta}"
+                </p>
+              </>
+            );
+          })()}
+        </CardContent>
+      </Card>
+
+      {/* Phase 3: Layout Style & Font Selector */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Layers className="h-4 w-4" />
+            Phong cách giao diện
+          </CardTitle>
+          <CardDescription>
+            Thay đổi kiểu bố cục và phông chữ. Hệ thống tự chọn phong cách phù hợp theo ngành nghề.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Kiểu bố cục (Layout Style)</Label>
+            <Select
+              value={(formData as any).custom_layout_style || '_auto_'}
+              onValueChange={(val) => handleChange('custom_layout_style' as any, val === '_auto_' ? null : val)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Tự động theo ngành" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_auto_">🤖 Tự động theo ngành</SelectItem>
+                <SelectItem value="apple">🍎 Apple – Tối giản, cao cấp</SelectItem>
+                <SelectItem value="tgdd">🛒 TGDĐ – Grid, badge, giá nổi bật</SelectItem>
+                <SelectItem value="hasaki">💄 Hasaki – Flash sale, deal sốc</SelectItem>
+                <SelectItem value="nike">👟 Nike – Bold, lifestyle</SelectItem>
+                <SelectItem value="canifa">👗 Canifa – Thanh lịch, BST</SelectItem>
+                <SelectItem value="shopee">🛍️ Shopee – Marketplace, đa danh mục</SelectItem>
+                <SelectItem value="minimal">✨ Minimal – Đơn giản, dịch vụ</SelectItem>
+                <SelectItem value="luxury">💎 Luxury – Sang trọng, serif</SelectItem>
+                <SelectItem value="organic">🌿 Organic – Tự nhiên, organic</SelectItem>
+              </SelectContent>
+            </Select>
+            {(() => {
+              const templateId = (formData as any).website_template || 'phone_store';
+              const config = getIndustryConfig(templateId);
+              return (
+                <p className="text-[10px] text-muted-foreground">
+                  Ngành "{templateId}" mặc định dùng phong cách: <strong>{config.layoutStyle}</strong>
+                  {config.brandInspiration && <> ({config.brandInspiration})</>}
+                </p>
+              );
+            })()}
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Type className="h-4 w-4" />
+              Phông chữ
+            </Label>
+            <Select
+              value={(formData as any).custom_font_family || '_auto_'}
+              onValueChange={(val) => handleChange('custom_font_family' as any, val === '_auto_' ? null : val)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Tự động theo ngành" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_auto_">🤖 Tự động theo ngành</SelectItem>
+                <SelectItem value='-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif'>SF Pro – Apple (Mặc định)</SelectItem>
+                <SelectItem value='"Inter", system-ui, sans-serif'>Inter – Hiện đại, rõ ràng</SelectItem>
+                <SelectItem value='"Nunito Sans", system-ui, sans-serif'>Nunito Sans – Tròn, thân thiện</SelectItem>
+                <SelectItem value='"Playfair Display", "Georgia", serif'>Playfair Display – Sang trọng, serif</SelectItem>
+                <SelectItem value='"Cormorant Garamond", "Georgia", serif'>Cormorant Garamond – Cổ điển, quý phái</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Phase 3: Homepage Section Manager */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Layout className="h-4 w-4" />
+            Bố cục trang chủ
+          </CardTitle>
+          <CardDescription>
+            Bật/tắt và sắp xếp thứ tự các mục hiển thị trên trang chủ website
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <HomeSectionManager
+            templateId={(formData as any).website_template || 'phone_store'}
+            customSections={(formData as any).custom_home_sections || null}
+            onChange={(sections) => setFormData(prev => ({ ...prev, custom_home_sections: sections }))}
           />
         </CardContent>
       </Card>

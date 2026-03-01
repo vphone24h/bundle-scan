@@ -5277,9 +5277,15 @@ export type Database = {
           banner_link_url: string | null
           created_at: string
           custom_domain_article: string | null
+          custom_font_family: string | null
+          custom_home_sections: Json | null
+          custom_layout_style: string | null
           custom_nav_items: Json | null
           custom_trust_badges: Json | null
           facebook_url: string | null
+          hero_cta: string | null
+          hero_subtitle: string | null
+          hero_title: string | null
           id: string
           is_enabled: boolean | null
           meta_description: string | null
@@ -5314,9 +5320,15 @@ export type Database = {
           banner_link_url?: string | null
           created_at?: string
           custom_domain_article?: string | null
+          custom_font_family?: string | null
+          custom_home_sections?: Json | null
+          custom_layout_style?: string | null
           custom_nav_items?: Json | null
           custom_trust_badges?: Json | null
           facebook_url?: string | null
+          hero_cta?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
           id?: string
           is_enabled?: boolean | null
           meta_description?: string | null
@@ -5351,9 +5363,15 @@ export type Database = {
           banner_link_url?: string | null
           created_at?: string
           custom_domain_article?: string | null
+          custom_font_family?: string | null
+          custom_home_sections?: Json | null
+          custom_layout_style?: string | null
           custom_nav_items?: Json | null
           custom_trust_badges?: Json | null
           facebook_url?: string | null
+          hero_cta?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
           id?: string
           is_enabled?: boolean | null
           meta_description?: string | null
