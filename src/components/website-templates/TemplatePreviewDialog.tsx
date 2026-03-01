@@ -94,11 +94,6 @@ export function TemplatePreviewDialog({
                 <PaintBucket className="h-3 w-3" /> Chỉnh sửa Website
               </Button>
             )}
-            {canEdit && (
-              <Button size="sm" variant="ghost" className="h-8 text-xs gap-1" onClick={() => setEditMode(!editMode)}>
-                {editMode ? <><X className="h-3 w-3" /> Xong</> : <><Pencil className="h-3 w-3" /> Sửa</>}
-              </Button>
-            )}
             <Button size="sm" className="h-8 text-xs px-4" onClick={handleSelect} variant={isSelected ? 'secondary' : 'default'}>
               {isSelected ? <><Check className="h-3.5 w-3.5 mr-1" /> Đã chọn</> : 'Chọn mẫu'}
             </Button>
