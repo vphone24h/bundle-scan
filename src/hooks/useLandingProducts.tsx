@@ -83,6 +83,26 @@ export function useDeleteLandingProductCategory() {
   });
 }
 
+export function useUpdateLandingProductCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; image_url?: string | null }) => {
+      const { data, error } = await supabase
+        .from('landing_product_categories' as any)
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['landing-product-categories'] });
+      qc.invalidateQueries({ queryKey: ['public-landing-products'] });
+    },
+  });
+}
+
 export function useLandingProducts() {
   return useQuery({
     queryKey: ['landing-products'],

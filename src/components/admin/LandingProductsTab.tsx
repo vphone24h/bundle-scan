@@ -3,6 +3,7 @@ import {
   useLandingProductCategories,
   useCreateLandingProductCategory,
   useDeleteLandingProductCategory,
+  useUpdateLandingProductCategory,
   useLandingProducts,
   useCreateLandingProduct,
   useUpdateLandingProduct,
@@ -36,6 +37,7 @@ export function LandingProductsTab() {
   const { data: categories, isLoading: catLoading } = useLandingProductCategories();
   const createCat = useCreateLandingProductCategory();
   const deleteCat = useDeleteLandingProductCategory();
+  const updateCat = useUpdateLandingProductCategory();
   const { data: products, isLoading: prodLoading } = useLandingProducts();
   const createProduct = useCreateLandingProduct();
   const updateProduct = useUpdateLandingProduct();
@@ -46,9 +48,12 @@ export function LandingProductsTab() {
   const [productDialog, setProductDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LandingProduct | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadingCatId, setUploadingCatId] = useState<string | null>(null);
   const [uploadingVariantIdx, setUploadingVariantIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const variantFileRef = useRef<HTMLInputElement>(null);
+  const catImageRef = useRef<HTMLInputElement>(null);
+  const [pendingCatId, setPendingCatId] = useState<string | null>(null);
   const [pendingVariantIdx, setPendingVariantIdx] = useState<number | null>(null);
 
   const customProductTabs = (landingSettings as any)?.custom_product_tabs || [];
@@ -213,6 +218,30 @@ export function LandingProductsTab() {
 
   return (
     <div className="space-y-6">
+      {/* Hidden input for category cover image */}
+      <input
+        ref={catImageRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file || !pendingCatId || !tenant?.id) return;
+          setUploadingCatId(pendingCatId);
+          try {
+            const url = await uploadLandingProductImage(file, tenant.id);
+            await updateCat.mutateAsync({ id: pendingCatId, image_url: url });
+            toast({ title: 'Đã cập nhật ảnh bìa' });
+          } catch (err: any) {
+            toast({ title: 'Lỗi upload', description: err.message, variant: 'destructive' });
+          } finally {
+            setUploadingCatId(null);
+            setPendingCatId(null);
+            if (catImageRef.current) catImageRef.current.value = '';
+          }
+        }}
+      />
+
       {/* Danh mục sản phẩm */}
       <Card data-tour="landing-products-category">
         <CardHeader>
@@ -233,17 +262,49 @@ export function LandingProductsTab() {
               {createCat.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             </Button>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="space-y-2">
             {categories?.map(cat => (
-              <Badge key={cat.id} variant="secondary" className="gap-1 pr-1">
-                {cat.name}
+              <div key={cat.id} className="flex items-center gap-3 p-2.5 rounded-lg border bg-card">
+                {/* Cover image */}
+                <button
+                  onClick={() => { setPendingCatId(cat.id); catImageRef.current?.click(); }}
+                  className="shrink-0 h-14 w-14 rounded-lg border border-dashed border-border overflow-hidden flex items-center justify-center bg-muted/30 hover:bg-muted/60 transition-colors relative"
+                  disabled={uploadingCatId === cat.id}
+                >
+                  {uploadingCatId === cat.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : cat.image_url ? (
+                    <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{cat.name}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {cat.image_url ? 'Bấm ảnh để đổi' : 'Bấm để thêm ảnh bìa'}
+                  </p>
+                </div>
+                {cat.image_url && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                    onClick={async () => {
+                      await updateCat.mutateAsync({ id: cat.id, image_url: null });
+                      toast({ title: 'Đã xóa ảnh bìa' });
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
                 <button
                   onClick={() => { if (confirm(`Xoá danh mục "${cat.name}"?`)) deleteCat.mutate(cat.id); }}
-                  className="ml-1 hover:text-destructive"
+                  className="shrink-0 h-7 w-7 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
                 >
-                  <X className="h-3 w-3" />
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
-              </Badge>
+              </div>
             ))}
             {(!categories || categories.length === 0) && (
               <p className="text-sm text-muted-foreground">Chưa có danh mục nào</p>

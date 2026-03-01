@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronUp, ChevronDown, RotateCcw, Sparkles, Plus, Pencil, Trash2, X, Package } from 'lucide-react';
+import { ChevronUp, ChevronDown, RotateCcw, Sparkles, Plus, Pencil, Trash2, X, Package, ArrowLeftRight, ArrowDownUp } from 'lucide-react';
 import { HomeSection, getIndustryConfig } from '@/lib/industryConfig';
 
 export interface HomeSectionItem {
   id: HomeSection | string; // string for custom tab IDs like "productTab_xxx"
   enabled: boolean;
+  displayMode?: 'horizontal' | 'vertical'; // for categories section
 }
 
 export interface CustomProductTab {
@@ -222,6 +223,24 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
                   </>
                 )}
               </div>
+
+              {/* Display mode toggle for categories */}
+              {item.id === 'categories' && item.enabled && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated = [...currentItems];
+                    const currentMode = updated[i].displayMode || 'horizontal';
+                    updated[i] = { ...updated[i], displayMode: currentMode === 'horizontal' ? 'vertical' : 'horizontal' };
+                    onChange(updated);
+                  }}
+                  className="h-6 px-1.5 flex items-center justify-center gap-0.5 rounded hover:bg-primary/10 text-primary text-[10px] font-medium shrink-0"
+                  title={item.displayMode === 'vertical' ? 'Xếp dọc (kéo xuống)' : 'Xếp ngang (trượt ngang)'}
+                >
+                  {item.displayMode === 'vertical' ? <ArrowDownUp className="h-3 w-3" /> : <ArrowLeftRight className="h-3 w-3" />}
+                  {item.displayMode === 'vertical' ? 'Dọc' : 'Ngang'}
+                </button>
+              )}
 
               {/* Actions for custom tabs */}
               {isCustom && !isEditing && (

@@ -84,6 +84,9 @@ export default function UniversalStoreTemplate({
     if ((settings as any)?.custom_home_sections) {
       const customSections = (settings as any).custom_home_sections as HomeSectionItem[];
       c.homeSections = customSections.filter((s: HomeSectionItem) => s.enabled).map((s: HomeSectionItem) => s.id) as HomeSection[];
+      // Store category display mode
+      const catSection = customSections.find(s => s.id === 'categories');
+      if (catSection) (c as any)._categoryDisplayMode = catSection.displayMode || 'horizontal';
       // When user explicitly enables sections via editor, force-enable corresponding features
       for (const s of customSections.filter((s: HomeSectionItem) => s.enabled)) {
         if (s.id === 'articles') c.features = { ...c.features, articles: true };
@@ -308,8 +311,54 @@ export default function UniversalStoreTemplate({
                       accentColor={accentColor}
                     />
                   );
-                case 'categories':
+                case 'categories': {
                   if (!config.features.categories || !productsData || productsData.categories.length === 0) return null;
+                  const catDisplayMode = (config as any)._categoryDisplayMode || 'horizontal';
+                  
+                  if (catDisplayMode === 'vertical') {
+                    // Vertical: stacked cards with cover images
+                    return (
+                      <section key="categories" className="py-8 bg-[#f5f5f7]">
+                        <div className="max-w-[1200px] mx-auto px-4">
+                          <ScrollReveal animation="fade-up">
+                            <h2 className="text-lg font-bold tracking-tight mb-4">Danh mục sản phẩm</h2>
+                          </ScrollReveal>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {productsData.categories.map((cat, idx) => (
+                              <ScrollReveal key={cat.id} animation="fade-up" delay={idx * 80}>
+                                <button
+                                  onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products'); }}
+                                  className="group w-full rounded-2xl overflow-hidden relative text-left"
+                                  style={{ minHeight: cat.image_url ? '200px' : '120px' }}
+                                >
+                                  {cat.image_url ? (
+                                    <>
+                                      <img src={cat.image_url} alt={cat.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                      <div className="relative z-10 h-full flex flex-col justify-end p-5">
+                                        <h3 className="text-lg font-bold text-white">{cat.name}</h3>
+                                        <p className="text-xs text-white/70 mt-0.5">Khám phá ngay →</p>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div className="bg-white h-full flex items-center justify-between p-5 border border-black/5 rounded-2xl group-hover:shadow-lg transition-shadow">
+                                      <div>
+                                        <h3 className="text-base font-bold text-[#1d1d1f]">{cat.name}</h3>
+                                        <p className="text-xs text-[#86868b] mt-0.5">Khám phá ngay →</p>
+                                      </div>
+                                      <ShoppingBag className="h-8 w-8 text-[#d2d2d7]" />
+                                    </div>
+                                  )}
+                                </button>
+                              </ScrollReveal>
+                            ))}
+                          </div>
+                        </div>
+                      </section>
+                    );
+                  }
+                  
+                  // Horizontal: scrollable row (default)
                   return (
                     <ScrollReveal key="categories" animation="fade-up" delay={150}>
                       <section className="bg-[#f5f5f7] py-8">
@@ -332,6 +381,7 @@ export default function UniversalStoreTemplate({
                       </section>
                     </ScrollReveal>
                   );
+                }
                 case 'featuredProducts': {
                   const displayProducts = featuredProducts.length > 0 ? featuredProducts : allProducts;
                   if (displayProducts.length === 0) return null;
