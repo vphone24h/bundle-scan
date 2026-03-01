@@ -9,8 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Heart, MessageCircle, Send, Trash2, MessageSquare, UserPlus, UserCheck } from 'lucide-react';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { Heart, MessageCircle, Send, Trash2, MoreHorizontal, Pencil, MessageSquare, UserPlus, UserCheck } from 'lucide-react';
 import { VerifiedBadge } from './VerifiedBadge';
+import { EditPostDialog } from './EditPostDialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useToggleFollow, useIsFollowing } from '@/hooks/useSocial';
@@ -26,6 +28,7 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
   const [showLikers, setShowLikers] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   const toggleLike = useToggleLike();
   const { data: comments } = usePostComments(showComments ? post.id : null);
@@ -119,9 +122,21 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
             </p>
           </div>
           {isOwnPost && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={handleDelete}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
+                  <Pencil className="h-4 w-4 mr-2" /> Chỉnh sửa
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                  <Trash2 className="h-4 w-4 mr-2" /> Xóa
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
 
@@ -267,6 +282,10 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
           </div>
         )}
       </CardContent>
+
+      {showEditDialog && (
+        <EditPostDialog post={post} open={showEditDialog} onOpenChange={setShowEditDialog} />
+      )}
     </Card>
   );
 }
