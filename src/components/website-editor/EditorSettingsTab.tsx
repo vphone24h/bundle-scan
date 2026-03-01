@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
 import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, getFullNavItems, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, SYSTEM_PAGES, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
 import { HomeSectionManager, HomeSectionItem } from '@/components/admin/HomeSectionManager';
+import { MenuEditorInline } from '@/components/website-editor/MenuEditorInline';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -308,38 +309,12 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
         isExpanded={expandedBlocks.has('menu')}
         onToggle={() => toggleBlock('menu')}
       >
-        <div className="space-y-2">
-          <p className="text-[10px] text-muted-foreground">
-            💡 Quản lý chi tiết menu tại trang <a href="/landing-settings?tab=settings" className="text-primary underline">Cấu hình website</a>
-          </p>
-          {(() => {
-            const customNavItems = (formData as any)?.custom_nav_items as NavItemConfig[] | null;
-            const items = customNavItems || getDefaultNavItems(config);
-            return (
-              <div className="space-y-1">
-                {items.filter(i => i.enabled).map((item, idx) => (
-                  <div key={item.id + idx} className="flex items-center gap-2 p-2 rounded-lg border bg-muted/20">
-                    <span className="text-sm">{item.icon || '📄'}</span>
-                    <span className="text-xs font-medium flex-1">{item.label}</span>
-                    <span className="text-[9px] text-muted-foreground">{item.type === 'page' ? 'Trang' : 'Link'}</span>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="w-full gap-1.5 text-xs"
-            onClick={() => {
-              const fullNav = getFullNavItems(templateId);
-              onChange('custom_nav_items', fullNav);
-            }}
-          >
-            <Sparkles className="h-3.5 w-3.5" /> Gợi ý menu theo ngành
-          </Button>
-        </div>
+        <MenuEditorInline
+          formData={formData}
+          onChange={onChange}
+          templateId={templateId}
+          config={config}
+        />
       </SettingsBlock>
 
       {/* Banner */}
