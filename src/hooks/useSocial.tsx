@@ -495,6 +495,38 @@ export function useIsFollowing(targetUserId?: string) {
   });
 }
 
+// ─── Search Users ────────────────────────────────────────────
+export function useSearchUsers(query: string) {
+  return useQuery({
+    queryKey: ['social-search-users', query],
+    queryFn: async () => {
+      if (!query.trim() || query.trim().length < 2) return [];
+      const searchTerm = `%${query.trim()}%`;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, avatar_url, phone')
+        .or(`display_name.ilike.${searchTerm},phone.ilike.${searchTerm}`)
+        .limit(10);
+      if (error) throw error;
+
+      const userIds = (data || []).map(p => p.user_id);
+      if (!userIds.length) return [];
+      const { data: socialProfiles } = await supabase
+        .from('social_profiles')
+        .select('user_id, is_verified')
+        .in('user_id', userIds);
+      const verifiedMap = new Map((socialProfiles || []).map(sp => [sp.user_id, sp.is_verified]));
+
+      return (data || []).map(p => ({
+        ...p,
+        is_verified: verifiedMap.get(p.user_id) || false,
+      }));
+    },
+    enabled: query.trim().length >= 2,
+    staleTime: 10000,
+  });
+}
+
 // ─── Notifications ───────────────────────────────────────────
 export function useSocialNotifications() {
   const { user } = useAuth();
