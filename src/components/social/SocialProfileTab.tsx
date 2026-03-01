@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Edit, Save, X, MapPin, Phone, Users, Camera, Loader2, UserPlus, UserCheck } from 'lucide-react';
+import { Edit, Save, X, MapPin, Phone, Users, Camera, Loader2, UserPlus, UserCheck, ArrowLeft } from 'lucide-react';
 import { VerifiedBadge } from './VerifiedBadge';
 import { toast } from 'sonner';
 import { SocialPostCard } from './SocialPostCard';
@@ -20,9 +20,10 @@ import { useQueryClient } from '@tanstack/react-query';
 interface Props {
   userId?: string;
   onViewProfile: (userId: string) => void;
+  onBack?: () => void;
 }
 
-export const SocialProfileTab = memo(function SocialProfileTab({ userId, onViewProfile }: Props) {
+export const SocialProfileTab = memo(function SocialProfileTab({ userId, onViewProfile, onBack }: Props) {
   const { user } = useAuth();
   const isOwnProfile = !userId || userId === user?.id;
   const targetId = isOwnProfile ? user?.id : userId;
@@ -112,6 +113,13 @@ export const SocialProfileTab = memo(function SocialProfileTab({ userId, onViewP
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
+      {/* Back button when viewing other profile */}
+      {!isOwnProfile && onBack && (
+        <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">
+          <ArrowLeft className="h-4 w-4" /> Quay lại
+        </Button>
+      )}
+
       {/* Profile Card */}
       <Card>
         <CardContent className="pt-6">

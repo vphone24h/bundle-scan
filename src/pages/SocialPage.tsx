@@ -126,7 +126,7 @@ const SocialPage = () => {
 
             <TabsContent value="profile" forceMount={activeTab === 'profile' ? undefined : true} className={activeTab !== 'profile' ? 'hidden' : ''}>
               <Suspense fallback={<TabFallback />}>
-                <SocialProfileTab userId={viewUserId} onViewProfile={handleViewProfile} />
+                <SocialProfileTab userId={viewUserId} onViewProfile={handleViewProfile} onBack={() => { setViewUserId(undefined); setActiveTab('feed'); }} />
               </Suspense>
             </TabsContent>
             <TabsContent value="feed" forceMount={activeTab === 'feed' ? undefined : true} className={activeTab !== 'feed' ? 'hidden' : ''}>

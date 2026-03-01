@@ -469,9 +469,10 @@ export function useToggleFollow() {
         } as any);
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, { targetUserId }) => {
       queryClient.invalidateQueries({ queryKey: ['social-feed'] });
       queryClient.invalidateQueries({ queryKey: ['social-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['social-following'] });
     },
   });
 }
