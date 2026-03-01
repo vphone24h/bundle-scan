@@ -90,7 +90,6 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
   const currentItems = customSections || buildFromConfig();
 
   const handleToggle = (index: number) => {
-    if (currentItems[index].id === 'hero') return;
     const updated = [...currentItems];
     updated[index] = { ...updated[index], enabled: !updated[index].enabled };
     onChange(updated);
@@ -267,7 +266,6 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
               <Switch
                 checked={item.enabled}
                 onCheckedChange={() => handleToggle(i)}
-                disabled={isHero}
                 className="shrink-0"
               />
             </div>

@@ -57,14 +57,23 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
   const baseConfig = getIndustryConfig(templateId);
   const customProductTabs: CustomProductTab[] = (formData as any)?.custom_product_tabs || [];
 
-  // Build enabled section IDs (including custom productTab_* ones)
+  // Build enabled sections (including custom productTab_* ones)
+  const customHomeSections = (formData as any)?.custom_home_sections as HomeSectionItem[] | undefined;
   const enabledSectionIds = useMemo(() => {
-    if ((formData as any)?.custom_home_sections) {
-      const customSections = (formData as any).custom_home_sections as HomeSectionItem[];
-      return customSections.filter(s => s.enabled).map(s => s.id);
+    if (customHomeSections) {
+      return customHomeSections.filter(s => s.enabled).map(s => s.id);
     }
     return baseConfig.homeSections as string[];
-  }, [baseConfig, formData]);
+  }, [baseConfig, customHomeSections]);
+
+  // Get category display mode from custom sections
+  const categoryDisplayMode = useMemo(() => {
+    if (customHomeSections) {
+      const catSection = customHomeSections.find(s => s.id === 'categories');
+      return catSection?.displayMode || 'horizontal';
+    }
+    return 'horizontal';
+  }, [customHomeSections]);
 
   const config = useMemo(() => {
     const c = { ...baseConfig };
@@ -362,16 +371,31 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
                 return (
                   <SectionOverlay key="categories" sectionId="layout" label="Danh mục" onEdit={onEditSection}>
                     <section className="py-4 bg-[#f5f5f7] px-4">
-                      <div className="flex gap-3 overflow-x-auto scrollbar-hide">
-                        {['Danh mục 1', 'Danh mục 2', 'Danh mục 3'].map((cat, i) => (
-                          <div key={i} className="flex flex-col items-center gap-1.5 min-w-[70px]">
-                            <div className="h-14 w-14 rounded-2xl bg-white border border-black/5 flex items-center justify-center">
-                              <span className="text-lg opacity-40">📁</span>
+                      {categoryDisplayMode === 'vertical' ? (
+                        <div className="grid grid-cols-2 gap-3">
+                          {['Danh mục 1', 'Danh mục 2', 'Danh mục 3', 'Danh mục 4'].map((cat, i) => (
+                            <div key={i} className="rounded-2xl overflow-hidden relative" style={{ minHeight: '100px' }}>
+                              <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted/80" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                              <div className="relative z-10 h-full flex flex-col justify-end p-3" style={{ minHeight: '100px' }}>
+                                <p className="text-xs font-bold text-white">{cat}</p>
+                                <p className="text-[8px] text-white/70">Khám phá →</p>
+                              </div>
                             </div>
-                            <span className="text-[10px] font-medium text-center">{cat}</span>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+                          {['Danh mục 1', 'Danh mục 2', 'Danh mục 3'].map((cat, i) => (
+                            <div key={i} className="flex flex-col items-center gap-1.5 min-w-[70px]">
+                              <div className="h-14 w-14 rounded-2xl bg-white border border-black/5 flex items-center justify-center">
+                                <span className="text-lg opacity-40">📁</span>
+                              </div>
+                              <span className="text-[10px] font-medium text-center">{cat}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </section>
                   </SectionOverlay>
                 );
