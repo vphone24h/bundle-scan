@@ -5,6 +5,7 @@ import { NavItemConfig, HomeSection } from '@/lib/industryConfig';
 export interface HomeSectionItem {
   id: HomeSection | string; // string for custom tab IDs like "productTab_xxx"
   enabled: boolean;
+  displayMode?: 'horizontal' | 'vertical'; // for categories section
 }
 
 export interface TenantLandingSettings {
