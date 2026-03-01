@@ -84,6 +84,16 @@ export default function UniversalStoreTemplate({
     if ((settings as any)?.custom_home_sections) {
       const customSections = (settings as any).custom_home_sections as HomeSectionItem[];
       c.homeSections = customSections.filter((s: HomeSectionItem) => s.enabled).map((s: HomeSectionItem) => s.id) as HomeSection[];
+      // When user explicitly enables sections via editor, force-enable corresponding features
+      for (const s of customSections.filter((s: HomeSectionItem) => s.enabled)) {
+        if (s.id === 'articles') c.features = { ...c.features, articles: true };
+        if (s.id === 'warranty') c.features = { ...c.features, warranty: true };
+        if (s.id === 'voucher') c.features = { ...c.features, voucher: true };
+        if (s.id === 'reviews') c.features = { ...c.features, reviews: true };
+        if (s.id === 'branches') c.features = { ...c.features, branches: true };
+        if (s.id === 'storeInfo') c.features = { ...c.features, storeInfo: true };
+        if (s.id === 'categories') c.features = { ...c.features, categories: true };
+      }
     }
     return c;
   }, [baseConfig, settings]);
@@ -350,8 +360,10 @@ export default function UniversalStoreTemplate({
                     </section>
                   );
                 }
-                case 'articles':
-                  if (!config.features.articles || featuredArticles.length === 0) return null;
+                case 'articles': {
+                  const allArticles = articlesData?.articles || [];
+                  const displayArticles = featuredArticles.length > 0 ? featuredArticles : allArticles;
+                  if (!config.features.articles || displayArticles.length === 0) return null;
                   return (
                     <section key="articles" className="py-12 bg-[#f5f5f7]">
                       <div className="max-w-[1200px] mx-auto px-4">
@@ -361,7 +373,7 @@ export default function UniversalStoreTemplate({
                           </div>
                         </ScrollReveal>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {featuredArticles.slice(0, 3).map((a, i) => (
+                          {displayArticles.slice(0, 3).map((a, i) => (
                             <ScrollReveal key={a.id} animation="fade-up" delay={i * 100}>
                               <button onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all text-left group w-full">
                                 {a.thumbnail_url ? (
@@ -381,6 +393,7 @@ export default function UniversalStoreTemplate({
                       </div>
                     </section>
                   );
+                }
                 case 'warranty':
                   if (!config.features.warranty || settings?.show_warranty_lookup === false) return null;
                   return (
