@@ -7,6 +7,7 @@ export interface WebsiteTemplate {
   icon: string; // emoji
   tier: 'basic' | 'premium' | 'pro';
   available: boolean;
+  brandInspiration?: string; // e.g. "Apple Store VN"
 }
 
 export const WEBSITE_TEMPLATES: WebsiteTemplate[] = [

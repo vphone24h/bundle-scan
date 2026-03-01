@@ -11,7 +11,7 @@ import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { VoucherClaimForm } from '@/components/landing/VoucherClaimForm';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
 import { ScrollReveal, useParallax } from '@/hooks/useScrollReveal';
-import { IndustryConfig, getIndustryConfig, GOOGLE_FONTS, NavItemConfig, getDefaultNavItems, getSystemPageById } from '@/lib/industryConfig';
+import { ResolvedIndustryConfig, getIndustryConfig, GOOGLE_FONTS, NavItemConfig, getDefaultNavItems, getSystemPageById } from '@/lib/industryConfig';
 import {
   RepairPage, TradeInPage, InstallmentPage, PriceListPage,
   BookingPage, BranchesPage, ContactPage, AccessoriesPage,
@@ -375,8 +375,8 @@ export default function UniversalStoreTemplate({
               </section>
             </ScrollReveal>
 
-            {/* PRODUCT CATEGORIES */}
-            {productsData && productsData.categories.length > 0 && (
+            {/* PRODUCT CATEGORIES - only if feature enabled */}
+            {config.features.categories && productsData && productsData.categories.length > 0 && (
               <ScrollReveal animation="fade-up" delay={150}>
                 <section className="bg-[#f5f5f7] py-8">
                   <div className="max-w-[1200px] mx-auto px-4">
@@ -462,8 +462,8 @@ export default function UniversalStoreTemplate({
               </section>
             )}
 
-            {/* NEWS */}
-            {featuredArticles.length > 0 && (
+            {/* NEWS - only if feature enabled */}
+            {config.features.articles && featuredArticles.length > 0 && (
               <section className="py-12 bg-[#f5f5f7]">
                 <div className="max-w-[1200px] mx-auto px-4">
                   <ScrollReveal animation="fade-up">
@@ -493,8 +493,8 @@ export default function UniversalStoreTemplate({
               </section>
             )}
 
-            {/* WARRANTY LOOKUP */}
-            {(settings?.show_warranty_lookup !== false) && (
+            {/* WARRANTY LOOKUP - only if feature enabled */}
+            {config.features.warranty && (settings?.show_warranty_lookup !== false) && (
               <ScrollReveal animation="fade-up">
                 <section className="py-12 bg-white">
                   <div className="max-w-lg mx-auto px-4 text-center">
@@ -520,8 +520,8 @@ export default function UniversalStoreTemplate({
               </ScrollReveal>
             )}
 
-            {/* VOUCHER */}
-            {(settings as any)?.voucher_enabled && tenantId && (
+            {/* VOUCHER - only if feature enabled */}
+            {config.features.voucher && (settings as any)?.voucher_enabled && tenantId && (
               <section className="py-8 bg-[#f5f5f7]">
                 <div className="max-w-lg mx-auto px-4">
                   <VoucherClaimForm tenantId={tenantId} branches={branches.map(b => ({ id: b.id, name: b.name }))} primaryColor={accentColor} />
@@ -529,8 +529,8 @@ export default function UniversalStoreTemplate({
               </section>
             )}
 
-            {/* REVIEWS */}
-            {tenantId && (
+            {/* REVIEWS - only if feature enabled */}
+            {config.features.reviews && tenantId && (
               <ScrollReveal animation="fade-up">
                 <section className="py-12 bg-white">
                   <div className="max-w-[1200px] mx-auto px-4">
@@ -540,8 +540,8 @@ export default function UniversalStoreTemplate({
               </ScrollReveal>
             )}
 
-            {/* STORE INFO */}
-            {(settings?.show_store_info !== false) && (settings?.store_address || settings?.store_phone || branches.length > 0) && (
+            {/* STORE INFO - only if feature enabled */}
+            {config.features.storeInfo && (settings?.show_store_info !== false) && (settings?.store_address || settings?.store_phone || branches.length > 0) && (
               <ScrollReveal animation="fade-up">
                 <section className="py-12 bg-[#f5f5f7]">
                   <div className="max-w-[1200px] mx-auto px-4">
