@@ -12,10 +12,48 @@ export interface NavItemConfig {
   label: string;
   enabled: boolean;
   type: 'page' | 'link'; // page = internal pageView, link = external URL
-  pageView?: string; // for page type: home, products, news, warranty
+  pageView?: string; // for page type: home, products, news, warranty, repair, tradein, installment, etc.
   url?: string; // for link type
   icon?: string; // emoji or lucide icon name
 }
+
+// System pages that auto-generate content (no URL needed)
+export interface SystemPageDef {
+  id: string;
+  label: string;
+  icon: string;
+  description: string;
+  category: string;
+}
+
+export const SYSTEM_PAGES: SystemPageDef[] = [
+  { id: 'home', label: 'Trang chủ', icon: '🏠', description: 'Trang chủ website', category: 'Mặc định' },
+  { id: 'products', label: 'Sản phẩm', icon: '📦', description: 'Danh sách sản phẩm từ kho', category: 'Mặc định' },
+  { id: 'news', label: 'Tin tức', icon: '📰', description: 'Bài viết, blog', category: 'Mặc định' },
+  { id: 'warranty', label: 'Bảo hành', icon: '🛡️', description: 'Tra cứu bảo hành', category: 'Mặc định' },
+  { id: 'repair', label: 'Sửa chữa', icon: '🔧', description: 'Dịch vụ sửa chữa, bảng giá, đặt lịch', category: 'Dịch vụ' },
+  { id: 'tradein', label: 'Thu cũ đổi mới', icon: '🔄', description: 'Quy trình thu cũ, định giá', category: 'Dịch vụ' },
+  { id: 'installment', label: 'Trả góp', icon: '💳', description: 'Hướng dẫn trả góp 0%', category: 'Dịch vụ' },
+  { id: 'accessories', label: 'Phụ kiện', icon: '🎧', description: 'Phụ kiện chính hãng', category: 'Sản phẩm' },
+  { id: 'compare', label: 'So sánh sản phẩm', icon: '⚖️', description: 'So sánh cấu hình, giá', category: 'Sản phẩm' },
+  { id: 'pricelist', label: 'Bảng giá', icon: '💰', description: 'Bảng giá cập nhật', category: 'Dịch vụ' },
+  { id: 'booking', label: 'Đặt lịch', icon: '📅', description: 'Đặt lịch hẹn online', category: 'Dịch vụ' },
+  { id: 'branches', label: 'Chi nhánh', icon: '📍', description: 'Hệ thống chi nhánh', category: 'Thông tin' },
+  { id: 'contact', label: 'Liên hệ', icon: '📞', description: 'Thông tin liên hệ', category: 'Thông tin' },
+  { id: 'services', label: 'Dịch vụ', icon: '💆', description: 'Danh sách dịch vụ', category: 'Dịch vụ' },
+  { id: 'rooms', label: 'Phòng', icon: '🛏️', description: 'Danh sách phòng', category: 'Sản phẩm' },
+  { id: 'courses', label: 'Khóa học', icon: '📚', description: 'Danh sách khóa học', category: 'Sản phẩm' },
+  { id: 'doctors', label: 'Bác sĩ', icon: '👨‍⚕️', description: 'Đội ngũ bác sĩ', category: 'Thông tin' },
+  { id: 'collection', label: 'Bộ sưu tập', icon: '👗', description: 'Bộ sưu tập mới', category: 'Sản phẩm' },
+  { id: 'promotion', label: 'Khuyến mãi', icon: '🏷️', description: 'Chương trình khuyến mãi', category: 'Sản phẩm' },
+  { id: 'reviews', label: 'Đánh giá', icon: '⭐', description: 'Đánh giá khách hàng', category: 'Thông tin' },
+];
+
+export function getSystemPageById(id: string): SystemPageDef | undefined {
+  return SYSTEM_PAGES.find(p => p.id === id);
+}
+
+export const SYSTEM_PAGE_IDS = new Set(SYSTEM_PAGES.map(p => p.id));
 
 export interface IndustryConfig {
   id: string;
@@ -749,153 +787,153 @@ export function getDefaultNavItems(config: IndustryConfig): NavItemConfig[] {
   ];
 }
 
-// Suggested extra nav items per industry
+// Suggested extra nav items per industry - now using type: 'page' with pageView for system pages
 export const INDUSTRY_SUGGESTED_NAV: Record<string, NavItemConfig[]> = {
   // Technology
   phone_store: [
-    { id: 'repair', label: 'Sửa chữa', enabled: true, type: 'link', icon: '🔧' },
-    { id: 'tradein', label: 'Thu cũ đổi mới', enabled: true, type: 'link', icon: '🔄' },
-    { id: 'installment', label: 'Trả góp', enabled: true, type: 'link', icon: '💳' },
-    { id: 'accessories', label: 'Phụ kiện', enabled: false, type: 'link', icon: '🎧' },
-    { id: 'compare', label: 'So sánh máy', enabled: false, type: 'link', icon: '⚖️' },
+    { id: 'repair', label: 'Sửa chữa', enabled: true, type: 'page', pageView: 'repair', icon: '🔧' },
+    { id: 'tradein', label: 'Thu cũ đổi mới', enabled: true, type: 'page', pageView: 'tradein', icon: '🔄' },
+    { id: 'installment', label: 'Trả góp', enabled: true, type: 'page', pageView: 'installment', icon: '💳' },
+    { id: 'accessories', label: 'Phụ kiện', enabled: false, type: 'page', pageView: 'accessories', icon: '🎧' },
+    { id: 'compare', label: 'So sánh máy', enabled: false, type: 'page', pageView: 'compare', icon: '⚖️' },
   ],
   laptop_store: [
-    { id: 'repair', label: 'Sửa chữa', enabled: true, type: 'link', icon: '🔧' },
-    { id: 'tradein', label: 'Thu cũ đổi mới', enabled: true, type: 'link', icon: '🔄' },
-    { id: 'installment', label: 'Trả góp', enabled: true, type: 'link', icon: '💳' },
-    { id: 'accessories', label: 'Phụ kiện', enabled: false, type: 'link', icon: '🎧' },
-    { id: 'compare', label: 'So sánh máy', enabled: false, type: 'link', icon: '⚖️' },
+    { id: 'repair', label: 'Sửa chữa', enabled: true, type: 'page', pageView: 'repair', icon: '🔧' },
+    { id: 'tradein', label: 'Thu cũ đổi mới', enabled: true, type: 'page', pageView: 'tradein', icon: '🔄' },
+    { id: 'installment', label: 'Trả góp', enabled: true, type: 'page', pageView: 'installment', icon: '💳' },
+    { id: 'accessories', label: 'Phụ kiện', enabled: false, type: 'page', pageView: 'accessories', icon: '🎧' },
+    { id: 'compare', label: 'So sánh máy', enabled: false, type: 'page', pageView: 'compare', icon: '⚖️' },
   ],
   accessories_store: [
-    { id: 'combo', label: 'Combo tiết kiệm', enabled: true, type: 'link', icon: '🎁' },
-    { id: 'guide', label: 'Hướng dẫn chọn', enabled: false, type: 'link', icon: '📖' },
+    { id: 'combo', label: 'Combo tiết kiệm', enabled: true, type: 'page', pageView: 'promotion', icon: '🎁' },
+    { id: 'guide', label: 'Hướng dẫn chọn', enabled: false, type: 'page', pageView: 'news', icon: '📖' },
   ],
   electronics_store: [
-    { id: 'install', label: 'Lắp đặt', enabled: true, type: 'link', icon: '🔧' },
-    { id: 'installment', label: 'Trả góp', enabled: true, type: 'link', icon: '💳' },
-    { id: 'promotion', label: 'Khuyến mãi', enabled: true, type: 'link', icon: '🏷️' },
+    { id: 'install', label: 'Lắp đặt', enabled: true, type: 'page', pageView: 'repair', icon: '🔧' },
+    { id: 'installment', label: 'Trả góp', enabled: true, type: 'page', pageView: 'installment', icon: '💳' },
+    { id: 'promotion', label: 'Khuyến mãi', enabled: true, type: 'page', pageView: 'promotion', icon: '🏷️' },
   ],
   // Fashion & Beauty
   fashion_store: [
-    { id: 'collection', label: 'Bộ sưu tập', enabled: true, type: 'link', icon: '👗' },
-    { id: 'newarrival', label: 'Hàng mới về', enabled: true, type: 'link', icon: '✨' },
-    { id: 'flashsale', label: 'Flash sale', enabled: true, type: 'link', icon: '⚡' },
-    { id: 'lookbook', label: 'Lookbook', enabled: false, type: 'link', icon: '📸' },
-    { id: 'sizeguide', label: 'Size guide', enabled: false, type: 'link', icon: '📏' },
-    { id: 'returnpolicy', label: 'Chính sách đổi trả', enabled: false, type: 'link', icon: '🔄' },
+    { id: 'collection', label: 'Bộ sưu tập', enabled: true, type: 'page', pageView: 'collection', icon: '👗' },
+    { id: 'newarrival', label: 'Hàng mới về', enabled: true, type: 'page', pageView: 'products', icon: '✨' },
+    { id: 'flashsale', label: 'Flash sale', enabled: true, type: 'page', pageView: 'promotion', icon: '⚡' },
+    { id: 'lookbook', label: 'Lookbook', enabled: false, type: 'page', pageView: 'news', icon: '📸' },
+    { id: 'sizeguide', label: 'Size guide', enabled: false, type: 'page', pageView: 'contact', icon: '📏' },
+    { id: 'returnpolicy', label: 'Chính sách đổi trả', enabled: false, type: 'page', pageView: 'contact', icon: '🔄' },
   ],
   shoes_store: [
-    { id: 'newarrival', label: 'Hàng mới về', enabled: true, type: 'link', icon: '✨' },
-    { id: 'flashsale', label: 'Flash sale', enabled: true, type: 'link', icon: '⚡' },
-    { id: 'sizeguide', label: 'Size guide', enabled: false, type: 'link', icon: '📏' },
+    { id: 'newarrival', label: 'Hàng mới về', enabled: true, type: 'page', pageView: 'products', icon: '✨' },
+    { id: 'flashsale', label: 'Flash sale', enabled: true, type: 'page', pageView: 'promotion', icon: '⚡' },
+    { id: 'sizeguide', label: 'Size guide', enabled: false, type: 'page', pageView: 'contact', icon: '📏' },
   ],
   cosmetics_store: [
-    { id: 'skincare', label: 'Chăm sóc da', enabled: true, type: 'link', icon: '🧴' },
-    { id: 'feedback', label: 'Feedback khách hàng', enabled: true, type: 'link', icon: '⭐' },
-    { id: 'promotion', label: 'Khuyến mãi', enabled: true, type: 'link', icon: '🏷️' },
+    { id: 'skincare', label: 'Chăm sóc da', enabled: true, type: 'page', pageView: 'services', icon: '🧴' },
+    { id: 'feedback', label: 'Feedback khách hàng', enabled: true, type: 'page', pageView: 'reviews', icon: '⭐' },
+    { id: 'promotion', label: 'Khuyến mãi', enabled: true, type: 'page', pageView: 'promotion', icon: '🏷️' },
   ],
   spa_store: [
-    { id: 'services', label: 'Dịch vụ', enabled: true, type: 'link', icon: '💆' },
-    { id: 'pricelist', label: 'Bảng giá', enabled: true, type: 'link', icon: '💰' },
-    { id: 'booking', label: 'Đặt lịch', enabled: true, type: 'link', icon: '📅' },
-    { id: 'beforeafter', label: 'Trước & sau', enabled: true, type: 'link', icon: '📸' },
-    { id: 'feedback', label: 'Feedback khách hàng', enabled: false, type: 'link', icon: '⭐' },
+    { id: 'services', label: 'Dịch vụ', enabled: true, type: 'page', pageView: 'services', icon: '💆' },
+    { id: 'pricelist', label: 'Bảng giá', enabled: true, type: 'page', pageView: 'pricelist', icon: '💰' },
+    { id: 'booking', label: 'Đặt lịch', enabled: true, type: 'page', pageView: 'booking', icon: '📅' },
+    { id: 'beforeafter', label: 'Trước & sau', enabled: true, type: 'page', pageView: 'reviews', icon: '📸' },
+    { id: 'feedback', label: 'Feedback khách hàng', enabled: false, type: 'page', pageView: 'reviews', icon: '⭐' },
   ],
   salon_store: [
-    { id: 'pricelist', label: 'Bảng giá', enabled: true, type: 'link', icon: '💰' },
-    { id: 'booking', label: 'Đặt lịch', enabled: true, type: 'link', icon: '📅' },
-    { id: 'trends', label: 'Xu hướng tóc', enabled: false, type: 'link', icon: '💇' },
+    { id: 'pricelist', label: 'Bảng giá', enabled: true, type: 'page', pageView: 'pricelist', icon: '💰' },
+    { id: 'booking', label: 'Đặt lịch', enabled: true, type: 'page', pageView: 'booking', icon: '📅' },
+    { id: 'trends', label: 'Xu hướng tóc', enabled: false, type: 'page', pageView: 'news', icon: '💇' },
   ],
   watch_store: [
-    { id: 'collection', label: 'Bộ sưu tập', enabled: true, type: 'link', icon: '⌚' },
-    { id: 'installment', label: 'Trả góp', enabled: true, type: 'link', icon: '💳' },
-    { id: 'auth', label: 'Kiểm tra Auth', enabled: false, type: 'link', icon: '✅' },
+    { id: 'collection', label: 'Bộ sưu tập', enabled: true, type: 'page', pageView: 'collection', icon: '⌚' },
+    { id: 'installment', label: 'Trả góp', enabled: true, type: 'page', pageView: 'installment', icon: '💳' },
+    { id: 'auth', label: 'Kiểm tra Auth', enabled: false, type: 'page', pageView: 'warranty', icon: '✅' },
   ],
   jewelry_store: [
-    { id: 'collection', label: 'Bộ sưu tập', enabled: true, type: 'link', icon: '💎' },
-    { id: 'customorder', label: 'Đặt riêng', enabled: true, type: 'link', icon: '✨' },
-    { id: 'installment', label: 'Trả góp', enabled: false, type: 'link', icon: '💳' },
+    { id: 'collection', label: 'Bộ sưu tập', enabled: true, type: 'page', pageView: 'collection', icon: '💎' },
+    { id: 'customorder', label: 'Đặt riêng', enabled: true, type: 'page', pageView: 'contact', icon: '✨' },
+    { id: 'installment', label: 'Trả góp', enabled: false, type: 'page', pageView: 'installment', icon: '💳' },
   ],
   // Food & Beverage
   restaurant_store: [
-    { id: 'booking', label: 'Đặt bàn', enabled: true, type: 'link', icon: '🍽️' },
-    { id: 'combo', label: 'Combo khuyến mãi', enabled: true, type: 'link', icon: '🎁' },
-    { id: 'branches', label: 'Chi nhánh', enabled: true, type: 'link', icon: '📍' },
-    { id: 'delivery', label: 'Giao hàng', enabled: false, type: 'link', icon: '🚚' },
-    { id: 'reviews', label: 'Đánh giá', enabled: false, type: 'link', icon: '⭐' },
+    { id: 'booking', label: 'Đặt bàn', enabled: true, type: 'page', pageView: 'booking', icon: '🍽️' },
+    { id: 'combo', label: 'Combo khuyến mãi', enabled: true, type: 'page', pageView: 'promotion', icon: '🎁' },
+    { id: 'branches', label: 'Chi nhánh', enabled: true, type: 'page', pageView: 'branches', icon: '📍' },
+    { id: 'delivery', label: 'Giao hàng', enabled: false, type: 'page', pageView: 'contact', icon: '🚚' },
+    { id: 'reviews', label: 'Đánh giá', enabled: false, type: 'page', pageView: 'reviews', icon: '⭐' },
   ],
   cafe_store: [
-    { id: 'combo', label: 'Combo khuyến mãi', enabled: true, type: 'link', icon: '🎁' },
-    { id: 'branches', label: 'Chi nhánh', enabled: true, type: 'link', icon: '📍' },
-    { id: 'delivery', label: 'Giao hàng', enabled: false, type: 'link', icon: '🚚' },
+    { id: 'combo', label: 'Combo khuyến mãi', enabled: true, type: 'page', pageView: 'promotion', icon: '🎁' },
+    { id: 'branches', label: 'Chi nhánh', enabled: true, type: 'page', pageView: 'branches', icon: '📍' },
+    { id: 'delivery', label: 'Giao hàng', enabled: false, type: 'page', pageView: 'contact', icon: '🚚' },
   ],
   boba_store: [
-    { id: 'topping', label: 'Topping', enabled: true, type: 'link', icon: '🧋' },
-    { id: 'combo', label: 'Combo tiết kiệm', enabled: true, type: 'link', icon: '🎁' },
-    { id: 'delivery', label: 'Giao hàng', enabled: false, type: 'link', icon: '🚚' },
+    { id: 'topping', label: 'Topping', enabled: true, type: 'page', pageView: 'products', icon: '🧋' },
+    { id: 'combo', label: 'Combo tiết kiệm', enabled: true, type: 'page', pageView: 'promotion', icon: '🎁' },
+    { id: 'delivery', label: 'Giao hàng', enabled: false, type: 'page', pageView: 'contact', icon: '🚚' },
   ],
   // Real Estate & Auto
   realestate_store: [
-    { id: 'forsale', label: 'Nhà bán', enabled: true, type: 'link', icon: '🏠' },
-    { id: 'forrent', label: 'Nhà cho thuê', enabled: true, type: 'link', icon: '🔑' },
-    { id: 'investment', label: 'Tư vấn đầu tư', enabled: true, type: 'link', icon: '📈' },
-    { id: 'market', label: 'Tin thị trường', enabled: false, type: 'link', icon: '📊' },
+    { id: 'forsale', label: 'Nhà bán', enabled: true, type: 'page', pageView: 'products', icon: '🏠' },
+    { id: 'forrent', label: 'Nhà cho thuê', enabled: true, type: 'page', pageView: 'products', icon: '🔑' },
+    { id: 'investment', label: 'Tư vấn đầu tư', enabled: true, type: 'page', pageView: 'contact', icon: '📈' },
+    { id: 'market', label: 'Tin thị trường', enabled: false, type: 'page', pageView: 'news', icon: '📊' },
   ],
   car_showroom: [
-    { id: 'usedcar', label: 'Xe đã qua sử dụng', enabled: true, type: 'link', icon: '🚙' },
-    { id: 'pricelist', label: 'Bảng giá', enabled: true, type: 'link', icon: '💰' },
-    { id: 'testdrive', label: 'Đặt lịch lái thử', enabled: true, type: 'link', icon: '📅' },
-    { id: 'compare', label: 'So sánh xe', enabled: false, type: 'link', icon: '⚖️' },
-    { id: 'promotion', label: 'Khuyến mãi', enabled: true, type: 'link', icon: '🏷️' },
+    { id: 'usedcar', label: 'Xe đã qua sử dụng', enabled: true, type: 'page', pageView: 'products', icon: '🚙' },
+    { id: 'pricelist', label: 'Bảng giá', enabled: true, type: 'page', pageView: 'pricelist', icon: '💰' },
+    { id: 'testdrive', label: 'Đặt lịch lái thử', enabled: true, type: 'page', pageView: 'booking', icon: '📅' },
+    { id: 'compare', label: 'So sánh xe', enabled: false, type: 'page', pageView: 'compare', icon: '⚖️' },
+    { id: 'promotion', label: 'Khuyến mãi', enabled: true, type: 'page', pageView: 'promotion', icon: '🏷️' },
   ],
   motorbike_showroom: [
-    { id: 'usedmoto', label: 'Xe đã qua sử dụng', enabled: true, type: 'link', icon: '🏍️' },
-    { id: 'pricelist', label: 'Bảng giá', enabled: true, type: 'link', icon: '💰' },
-    { id: 'installment', label: 'Trả góp', enabled: true, type: 'link', icon: '💳' },
-    { id: 'promotion', label: 'Khuyến mãi', enabled: true, type: 'link', icon: '🏷️' },
+    { id: 'usedmoto', label: 'Xe đã qua sử dụng', enabled: true, type: 'page', pageView: 'products', icon: '🏍️' },
+    { id: 'pricelist', label: 'Bảng giá', enabled: true, type: 'page', pageView: 'pricelist', icon: '💰' },
+    { id: 'installment', label: 'Trả góp', enabled: true, type: 'page', pageView: 'installment', icon: '💳' },
+    { id: 'promotion', label: 'Khuyến mãi', enabled: true, type: 'page', pageView: 'promotion', icon: '🏷️' },
   ],
   // Home & Construction
   furniture_store: [
-    { id: 'interior', label: 'Thiết kế nội thất', enabled: true, type: 'link', icon: '🏡' },
-    { id: 'installment', label: 'Trả góp', enabled: false, type: 'link', icon: '💳' },
+    { id: 'interior', label: 'Thiết kế nội thất', enabled: true, type: 'page', pageView: 'services', icon: '🏡' },
+    { id: 'installment', label: 'Trả góp', enabled: false, type: 'page', pageView: 'installment', icon: '💳' },
   ],
   construction_store: [
-    { id: 'quote', label: 'Báo giá', enabled: true, type: 'link', icon: '💰' },
-    { id: 'projects', label: 'Dự án', enabled: false, type: 'link', icon: '🏗️' },
+    { id: 'quote', label: 'Báo giá', enabled: true, type: 'page', pageView: 'pricelist', icon: '💰' },
+    { id: 'projects', label: 'Dự án', enabled: false, type: 'page', pageView: 'news', icon: '🏗️' },
   ],
   // Hospitality
   hotel_store: [
-    { id: 'rooms', label: 'Phòng', enabled: true, type: 'link', icon: '🛏️' },
-    { id: 'booking', label: 'Đặt phòng', enabled: true, type: 'link', icon: '📅' },
-    { id: 'pricelist', label: 'Bảng giá', enabled: true, type: 'link', icon: '💰' },
-    { id: 'amenities', label: 'Tiện ích', enabled: true, type: 'link', icon: '🏊' },
-    { id: 'reviews', label: 'Đánh giá khách', enabled: false, type: 'link', icon: '⭐' },
-    { id: 'attractions', label: 'Địa điểm du lịch', enabled: false, type: 'link', icon: '🗺️' },
+    { id: 'rooms', label: 'Phòng', enabled: true, type: 'page', pageView: 'rooms', icon: '🛏️' },
+    { id: 'booking', label: 'Đặt phòng', enabled: true, type: 'page', pageView: 'booking', icon: '📅' },
+    { id: 'pricelist', label: 'Bảng giá', enabled: true, type: 'page', pageView: 'pricelist', icon: '💰' },
+    { id: 'amenities', label: 'Tiện ích', enabled: true, type: 'page', pageView: 'services', icon: '🏊' },
+    { id: 'reviews', label: 'Đánh giá khách', enabled: false, type: 'page', pageView: 'reviews', icon: '⭐' },
+    { id: 'attractions', label: 'Địa điểm du lịch', enabled: false, type: 'page', pageView: 'news', icon: '🗺️' },
   ],
   // Retail
   wholesale_store: [
-    { id: 'wholesale', label: 'Sản phẩm sỉ', enabled: true, type: 'link', icon: '📦' },
-    { id: 'agentpolicy', label: 'Chính sách đại lý', enabled: true, type: 'link', icon: '📋' },
-    { id: 'register', label: 'Đăng ký đại lý', enabled: true, type: 'link', icon: '📝' },
-    { id: 'pricelist', label: 'Bảng giá sỉ', enabled: true, type: 'link', icon: '💰' },
+    { id: 'wholesale', label: 'Sản phẩm sỉ', enabled: true, type: 'page', pageView: 'products', icon: '📦' },
+    { id: 'agentpolicy', label: 'Chính sách đại lý', enabled: true, type: 'page', pageView: 'contact', icon: '📋' },
+    { id: 'register', label: 'Đăng ký đại lý', enabled: true, type: 'page', pageView: 'contact', icon: '📝' },
+    { id: 'pricelist', label: 'Bảng giá sỉ', enabled: true, type: 'page', pageView: 'pricelist', icon: '💰' },
   ],
   // Services
   training_center: [
-    { id: 'courses', label: 'Khóa học', enabled: true, type: 'link', icon: '📚' },
-    { id: 'schedule', label: 'Lịch khai giảng', enabled: true, type: 'link', icon: '📅' },
-    { id: 'register', label: 'Đăng ký học', enabled: true, type: 'link', icon: '📝' },
-    { id: 'teachers', label: 'Giảng viên', enabled: false, type: 'link', icon: '👨‍🏫' },
-    { id: 'fees', label: 'Học phí', enabled: false, type: 'link', icon: '💰' },
-    { id: 'certificate', label: 'Chứng chỉ', enabled: false, type: 'link', icon: '🎓' },
+    { id: 'courses', label: 'Khóa học', enabled: true, type: 'page', pageView: 'courses', icon: '📚' },
+    { id: 'schedule', label: 'Lịch khai giảng', enabled: true, type: 'page', pageView: 'booking', icon: '📅' },
+    { id: 'register', label: 'Đăng ký học', enabled: true, type: 'page', pageView: 'contact', icon: '📝' },
+    { id: 'teachers', label: 'Giảng viên', enabled: false, type: 'page', pageView: 'doctors', icon: '👨‍🏫' },
+    { id: 'fees', label: 'Học phí', enabled: false, type: 'page', pageView: 'pricelist', icon: '💰' },
+    { id: 'certificate', label: 'Chứng chỉ', enabled: false, type: 'page', pageView: 'news', icon: '🎓' },
   ],
   clinic_store: [
-    { id: 'doctors', label: 'Bác sĩ', enabled: true, type: 'link', icon: '👨‍⚕️' },
-    { id: 'booking', label: 'Đặt lịch khám', enabled: true, type: 'link', icon: '📅' },
-    { id: 'pricelist', label: 'Bảng giá', enabled: true, type: 'link', icon: '💰' },
-    { id: 'faq', label: 'Hỏi đáp sức khỏe', enabled: false, type: 'link', icon: '❓' },
+    { id: 'doctors', label: 'Bác sĩ', enabled: true, type: 'page', pageView: 'doctors', icon: '👨‍⚕️' },
+    { id: 'booking', label: 'Đặt lịch khám', enabled: true, type: 'page', pageView: 'booking', icon: '📅' },
+    { id: 'pricelist', label: 'Bảng giá', enabled: true, type: 'page', pageView: 'pricelist', icon: '💰' },
+    { id: 'faq', label: 'Hỏi đáp sức khỏe', enabled: false, type: 'page', pageView: 'news', icon: '❓' },
   ],
   pharmacy_store: [
-    { id: 'consult', label: 'Tư vấn dược sĩ', enabled: true, type: 'link', icon: '💊' },
+    { id: 'consult', label: 'Tư vấn dược sĩ', enabled: true, type: 'page', pageView: 'contact', icon: '💊' },
   ],
 };
 
