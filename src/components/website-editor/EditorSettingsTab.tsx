@@ -469,6 +469,15 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
           onChange={sections => onChange('custom_home_sections', sections)}
           customProductTabs={(formData as any).custom_product_tabs || []}
           onTabsChange={tabs => onChange('custom_product_tabs', tabs)}
+          onManageTabProducts={(tabId, tabName) => {
+            // Navigate to landing settings products tab - for now show a toast hint
+            import('@/hooks/use-toast').then(({ toast }) => {
+              toast({
+                title: `📦 ${tabName}`,
+                description: 'Vào "Sản phẩm" → Thêm/Sửa sản phẩm → chọn tab này trong mục "Hiển thị trên trang chủ"',
+              });
+            });
+          }}
         />
       </SettingsBlock>
 
