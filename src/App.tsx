@@ -47,6 +47,7 @@ const InstallAppPage = lazy(() => import("./pages/InstallAppPage"));
 const TaxPolicyPage = lazy(() => import("./pages/TaxPolicyPage"));
 const StockTransferPage = lazy(() => import("./pages/StockTransferPage"));
 const PlatformArticlesPage = lazy(() => import("./pages/PlatformArticlesPage"));
+const SocialPage = lazy(() => import("./pages/SocialPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Aggressively preload all main page chunks after initial render
@@ -90,6 +91,7 @@ function preloadAllPages() {
     () => import("./pages/TaxPolicyPage"),
     () => import("./pages/StockTransferPage"),
     () => import("./pages/PlatformArticlesPage"),
+    () => import("./pages/SocialPage"),
   ];
   // Load them sequentially with small delays to avoid blocking the main thread
   let i = 0;
@@ -214,6 +216,7 @@ const App = () => (
                 <Route path="/landing-settings" element={<SubscriptionRoute><LandingPageAdminPage /></SubscriptionRoute>} />
                 <Route path="/install-app" element={<GuardedRoute><InstallAppPage /></GuardedRoute>} />
                 <Route path="/guides" element={<GuardedRoute><PlatformArticlesPage /></GuardedRoute>} />
+                <Route path="/social" element={<GuardedRoute><SocialPage /></GuardedRoute>} />
                 {/* Platform Admin route - also guarded */}
                 <Route path="/platform-admin" element={<GuardedRoute><PlatformAdminPage /></GuardedRoute>} />
                 

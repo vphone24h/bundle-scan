@@ -4233,6 +4233,242 @@ export type Database = {
           },
         ]
       }
+      social_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "social_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      social_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_notifications: {
+        Row: {
+          actor_id: string
+          comment_id: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          post_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          actor_id: string
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          post_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          actor_id?: string
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          post_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_notifications_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "social_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_notifications_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_posts: {
+        Row: {
+          comment_count: number
+          content: string
+          created_at: string
+          engagement_score: number
+          id: string
+          image_urls: string[] | null
+          like_count: number
+          message_click_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_count?: number
+          content: string
+          created_at?: string
+          engagement_score?: number
+          id?: string
+          image_urls?: string[] | null
+          like_count?: number
+          message_click_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_count?: number
+          content?: string
+          created_at?: string
+          engagement_score?: number
+          id?: string
+          image_urls?: string[] | null
+          like_count?: number
+          message_click_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      social_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          facebook_url: string | null
+          follower_count: number
+          following_count: number
+          id: string
+          is_verified: boolean
+          show_facebook_button: boolean
+          show_zalo_button: boolean
+          store_address: string | null
+          tiktok_url: string | null
+          updated_at: string
+          user_id: string
+          verified_until: string | null
+          zalo_number: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          facebook_url?: string | null
+          follower_count?: number
+          following_count?: number
+          id?: string
+          is_verified?: boolean
+          show_facebook_button?: boolean
+          show_zalo_button?: boolean
+          store_address?: string | null
+          tiktok_url?: string | null
+          updated_at?: string
+          user_id: string
+          verified_until?: string | null
+          zalo_number?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          facebook_url?: string | null
+          follower_count?: number
+          following_count?: number
+          id?: string
+          is_verified?: boolean
+          show_facebook_button?: boolean
+          show_zalo_button?: boolean
+          store_address?: string | null
+          tiktok_url?: string | null
+          updated_at?: string
+          user_id?: string
+          verified_until?: string | null
+          zalo_number?: string | null
+        }
+        Relationships: []
+      }
       staff_kpi_settings: {
         Row: {
           created_at: string

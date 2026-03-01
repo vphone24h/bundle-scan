@@ -33,8 +33,9 @@ import {
   Download,
   HeartHandshake,
   Bell,
-   Percent,
-   Star,
+  Percent,
+  Star,
+  MessageCircleMore,
 } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { cn } from '@/lib/utils';
@@ -118,6 +119,7 @@ const allNavItems: NavItem[] = [
   { title: 'Đánh giá nhân viên', href: '/users', icon: Star, permission: 'canViewStaffReviews' },
   { title: 'Lịch sử thao tác', href: '/audit-logs', icon: History, permission: 'canViewAuditLogs' },
   { title: 'Website bán hàng', href: '/landing-settings', icon: Globe, permission: 'canViewProducts' },
+  { title: 'Mạng xã hội', href: '/social', icon: MessageCircleMore, permission: 'canManageBranches' },
   { title: 'Ứng dụng', href: '/applications', icon: AppWindow },
   { title: 'Affiliate', href: '/affiliate', icon: Share2, permission: 'canManageBranches' },
   { title: 'Tải ứng dụng', href: '/install-app', icon: Download },
