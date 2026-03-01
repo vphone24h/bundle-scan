@@ -170,6 +170,9 @@ export default function WebsiteEditorPage() {
             focusSection={focusSection}
             onClearFocus={() => setFocusSection(null)}
             tenantId={tenant?.id || null}
+            onSave={handleSave}
+            isSaving={updateSettings.isPending}
+            hasChanges={hasChanges}
           />
         )}
       </div>

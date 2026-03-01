@@ -15,7 +15,7 @@ import { toast } from '@/hooks/use-toast';
 import {
   ChevronDown, ChevronRight, Upload, X, Loader2, Plus,
   Image, Palette, Type, Menu, Layout, Phone, MessageCircle,
-  Shield, Star, MapPin, Globe, Eye, EyeOff, Sparkles, Layers, PanelTop
+  Shield, Star, MapPin, Globe, Eye, EyeOff, Sparkles, Layers, PanelTop, Save
 } from 'lucide-react';
 
 interface EditorSettingsTabProps {
@@ -24,6 +24,9 @@ interface EditorSettingsTabProps {
   focusSection: string | null;
   onClearFocus: () => void;
   tenantId: string | null;
+  onSave?: () => void;
+  isSaving?: boolean;
+  hasChanges?: boolean;
 }
 
 // Collapsible block component
@@ -83,7 +86,7 @@ const SECTION_TO_BLOCK: Record<string, string> = {
   'menu': 'menu',
 };
 
-export function EditorSettingsTab({ formData, onChange, focusSection, onClearFocus, tenantId }: EditorSettingsTabProps) {
+export function EditorSettingsTab({ formData, onChange, focusSection, onClearFocus, tenantId, onSave, isSaving, hasChanges }: EditorSettingsTabProps) {
   const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -553,8 +556,18 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
         </div>
       </SettingsBlock>
 
+      {/* Sticky save button */}
+      {onSave && (
+        <div className="sticky bottom-0 p-3 bg-background border-t">
+          <Button onClick={onSave} disabled={isSaving || !hasChanges} className="w-full">
+            {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+            Lưu cài đặt
+          </Button>
+        </div>
+      )}
+
       {/* Spacer */}
-      <div className="h-20" />
+      <div className="h-4" />
     </div>
   );
 }
