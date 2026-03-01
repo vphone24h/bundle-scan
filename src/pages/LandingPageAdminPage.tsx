@@ -11,8 +11,8 @@ import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useLandingGuideUrl } from '@/hooks/useAppConfig';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
-import { Navigate } from 'react-router-dom';
-import { BookOpen } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { BookOpen, Pencil } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 
@@ -71,6 +71,7 @@ function PendingBadge() {
 }
 
 export default function LandingPageAdminPage() {
+  const navigate = useNavigate();
   const { data: permissions, isLoading } = usePermissions();
   const landingGuideUrl = useLandingGuideUrl();
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('landing-page-admin-v3');
@@ -106,6 +107,14 @@ export default function LandingPageAdminPage() {
           title="Website bán hàng" 
           description="Cấu hình website bán hàng cho khách hàng"
           helpText="Thiết lập website bán hàng công khai: sản phẩm, tin tức, tra cứu bảo hành. Khách hàng có thể truy cập qua subdomain hoặc tên miền riêng của bạn."
+          actions={
+            isSuperAdmin ? (
+              <Button onClick={() => navigate('/website-editor')} className="gap-1.5">
+                <Pencil className="h-4 w-4" />
+                Chỉnh sửa Website
+              </Button>
+            ) : undefined
+          }
         />
         {landingGuideUrl && (
           <div className="mt-4">

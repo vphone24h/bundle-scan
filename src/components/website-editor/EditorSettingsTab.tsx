@@ -1,0 +1,547 @@
+import { useState, useEffect, useRef } from 'react';
+import { TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
+import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, getFullNavItems, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, SYSTEM_PAGES, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
+import { HomeSectionManager, HomeSectionItem } from '@/components/admin/HomeSectionManager';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { toast } from '@/hooks/use-toast';
+import {
+  ChevronDown, ChevronRight, Upload, X, Loader2, Plus,
+  Image, Palette, Type, Menu, Layout, Phone, MessageCircle,
+  Shield, Star, MapPin, Globe, Eye, EyeOff, Sparkles, Layers, PanelTop
+} from 'lucide-react';
+
+interface EditorSettingsTabProps {
+  formData: Partial<TenantLandingSettings>;
+  onChange: (field: string, value: unknown) => void;
+  focusSection: string | null;
+  onClearFocus: () => void;
+  tenantId: string | null;
+}
+
+// Collapsible block component
+function SettingsBlock({
+  id,
+  icon,
+  title,
+  description,
+  isExpanded,
+  onToggle,
+  children,
+}: {
+  id: string;
+  icon: React.ReactNode;
+  title: string;
+  description?: string;
+  isExpanded: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border-b last:border-b-0" id={`editor-block-${id}`}>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors text-left"
+      >
+        <span className="text-lg shrink-0">{icon}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium">{title}</p>
+          {description && <p className="text-[10px] text-muted-foreground mt-0.5">{description}</p>}
+        </div>
+        {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+      </button>
+      {isExpanded && (
+        <div className="px-4 pb-4 space-y-4 animate-in slide-in-from-top-1 duration-200">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Map section IDs from preview to block IDs
+const SECTION_TO_BLOCK: Record<string, string> = {
+  'store-info': 'store-info',
+  'banner': 'banner',
+  'trust-badges': 'trust-badges',
+  'products': 'layout',
+  'articles': 'layout',
+  'warranty': 'store-info',
+  'voucher': 'store-info',
+  'reviews': 'layout',
+  'layout': 'layout',
+  'footer': 'social',
+  'sticky-bar': 'social',
+};
+
+export function EditorSettingsTab({ formData, onChange, focusSection, onClearFocus, tenantId }: EditorSettingsTabProps) {
+  const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+
+  const templateId = (formData as any)?.website_template || 'phone_store';
+  const config = getIndustryConfig(templateId);
+
+  // Auto-expand focused section from preview click
+  useEffect(() => {
+    if (focusSection) {
+      const blockId = SECTION_TO_BLOCK[focusSection] || focusSection;
+      setExpandedBlocks(prev => new Set(prev).add(blockId));
+      onClearFocus();
+      // Scroll to block
+      setTimeout(() => {
+        const el = document.getElementById(`editor-block-${blockId}`);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [focusSection, onClearFocus]);
+
+  const toggleBlock = (id: string) => {
+    setExpandedBlocks(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !tenantId) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'Lỗi', description: 'Logo tối đa 2MB', variant: 'destructive' });
+      return;
+    }
+    setUploadingLogo(true);
+    try {
+      const url = await uploadLandingAsset(file, tenantId, 'logo');
+      onChange('store_logo_url', url);
+    } catch { toast({ title: 'Lỗi upload', variant: 'destructive' }); }
+    finally { setUploadingLogo(false); }
+  };
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !tenantId) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Lỗi', description: 'Banner tối đa 5MB', variant: 'destructive' });
+      return;
+    }
+    setUploadingBanner(true);
+    try {
+      const url = await uploadLandingAsset(file, tenantId, 'banner');
+      onChange('banner_image_url', url);
+    } catch { toast({ title: 'Lỗi upload', variant: 'destructive' }); }
+    finally { setUploadingBanner(false); }
+  };
+
+  return (
+    <div className="h-full overflow-y-auto bg-background">
+      <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+      <input ref={bannerInputRef} type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" />
+
+      {/* Logo & Tên cửa hàng */}
+      <SettingsBlock
+        id="store-info"
+        icon="🏪"
+        title="Thông tin cửa hàng"
+        description="Logo, tên, địa chỉ, SĐT"
+        isExpanded={expandedBlocks.has('store-info')}
+        onToggle={() => toggleBlock('store-info')}
+      >
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label className="text-xs">Logo</Label>
+            <div className="flex items-center gap-3">
+              {formData.store_logo_url ? (
+                <div className="relative">
+                  <img src={formData.store_logo_url} alt="Logo" className="h-14 w-14 rounded-xl object-cover border" />
+                  <button
+                    type="button"
+                    onClick={() => onChange('store_logo_url', '')}
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : null}
+              <Button type="button" variant="outline" size="sm" onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}>
+                {uploadingLogo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                <span className="ml-1.5">{formData.store_logo_url ? 'Đổi' : 'Upload'}</span>
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Tên cửa hàng</Label>
+            <Input value={formData.store_name || ''} onChange={e => onChange('store_name', e.target.value)} placeholder="Tên cửa hàng" />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Mô tả ngắn</Label>
+            <Textarea value={formData.store_description || ''} onChange={e => onChange('store_description', e.target.value)} placeholder="Mô tả..." rows={2} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Địa chỉ</Label>
+            <Input value={formData.store_address || ''} onChange={e => onChange('store_address', e.target.value)} placeholder="Địa chỉ cửa hàng" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Điện thoại</Label>
+              <Input value={formData.store_phone || ''} onChange={e => onChange('store_phone', e.target.value)} placeholder="0xxx" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Email</Label>
+              <Input value={formData.store_email || ''} onChange={e => onChange('store_email', e.target.value)} placeholder="email@..." />
+            </div>
+          </div>
+        </div>
+      </SettingsBlock>
+
+      {/* Màu thương hiệu */}
+      <SettingsBlock
+        id="brand-color"
+        icon="🎨"
+        title="Màu thương hiệu"
+        description="Màu chủ đạo, nút, link"
+        isExpanded={expandedBlocks.has('brand-color')}
+        onToggle={() => toggleBlock('brand-color')}
+      >
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              value={formData.primary_color || '#0f766e'}
+              onChange={e => onChange('primary_color', e.target.value)}
+              className="h-10 w-10 rounded-lg border cursor-pointer"
+            />
+            <div className="flex-1">
+              <Label className="text-xs">Màu chủ đạo</Label>
+              <Input
+                value={formData.primary_color || '#0f766e'}
+                onChange={e => onChange('primary_color', e.target.value)}
+                className="h-8 text-xs mt-1"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {['#0071e3', '#0f766e', '#e11d48', '#ea580c', '#7c3aed', '#000000'].map(color => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => onChange('primary_color', color)}
+                className={`h-8 w-8 rounded-full border-2 transition-all ${formData.primary_color === color ? 'border-foreground scale-110' : 'border-transparent'}`}
+                style={{ backgroundColor: color }}
+              />
+            ))}
+          </div>
+        </div>
+      </SettingsBlock>
+
+      {/* Font chữ & Layout */}
+      <SettingsBlock
+        id="appearance"
+        icon="✨"
+        title="Giao diện"
+        description="Font chữ, phong cách bố cục"
+        isExpanded={expandedBlocks.has('appearance')}
+        onToggle={() => toggleBlock('appearance')}
+      >
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Phong cách</Label>
+            <Select
+              value={(formData as any).custom_layout_style || '_auto_'}
+              onValueChange={val => onChange('custom_layout_style', val === '_auto_' ? null : val)}
+            >
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_auto_">🤖 Tự động theo ngành</SelectItem>
+                <SelectItem value="apple">🍎 Apple – Tối giản</SelectItem>
+                <SelectItem value="tgdd">🛒 TGDĐ – Grid, badge</SelectItem>
+                <SelectItem value="hasaki">💄 Hasaki – Flash sale</SelectItem>
+                <SelectItem value="nike">👟 Nike – Bold</SelectItem>
+                <SelectItem value="canifa">👗 Canifa – Thanh lịch</SelectItem>
+                <SelectItem value="shopee">🛍️ Shopee – Marketplace</SelectItem>
+                <SelectItem value="minimal">✨ Minimal – Đơn giản</SelectItem>
+                <SelectItem value="luxury">💎 Luxury – Sang trọng</SelectItem>
+                <SelectItem value="organic">🌿 Organic – Tự nhiên</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Phông chữ</Label>
+            <Select
+              value={(formData as any).custom_font_family || '_auto_'}
+              onValueChange={val => onChange('custom_font_family', val === '_auto_' ? null : val)}
+            >
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_auto_">🤖 Tự động</SelectItem>
+                <SelectItem value='-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif'>SF Pro</SelectItem>
+                <SelectItem value='"Inter", system-ui, sans-serif'>Inter</SelectItem>
+                <SelectItem value='"Nunito Sans", system-ui, sans-serif'>Nunito Sans</SelectItem>
+                <SelectItem value='"Playfair Display", "Georgia", serif'>Playfair Display</SelectItem>
+                <SelectItem value='"Cormorant Garamond", "Georgia", serif'>Cormorant Garamond</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </SettingsBlock>
+
+      {/* Menu */}
+      <SettingsBlock
+        id="menu"
+        icon="☰"
+        title="Menu website"
+        description="Thêm, xoá, sắp xếp menu"
+        isExpanded={expandedBlocks.has('menu')}
+        onToggle={() => toggleBlock('menu')}
+      >
+        <div className="space-y-2">
+          <p className="text-[10px] text-muted-foreground">
+            💡 Quản lý chi tiết menu tại trang <a href="/landing-settings?tab=settings" className="text-primary underline">Cấu hình website</a>
+          </p>
+          {(() => {
+            const customNavItems = (formData as any)?.custom_nav_items as NavItemConfig[] | null;
+            const items = customNavItems || getDefaultNavItems(config);
+            return (
+              <div className="space-y-1">
+                {items.filter(i => i.enabled).map((item, idx) => (
+                  <div key={item.id + idx} className="flex items-center gap-2 p-2 rounded-lg border bg-muted/20">
+                    <span className="text-sm">{item.icon || '📄'}</span>
+                    <span className="text-xs font-medium flex-1">{item.label}</span>
+                    <span className="text-[9px] text-muted-foreground">{item.type === 'page' ? 'Trang' : 'Link'}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full gap-1.5 text-xs"
+            onClick={() => {
+              const fullNav = getFullNavItems(templateId);
+              onChange('custom_nav_items', fullNav);
+            }}
+          >
+            <Sparkles className="h-3.5 w-3.5" /> Gợi ý menu theo ngành
+          </Button>
+        </div>
+      </SettingsBlock>
+
+      {/* Banner */}
+      <SettingsBlock
+        id="banner"
+        icon="🎯"
+        title="Banner trang chủ"
+        description="Tiêu đề, mô tả, nút CTA, hình ảnh"
+        isExpanded={expandedBlocks.has('banner')}
+        onToggle={() => toggleBlock('banner')}
+      >
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Tiêu đề chính</Label>
+            <Input
+              value={(formData as any).hero_title || ''}
+              onChange={e => onChange('hero_title', e.target.value || null)}
+              placeholder={config.heroTitle}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Mô tả phụ</Label>
+            <Input
+              value={(formData as any).hero_subtitle || ''}
+              onChange={e => onChange('hero_subtitle', e.target.value || null)}
+              placeholder={config.heroSubtitle}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Nút CTA</Label>
+            <Input
+              value={(formData as any).hero_cta || ''}
+              onChange={e => onChange('hero_cta', e.target.value || null)}
+              placeholder={config.heroCta}
+            />
+          </div>
+          <Separator />
+          <div className="space-y-1.5">
+            <Label className="text-xs">Ảnh banner (tuỳ chọn)</Label>
+            <div className="flex items-center gap-2">
+              {formData.banner_image_url ? (
+                <div className="relative">
+                  <img src={formData.banner_image_url} alt="Banner" className="h-16 w-28 rounded-lg object-cover border" />
+                  <button type="button" onClick={() => onChange('banner_image_url', '')}
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : null}
+              <Button type="button" variant="outline" size="sm" onClick={() => bannerInputRef.current?.click()} disabled={uploadingBanner}>
+                {uploadingBanner ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                <span className="ml-1.5">{formData.banner_image_url ? 'Đổi' : 'Upload'}</span>
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Link khi nhấn banner</Label>
+            <Input
+              value={formData.banner_link_url || ''}
+              onChange={e => onChange('banner_link_url', e.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+        </div>
+      </SettingsBlock>
+
+      {/* Trust Badges */}
+      <SettingsBlock
+        id="trust-badges"
+        icon="🛡️"
+        title="Cam kết uy tín"
+        description="4 biểu tượng cam kết"
+        isExpanded={expandedBlocks.has('trust-badges')}
+        onToggle={() => toggleBlock('trust-badges')}
+      >
+        <div className="space-y-2">
+          {(() => {
+            const badges = (formData as any)?.custom_trust_badges || config.trustBadges;
+            return badges.slice(0, 4).map((badge: IndustryTrustBadge, i: number) => (
+              <div key={i} className="flex items-start gap-2 rounded-lg border p-2.5">
+                <div className="flex-1 space-y-1">
+                  <Input
+                    value={badge.title}
+                    onChange={e => {
+                      const current = [...((formData as any)?.custom_trust_badges || config.trustBadges)];
+                      current[i] = { ...current[i], title: e.target.value };
+                      onChange('custom_trust_badges', current);
+                    }}
+                    placeholder="Tiêu đề" className="h-8 text-xs"
+                  />
+                  <Input
+                    value={badge.desc}
+                    onChange={e => {
+                      const current = [...((formData as any)?.custom_trust_badges || config.trustBadges)];
+                      current[i] = { ...current[i], desc: e.target.value };
+                      onChange('custom_trust_badges', current);
+                    }}
+                    placeholder="Mô tả" className="h-8 text-xs"
+                  />
+                </div>
+              </div>
+            ));
+          })()}
+          <Button
+            type="button" variant="ghost" size="sm" className="text-xs"
+            onClick={() => onChange('custom_trust_badges', null)}
+          >
+            Khôi phục mặc định
+          </Button>
+        </div>
+      </SettingsBlock>
+
+      {/* Layout trang chủ */}
+      <SettingsBlock
+        id="layout"
+        icon="📐"
+        title="Bố cục trang chủ"
+        description="Bật/tắt, sắp xếp các phần"
+        isExpanded={expandedBlocks.has('layout')}
+        onToggle={() => toggleBlock('layout')}
+      >
+        <HomeSectionManager
+          templateId={templateId}
+          customSections={(formData as any).custom_home_sections || null}
+          onChange={sections => onChange('custom_home_sections', sections)}
+        />
+      </SettingsBlock>
+
+      {/* Liên hệ & Mạng xã hội */}
+      <SettingsBlock
+        id="social"
+        icon="💬"
+        title="Nút liên hệ & MXH"
+        description="Zalo, Facebook, TikTok, Hotline"
+        isExpanded={expandedBlocks.has('social')}
+        onToggle={() => toggleBlock('social')}
+      >
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Zalo (SĐT hoặc link)</Label>
+            <Input value={formData.zalo_url || ''} onChange={e => onChange('zalo_url', e.target.value)} placeholder="0xxx hoặc https://zalo.me/..." />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Facebook</Label>
+            <Input value={formData.facebook_url || ''} onChange={e => onChange('facebook_url', e.target.value)} placeholder="https://facebook.com/..." />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">TikTok</Label>
+            <Input value={(formData as any).tiktok_url || ''} onChange={e => onChange('tiktok_url', e.target.value)} placeholder="https://tiktok.com/@..." />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Hotline bảo hành</Label>
+            <Input value={formData.warranty_hotline || ''} onChange={e => onChange('warranty_hotline', e.target.value)} placeholder="1900xxxx" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Link nhóm hỗ trợ</Label>
+            <Input value={formData.support_group_url || ''} onChange={e => onChange('support_group_url', e.target.value)} placeholder="https://..." />
+          </div>
+        </div>
+      </SettingsBlock>
+
+      {/* Popup khuyến mãi / Voucher */}
+      <SettingsBlock
+        id="voucher"
+        icon="🎟️"
+        title="Voucher khuyến mãi"
+        description="Bật/tắt phát voucher"
+        isExpanded={expandedBlocks.has('voucher')}
+        onToggle={() => toggleBlock('voucher')}
+      >
+        <div className="flex items-center justify-between">
+          <Label className="text-xs">Bật phát voucher trên website</Label>
+          <Switch
+            checked={formData.voucher_enabled}
+            onCheckedChange={checked => onChange('voucher_enabled', checked)}
+          />
+        </div>
+      </SettingsBlock>
+
+      {/* SEO */}
+      <SettingsBlock
+        id="seo"
+        icon="🔍"
+        title="SEO"
+        description="Meta title, description"
+        isExpanded={expandedBlocks.has('seo')}
+        onToggle={() => toggleBlock('seo')}
+      >
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Meta Title</Label>
+            <Input value={formData.meta_title || ''} onChange={e => onChange('meta_title', e.target.value)} placeholder="Tiêu đề SEO" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Meta Description</Label>
+            <Textarea value={formData.meta_description || ''} onChange={e => onChange('meta_description', e.target.value)} placeholder="Mô tả SEO" rows={2} />
+          </div>
+        </div>
+      </SettingsBlock>
+
+      {/* Spacer */}
+      <div className="h-20" />
+    </div>
+  );
+}

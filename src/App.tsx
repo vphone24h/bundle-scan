@@ -48,6 +48,7 @@ const TaxPolicyPage = lazy(() => import("./pages/TaxPolicyPage"));
 const StockTransferPage = lazy(() => import("./pages/StockTransferPage"));
 const PlatformArticlesPage = lazy(() => import("./pages/PlatformArticlesPage"));
 const SocialPage = lazy(() => import("./pages/SocialPage"));
+const WebsiteEditorPage = lazy(() => import("./pages/WebsiteEditorPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Aggressively preload all main page chunks after initial render
@@ -214,6 +215,7 @@ const App = () => (
                 <Route path="/applications" element={<GuardedRoute><ApplicationsPage /></GuardedRoute>} />
                 <Route path="/advertisements" element={<GuardedRoute><AdvertisementsAdminPage /></GuardedRoute>} />
                 <Route path="/landing-settings" element={<SubscriptionRoute><LandingPageAdminPage /></SubscriptionRoute>} />
+                <Route path="/website-editor" element={<SubscriptionRoute><WebsiteEditorPage /></SubscriptionRoute>} />
                 <Route path="/install-app" element={<GuardedRoute><InstallAppPage /></GuardedRoute>} />
                 <Route path="/guides" element={<GuardedRoute><PlatformArticlesPage /></GuardedRoute>} />
                 <Route path="/social" element={<GuardedRoute><SocialPage /></GuardedRoute>} />
