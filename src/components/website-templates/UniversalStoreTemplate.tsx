@@ -324,12 +324,12 @@ export default function UniversalStoreTemplate({
                             <h2 className="text-lg font-bold tracking-tight mb-4">Danh mục sản phẩm</h2>
                           </ScrollReveal>
                         </div>
-                        <div className="flex flex-col gap-3 px-3 sm:px-4">
+                        <div className="flex flex-col gap-0">
                           {productsData.categories.map((cat, idx) => (
                             <ScrollReveal key={cat.id} animation="fade-up" delay={idx * 80}>
                               <button
                                 onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products'); }}
-                                className="group w-full rounded-2xl overflow-hidden relative text-left"
+                                className="group w-full overflow-hidden relative text-left"
                                 style={{ minHeight: cat.image_url ? '220px' : '120px' }}
                               >
                                 {cat.image_url ? (
@@ -342,7 +342,7 @@ export default function UniversalStoreTemplate({
                                     </div>
                                   </>
                                 ) : (
-                                  <div className="bg-white h-full flex items-center justify-between p-6 border border-black/5 rounded-2xl group-hover:shadow-lg transition-shadow">
+                                  <div className="bg-white h-full flex items-center justify-between p-6 border border-black/5 group-hover:shadow-lg transition-shadow">
                                     <div>
                                       <h3 className="text-lg font-bold text-[#1d1d1f]">{cat.name}</h3>
                                       <p className="text-sm text-[#86868b] mt-0.5">Khám phá ngay →</p>
