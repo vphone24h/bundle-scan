@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { WebsiteTemplate } from '@/lib/websiteTemplates';
@@ -7,7 +8,7 @@ import { getIndustryConfig, IndustryTrustBadge, LayoutStyle } from '@/lib/indust
 import {
   Check, Shield, Award, Truck, CreditCard, Clock, Star,
   Phone, MessageCircle, Pencil, X, RotateCcw, Zap,
-  Menu, Search, ChevronDown, ShoppingBag,
+  Menu, Search, ChevronDown, ShoppingBag, PaintBucket,
 } from 'lucide-react';
 
 interface EditableSettings {
@@ -50,6 +51,7 @@ export function TemplatePreviewDialog({
   editableSettings, onSettingsChange,
 }: TemplatePreviewDialogProps) {
   const [editMode, setEditMode] = useState(false);
+  const navigate = useNavigate();
 
   if (!template) return null;
 
@@ -87,6 +89,11 @@ export function TemplatePreviewDialog({
             <X className="h-3.5 w-3.5 mr-1" /> Đóng
           </Button>
           <div className="flex items-center gap-2">
+            {isSelected && (
+              <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => { onOpenChange(false); navigate('/website-editor'); }}>
+                <PaintBucket className="h-3 w-3" /> Chỉnh sửa Website
+              </Button>
+            )}
             {canEdit && (
               <Button size="sm" variant="ghost" className="h-8 text-xs gap-1" onClick={() => setEditMode(!editMode)}>
                 {editMode ? <><X className="h-3 w-3" /> Xong</> : <><Pencil className="h-3 w-3" /> Sửa</>}
