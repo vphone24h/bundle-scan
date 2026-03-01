@@ -90,7 +90,12 @@ export default function UniversalStoreTemplate({
 
   const accentColor = settings?.primary_color || config.accentColor;
 
-  const [pageView, setPageView] = useState<PageView>('home');
+  // PWA standalone mode (bookmark/home screen) → default to warranty page
+  const isStandalone = typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true
+  );
+  const [pageView, setPageView] = useState<PageView>(isStandalone ? 'warranty' : 'home');
   const [selectedArticle, setSelectedArticle] = useState<LandingArticle | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<LandingProduct | null>(null);
