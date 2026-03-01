@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { productName, categoryName, businessType, tenantId, imageCount = 1 } = await req.json();
+    const { productName, categoryName, businessType, tenantId, imageCount = 1, verifiedName, designFeatures, productType, brand } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -18,70 +18,32 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Determine product type for better prompts
-    const isPhone = businessType === 'phone_store' || /phone|điện thoại|iphone|samsung|xiaomi|oppo|vivo/i.test(productName);
-    const isFashion = businessType === 'fashion' || /áo|quần|váy|giày|túi|thời trang/i.test(productName);
+    // Use verified name if available, otherwise fall back to original
+    const exactName = verifiedName || productName;
+    const features = designFeatures || '';
+    const type = productType || (businessType === 'phone_store' ? 'phone' : 'other');
 
-    const imagePrompts: string[] = [];
+    // Build highly specific prompt based on verified product info
+    let imagePrompt: string;
 
-    // Cover image - hero shot
-    if (isPhone) {
-      imagePrompts.push(
-        `Professional product photography of ${productName} smartphone, front view on clean white background, studio lighting, ultra high resolution, e-commerce product photo, 4:3 aspect ratio`,
-      );
-      // Different color variants and angles
-      imagePrompts.push(
-        `${productName} smartphone shown from back side, elegant product photography, studio lighting on gradient background, showcasing design and camera module, ultra high resolution`,
-      );
-      imagePrompts.push(
-        `${productName} smartphone held in hand, lifestyle photography, bokeh background, natural lighting, showing screen display, ultra high resolution`,
-      );
-      imagePrompts.push(
-        `${productName} smartphone close-up on camera system detail, macro product photography, studio lighting, ultra high resolution`,
-      );
-      imagePrompts.push(
-        `${productName} smartphone from 45 degree angle on sleek surface, reflections, premium product photography, ultra high resolution`,
-      );
-    } else if (isFashion) {
-      imagePrompts.push(
-        `Professional fashion product photography of ${productName}, flat lay on white background, studio lighting, e-commerce style, ultra high resolution`,
-      );
-      imagePrompts.push(
-        `${productName} fashion item detail close-up, showing fabric texture and quality, studio macro photography, ultra high resolution`,
-      );
-      imagePrompts.push(
-        `${productName} styled outfit photography, lifestyle shot, natural lighting, fashion editorial style, ultra high resolution`,
-      );
-      imagePrompts.push(
-        `${productName} fashion item from different angle, hanging on minimal hanger, clean background, ultra high resolution`,
-      );
-      imagePrompts.push(
-        `${productName} in different color variant, professional product photography, white background, ultra high resolution`,
-      );
+    if (type === 'phone') {
+      imagePrompt = `Professional e-commerce product photography of exactly "${exactName}" smartphone. ${features ? `Design details: ${features}.` : ''} ${brand ? `Brand: ${brand}.` : ''} Front view showing the screen, on a clean white background. Studio lighting, sharp focus, high resolution. The phone must look EXACTLY like the real "${exactName}" - correct notch/dynamic island style, correct camera layout, correct body shape. Do NOT show any other phone model. 4:3 aspect ratio, ultra high resolution.`;
+    } else if (type === 'fashion') {
+      imagePrompt = `Professional fashion product photography of "${exactName}". ${features ? `Details: ${features}.` : ''} Flat lay on white background, studio lighting, e-commerce style, showing fabric texture and design details clearly. Ultra high resolution.`;
+    } else if (type === 'laptop' || type === 'tablet') {
+      imagePrompt = `Professional product photography of exactly "${exactName}". ${features ? `Design: ${features}.` : ''} ${brand ? `Brand: ${brand}.` : ''} Open view showing screen and keyboard/body, on clean white background. Must look EXACTLY like the real product. Studio lighting, ultra high resolution.`;
     } else {
-      imagePrompts.push(
-        `Professional product photography of ${productName}, front view on clean white background, studio lighting, e-commerce product photo, ultra high resolution`,
-      );
-      imagePrompts.push(
-        `${productName} product from back/side angle, professional studio photography, gradient background, ultra high resolution`,
-      );
-      imagePrompts.push(
-        `${productName} product lifestyle photography, in-use scenario, natural lighting, attractive composition, ultra high resolution`,
-      );
-      imagePrompts.push(
-        `${productName} close-up detail shot, showing product quality and features, macro photography, ultra high resolution`,
-      );
-      imagePrompts.push(
-        `${productName} product from 45 degree angle, premium studio photography, clean background, ultra high resolution`,
-      );
+      imagePrompt = `Professional e-commerce product photography of "${exactName}". ${features ? `Details: ${features}.` : ''} ${brand ? `Brand: ${brand}.` : ''} Clean white background, studio lighting, sharp details, attractive composition. Ultra high resolution.`;
     }
 
-    const actualCount = Math.min(imageCount, imagePrompts.length);
-    const prompts = imagePrompts.slice(0, actualCount);
+    console.log("Generating image for:", exactName);
+    console.log("Prompt:", imagePrompt);
 
     const imageUrls: string[] = [];
 
-    for (let i = 0; i < prompts.length; i++) {
+    const actualCount = Math.min(imageCount, 5);
+
+    for (let i = 0; i < actualCount; i++) {
       try {
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -91,7 +53,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             model: "google/gemini-2.5-flash-image",
-            messages: [{ role: "user", content: prompts[i] }],
+            messages: [{ role: "user", content: imagePrompt }],
             modalities: ["image", "text"],
           }),
         });
@@ -99,7 +61,6 @@ serve(async (req) => {
         if (!aiResponse.ok) {
           if (aiResponse.status === 429) {
             console.error("Rate limited at image", i);
-            // Wait a bit and continue
             await new Promise(r => setTimeout(r, 3000));
             continue;
           }
@@ -124,7 +85,6 @@ serve(async (req) => {
           continue;
         }
 
-        // Extract base64 data
         const base64Match = imageData.match(/^data:image\/(.*?);base64,(.*)$/);
         if (!base64Match) {
           console.error(`Invalid image format for prompt ${i}`);
@@ -135,7 +95,6 @@ serve(async (req) => {
         const base64Data = base64Match[2];
         const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
         
-        // Upload to storage
         const fileName = `${tenantId}/ai-gen/${Date.now()}-${i}.${ext}`;
         const { error: uploadError } = await supabase.storage
           .from('landing-assets')
@@ -155,8 +114,7 @@ serve(async (req) => {
         
         imageUrls.push(publicUrl.publicUrl);
 
-        // Small delay between requests to avoid rate limiting
-        if (i < prompts.length - 1) {
+        if (i < actualCount - 1) {
           await new Promise(r => setTimeout(r, 1500));
         }
       } catch (imgError) {

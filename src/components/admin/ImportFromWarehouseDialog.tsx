@@ -30,6 +30,10 @@ interface ProductAIResult {
   description: string | null;
   images: string[];
   landingProductId?: string;
+  verifiedName?: string;
+  designFeatures?: string;
+  productType?: string;
+  brand?: string;
 }
 
 export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts }: Props) {
@@ -103,7 +107,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     }
   };
 
-  const generateAIDescription = async (item: InventoryItem): Promise<{ description: string; seo_title: string; seo_description: string } | null> => {
+  const generateAIDescription = async (item: InventoryItem): Promise<{ description: string; seo_title: string; seo_description: string; verified_name?: string; design_features?: string; product_type?: string; brand?: string } | null> => {
     try {
       const { data, error } = await supabase.functions.invoke('generate-product-description', {
         body: {
@@ -123,7 +127,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     }
   };
 
-  const generateAIImages = async (productName: string): Promise<string[]> => {
+  const generateAIImages = async (productName: string, opts?: { verifiedName?: string; designFeatures?: string; productType?: string; brand?: string }): Promise<string[]> => {
     try {
       const { data, error } = await supabase.functions.invoke('generate-product-images', {
         body: {
@@ -132,6 +136,10 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
           businessType: tenant?.business_type || 'phone_store',
           tenantId: tenant?.id,
           imageCount: 1,
+          verifiedName: opts?.verifiedName,
+          designFeatures: opts?.designFeatures,
+          productType: opts?.productType,
+          brand: opts?.brand,
         },
       });
       if (error) throw error;
@@ -188,7 +196,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     for (let idx = 0; idx < selectedItems.length; idx++) {
       const item = selectedItems[idx];
       setCurrentStepIdx(idx + 1);
-      setAiProgress(`Bước 1: AI đang viết mô tả ${idx + 1}/${selectedItems.length}: ${item.productName}`);
+      setAiProgress(`Bước 1: AI đang xác minh & viết mô tả ${idx + 1}/${selectedItems.length}: ${item.productName}`);
 
       try {
         const firstProduct = item.products[0];
@@ -196,8 +204,11 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
         const aiContent = await generateAIDescription(item);
         const landingCategoryId = item.categoryId ? (categoryMap.get(item.categoryId) ?? null) : null;
 
+        // Use verified name from AI if available
+        const displayName = aiContent?.verified_name || item.productName;
+
         const created = await createProduct.mutateAsync({
-          name: item.productName,
+          name: displayName,
           description: aiContent?.description || null,
           price: salePrice || item.avgImportPrice,
           sale_price: null,
@@ -211,10 +222,14 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
 
         results.push({
           productId: item.productId,
-          productName: item.productName,
+          productName: displayName,
           description: aiContent?.description || null,
           images: [],
           landingProductId: (created as any)?.id || undefined,
+          verifiedName: aiContent?.verified_name,
+          designFeatures: aiContent?.design_features,
+          productType: aiContent?.product_type,
+          brand: aiContent?.brand,
         });
       } catch (e: any) {
         console.error(`Error step1 ${item.productName}:`, e);
@@ -246,7 +261,12 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
       setAiProgress(`Bước 2: AI đang tạo ảnh bìa ${idx + 1}/${productsToProcess.length}: ${result.productName}`);
 
       try {
-        const images = await generateAIImages(result.productName);
+        const images = await generateAIImages(result.productName, {
+          verifiedName: result.verifiedName,
+          designFeatures: result.designFeatures,
+          productType: result.productType,
+          brand: result.brand,
+        });
         result.images = images;
 
         // Update the landing product with generated images
@@ -523,7 +543,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
                 {aiStep === 'step1_desc' ? 'Bước 1: Tạo mô tả sản phẩm' : 'Bước 2: Tạo ảnh sản phẩm'}
               </p>
               <p className="text-xs text-muted-foreground">
-                {aiStep === 'step2_images' ? 'AI đang tạo ảnh bìa cho sản phẩm' : 'AI đang viết mô tả hấp dẫn và chuẩn SEO'}
+                {aiStep === 'step2_images' ? 'AI đang tạo ảnh bìa cho sản phẩm' : 'AI đang xác minh sản phẩm & viết mô tả chuẩn SEO'}
               </p>
             </div>
             {aiProgress && (
