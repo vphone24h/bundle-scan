@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { WEBSITE_TEMPLATES, TEMPLATE_CATEGORIES, WebsiteTemplate } from '@/lib/websiteTemplates';
+import { getIndustryConfig, ResolvedIndustryConfig } from '@/lib/industryConfig';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { TemplatePreviewDialog } from './TemplatePreviewDialog';
-import { IndustryTrustBadge } from '@/lib/industryConfig';
 
 interface EditableSettings {
   custom_trust_badges?: { icon: string; title: string; desc: string }[] | null;
@@ -106,6 +106,7 @@ function TemplateCard({
   onPreview: () => void;
 }) {
   const isDisabled = !template.available;
+  const config = getIndustryConfig(template.id);
 
   return (
     <button
@@ -123,9 +124,22 @@ function TemplateCard({
     >
       <span className="text-3xl">{template.icon}</span>
       <span className="text-xs font-semibold leading-tight">{template.name}</span>
+      {config.brandInspiration && (
+        <span className="text-[9px] text-muted-foreground leading-tight italic">
+          {config.brandInspiration}
+        </span>
+      )}
       <Badge variant="secondary" className={cn('text-[10px] px-1.5 py-0', tierColors[template.tier])}>
         {tierLabels[template.tier]}
       </Badge>
+      {/* Feature badges */}
+      <div className="flex flex-wrap justify-center gap-0.5">
+        {config.features.tradein && <span className="text-[8px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-1 rounded">Thu cũ</span>}
+        {config.features.installment && <span className="text-[8px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-1 rounded">Trả góp</span>}
+        {config.features.flashSale && <span className="text-[8px] bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 px-1 rounded">Flash sale</span>}
+        {config.features.sizeChart && <span className="text-[8px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 px-1 rounded">Size chart</span>}
+        {config.features.booking && <span className="text-[8px] bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1 rounded">Đặt lịch</span>}
+      </div>
       {isDisabled && (
         <span className="text-[10px] text-muted-foreground">Sắp ra mắt</span>
       )}

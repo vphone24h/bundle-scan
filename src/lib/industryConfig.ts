@@ -117,13 +117,61 @@ export function getSystemPageById(id: string): SystemPageDef | undefined {
 
 export const SYSTEM_PAGE_IDS = new Set(SYSTEM_PAGES.map(p => p.id));
 
+// Feature toggles for each industry - controls which sections/modules are visible
+export interface IndustryFeatures {
+  warranty: boolean;       // Tra cứu bảo hành
+  imei: boolean;           // IMEI tracking
+  tradein: boolean;        // Thu cũ đổi mới
+  installment: boolean;    // Trả góp
+  compare: boolean;        // So sánh sản phẩm
+  repair: boolean;         // Sửa chữa
+  flashSale: boolean;      // Flash sale section
+  combo: boolean;          // Combo/bundle deals
+  sizeChart: boolean;      // Bảng size (thời trang/giày)
+  lookbook: boolean;       // Lookbook/outfit inspiration
+  booking: boolean;        // Đặt lịch hẹn
+  reviews: boolean;        // Đánh giá khách hàng
+  voucher: boolean;        // Voucher/coupon
+  branches: boolean;       // Chi nhánh
+  articles: boolean;       // Bài viết/tin tức
+  categories: boolean;     // Danh mục sản phẩm
+  storeInfo: boolean;      // Thông tin cửa hàng
+}
+
+// Layout style inspiration - determines visual variant
+export type LayoutStyle =
+  | 'apple'       // Clean, minimal, premium (Apple Store VN)
+  | 'tgdd'        // Grid-heavy, badges, price-focused (Thế Giới Di Động)
+  | 'hasaki'      // Deal-centric, flash sale, beauty-focused (Hasaki)
+  | 'nike'        // Bold imagery, lifestyle, sport (Nike/Biti's)
+  | 'canifa'      // Elegant, collection-based, fashion (Canifa)
+  | 'shopee'      // Marketplace, multi-category, promo-heavy
+  | 'minimal'     // Simple, clean, service-focused
+  | 'luxury'      // High-end, editorial, serif fonts
+  | 'organic';    // Natural, earthy, farm-to-table
+
+// Home page section identifiers for ordering
+export type HomeSection =
+  | 'hero'
+  | 'trustBadges'
+  | 'flashSale'
+  | 'categories'
+  | 'featuredProducts'
+  | 'combo'
+  | 'articles'
+  | 'reviews'
+  | 'warranty'
+  | 'voucher'
+  | 'branches'
+  | 'storeInfo';
+
 export interface IndustryConfig {
   id: string;
   heroTitle: string;
   heroSubtitle: string;
   heroCta: string;
-  heroGradient: string; // CSS gradient for default banner
-  accentColor: string; // hex
+  heroGradient: string;
+  accentColor: string;
   trustBadges: IndustryTrustBadge[];
   productSectionTitle: string;
   productSectionSubtitle: string;
@@ -131,8 +179,122 @@ export interface IndustryConfig {
   navLabels: { home: string; products: string; news: string; warranty: string };
   stickyBarLabels: { chat: string; call: string };
   fontFamily: string;
-  suggestedNavItems?: NavItemConfig[]; // Extra nav items suggested for this industry
+  suggestedNavItems?: NavItemConfig[];
+  // Feature toggles, layout, sections (optional - defaults applied in getIndustryConfig)
+  features?: Partial<IndustryFeatures>;
+  layoutStyle?: LayoutStyle;
+  homeSections?: HomeSection[];
+  brandInspiration?: string;
 }
+
+// Resolved config with all defaults applied
+export interface ResolvedIndustryConfig extends Omit<IndustryConfig, 'features' | 'layoutStyle' | 'homeSections'> {
+  features: IndustryFeatures;
+  layoutStyle: LayoutStyle;
+  homeSections: HomeSection[];
+}
+
+// Default features - all enabled
+const DEFAULT_FEATURES: IndustryFeatures = {
+  warranty: true, imei: true, tradein: false, installment: false, compare: false,
+  repair: false, flashSale: false, combo: false, sizeChart: false, lookbook: false,
+  booking: false, reviews: true, voucher: true, branches: true, articles: true,
+  categories: true, storeInfo: true,
+};
+
+// Default home sections order
+const DEFAULT_HOME_SECTIONS: HomeSection[] = [
+  'hero', 'trustBadges', 'categories', 'featuredProducts', 'articles', 'warranty', 'voucher', 'reviews', 'storeInfo',
+];
+
+// Per-industry feature presets
+const INDUSTRY_FEATURE_PRESETS: Record<string, Partial<IndustryFeatures>> = {
+  // Technology - full features
+  phone_store: { imei: true, tradein: true, installment: true, compare: true, repair: true, warranty: true },
+  laptop_store: { imei: true, tradein: true, installment: true, compare: true, repair: true, warranty: true },
+  accessories_store: { imei: false, tradein: false, installment: false, combo: true },
+  electronics_store: { imei: true, tradein: true, installment: true, compare: true, repair: true, warranty: true },
+  // Fashion & Beauty - hide tech, show fashion features
+  fashion_store: { imei: false, warranty: false, tradein: false, compare: false, sizeChart: true, lookbook: true, flashSale: true, combo: true },
+  shoes_store: { imei: false, warranty: false, tradein: false, compare: false, sizeChart: true, lookbook: true, flashSale: true },
+  cosmetics_store: { imei: false, warranty: false, tradein: false, compare: false, flashSale: true, combo: true, reviews: true },
+  spa_store: { imei: false, warranty: false, tradein: false, compare: false, booking: true },
+  salon_store: { imei: false, warranty: false, tradein: false, compare: false, booking: true },
+  watch_store: { imei: true, warranty: true, installment: true, compare: true },
+  jewelry_store: { imei: false, warranty: true, installment: true },
+  // Food & Beverage
+  restaurant_store: { imei: false, warranty: false, tradein: false, compare: false, booking: true, combo: true },
+  cafe_store: { imei: false, warranty: false, tradein: false, compare: false, combo: true },
+  boba_store: { imei: false, warranty: false, tradein: false, compare: false, combo: true, flashSale: true },
+  // Real Estate & Auto
+  realestate_store: { imei: false, warranty: false, tradein: false, installment: true, compare: true },
+  car_showroom: { imei: false, warranty: true, tradein: true, installment: true, compare: true, booking: true },
+  motorbike_showroom: { imei: false, warranty: true, tradein: true, installment: true },
+  // Home & Construction
+  furniture_store: { imei: false, warranty: true, installment: true },
+  construction_store: { imei: false, warranty: false, tradein: false, compare: false },
+  // Hospitality
+  hotel_store: { imei: false, warranty: false, tradein: false, compare: false, booking: true },
+  // Retail
+  minimart_store: { imei: false, warranty: false, tradein: false, compare: false, flashSale: true, combo: true },
+  grocery_store: { imei: false, warranty: false, tradein: false, compare: false },
+  wholesale_store: { imei: false, warranty: false, tradein: false, compare: false },
+  general_store: { imei: false, warranty: false, tradein: false, flashSale: true, combo: true },
+  // Services
+  repair_service: { imei: true, warranty: true, repair: true, booking: true },
+  training_center: { imei: false, warranty: false, tradein: false, compare: false, booking: true },
+  clinic_store: { imei: false, warranty: false, tradein: false, compare: false, booking: true },
+  pharmacy_store: { imei: false, warranty: false, tradein: false, compare: false },
+  company_site: { imei: false, warranty: false, tradein: false, compare: false },
+  // Specialty
+  baby_store: { imei: false, warranty: false, tradein: false, compare: false, combo: true },
+  sports_store: { imei: false, warranty: false, tradein: false, compare: false, sizeChart: true, flashSale: true },
+  pet_store: { imei: false, warranty: false, tradein: false, compare: false, combo: true },
+  farm_store: { imei: false, warranty: false, tradein: false, compare: false },
+  landing_page: { imei: false, warranty: false, tradein: false, compare: false, flashSale: true },
+};
+
+// Per-industry layout style
+const INDUSTRY_LAYOUT_STYLES: Record<string, LayoutStyle> = {
+  phone_store: 'apple', laptop_store: 'apple', accessories_store: 'apple',
+  electronics_store: 'tgdd',
+  fashion_store: 'canifa', shoes_store: 'nike', cosmetics_store: 'hasaki',
+  spa_store: 'luxury', salon_store: 'minimal', watch_store: 'luxury', jewelry_store: 'luxury',
+  restaurant_store: 'luxury', cafe_store: 'minimal', boba_store: 'shopee',
+  realestate_store: 'minimal', car_showroom: 'luxury', motorbike_showroom: 'nike',
+  furniture_store: 'canifa', construction_store: 'minimal',
+  hotel_store: 'luxury',
+  minimart_store: 'tgdd', grocery_store: 'minimal', wholesale_store: 'minimal', general_store: 'shopee',
+  repair_service: 'minimal', training_center: 'minimal', clinic_store: 'minimal',
+  pharmacy_store: 'minimal', company_site: 'minimal',
+  baby_store: 'shopee', sports_store: 'nike', pet_store: 'organic', farm_store: 'organic',
+  landing_page: 'shopee',
+};
+
+// Per-industry home sections order
+const INDUSTRY_HOME_SECTIONS: Record<string, HomeSection[]> = {
+  phone_store: ['hero', 'trustBadges', 'categories', 'featuredProducts', 'articles', 'warranty', 'voucher', 'reviews', 'storeInfo'],
+  cosmetics_store: ['hero', 'trustBadges', 'flashSale', 'categories', 'featuredProducts', 'combo', 'articles', 'reviews', 'voucher', 'storeInfo'],
+  fashion_store: ['hero', 'trustBadges', 'categories', 'featuredProducts', 'articles', 'voucher', 'reviews', 'storeInfo'],
+  shoes_store: ['hero', 'trustBadges', 'categories', 'featuredProducts', 'flashSale', 'articles', 'reviews', 'storeInfo'],
+  electronics_store: ['hero', 'trustBadges', 'flashSale', 'categories', 'featuredProducts', 'articles', 'warranty', 'voucher', 'reviews', 'storeInfo'],
+  restaurant_store: ['hero', 'trustBadges', 'categories', 'featuredProducts', 'combo', 'articles', 'reviews', 'branches', 'storeInfo'],
+  hotel_store: ['hero', 'trustBadges', 'featuredProducts', 'articles', 'reviews', 'branches', 'storeInfo'],
+};
+
+// Brand inspiration descriptions
+const INDUSTRY_BRAND_INSPIRATION: Record<string, string> = {
+  phone_store: 'Apple Store Việt Nam',
+  electronics_store: 'Thế Giới Di Động / Điện Máy Xanh',
+  cosmetics_store: 'Hasaki / Sephora',
+  fashion_store: 'Canifa / Uniqlo',
+  shoes_store: 'Nike Store / Biti\'s',
+  spa_store: 'High-end Spa',
+  watch_store: 'Luxury Watch Boutique',
+  jewelry_store: 'PNJ / Cartier',
+  restaurant_store: 'Premium Restaurant',
+  hotel_store: 'Luxury Hotel & Resort',
+};
 
 export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
   // === TECHNOLOGY ===
@@ -834,9 +996,17 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
   },
 };
 
-// Get config for a template, fallback to phone_store
-export function getIndustryConfig(templateId: string): IndustryConfig {
-  return INDUSTRY_CONFIGS[templateId] || INDUSTRY_CONFIGS.phone_store;
+// Get config for a template, fallback to phone_store - returns resolved config with all defaults
+export function getIndustryConfig(templateId: string): ResolvedIndustryConfig {
+  const raw = INDUSTRY_CONFIGS[templateId] || INDUSTRY_CONFIGS.phone_store;
+  const presetFeatures = INDUSTRY_FEATURE_PRESETS[raw.id] || {};
+  return {
+    ...raw,
+    features: { ...DEFAULT_FEATURES, ...presetFeatures, ...raw.features },
+    layoutStyle: raw.layoutStyle || INDUSTRY_LAYOUT_STYLES[raw.id] || 'minimal',
+    homeSections: raw.homeSections || INDUSTRY_HOME_SECTIONS[raw.id] || DEFAULT_HOME_SECTIONS,
+    brandInspiration: raw.brandInspiration || INDUSTRY_BRAND_INSPIRATION[raw.id],
+  };
 }
 
 // Default nav items present for all templates
