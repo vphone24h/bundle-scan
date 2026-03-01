@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import { SetURLSearchParams } from 'react-router-dom';
 import { QueryClient } from '@tanstack/react-query';
-import { TenantLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo } from '@/hooks/useTenantLanding';
+import { TenantLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo, HomeSectionItem } from '@/hooks/useTenantLanding';
 import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProducts';
 import { LandingArticle, LandingArticleCategory } from '@/hooks/useLandingArticles';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
@@ -11,7 +11,7 @@ import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { VoucherClaimForm } from '@/components/landing/VoucherClaimForm';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
 import { ScrollReveal, useParallax } from '@/hooks/useScrollReveal';
-import { ResolvedIndustryConfig, getIndustryConfig, GOOGLE_FONTS, NavItemConfig, getDefaultNavItems, getSystemPageById } from '@/lib/industryConfig';
+import { ResolvedIndustryConfig, getIndustryConfig, GOOGLE_FONTS, NavItemConfig, getDefaultNavItems, getSystemPageById, HomeSection, LayoutStyle } from '@/lib/industryConfig';
 import {
   RepairPage, TradeInPage, InstallmentPage, PriceListPage,
   BookingPage, BranchesPage, ContactPage, AccessoriesPage,
@@ -68,7 +68,23 @@ export default function UniversalStoreTemplate({
   productsData, articlesData, searchParams, setSearchParams, queryClient,
   templateId,
 }: UniversalTemplateProps) {
-  const config = getIndustryConfig(templateId || settings?.website_template || 'phone_store');
+  const baseConfig = getIndustryConfig(templateId || settings?.website_template || 'phone_store');
+  
+  // Apply user overrides from settings (Phase 3)
+  const config = useMemo(() => {
+    const c = { ...baseConfig };
+    if ((settings as any)?.custom_layout_style) c.layoutStyle = (settings as any).custom_layout_style as LayoutStyle;
+    if ((settings as any)?.custom_font_family) c.fontFamily = (settings as any).custom_font_family;
+    if ((settings as any)?.hero_title) c.heroTitle = (settings as any).hero_title;
+    if ((settings as any)?.hero_subtitle) c.heroSubtitle = (settings as any).hero_subtitle;
+    if ((settings as any)?.hero_cta) c.heroCta = (settings as any).hero_cta;
+    if ((settings as any)?.custom_home_sections) {
+      const customSections = (settings as any).custom_home_sections as HomeSectionItem[];
+      c.homeSections = customSections.filter((s: HomeSectionItem) => s.enabled).map((s: HomeSectionItem) => s.id);
+    }
+    return c;
+  }, [baseConfig, settings]);
+
   const accentColor = settings?.primary_color || config.accentColor;
 
   const [pageView, setPageView] = useState<PageView>('home');
@@ -308,243 +324,200 @@ export default function UniversalStoreTemplate({
         {/* === HOME PAGE === */}
         {pageView === 'home' && (
           <div>
-            {/* HERO BANNER */}
-            <LayoutHero
-              layoutStyle={config.layoutStyle}
-              config={config}
-              settings={settings}
-              accentColor={accentColor}
-              onNavigateProducts={() => navigateTo('products')}
-            />
-
-            {/* TRUST BADGES */}
-            <LayoutTrustBadges
-              layoutStyle={config.layoutStyle}
-              badges={(settings as any)?.custom_trust_badges || config.trustBadges}
-              accentColor={accentColor}
-            />
-
-            {/* PRODUCT CATEGORIES - only if feature enabled */}
-            {config.features.categories && productsData && productsData.categories.length > 0 && (
-              <ScrollReveal animation="fade-up" delay={150}>
-                <section className="bg-[#f5f5f7] py-8">
-                  <div className="max-w-[1200px] mx-auto px-4">
-                    <div className="flex items-center overflow-x-auto gap-4 py-2 scrollbar-hide">
-                      {productsData.categories.map(cat => (
-                        <button
-                          key={cat.id}
-                          onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products'); }}
-                          className="flex flex-col items-center gap-2 min-w-[90px] group"
-                        >
-                          {cat.image_url ? (
-                            <img src={cat.image_url} alt={cat.name} className="h-16 w-16 rounded-2xl object-cover border border-black/5 group-hover:scale-105 transition-transform" />
-                          ) : (
-                            <div className="h-16 w-16 rounded-2xl bg-white flex items-center justify-center border border-black/5 group-hover:scale-105 transition-transform">
-                              <ShoppingBag className="h-6 w-6 text-[#86868b]" />
-                            </div>
-                          )}
-                          <span className="text-[11px] font-medium text-center leading-tight">{cat.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </section>
-              </ScrollReveal>
-            )}
-
-            {/* FEATURED PRODUCTS */}
-            {featuredProducts.length > 0 && (
-              <section className="py-10 bg-white">
-                <div className="max-w-[1200px] mx-auto px-4">
-                  <ScrollReveal animation="fade-up">
-                    <div className="flex items-end justify-between mb-6">
-                      <div>
-                        <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{config.productSectionTitle}</h2>
-                        <p className="text-xs text-[#86868b] mt-0.5">{config.productSectionSubtitle}</p>
-                      </div>
-                      <button
-                        onClick={() => navigateTo('products')}
-                        className="text-xs font-medium shrink-0 flex items-center gap-1"
-                        style={{ color: accentColor }}
-                      >
-                        Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
-                      </button>
-                    </div>
-                  </ScrollReveal>
-                  <div className={getProductGridClass(config.layoutStyle)}>
-                    {featuredProducts.slice(0, 8).map((p, i) => (
-                      <ScrollReveal key={p.id} animation="fade-up" delay={i * 80}>
-                        <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
-                      </ScrollReveal>
-                    ))}
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* ALL PRODUCTS if no featured */}
-            {featuredProducts.length === 0 && allProducts.length > 0 && (
-              <section className="py-10 bg-white">
-                <div className="max-w-[1200px] mx-auto px-4">
-                  <ScrollReveal animation="fade-up">
-                    <div className="flex items-end justify-between mb-6">
-                      <div>
-                        <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{config.productSectionTitle}</h2>
-                      </div>
-                      <button
-                        onClick={() => navigateTo('products')}
-                        className="text-xs font-medium shrink-0 flex items-center gap-1"
-                        style={{ color: accentColor }}
-                      >
-                        Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
-                      </button>
-                    </div>
-                  </ScrollReveal>
-                  <div className={getProductGridClass(config.layoutStyle)}>
-                    {allProducts.slice(0, 8).map((p, i) => (
-                      <ScrollReveal key={p.id} animation="fade-up" delay={i * 80}>
-                        <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
-                      </ScrollReveal>
-                    ))}
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* NEWS - only if feature enabled */}
-            {config.features.articles && featuredArticles.length > 0 && (
-              <section className="py-12 bg-[#f5f5f7]">
-                <div className="max-w-[1200px] mx-auto px-4">
-                  <ScrollReveal animation="fade-up">
-                    <div className="text-center mb-8">
-                      <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{config.navLabels.news}</h2>
-                    </div>
-                  </ScrollReveal>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {featuredArticles.slice(0, 3).map((a, i) => (
-                      <ScrollReveal key={a.id} animation="fade-up" delay={i * 100}>
-                        <button onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all text-left group w-full">
-                          {a.thumbnail_url ? (
-                            <img src={a.thumbnail_url} alt={a.title} className="w-full h-48 object-cover group-hover:scale-[1.02] transition-transform" />
-                          ) : (
-                            <div className="w-full h-48 bg-[#f5f5f7] flex items-center justify-center"><Newspaper className="h-10 w-10 text-[#86868b]" /></div>
-                          )}
-                          <div className="p-5">
-                            <p className="font-semibold text-sm line-clamp-2 mb-2">{a.title}</p>
-                            {a.summary && <p className="text-xs text-[#86868b] line-clamp-2">{a.summary}</p>}
-                            <p className="text-[11px] font-medium mt-3" style={{ color: accentColor }}>Đọc thêm →</p>
+            {config.homeSections.map((sectionId) => {
+              switch (sectionId) {
+                case 'hero':
+                  return (
+                    <LayoutHero
+                      key="hero"
+                      layoutStyle={config.layoutStyle}
+                      config={config}
+                      settings={settings}
+                      accentColor={accentColor}
+                      onNavigateProducts={() => navigateTo('products')}
+                    />
+                  );
+                case 'trustBadges':
+                  return (
+                    <LayoutTrustBadges
+                      key="trustBadges"
+                      layoutStyle={config.layoutStyle}
+                      badges={(settings as any)?.custom_trust_badges || config.trustBadges}
+                      accentColor={accentColor}
+                    />
+                  );
+                case 'categories':
+                  if (!config.features.categories || !productsData || productsData.categories.length === 0) return null;
+                  return (
+                    <ScrollReveal key="categories" animation="fade-up" delay={150}>
+                      <section className="bg-[#f5f5f7] py-8">
+                        <div className="max-w-[1200px] mx-auto px-4">
+                          <div className="flex items-center overflow-x-auto gap-4 py-2 scrollbar-hide">
+                            {productsData.categories.map(cat => (
+                              <button key={cat.id} onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products'); }} className="flex flex-col items-center gap-2 min-w-[90px] group">
+                                {cat.image_url ? (
+                                  <img src={cat.image_url} alt={cat.name} className="h-16 w-16 rounded-2xl object-cover border border-black/5 group-hover:scale-105 transition-transform" />
+                                ) : (
+                                  <div className="h-16 w-16 rounded-2xl bg-white flex items-center justify-center border border-black/5 group-hover:scale-105 transition-transform">
+                                    <ShoppingBag className="h-6 w-6 text-[#86868b]" />
+                                  </div>
+                                )}
+                                <span className="text-[11px] font-medium text-center leading-tight">{cat.name}</span>
+                              </button>
+                            ))}
                           </div>
-                        </button>
-                      </ScrollReveal>
-                    ))}
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* WARRANTY LOOKUP - only if feature enabled */}
-            {config.features.warranty && (settings?.show_warranty_lookup !== false) && (
-              <ScrollReveal animation="fade-up">
-                <section className="py-12 bg-white">
-                  <div className="max-w-lg mx-auto px-4 text-center">
-                    <Shield className="h-8 w-8 mx-auto mb-3" style={{ color: accentColor }} />
-                    <h2 className="text-2xl font-bold tracking-tight mb-2">Tra cứu bảo hành</h2>
-                    <p className="text-sm text-[#86868b] mb-6">Nhập IMEI hoặc số điện thoại để kiểm tra</p>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Nhập IMEI hoặc SĐT..."
-                        value={searchValue}
-                        onChange={e => setSearchValue(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        className="flex-1 h-12 text-base rounded-xl border-black/10"
-                        style={{ '--tw-ring-color': accentColor } as any}
-                        inputMode="tel"
-                      />
-                      <Button onClick={handleSearch} disabled={!searchValue.trim() || isSearching} className="h-12 px-6 rounded-xl" style={{ backgroundColor: accentColor }}>
-                        {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
-                      </Button>
-                    </div>
-                  </div>
-                </section>
-              </ScrollReveal>
-            )}
-
-            {/* VOUCHER - only if feature enabled */}
-            {config.features.voucher && (settings as any)?.voucher_enabled && tenantId && (
-              <section className="py-8 bg-[#f5f5f7]">
-                <div className="max-w-lg mx-auto px-4">
-                  <VoucherClaimForm tenantId={tenantId} branches={branches.map(b => ({ id: b.id, name: b.name }))} primaryColor={accentColor} />
-                </div>
-              </section>
-            )}
-
-            {/* REVIEWS - only if feature enabled */}
-            {config.features.reviews && tenantId && (
-              <ScrollReveal animation="fade-up">
-                <section className="py-12 bg-white">
-                  <div className="max-w-[1200px] mx-auto px-4">
-                    <StoreReviewsSection tenantId={tenantId} primaryColor={accentColor} />
-                  </div>
-                </section>
-              </ScrollReveal>
-            )}
-
-            {/* STORE INFO - only if feature enabled */}
-            {config.features.storeInfo && (settings?.show_store_info !== false) && (settings?.store_address || settings?.store_phone || branches.length > 0) && (
-              <ScrollReveal animation="fade-up">
-                <section className="py-12 bg-[#f5f5f7]">
-                  <div className="max-w-[1200px] mx-auto px-4">
-                    <div className="text-center mb-8">
-                      <h2 className="text-2xl font-bold tracking-tight">Liên hệ</h2>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {branches.map(branch => (
-                        <div key={branch.id} className="bg-white rounded-2xl p-5 space-y-3">
-                          <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4" style={{ color: accentColor }} />
-                            <p className="font-semibold text-sm">{branch.name}</p>
+                        </div>
+                      </section>
+                    </ScrollReveal>
+                  );
+                case 'featuredProducts': {
+                  const displayProducts = featuredProducts.length > 0 ? featuredProducts : allProducts;
+                  if (displayProducts.length === 0) return null;
+                  return (
+                    <section key="featuredProducts" className="py-10 bg-white">
+                      <div className="max-w-[1200px] mx-auto px-4">
+                        <ScrollReveal animation="fade-up">
+                          <div className="flex items-end justify-between mb-6">
+                            <div>
+                              <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{config.productSectionTitle}</h2>
+                              {featuredProducts.length > 0 && <p className="text-xs text-[#86868b] mt-0.5">{config.productSectionSubtitle}</p>}
+                            </div>
+                            <button onClick={() => navigateTo('products')} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
+                              Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
+                            </button>
                           </div>
-                          {branch.address && (
-                            <div className="flex items-start gap-2">
-                              <MapPin className="h-3.5 w-3.5 text-[#86868b] mt-0.5" />
-                              <p className="text-xs text-[#86868b]">{branch.address}</p>
-                            </div>
-                          )}
-                          {branch.phone && (
-                            <a href={`tel:${branch.phone}`} className="flex items-center gap-2" style={{ color: accentColor }}>
-                              <Phone className="h-3.5 w-3.5" />
-                              <p className="text-xs font-medium">{branch.phone}</p>
-                            </a>
-                          )}
+                        </ScrollReveal>
+                        <div className={getProductGridClass(config.layoutStyle)}>
+                          {displayProducts.slice(0, 8).map((p, i) => (
+                            <ScrollReveal key={p.id} animation="fade-up" delay={i * 80}>
+                              <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
+                            </ScrollReveal>
+                          ))}
                         </div>
-                      ))}
-                      {branches.length === 0 && (
-                        <div className="bg-white rounded-2xl p-5 space-y-3">
-                          {settings?.store_address && (
-                            <div className="flex items-start gap-2">
-                              <MapPin className="h-4 w-4 text-[#86868b] mt-0.5" />
-                              <p className="text-sm">{settings.store_address}</p>
-                            </div>
-                          )}
-                          {settings?.store_phone && (
-                            <a href={`tel:${settings.store_phone}`} className="flex items-center gap-2" style={{ color: accentColor }}>
-                              <Phone className="h-4 w-4" />
-                              <p className="text-sm font-medium">{settings.store_phone}</p>
-                            </a>
-                          )}
-                          {settings?.store_email && (
-                            <a href={`mailto:${settings.store_email}`} className="flex items-center gap-2" style={{ color: accentColor }}>
-                              <Mail className="h-4 w-4" />
-                              <p className="text-sm font-medium">{settings.store_email}</p>
-                            </a>
-                          )}
+                      </div>
+                    </section>
+                  );
+                }
+                case 'articles':
+                  if (!config.features.articles || featuredArticles.length === 0) return null;
+                  return (
+                    <section key="articles" className="py-12 bg-[#f5f5f7]">
+                      <div className="max-w-[1200px] mx-auto px-4">
+                        <ScrollReveal animation="fade-up">
+                          <div className="text-center mb-8">
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">{config.navLabels.news}</h2>
+                          </div>
+                        </ScrollReveal>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {featuredArticles.slice(0, 3).map((a, i) => (
+                            <ScrollReveal key={a.id} animation="fade-up" delay={i * 100}>
+                              <button onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all text-left group w-full">
+                                {a.thumbnail_url ? (
+                                  <img src={a.thumbnail_url} alt={a.title} className="w-full h-48 object-cover group-hover:scale-[1.02] transition-transform" />
+                                ) : (
+                                  <div className="w-full h-48 bg-[#f5f5f7] flex items-center justify-center"><Newspaper className="h-10 w-10 text-[#86868b]" /></div>
+                                )}
+                                <div className="p-5">
+                                  <p className="font-semibold text-sm line-clamp-2 mb-2">{a.title}</p>
+                                  {a.summary && <p className="text-xs text-[#86868b] line-clamp-2">{a.summary}</p>}
+                                  <p className="text-[11px] font-medium mt-3" style={{ color: accentColor }}>Đọc thêm →</p>
+                                </div>
+                              </button>
+                            </ScrollReveal>
+                          ))}
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </section>
-              </ScrollReveal>
-            )}
+                      </div>
+                    </section>
+                  );
+                case 'warranty':
+                  if (!config.features.warranty || settings?.show_warranty_lookup === false) return null;
+                  return (
+                    <ScrollReveal key="warranty" animation="fade-up">
+                      <section className="py-12 bg-white">
+                        <div className="max-w-lg mx-auto px-4 text-center">
+                          <Shield className="h-8 w-8 mx-auto mb-3" style={{ color: accentColor }} />
+                          <h2 className="text-2xl font-bold tracking-tight mb-2">Tra cứu bảo hành</h2>
+                          <p className="text-sm text-[#86868b] mb-6">Nhập IMEI hoặc số điện thoại để kiểm tra</p>
+                          <div className="flex gap-2">
+                            <Input placeholder="Nhập IMEI hoặc SĐT..." value={searchValue} onChange={e => setSearchValue(e.target.value)} onKeyPress={handleKeyPress} className="flex-1 h-12 text-base rounded-xl border-black/10" style={{ '--tw-ring-color': accentColor } as any} inputMode="tel" />
+                            <Button onClick={handleSearch} disabled={!searchValue.trim() || isSearching} className="h-12 px-6 rounded-xl" style={{ backgroundColor: accentColor }}>
+                              {isSearching ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
+                            </Button>
+                          </div>
+                        </div>
+                      </section>
+                    </ScrollReveal>
+                  );
+                case 'voucher':
+                  if (!config.features.voucher || !(settings as any)?.voucher_enabled || !tenantId) return null;
+                  return (
+                    <section key="voucher" className="py-8 bg-[#f5f5f7]">
+                      <div className="max-w-lg mx-auto px-4">
+                        <VoucherClaimForm tenantId={tenantId} branches={branches.map(b => ({ id: b.id, name: b.name }))} primaryColor={accentColor} />
+                      </div>
+                    </section>
+                  );
+                case 'reviews':
+                  if (!config.features.reviews || !tenantId) return null;
+                  return (
+                    <ScrollReveal key="reviews" animation="fade-up">
+                      <section className="py-12 bg-white">
+                        <div className="max-w-[1200px] mx-auto px-4">
+                          <StoreReviewsSection tenantId={tenantId} primaryColor={accentColor} />
+                        </div>
+                      </section>
+                    </ScrollReveal>
+                  );
+                case 'branches':
+                  if (!config.features.branches || !settings?.show_branches || branches.length === 0) return null;
+                  return (
+                    <ScrollReveal key="branches" animation="fade-up">
+                      <section className="py-12 bg-[#f5f5f7]">
+                        <div className="max-w-[1200px] mx-auto px-4">
+                          <div className="text-center mb-8"><h2 className="text-2xl font-bold tracking-tight">Chi nhánh</h2></div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {branches.map(branch => (
+                              <div key={branch.id} className="bg-white rounded-2xl p-5 space-y-3">
+                                <div className="flex items-center gap-2"><Building2 className="h-4 w-4" style={{ color: accentColor }} /><p className="font-semibold text-sm">{branch.name}</p></div>
+                                {branch.address && <div className="flex items-start gap-2"><MapPin className="h-3.5 w-3.5 text-[#86868b] mt-0.5" /><p className="text-xs text-[#86868b]">{branch.address}</p></div>}
+                                {branch.phone && <a href={`tel:${branch.phone}`} className="flex items-center gap-2" style={{ color: accentColor }}><Phone className="h-3.5 w-3.5" /><p className="text-xs font-medium">{branch.phone}</p></a>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </section>
+                    </ScrollReveal>
+                  );
+                case 'storeInfo':
+                  if (!config.features.storeInfo || settings?.show_store_info === false || (!settings?.store_address && !settings?.store_phone && branches.length === 0)) return null;
+                  return (
+                    <ScrollReveal key="storeInfo" animation="fade-up">
+                      <section className="py-12 bg-[#f5f5f7]">
+                        <div className="max-w-[1200px] mx-auto px-4">
+                          <div className="text-center mb-8"><h2 className="text-2xl font-bold tracking-tight">Liên hệ</h2></div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {branches.length > 0 ? branches.map(branch => (
+                              <div key={branch.id} className="bg-white rounded-2xl p-5 space-y-3">
+                                <div className="flex items-center gap-2"><Building2 className="h-4 w-4" style={{ color: accentColor }} /><p className="font-semibold text-sm">{branch.name}</p></div>
+                                {branch.address && <div className="flex items-start gap-2"><MapPin className="h-3.5 w-3.5 text-[#86868b] mt-0.5" /><p className="text-xs text-[#86868b]">{branch.address}</p></div>}
+                                {branch.phone && <a href={`tel:${branch.phone}`} className="flex items-center gap-2" style={{ color: accentColor }}><Phone className="h-3.5 w-3.5" /><p className="text-xs font-medium">{branch.phone}</p></a>}
+                              </div>
+                            )) : (
+                              <div className="bg-white rounded-2xl p-5 space-y-3">
+                                {settings?.store_address && <div className="flex items-start gap-2"><MapPin className="h-4 w-4 text-[#86868b] mt-0.5" /><p className="text-sm">{settings.store_address}</p></div>}
+                                {settings?.store_phone && <a href={`tel:${settings.store_phone}`} className="flex items-center gap-2" style={{ color: accentColor }}><Phone className="h-4 w-4" /><p className="text-sm font-medium">{settings.store_phone}</p></a>}
+                                {settings?.store_email && <a href={`mailto:${settings.store_email}`} className="flex items-center gap-2" style={{ color: accentColor }}><Mail className="h-4 w-4" /><p className="text-sm font-medium">{settings.store_email}</p></a>}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </section>
+                    </ScrollReveal>
+                  );
+                default:
+                  return null;
+              }
+            })}
           </div>
         )}
 
