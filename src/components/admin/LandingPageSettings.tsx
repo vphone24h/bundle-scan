@@ -16,7 +16,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon, Award, Truck, CreditCard, Clock, Star, Eye, EyeOff, Menu as MenuIcon, Sparkles, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
-import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, PageItemConfig, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems, SYSTEM_PAGES, SYSTEM_PAGE_IDS, getSystemPageById, DEFAULT_PAGE_ITEMS } from '@/lib/industryConfig';
+import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, PageItemConfig, InstallmentRateConfig, DEFAULT_INSTALLMENT_RATES, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems, SYSTEM_PAGES, SYSTEM_PAGE_IDS, getSystemPageById, DEFAULT_PAGE_ITEMS } from '@/lib/industryConfig';
 
 import {
   Dialog,
@@ -303,10 +303,41 @@ function NavMenuEditor({
     onChange(updated);
   };
 
+  // Installment rate handlers
+  const handleInstallmentRateChange = (navIndex: number, rateIndex: number, field: keyof InstallmentRateConfig, value: string | number | boolean) => {
+    const updated = [...currentItems];
+    const rates = updated[navIndex].installmentRates ? [...updated[navIndex].installmentRates!] : [...DEFAULT_INSTALLMENT_RATES];
+    rates[rateIndex] = { ...rates[rateIndex], [field]: value };
+    updated[navIndex] = { ...updated[navIndex], installmentRates: rates };
+    onChange(updated);
+  };
+
+  const handleAddInstallmentRate = (navIndex: number) => {
+    const updated = [...currentItems];
+    const rates = updated[navIndex].installmentRates ? [...updated[navIndex].installmentRates!] : [...DEFAULT_INSTALLMENT_RATES];
+    rates.push({ label: 'Ngân hàng mới', rate: 2.0 });
+    updated[navIndex] = { ...updated[navIndex], installmentRates: rates };
+    onChange(updated);
+  };
+
+  const handleRemoveInstallmentRate = (navIndex: number, rateIndex: number) => {
+    const updated = [...currentItems];
+    const rates = updated[navIndex].installmentRates ? [...updated[navIndex].installmentRates!] : [...DEFAULT_INSTALLMENT_RATES];
+    rates.splice(rateIndex, 1);
+    updated[navIndex] = { ...updated[navIndex], installmentRates: rates };
+    onChange(updated);
+  };
+
+  const handleResetInstallmentRates = (navIndex: number) => {
+    const updated = [...currentItems];
+    updated[navIndex] = { ...updated[navIndex], installmentRates: undefined };
+    onChange(updated);
+  };
+
   const hasEditableItems = (item: NavItemConfig) => {
     if (item.type !== 'page') return false;
     const pv = item.pageView || '';
-    return !!DEFAULT_PAGE_ITEMS[pv] || (item.pageItems && item.pageItems.length > 0);
+    return !!DEFAULT_PAGE_ITEMS[pv] || (item.pageItems && item.pageItems.length > 0) || pv === 'installment';
   };
 
   return (
@@ -437,6 +468,52 @@ function NavMenuEditor({
                       </div>
                     ))}
                   </div>
+
+                  {/* Installment rates editor */}
+                  {pageView === 'installment' && (() => {
+                    const currentRates = item.installmentRates || DEFAULT_INSTALLMENT_RATES;
+                    return (
+                      <div className="border-t pt-3 mt-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-medium">💰 Lãi suất ngân hàng ({currentRates.length})</Label>
+                          <div className="flex gap-1">
+                            {item.installmentRates && (
+                              <Button type="button" variant="ghost" size="sm" className="text-[10px] h-6 px-2" onClick={() => handleResetInstallmentRates(i)}>
+                                Mặc định
+                              </Button>
+                            )}
+                            <Button type="button" variant="ghost" size="sm" className="text-[10px] h-6 px-2" onClick={() => handleAddInstallmentRate(i)}>
+                              <Plus className="h-3 w-3 mr-1" /> Thêm NH
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                          {currentRates.map((rt, ri) => (
+                            <div key={ri} className={`flex items-center gap-1.5 rounded-md border p-2 ${rt.isBadCredit ? 'border-orange-300 bg-orange-50' : 'bg-background'}`}>
+                              <Input value={rt.label} onChange={(e) => handleInstallmentRateChange(i, ri, 'label', e.target.value)}
+                                className="h-7 text-xs font-medium flex-1" placeholder="Tên ngân hàng" />
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Input value={rt.rate} onChange={(e) => handleInstallmentRateChange(i, ri, 'rate', parseFloat(e.target.value) || 0)}
+                                  className="h-7 text-xs w-16 text-right" placeholder="1.83" type="number" step="0.01" min="0" />
+                                <span className="text-[10px] text-muted-foreground">%</span>
+                              </div>
+                              <label className="flex items-center gap-1 shrink-0" title="Nợ xấu">
+                                <input type="checkbox" checked={!!rt.isBadCredit}
+                                  onChange={(e) => handleInstallmentRateChange(i, ri, 'isBadCredit', e.target.checked)}
+                                  className="h-3 w-3 rounded" />
+                                <span className="text-[10px]">⚠️</span>
+                              </label>
+                              <button type="button" onClick={() => handleRemoveInstallmentRate(i, ri)}
+                                className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive shrink-0">
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">Lãi suất %/tháng. Đánh dấu ⚠️ cho mục "Góp nợ xấu".</p>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>

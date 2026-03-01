@@ -15,6 +15,24 @@ export interface PageItemConfig {
   link?: string;
 }
 
+export interface InstallmentRateConfig {
+  label: string;
+  rate: number;
+  isBadCredit?: boolean;
+}
+
+export const DEFAULT_INSTALLMENT_RATES: InstallmentRateConfig[] = [
+  { label: 'Home Credit', rate: 1.83 },
+  { label: 'FE Credit', rate: 2.07 },
+  { label: 'HD SAISON', rate: 1.75 },
+  { label: 'Mirae Asset', rate: 1.58 },
+  { label: 'MCredit', rate: 1.92 },
+  { label: 'Shinhan Finance', rate: 1.67 },
+  { label: 'LOTTE Finance', rate: 2.1 },
+  { label: 'Toyota Finance', rate: 1.45 },
+  { label: 'Góp nợ xấu', rate: 3.5, isBadCredit: true },
+];
+
 export interface NavItemConfig {
   id: string;
   label: string;
@@ -24,6 +42,7 @@ export interface NavItemConfig {
   url?: string; // for link type
   icon?: string; // emoji or lucide icon name
   pageItems?: PageItemConfig[]; // editable items within the system page
+  installmentRates?: InstallmentRateConfig[]; // configurable rates for installment page
 }
 
 // Default items for each system page type
