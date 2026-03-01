@@ -427,7 +427,7 @@ function NavMenuEditor({
                                 className="h-6 text-[11px] w-24" placeholder="Giá" />
                             )}
                             <Input value={pi.link || ''} onChange={(e) => handlePageItemChange(i, j, 'link', e.target.value)}
-                              className="h-6 text-[11px] flex-1" placeholder="Link (tuỳ chọn)" />
+                              className="h-6 text-[11px] flex-1" placeholder="Link bài viết, sản phẩm, FB, Zalo... (tuỳ chọn)" />
                           </div>
                         </div>
                         <button type="button" onClick={() => handleRemovePageItem(i, j)}
