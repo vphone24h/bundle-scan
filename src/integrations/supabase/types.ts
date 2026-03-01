@@ -3664,6 +3664,8 @@ export type Database = {
       }
       platform_settings: {
         Row: {
+          admin_phone: string | null
+          admin_zalo: string | null
           ai_description_enabled: boolean
           auto_image_enabled: boolean
           id: string
@@ -3671,6 +3673,8 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          admin_phone?: string | null
+          admin_zalo?: string | null
           ai_description_enabled?: boolean
           auto_image_enabled?: boolean
           id?: string
@@ -3678,6 +3682,8 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          admin_phone?: string | null
+          admin_zalo?: string | null
           ai_description_enabled?: boolean
           auto_image_enabled?: boolean
           id?: string
