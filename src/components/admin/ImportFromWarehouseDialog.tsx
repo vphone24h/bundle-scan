@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,15 +19,29 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   existingProducts: LandingProduct[];
-  aiDescriptionEnabled?: boolean;
-  autoImageEnabled?: boolean;
 }
 
-export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts, aiDescriptionEnabled = true, autoImageEnabled = true }: Props) {
+export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts }: Props) {
   const { data: inventory, isLoading } = useInventory();
   const { data: categories } = useCategories();
   const { data: tenant } = useCurrentTenant();
   const createProduct = useCreateLandingProduct();
+
+  // Read global AI settings from platform_settings
+  const { data: platformSettings } = useQuery({
+    queryKey: ['platform-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('platform_settings')
+        .select('ai_description_enabled, auto_image_enabled')
+        .limit(1)
+        .single();
+      if (error) return { ai_description_enabled: true, auto_image_enabled: true };
+      return data;
+    },
+  });
+  const aiDescriptionEnabled = platformSettings?.ai_description_enabled ?? true;
+  const autoImageEnabled = platformSettings?.auto_image_enabled ?? true;
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('_all_');

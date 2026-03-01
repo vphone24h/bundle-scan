@@ -943,48 +943,6 @@ export function LandingPageSettings() {
         </CardContent>
       </Card>
 
-      {/* Cài đặt AI & Ảnh tự động */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Bot className="h-4 w-4" />
-            Cài đặt AI tự động
-          </CardTitle>
-          <CardDescription>
-            Bật/tắt tính năng AI khi thêm sản phẩm từ kho lên website (có thể tốn credit Lovable AI)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                <Bot className="h-3.5 w-3.5" />
-                AI tự viết mô tả sản phẩm
-              </Label>
-              <p className="text-xs text-muted-foreground">Tự động tạo mô tả chuyên nghiệp, SEO title, SEO description bằng AI</p>
-            </div>
-            <Switch
-              checked={formData.ai_description_enabled ?? true}
-              onCheckedChange={(checked) => handleChange('ai_description_enabled' as any, checked)}
-            />
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                <ImageIcon className="h-3.5 w-3.5" />
-                Tự động lấy ảnh sản phẩm
-              </Label>
-              <p className="text-xs text-muted-foreground">Lấy ảnh có sẵn từ kho khi nhập sản phẩm lên website</p>
-            </div>
-            <Switch
-              checked={formData.auto_image_enabled ?? true}
-              onCheckedChange={(checked) => handleChange('auto_image_enabled' as any, checked)}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Kênh thông tin / Social Media */}
       <Card data-tour="landing-social-card">
         <CardHeader>
