@@ -4,49 +4,15 @@ import { useSocialFeed, useCreatePost } from '@/hooks/useSocial';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ImagePlus, Send, Loader2, Search, X } from 'lucide-react';
+import { ImagePlus, Send, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { SocialPostCard } from './SocialPostCard';
 import { toast } from 'sonner';
-import { useQuery } from '@tanstack/react-query';
 
 interface Props {
   onViewProfile: (userId: string) => void;
-}
-
-function useSearchUsers(query: string) {
-  return useQuery({
-    queryKey: ['social-search-users', query],
-    queryFn: async () => {
-      if (!query.trim() || query.trim().length < 2) return [];
-      const searchTerm = `%${query.trim()}%`;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, display_name, avatar_url, phone')
-        .or(`display_name.ilike.${searchTerm},phone.ilike.${searchTerm}`)
-        .limit(10);
-      if (error) throw error;
-
-      // Fetch verified status
-      const userIds = (data || []).map(p => p.user_id);
-      if (!userIds.length) return [];
-      const { data: socialProfiles } = await supabase
-        .from('social_profiles')
-        .select('user_id, is_verified')
-        .in('user_id', userIds);
-      const verifiedMap = new Map((socialProfiles || []).map(sp => [sp.user_id, sp.is_verified]));
-
-      return (data || []).map(p => ({
-        ...p,
-        is_verified: verifiedMap.get(p.user_id) || false,
-      }));
-    },
-    enabled: query.trim().length >= 2,
-    staleTime: 10000,
-  });
 }
 
 export const SocialFeedTab = memo(function SocialFeedTab({ onViewProfile }: Props) {
@@ -57,10 +23,7 @@ export const SocialFeedTab = memo(function SocialFeedTab({ onViewProfile }: Prop
   const [newContent, setNewContent] = useState('');
   const [uploading, setUploading] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const { data: searchResults } = useSearchUsers(searchQuery);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -97,65 +60,6 @@ export const SocialFeedTab = memo(function SocialFeedTab({ onViewProfile }: Prop
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      {/* Search bar */}
-      <div className="relative">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={e => { setSearchQuery(e.target.value); setShowSearch(true); }}
-              onFocus={() => setShowSearch(true)}
-              placeholder="Tìm người dùng theo tên hoặc SĐT..."
-              className="pl-9 h-9"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => { setSearchQuery(''); setShowSearch(false); }}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
-              >
-                <X className="h-4 w-4 text-muted-foreground" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Search results dropdown */}
-        {showSearch && searchQuery.trim().length >= 2 && (
-          <Card className="absolute z-50 w-full mt-1 shadow-lg max-h-64 overflow-auto">
-            <CardContent className="p-2">
-              {!searchResults?.length ? (
-                <p className="text-sm text-muted-foreground text-center py-3">Không tìm thấy</p>
-              ) : (
-                searchResults.map(u => (
-                  <button
-                    key={u.user_id}
-                    className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-accent transition-colors text-left"
-                    onClick={() => {
-                      onViewProfile(u.user_id);
-                      setSearchQuery('');
-                      setShowSearch(false);
-                    }}
-                  >
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={u.avatar_url || undefined} />
-                      <AvatarFallback className="text-sm">{(u.display_name || 'U')[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{u.display_name || 'Người dùng'}</p>
-                      {u.phone && <p className="text-xs text-muted-foreground">{u.phone}</p>}
-                    </div>
-                    {u.is_verified && (
-                      <span className="text-blue-500 text-xs">✓</span>
-                    )}
-                  </button>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
       {/* Create post */}
       <Card>
         <CardContent className="pt-4">
