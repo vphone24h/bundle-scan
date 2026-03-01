@@ -323,36 +323,36 @@ export default function UniversalStoreTemplate({
                           <ScrollReveal animation="fade-up">
                             <h2 className="text-lg font-bold tracking-tight mb-4">Danh mục sản phẩm</h2>
                           </ScrollReveal>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {productsData.categories.map((cat, idx) => (
-                              <ScrollReveal key={cat.id} animation="fade-up" delay={idx * 80}>
-                                <button
-                                  onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products'); }}
-                                  className="group w-full rounded-2xl overflow-hidden relative text-left"
-                                  style={{ minHeight: cat.image_url ? '200px' : '120px' }}
-                                >
-                                  {cat.image_url ? (
-                                    <>
-                                      <img src={cat.image_url} alt={cat.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                      <div className="relative z-10 h-full flex flex-col justify-end p-5">
-                                        <h3 className="text-lg font-bold text-white">{cat.name}</h3>
-                                        <p className="text-xs text-white/70 mt-0.5">Khám phá ngay →</p>
-                                      </div>
-                                    </>
-                                  ) : (
-                                    <div className="bg-white h-full flex items-center justify-between p-5 border border-black/5 rounded-2xl group-hover:shadow-lg transition-shadow">
-                                      <div>
-                                        <h3 className="text-base font-bold text-[#1d1d1f]">{cat.name}</h3>
-                                        <p className="text-xs text-[#86868b] mt-0.5">Khám phá ngay →</p>
-                                      </div>
-                                      <ShoppingBag className="h-8 w-8 text-[#d2d2d7]" />
+                        </div>
+                        <div className="flex flex-col gap-3 px-3 sm:px-4">
+                          {productsData.categories.map((cat, idx) => (
+                            <ScrollReveal key={cat.id} animation="fade-up" delay={idx * 80}>
+                              <button
+                                onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products'); }}
+                                className="group w-full rounded-2xl overflow-hidden relative text-left"
+                                style={{ minHeight: cat.image_url ? '220px' : '120px' }}
+                              >
+                                {cat.image_url ? (
+                                  <>
+                                    <img src={cat.image_url} alt={cat.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                                    <div className="relative z-10 h-full flex flex-col justify-end p-6" style={{ minHeight: '220px' }}>
+                                      <h3 className="text-xl font-bold text-white">{cat.name}</h3>
+                                      <p className="text-sm text-white/80 mt-1">Khám phá ngay →</p>
                                     </div>
-                                  )}
-                                </button>
-                              </ScrollReveal>
-                            ))}
-                          </div>
+                                  </>
+                                ) : (
+                                  <div className="bg-white h-full flex items-center justify-between p-6 border border-black/5 rounded-2xl group-hover:shadow-lg transition-shadow">
+                                    <div>
+                                      <h3 className="text-lg font-bold text-[#1d1d1f]">{cat.name}</h3>
+                                      <p className="text-sm text-[#86868b] mt-0.5">Khám phá ngay →</p>
+                                    </div>
+                                    <ShoppingBag className="h-8 w-8 text-[#d2d2d7]" />
+                                  </div>
+                                )}
+                              </button>
+                            </ScrollReveal>
+                          ))}
                         </div>
                       </section>
                     );
