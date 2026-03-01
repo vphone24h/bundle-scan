@@ -323,6 +323,36 @@ export function useToggleLike() {
   });
 }
 
+// ─── Post Likers ─────────────────────────────────────────────
+export function usePostLikers(postId: string | null) {
+  return useQuery({
+    queryKey: ['social-likers', postId],
+    queryFn: async () => {
+      if (!postId) return [];
+      const { data: likes } = await supabase
+        .from('social_likes')
+        .select('user_id, created_at')
+        .eq('post_id', postId)
+        .order('created_at', { ascending: false });
+      if (!likes?.length) return [];
+      const userIds = likes.map(l => l.user_id);
+      const [{ data: profiles }, { data: socialProfiles }] = await Promise.all([
+        supabase.from('profiles').select('user_id, display_name, avatar_url').in('user_id', userIds),
+        supabase.from('social_profiles').select('user_id, is_verified').in('user_id', userIds),
+      ]);
+      const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+      const spMap = new Map((socialProfiles || []).map(p => [p.user_id, p]));
+      return likes.map(l => ({
+        user_id: l.user_id,
+        display_name: profileMap.get(l.user_id)?.display_name || 'Người dùng',
+        avatar_url: profileMap.get(l.user_id)?.avatar_url,
+        is_verified: spMap.get(l.user_id)?.is_verified || false,
+      }));
+    },
+    enabled: !!postId,
+  });
+}
+
 // ─── Comments ────────────────────────────────────────────────
 export function usePostComments(postId: string | null) {
   return useQuery({

@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
-import { SocialPost, useToggleLike, usePostComments, useCreateComment, useDeletePost, useTrackMessageClick } from '@/hooks/useSocial';
+import { SocialPost, useToggleLike, usePostComments, usePostLikers, useCreateComment, useDeletePost, useTrackMessageClick } from '@/hooks/useSocial';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Heart, MessageCircle, Send, Trash2, MessageSquare, UserPlus, UserCheck } from 'lucide-react';
 import { VerifiedBadge } from './VerifiedBadge';
 import { cn } from '@/lib/utils';
@@ -24,12 +25,14 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
+  const [showLikers, setShowLikers] = useState(false);
 
   const toggleLike = useToggleLike();
   const { data: comments } = usePostComments(showComments ? post.id : null);
   const createComment = useCreateComment();
   const deletePost = useDeletePost();
   const trackClick = useTrackMessageClick();
+  const { data: likers } = usePostLikers(showLikers ? post.id : null);
   const toggleFollow = useToggleFollow();
   const { data: isFollowingUser } = useIsFollowing(user?.id !== post.user_id ? post.user_id : undefined);
 
@@ -136,7 +139,37 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
 
         {/* Stats */}
         <div className="flex items-center gap-4 text-xs text-muted-foreground pb-2 border-b">
-          {post.like_count > 0 && <span>{post.like_count} thích</span>}
+          {post.like_count > 0 && (
+            <Popover open={showLikers} onOpenChange={setShowLikers}>
+              <PopoverTrigger asChild>
+                <button className="hover:underline cursor-pointer">
+                  {post.like_count} thích
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-0 max-h-60 overflow-y-auto" align="start">
+                <div className="p-2 border-b font-semibold text-sm">Người đã thích</div>
+                <div className="divide-y">
+                  {likers?.map(liker => (
+                    <button
+                      key={liker.user_id}
+                      className="flex items-center gap-2 w-full px-3 py-2 hover:bg-accent/50 transition-colors text-left"
+                      onClick={() => { setShowLikers(false); onViewProfile(liker.user_id); }}
+                    >
+                      <Avatar className="h-7 w-7">
+                        <AvatarImage src={liker.avatar_url || undefined} />
+                        <AvatarFallback className="text-xs">{(liker.display_name || 'U')[0]}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium truncate flex items-center gap-1">
+                        {liker.display_name}
+                        {liker.is_verified && <VerifiedBadge size="sm" />}
+                      </span>
+                    </button>
+                  ))}
+                  {!likers?.length && <div className="p-3 text-center text-muted-foreground text-sm">Đang tải...</div>}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
           {post.comment_count > 0 && <span>{post.comment_count} bình luận</span>}
         </div>
 
