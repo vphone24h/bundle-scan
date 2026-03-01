@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollReveal } from '@/hooks/useScrollReveal';
 import { formatNumber } from '@/lib/formatNumber';
+import { PageItemConfig, DEFAULT_PAGE_ITEMS } from '@/lib/industryConfig';
 import {
   Wrench, RefreshCw, CreditCard, Headphones, BarChart3, DollarSign,
   Calendar, MapPin, Phone, Mail, Clock, CheckCircle, ArrowRight,
@@ -16,6 +17,7 @@ interface SystemPageProps {
   zaloUrl?: string | null;
   branches?: { id: string; name: string; address?: string | null; phone?: string | null }[];
   onNavigateProducts?: () => void;
+  pageItems?: PageItemConfig[];
 }
 
 // === REPAIR PAGE ===
@@ -109,13 +111,9 @@ export function RepairPage({ accentColor, storeName, storePhone, zaloUrl }: Syst
 }
 
 // === TRADE-IN PAGE ===
-export function TradeInPage({ accentColor, storeName, storePhone, zaloUrl }: SystemPageProps) {
-  const steps = [
-    { step: '01', title: 'Mang máy đến cửa hàng', desc: 'Hoặc gửi thông tin qua Zalo' },
-    { step: '02', title: 'Kiểm tra & định giá', desc: 'Kỹ thuật viên đánh giá trong 15 phút' },
-    { step: '03', title: 'Chọn máy mới', desc: 'Thu cũ trừ thẳng vào giá máy mới' },
-    { step: '04', title: 'Nhận máy mới', desc: 'Hoàn tất thủ tục nhanh chóng' },
-  ];
+export function TradeInPage({ accentColor, storeName, storePhone, zaloUrl, pageItems }: SystemPageProps) {
+  const defaultSteps = DEFAULT_PAGE_ITEMS.tradein;
+  const items = pageItems && pageItems.length > 0 ? pageItems : defaultSteps;
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8 space-y-10">
@@ -131,9 +129,9 @@ export function TradeInPage({ accentColor, storeName, storePhone, zaloUrl }: Sys
       <ScrollReveal animation="fade-up" delay={100}>
         <h2 className="text-lg font-bold mb-4">Quy trình đổi máy</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {steps.map((s, i) => (
+          {items.map((s, i) => (
             <div key={i} className="rounded-xl border p-4 text-center">
-              <div className="text-2xl font-bold mb-2" style={{ color: accentColor }}>{s.step}</div>
+              <div className="text-2xl font-bold mb-2" style={{ color: accentColor }}>{String(i + 1).padStart(2, '0')}</div>
               <h3 className="font-semibold text-sm">{s.title}</h3>
               <p className="text-xs text-[#86868b] mt-1">{s.desc}</p>
             </div>
@@ -183,7 +181,8 @@ export function TradeInPage({ accentColor, storeName, storePhone, zaloUrl }: Sys
 }
 
 // === INSTALLMENT PAGE ===
-export function InstallmentPage({ accentColor, storeName, storePhone, zaloUrl, onNavigateProducts }: SystemPageProps) {
+export function InstallmentPage({ accentColor, storeName, storePhone, zaloUrl, onNavigateProducts, pageItems }: SystemPageProps) {
+  const items = pageItems && pageItems.length > 0 ? pageItems : DEFAULT_PAGE_ITEMS.installment;
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8 space-y-10">
       <ScrollReveal animation="fade-up">
@@ -198,14 +197,9 @@ export function InstallmentPage({ accentColor, storeName, storePhone, zaloUrl, o
       <ScrollReveal animation="fade-up" delay={100}>
         <h2 className="text-lg font-bold mb-4">Điều kiện đăng ký</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {[
-            { icon: <FileText className="h-5 w-5" />, title: 'CCCD/CMND', desc: 'Bản gốc còn hạn sử dụng' },
-            { icon: <Users className="h-5 w-5" />, title: 'Từ 18 tuổi trở lên', desc: 'Có thu nhập ổn định' },
-            { icon: <Phone className="h-5 w-5" />, title: 'SĐT chính chủ', desc: 'Đăng ký dưới tên bạn' },
-            { icon: <CreditCard className="h-5 w-5" />, title: 'Không cần trả trước', desc: 'Hỗ trợ trả góp 0%' },
-          ].map((item, i) => (
+          {items.map((item, i) => (
             <div key={i} className="flex items-start gap-3 rounded-xl border p-4">
-              <div style={{ color: accentColor }}>{item.icon}</div>
+              <span className="text-xl shrink-0">{item.icon || '📄'}</span>
               <div>
                 <h3 className="font-semibold text-sm">{item.title}</h3>
                 <p className="text-xs text-[#86868b] mt-0.5">{item.desc}</p>
