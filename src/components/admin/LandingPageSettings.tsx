@@ -16,7 +16,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon, Award, Truck, CreditCard, Clock, Star, Eye, EyeOff, Menu as MenuIcon, Sparkles, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
-import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems } from '@/lib/industryConfig';
+import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems, SYSTEM_PAGES, SYSTEM_PAGE_IDS, getSystemPageById } from '@/lib/industryConfig';
 
 import {
   Dialog,
@@ -207,7 +207,27 @@ function NavMenuEditor({
     onChange(updated);
   };
 
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [addMenuType, setAddMenuType] = useState<'system' | 'link'>('system');
+
   const handleAdd = () => {
+    setShowAddMenu(true);
+  };
+
+  const handleAddSystemPage = (pageDef: typeof SYSTEM_PAGES[number]) => {
+    const newItem: NavItemConfig = {
+      id: pageDef.id + '_' + Date.now(),
+      label: pageDef.label,
+      enabled: true,
+      type: 'page',
+      pageView: pageDef.id,
+      icon: pageDef.icon,
+    };
+    onChange([...currentItems, newItem]);
+    setShowAddMenu(false);
+  };
+
+  const handleAddCustomLink = () => {
     const newItem: NavItemConfig = {
       id: `custom_${Date.now()}`,
       label: 'Trang mới',
@@ -217,6 +237,7 @@ function NavMenuEditor({
       url: '',
     };
     onChange([...currentItems, newItem]);
+    setShowAddMenu(false);
   };
 
   const handleMoveUp = (index: number) => {
@@ -309,7 +330,7 @@ function NavMenuEditor({
 
             {/* Type badge */}
             <span className="text-[10px] text-muted-foreground shrink-0">
-              {isCoreItem(item.id) ? 'Mặc định' : 'Tuỳ chỉnh'}
+              {isCoreItem(item.id) ? 'Mặc định' : item.type === 'page' ? 'Trang HT' : 'Link ngoài'}
             </span>
 
             {/* Toggle visibility */}
@@ -337,14 +358,72 @@ function NavMenuEditor({
         ))}
       </div>
 
-      {/* Add new item */}
-      <Button type="button" variant="outline" size="sm" className="gap-1.5 text-xs w-full" onClick={handleAdd}>
-        <Plus className="h-3.5 w-3.5" />
-        Thêm trang mới
-      </Button>
+      {/* Add new item - with type selector */}
+      {!showAddMenu ? (
+        <Button type="button" variant="outline" size="sm" className="gap-1.5 text-xs w-full" onClick={handleAdd}>
+          <Plus className="h-3.5 w-3.5" />
+          Thêm trang mới
+        </Button>
+      ) : (
+        <div className="rounded-xl border p-3 space-y-3 bg-muted/30">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-medium">Chọn loại nội dung</Label>
+            <button type="button" onClick={() => setShowAddMenu(false)} className="text-muted-foreground hover:text-foreground">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          
+          {/* Type tabs */}
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setAddMenuType('system')}
+              className={`flex-1 text-xs py-2 rounded-lg font-medium transition-colors ${addMenuType === 'system' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
+            >
+              📄 Trang hệ thống
+            </button>
+            <button
+              type="button"
+              onClick={() => setAddMenuType('link')}
+              className={`flex-1 text-xs py-2 rounded-lg font-medium transition-colors ${addMenuType === 'link' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
+            >
+              🔗 Link tuỳ chỉnh
+            </button>
+          </div>
+
+          {addMenuType === 'system' ? (
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {SYSTEM_PAGES.filter(p => !['home', 'products', 'news', 'warranty'].includes(p.id)).map(page => {
+                const alreadyAdded = currentItems.some(it => it.pageView === page.id || it.id === page.id);
+                return (
+                  <button
+                    key={page.id}
+                    type="button"
+                    disabled={alreadyAdded}
+                    onClick={() => handleAddSystemPage(page)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors ${alreadyAdded ? 'opacity-40 cursor-not-allowed' : 'hover:bg-accent'}`}
+                  >
+                    <span>{page.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium">{page.label}</span>
+                      <span className="text-[10px] text-muted-foreground ml-2">{page.description}</span>
+                    </div>
+                    {alreadyAdded && <span className="text-[10px] text-muted-foreground">Đã thêm</span>}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <Button type="button" variant="outline" size="sm" className="gap-1.5 text-xs w-full" onClick={handleAddCustomLink}>
+              <Plus className="h-3.5 w-3.5" />
+              Thêm link tuỳ chỉnh
+            </Button>
+          )}
+        </div>
+      )}
 
       <p className="text-[10px] text-muted-foreground">
-        💡 Các mục "Mặc định" là trang nội dung có sẵn. Mục "Tuỳ chỉnh" có thể gắn link ngoài hoặc dùng làm trang thông tin.
+        💡 "Trang HT" = Trang hệ thống tự tạo nội dung (không cần URL). "Link ngoài" = liên kết đến trang bất kỳ.
       </p>
     </div>
   );

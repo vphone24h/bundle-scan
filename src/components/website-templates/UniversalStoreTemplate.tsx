@@ -11,7 +11,12 @@ import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { VoucherClaimForm } from '@/components/landing/VoucherClaimForm';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
 import { ScrollReveal, useParallax } from '@/hooks/useScrollReveal';
-import { IndustryConfig, getIndustryConfig, GOOGLE_FONTS, NavItemConfig, getDefaultNavItems } from '@/lib/industryConfig';
+import { IndustryConfig, getIndustryConfig, GOOGLE_FONTS, NavItemConfig, getDefaultNavItems, getSystemPageById } from '@/lib/industryConfig';
+import {
+  RepairPage, TradeInPage, InstallmentPage, PriceListPage,
+  BookingPage, BranchesPage, ContactPage, AccessoriesPage,
+  ComparePage, GenericSystemPage,
+} from './SystemPageTemplates';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -62,7 +67,7 @@ function calculateWarrantyStatus(item: WarrantyResult): WarrantyStatus | null {
   return { valid: isValid, message: isValid ? `Còn ${daysLeft} ngày` : 'Hết BH', endDate, startDate: saleDate, months: warrantyMonths, daysLeft };
 }
 
-type PageView = 'home' | 'products' | 'news' | 'warranty' | 'article-detail';
+type PageView = 'home' | 'products' | 'news' | 'warranty' | 'article-detail' | 'repair' | 'tradein' | 'installment' | 'accessories' | 'compare' | 'pricelist' | 'booking' | 'branches' | 'contact' | 'services' | 'rooms' | 'courses' | 'doctors' | 'collection' | 'promotion' | 'reviews' | 'system-page';
 
 export default function UniversalStoreTemplate({
   settings, tenant, tenantId, storeId, branches,
@@ -888,6 +893,42 @@ export default function UniversalStoreTemplate({
             )}
           </div>
         )}
+
+        {/* === SYSTEM PAGES === */}
+        {(() => {
+          const systemPageProps = {
+            accentColor,
+            storeName: displayStoreName,
+            storePhone: warrantyHotline || settings?.store_phone,
+            zaloUrl,
+            branches: branches.map(b => ({ id: b.id, name: b.name, address: b.address, phone: b.phone })),
+            onNavigateProducts: () => navigateTo('products'),
+          };
+
+          switch (pageView) {
+            case 'repair': return <RepairPage {...systemPageProps} />;
+            case 'tradein': return <TradeInPage {...systemPageProps} />;
+            case 'installment': return <InstallmentPage {...systemPageProps} />;
+            case 'pricelist': return <PriceListPage {...systemPageProps} />;
+            case 'booking': return <BookingPage {...systemPageProps} />;
+            case 'branches': return <BranchesPage {...systemPageProps} />;
+            case 'contact': return <ContactPage {...systemPageProps} />;
+            case 'accessories': return <AccessoriesPage {...systemPageProps} />;
+            case 'compare': return <ComparePage {...systemPageProps} />;
+            case 'services':
+            case 'rooms':
+            case 'courses':
+            case 'doctors':
+            case 'collection':
+            case 'promotion':
+            case 'reviews': {
+              // Find the label from nav items
+              const activeNav = navItems.find(n => n.pageView === pageView);
+              return <GenericSystemPage {...systemPageProps} pageId={pageView} pageLabel={activeNav?.label || pageView} />;
+            }
+            default: return null;
+          }
+        })()}
       </main>
 
       {/* === FOOTER === */}
