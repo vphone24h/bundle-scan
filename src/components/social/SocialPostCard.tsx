@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MessageCircle, Send, CheckCircle, Trash2, MessageSquare, UserPlus, UserCheck } from 'lucide-react';
+import { Heart, MessageCircle, Send, Trash2, MessageSquare, UserPlus, UserCheck } from 'lucide-react';
+import { VerifiedBadge } from './VerifiedBadge';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useToggleFollow, useIsFollowing } from '@/hooks/useSocial';
@@ -91,7 +92,7 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
               <button onClick={() => onViewProfile(post.user_id)} className="font-semibold text-sm hover:underline">
                 {post.display_name}
               </button>
-              {post.is_verified && <CheckCircle className="h-4 w-4 text-blue-500 fill-blue-500" />}
+              {post.is_verified && <VerifiedBadge size="md" />}
               {!isOwnPost && user?.id && (
                 <button
                   onClick={() => toggleFollow.mutate({ targetUserId: post.user_id, isFollowing: !!isFollowingUser })}
@@ -175,7 +176,7 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
                   <div className="flex-1 bg-muted rounded-xl px-3 py-1.5">
                     <div className="flex items-center gap-1">
                       <span className="text-xs font-semibold">{comment.display_name}</span>
-                      {comment.is_verified && <CheckCircle className="h-3 w-3 text-blue-500 fill-blue-500" />}
+                      {comment.is_verified && <VerifiedBadge size="sm" />}
                     </div>
                     <p className="text-sm">{comment.content}</p>
                   </div>
@@ -200,7 +201,7 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
                     <div className="flex-1 bg-muted rounded-xl px-3 py-1.5">
                       <div className="flex items-center gap-1">
                         <span className="text-xs font-semibold">{reply.display_name}</span>
-                        {reply.is_verified && <CheckCircle className="h-3 w-3 text-blue-500 fill-blue-500" />}
+                        {reply.is_verified && <VerifiedBadge size="sm" />}
                       </div>
                       <p className="text-sm">{reply.content}</p>
                     </div>
