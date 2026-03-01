@@ -959,7 +959,12 @@ export function LandingPageSettings() {
         <CardContent>
           <TemplateSelector
             selectedTemplate={(formData as any).website_template || 'phone_store'}
-            onSelect={(id) => handleChange('website_template' as any, id)}
+            onSelect={(id) => {
+              handleChange('website_template' as any, id);
+              // Auto-apply industry nav items when template changes
+              const fullNav = getFullNavItems(id);
+              setFormData(prev => ({ ...prev, custom_nav_items: fullNav }));
+            }}
             editableSettings={{
               custom_trust_badges: (formData as any).custom_trust_badges || null,
             }}
