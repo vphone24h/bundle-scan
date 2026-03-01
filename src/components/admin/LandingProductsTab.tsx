@@ -495,8 +495,6 @@ export function LandingProductsTab() {
         open={warehouseDialog}
         onOpenChange={setWarehouseDialog}
         existingProducts={products || []}
-        aiDescriptionEnabled={landingSettings?.ai_description_enabled ?? true}
-        autoImageEnabled={landingSettings?.auto_image_enabled ?? true}
       />
     </div>
   );

@@ -3662,6 +3662,30 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          ai_description_enabled: boolean
+          auto_image_enabled: boolean
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          ai_description_enabled?: boolean
+          auto_image_enabled?: boolean
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          ai_description_enabled?: boolean
+          auto_image_enabled?: boolean
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       platform_users: {
         Row: {
           created_at: string

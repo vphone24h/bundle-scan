@@ -16,6 +16,7 @@ import { EmailHistoryTable } from '@/components/platform/EmailHistoryTable';
 import { CustomDomainsManagement } from '@/components/platform/CustomDomainsManagement';
 import { PlatformArticlesManagement } from '@/components/platform/PlatformArticlesManagement';
 import { WelcomeEmailConfig } from '@/components/platform/WelcomeEmailConfig';
+import { PlatformAISettings } from '@/components/platform/PlatformAISettings';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate } from 'react-router-dom';
 import { Loader2, Users, Megaphone, FileText, Mail, Globe, MailPlus, Bell, Zap, Database } from 'lucide-react';
@@ -166,7 +167,10 @@ export default function PlatformAdminPage() {
           </TabsContent>
 
           <TabsContent value="config" className="mt-6">
-            <PaymentConfigManagement />
+            <div className="space-y-6">
+              <PlatformAISettings />
+              <PaymentConfigManagement />
+            </div>
           </TabsContent>
 
           <TabsContent value="welcome-email" className="mt-6">
