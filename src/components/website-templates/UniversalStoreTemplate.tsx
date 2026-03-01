@@ -414,15 +414,13 @@ export default function UniversalStoreTemplate({
                       <div>
                         <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{config.productSectionTitle}</h2>
                       </div>
-                      {allProducts.length > 8 && (
-                        <button
-                          onClick={() => navigateTo('products')}
-                          className="text-xs font-medium shrink-0 flex items-center gap-1"
-                          style={{ color: accentColor }}
-                        >
-                          Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => navigateTo('products')}
+                        className="text-xs font-medium shrink-0 flex items-center gap-1"
+                        style={{ color: accentColor }}
+                      >
+                        Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
+                      </button>
                     </div>
                   </ScrollReveal>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
