@@ -87,7 +87,7 @@ const SocialPage = () => {
   return (
     <MainLayout>
       {/* Sticky header with title and search icon */}
-      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b pb-2 -mx-4 px-4 pt-2 sm:static sm:border-0 sm:pb-0 sm:mx-0 sm:px-0 sm:pt-0 sm:bg-transparent sm:backdrop-blur-none">
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b pb-2 -mx-4 px-4 pt-2 sm:static sm:border-0 sm:pb-0 sm:mx-0 sm:px-0 sm:pt-0 sm:bg-transparent sm:backdrop-blur-none">
         <div className="flex items-center justify-between">
           <PageHeader title="Mạng xã hội" description="Kết nối cộng đồng VKHO" />
           <Button
