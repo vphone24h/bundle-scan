@@ -81,16 +81,22 @@ export function TemplatePreviewDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) setEditMode(false); onOpenChange(o); }}>
       <DialogContent className="max-w-md sm:max-w-lg p-0 gap-0 h-[90vh] sm:max-h-[90vh] overflow-hidden flex flex-col [&>button.absolute]:hidden">
-        {canEdit && (
-          <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50 shrink-0">
-            <span className="text-xs font-medium text-muted-foreground">
-              {editMode ? '✏️ Đang chỉnh sửa' : 'Xem trước mẫu website'}
-            </span>
-            <Button size="sm" className="h-7 text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setEditMode(!editMode)}>
-              {editMode ? <><X className="h-3 w-3" /> Xong</> : <><Pencil className="h-3 w-3" /> Chỉnh sửa</>}
+        {/* Top bar: close + select + edit */}
+        <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/50 shrink-0 gap-2">
+          <Button variant="outline" size="sm" className="h-8 text-xs px-3" onClick={() => { setEditMode(false); onOpenChange(false); }}>
+            <X className="h-3.5 w-3.5 mr-1" /> Đóng
+          </Button>
+          <div className="flex items-center gap-2">
+            {canEdit && (
+              <Button size="sm" variant="ghost" className="h-8 text-xs gap-1" onClick={() => setEditMode(!editMode)}>
+                {editMode ? <><X className="h-3 w-3" /> Xong</> : <><Pencil className="h-3 w-3" /> Sửa</>}
+              </Button>
+            )}
+            <Button size="sm" className="h-8 text-xs px-4" onClick={handleSelect} variant={isSelected ? 'secondary' : 'default'}>
+              {isSelected ? <><Check className="h-3.5 w-3.5 mr-1" /> Đã chọn</> : 'Chọn mẫu'}
             </Button>
           </div>
-        )}
+        </div>
 
         <div className="flex-1 overflow-y-auto bg-white text-[#1d1d1f]" style={{ fontFamily: config.fontFamily }}>
           {/* HEADER */}
@@ -151,12 +157,6 @@ export function TemplatePreviewDialog({
           </div>
         </div>
 
-        <DialogFooter className="flex-row gap-2 p-4 border-t bg-background shrink-0">
-          <Button variant="outline" onClick={() => { setEditMode(false); onOpenChange(false); }} className="flex-1">Đóng</Button>
-          <Button onClick={handleSelect} className="flex-1" variant={isSelected ? 'secondary' : 'default'}>
-            {isSelected ? <><Check className="h-4 w-4 mr-1" /> Đã chọn</> : 'Chọn mẫu này'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
