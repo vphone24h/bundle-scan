@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { TenantLandingSettings } from '@/hooks/useTenantLanding';
 import { getIndustryConfig, getFullNavItems, LayoutStyle, HomeSection } from '@/lib/industryConfig';
-import { HomeSectionItem } from '@/components/admin/HomeSectionManager';
+import { HomeSectionItem, CustomProductTab } from '@/components/admin/HomeSectionManager';
 import { Pencil } from 'lucide-react';
 
 interface EditorPreviewTabProps {
@@ -55,6 +55,16 @@ function SectionOverlay({
 export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }: EditorPreviewTabProps) {
   const templateId = (formData as any)?.website_template || 'phone_store';
   const baseConfig = getIndustryConfig(templateId);
+  const customProductTabs: CustomProductTab[] = (formData as any)?.custom_product_tabs || [];
+
+  // Build enabled section IDs (including custom productTab_* ones)
+  const enabledSectionIds = useMemo(() => {
+    if ((formData as any)?.custom_home_sections) {
+      const customSections = (formData as any).custom_home_sections as HomeSectionItem[];
+      return customSections.filter(s => s.enabled).map(s => s.id);
+    }
+    return baseConfig.homeSections as string[];
+  }, [baseConfig, formData]);
 
   const config = useMemo(() => {
     const c = { ...baseConfig };
@@ -63,12 +73,10 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
     if ((formData as any)?.hero_title) c.heroTitle = (formData as any).hero_title;
     if ((formData as any)?.hero_subtitle) c.heroSubtitle = (formData as any).hero_subtitle;
     if ((formData as any)?.hero_cta) c.heroCta = (formData as any).hero_cta;
-    if ((formData as any)?.custom_home_sections) {
-      const customSections = (formData as any).custom_home_sections as HomeSectionItem[];
-      c.homeSections = customSections.filter((s: HomeSectionItem) => s.enabled).map((s: HomeSectionItem) => s.id) as HomeSection[];
-    }
+    // Keep built-in sections for the config (non-custom ones)
+    c.homeSections = enabledSectionIds.filter(id => !id.startsWith('productTab_')) as HomeSection[];
     return c;
-  }, [baseConfig, formData]);
+  }, [baseConfig, formData, enabledSectionIds]);
 
   const accentColor = formData.primary_color || config.accentColor;
   const storeName = formData.store_name || tenant?.name || 'Cửa hàng';
@@ -141,7 +149,64 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
           </SectionOverlay>
 
           {/* Render home sections */}
-          {config.homeSections.map((sectionId) => {
+          {enabledSectionIds.map((sectionId) => {
+            // Handle custom product tabs
+            if (sectionId.startsWith('productTab_')) {
+              const tab = customProductTabs.find(t => t.id === sectionId);
+              if (!tab) return null;
+              return (
+                <SectionOverlay key={sectionId} sectionId="layout" label={tab.name} onEdit={onEditSection}>
+                  <section className="py-6 bg-white px-4">
+                    <h2 className="text-sm font-bold tracking-tight mb-3">{tab.icon || '📦'} {tab.name}</h2>
+                    {tab.displayStyle === 'slide' ? (
+                      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                        {[1, 2, 3, 4].map(i => (
+                          <div key={i} className="min-w-[150px] rounded-xl border border-black/5 overflow-hidden shrink-0">
+                            <div className="aspect-square bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                              <span className="text-2xl opacity-30">📦</span>
+                            </div>
+                            <div className="p-2.5">
+                              <p className="text-[11px] font-medium leading-tight">Sản phẩm {i}</p>
+                              <p className="text-[11px] font-bold mt-1" style={{ color: accentColor }}>Liên hệ</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : tab.displayStyle === 'list' ? (
+                      <div className="space-y-2">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="flex gap-3 p-2.5 rounded-xl border border-black/5">
+                            <div className="h-16 w-16 rounded-lg bg-muted shrink-0 flex items-center justify-center">
+                              <span className="text-lg opacity-30">📦</span>
+                            </div>
+                            <div>
+                              <p className="text-[11px] font-medium">Sản phẩm {i}</p>
+                              <p className="text-[11px] font-bold mt-1" style={{ color: accentColor }}>Liên hệ</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3">
+                        {[1, 2, 3, 4].map(i => (
+                          <div key={i} className="rounded-xl border border-black/5 overflow-hidden">
+                            <div className="aspect-square bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                              <span className="text-2xl opacity-30">📦</span>
+                            </div>
+                            <div className="p-2.5">
+                              <p className="text-[11px] font-medium leading-tight">Sản phẩm {i}</p>
+                              <p className="text-[11px] font-bold mt-1" style={{ color: accentColor }}>Liên hệ</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                </SectionOverlay>
+              );
+            }
+
+            // Built-in sections
             switch (sectionId) {
               case 'hero':
                 return (
@@ -304,6 +369,62 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
                               <span className="text-lg opacity-40">📁</span>
                             </div>
                             <span className="text-[10px] font-medium text-center">{cat}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  </SectionOverlay>
+                );
+
+              case 'branches':
+                return (
+                  <SectionOverlay key="branches" sectionId="store-info" label="Chi nhánh" onEdit={onEditSection}>
+                    <section className="py-6 px-4 bg-white">
+                      <h2 className="text-sm font-bold tracking-tight mb-3">📍 Chi nhánh</h2>
+                      <div className="space-y-2">
+                        {[1, 2].map(i => (
+                          <div key={i} className="p-3 rounded-xl border border-black/5">
+                            <p className="text-[11px] font-medium">Chi nhánh {i}</p>
+                            <p className="text-[10px] text-[#86868b]">Địa chỉ chi nhánh...</p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  </SectionOverlay>
+                );
+
+              case 'flashSale':
+                return (
+                  <SectionOverlay key="flashSale" sectionId="layout" label="Flash Sale" onEdit={onEditSection}>
+                    <section className="py-6 px-4 bg-gradient-to-r from-red-50 to-orange-50">
+                      <h2 className="text-sm font-bold tracking-tight mb-3">⚡ Flash Sale</h2>
+                      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="min-w-[140px] rounded-xl border border-black/5 overflow-hidden shrink-0 bg-white">
+                            <div className="aspect-square bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                              <span className="text-2xl opacity-30">⚡</span>
+                            </div>
+                            <div className="p-2.5">
+                              <p className="text-[11px] font-medium leading-tight">SP Sale {i}</p>
+                              <p className="text-[11px] font-bold mt-1 text-red-500">Giảm giá</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  </SectionOverlay>
+                );
+
+              case 'combo':
+                return (
+                  <SectionOverlay key="combo" sectionId="layout" label="Combo" onEdit={onEditSection}>
+                    <section className="py-6 px-4 bg-white">
+                      <h2 className="text-sm font-bold tracking-tight mb-3">🎁 Combo ưu đãi</h2>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[1, 2].map(i => (
+                          <div key={i} className="rounded-xl border border-black/5 p-3">
+                            <p className="text-[11px] font-medium">Combo {i}</p>
+                            <p className="text-[10px] text-[#86868b]">Tiết kiệm hơn khi mua combo</p>
                           </div>
                         ))}
                       </div>
