@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
 import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, getFullNavItems, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, SYSTEM_PAGES, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
 import { HomeSectionManager, HomeSectionItem } from '@/components/admin/HomeSectionManager';
-import { MenuEditorInline } from '@/components/website-editor/MenuEditorInline';
+import { NavMenuEditor } from '@/components/website-editor/NavMenuEditor';
+import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -79,6 +80,7 @@ const SECTION_TO_BLOCK: Record<string, string> = {
   'layout': 'layout',
   'footer': 'social',
   'sticky-bar': 'social',
+  'menu': 'menu',
 };
 
 export function EditorSettingsTab({ formData, onChange, focusSection, onClearFocus, tenantId }: EditorSettingsTabProps) {
@@ -147,6 +149,32 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
     <div className="h-full overflow-y-auto bg-background">
       <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
       <input ref={bannerInputRef} type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" />
+
+      {/* Chọn mẫu Website */}
+      <SettingsBlock
+        id="template"
+        icon="🎨"
+        title="Chọn mẫu website"
+        description="Giao diện theo ngành nghề"
+        isExpanded={expandedBlocks.has('template')}
+        onToggle={() => toggleBlock('template')}
+      >
+        <TemplateSelector
+          selectedTemplate={templateId}
+          onSelect={(id) => {
+            onChange('website_template', id);
+            onChange('custom_nav_items', getFullNavItems(id));
+          }}
+          editableSettings={{
+            custom_trust_badges: (formData as any).custom_trust_badges || null,
+          }}
+          onSettingsChange={(editSettings) => {
+            if (editSettings.custom_trust_badges !== undefined) {
+              onChange('custom_trust_badges', editSettings.custom_trust_badges);
+            }
+          }}
+        />
+      </SettingsBlock>
 
       {/* Logo & Tên cửa hàng */}
       <SettingsBlock
@@ -309,11 +337,10 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
         isExpanded={expandedBlocks.has('menu')}
         onToggle={() => toggleBlock('menu')}
       >
-        <MenuEditorInline
-          formData={formData}
-          onChange={onChange}
+        <NavMenuEditor
           templateId={templateId}
-          config={config}
+          customNavItems={(formData as any)?.custom_nav_items || null}
+          onChange={(items) => onChange('custom_nav_items', items)}
         />
       </SettingsBlock>
 
