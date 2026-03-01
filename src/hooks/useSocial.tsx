@@ -171,14 +171,20 @@ export function useSocialFeed(filterUserId?: string) {
     queryFn: async ({ pageParam = 0 }) => {
       let query = supabase
         .from('social_posts')
-        .select('*')
-        .order('engagement_score', { ascending: false })
-        .order('created_at', { ascending: false })
-        .range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);
+        .select('*');
 
       if (filterUserId) {
-        query = query.eq('user_id', filterUserId);
+        // Profile view: newest first
+        query = query.eq('user_id', filterUserId)
+          .order('created_at', { ascending: false });
+      } else {
+        // Feed view: engagement + recency blend
+        query = query
+          .order('engagement_score', { ascending: false })
+          .order('created_at', { ascending: false });
       }
+
+      query = query.range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);
 
       const { data: posts, error } = await query;
       if (error) throw error;
