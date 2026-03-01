@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,16 @@ export function CustomDomainsManagement() {
   const [newDomain, setNewDomain] = useState('');
   const [selectedTenantId, setSelectedTenantId] = useState('');
   const [adding, setAdding] = useState(false);
+  const [tenantSearch, setTenantSearch] = useState('');
+
+  const filteredTenants = useMemo(() => {
+    if (!tenants) return [];
+    if (!tenantSearch.trim()) return tenants;
+    const q = tenantSearch.toLowerCase().trim();
+    return tenants.filter((t: any) =>
+      t.name?.toLowerCase().includes(q) || t.subdomain?.toLowerCase().includes(q)
+    );
+  }, [tenants, tenantSearch]);
 
   const filteredDomains = domains?.filter((d: any) =>
     d.domain.toLowerCase().includes(search.toLowerCase()) ||
@@ -65,6 +75,7 @@ export function CustomDomainsManagement() {
       setShowAddDialog(false);
       setNewDomain('');
       setSelectedTenantId('');
+      setTenantSearch('');
     } catch (error: any) {
       toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
     }
@@ -303,18 +314,27 @@ export function CustomDomainsManagement() {
             </div>
             <div>
               <Label>Doanh nghiệp</Label>
-              <Select value={selectedTenantId} onValueChange={setSelectedTenantId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn doanh nghiệp..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {tenants?.map((t: any) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name} ({t.subdomain})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                placeholder="Tìm tên hoặc store ID..."
+                value={tenantSearch}
+                onChange={(e) => setTenantSearch(e.target.value)}
+                className="mb-2"
+              />
+              <div className="max-h-48 overflow-y-auto border rounded-md">
+                {filteredTenants.length === 0 && (
+                  <p className="text-sm text-muted-foreground p-3 text-center">Không tìm thấy</p>
+                )}
+                {filteredTenants.map((t: any) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${selectedTenantId === t.id ? 'bg-primary/10 font-medium text-primary' : ''}`}
+                    onClick={() => setSelectedTenantId(t.id)}
+                  >
+                    {t.name} <span className="text-muted-foreground">({t.subdomain})</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>
