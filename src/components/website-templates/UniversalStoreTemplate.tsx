@@ -30,16 +30,10 @@ import {
   ShoppingBag, Newspaper, ArrowLeft, Download, Smartphone, Share,
   Plus, MoreVertical, Link2, Truck, CreditCard, Award, Menu, X,
 } from 'lucide-react';
+import { LayoutHero } from './layouts/HeroVariants';
+import { LayoutProductCard, getProductGridClass } from './layouts/ProductCardVariants';
+import { LayoutTrustBadges } from './layouts/TrustBadgeVariants';
 
-// Icon map for industry config
-const ICON_MAP: Record<string, React.ReactNode> = {
-  Shield: <Shield className="h-5 w-5" />,
-  Award: <Award className="h-5 w-5" />,
-  Truck: <Truck className="h-5 w-5" />,
-  CreditCard: <CreditCard className="h-5 w-5" />,
-  Clock: <Clock className="h-5 w-5" />,
-  Star: <Star className="h-5 w-5" />,
-};
 
 export interface UniversalTemplateProps {
   settings: TenantLandingSettings | null;
@@ -315,65 +309,20 @@ export default function UniversalStoreTemplate({
         {pageView === 'home' && (
           <div>
             {/* HERO BANNER */}
-            {settings?.show_banner && settings?.banner_image_url ? (
-              <section className="relative overflow-hidden bg-[#f5f5f7]">
-                {settings.banner_link_url ? (
-                  <a href={settings.banner_link_url} target="_blank" rel="noopener noreferrer">
-                    <img src={settings.banner_image_url} alt="Banner" className="w-full h-auto max-h-[500px] object-cover" />
-                  </a>
-                ) : (
-                  <img src={settings.banner_image_url} alt="Banner" className="w-full h-auto max-h-[500px] object-cover" />
-                )}
-              </section>
-            ) : (
-              <section ref={heroRef} className="relative overflow-hidden text-white" style={{ background: config.heroGradient }}>
-                <div
-                  className="max-w-[1200px] mx-auto px-6 py-12 sm:py-20"
-                  style={{ transform: `translateY(${heroOffset}px)` }}
-                >
-                  <ScrollReveal animation="fade-up" delay={100}>
-                    <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-3">
-                      {config.heroTitle}
-                    </h1>
-                  </ScrollReveal>
-                  <ScrollReveal animation="fade-up" delay={200}>
-                    <p className="text-sm sm:text-base text-white/70 mb-6 max-w-md">
-                      {config.heroSubtitle}
-                    </p>
-                  </ScrollReveal>
-                  <ScrollReveal animation="scale-up" delay={300}>
-                    <Button
-                      onClick={() => navigateTo('products')}
-                      className="text-white rounded-full px-8 h-11 text-sm font-medium"
-                      style={{ backgroundColor: accentColor }}
-                    >
-                      {config.heroCta}
-                    </Button>
-                  </ScrollReveal>
-                </div>
-              </section>
-            )}
+            <LayoutHero
+              layoutStyle={config.layoutStyle}
+              config={config}
+              settings={settings}
+              accentColor={accentColor}
+              onNavigateProducts={() => navigateTo('products')}
+            />
 
-            {/* TRUST BADGES - horizontal layout */}
-            <ScrollReveal animation="fade-up" delay={100}>
-              <section className="bg-white border-b border-black/5">
-                <div className="max-w-[1200px] mx-auto px-4 py-5">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {((settings as any)?.custom_trust_badges || config.trustBadges).map((badge: any, i: number) => (
-                      <div key={i} className="flex items-center gap-3 p-3 rounded-xl">
-                        <div className="shrink-0" style={{ color: accentColor }}>
-                          {ICON_MAP[badge.icon] || <Shield className="h-5 w-5" />}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold leading-tight">{badge.title}</p>
-                          <p className="text-[10px] text-[#86868b] leading-tight">{badge.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </section>
-            </ScrollReveal>
+            {/* TRUST BADGES */}
+            <LayoutTrustBadges
+              layoutStyle={config.layoutStyle}
+              badges={(settings as any)?.custom_trust_badges || config.trustBadges}
+              accentColor={accentColor}
+            />
 
             {/* PRODUCT CATEGORIES - only if feature enabled */}
             {config.features.categories && productsData && productsData.categories.length > 0 && (
@@ -422,10 +371,10 @@ export default function UniversalStoreTemplate({
                       </button>
                     </div>
                   </ScrollReveal>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                  <div className={getProductGridClass(config.layoutStyle)}>
                     {featuredProducts.slice(0, 8).map((p, i) => (
                       <ScrollReveal key={p.id} animation="fade-up" delay={i * 80}>
-                        <ProductCard product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
+                        <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
                       </ScrollReveal>
                     ))}
                   </div>
@@ -451,10 +400,10 @@ export default function UniversalStoreTemplate({
                       </button>
                     </div>
                   </ScrollReveal>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                  <div className={getProductGridClass(config.layoutStyle)}>
                     {allProducts.slice(0, 8).map((p, i) => (
                       <ScrollReveal key={p.id} animation="fade-up" delay={i * 80}>
-                        <ProductCard product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
+                        <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
                       </ScrollReveal>
                     ))}
                   </div>
@@ -650,10 +599,10 @@ export default function UniversalStoreTemplate({
                 ))}
               </div>
             )}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className={getProductGridClass(config.layoutStyle)}>
               {filteredProducts.map((p, i) => (
                 <ScrollReveal key={p.id} animation="fade-up" delay={i * 50} once>
-                  <ProductCard product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
+                  <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
                 </ScrollReveal>
               ))}
               {filteredProducts.length === 0 && (
@@ -992,51 +941,6 @@ export default function UniversalStoreTemplate({
   );
 }
 
-// === Product Card with hover effects ===
-function ProductCard({ product, onClick, accentColor }: { product: LandingProduct; onClick: () => void; accentColor: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className="bg-[#f5f5f7] rounded-2xl overflow-hidden text-left group transition-all hover:shadow-lg w-full"
-    >
-      <div className="relative overflow-hidden">
-        {product.image_url ? (
-          <img
-            src={product.image_url}
-            alt={product.name}
-            className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <div className="w-full aspect-square bg-[#e8e8ed] flex items-center justify-center">
-            <Package className="h-10 w-10 text-[#86868b]" />
-          </div>
-        )}
-        {product.sale_price && (
-          <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-            -{Math.round(((product.price - product.sale_price) / product.price) * 100)}%
-          </div>
-        )}
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100">
-          <span className="text-white text-xs font-medium bg-black/60 backdrop-blur-sm rounded-full px-4 py-1.5">Xem chi tiết</span>
-        </div>
-      </div>
-      <div className="p-3 sm:p-4">
-        <p className="font-medium text-xs sm:text-sm line-clamp-2 min-h-[2rem] leading-tight">{product.name}</p>
-        <div className="mt-2">
-          {product.sale_price ? (
-            <div className="space-y-0.5">
-              <p className="text-xs text-[#86868b] line-through">{formatNumber(product.price)}đ</p>
-              <p className="font-bold text-sm text-red-600">{formatNumber(product.sale_price)}đ</p>
-            </div>
-          ) : (
-            <p className="font-bold text-sm text-[#1d1d1f]">{formatNumber(product.price)}đ</p>
-          )}
-        </div>
-      </div>
-    </button>
-  );
-}
 
 // === Info Cell ===
 function InfoCell({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
