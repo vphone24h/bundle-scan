@@ -1,61 +1,90 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Bot, Image as ImageIcon, Loader2, Save } from 'lucide-react';
+import { Bot, Image as ImageIcon, Loader2, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+
+interface TenantAISetting {
+  tenant_id: string;
+  tenant_name: string;
+  subdomain: string;
+  ai_description_enabled: boolean;
+  auto_image_enabled: boolean;
+}
 
 export function PlatformAISettings() {
   const queryClient = useQueryClient();
-  const [aiEnabled, setAiEnabled] = useState(true);
-  const [imageEnabled, setImageEnabled] = useState(true);
+  const [search, setSearch] = useState('');
 
-  const { data: settings, isLoading } = useQuery({
-    queryKey: ['platform-settings'],
+  const { data: tenants, isLoading } = useQuery({
+    queryKey: ['platform-tenant-ai-settings'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('platform_settings')
-        .select('*')
-        .limit(1)
-        .single();
-      if (error) throw error;
-      return data;
+      // Get all tenants with their landing settings
+      const { data: allTenants, error: tErr } = await supabase
+        .from('tenants')
+        .select('id, name, subdomain')
+        .order('created_at', { ascending: false });
+      if (tErr) throw tErr;
+
+      const { data: settings, error: sErr } = await supabase
+        .from('tenant_landing_settings' as any)
+        .select('tenant_id, ai_description_enabled, auto_image_enabled');
+      if (sErr) throw sErr;
+
+      const settingsMap = new Map((settings as any[]).map((s: any) => [s.tenant_id, s]));
+
+      return (allTenants || []).map((t): TenantAISetting => {
+        const s = settingsMap.get(t.id);
+        return {
+          tenant_id: t.id,
+          tenant_name: t.name,
+          subdomain: t.subdomain,
+          ai_description_enabled: s?.ai_description_enabled ?? false,
+          auto_image_enabled: s?.auto_image_enabled ?? false,
+        };
+      });
     },
   });
 
-  useEffect(() => {
-    if (settings) {
-      setAiEnabled(settings.ai_description_enabled);
-      setImageEnabled(settings.auto_image_enabled);
-    }
-  }, [settings]);
+  const toggleMutation = useMutation({
+    mutationFn: async ({ tenantId, field, value }: { tenantId: string; field: 'ai_description_enabled' | 'auto_image_enabled'; value: boolean }) => {
+      // Upsert tenant_landing_settings
+      const { data: existing } = await supabase
+        .from('tenant_landing_settings' as any)
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('platform_settings')
-        .update({
-          ai_description_enabled: aiEnabled,
-          auto_image_enabled: imageEnabled,
-          updated_by: (await supabase.auth.getUser()).data.user?.id,
-        })
-        .eq('id', settings!.id);
-      if (error) throw error;
+      if (existing) {
+        const { error } = await supabase
+          .from('tenant_landing_settings' as any)
+          .update({ [field]: value })
+          .eq('tenant_id', tenantId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('tenant_landing_settings' as any)
+          .insert([{ tenant_id: tenantId, [field]: value }]);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['platform-settings'] });
-      toast({ title: 'Đã lưu cài đặt AI' });
+      queryClient.invalidateQueries({ queryKey: ['platform-tenant-ai-settings'] });
+      toast({ title: 'Đã cập nhật' });
     },
     onError: () => {
-      toast({ title: 'Lỗi khi lưu', variant: 'destructive' });
+      toast({ title: 'Lỗi khi cập nhật', variant: 'destructive' });
     },
   });
 
-  const hasChanges = settings && (aiEnabled !== settings.ai_description_enabled || imageEnabled !== settings.auto_image_enabled);
+  const filtered = tenants?.filter(t =>
+    !search || t.tenant_name.toLowerCase().includes(search.toLowerCase()) || t.subdomain.toLowerCase().includes(search.toLowerCase())
+  );
 
   if (isLoading) return null;
 
@@ -64,40 +93,55 @@ export function PlatformAISettings() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Bot className="h-4 w-4" />
-          Cài đặt AI tự động (toàn hệ thống)
+          Cài đặt AI theo từng cửa hàng
         </CardTitle>
         <CardDescription>
-          Bật/tắt tính năng AI khi thêm sản phẩm từ kho lên website — áp dụng cho tất cả cửa hàng
+          Bật/tắt tính năng AI mô tả & ảnh tự động cho từng cửa hàng — mặc định là TẮT
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label className="text-sm font-medium flex items-center gap-1.5">
-              <Bot className="h-3.5 w-3.5" />
-              AI tự viết mô tả sản phẩm
-            </Label>
-            <p className="text-xs text-muted-foreground">Tự động tạo mô tả chuyên nghiệp, SEO title, SEO description bằng AI</p>
-          </div>
-          <Switch checked={aiEnabled} onCheckedChange={setAiEnabled} />
+      <CardContent className="space-y-3">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Tìm cửa hàng..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9"
+          />
         </div>
-        <Separator />
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label className="text-sm font-medium flex items-center gap-1.5">
-              <ImageIcon className="h-3.5 w-3.5" />
-              Tự động lấy ảnh sản phẩm
-            </Label>
-            <p className="text-xs text-muted-foreground">Lấy ảnh có sẵn từ kho khi nhập sản phẩm lên website</p>
-          </div>
-          <Switch checked={imageEnabled} onCheckedChange={setImageEnabled} />
+
+        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+          {filtered?.map(t => (
+            <div key={t.tenant_id} className="p-3 rounded-lg border bg-card space-y-2">
+              <div className="font-medium text-sm">{t.tenant_name}</div>
+              <div className="text-xs text-muted-foreground">{t.subdomain}</div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <Bot className="h-3 w-3" />
+                  AI mô tả
+                </Label>
+                <Switch
+                  checked={t.ai_description_enabled}
+                  onCheckedChange={v => toggleMutation.mutate({ tenantId: t.tenant_id, field: 'ai_description_enabled', value: v })}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <ImageIcon className="h-3 w-3" />
+                  Ảnh tự động
+                </Label>
+                <Switch
+                  checked={t.auto_image_enabled}
+                  onCheckedChange={v => toggleMutation.mutate({ tenantId: t.tenant_id, field: 'auto_image_enabled', value: v })}
+                />
+              </div>
+            </div>
+          ))}
+          {filtered?.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">Không tìm thấy cửa hàng</p>
+          )}
         </div>
-        {hasChanges && (
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="w-full gap-2">
-            {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Lưu cài đặt
-          </Button>
-        )}
       </CardContent>
     </Card>
   );

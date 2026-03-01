@@ -1,16 +1,16 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Search, Package, Upload } from 'lucide-react';
+import { Loader2, Search, Package, Upload, Bot, Phone } from 'lucide-react';
 import { useInventory, InventoryItem } from '@/hooks/useInventory';
 import { useCategories } from '@/hooks/useCategories';
 import { useCreateLandingProduct, LandingProduct } from '@/hooks/useLandingProducts';
 import { useCurrentTenant } from '@/hooks/useTenant';
+import { useTenantLandingSettings } from '@/hooks/useTenantLanding';
 import { toast } from '@/hooks/use-toast';
 import { formatNumber } from '@/lib/formatNumber';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,23 +25,11 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
   const { data: inventory, isLoading } = useInventory();
   const { data: categories } = useCategories();
   const { data: tenant } = useCurrentTenant();
+  const { data: landingSettings } = useTenantLandingSettings();
   const createProduct = useCreateLandingProduct();
 
-  // Read global AI settings from platform_settings
-  const { data: platformSettings } = useQuery({
-    queryKey: ['platform-settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('platform_settings')
-        .select('ai_description_enabled, auto_image_enabled')
-        .limit(1)
-        .single();
-      if (error) return { ai_description_enabled: true, auto_image_enabled: true };
-      return data;
-    },
-  });
-  const aiDescriptionEnabled = platformSettings?.ai_description_enabled ?? true;
-  const autoImageEnabled = platformSettings?.auto_image_enabled ?? true;
+  const aiEnabled = landingSettings?.ai_description_enabled ?? false;
+  const autoImageEnabled = landingSettings?.auto_image_enabled ?? false;
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('_all_');
@@ -49,7 +37,6 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
   const [importing, setImporting] = useState(false);
   const [aiProgress, setAiProgress] = useState('');
 
-  // Filter inventory items that are in stock
   const filteredItems = useMemo(() => {
     if (!inventory) return [];
     return inventory.filter(item => {
@@ -99,7 +86,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     }
   };
 
-  const handleImport = async () => {
+  const handleImport = async (useAI: boolean) => {
     if (selected.size === 0) return;
     setImporting(true);
 
@@ -108,15 +95,17 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
 
     for (let idx = 0; idx < selectedItems.length; idx++) {
       const item = selectedItems[idx];
-      setAiProgress(`Đang xử lý ${idx + 1}/${selectedItems.length}: ${item.productName}${aiDescriptionEnabled ? ' (AI đang viết mô tả...)' : ''}`);
+      setAiProgress(
+        useAI
+          ? `Đang xử lý ${idx + 1}/${selectedItems.length}: ${item.productName} (AI đang viết mô tả...)`
+          : `Đang thêm ${idx + 1}/${selectedItems.length}: ${item.productName}`
+      );
 
       try {
-        // Get sale_price from the first product detail
         const firstProduct = item.products[0];
         let salePrice = firstProduct ? (await getSalePrice(firstProduct.id)) : item.avgImportPrice;
 
-        // Generate AI description only if enabled
-        const aiContent = aiDescriptionEnabled ? await generateAIDescription(item) : null;
+        const aiContent = useAI ? await generateAIDescription(item) : null;
 
         await createProduct.mutateAsync({
           name: item.productName,
@@ -144,7 +133,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
       title: `Đã đưa ${successCount} sản phẩm lên website`,
       description: successCount < selectedItems.length
         ? `${selectedItems.length - successCount} sản phẩm lỗi`
-        : 'AI đã tự động viết mô tả cho từng sản phẩm',
+        : useAI ? 'AI đã tự động viết mô tả cho từng sản phẩm' : undefined,
     });
   };
 
@@ -246,26 +235,61 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
         )}
 
         <DialogFooter>
-          <div className="flex items-center justify-between w-full">
-            <span className="text-sm text-muted-foreground">
-              Đã chọn: {selected.size} sản phẩm
-            </span>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={importing}>
+          <div className="flex flex-col w-full gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">
+                Đã chọn: {selected.size} sản phẩm
+              </span>
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={importing} size="sm">
                 Huỷ
               </Button>
+            </div>
+            <div className="flex gap-2 w-full">
+              {/* Nút thêm thủ công */}
               <Button
-                onClick={handleImport}
+                onClick={() => handleImport(false)}
                 disabled={selected.size === 0 || importing}
-                className="gap-1.5"
+                variant="outline"
+                className="flex-1 gap-1.5"
               >
                 {importing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Upload className="h-4 w-4" />
                 )}
-                Đưa lên Website
+                Thêm thủ công
               </Button>
+
+              {/* Nút thêm tự động AI */}
+              {aiEnabled ? (
+                <Button
+                  onClick={() => handleImport(true)}
+                  disabled={selected.size === 0 || importing}
+                  className="flex-1 gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
+                >
+                  {importing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Bot className="h-4 w-4" />
+                  )}
+                  Thêm tự động (AI)
+                </Button>
+              ) : (
+                <div className="flex-1">
+                  <Button
+                    disabled
+                    className="w-full gap-1.5 opacity-60"
+                    variant="secondary"
+                  >
+                    <Bot className="h-4 w-4" />
+                    Thêm tự động (AI)
+                  </Button>
+                  <p className="text-[10px] text-muted-foreground mt-1 text-center flex items-center justify-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    Liên hệ Admin để kích hoạt AI
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </DialogFooter>
@@ -274,7 +298,6 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
   );
 }
 
-// Helper to get sale_price from products table
 async function getSalePrice(productId: string): Promise<number | null> {
   const { data } = await supabase
     .from('products')
