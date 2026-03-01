@@ -103,7 +103,7 @@ export function TemplatePreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) setEditMode(false); onOpenChange(o); }}>
-      <DialogContent className="max-w-md sm:max-w-lg p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-md sm:max-w-lg p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col [&>button.absolute]:hidden">
         {/* Edit mode toggle */}
         {canEdit && (
           <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/50 shrink-0">
