@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import UniversalStoreTemplate from '@/components/website-templates/UniversalStoreTemplate';
+import AppleStyleLandingTemplate from '@/components/website-templates/AppleStyleLandingTemplate';
 import { Loader2, Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -186,7 +187,25 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
 
   const branches: BranchInfo[] = landingData?.branches || [];
 
-  // All templates now use UniversalStoreTemplate with industry-specific config
+  // Apple Landing uses its own standalone template
+  if (template === 'apple_landing') {
+    return (
+      <AppleStyleLandingTemplate
+        settings={settings}
+        tenant={tenant}
+        tenantId={tenantId}
+        storeId={storeId}
+        branches={branches}
+        productsData={productsData}
+        articlesData={articlesData}
+        searchParams={searchParams}
+        setSearchParams={setSearchParams}
+        queryClient={queryClient}
+      />
+    );
+  }
+
+  // All other templates use UniversalStoreTemplate
   return (
     <UniversalStoreTemplate
       settings={settings}

@@ -11,6 +11,9 @@ export interface WebsiteTemplate {
 }
 
 export const WEBSITE_TEMPLATES: WebsiteTemplate[] = [
+  // Apple Style Landing
+  { id: 'apple_landing', name: 'Apple Style Landing', category: 'Công nghệ', description: 'Phong cách Apple.com – full-screen banners, tối giản, cao cấp', icon: '🍎', tier: 'pro', available: true, brandInspiration: 'Apple.com' },
+
   // Technology
   { id: 'phone_store', name: 'Cửa hàng điện thoại', category: 'Công nghệ', description: 'Phong cách Apple Store cao cấp, tối ưu bán iPhone/Samsung', icon: '📱', tier: 'premium', available: true },
   { id: 'laptop_store', name: 'Cửa hàng laptop', category: 'Công nghệ', description: 'Hiện đại, chuyên nghiệp cho máy tính', icon: '💻', tier: 'premium', available: true },
