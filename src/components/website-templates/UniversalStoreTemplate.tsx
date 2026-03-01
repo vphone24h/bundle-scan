@@ -896,6 +896,7 @@ export default function UniversalStoreTemplate({
 
         {/* === SYSTEM PAGES === */}
         {(() => {
+          const activeNav = navItems.find(n => n.pageView === pageView);
           const systemPageProps = {
             accentColor,
             storeName: displayStoreName,
@@ -903,6 +904,7 @@ export default function UniversalStoreTemplate({
             zaloUrl,
             branches: branches.map(b => ({ id: b.id, name: b.name, address: b.address, phone: b.phone })),
             onNavigateProducts: () => navigateTo('products'),
+            pageItems: activeNav?.pageItems,
           };
 
           switch (pageView) {
@@ -922,8 +924,6 @@ export default function UniversalStoreTemplate({
             case 'collection':
             case 'promotion':
             case 'reviews': {
-              // Find the label from nav items
-              const activeNav = navItems.find(n => n.pageView === pageView);
               return <GenericSystemPage {...systemPageProps} pageId={pageView} pageLabel={activeNav?.label || pageView} />;
             }
             default: return null;

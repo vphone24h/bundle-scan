@@ -16,7 +16,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon, Award, Truck, CreditCard, Clock, Star, Eye, EyeOff, Menu as MenuIcon, Sparkles, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
-import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems, SYSTEM_PAGES, SYSTEM_PAGE_IDS, getSystemPageById } from '@/lib/industryConfig';
+import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, PageItemConfig, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems, SYSTEM_PAGES, SYSTEM_PAGE_IDS, getSystemPageById, DEFAULT_PAGE_ITEMS } from '@/lib/industryConfig';
 
 import {
   Dialog,
@@ -179,9 +179,10 @@ function NavMenuEditor({
   // Merge: use custom if set, otherwise defaults + suggested
   const currentItems = customNavItems || [...defaultItems, ...suggestedExtras];
 
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+
   const handleToggle = (index: number) => {
     const updated = [...currentItems];
-    // Don't allow disabling 'home'
     if (updated[index].id === 'home') return;
     updated[index] = { ...updated[index], enabled: !updated[index].enabled };
     onChange(updated);
@@ -200,11 +201,11 @@ function NavMenuEditor({
   };
 
   const handleRemove = (index: number) => {
-    // Don't remove core items
     const item = currentItems[index];
     if (['home', 'products', 'news', 'warranty'].includes(item.id)) return;
     const updated = currentItems.filter((_, i) => i !== index);
     onChange(updated);
+    if (expandedIndex === index) setExpandedIndex(null);
   };
 
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -215,6 +216,7 @@ function NavMenuEditor({
   };
 
   const handleAddSystemPage = (pageDef: typeof SYSTEM_PAGES[number]) => {
+    const defaultItems_page = DEFAULT_PAGE_ITEMS[pageDef.id];
     const newItem: NavItemConfig = {
       id: pageDef.id + '_' + Date.now(),
       label: pageDef.label,
@@ -222,6 +224,7 @@ function NavMenuEditor({
       type: 'page',
       pageView: pageDef.id,
       icon: pageDef.icon,
+      pageItems: defaultItems_page ? [...defaultItems_page] : undefined,
     };
     onChange([...currentItems, newItem]);
     setShowAddMenu(false);
@@ -263,6 +266,49 @@ function NavMenuEditor({
 
   const isCoreItem = (id: string) => ['home', 'products', 'news', 'warranty'].includes(id);
 
+  // Page items handlers
+  const handlePageItemChange = (navIndex: number, itemIndex: number, field: keyof PageItemConfig, value: string) => {
+    const updated = [...currentItems];
+    const pageView = updated[navIndex].pageView || '';
+    const defaults = DEFAULT_PAGE_ITEMS[pageView] || [];
+    const items = updated[navIndex].pageItems ? [...updated[navIndex].pageItems!] : [...defaults];
+    items[itemIndex] = { ...items[itemIndex], [field]: value };
+    updated[navIndex] = { ...updated[navIndex], pageItems: items };
+    onChange(updated);
+  };
+
+  const handleAddPageItem = (navIndex: number) => {
+    const updated = [...currentItems];
+    const pageView = updated[navIndex].pageView || '';
+    const defaults = DEFAULT_PAGE_ITEMS[pageView] || [];
+    const items = updated[navIndex].pageItems ? [...updated[navIndex].pageItems!] : [...defaults];
+    items.push({ title: 'Mục mới', desc: '', icon: '📌', price: '' });
+    updated[navIndex] = { ...updated[navIndex], pageItems: items };
+    onChange(updated);
+  };
+
+  const handleRemovePageItem = (navIndex: number, itemIndex: number) => {
+    const updated = [...currentItems];
+    const pageView = updated[navIndex].pageView || '';
+    const defaults = DEFAULT_PAGE_ITEMS[pageView] || [];
+    const items = updated[navIndex].pageItems ? [...updated[navIndex].pageItems!] : [...defaults];
+    items.splice(itemIndex, 1);
+    updated[navIndex] = { ...updated[navIndex], pageItems: items };
+    onChange(updated);
+  };
+
+  const handleResetPageItems = (navIndex: number) => {
+    const updated = [...currentItems];
+    updated[navIndex] = { ...updated[navIndex], pageItems: undefined };
+    onChange(updated);
+  };
+
+  const hasEditableItems = (item: NavItemConfig) => {
+    if (item.type !== 'page') return false;
+    const pv = item.pageView || '';
+    return !!DEFAULT_PAGE_ITEMS[pv] || (item.pageItems && item.pageItems.length > 0);
+  };
+
   return (
     <div className="space-y-3">
       {/* Auto-suggest button */}
@@ -280,82 +326,122 @@ function NavMenuEditor({
 
       {/* Nav items list */}
       <div className="space-y-2">
-        {currentItems.map((item, i) => (
-          <div
-            key={item.id + i}
-            className={`flex items-center gap-2 rounded-lg border p-2.5 transition-all ${
-              item.enabled ? 'bg-background' : 'bg-muted/50 opacity-60'
-            }`}
-          >
-            {/* Drag handle / order buttons */}
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => handleMoveUp(i)}
-                disabled={i === 0}
-                className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
-              >
-                <ChevronUp className="h-3 w-3" />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleMoveDown(i)}
-                disabled={i === currentItems.length - 1}
-                className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
-              >
-                <ChevronDown className="h-3 w-3" />
-              </button>
-            </div>
+        {currentItems.map((item, i) => {
+          const isExpanded = expandedIndex === i;
+          const canEditItems = hasEditableItems(item);
+          const pageView = item.pageView || '';
+          const defaults = DEFAULT_PAGE_ITEMS[pageView] || [];
+          const currentPageItems = item.pageItems || defaults;
 
-            {/* Icon */}
-            <span className="text-lg shrink-0">{item.icon || '📄'}</span>
+          return (
+            <div key={item.id + i} className="rounded-lg border transition-all overflow-hidden">
+              <div
+                className={`flex items-center gap-2 p-2.5 ${
+                  item.enabled ? 'bg-background' : 'bg-muted/50 opacity-60'
+                }`}
+              >
+                {/* Drag handle / order buttons */}
+                <div className="flex flex-col gap-0.5 shrink-0">
+                  <button type="button" onClick={() => handleMoveUp(i)} disabled={i === 0}
+                    className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
+                    <ChevronUp className="h-3 w-3" />
+                  </button>
+                  <button type="button" onClick={() => handleMoveDown(i)} disabled={i === currentItems.length - 1}
+                    className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                </div>
 
-            {/* Label input */}
-            <div className="flex-1 min-w-0 space-y-1">
-              <Input
-                value={item.label}
-                onChange={(e) => handleLabelChange(i, e.target.value)}
-                className="h-8 text-sm font-medium"
-                placeholder="Tên menu"
-              />
-              {item.type === 'link' && !isCoreItem(item.id) && (
-                <Input
-                  value={item.url || ''}
-                  onChange={(e) => handleUrlChange(i, e.target.value)}
-                  className="h-7 text-xs"
-                  placeholder="URL (tuỳ chọn, VD: https://...)"
-                />
+                {/* Icon */}
+                <span className="text-lg shrink-0">{item.icon || '📄'}</span>
+
+                {/* Label input */}
+                <div className="flex-1 min-w-0 space-y-1">
+                  <Input value={item.label} onChange={(e) => handleLabelChange(i, e.target.value)}
+                    className="h-8 text-sm font-medium" placeholder="Tên menu" />
+                  {item.type === 'link' && !isCoreItem(item.id) && (
+                    <Input value={item.url || ''} onChange={(e) => handleUrlChange(i, e.target.value)}
+                      className="h-7 text-xs" placeholder="URL (tuỳ chọn, VD: https://...)" />
+                  )}
+                </div>
+
+                {/* Type badge */}
+                <span className="text-[10px] text-muted-foreground shrink-0">
+                  {isCoreItem(item.id) ? 'Mặc định' : item.type === 'page' ? 'Trang HT' : 'Link ngoài'}
+                </span>
+
+                {/* Expand items editor */}
+                {canEditItems && (
+                  <button type="button" onClick={() => setExpandedIndex(isExpanded ? null : i)}
+                    className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
+                    title="Chỉnh sửa nội dung trang">
+                    <MenuIcon className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                )}
+
+                {/* Toggle visibility */}
+                <button type="button" onClick={() => handleToggle(i)} disabled={item.id === 'home'}
+                  className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors disabled:opacity-30"
+                  title={item.enabled ? 'Ẩn' : 'Hiện'}>
+                  {item.enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                </button>
+
+                {/* Remove (only custom items) */}
+                {!isCoreItem(item.id) && (
+                  <button type="button" onClick={() => handleRemove(i)}
+                    className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Expanded page items editor */}
+              {isExpanded && canEditItems && (
+                <div className="border-t bg-muted/20 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">Nội dung trang ({currentPageItems.length} mục)</Label>
+                    <div className="flex gap-1">
+                      {item.pageItems && (
+                        <Button type="button" variant="ghost" size="sm" className="text-[10px] h-6 px-2" onClick={() => handleResetPageItems(i)}>
+                          Mặc định
+                        </Button>
+                      )}
+                      <Button type="button" variant="ghost" size="sm" className="text-[10px] h-6 px-2" onClick={() => handleAddPageItem(i)}>
+                        <Plus className="h-3 w-3 mr-1" /> Thêm
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                    {currentPageItems.map((pi, j) => (
+                      <div key={j} className="flex items-start gap-1.5 rounded-md border bg-background p-2">
+                        <Input value={pi.icon || ''} onChange={(e) => handlePageItemChange(i, j, 'icon', e.target.value)}
+                          className="h-7 w-10 text-center text-sm p-0 shrink-0" placeholder="📌" maxLength={4} />
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <Input value={pi.title} onChange={(e) => handlePageItemChange(i, j, 'title', e.target.value)}
+                            className="h-7 text-xs font-medium" placeholder="Tên dịch vụ" />
+                          <Input value={pi.desc || ''} onChange={(e) => handlePageItemChange(i, j, 'desc', e.target.value)}
+                            className="h-6 text-[11px]" placeholder="Mô tả ngắn" />
+                          <div className="flex gap-1">
+                            {(pageView === 'repair' || pageView === 'pricelist') && (
+                              <Input value={pi.price || ''} onChange={(e) => handlePageItemChange(i, j, 'price', e.target.value)}
+                                className="h-6 text-[11px] w-24" placeholder="Giá" />
+                            )}
+                            <Input value={pi.link || ''} onChange={(e) => handlePageItemChange(i, j, 'link', e.target.value)}
+                              className="h-6 text-[11px] flex-1" placeholder="Link (tuỳ chọn)" />
+                          </div>
+                        </div>
+                        <button type="button" onClick={() => handleRemovePageItem(i, j)}
+                          className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive shrink-0 mt-0.5">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-
-            {/* Type badge */}
-            <span className="text-[10px] text-muted-foreground shrink-0">
-              {isCoreItem(item.id) ? 'Mặc định' : item.type === 'page' ? 'Trang HT' : 'Link ngoài'}
-            </span>
-
-            {/* Toggle visibility */}
-            <button
-              type="button"
-              onClick={() => handleToggle(i)}
-              disabled={item.id === 'home'}
-              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors disabled:opacity-30"
-              title={item.enabled ? 'Ẩn' : 'Hiện'}
-            >
-              {item.enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
-            </button>
-
-            {/* Remove (only custom items) */}
-            {!isCoreItem(item.id) && (
-              <button
-                type="button"
-                onClick={() => handleRemove(i)}
-                className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Add new item - with type selector */}

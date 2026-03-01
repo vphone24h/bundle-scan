@@ -7,6 +7,14 @@ export interface IndustryTrustBadge {
   desc: string;
 }
 
+export interface PageItemConfig {
+  title: string;
+  desc?: string;
+  icon?: string;
+  price?: string;
+  link?: string;
+}
+
 export interface NavItemConfig {
   id: string;
   label: string;
@@ -15,7 +23,42 @@ export interface NavItemConfig {
   pageView?: string; // for page type: home, products, news, warranty, repair, tradein, installment, etc.
   url?: string; // for link type
   icon?: string; // emoji or lucide icon name
+  pageItems?: PageItemConfig[]; // editable items within the system page
 }
+
+// Default items for each system page type
+export const DEFAULT_PAGE_ITEMS: Record<string, PageItemConfig[]> = {
+  repair: [
+    { icon: '📱', title: 'Thay màn hình', desc: 'Màn hình vỡ, sọc, chết điểm ảnh', price: 'Liên hệ' },
+    { icon: '🔋', title: 'Thay pin', desc: 'Pin chai, sập nguồn, phồng pin', price: 'Liên hệ' },
+    { icon: '📷', title: 'Sửa camera', desc: 'Camera mờ, không lấy nét, lỗi', price: 'Liên hệ' },
+    { icon: '🔊', title: 'Sửa loa / mic', desc: 'Loa nhỏ, mic không thu, rè', price: 'Liên hệ' },
+    { icon: '⚡', title: 'Sửa IC nguồn', desc: 'Không sạc, sập nguồn liên tục', price: 'Liên hệ' },
+    { icon: '💧', title: 'Xử lý vào nước', desc: 'Rơi nước, ẩm, không lên nguồn', price: 'Liên hệ' },
+  ],
+  tradein: [
+    { icon: '📦', title: 'Mang máy đến cửa hàng', desc: 'Hoặc gửi thông tin qua Zalo' },
+    { icon: '🔍', title: 'Kiểm tra & định giá', desc: 'Kỹ thuật viên đánh giá trong 15 phút' },
+    { icon: '📱', title: 'Chọn máy mới', desc: 'Thu cũ trừ thẳng vào giá máy mới' },
+    { icon: '✅', title: 'Nhận máy mới', desc: 'Hoàn tất thủ tục nhanh chóng' },
+  ],
+  installment: [
+    { icon: '📄', title: 'CCCD/CMND', desc: 'Bản gốc còn hạn sử dụng' },
+    { icon: '👤', title: 'Từ 18 tuổi trở lên', desc: 'Có thu nhập ổn định' },
+    { icon: '📞', title: 'SĐT chính chủ', desc: 'Đăng ký dưới tên bạn' },
+    { icon: '💳', title: 'Không cần trả trước', desc: 'Hỗ trợ trả góp 0%' },
+  ],
+  pricelist: [
+    { title: 'iPhone 16 Pro Max', price: 'Liên hệ' },
+    { title: 'iPhone 16 Pro', price: 'Liên hệ' },
+    { title: 'iPhone 15', price: 'Liên hệ' },
+  ],
+  booking: [
+    { title: 'Sửa chữa', desc: 'Đặt lịch sửa máy' },
+    { title: 'Bảo hành', desc: 'Đặt lịch bảo hành' },
+    { title: 'Tư vấn', desc: 'Đặt lịch tư vấn mua máy' },
+  ],
+};
 
 // System pages that auto-generate content (no URL needed)
 export interface SystemPageDef {
