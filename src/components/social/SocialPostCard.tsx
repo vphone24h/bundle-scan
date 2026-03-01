@@ -8,9 +8,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MessageCircle, Send, CheckCircle, Trash2, MessageSquare } from 'lucide-react';
+import { Heart, MessageCircle, Send, CheckCircle, Trash2, MessageSquare, UserPlus, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useToggleFollow, useIsFollowing } from '@/hooks/useSocial';
 
 interface Props {
   post: SocialPost;
@@ -28,6 +29,10 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
   const createComment = useCreateComment();
   const deletePost = useDeletePost();
   const trackClick = useTrackMessageClick();
+  const toggleFollow = useToggleFollow();
+  const { data: isFollowingUser } = useIsFollowing(user?.id !== post.user_id ? post.user_id : undefined);
+
+  const isOwnPost = user?.id === post.user_id;
 
   const handleLike = () => {
     toggleLike.mutate({ postId: post.id, isLiked: !!post.is_liked });
@@ -87,12 +92,29 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
                 {post.display_name}
               </button>
               {post.is_verified && <CheckCircle className="h-4 w-4 text-blue-500 fill-blue-500" />}
+              {!isOwnPost && user?.id && (
+                <button
+                  onClick={() => toggleFollow.mutate({ targetUserId: post.user_id, isFollowing: !!isFollowingUser })}
+                  className="ml-1"
+                  disabled={toggleFollow.isPending}
+                >
+                  {isFollowingUser ? (
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 cursor-pointer">
+                      <UserCheck className="h-3 w-3 mr-0.5" /> Đang theo dõi
+                    </Badge>
+                  ) : (
+                    <Badge variant="default" className="text-[10px] px-1.5 py-0 cursor-pointer">
+                      <UserPlus className="h-3 w-3 mr-0.5" /> Theo dõi
+                    </Badge>
+                  )}
+                </button>
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
               {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: vi })}
             </p>
           </div>
-          {user?.id === post.user_id && (
+          {isOwnPost && (
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={handleDelete}>
               <Trash2 className="h-4 w-4" />
             </Button>

@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useSocialProfile, useUpsertSocialProfile, useSocialFeed, SocialPost } from '@/hooks/useSocial';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSocialProfile, useUpsertSocialProfile, useSocialFeed, useIsFollowing, useToggleFollow } from '@/hooks/useSocial';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,9 +9,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Edit, Save, X, CheckCircle, MapPin, Phone, Users } from 'lucide-react';
+import { Edit, Save, X, CheckCircle, MapPin, Phone, Users, Camera, Loader2, UserPlus, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { SocialPostCard } from './SocialPostCard';
+import { supabase } from '@/integrations/supabase/client';
+import { useUpdateProfile } from '@/hooks/useProfile';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Props {
   userId?: string;
@@ -21,10 +24,17 @@ interface Props {
 export function SocialProfileTab({ userId, onViewProfile }: Props) {
   const { user } = useAuth();
   const isOwnProfile = !userId || userId === user?.id;
+  const targetId = isOwnProfile ? user?.id : userId;
   const { data: profile, isLoading } = useSocialProfile(isOwnProfile ? undefined : userId);
   const { data: feedData } = useSocialFeed(isOwnProfile ? user?.id : userId);
   const upsert = useUpsertSocialProfile();
+  const updateProfile = useUpdateProfile();
+  const queryClient = useQueryClient();
+  const { data: isFollowing } = useIsFollowing(isOwnProfile ? undefined : userId);
+  const toggleFollow = useToggleFollow();
   const [editing, setEditing] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     zalo_number: '',
     facebook_url: '',
@@ -60,6 +70,33 @@ export function SocialProfileTab({ userId, onViewProfile }: Props) {
     }
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `social/${user.id}/avatar_${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('tenant-assets').upload(path, file, { upsert: true });
+      if (error) throw error;
+
+      const { data } = supabase.storage.from('tenant-assets').getPublicUrl(path);
+      await updateProfile.mutateAsync({ avatar_url: data.publicUrl });
+      queryClient.invalidateQueries({ queryKey: ['social-profile'] });
+      toast.success('Đã cập nhật ảnh đại diện');
+    } catch {
+      toast.error('Lỗi khi tải ảnh lên');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleFollow = () => {
+    if (!userId) return;
+    toggleFollow.mutate({ targetUserId: userId, isFollowing: !!isFollowing });
+  };
+
   const posts = feedData?.pages?.flatMap(p => p.posts) || [];
 
   if (isLoading) return <div className="text-center py-8 text-muted-foreground">Đang tải...</div>;
@@ -70,10 +107,30 @@ export function SocialProfileTab({ userId, onViewProfile }: Props) {
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-start gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={profile?.avatar_url || undefined} />
-              <AvatarFallback className="text-lg">{(profile?.display_name || 'U')[0]}</AvatarFallback>
-            </Avatar>
+            {/* Avatar with upload */}
+            <div className="relative group">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={profile?.avatar_url || undefined} />
+                <AvatarFallback className="text-lg">{(profile?.display_name || 'U')[0]}</AvatarFallback>
+              </Avatar>
+              {isOwnProfile && (
+                <>
+                  <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    {uploadingAvatar ? (
+                      <Loader2 className="h-5 w-5 text-white animate-spin" />
+                    ) : (
+                      <Camera className="h-5 w-5 text-white" />
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xl font-bold">{profile?.display_name || 'Người dùng'}</h2>
@@ -115,9 +172,27 @@ export function SocialProfileTab({ userId, onViewProfile }: Props) {
                 )}
               </div>
             </div>
-            {isOwnProfile && !editing && (
-              <Button variant="outline" size="sm" onClick={startEdit}><Edit className="h-4 w-4 mr-1" /> Sửa</Button>
-            )}
+
+            {/* Action buttons */}
+            <div className="flex flex-col gap-2">
+              {isOwnProfile && !editing && (
+                <Button variant="outline" size="sm" onClick={startEdit}><Edit className="h-4 w-4 mr-1" /> Sửa</Button>
+              )}
+              {!isOwnProfile && user?.id && (
+                <Button
+                  variant={isFollowing ? "secondary" : "default"}
+                  size="sm"
+                  onClick={handleFollow}
+                  disabled={toggleFollow.isPending}
+                >
+                  {isFollowing ? (
+                    <><UserCheck className="h-4 w-4 mr-1" /> Đang theo dõi</>
+                  ) : (
+                    <><UserPlus className="h-4 w-4 mr-1" /> Theo dõi</>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Edit form */}
