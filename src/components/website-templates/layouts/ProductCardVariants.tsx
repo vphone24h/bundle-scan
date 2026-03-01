@@ -200,6 +200,109 @@ function LuxuryProductCard({ product, onClick, accentColor }: ProductCardProps) 
   );
 }
 
+// === MINIMAL PRODUCT CARD === (Clean, warm tones)
+function MinimalProductCard({ product, onClick, accentColor }: ProductCardProps) {
+  return (
+    <button onClick={onClick} className="bg-[#faf9f6] rounded-xl overflow-hidden text-left group transition-all hover:shadow-md w-full border border-stone-200/50">
+      <div className="relative overflow-hidden">
+        {product.image_url ? (
+          <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
+        ) : (
+          <div className="w-full aspect-square bg-stone-100 flex items-center justify-center"><Package className="h-10 w-10 text-stone-300" /></div>
+        )}
+        {product.sale_price && (
+          <div className="absolute top-2 left-2 text-white text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: accentColor }}>
+            -{Math.round(((product.price - product.sale_price) / product.price) * 100)}%
+          </div>
+        )}
+      </div>
+      <div className="p-3">
+        <p className="font-medium text-xs line-clamp-2 min-h-[2rem] leading-tight text-stone-700">{product.name}</p>
+        <div className="mt-2">
+          {product.sale_price ? (
+            <div className="space-y-0.5">
+              <p className="text-[11px] text-stone-400 line-through">{formatNumber(product.price)}đ</p>
+              <p className="font-semibold text-sm" style={{ color: accentColor }}>{formatNumber(product.sale_price)}đ</p>
+            </div>
+          ) : (
+            <p className="font-semibold text-sm text-stone-800">{formatNumber(product.price)}đ</p>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// === SHOPEE PRODUCT CARD === (Promo badges, orange accents)
+function ShopeeProductCard({ product, onClick, accentColor }: ProductCardProps) {
+  const discount = product.sale_price ? Math.round(((product.price - product.sale_price) / product.price) * 100) : 0;
+  return (
+    <button onClick={onClick} className="bg-white rounded-lg overflow-hidden text-left group transition-all hover:shadow-lg w-full border border-gray-200 relative">
+      {discount > 0 && (
+        <div className="absolute top-0 right-0 z-10 bg-gradient-to-br from-orange-500 to-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">
+          -{discount}%
+        </div>
+      )}
+      <div className="relative overflow-hidden">
+        {product.image_url ? (
+          <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300" />
+        ) : (
+          <div className="w-full aspect-square bg-orange-50 flex items-center justify-center"><Package className="h-10 w-10 text-orange-200" /></div>
+        )}
+      </div>
+      <div className="p-2.5 space-y-1">
+        <p className="font-medium text-xs line-clamp-2 min-h-[2rem] text-gray-800">{product.name}</p>
+        <div>
+          {product.sale_price ? (
+            <>
+              <p className="font-bold text-sm text-red-600">{formatNumber(product.sale_price)}đ</p>
+              <p className="text-[10px] text-gray-400 line-through">{formatNumber(product.price)}đ</p>
+            </>
+          ) : (
+            <p className="font-bold text-sm text-orange-600">{formatNumber(product.price)}đ</p>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-[9px] bg-red-50 text-red-500 font-medium px-1.5 py-0.5 rounded border border-red-100">🔥 Bán chạy</span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// === ORGANIC PRODUCT CARD === (Natural, earthy)
+function OrganicProductCard({ product, onClick, accentColor }: ProductCardProps) {
+  return (
+    <button onClick={onClick} className="bg-white rounded-2xl overflow-hidden text-left group transition-all hover:shadow-md w-full border border-green-100">
+      <div className="relative overflow-hidden">
+        {product.image_url ? (
+          <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
+        ) : (
+          <div className="w-full aspect-square bg-green-50 flex items-center justify-center"><Package className="h-10 w-10 text-green-300" /></div>
+        )}
+        {product.sale_price && (
+          <div className="absolute top-2 left-2 bg-green-600 text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
+            -{Math.round(((product.price - product.sale_price) / product.price) * 100)}%
+          </div>
+        )}
+      </div>
+      <div className="p-3">
+        <p className="font-medium text-xs line-clamp-2 min-h-[2rem] leading-tight text-green-900">{product.name}</p>
+        <div className="mt-2">
+          {product.sale_price ? (
+            <div className="space-y-0.5">
+              <p className="text-[11px] text-green-400 line-through">{formatNumber(product.price)}đ</p>
+              <p className="font-bold text-sm text-green-700">{formatNumber(product.sale_price)}đ</p>
+            </div>
+          ) : (
+            <p className="font-bold text-sm text-green-800">{formatNumber(product.price)}đ</p>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
 // === RESOLVER ===
 export function LayoutProductCard({ layoutStyle, ...props }: ProductCardProps & { layoutStyle: LayoutStyle }) {
   switch (layoutStyle) {
@@ -208,6 +311,9 @@ export function LayoutProductCard({ layoutStyle, ...props }: ProductCardProps & 
     case 'nike':
     case 'canifa': return <NikeProductCard {...props} />;
     case 'luxury': return <LuxuryProductCard {...props} />;
+    case 'minimal': return <MinimalProductCard {...props} />;
+    case 'shopee': return <ShopeeProductCard {...props} />;
+    case 'organic': return <OrganicProductCard {...props} />;
     case 'apple':
     default: return <AppleProductCard {...props} />;
   }
@@ -225,6 +331,10 @@ export function getProductGridClass(layoutStyle: LayoutStyle): string {
       return 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4';
     case 'luxury':
       return 'grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8';
+    case 'shopee':
+      return 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2';
+    case 'organic':
+      return 'grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-5';
     default:
       return 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6';
   }

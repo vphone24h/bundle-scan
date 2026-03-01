@@ -115,6 +115,66 @@ function LuxuryBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyl
   );
 }
 
+function MinimalBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyle'>) {
+  return (
+    <section className="bg-[#faf9f6] border-b border-stone-200">
+      <div className="max-w-[1200px] mx-auto px-4 py-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {badges.map((badge, i) => (
+            <div key={i} className="flex items-center gap-2.5 p-3 rounded-xl">
+              <div className="shrink-0" style={{ color: accentColor }}>{ICON_MAP[badge.icon] || <Shield className="h-5 w-5" />}</div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-stone-700 leading-tight">{badge.title}</p>
+                <p className="text-[10px] text-stone-400 leading-tight">{badge.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ShopeeBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyle'>) {
+  return (
+    <section className="bg-orange-50 border-b border-orange-200">
+      <div className="max-w-[1200px] mx-auto px-4 py-3">
+        <div className="flex overflow-x-auto gap-3 scrollbar-hide">
+          {badges.map((badge, i) => (
+            <div key={i} className="flex items-center gap-2 shrink-0 bg-white rounded-lg px-3 py-2 shadow-sm border border-orange-100">
+              <div className="text-orange-500">{ICON_MAP[badge.icon] || <Shield className="h-4 w-4" />}</div>
+              <div>
+                <p className="text-[11px] font-bold text-gray-800 whitespace-nowrap">{badge.title}</p>
+                <p className="text-[9px] text-orange-500 whitespace-nowrap">{badge.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function OrganicBadges({ badges, accentColor }: Omit<TrustBadgeProps, 'layoutStyle'>) {
+  return (
+    <section className="bg-green-50 border-b border-green-200">
+      <div className="max-w-[1200px] mx-auto px-4 py-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {badges.map((badge, i) => (
+            <div key={i} className="flex items-center gap-2.5 p-3 bg-white/80 rounded-xl border border-green-100">
+              <div className="text-green-600">{ICON_MAP[badge.icon] || <Shield className="h-5 w-5" />}</div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-green-900 leading-tight">{badge.title}</p>
+                <p className="text-[10px] text-green-600/70 leading-tight">{badge.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function LayoutTrustBadges({ layoutStyle, ...props }: TrustBadgeProps) {
   switch (layoutStyle) {
     case 'tgdd': return <TGDDBadges {...props} />;
@@ -122,6 +182,9 @@ export function LayoutTrustBadges({ layoutStyle, ...props }: TrustBadgeProps) {
     case 'nike':
     case 'canifa': return <NikeBadges {...props} />;
     case 'luxury': return <LuxuryBadges {...props} />;
+    case 'minimal': return <MinimalBadges {...props} />;
+    case 'shopee': return <ShopeeBadges {...props} />;
+    case 'organic': return <OrganicBadges {...props} />;
     case 'apple':
     default: return <AppleBadges {...props} />;
   }

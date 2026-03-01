@@ -125,17 +125,26 @@ export function TemplatePreviewDialog({
           {/* FOOTER */}
           <footer className={getFooterClass(layout)}>
             <div className="text-center">
-              <p className={layout === 'luxury' ? 'text-[10px] text-amber-200/60' : 'text-[10px] text-[#86868b]'}>© 2025 {template.name}</p>
+              <p className={
+                layout === 'luxury' ? 'text-[10px] text-amber-200/60' :
+                layout === 'nike' || layout === 'canifa' ? 'text-[10px] text-white/40' :
+                layout === 'minimal' ? 'text-[10px] text-stone-400' :
+                layout === 'shopee' ? 'text-[10px] text-orange-400 font-medium' :
+                layout === 'organic' ? 'text-[10px] text-green-500' :
+                layout === 'tgdd' ? 'text-[10px] text-gray-500 font-medium' :
+                layout === 'hasaki' ? 'text-[10px] text-pink-400' :
+                'text-[10px] text-[#86868b]'
+              }>© 2025 {template.name}</p>
             </div>
           </footer>
 
           {/* STICKY BAR */}
-          <div className="bg-white/90 backdrop-blur-xl border-t border-black/5 py-2 px-4">
+          <div className={getPreviewStickyClass(layout)}>
             <div className="flex items-center gap-2">
-              <button className="flex-1 text-white rounded-xl py-2 text-center text-xs font-medium flex items-center justify-center gap-1.5" style={{ backgroundColor: accent }}>
+              <button className={getPreviewChatBtnClass(layout)} style={layout === 'apple' || layout === 'minimal' ? { backgroundColor: accent } : {}}>
                 <MessageCircle className="h-3.5 w-3.5" /> {config.stickyBarLabels.chat}
               </button>
-              <button className="flex-1 bg-[#1d1d1f] text-white rounded-xl py-2 text-center text-xs font-medium flex items-center justify-center gap-1.5">
+              <button className={getPreviewCallBtnClass(layout)}>
                 <Phone className="h-3.5 w-3.5" /> {config.stickyBarLabels.call}
               </button>
             </div>
@@ -155,13 +164,23 @@ export function TemplatePreviewDialog({
 
 // === Layout-specific Preview Header ===
 function PreviewHeader({ layout, templateName }: { layout: LayoutStyle; templateName: string }) {
-  const headerBg = layout === 'nike' ? 'bg-black text-white' :
+  const headerBg = layout === 'nike' || layout === 'canifa' ? 'bg-black text-white' :
                    layout === 'luxury' ? 'bg-[#0f0f23] text-amber-100' :
                    layout === 'tgdd' ? 'bg-yellow-400 text-black' :
                    layout === 'hasaki' ? 'bg-gradient-to-r from-pink-500 to-red-500 text-white' :
+                   layout === 'minimal' ? 'bg-[#faf9f6] text-stone-800' :
+                   layout === 'shopee' ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white' :
+                   layout === 'organic' ? 'bg-green-50 text-green-900' :
                    'bg-white/80 backdrop-blur-xl';
-  const iconColor = layout === 'nike' || layout === 'luxury' || layout === 'hasaki' ? 'text-white/60' :
-                    layout === 'tgdd' ? 'text-black/60' : 'text-[#86868b]';
+  const iconColor = layout === 'nike' || layout === 'luxury' || layout === 'hasaki' || layout === 'canifa' || layout === 'shopee' ? 'text-white/60' :
+                    layout === 'tgdd' ? 'text-black/60' :
+                    layout === 'minimal' ? 'text-stone-400' :
+                    layout === 'organic' ? 'text-green-600' :
+                    'text-[#86868b]';
+  const nameClass = layout === 'nike' || layout === 'canifa' ? 'font-bold text-xs tracking-tight uppercase' :
+                    layout === 'luxury' ? 'font-light text-xs tracking-[0.1em] uppercase' :
+                    layout === 'minimal' ? 'font-medium text-xs tracking-wide' :
+                    'font-semibold text-xs tracking-tight';
 
   return (
     <header className={`sticky top-0 z-10 border-b border-black/5 ${headerBg}`}>
@@ -169,7 +188,7 @@ function PreviewHeader({ layout, templateName }: { layout: LayoutStyle; template
         <div className="flex items-center justify-between h-11">
           <div className="flex items-center gap-2.5">
             <Menu className={`h-4 w-4 ${iconColor}`} />
-            <span className="font-semibold text-xs tracking-tight">{templateName}</span>
+            <span className={nameClass}>{templateName}</span>
           </div>
           <Search className={`h-4 w-4 ${iconColor}`} />
         </div>
@@ -188,15 +207,19 @@ function PreviewHero({ layout, accent, heroTitle, heroSubtitle, heroCta, heroGra
     switch (layout) {
       case 'tgdd': return 'linear-gradient(135deg, #ffd700 0%, #ff6b00 100%)';
       case 'hasaki': return 'linear-gradient(135deg, #ff6b81 0%, #ee5a24 50%, #ff4757 100%)';
-      case 'nike': return '#000000';
+      case 'nike':
+      case 'canifa': return '#000000';
       case 'luxury': return 'linear-gradient(135deg, #1a1a2e 0%, #0f0f23 50%, #16213e 100%)';
+      case 'minimal': return '#faf9f6';
+      case 'shopee': return 'linear-gradient(135deg, #ee4d2d 0%, #ff6633 50%, #f53d2d 100%)';
+      case 'organic': return 'linear-gradient(135deg, #2d5016 0%, #4a7c2e 50%, #3d6b21 100%)';
       default: return heroGradient;
     }
   };
 
   return (
-    <section className="relative overflow-hidden text-white" style={{ background: getBackground() }}>
-      <div className={`px-6 ${layout === 'luxury' ? 'py-14 text-center' : layout === 'nike' ? 'py-12' : 'py-10'}`}>
+    <section className={`relative overflow-hidden ${layout === 'minimal' ? 'text-stone-800' : 'text-white'}`} style={{ background: getBackground() }}>
+      <div className={`px-6 ${layout === 'luxury' ? 'py-14 text-center' : layout === 'nike' || layout === 'canifa' ? 'py-12' : layout === 'minimal' ? 'py-10 text-center' : 'py-10'}`}>
         {layout === 'tgdd' && (
           <div className="inline-flex items-center gap-1 bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full mb-2">
             <Zap className="h-2.5 w-2.5" /> DEAL SỐC
@@ -331,8 +354,53 @@ function getPreviewGridClass(layout: LayoutStyle): string {
 function getFooterClass(layout: LayoutStyle): string {
   switch (layout) {
     case 'luxury': return 'py-4 border-t border-amber-900/20 bg-[#0f0f23]';
-    case 'nike': return 'py-4 border-t border-black/10 bg-black text-white';
+    case 'nike':
+    case 'canifa': return 'py-4 border-t border-black/10 bg-black text-white';
+    case 'minimal': return 'py-4 border-t border-stone-200 bg-[#faf9f6]';
+    case 'shopee': return 'py-4 border-t-2 border-orange-300 bg-orange-50';
+    case 'organic': return 'py-4 border-t border-green-200 bg-green-50';
+    case 'tgdd': return 'py-4 border-t-2 border-yellow-400 bg-gray-50';
+    case 'hasaki': return 'py-4 border-t border-pink-200 bg-pink-50';
     default: return 'py-4 border-t border-black/5 bg-[#f5f5f7]';
+  }
+}
+
+function getPreviewStickyClass(layout: LayoutStyle): string {
+  switch (layout) {
+    case 'nike': case 'canifa': return 'bg-black/95 border-t border-white/10 py-2 px-4';
+    case 'luxury': return 'bg-[#0f0f23]/95 border-t border-amber-900/20 py-2 px-4';
+    case 'tgdd': return 'bg-yellow-400/95 border-t border-yellow-500 py-2 px-4';
+    case 'hasaki': return 'bg-white/95 border-t border-pink-200 py-2 px-4';
+    case 'minimal': return 'bg-[#faf9f6]/95 border-t border-stone-200 py-2 px-4';
+    case 'shopee': return 'bg-white/95 border-t-2 border-orange-400 py-2 px-4';
+    case 'organic': return 'bg-green-50/95 border-t border-green-200 py-2 px-4';
+    default: return 'bg-white/90 backdrop-blur-xl border-t border-black/5 py-2 px-4';
+  }
+}
+
+function getPreviewChatBtnClass(layout: LayoutStyle): string {
+  const base = 'flex-1 py-2 text-center text-xs font-medium flex items-center justify-center gap-1.5';
+  switch (layout) {
+    case 'nike': case 'canifa': return `${base} bg-white text-black rounded-full font-bold`;
+    case 'luxury': return `${base} bg-amber-600 text-white rounded-none text-[10px] tracking-wider uppercase`;
+    case 'tgdd': return `${base} bg-blue-600 text-white rounded-lg font-bold`;
+    case 'hasaki': return `${base} bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-full font-bold`;
+    case 'shopee': return `${base} bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-bold`;
+    case 'organic': return `${base} bg-green-600 text-white rounded-xl`;
+    default: return `${base} text-white rounded-xl`;
+  }
+}
+
+function getPreviewCallBtnClass(layout: LayoutStyle): string {
+  const base = 'flex-1 py-2 text-center text-xs font-medium flex items-center justify-center gap-1.5';
+  switch (layout) {
+    case 'nike': case 'canifa': return `${base} border border-white/30 text-white rounded-full font-bold`;
+    case 'luxury': return `${base} border border-amber-600/50 text-amber-200 rounded-none text-[10px] tracking-wider uppercase`;
+    case 'tgdd': return `${base} bg-red-600 text-white rounded-lg font-bold`;
+    case 'hasaki': return `${base} bg-gray-900 text-white rounded-full font-bold`;
+    case 'shopee': return `${base} bg-gray-800 text-white rounded-lg font-bold`;
+    case 'organic': return `${base} bg-green-900 text-white rounded-xl`;
+    default: return `${base} bg-[#1d1d1f] text-white rounded-xl`;
   }
 }
 
