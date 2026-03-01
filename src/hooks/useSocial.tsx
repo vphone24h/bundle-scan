@@ -79,19 +79,32 @@ export function useSocialProfile(userId?: string) {
     queryFn: async () => {
       if (!targetId) return null;
 
-      const { data: sp } = await supabase
-        .from('social_profiles')
-        .select('*')
-        .eq('user_id', targetId)
-        .maybeSingle();
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('display_name, avatar_url, phone')
-        .eq('user_id', targetId)
-        .maybeSingle();
+      const [{ data: sp }, { data: profile }, { data: pu }] = await Promise.all([
+        supabase.from('social_profiles').select('*').eq('user_id', targetId).maybeSingle(),
+        supabase.from('profiles').select('display_name, avatar_url, phone').eq('user_id', targetId).maybeSingle(),
+        supabase.from('platform_users').select('tenant_id').eq('user_id', targetId).maybeSingle(),
+      ]);
 
       if (!sp && !profile) return null;
+
+      // Check if user's tenant has active subscription → auto verified
+      let hasSubscription = false;
+      if (pu?.tenant_id) {
+        const { data: tenant } = await supabase
+          .from('tenants')
+          .select('subscription_plan, subscription_end_date')
+          .eq('id', pu.tenant_id)
+          .maybeSingle();
+        if (tenant?.subscription_plan) {
+          if (tenant.subscription_plan === 'lifetime') {
+            hasSubscription = true;
+          } else if (tenant.subscription_end_date) {
+            hasSubscription = new Date(tenant.subscription_end_date) > new Date();
+          }
+        }
+      }
+
+      const isVerified = sp?.is_verified || hasSubscription;
 
       return {
         user_id: targetId,
@@ -100,7 +113,7 @@ export function useSocialProfile(userId?: string) {
         tiktok_url: sp?.tiktok_url || null,
         bio: sp?.bio || null,
         store_address: sp?.store_address || null,
-        is_verified: sp?.is_verified || false,
+        is_verified: isVerified,
         verified_until: sp?.verified_until || null,
         show_zalo_button: sp?.show_zalo_button ?? true,
         show_facebook_button: sp?.show_facebook_button ?? true,
@@ -174,8 +187,8 @@ export function useSocialFeed(filterUserId?: string) {
       // Get unique user ids
       const userIds = [...new Set(posts.map(p => p.user_id))];
 
-      // Fetch profiles + social profiles
-      const [{ data: profiles }, { data: socialProfiles }, { data: myLikes }, { data: myFollows }] = await Promise.all([
+      // Fetch profiles + social profiles + tenant subscription status
+      const [{ data: profiles }, { data: socialProfiles }, { data: myLikes }, { data: myFollows }, { data: platformUsers }] = await Promise.all([
         supabase.from('profiles').select('user_id, display_name, avatar_url').in('user_id', userIds),
         supabase.from('social_profiles').select('user_id, is_verified, show_zalo_button, show_facebook_button, zalo_number, facebook_url').in('user_id', userIds),
         user?.id
@@ -184,7 +197,26 @@ export function useSocialFeed(filterUserId?: string) {
         user?.id
           ? supabase.from('social_follows').select('following_id').eq('follower_id', user.id).in('following_id', userIds)
           : { data: [] },
+        supabase.from('platform_users').select('user_id, tenant_id').in('user_id', userIds),
       ]);
+
+      // Check tenant subscriptions for verified badge
+      const tenantIds = [...new Set((platformUsers || []).map(pu => pu.tenant_id).filter(Boolean))];
+      let subscribedTenants = new Set<string>();
+      if (tenantIds.length > 0) {
+        const { data: tenants } = await supabase
+          .from('tenants')
+          .select('id, subscription_plan, subscription_end_date')
+          .in('id', tenantIds);
+        (tenants || []).forEach(t => {
+          if (t.subscription_plan === 'lifetime') {
+            subscribedTenants.add(t.id);
+          } else if (t.subscription_plan && t.subscription_end_date && new Date(t.subscription_end_date) > new Date()) {
+            subscribedTenants.add(t.id);
+          }
+        });
+      }
+      const userTenantMap = new Map((platformUsers || []).map(pu => [pu.user_id, pu.tenant_id]));
 
       const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
       const spMap = new Map((socialProfiles || []).map(sp => [sp.user_id, sp]));
@@ -194,12 +226,14 @@ export function useSocialFeed(filterUserId?: string) {
       const enriched: SocialPost[] = posts.map(post => {
         const prof = profileMap.get(post.user_id);
         const sp = spMap.get(post.user_id);
+        const tenantId = userTenantMap.get(post.user_id);
+        const hasSubscription = tenantId ? subscribedTenants.has(tenantId) : false;
         return {
           ...post,
           image_urls: post.image_urls || [],
           display_name: prof?.display_name || 'Người dùng',
           avatar_url: prof?.avatar_url,
-          is_verified: sp?.is_verified || false,
+          is_verified: sp?.is_verified || hasSubscription,
           is_liked: likedSet.has(post.id),
           is_following: followSet.has(post.user_id),
           show_zalo_button: sp?.show_zalo_button ?? true,
