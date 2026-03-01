@@ -67,17 +67,24 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
   const [totalSteps, setTotalSteps] = useState(0);
 
+  // Build a set of existing product names for filtering
+  const existingNames = useMemo(() => {
+    return new Set((existingProducts || []).map(p => p.name.toLowerCase().trim()));
+  }, [existingProducts]);
+
   const filteredItems = useMemo(() => {
     if (!inventory) return [];
     return inventory.filter(item => {
       if (item.stock <= 0) return false;
+      // Hide products already added to landing page
+      if (existingNames.has(item.productName.toLowerCase().trim())) return false;
       const matchSearch = !search ||
         item.productName.toLowerCase().includes(search.toLowerCase()) ||
         item.sku.toLowerCase().includes(search.toLowerCase());
       const matchCat = categoryFilter === '_all_' || item.categoryId === categoryFilter;
       return matchSearch && matchCat;
     });
-  }, [inventory, search, categoryFilter]);
+  }, [inventory, search, categoryFilter, existingNames]);
 
   const toggleSelect = (id: string) => {
     setSelected(prev => {
@@ -124,7 +131,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
           categoryName: '',
           businessType: tenant?.business_type || 'phone_store',
           tenantId: tenant?.id,
-          imageCount: 5,
+          imageCount: 1,
         },
       });
       if (error) throw error;
@@ -236,7 +243,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     for (let idx = 0; idx < productsToProcess.length; idx++) {
       const result = productsToProcess[idx];
       setCurrentStepIdx(idx + 1);
-      setAiProgress(`Bước 2: AI đang tạo ảnh ${idx + 1}/${productsToProcess.length}: ${result.productName} (1 ảnh bìa + 4 ảnh sản phẩm)`);
+      setAiProgress(`Bước 2: AI đang tạo ảnh bìa ${idx + 1}/${productsToProcess.length}: ${result.productName}`);
 
       try {
         const images = await generateAIImages(result.productName);
@@ -516,7 +523,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
                 {aiStep === 'step1_desc' ? 'Bước 1: Tạo mô tả sản phẩm' : 'Bước 2: Tạo ảnh sản phẩm'}
               </p>
               <p className="text-xs text-muted-foreground">
-                {aiStep === 'step2_images' ? 'AI đang tạo 1 ảnh bìa + 4 ảnh sản phẩm cho mỗi sản phẩm' : 'AI đang viết mô tả hấp dẫn và chuẩn SEO'}
+                {aiStep === 'step2_images' ? 'AI đang tạo ảnh bìa cho sản phẩm' : 'AI đang viết mô tả hấp dẫn và chuẩn SEO'}
               </p>
             </div>
             {aiProgress && (
@@ -573,7 +580,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
                       Thêm tự động (AI)
                     </Button>
                     <p className="text-[10px] text-muted-foreground mt-1 text-center">
-                      B1: Mô tả AI → B2: Ảnh bìa + 4 ảnh sản phẩm
+                      B1: Mô tả AI → B2: Ảnh bìa AI
                     </p>
                   </div>
                 ) : (
@@ -583,7 +590,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
                       Thêm tự động (AI)
                     </Button>
                     <p className="text-[10px] text-muted-foreground mt-1 text-center">
-                      B1: Mô tả AI → B2: Ảnh bìa + 4 ảnh sản phẩm
+                      B1: Mô tả AI → B2: Ảnh bìa AI
                     </p>
                     <div className="flex items-center justify-center gap-2 mt-1">
                       {adminPhone && (
