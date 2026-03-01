@@ -467,6 +467,8 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
           templateId={templateId}
           customSections={(formData as any).custom_home_sections || null}
           onChange={sections => onChange('custom_home_sections', sections)}
+          customProductTabs={(formData as any).custom_product_tabs || []}
+          onTabsChange={tabs => onChange('custom_product_tabs', tabs)}
         />
       </SettingsBlock>
 

@@ -83,7 +83,7 @@ export default function UniversalStoreTemplate({
     if ((settings as any)?.hero_cta) c.heroCta = (settings as any).hero_cta;
     if ((settings as any)?.custom_home_sections) {
       const customSections = (settings as any).custom_home_sections as HomeSectionItem[];
-      c.homeSections = customSections.filter((s: HomeSectionItem) => s.enabled).map((s: HomeSectionItem) => s.id);
+      c.homeSections = customSections.filter((s: HomeSectionItem) => s.enabled).map((s: HomeSectionItem) => s.id) as HomeSection[];
     }
     return c;
   }, [baseConfig, settings]);
@@ -466,8 +466,49 @@ export default function UniversalStoreTemplate({
                       </section>
                     </ScrollReveal>
                   );
-                default:
-                  return null;
+                default: {
+                  // Handle custom product tabs (productTab_xxx)
+                  if (typeof sectionId === 'string' && sectionId.startsWith('productTab_')) {
+                    const customTabs = (settings as any)?.custom_product_tabs as { id: string; name: string; displayStyle: string; enabled: boolean }[] || [];
+                    const tab = customTabs.find(t => t.id === sectionId);
+                    if (!tab) return null;
+                    const tabProducts = allProducts.filter(p => (p as any).home_tab_ids?.includes(sectionId));
+                    if (tabProducts.length === 0) return null;
+                    return (
+                      <section key={sectionId} className="py-10 bg-white">
+                        <div className="max-w-[1200px] mx-auto px-4">
+                          <ScrollReveal animation="fade-up">
+                            <div className="flex items-end justify-between mb-6">
+                              <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{tab.name}</h2>
+                              <button onClick={() => navigateTo('products')} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
+                                Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
+                              </button>
+                            </div>
+                          </ScrollReveal>
+                          {tab.displayStyle === 'slide' ? (
+                            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                              {tabProducts.slice(0, 12).map((p, i) => (
+                                <div key={p.id} className="min-w-[180px] max-w-[200px] shrink-0">
+                                  <ScrollReveal animation="fade-up" delay={i * 60}>
+                                    <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
+                                  </ScrollReveal>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className={tab.displayStyle === 'list' ? 'space-y-3' : getProductGridClass(config.layoutStyle)}>
+                              {tabProducts.slice(0, 8).map((p, i) => (
+                                <ScrollReveal key={p.id} animation="fade-up" delay={i * 60}>
+                                  <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
+                                </ScrollReveal>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </section>
+                    );
+                  }
+                }
               }
             })}
           </div>

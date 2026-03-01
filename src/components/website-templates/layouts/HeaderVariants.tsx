@@ -42,7 +42,7 @@ function AppleHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-[#1d1d1f] text-white" />
+      <MobileMenu {...props} activeClass="bg-[#1d1d1f] text-white" storeName={props.storeName} logoUrl={props.logoUrl} />
     </header>
   );
 }
@@ -65,7 +65,7 @@ function TGDDHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-red-600 text-white" menuBg="bg-yellow-300/95" />
+      <MobileMenu {...props} activeClass="bg-red-600 text-white" menuBg="bg-yellow-300/95" storeName={props.storeName} logoUrl={props.logoUrl} />
     </header>
   );
 }
@@ -91,7 +91,7 @@ function HasakiHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-red-600 text-white" menuBg="bg-gradient-to-b from-pink-500/95 to-red-500/95 text-white" />
+      <MobileMenu {...props} activeClass="bg-red-600 text-white" menuBg="bg-gradient-to-b from-pink-500/95 to-red-500/95 text-white" storeName={props.storeName} logoUrl={props.logoUrl} />
     </header>
   );
 }
@@ -117,7 +117,7 @@ function NikeHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-white text-black" menuBg="bg-black/95 text-white" />
+      <MobileMenu {...props} activeClass="bg-white text-black" menuBg="bg-black/95 text-white" storeName={props.storeName} logoUrl={props.logoUrl} />
     </header>
   );
 }
@@ -143,7 +143,7 @@ function LuxuryHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-amber-600 text-white" menuBg="bg-[#0f0f23]/95 text-amber-100" />
+      <MobileMenu {...props} activeClass="bg-amber-600 text-white" menuBg="bg-[#0f0f23]/95 text-amber-100" storeName={props.storeName} logoUrl={props.logoUrl} />
     </header>
   );
 }
@@ -169,7 +169,7 @@ function MinimalHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-stone-800 text-white" menuBg="bg-[#faf9f6]/95" />
+      <MobileMenu {...props} activeClass="bg-stone-800 text-white" menuBg="bg-[#faf9f6]/95" storeName={props.storeName} logoUrl={props.logoUrl} />
     </header>
   );
 }
@@ -197,7 +197,7 @@ function ShopeeHeader(props: HeaderProps) {
           </div>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-orange-600 text-white" menuBg="bg-gradient-to-b from-orange-500/95 to-red-500/95 text-white" />
+      <MobileMenu {...props} activeClass="bg-orange-600 text-white" menuBg="bg-gradient-to-b from-orange-500/95 to-red-500/95 text-white" storeName={props.storeName} logoUrl={props.logoUrl} />
     </header>
   );
 }
@@ -223,7 +223,7 @@ function OrganicHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-green-700 text-white" menuBg="bg-green-50/95" />
+      <MobileMenu {...props} activeClass="bg-green-700 text-white" menuBg="bg-green-50/95" storeName={props.storeName} logoUrl={props.logoUrl} />
     </header>
   );
 }
@@ -247,26 +247,46 @@ function DesktopNav({ navItems, onNavClick, isNavActive, activeClass, inactiveCl
   );
 }
 
-// === Shared Mobile Menu ===
-function MobileMenu({ mobileMenuOpen, navItems, onNavClick, isNavActive, onCloseMenu, activeClass, menuBg }: HeaderProps & { activeClass: string; menuBg?: string }) {
-  if (!mobileMenuOpen) return null;
+// === Shared Mobile Menu (Slide-in Drawer from Left) ===
+function MobileMenu({ mobileMenuOpen, navItems, onNavClick, isNavActive, onCloseMenu, activeClass, menuBg, storeName, logoUrl }: HeaderProps & { activeClass: string; menuBg?: string }) {
   return (
-    <div className={`sm:hidden border-t border-black/5 backdrop-blur-xl ${menuBg || 'bg-white/95'}`}>
-      <div className="px-4 py-3 space-y-1">
-        {navItems.map(item => (
-          <button
-            key={item.id}
-            onClick={() => { onNavClick(item); onCloseMenu(); }}
-            className={`w-full text-left px-3 py-2.5 text-sm font-medium rounded-xl transition-all flex items-center gap-2 ${
-              isNavActive(item) ? activeClass : ''
-            }`}
-          >
-            {item.icon && <span className="text-base">{item.icon}</span>}
-            {item.label}
+    <>
+      {/* Backdrop */}
+      <div
+        className={`sm:hidden fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={onCloseMenu}
+      />
+      {/* Drawer */}
+      <div
+        className={`sm:hidden fixed top-0 left-0 z-[70] h-full w-[280px] max-w-[80vw] shadow-2xl transition-transform duration-300 ease-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} ${menuBg || 'bg-white'}`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-4 border-b border-black/5">
+          <div className="flex items-center gap-2.5">
+            {logoUrl && <img src={logoUrl} alt={storeName} className="h-8 w-8 rounded-lg object-cover" />}
+            <span className="font-semibold text-sm">{storeName}</span>
+          </div>
+          <button onClick={onCloseMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-black/5 transition-colors">
+            <X className="h-5 w-5" />
           </button>
-        ))}
+        </div>
+        {/* Nav items */}
+        <div className="px-3 py-3 space-y-0.5 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 65px)' }}>
+          {navItems.map(item => (
+            <button
+              key={item.id}
+              onClick={() => { onNavClick(item); onCloseMenu(); }}
+              className={`w-full text-left px-3 py-3 text-sm font-medium rounded-xl transition-all flex items-center gap-2.5 ${
+                isNavActive(item) ? activeClass : 'hover:bg-black/5'
+              }`}
+            >
+              {item.icon && <span className="text-base">{item.icon}</span>}
+              {item.label}
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

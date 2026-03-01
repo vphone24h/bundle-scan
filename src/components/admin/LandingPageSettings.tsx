@@ -1135,7 +1135,7 @@ export function LandingPageSettings() {
           <HomeSectionManager
             templateId={(formData as any).website_template || 'phone_store'}
             customSections={(formData as any).custom_home_sections || null}
-            onChange={(sections) => setFormData(prev => ({ ...prev, custom_home_sections: sections }))}
+            onChange={(sections) => setFormData(prev => ({ ...prev, custom_home_sections: sections as any }))}
           />
         </CardContent>
       </Card>
