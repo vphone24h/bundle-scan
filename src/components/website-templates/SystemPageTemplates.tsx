@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollReveal } from '@/hooks/useScrollReveal';
 import { formatNumber } from '@/lib/formatNumber';
-import { PageItemConfig, DEFAULT_PAGE_ITEMS } from '@/lib/industryConfig';
+import { PageItemConfig, DEFAULT_PAGE_ITEMS, InstallmentRateConfig, DEFAULT_INSTALLMENT_RATES } from '@/lib/industryConfig';
 import {
   Wrench, RefreshCw, CreditCard, Headphones, BarChart3, DollarSign,
   Calendar, MapPin, Phone, Mail, Clock, CheckCircle, ArrowRight,
@@ -19,6 +19,7 @@ interface SystemPageProps {
   branches?: { id: string; name: string; address?: string | null; phone?: string | null }[];
   onNavigateProducts?: () => void;
   pageItems?: PageItemConfig[];
+  installmentRates?: InstallmentRateConfig[];
 }
 
 // === REPAIR PAGE ===
@@ -182,19 +183,15 @@ export function TradeInPage({ accentColor, storeName, storePhone, zaloUrl, pageI
 }
 
 // === INSTALLMENT CALCULATOR SECTION ===
-function InstallmentCalculatorSection({ accentColor }: { accentColor: string }) {
+function InstallmentCalculatorSection({ accentColor, rates }: { accentColor: string; rates: InstallmentRateConfig[] }) {
   const [totalAmount, setTotalAmount] = useState('');
   const [downPayment, setDownPayment] = useState('');
   const [months, setMonths] = useState(12);
-  const [rate, setRate] = useState(1.8);
+  const [rate, setRate] = useState(rates[0]?.rate || 1.83);
   const [showResult, setShowResult] = useState(false);
 
-  const PRESETS = [
-    { label: 'Home Credit', rate: 1.83 },
-    { label: 'FE Credit', rate: 2.07 },
-    { label: 'HD SAISON', rate: 1.75 },
-    { label: 'Mirae Asset', rate: 1.58 },
-  ];
+  const normalRates = rates.filter(r => !r.isBadCredit);
+  const badCreditRates = rates.filter(r => r.isBadCredit);
 
   const parseCurrency = (v: string) => Number(v.replace(/\D/g, '')) || 0;
   const fmtCurrency = (v: string) => {
@@ -259,7 +256,7 @@ function InstallmentCalculatorSection({ accentColor }: { accentColor: string }) 
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1 block">Lãi suất / tháng</label>
           <div className="flex flex-wrap gap-1.5">
-            {PRESETS.map(p => (
+            {normalRates.map(p => (
               <button
                 key={p.label}
                 onClick={() => { setRate(p.rate); setShowResult(false); }}
@@ -270,6 +267,20 @@ function InstallmentCalculatorSection({ accentColor }: { accentColor: string }) 
               </button>
             ))}
           </div>
+          {badCreditRates.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {badCreditRates.map(p => (
+                <button
+                  key={p.label}
+                  onClick={() => { setRate(p.rate); setShowResult(false); }}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium border transition-colors ${rate === p.rate ? 'text-white border-transparent' : 'border-orange-300 text-orange-600 hover:bg-orange-50'}`}
+                  style={rate === p.rate ? { backgroundColor: '#ea580c' } : {}}
+                >
+                  ⚠️ {p.label} ({p.rate}%)
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -302,8 +313,11 @@ function InstallmentCalculatorSection({ accentColor }: { accentColor: string }) 
 }
 
 // === INSTALLMENT PAGE ===
-export function InstallmentPage({ accentColor, storeName, storePhone, zaloUrl, onNavigateProducts, pageItems }: SystemPageProps) {
+export function InstallmentPage({ accentColor, storeName, storePhone, zaloUrl, onNavigateProducts, pageItems, installmentRates }: SystemPageProps) {
   const items = pageItems && pageItems.length > 0 ? pageItems : DEFAULT_PAGE_ITEMS.installment;
+  const rates = installmentRates && installmentRates.length > 0 ? installmentRates : DEFAULT_INSTALLMENT_RATES;
+  const partnerNames = rates.filter(r => !r.isBadCredit).map(r => r.label);
+
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8 space-y-10">
       <ScrollReveal animation="fade-up">
@@ -334,7 +348,7 @@ export function InstallmentPage({ accentColor, storeName, storePhone, zaloUrl, o
       <ScrollReveal animation="fade-up" delay={200}>
         <h2 className="text-lg font-bold mb-4">Đối tác tài chính</h2>
         <div className="flex flex-wrap gap-3">
-          {['Home Credit', 'FE Credit', 'HD Saison', 'MCredit', 'Shinhan Finance'].map((p, i) => (
+          {partnerNames.map((p, i) => (
             <div key={i} className="rounded-full border px-4 py-2 text-sm font-medium">{p}</div>
           ))}
         </div>
@@ -342,7 +356,7 @@ export function InstallmentPage({ accentColor, storeName, storePhone, zaloUrl, o
 
       {/* Installment Calculator */}
       <ScrollReveal animation="fade-up" delay={250}>
-        <InstallmentCalculatorSection accentColor={accentColor} />
+        <InstallmentCalculatorSection accentColor={accentColor} rates={rates} />
       </ScrollReveal>
 
       {/* CTA */}

@@ -905,6 +905,7 @@ export default function UniversalStoreTemplate({
             branches: branches.map(b => ({ id: b.id, name: b.name, address: b.address, phone: b.phone })),
             onNavigateProducts: () => navigateTo('products'),
             pageItems: activeNav?.pageItems,
+            installmentRates: activeNav?.installmentRates,
           };
 
           switch (pageView) {
