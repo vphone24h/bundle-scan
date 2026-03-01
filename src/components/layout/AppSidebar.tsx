@@ -3,6 +3,7 @@ import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { usePendingTransferCount } from '@/hooks/useStockTransfers';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useUnreadReviewCount } from '@/hooks/useUnreadReviews';
+import { useUnreadSocialNotifCount } from '@/hooks/useSocial';
 import {
   LayoutDashboard,
   Package,
@@ -141,6 +142,7 @@ export function AppSidebar() {
   const { data: pendingTransferCount } = usePendingTransferCount();
   const { data: pendingOrderCount } = usePendingOrderCount();
   const { data: unreadReviewCount } = useUnreadReviewCount();
+  const { data: unreadSocialCount } = useUnreadSocialNotifCount();
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -292,6 +294,11 @@ export function AppSidebar() {
                 )}
                 {item.title === 'Đánh giá nhân viên' && (unreadReviewCount || 0) > 0 && (
                   <span className="h-2.5 w-2.5 rounded-full bg-destructive animate-pulse" />
+                )}
+                {item.href === '/social' && (unreadSocialCount || 0) > 0 && (
+                  <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+                    {unreadSocialCount}
+                  </span>
                 )}
               </Link>
             )}
