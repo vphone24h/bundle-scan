@@ -369,7 +369,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
 
   return (
     <Dialog open={open} onOpenChange={importing ? undefined : handleClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
@@ -562,7 +562,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           {aiStep === 'done' ? (
             <Button onClick={handleFinish} className="w-full gap-1.5">
               <CheckCircle2 className="h-4 w-4" />
