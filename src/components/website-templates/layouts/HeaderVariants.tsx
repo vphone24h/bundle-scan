@@ -259,6 +259,7 @@ function MobileMenu({ mobileMenuOpen, navItems, onNavClick, isNavActive, onClose
       {/* Drawer */}
       <div
         className={`sm:hidden fixed top-0 left-0 z-[70] h-full w-[280px] max-w-[80vw] shadow-2xl transition-transform duration-300 ease-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} ${menuBg || 'bg-white'}`}
+        style={{ backgroundColor: menuBg ? undefined : '#ffffff' }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-black/5">
