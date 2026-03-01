@@ -466,9 +466,61 @@ export default function UniversalStoreTemplate({
                       </section>
                     </ScrollReveal>
                   );
+                case 'flashSale': {
+                  const flashProducts = allProducts.filter(p => (p as any).home_tab_ids?.includes('flashSale'));
+                  if (flashProducts.length === 0) return null;
+                  return (
+                    <section key="flashSale" className="py-8 bg-red-50/60">
+                      <div className="max-w-[1200px] mx-auto px-4">
+                        <ScrollReveal animation="fade-up">
+                          <div className="flex items-end justify-between mb-6">
+                            <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">⚡ Flash Sale</h2>
+                            <button onClick={() => navigateTo('products')} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
+                              Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
+                            </button>
+                          </div>
+                        </ScrollReveal>
+                        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                          {flashProducts.slice(0, 12).map((p, i) => (
+                            <div key={p.id} className="min-w-[180px] max-w-[200px] shrink-0">
+                              <ScrollReveal animation="fade-up" delay={i * 60}>
+                                <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
+                              </ScrollReveal>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </section>
+                  );
+                }
+                case 'combo': {
+                  const comboProducts = allProducts.filter(p => (p as any).home_tab_ids?.includes('combo'));
+                  if (comboProducts.length === 0) return null;
+                  return (
+                    <section key="combo" className="py-8 bg-amber-50/40">
+                      <div className="max-w-[1200px] mx-auto px-4">
+                        <ScrollReveal animation="fade-up">
+                          <div className="flex items-end justify-between mb-6">
+                            <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">🎁 Combo ưu đãi</h2>
+                            <button onClick={() => navigateTo('products')} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
+                              Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
+                            </button>
+                          </div>
+                        </ScrollReveal>
+                        <div className={getProductGridClass(config.layoutStyle)}>
+                          {comboProducts.slice(0, 8).map((p, i) => (
+                            <ScrollReveal key={p.id} animation="fade-up" delay={i * 60}>
+                              <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
+                            </ScrollReveal>
+                          ))}
+                        </div>
+                      </div>
+                    </section>
+                  );
+                }
                 default: {
                   // Handle custom product tabs (productTab_xxx)
-                  if (typeof sectionId === 'string' && sectionId.startsWith('productTab_')) {
+                  if (typeof sectionId === 'string' && (sectionId as string).startsWith('productTab_')) {
                     const customTabs = (settings as any)?.custom_product_tabs as { id: string; name: string; displayStyle: string; enabled: boolean }[] || [];
                     const tab = customTabs.find(t => t.id === sectionId);
                     if (!tab) return null;
@@ -508,6 +560,7 @@ export default function UniversalStoreTemplate({
                       </section>
                     );
                   }
+                  return null;
                 }
               }
             })}
