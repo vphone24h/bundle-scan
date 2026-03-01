@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { NavItemConfig, HomeSection } from '@/lib/industryConfig';
 
 export interface HomeSectionItem {
-  id: HomeSection;
+  id: HomeSection | string; // string for custom tab IDs like "productTab_xxx"
   enabled: boolean;
 }
 
@@ -46,6 +46,7 @@ export interface TenantLandingSettings {
   hero_subtitle: string | null;
   hero_cta: string | null;
   custom_home_sections: HomeSectionItem[] | null;
+  custom_product_tabs: { id: string; name: string; displayStyle: string; enabled: boolean }[] | null;
   custom_font_family: string | null;
   custom_layout_style: string | null;
   created_at: string;

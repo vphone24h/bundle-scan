@@ -3939,6 +3939,7 @@ export type Database = {
           branch_id: string | null
           category_id: string | null
           created_at: string
+          home_tab_ids: string[] | null
           id: string
           imei: string | null
           import_date: string
@@ -3961,6 +3962,7 @@ export type Database = {
           branch_id?: string | null
           category_id?: string | null
           created_at?: string
+          home_tab_ids?: string[] | null
           id?: string
           imei?: string | null
           import_date?: string
@@ -3983,6 +3985,7 @@ export type Database = {
           branch_id?: string | null
           category_id?: string | null
           created_at?: string
+          home_tab_ids?: string[] | null
           id?: string
           imei?: string | null
           import_date?: string
@@ -5281,6 +5284,7 @@ export type Database = {
           custom_home_sections: Json | null
           custom_layout_style: string | null
           custom_nav_items: Json | null
+          custom_product_tabs: Json | null
           custom_trust_badges: Json | null
           facebook_url: string | null
           hero_cta: string | null
@@ -5324,6 +5328,7 @@ export type Database = {
           custom_home_sections?: Json | null
           custom_layout_style?: string | null
           custom_nav_items?: Json | null
+          custom_product_tabs?: Json | null
           custom_trust_badges?: Json | null
           facebook_url?: string | null
           hero_cta?: string | null
@@ -5367,6 +5372,7 @@ export type Database = {
           custom_home_sections?: Json | null
           custom_layout_style?: string | null
           custom_nav_items?: Json | null
+          custom_product_tabs?: Json | null
           custom_trust_badges?: Json | null
           facebook_url?: string | null
           hero_cta?: string | null

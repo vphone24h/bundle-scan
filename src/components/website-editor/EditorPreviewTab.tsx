@@ -65,7 +65,7 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
     if ((formData as any)?.hero_cta) c.heroCta = (formData as any).hero_cta;
     if ((formData as any)?.custom_home_sections) {
       const customSections = (formData as any).custom_home_sections as HomeSectionItem[];
-      c.homeSections = customSections.filter((s: HomeSectionItem) => s.enabled).map((s: HomeSectionItem) => s.id);
+      c.homeSections = customSections.filter((s: HomeSectionItem) => s.enabled).map((s: HomeSectionItem) => s.id) as HomeSection[];
     }
     return c;
   }, [baseConfig, formData]);
