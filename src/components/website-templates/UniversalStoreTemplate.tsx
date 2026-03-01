@@ -33,6 +33,9 @@ import {
 import { LayoutHero } from './layouts/HeroVariants';
 import { LayoutProductCard, getProductGridClass } from './layouts/ProductCardVariants';
 import { LayoutTrustBadges } from './layouts/TrustBadgeVariants';
+import { LayoutHeader } from './layouts/HeaderVariants';
+import { LayoutFooter } from './layouts/FooterVariants';
+import { LayoutStickyBar } from './layouts/StickyBarVariants';
 
 
 export interface UniversalTemplateProps {
@@ -249,76 +252,20 @@ export default function UniversalStoreTemplate({
   return (
     <div className="min-h-screen bg-white text-[#1d1d1f]" style={{ fontFamily: config.fontFamily }}>
       {/* === HEADER === */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/5">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-12">
-            {/* Left: Hamburger + Store name */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-black/5 transition-colors sm:hidden"
-              >
-                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </button>
-              <button onClick={() => navigateTo('home')} className="flex items-center gap-2.5">
-                {settings?.store_logo_url ? (
-                  <img src={settings.store_logo_url} alt={displayStoreName} className="h-7 w-7 rounded-lg object-cover" />
-                ) : null}
-                <span className="font-semibold text-sm tracking-tight">{displayStoreName}</span>
-              </button>
-            </div>
-
-            {/* Desktop nav */}
-            <nav className="hidden sm:flex items-center gap-1">
-              {navItems.map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavClick(item)}
-                  className="px-3 py-1.5 text-xs font-medium rounded-full transition-all"
-                  style={
-                    isNavActive(item)
-                      ? { backgroundColor: '#1d1d1f', color: 'white' }
-                      : {}
-                  }
-                >
-                  {item.label}
-                </button>
-              ))}
-            </nav>
-
-            {/* Search icon */}
-            <button
-              onClick={() => { navigateTo('products'); setTimeout(() => document.getElementById('product-search-input')?.focus(), 100); }}
-              className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-black/5 transition-colors"
-            >
-              <Search className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile menu dropdown */}
-        {mobileMenuOpen && (
-          <div className="sm:hidden border-t border-black/5 bg-white/95 backdrop-blur-xl">
-            <div className="px-4 py-3 space-y-1">
-              {navItems.map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => { handleNavClick(item); setMobileMenuOpen(false); }}
-                  className="w-full text-left px-3 py-2.5 text-sm font-medium rounded-xl transition-all flex items-center gap-2"
-                  style={
-                    isNavActive(item)
-                      ? { backgroundColor: '#1d1d1f', color: 'white' }
-                      : {}
-                  }
-                >
-                  {item.icon && <span className="text-base">{item.icon}</span>}
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </header>
+      <LayoutHeader
+        layoutStyle={config.layoutStyle}
+        storeName={displayStoreName}
+        logoUrl={settings?.store_logo_url}
+        accentColor={accentColor}
+        mobileMenuOpen={mobileMenuOpen}
+        onToggleMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+        onNavigateHome={() => navigateTo('home')}
+        onOpenSearch={() => { navigateTo('products'); setTimeout(() => document.getElementById('product-search-input')?.focus(), 100); }}
+        navItems={navItems}
+        onNavClick={handleNavClick}
+        isNavActive={isNavActive}
+        onCloseMenu={() => setMobileMenuOpen(false)}
+      />
 
       <main>
         {/* === HOME PAGE === */}
@@ -855,42 +802,24 @@ export default function UniversalStoreTemplate({
       </main>
 
       {/* === FOOTER === */}
-      <footer className="py-8 border-t border-black/5 bg-[#f5f5f7]">
-        <div className="max-w-[1200px] mx-auto px-4 text-center space-y-3">
-          <div className="flex items-center justify-center gap-4">
-            {facebookUrl && (
-              <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="text-[#86868b] hover:text-[#1d1d1f] transition-colors">
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-              </a>
-            )}
-            {zaloUrl && (
-              <a href={zaloUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-[#86868b] hover:text-[#1d1d1f] transition-colors">Zalo</a>
-            )}
-            {tiktokUrl && (
-              <a href={tiktokUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-[#86868b] hover:text-[#1d1d1f] transition-colors">TikTok</a>
-            )}
-          </div>
-          <p className="text-xs text-[#86868b]">© {new Date().getFullYear()} {displayStoreName}</p>
-        </div>
-      </footer>
+      <LayoutFooter
+        layoutStyle={config.layoutStyle}
+        storeName={displayStoreName}
+        accentColor={accentColor}
+        facebookUrl={facebookUrl}
+        zaloUrl={zaloUrl}
+        tiktokUrl={tiktokUrl}
+      />
 
       {/* === STICKY BUY BAR (Mobile) === */}
-      {(zaloUrl || warrantyHotline) && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-black/5 py-2 px-4 sm:hidden" style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}>
-          <div className="flex items-center gap-2">
-            {zaloUrl && (
-              <a href={zaloUrl} target="_blank" rel="noopener noreferrer" className="flex-1 text-white rounded-xl py-2.5 text-center text-sm font-medium" style={{ backgroundColor: accentColor }}>
-                {config.stickyBarLabels.chat}
-              </a>
-            )}
-            {warrantyHotline && (
-              <a href={`tel:${warrantyHotline}`} className="flex-1 bg-[#1d1d1f] text-white rounded-xl py-2.5 text-center text-sm font-medium">
-                {config.stickyBarLabels.call}
-              </a>
-            )}
-          </div>
-        </div>
-      )}
+      <LayoutStickyBar
+        layoutStyle={config.layoutStyle}
+        accentColor={accentColor}
+        zaloUrl={zaloUrl}
+        warrantyHotline={warrantyHotline}
+        chatLabel={config.stickyBarLabels.chat}
+        callLabel={config.stickyBarLabels.call}
+      />
 
       {/* PRODUCT DETAIL DIALOG */}
       <ProductDetailDialog

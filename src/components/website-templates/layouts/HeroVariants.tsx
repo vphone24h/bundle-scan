@@ -236,6 +236,80 @@ function BannerHero({ settings }: { settings: TenantLandingSettings }) {
   );
 }
 
+// === MINIMAL STYLE HERO === (Clean, warm, service-focused)
+function MinimalHero({ config, settings, accentColor, onNavigateProducts }: HeroProps) {
+  if (settings?.show_banner && settings?.banner_image_url) return <BannerHero settings={settings} />;
+  return (
+    <section className="relative overflow-hidden bg-[#faf9f6]">
+      <div className="max-w-[900px] mx-auto px-6 py-14 sm:py-20 text-center">
+        <ScrollReveal animation="fade-up" delay={100}>
+          <h1 className="text-2xl sm:text-4xl font-medium tracking-tight text-stone-800 mb-3">{config.heroTitle}</h1>
+        </ScrollReveal>
+        <ScrollReveal animation="fade-up" delay={200}>
+          <p className="text-sm text-stone-500 mb-6 max-w-md mx-auto">{config.heroSubtitle}</p>
+        </ScrollReveal>
+        <ScrollReveal animation="scale-up" delay={300}>
+          <Button onClick={onNavigateProducts} className="rounded-xl px-8 h-11 text-sm font-medium text-white" style={{ backgroundColor: accentColor }}>
+            {config.heroCta}
+          </Button>
+        </ScrollReveal>
+      </div>
+    </section>
+  );
+}
+
+// === SHOPEE STYLE HERO === (Playful, promo-heavy, orange)
+function ShopeeHero({ config, settings, accentColor, onNavigateProducts }: HeroProps) {
+  if (settings?.show_banner && settings?.banner_image_url) return <BannerHero settings={settings} />;
+  return (
+    <section className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #ee4d2d 0%, #ff6633 50%, #f53d2d 100%)' }}>
+      <div className="max-w-[1200px] mx-auto px-4 py-8 sm:py-12">
+        <ScrollReveal animation="fade-up" delay={100}>
+          <div className="inline-flex items-center gap-1.5 bg-yellow-400 text-red-700 text-xs font-bold px-3 py-1 rounded-full mb-3">
+            🔥 SIÊU SALE
+          </div>
+        </ScrollReveal>
+        <ScrollReveal animation="fade-up" delay={150}>
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-white mb-2">{config.heroTitle}</h1>
+        </ScrollReveal>
+        <ScrollReveal animation="fade-up" delay={200}>
+          <p className="text-sm text-white/80 mb-5 max-w-sm">{config.heroSubtitle}</p>
+        </ScrollReveal>
+        <ScrollReveal animation="fade-up" delay={250}>
+          <Button onClick={onNavigateProducts} className="bg-white text-red-600 hover:bg-white/90 rounded-lg px-6 h-10 text-sm font-bold shadow-lg">
+            {config.heroCta}
+          </Button>
+        </ScrollReveal>
+      </div>
+    </section>
+  );
+}
+
+// === ORGANIC STYLE HERO === (Natural, earthy, green)
+function OrganicHero({ config, settings, accentColor, onNavigateProducts }: HeroProps) {
+  if (settings?.show_banner && settings?.banner_image_url) return <BannerHero settings={settings} />;
+  return (
+    <section className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #2d5016 0%, #4a7c2e 50%, #3d6b21 100%)' }}>
+      <div className="max-w-[1200px] mx-auto px-6 py-12 sm:py-16">
+        <ScrollReveal animation="fade-up" delay={100}>
+          <p className="text-xs text-green-200/60 mb-2">🌿 Tự nhiên · An toàn · Tươi ngon</p>
+        </ScrollReveal>
+        <ScrollReveal animation="fade-up" delay={200}>
+          <h1 className="text-2xl sm:text-4xl font-bold text-white mb-3 tracking-tight">{config.heroTitle}</h1>
+        </ScrollReveal>
+        <ScrollReveal animation="fade-up" delay={300}>
+          <p className="text-sm text-white/70 mb-6 max-w-md">{config.heroSubtitle}</p>
+        </ScrollReveal>
+        <ScrollReveal animation="scale-up" delay={400}>
+          <Button onClick={onNavigateProducts} className="bg-green-100 text-green-900 hover:bg-green-200 rounded-full px-8 h-11 text-sm font-semibold">
+            {config.heroCta}
+          </Button>
+        </ScrollReveal>
+      </div>
+    </section>
+  );
+}
+
 // === HERO RESOLVER ===
 export function LayoutHero({ layoutStyle, ...props }: HeroProps & { layoutStyle: LayoutStyle }) {
   switch (layoutStyle) {
@@ -244,6 +318,9 @@ export function LayoutHero({ layoutStyle, ...props }: HeroProps & { layoutStyle:
     case 'nike': return <NikeHero {...props} />;
     case 'luxury': return <LuxuryHero {...props} />;
     case 'canifa': return <NikeHero {...props} />;
+    case 'minimal': return <MinimalHero {...props} />;
+    case 'shopee': return <ShopeeHero {...props} />;
+    case 'organic': return <OrganicHero {...props} />;
     case 'apple':
     default: return <AppleHero {...props} />;
   }
