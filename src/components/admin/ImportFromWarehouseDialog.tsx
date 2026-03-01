@@ -102,12 +102,48 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     }
   };
 
+  // Map warehouse category to landing category (find or create)
+  const resolveLandingCategoryId = async (categoryId: string | null, categoryName: string | null): Promise<string | null> => {
+    if (!categoryId || !categoryName) return null;
+    try {
+      // Check if a landing category with same name already exists
+      const { data: existing } = await supabase
+        .from('landing_product_categories' as any)
+        .select('id')
+        .eq('name', categoryName)
+        .limit(1)
+        .maybeSingle();
+      if (existing) return (existing as any).id;
+
+      // Create new landing category
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId) return null;
+      const { data: created } = await supabase
+        .from('landing_product_categories' as any)
+        .insert([{ name: categoryName, tenant_id: tenantId }])
+        .select('id')
+        .single();
+      return created ? (created as any).id : null;
+    } catch {
+      return null;
+    }
+  };
+
   const handleImport = async (useAI: boolean) => {
     if (selected.size === 0) return;
     setImporting(true);
 
     const selectedItems = (inventory || []).filter(i => selected.has(i.productId));
     let successCount = 0;
+
+    // Pre-resolve category mappings to avoid duplicate creation
+    const categoryMap = new Map<string, string | null>();
+    for (const item of selectedItems) {
+      if (item.categoryId && !categoryMap.has(item.categoryId)) {
+        const landingCatId = await resolveLandingCategoryId(item.categoryId, item.categoryName || null);
+        categoryMap.set(item.categoryId, landingCatId);
+      }
+    }
 
     for (let idx = 0; idx < selectedItems.length; idx++) {
       const item = selectedItems[idx];
@@ -123,12 +159,14 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
 
         const aiContent = useAI ? await generateAIDescription(item) : null;
 
+        const landingCategoryId = item.categoryId ? (categoryMap.get(item.categoryId) ?? null) : null;
+
         await createProduct.mutateAsync({
           name: item.productName,
           description: aiContent?.description || null,
           price: salePrice || item.avgImportPrice,
           sale_price: null,
-          category_id: item.categoryId || null,
+          category_id: landingCategoryId,
           image_url: null,
           images: [],
           is_featured: false,
