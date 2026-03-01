@@ -11,9 +11,6 @@ export interface WebsiteTemplate {
 }
 
 export const WEBSITE_TEMPLATES: WebsiteTemplate[] = [
-  // Apple Style Landing
-  { id: 'apple_landing', name: 'Apple Style Landing', category: 'Công nghệ', description: 'Phong cách Apple.com – full-screen banners, tối giản, cao cấp', icon: '🍎', tier: 'pro', available: true, brandInspiration: 'Apple.com' },
-
   // Technology
   { id: 'phone_store', name: 'Cửa hàng điện thoại', category: 'Công nghệ', description: 'Phong cách Apple Store cao cấp, tối ưu bán iPhone/Samsung', icon: '📱', tier: 'premium', available: true },
   { id: 'laptop_store', name: 'Cửa hàng laptop', category: 'Công nghệ', description: 'Hiện đại, chuyên nghiệp cho máy tính', icon: '💻', tier: 'premium', available: true },
@@ -65,6 +62,9 @@ export const WEBSITE_TEMPLATES: WebsiteTemplate[] = [
   { id: 'pet_store', name: 'Thú cưng', category: 'Chuyên biệt', description: 'Dễ thương, thân thiện', icon: '🐾', tier: 'basic', available: true },
   { id: 'farm_store', name: 'Nông sản / Đặc sản', category: 'Chuyên biệt', description: 'Tự nhiên, sạch, nguồn gốc rõ ràng', icon: '🌾', tier: 'basic', available: true },
   { id: 'landing_page', name: 'Landing Page bán hàng', category: 'Chuyên biệt', description: 'Trang đích tối ưu chuyển đổi', icon: '🎯', tier: 'basic', available: true },
+
+  // Apple Style Landing (cuối cùng)
+  { id: 'apple_landing', name: 'Apple Style Landing', category: 'Công nghệ', description: 'Phong cách Apple.com – full-screen banners, tối giản, cao cấp', icon: '🍎', tier: 'pro', available: true, brandInspiration: 'Apple.com' },
 ];
 
 export const TEMPLATE_CATEGORIES = [...new Set(WEBSITE_TEMPLATES.map(t => t.category))];
