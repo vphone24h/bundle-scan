@@ -293,6 +293,23 @@ export function useDeletePost() {
   });
 }
 
+export function useUpdatePost() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ postId, content, imageUrls }: { postId: string; content: string; imageUrls: string[] }) => {
+      const { error } = await supabase.from('social_posts').update({
+        content,
+        image_urls: imageUrls,
+      } as any).eq('id', postId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['social-feed'] });
+    },
+  });
+}
+
 // ─── Likes ───────────────────────────────────────────────────
 export function useToggleLike() {
   const queryClient = useQueryClient();
