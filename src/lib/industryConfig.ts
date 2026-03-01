@@ -252,10 +252,12 @@ const INDUSTRY_FEATURE_PRESETS: Record<string, Partial<IndustryFeatures>> = {
   pet_store: { imei: false, warranty: false, tradein: false, compare: false, combo: true },
   farm_store: { imei: false, warranty: false, tradein: false, compare: false },
   landing_page: { imei: false, warranty: false, tradein: false, compare: false, flashSale: true },
+  apple_landing: { imei: true, tradein: true, installment: true, compare: true, repair: true, warranty: true, flashSale: true },
 };
 
 // Per-industry layout style
 const INDUSTRY_LAYOUT_STYLES: Record<string, LayoutStyle> = {
+  apple_landing: 'apple',
   phone_store: 'apple', laptop_store: 'apple', accessories_store: 'apple',
   electronics_store: 'tgdd',
   fashion_store: 'canifa', shoes_store: 'nike', cosmetics_store: 'hasaki',
@@ -273,6 +275,7 @@ const INDUSTRY_LAYOUT_STYLES: Record<string, LayoutStyle> = {
 
 // Per-industry home sections order
 const INDUSTRY_HOME_SECTIONS: Record<string, HomeSection[]> = {
+  apple_landing: ['hero', 'trustBadges', 'categories', 'featuredProducts', 'flashSale', 'articles', 'warranty', 'voucher', 'reviews', 'storeInfo'],
   phone_store: ['hero', 'trustBadges', 'categories', 'featuredProducts', 'articles', 'warranty', 'voucher', 'reviews', 'storeInfo'],
   cosmetics_store: ['hero', 'trustBadges', 'flashSale', 'categories', 'featuredProducts', 'combo', 'articles', 'reviews', 'voucher', 'storeInfo'],
   fashion_store: ['hero', 'trustBadges', 'categories', 'featuredProducts', 'articles', 'voucher', 'reviews', 'storeInfo'],
@@ -284,6 +287,7 @@ const INDUSTRY_HOME_SECTIONS: Record<string, HomeSection[]> = {
 
 // Brand inspiration descriptions
 const INDUSTRY_BRAND_INSPIRATION: Record<string, string> = {
+  apple_landing: 'Apple.com',
   phone_store: 'Apple Store Việt Nam',
   electronics_store: 'Thế Giới Di Động / Điện Máy Xanh',
   cosmetics_store: 'Hasaki / Sephora',
@@ -297,6 +301,29 @@ const INDUSTRY_BRAND_INSPIRATION: Record<string, string> = {
 };
 
 export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
+  // === APPLE LANDING (Apple.com style) ===
+  apple_landing: {
+    id: 'apple_landing',
+    heroTitle: 'iPhone 16 Pro Max',
+    heroSubtitle: 'Titan. Siêu mạnh. Siêu nhẹ.',
+    heroCta: 'Mua ngay',
+    heroGradient: 'linear-gradient(180deg, #fbfbfd 0%, #f5f5f7 100%)',
+    accentColor: '#0071e3',
+    trustBadges: [
+      { icon: 'Shield', title: 'Bảo hành 12 tháng', desc: 'Chính hãng Apple' },
+      { icon: 'Award', title: '100% chính hãng', desc: 'Nguyên seal, full box' },
+      { icon: 'Truck', title: 'Giao nhanh 2h', desc: 'Nội thành HCM/HN' },
+      { icon: 'CreditCard', title: 'Trả góp 0%', desc: 'Duyệt nhanh 15 phút' },
+    ],
+    productSectionTitle: 'Sản phẩm nổi bật',
+    productSectionSubtitle: 'Được yêu thích nhất',
+    emptyProductText: 'Chưa có sản phẩm nào',
+    navLabels: { home: 'Trang chủ', products: 'Sản phẩm', news: 'Tin tức', warranty: 'Bảo hành' },
+    stickyBarLabels: { chat: 'Chat Zalo', call: 'Gọi ngay' },
+    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
+    brandInspiration: 'Apple.com',
+  },
+
   // === TECHNOLOGY ===
   phone_store: {
     id: 'phone_store',
@@ -1021,6 +1048,12 @@ export function getDefaultNavItems(config: IndustryConfig): NavItemConfig[] {
 
 // Suggested extra nav items per industry - now using type: 'page' with pageView for system pages
 export const INDUSTRY_SUGGESTED_NAV: Record<string, NavItemConfig[]> = {
+  apple_landing: [
+    { id: 'tradein', label: 'Thu cũ đổi mới', enabled: true, type: 'page', pageView: 'tradein', icon: '🔄' },
+    { id: 'installment', label: 'Trả góp 0%', enabled: true, type: 'page', pageView: 'installment', icon: '💳' },
+    { id: 'repair', label: 'Sửa chữa', enabled: true, type: 'page', pageView: 'repair', icon: '🔧' },
+    { id: 'accessories', label: 'Phụ kiện', enabled: true, type: 'page', pageView: 'accessories', icon: '🎧' },
+  ],
   // Technology
   phone_store: [
     { id: 'repair', label: 'Sửa chữa', enabled: true, type: 'page', pageView: 'repair', icon: '🔧' },
