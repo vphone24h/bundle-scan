@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { PullToRefresh } from '@/components/layout/PullToRefresh';
 import DOMPurify from 'dompurify';
-import { SetURLSearchParams } from 'react-router-dom';
+import { SetURLSearchParams, useLocation } from 'react-router-dom';
+import { buildProductPath, extractProductIdFromPath } from '@/lib/slugify';
 import { QueryClient } from '@tanstack/react-query';
 import { TenantLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo, HomeSectionItem } from '@/hooks/useTenantLanding';
 import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProducts';
@@ -156,10 +157,22 @@ export default function UniversalStoreTemplate({
     }
   }, [warrantyStorageKey, submittedValue, warrantyResults]);
 
-  // Deep-link
+  const location = useLocation();
+
+  // Deep-link from query params OR path-based URLs
   useEffect(() => {
     const productId = searchParams.get('product');
     const articleId = searchParams.get('article');
+    
+    // Try path-based product URL: /category/product-slug-SHORTID
+    if (!productId && !articleId && productsData?.products) {
+      const shortId = extractProductIdFromPath(location.pathname);
+      if (shortId) {
+        const p = productsData.products.find(x => x.id.startsWith(shortId));
+        if (p) { setSelectedProduct(p); setPageView('products'); }
+      }
+    }
+    
     if (productId && productsData?.products) {
       const p = productsData.products.find(x => x.id === productId);
       if (p) { setSelectedProduct(p); setPageView('products'); }
@@ -168,7 +181,7 @@ export default function UniversalStoreTemplate({
       const a = articlesData.articles.find(x => x.id === articleId);
       if (a) { setSelectedArticle(a); setPageView('article-detail'); }
     }
-  }, [searchParams, productsData, articlesData]);
+  }, [searchParams, productsData, articlesData, location.pathname]);
 
   const isPhoneSearch = /^0\d{9,10}$/.test(submittedValue.replace(/\s/g, ''));
   const firstResult = warrantyResults?.[0];
@@ -229,12 +242,29 @@ export default function UniversalStoreTemplate({
   };
 
   const copyShareLink = (type: 'product' | 'article', id: string) => {
-    const spaUrl = new URL(window.location.href);
-    spaUrl.search = '';
-    spaUrl.searchParams.set(type, id);
-    const directUrl = spaUrl.toString();
+    const baseUrl = new URL(window.location.href);
+    baseUrl.search = '';
+    baseUrl.hash = '';
+    
+    if (type === 'product') {
+      // Build SEO-friendly path: /category/product-slug-shortid
+      const product = productsData?.products?.find(p => p.id === id);
+      if (product) {
+        const categories = productsData?.categories || [];
+        const category = categories.find(c => c.id === product.category_id);
+        const parentCategory = category?.parent_id ? categories.find(c => c.id === category.parent_id) : null;
+        const productPath = buildProductPath(product.name, product.id, category?.name, parentCategory?.name);
+        baseUrl.pathname = productPath;
+      } else {
+        baseUrl.searchParams.set('product', id);
+      }
+    } else {
+      baseUrl.searchParams.set('article', id);
+    }
+    
+    const cleanUrl = baseUrl.toString();
     const ogProxyBase = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-meta`;
-    const ogUrl = `${ogProxyBase}?type=${type}&id=${id}&tenant_id=${tenantId || ''}&url=${encodeURIComponent(directUrl)}`;
+    const ogUrl = `${ogProxyBase}?type=${type}&id=${id}&tenant_id=${tenantId || ''}&url=${encodeURIComponent(cleanUrl)}`;
     navigator.clipboard.writeText(ogUrl).then(() => {
       import('sonner').then(({ toast }) => toast.success('Đã sao chép link chia sẻ'));
     }).catch(() => {});
