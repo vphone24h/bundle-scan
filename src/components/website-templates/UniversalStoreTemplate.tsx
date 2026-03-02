@@ -329,13 +329,13 @@ export default function UniversalStoreTemplate({
                             <ScrollReveal key={cat.id} animation="fade-up" delay={idx * 80}>
                               <button
                                 onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products'); }}
-                                className={`group w-full overflow-hidden relative text-left ${cat.image_url ? 'min-h-[220px] sm:min-h-[70vh]' : 'min-h-[120px]'}`}
+                                className={`group w-full overflow-hidden relative text-left ${cat.image_url ? 'min-h-[65vh] sm:min-h-[70vh]' : 'min-h-[120px]'}`}
                               >
                                 {cat.image_url ? (
                                   <>
                                     <img src={cat.image_url} alt={cat.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                                    <div className="relative z-10 h-full flex flex-col justify-end p-6 min-h-[220px] sm:min-h-[70vh]">
+                                    <div className="relative z-10 h-full flex flex-col justify-end p-6 min-h-[65vh] sm:min-h-[70vh]">
                                       <h3 className="text-xl font-bold text-white">{cat.name}</h3>
                                       <p className="text-sm text-white/80 mt-1">Khám phá ngay →</p>
                                     </div>
