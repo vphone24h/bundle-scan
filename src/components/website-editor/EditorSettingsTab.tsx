@@ -535,7 +535,54 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
         </div>
       </SettingsBlock>
 
-      {/* SEO */}
+      {/* Tính năng trang sản phẩm */}
+      <SettingsBlock
+        id="product-features"
+        icon="🛍️"
+        title="Trang sản phẩm"
+        description="Bật/tắt các mục trong trang chi tiết SP"
+        isExpanded={expandedBlocks.has('product-features')}
+        onToggle={() => toggleBlock('product-features')}
+      >
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Khung khuyến mãi</Label>
+            <Switch
+              checked={(formData as any).show_promotion_section !== false}
+              onCheckedChange={checked => onChange('show_promotion_section', checked)}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Khung bảo hành</Label>
+            <Switch
+              checked={(formData as any).show_warranty_section !== false}
+              onCheckedChange={checked => onChange('show_warranty_section', checked)}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Nút trả góp</Label>
+            <Switch
+              checked={(formData as any).show_installment_button !== false}
+              onCheckedChange={checked => onChange('show_installment_button', checked)}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">So sánh sản phẩm</Label>
+            <Switch
+              checked={(formData as any).show_compare_products === true}
+              onCheckedChange={checked => onChange('show_compare_products', checked)}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Thu cũ đổi mới</Label>
+            <Switch
+              checked={(formData as any).show_trade_in === true}
+              onCheckedChange={checked => onChange('show_trade_in', checked)}
+            />
+          </div>
+        </div>
+      </SettingsBlock>
+
       <SettingsBlock
         id="seo"
         icon="🔍"
