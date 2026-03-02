@@ -28,6 +28,7 @@ export interface DebtPayment {
   entity_id: string;
   payment_type: 'payment' | 'addition';
   amount: number;
+  allocated_amount: number;
   payment_source: string | null;
   description: string;
   branch_id: string | null;
@@ -577,74 +578,102 @@ export function useCreateDebtPayment() {
 
       if (error) throw error;
 
-      // FIFO allocation: Apply payment to oldest unpaid receipts first
+      // FIFO allocation: Apply payment chronologically across BOTH orders and addition notes
       if (payment.payment_type === 'payment') {
         let remainingPayment = payment.amount;
         
+        // Step 1: Get unpaid receipts (orders)
+        let orderItems: { id: string; date: number; debt_amount: number; paid_amount: number }[] = [];
+        
         if (payment.entity_type === 'customer') {
-          // Get unpaid export receipts for this customer, ordered by date (oldest first)
           const { data: receipts } = await supabase
             .from('export_receipts')
-            .select('id, code, debt_amount, paid_amount, total_amount')
+            .select('id, export_date, debt_amount, paid_amount')
             .eq('customer_id', payment.entity_id)
             .eq('status', 'completed')
             .gt('debt_amount', 0)
             .order('export_date', { ascending: true });
           
           if (receipts) {
-            for (const receipt of receipts) {
-              if (remainingPayment <= 0) break;
-              
-              const debtAmount = Number(receipt.debt_amount);
-              const payForThisReceipt = Math.min(remainingPayment, debtAmount);
-              
-              const newPaidAmount = Number(receipt.paid_amount) + payForThisReceipt;
-              const newDebtAmount = debtAmount - payForThisReceipt;
-              
-              // Update receipt with new paid/debt amounts
-              await supabase
-                .from('export_receipts')
-                .update({
-                  paid_amount: newPaidAmount,
-                  debt_amount: newDebtAmount,
-                })
-                .eq('id', receipt.id);
-              
-              remainingPayment -= payForThisReceipt;
-            }
+            orderItems = receipts.map(r => ({
+              id: r.id,
+              date: new Date(r.export_date).getTime(),
+              debt_amount: Number(r.debt_amount),
+              paid_amount: Number(r.paid_amount),
+            }));
           }
         } else {
-          // Get unpaid import receipts for this supplier, ordered by date (oldest first)
           const { data: receipts } = await supabase
             .from('import_receipts')
-            .select('id, code, debt_amount, paid_amount, total_amount')
+            .select('id, import_date, debt_amount, paid_amount')
             .eq('supplier_id', payment.entity_id)
             .eq('status', 'completed')
             .gt('debt_amount', 0)
             .order('import_date', { ascending: true });
           
           if (receipts) {
-            for (const receipt of receipts) {
-              if (remainingPayment <= 0) break;
-              
-              const debtAmount = Number(receipt.debt_amount);
-              const payForThisReceipt = Math.min(remainingPayment, debtAmount);
-              
-              const newPaidAmount = Number(receipt.paid_amount) + payForThisReceipt;
-              const newDebtAmount = debtAmount - payForThisReceipt;
-              
-              // Update receipt with new paid/debt amounts
-              await supabase
-                .from('import_receipts')
-                .update({
-                  paid_amount: newPaidAmount,
-                  debt_amount: newDebtAmount,
-                })
-                .eq('id', receipt.id);
-              
-              remainingPayment -= payForThisReceipt;
+            orderItems = receipts.map(r => ({
+              id: r.id,
+              date: new Date(r.import_date).getTime(),
+              debt_amount: Number(r.debt_amount),
+              paid_amount: Number(r.paid_amount),
+            }));
+          }
+        }
+        
+        // Step 2: Get unpaid addition notes
+        const { data: additions } = await supabase
+          .from('debt_payments')
+          .select('id, amount, allocated_amount, created_at')
+          .eq('entity_type', payment.entity_type)
+          .eq('entity_id', payment.entity_id)
+          .eq('payment_type', 'addition')
+          .order('created_at', { ascending: true });
+        
+        // Step 3: Merge into a single timeline sorted by date (oldest first)
+        type DebtItem = { kind: 'order'; id: string; date: number; unpaid: number; paidAmount: number } 
+          | { kind: 'addition'; id: string; date: number; unpaid: number; currentAllocated: number };
+        const timeline: DebtItem[] = [];
+        
+        for (const o of orderItems) {
+          timeline.push({ kind: 'order', id: o.id, date: o.date, unpaid: o.debt_amount, paidAmount: o.paid_amount });
+        }
+        
+        if (additions) {
+          for (const a of additions) {
+            const total = Number(a.amount);
+            const allocated = Number(a.allocated_amount) || 0;
+            const unpaid = total - allocated;
+            if (unpaid > 0) {
+              timeline.push({ kind: 'addition', id: a.id, date: new Date(a.created_at).getTime(), unpaid, currentAllocated: allocated });
             }
           }
+        }
+        
+        timeline.sort((a, b) => a.date - b.date);
+        
+        // Step 4: Allocate payment in chronological order
+        const receiptTable = payment.entity_type === 'customer' ? 'export_receipts' : 'import_receipts';
+        
+        for (const item of timeline) {
+          if (remainingPayment <= 0) break;
+          const payAmount = Math.min(remainingPayment, item.unpaid);
+          
+          if (item.kind === 'order') {
+            const newPaid = item.paidAmount + payAmount;
+            const newDebt = item.unpaid - payAmount;
+            
+            if (payment.entity_type === 'customer') {
+              await supabase.from('export_receipts').update({ paid_amount: newPaid, debt_amount: newDebt }).eq('id', item.id);
+            } else {
+              await supabase.from('import_receipts').update({ paid_amount: newPaid, debt_amount: newDebt }).eq('id', item.id);
+            }
+          } else {
+            const newAllocated = item.currentAllocated + payAmount;
+            await supabase.from('debt_payments').update({ allocated_amount: newAllocated }).eq('id', item.id);
+          }
+          
+          remainingPayment -= payAmount;
         }
       }
 
