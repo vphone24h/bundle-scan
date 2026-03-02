@@ -6,8 +6,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import DOMPurify from 'dompurify';
-import { SetURLSearchParams } from 'react-router-dom';
+import { SetURLSearchParams, useLocation } from 'react-router-dom';
 import { QueryClient } from '@tanstack/react-query';
+import { buildProductPath, extractProductIdFromPath } from '@/lib/slugify';
 import { TenantLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo, HomeSectionItem } from '@/hooks/useTenantLanding';
 import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProducts';
 import { LandingArticle, LandingArticleCategory } from '@/hooks/useLandingArticles';
@@ -333,13 +334,25 @@ export default function AppleStyleLandingTemplate({
     }
   }, [warrantyStorageKey, submittedValue, warrantyResults]);
 
-  // Deep-link
+  const location = useLocation();
+
+  // Deep-link from query params OR path-based URLs
   useEffect(() => {
     const pid = searchParams.get('product');
     const aid = searchParams.get('article');
+    
+    // Try path-based product URL
+    if (!pid && !aid && productsData?.products) {
+      const shortId = extractProductIdFromPath(location.pathname);
+      if (shortId) {
+        const p = productsData.products.find(x => x.id.startsWith(shortId));
+        if (p) { setSelectedProduct(p); setPageView('products'); }
+      }
+    }
+    
     if (pid && productsData?.products) { const p = productsData.products.find(x => x.id === pid); if (p) { setSelectedProduct(p); setPageView('products'); } }
     if (aid && articlesData?.articles) { const a = articlesData.articles.find(x => x.id === aid); if (a) { setSelectedArticle(a); setPageView('article-detail'); } }
-  }, [searchParams, productsData, articlesData]);
+  }, [searchParams, productsData, articlesData, location.pathname]);
 
   const isPhoneSearch = /^0\d{9,10}$/.test(submittedValue.replace(/\s/g, ''));
   const firstResult = warrantyResults?.[0];
@@ -387,9 +400,28 @@ export default function AppleStyleLandingTemplate({
     const np = new URLSearchParams(searchParams); np.set('product', p.id); np.delete('article'); setSearchParams(np, { replace: true });
   };
   const copyShareLink = (type: 'product' | 'article', id: string) => {
-    const u = new URL(window.location.href); u.search = ''; u.searchParams.set(type, id);
+    const baseUrl = new URL(window.location.href);
+    baseUrl.search = '';
+    baseUrl.hash = '';
+    
+    if (type === 'product') {
+      const product = productsData?.products?.find(p => p.id === id);
+      if (product) {
+        const categories = productsData?.categories || [];
+        const category = categories.find(c => c.id === product.category_id);
+        const parentCategory = category?.parent_id ? categories.find(c => c.id === category.parent_id) : null;
+        const productPath = buildProductPath(product.name, product.id, category?.name, parentCategory?.name);
+        baseUrl.pathname = productPath;
+      } else {
+        baseUrl.searchParams.set('product', id);
+      }
+    } else {
+      baseUrl.searchParams.set('article', id);
+    }
+    
+    const cleanUrl = baseUrl.toString();
     const ogBase = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-meta`;
-    const ogUrl = `${ogBase}?type=${type}&id=${id}&tenant_id=${tenantId || ''}&url=${encodeURIComponent(u.toString())}`;
+    const ogUrl = `${ogBase}?type=${type}&id=${id}&tenant_id=${tenantId || ''}&url=${encodeURIComponent(cleanUrl)}`;
     navigator.clipboard.writeText(ogUrl).then(() => { import('sonner').then(({ toast }) => toast.success('Đã sao chép link')); }).catch(() => {});
   };
 
