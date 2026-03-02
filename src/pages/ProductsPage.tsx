@@ -67,8 +67,6 @@ const PRODUCTS_TOUR_STEPS: TourStep[] = [
   },
 ];
 
-
-// Map Product to the format expected by ProductTable
 function mapProductForTable(product: Product) {
   return {
     id: product.id,
@@ -109,7 +107,6 @@ export default function ProductsPage() {
   const [productsForBarcode, setProductsForBarcode] = useState<any[]>([]);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   
-  // Search & filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -124,13 +121,11 @@ export default function ProductsPage() {
 
   const filteredProducts = useMemo(() => {
     return mappedProducts.filter((p) => {
-      // Search filter
       const matchesSearch =
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.imei && p.imei.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      // Date filter
       let matchesDate = true;
       if (dateFrom || dateTo) {
         const productDate = startOfDay(p.importDate);
@@ -146,19 +141,10 @@ export default function ProductsPage() {
         }
       }
       
-      // Category filter
       const matchesCategory = categoryFilter === '_all_' || p.categoryId === categoryFilter;
-      
-      // Supplier filter
       const matchesSupplier = supplierFilter === '_all_' || p.supplierId === supplierFilter;
-      
-      // Status filter
       const matchesStatus = statusFilter === '_all_' || p.status === statusFilter;
-      
-      // Branch filter
       const matchesBranch = branchFilter === '_all_' || p.branchId === branchFilter;
-      
-      // Printed filter
       const matchesPrinted = printedFilter === '_all_' || 
         (printedFilter === 'printed' && p.isPrinted) || 
         (printedFilter === 'not_printed' && !p.isPrinted);
@@ -167,7 +153,6 @@ export default function ProductsPage() {
     });
   }, [mappedProducts, searchTerm, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter, printedFilter]);
 
-  // Pagination
   const pagination = usePagination(filteredProducts, { 
     storageKey: 'products-list'
   });
@@ -186,7 +171,6 @@ export default function ProductsPage() {
   const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_' || printedFilter !== '_all_';
 
   const handleEdit = (product: any) => {
-    // Find the original product from the products array
     const originalProduct = products?.find(p => p.id === product.id);
     if (originalProduct) {
       setEditProduct(originalProduct);
@@ -205,25 +189,25 @@ export default function ProductsPage() {
 
   const handleExportProducts = () => {
     if (filteredProducts.length === 0) {
-      toast({ title: 'Không có dữ liệu', description: 'Không có sản phẩm nào để xuất', variant: 'destructive' });
+      toast({ title: t('pages.products.noData'), description: t('pages.products.noProductsToExport'), variant: 'destructive' });
       return;
     }
 
     exportToExcel({
       filename: `San_pham_${format(new Date(), 'ddMMyyyy')}`,
-      sheetName: 'Sản phẩm',
+      sheetName: t('sidebar.products'),
       columns: [
         { header: 'STT', key: 'stt', width: 6, isNumeric: true },
-        { header: 'Tên sản phẩm', key: 'name', width: 35 },
+        { header: t('pages.products.searchPlaceholder').split(',')[0], key: 'name', width: 35 },
         { header: 'SKU', key: 'sku', width: 18 },
         { header: 'IMEI', key: 'imei', width: 18 },
-        { header: 'Danh mục', key: 'categoryName', width: 18 },
-        { header: 'Giá nhập', key: 'importPrice', width: 15, isNumeric: true },
-        { header: 'Giá bán', key: 'salePrice', width: 15, isNumeric: true },
-        { header: 'Ngày nhập', key: 'importDate', width: 12, format: (v) => formatDateForExcel(v) },
-        { header: 'Nhà cung cấp', key: 'supplierName', width: 20 },
-        { header: 'Chi nhánh', key: 'branchName', width: 18 },
-        { header: 'Trạng thái', key: 'status', width: 12, format: (v) => v === 'in_stock' ? 'Tồn kho' : v === 'sold' ? 'Đã bán' : 'Đã trả' },
+        { header: t('pages.products.category'), key: 'categoryName', width: 18 },
+        { header: t('pages.products.fromDate'), key: 'importPrice', width: 15, isNumeric: true },
+        { header: t('pages.products.toDate'), key: 'salePrice', width: 15, isNumeric: true },
+        { header: t('pages.products.fromDate'), key: 'importDate', width: 12, format: (v) => formatDateForExcel(v) },
+        { header: t('pages.products.supplier'), key: 'supplierName', width: 20 },
+        { header: t('pages.products.branch'), key: 'branchName', width: 18 },
+        { header: t('pages.products.status'), key: 'status', width: 12, format: (v) => v === 'in_stock' ? t('pages.products.inStock') : v === 'sold' ? t('pages.products.sold') : t('pages.products.returned') },
       ],
       data: filteredProducts.map((p, index) => ({
         stt: index + 1,
@@ -240,10 +224,8 @@ export default function ProductsPage() {
       })),
     });
 
-    toast({ title: 'Xuất Excel thành công', description: `Đã xuất ${filteredProducts.length} sản phẩm` });
+    toast({ title: t('pages.products.exportSuccess'), description: t('pages.products.exportedProducts', { count: filteredProducts.length }) });
   };
-
-  // Shell-first: no spinner
 
   return (
     <MainLayout>
@@ -259,12 +241,12 @@ export default function ProductsPage() {
               onClick={() => setManualTourActive(v => !v)}
             >
               <PlayCircle className="mr-1.5 h-4 w-4" />
-              <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
+              <span className="hidden sm:inline">{manualTourActive ? t('pages.products.turnOffGuide') : t('pages.products.viewGuide')}</span>
               <span className="sm:hidden">HD</span>
             </Button>
             <Button onClick={() => navigate('/import/new')} size="sm">
               <Plus className="mr-1.5 h-4 w-4" />
-              Thêm sản phẩm
+              {t('pages.products.addProduct')}
             </Button>
             <div className="flex items-center gap-1" data-tour="product-print-btn">
               <Button
@@ -275,7 +257,7 @@ export default function ProductsPage() {
                 className={selectedProducts.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
               >
                 <Barcode className="mr-1.5 h-4 w-4" />
-                In mã vạch {selectedProducts.length > 0 ? `(${selectedProducts.length})` : ''}
+                {t('pages.products.printBarcode')} {selectedProducts.length > 0 ? `(${selectedProducts.length})` : ''}
               </Button>
               {selectedProducts.length === 0 && (
                 <Popover>
@@ -285,7 +267,7 @@ export default function ProductsPage() {
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto px-3 py-2 text-sm">
-                    Chọn sản phẩm rồi mới in được
+                    {t('pages.products.selectToPrint')}
                   </PopoverContent>
                 </Popover>
               )}
@@ -295,16 +277,14 @@ export default function ProductsPage() {
       />
 
       <div className="p-4 sm:p-6 lg:p-8 space-y-4">
-        {/* Filters */}
         <Card>
           <CardContent className="pt-4 sm:pt-6">
             <div className="space-y-4">
-              {/* Search row */}
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <div className="relative flex-1" data-tour="product-search">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Tìm theo tên, SKU hoặc IMEI..."
+                    placeholder={t('pages.products.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 search-input-highlight"
@@ -318,8 +298,8 @@ export default function ProductsPage() {
                     size="sm"
                   >
                     <Filter className="mr-1.5 sm:mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">Bộ lọc</span>
-                    <span className="sm:hidden">Lọc</span>
+                    <span className="hidden sm:inline">{t('pages.products.filters')}</span>
+                    <span className="sm:hidden">{t('pages.products.filtersShort')}</span>
                     {hasActiveFilters && (
                       <Badge variant="secondary" className="ml-1.5 sm:ml-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
                         !
@@ -328,112 +308,81 @@ export default function ProductsPage() {
                   </Button>
                   <Button variant="outline" onClick={handleExportProducts} size="sm" className="flex-1 sm:flex-none">
                     <Download className="mr-1.5 sm:mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">Xuất Excel</span>
+                    <span className="hidden sm:inline">{t('pages.products.exportExcel')}</span>
                     <span className="sm:hidden">Excel</span>
                   </Button>
                 </div>
               </div>
 
-              {/* Extended filters */}
               {showFilters && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-3 sm:gap-4 pt-4 border-t">
                   <div className="space-y-1.5 sm:space-y-2">
-                    <Label className="text-[10px] sm:text-xs">Từ ngày</Label>
-                    <Input
-                      type="date"
-                      value={dateFrom}
-                      onChange={(e) => setDateFrom(e.target.value)}
-                      className="text-sm"
-                    />
+                    <Label className="text-[10px] sm:text-xs">{t('pages.products.fromDate')}</Label>
+                    <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="text-sm" />
                   </div>
                   <div className="space-y-1.5 sm:space-y-2">
-                    <Label className="text-[10px] sm:text-xs">Đến ngày</Label>
-                    <Input
-                      type="date"
-                      value={dateTo}
-                      onChange={(e) => setDateTo(e.target.value)}
-                      className="text-sm"
-                    />
+                    <Label className="text-[10px] sm:text-xs">{t('pages.products.toDate')}</Label>
+                    <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="text-sm" />
                   </div>
                   <div className="space-y-1.5 sm:space-y-2">
-                    <Label className="text-[10px] sm:text-xs">Danh mục</Label>
+                    <Label className="text-[10px] sm:text-xs">{t('pages.products.category')}</Label>
                     <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="text-sm">
-                        <SelectValue placeholder="Tất cả" />
-                      </SelectTrigger>
+                      <SelectTrigger className="text-sm"><SelectValue placeholder={t('pages.products.allFilter')} /></SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả</SelectItem>
+                        <SelectItem value="_all_">{t('pages.products.allFilter')}</SelectItem>
                         {categories?.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.parent_id ? `— ${cat.name}` : cat.name}
-                          </SelectItem>
+                          <SelectItem key={cat.id} value={cat.id}>{cat.parent_id ? `— ${cat.name}` : cat.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1.5 sm:space-y-2">
-                    <Label className="text-[10px] sm:text-xs">Nhà cung cấp</Label>
+                    <Label className="text-[10px] sm:text-xs">{t('pages.products.supplier')}</Label>
                     <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-                      <SelectTrigger className="text-sm">
-                        <SelectValue placeholder="Tất cả" />
-                      </SelectTrigger>
+                      <SelectTrigger className="text-sm"><SelectValue placeholder={t('pages.products.allFilter')} /></SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả</SelectItem>
-                        {suppliers?.map((sup) => (
-                          <SelectItem key={sup.id} value={sup.id}>
-                            {sup.name}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="_all_">{t('pages.products.allFilter')}</SelectItem>
+                        {suppliers?.map((sup) => (<SelectItem key={sup.id} value={sup.id}>{sup.name}</SelectItem>))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1.5 sm:space-y-2">
-                    <Label className="text-[10px] sm:text-xs">Chi nhánh</Label>
+                    <Label className="text-[10px] sm:text-xs">{t('pages.products.branch')}</Label>
                     <Select value={branchFilter} onValueChange={setBranchFilter}>
-                      <SelectTrigger className="text-sm">
-                        <SelectValue placeholder="Tất cả" />
-                      </SelectTrigger>
+                      <SelectTrigger className="text-sm"><SelectValue placeholder={t('pages.products.allFilter')} /></SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả</SelectItem>
-                        {branches?.map((branch) => (
-                          <SelectItem key={branch.id} value={branch.id}>
-                            {branch.name}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="_all_">{t('pages.products.allFilter')}</SelectItem>
+                        {branches?.map((branch) => (<SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1.5 sm:space-y-2">
-                    <Label className="text-[10px] sm:text-xs">Trạng thái</Label>
+                    <Label className="text-[10px] sm:text-xs">{t('pages.products.status')}</Label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="text-sm">
-                        <SelectValue placeholder="Tất cả" />
-                      </SelectTrigger>
+                      <SelectTrigger className="text-sm"><SelectValue placeholder={t('pages.products.allFilter')} /></SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả</SelectItem>
-                        <SelectItem value="in_stock">Tồn kho</SelectItem>
-                        <SelectItem value="sold">Đã bán</SelectItem>
-                        <SelectItem value="returned">Đã trả</SelectItem>
+                        <SelectItem value="_all_">{t('pages.products.allFilter')}</SelectItem>
+                        <SelectItem value="in_stock">{t('pages.products.inStock')}</SelectItem>
+                        <SelectItem value="sold">{t('pages.products.sold')}</SelectItem>
+                        <SelectItem value="returned">{t('pages.products.returned')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1.5 sm:space-y-2">
-                    <Label className="text-[10px] sm:text-xs">Đã in tem</Label>
+                    <Label className="text-[10px] sm:text-xs">{t('pages.products.printStatus')}</Label>
                     <Select value={printedFilter} onValueChange={setPrintedFilter}>
-                      <SelectTrigger className="text-sm">
-                        <SelectValue placeholder="Tất cả" />
-                      </SelectTrigger>
+                      <SelectTrigger className="text-sm"><SelectValue placeholder={t('pages.products.allFilter')} /></SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả</SelectItem>
-                        <SelectItem value="printed">Đã in</SelectItem>
-                        <SelectItem value="not_printed">Chưa in</SelectItem>
+                        <SelectItem value="_all_">{t('pages.products.allFilter')}</SelectItem>
+                        <SelectItem value="printed">{t('pages.products.printed')}</SelectItem>
+                        <SelectItem value="not_printed">{t('pages.products.notPrinted')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="flex items-end col-span-2 sm:col-span-1">
                     <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full text-xs sm:text-sm">
                       <X className="h-4 w-4 mr-1" />
-                      Xóa lọc
+                      {t('pages.products.clearFilters')}
                     </Button>
                   </div>
                 </div>
@@ -442,19 +391,17 @@ export default function ProductsPage() {
           </CardContent>
         </Card>
 
-        {/* Results info */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Hiển thị {filteredProducts.length} / {mappedProducts.length} sản phẩm
+            {t('pages.products.showingProducts', { filtered: filteredProducts.length, total: mappedProducts.length })}
           </p>
           {selectedProducts.length > 0 && (
             <p className="text-xs sm:text-sm font-medium text-primary">
-              Đã chọn {selectedProducts.length} sản phẩm
+              {t('pages.products.selectedProducts', { count: selectedProducts.length })}
             </p>
           )}
         </div>
 
-        {/* Table */}
         <ProductTable
           products={pagination.paginatedData}
           selectedProducts={selectedProducts}
@@ -477,13 +424,11 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* Barcode Dialog */}
       <BarcodeDialog
         open={barcodeOpen}
         onClose={() => setBarcodeOpen(false)}
         products={productsForBarcode}
         onPrinted={async (productIds) => {
-          // Mark products as printed directly via supabase
           const { error } = await supabase
             .from('products')
             .update({ is_printed: true })
@@ -496,7 +441,6 @@ export default function ProductsPage() {
         }}
       />
 
-      {/* Edit Product Dialog */}
       <EditProductDialog
         product={editProduct}
         open={!!editProduct}
