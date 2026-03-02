@@ -123,7 +123,15 @@ export function TaxReport() {
   const { data: chartData, isLoading: chartLoading } = useReportChartData({ startDate, endDate, branchId: effectiveBranchId, groupBy: 'day' });
 
   const selectedTier = REVENUE_TIERS.find(t => t.value === revenueTier);
-  const effectiveTaxMethod = taxMethod;
+  const mustUseProfit = revenueTier === '3b_50b' || revenueTier === 'over_50b';
+  const effectiveTaxMethod = mustUseProfit ? 'profit' : taxMethod;
+
+  // Auto-set taxMethod when forced
+  useEffect(() => {
+    if (mustUseProfit && taxMethod !== 'profit') {
+      setTaxMethod('profit');
+    }
+  }, [mustUseProfit, taxMethod]);
 
   const selectedIndustry = INDUSTRIES.find(i => i.value === industry);
   const allStepsComplete = !!industry && !!revenueTier && (!!effectiveTaxMethod || selectedTier?.exempt);
@@ -426,6 +434,7 @@ export function TaxReport() {
               <Select
                 value={effectiveTaxMethod}
                 onValueChange={setTaxMethod}
+                disabled={mustUseProfit}
               >
                 <SelectTrigger className="w-full"><SelectValue placeholder="Chọn cách tính thuế..." /></SelectTrigger>
                 <SelectContent className="bg-popover">
@@ -434,10 +443,16 @@ export function TaxReport() {
                   ))}
                 </SelectContent>
               </Select>
+              {mustUseProfit && (
+                <div className="mt-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-xs text-amber-700 dark:text-amber-400">
+                  <p className="font-semibold">⚠️ Doanh thu từ 3 tỷ trở lên bắt buộc đóng thuế TNCN theo lợi nhuận.</p>
+                </div>
+              )}
               <div className="mt-2 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
                 <p>• <strong>Theo doanh số:</strong> TNCN = (Doanh thu − 500.000.000) × Thuế suất TNCN</p>
                 <p>• <strong>Theo lợi nhuận:</strong> TNCN = Lợi nhuận thuần × % mức thuế theo mốc doanh thu ở B2 ({revenueTier === 'over_50b' ? '17%' : '15%'}) <em>(phải có hóa đơn đầu vào)</em></p>
-                <p className="italic pt-1">Cả 2 cách đều hợp lệ, hãy chọn cách nào cho số thuế thấp hơn để tối ưu nhất.</p>
+                <p className="italic pt-1 font-medium text-amber-600 dark:text-amber-400">Lưu ý: Doanh thu từ 3-50 tỷ và trên 50 tỷ bắt buộc đóng thuế TNCN theo lợi nhuận.</p>
+                {!mustUseProfit && <p className="italic">Doanh thu dưới 3 tỷ: cả 2 cách đều hợp lệ, hãy chọn cách nào cho số thuế thấp hơn.</p>}
               </div>
             </div>
           )}
