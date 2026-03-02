@@ -414,24 +414,34 @@ export default function ExportHistoryPage() {
         description="Xem và quản lý các phiếu xuất hàng"
         helpText="Xem tất cả phiếu xuất (bán hàng) đã tạo. Lọc theo ngày, khách hàng, trạng thái. Nhấn vào phiếu để xem chi tiết, in hóa đơn hoặc xử lý trả hàng."
         actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (activeTab === 'receipts') {
-                setReceiptTabTourSeen(true);
-                setActiveTour('receipt-tab');
-              } else {
-                setItemTabTourSeen(true);
-                setActiveTour('item-tab');
-              }
-            }}
-            className="h-8 text-xs sm:text-sm"
-          >
-            <PlayCircle className="mr-1.5 h-4 w-4" />
-            <span className="hidden sm:inline">Xem hướng dẫn</span>
-            <span className="sm:hidden">Xem HD</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={() => navigate('/export/new')}
+              className="h-8 text-xs sm:text-sm"
+            >
+              <Package className="mr-1.5 h-4 w-4" />
+              Bán hàng
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (activeTab === 'receipts') {
+                  setReceiptTabTourSeen(true);
+                  setActiveTour('receipt-tab');
+                } else {
+                  setItemTabTourSeen(true);
+                  setActiveTour('item-tab');
+                }
+              }}
+              className="h-8 text-xs sm:text-sm"
+            >
+              <PlayCircle className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">Xem hướng dẫn</span>
+              <span className="sm:hidden">Xem HD</span>
+            </Button>
+          </div>
         }
       />
 
