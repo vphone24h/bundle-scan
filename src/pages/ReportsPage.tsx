@@ -36,14 +36,14 @@ import { formatNumber } from '@/lib/formatNumber';
 import { format, subDays } from 'date-fns';
 
 const baseReportTabs = [
-  { id: 'revenue', label: 'Doanh thu & Lợi nhuận', icon: DollarSign, description: 'Phân tích doanh thu, chi phí, lợi nhuận' },
-  { id: 'products', label: 'Hàng hóa', icon: Package, description: 'Bán chạy, tồn kho, nhập xuất' },
-  { id: 'customers', label: 'Khách hàng', icon: Users, description: 'Top khách hàng, công nợ, CRM' },
-  { id: 'suppliers', label: 'Nhà cung cấp', icon: Factory, description: 'Nhập hàng, công nợ NCC' },
-  { id: 'staff', label: 'Nhân viên', icon: UserCheck, description: 'Hiệu suất, KPI, doanh thu' },
+  { id: 'revenue', labelKey: 'pages.reports.revenueProfit', descKey: 'pages.reports.revenueProfitDesc', icon: DollarSign },
+  { id: 'products', labelKey: 'pages.reports.products', descKey: 'pages.reports.productsDesc', icon: Package },
+  { id: 'customers', labelKey: 'pages.reports.customers', descKey: 'pages.reports.customersDesc', icon: Users },
+  { id: 'suppliers', labelKey: 'pages.reports.suppliers', descKey: 'pages.reports.suppliersDesc', icon: Factory },
+  { id: 'staff', labelKey: 'pages.reports.staff', descKey: 'pages.reports.staffDesc', icon: UserCheck },
 ];
 
-const taxTab = { id: 'tax', label: 'Báo cáo thuế', icon: Receipt, description: 'Ước tính thuế GTGT, TNCN phải nộp' };
+const taxTab = { id: 'tax', labelKey: 'pages.reports.taxReport', descKey: 'pages.reports.taxReportDesc', icon: Receipt };
 
 // --- Tour steps per tab ---
 const TOUR_STEPS: Record<string, TourStep[]> = {
@@ -264,6 +264,7 @@ export default function ReportsPage() {
 
   const activeReport = reportTabs.find(t => t.id === activeTab);
   const ActiveIcon = activeReport?.icon || DollarSign;
+  const activeDescription = activeReport?.descKey ? t(activeReport.descKey) : t('pages.reports.description');
 
   // Only show the tour for the currently active tab
   const showRevenueTour = (manualTourActive && activeTab === 'revenue') || (!tourLoading && !reportsTourDone && profit7Days !== null && activeTab === 'revenue');
@@ -332,7 +333,7 @@ export default function ReportsPage() {
 
       <PageHeader
         title={t('pages.reports.title')}
-        description={activeReport?.description || t('pages.reports.description')}
+        description={activeDescription}
         helpText={t('pages.reports.helpText')}
         actions={
           <div className="flex gap-2 flex-wrap">
@@ -343,14 +344,14 @@ export default function ReportsPage() {
               className="h-8 text-xs sm:text-sm"
             >
               <PlayCircle className="mr-1.5 h-4 w-4" />
-              <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
-              <span className="sm:hidden">{manualTourActive ? 'Tắt HD' : 'Xem HD'}</span>
+              <span className="hidden sm:inline">{manualTourActive ? t('pages.reports.turnOffGuide') : t('pages.reports.viewGuide')}</span>
+              <span className="sm:hidden">{manualTourActive ? t('pages.reports.turnOffGuideShort') : t('pages.reports.viewGuideShort')}</span>
             </Button>
             {reportsGuideUrl && (
               <Button variant="secondary" size="sm" asChild>
                 <a href={reportsGuideUrl} target="_blank" rel="noopener noreferrer">
                   <BookOpen className="mr-2 h-4 w-4" />
-                  Hướng dẫn
+                  {t('common.guide')}
                 </a>
               </Button>
             )}
@@ -374,7 +375,7 @@ export default function ReportsPage() {
                 <SelectItem key={tab.id} value={tab.id}>
                   <div className="flex items-center gap-2">
                     <Icon className="h-4 w-4" />
-                    <span>{tab.label}</span>
+                    <span>{t(tab.labelKey)}</span>
                   </div>
                 </SelectItem>
               );

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,14 +15,15 @@ interface EInvoiceCancelDialogProps {
 }
 
 export function EInvoiceCancelDialog({ invoice, open, onOpenChange }: EInvoiceCancelDialogProps) {
+  const { t } = useTranslation();
   const [reason, setReason] = useState('');
   const einvoiceAPI = useEInvoiceAPI();
 
   const handleCancel = async () => {
     if (!reason.trim()) {
       toast({
-        title: 'Lỗi',
-        description: 'Vui lòng nhập lý do huỷ hoá đơn',
+        title: t('common.error'),
+        description: t('pages.eInvoice.cancelReasonRequired'),
         variant: 'destructive',
       });
       return;
@@ -37,15 +39,15 @@ export function EInvoiceCancelDialog({ invoice, open, onOpenChange }: EInvoiceCa
       });
 
       toast({
-        title: 'Thành công',
-        description: 'Hoá đơn đã được huỷ',
+        title: t('common.success'),
+        description: t('pages.eInvoice.cancelSuccess'),
       });
 
       onOpenChange(false);
     } catch (error: any) {
       toast({
-        title: 'Lỗi',
-        description: error.message || 'Không thể huỷ hoá đơn',
+        title: t('common.error'),
+        description: error.message || t('pages.eInvoice.cancelError'),
         variant: 'destructive',
       });
     }
@@ -57,20 +59,19 @@ export function EInvoiceCancelDialog({ invoice, open, onOpenChange }: EInvoiceCa
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <AlertTriangle className="h-5 w-5" />
-            Huỷ hoá đơn
+            {t('pages.eInvoice.cancelInvoice')}
           </DialogTitle>
           <DialogDescription>
-            Bạn đang huỷ hoá đơn số {invoice.invoice_series}/{invoice.invoice_number}.
-            Hành động này sẽ được gửi lên cơ quan thuế và không thể hoàn tác.
+            {t('pages.eInvoice.cancelInvoiceDesc', { series: invoice.invoice_series, number: invoice.invoice_number })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="reason">Lý do huỷ hoá đơn *</Label>
+            <Label htmlFor="reason">{t('pages.eInvoice.cancelReason')}</Label>
             <Textarea
               id="reason"
-              placeholder="Nhập lý do huỷ hoá đơn (bắt buộc)"
+              placeholder={t('pages.eInvoice.cancelReasonPlaceholder')}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={4}
@@ -80,7 +81,7 @@ export function EInvoiceCancelDialog({ invoice, open, onOpenChange }: EInvoiceCa
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Đóng
+            {t('common.close')}
           </Button>
           <Button
             variant="destructive"
@@ -88,7 +89,7 @@ export function EInvoiceCancelDialog({ invoice, open, onOpenChange }: EInvoiceCa
             disabled={einvoiceAPI.isPending || !reason.trim()}
           >
             {einvoiceAPI.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Xác nhận huỷ
+            {t('pages.eInvoice.confirmCancel')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Check, ChevronDown, ChevronUp, Rocket, X, Package, Users, ShoppingCart, FileDown, FolderTree, Globe, Building2 } from 'lucide-react';
@@ -9,80 +10,80 @@ import { Progress } from '@/components/ui/progress';
 
 interface ChecklistStep {
   key: string;
-  label: string;
-  description: string;
+  labelKey: string;
+  descKey: string;
   icon: React.ReactNode;
   link: string;
-  linkLabel: string;
+  actionKey: string;
   highlight?: boolean;
 }
 
 const STEPS: ChecklistStep[] = [
   {
     key: 'branch',
-    label: 'Thiết lập chi nhánh',
-    description: 'Tạo chi nhánh/cửa hàng để quản lý kho theo từng địa điểm',
+    labelKey: 'checklist.branch',
+    descKey: 'checklist.branchDesc',
     icon: <Building2 className="h-4 w-4" />,
     link: '/branches',
-    linkLabel: 'Thiết lập',
+    actionKey: 'checklist.branchAction',
   },
   {
     key: 'import',
-    label: 'Tạo phiếu nhập hàng đầu tiên',
-    description: 'Nhập hàng vào kho để bắt đầu quản lý tồn kho (danh mục được tạo khi nhập)',
+    labelKey: 'checklist.import',
+    descKey: 'checklist.importDesc',
     icon: <FileDown className="h-4 w-4" />,
     link: '/import/new',
-    linkLabel: '📦 Nhập hàng',
+    actionKey: 'checklist.importAction',
     highlight: true,
   },
   {
     key: 'category',
-    label: 'Tạo danh mục sản phẩm',
-    description: 'Phân loại sản phẩm để dễ quản lý (VD: iPhone, Samsung, Phụ kiện...)',
+    labelKey: 'checklist.category',
+    descKey: 'checklist.categoryDesc',
     icon: <FolderTree className="h-4 w-4" />,
     link: '/categories',
-    linkLabel: 'Tạo danh mục',
+    actionKey: 'checklist.categoryAction',
   },
   {
     key: 'export',
-    label: 'Tạo phiếu xuất (bán hàng)',
-    description: 'Bán hàng cho khách và in phiếu xuất kho',
+    labelKey: 'checklist.export',
+    descKey: 'checklist.exportDesc',
     icon: <ShoppingCart className="h-4 w-4" />,
     link: '/export/new',
-    linkLabel: '🛒 Bán hàng',
+    actionKey: 'checklist.exportAction',
     highlight: true,
   },
   {
     key: 'customer',
-    label: 'Thêm khách hàng',
-    description: 'Lưu thông tin khách hàng để theo dõi lịch sử mua hàng',
+    labelKey: 'checklist.customer',
+    descKey: 'checklist.customerDesc',
     icon: <Users className="h-4 w-4" />,
     link: '/customers',
-    linkLabel: 'Thêm KH',
+    actionKey: 'checklist.customerAction',
   },
   {
     key: 'product',
-    label: 'Kiểm tra sản phẩm trong kho',
-    description: 'Xem danh sách sản phẩm đã nhập, chỉnh sửa giá bán',
+    labelKey: 'checklist.product',
+    descKey: 'checklist.productDesc',
     icon: <Package className="h-4 w-4" />,
     link: '/products',
-    linkLabel: 'Xem kho',
+    actionKey: 'checklist.productAction',
   },
   {
     key: 'supplier',
-    label: 'Thêm nhà cung cấp',
-    description: 'Thêm thông tin nhà cung cấp để theo dõi nguồn hàng và công nợ',
+    labelKey: 'checklist.supplier',
+    descKey: 'checklist.supplierDesc',
     icon: <Users className="h-4 w-4" />,
     link: '/suppliers',
-    linkLabel: 'Thêm NCC',
+    actionKey: 'checklist.supplierAction',
   },
   {
     key: 'landing',
-    label: 'Thiết lập website bán hàng',
-    description: 'Tạo trang web riêng cho cửa hàng, tra cứu bảo hành miễn phí',
+    labelKey: 'checklist.landing',
+    descKey: 'checklist.landingDesc',
     icon: <Globe className="h-4 w-4" />,
     link: '/landing-settings',
-    linkLabel: 'Thiết lập',
+    actionKey: 'checklist.landingAction',
   },
 ];
 
@@ -92,17 +93,17 @@ function useChecklistStatus() {
   return useQuery({
     queryKey: ['getting-started-checklist'],
     queryFn: async () => {
-      // Single RPC call instead of 7 separate requests
       const { data, error } = await supabase.rpc('check_getting_started_status');
       if (error) throw error;
       return (data || {}) as Record<string, boolean>;
     },
-    staleTime: 10 * 60 * 1000, // cache 10 min
+    staleTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 }
 
 export function GettingStartedChecklist() {
+  const { t } = useTranslation();
   const { data: status } = useChecklistStatus();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isDismissed, setIsDismissed] = useState(() => {
@@ -114,7 +115,6 @@ export function GettingStartedChecklist() {
   const progress = Math.round((completedCount / totalSteps) * 100);
   const allDone = completedCount === totalSteps;
 
-  // Auto-dismiss when all done, auto-show when not all done
   if (!status) return null;
   if (allDone) {
     if (!isDismissed) {
@@ -142,7 +142,7 @@ export function GettingStartedChecklist() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-sm sm:text-base">
-              {allDone ? '🎉 Hoàn thành thiết lập!' : 'Bắt đầu sử dụng'}
+              {allDone ? t('checklist.setupComplete') : t('checklist.getStarted')}
             </h3>
             <span className="text-xs text-muted-foreground">{completedCount}/{totalSteps}</span>
           </div>
@@ -155,7 +155,7 @@ export function GettingStartedChecklist() {
               size="icon"
               className="h-7 w-7 text-muted-foreground hover:text-foreground"
               onClick={(e) => { e.stopPropagation(); handleDismiss(); }}
-              title="Ẩn checklist"
+              title={t('checklist.hideChecklist')}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -190,17 +190,17 @@ export function GettingStartedChecklist() {
                     'text-sm font-medium',
                     done && 'line-through text-muted-foreground'
                   )}>
-                    {step.label}
+                    {t(step.labelKey)}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t(step.descKey)}</p>
                 </div>
                 {!done && step.highlight ? (
                   <Button asChild className="shrink-0 h-9 px-4 text-sm font-bold bg-green-600 hover:bg-green-700 text-white shadow-md">
-                    <Link to={step.link}>{step.linkLabel}</Link>
+                    <Link to={step.link}>{t(step.actionKey)}</Link>
                   </Button>
                 ) : !done ? (
                   <Button variant="outline" size="sm" asChild className="shrink-0 h-7 text-xs">
-                    <Link to={step.link}>{step.linkLabel}</Link>
+                    <Link to={step.link}>{t(step.actionKey)}</Link>
                   </Button>
                 ) : null}
               </div>

@@ -351,7 +351,7 @@ const Index = () => {
                     </div>
                   ) : (todaySoldProducts?.length || 0) === 0 ? (
                     <div className="p-6 sm:p-8 text-center text-muted-foreground text-sm">
-                      Chưa bán sản phẩm nào hôm nay
+                      {t('pages.dashboard.noSoldToday')}
                     </div>
                   ) : (
                     todaySoldProducts?.slice(0, 5).map((item) => (
@@ -366,7 +366,7 @@ const Index = () => {
                         <div className="text-right shrink-0">
                           <p className="font-medium text-xs sm:text-sm text-emerald-600">{formatCurrency(Number(item.sale_price))}</p>
                           <Badge variant="outline" className="text-[10px] sm:text-xs status-sold">
-                            Đã bán
+                            {t('pages.dashboard.soldLabel')}
                           </Badge>
                         </div>
                       </div>
@@ -380,15 +380,15 @@ const Index = () => {
           {/* Recent Imports */}
           <div className="bg-card border rounded-xl">
             <div className="flex items-center justify-between p-3 sm:p-4 border-b">
-              <h3 className="text-sm sm:text-base font-semibold">Phiếu nhập gần đây</h3>
+              <h3 className="text-sm sm:text-base font-semibold">{t('pages.dashboard.recentImports')}</h3>
               <Button variant="ghost" size="sm" asChild className="h-8 text-xs sm:text-sm">
-                <Link to="/import/history">Xem tất cả</Link>
+                <Link to="/import/history">{t('pages.dashboard.viewAll')}</Link>
               </Button>
             </div>
             <div className="divide-y">
               {recentReceipts.length === 0 ? (
                 <div className="p-6 sm:p-8 text-center text-muted-foreground text-sm">
-                  Chưa có phiếu nhập nào
+                  {t('pages.dashboard.noImportReceipts')}
                 </div>
               ) : (
                 recentReceipts.map((receipt) => (
@@ -399,7 +399,7 @@ const Index = () => {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-xs sm:text-sm font-mono">{receipt.code}</p>
                       <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                        {receipt.suppliers?.name || 'Không rõ NCC'}
+                        {receipt.suppliers?.name || t('pages.dashboard.unknownSupplier')}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
@@ -418,29 +418,29 @@ const Index = () => {
           <Button asChild size="sm" className="flex-1 sm:flex-none">
             <Link to="/import/new">
               <FileDown className="mr-1.5 sm:mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Tạo phiếu nhập mới</span>
-              <span className="sm:hidden">Phiếu nhập</span>
+              <span className="hidden sm:inline">{t('pages.dashboard.createImport')}</span>
+              <span className="sm:hidden">{t('pages.dashboard.importReceipt')}</span>
             </Link>
           </Button>
           <Button variant="outline" asChild size="sm" className="flex-1 sm:flex-none">
             <Link to="/products">
               <Package className="mr-1.5 sm:mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Quản lý sản phẩm</span>
-              <span className="sm:hidden">Sản phẩm</span>
+              <span className="hidden sm:inline">{t('pages.dashboard.manageProducts')}</span>
+              <span className="sm:hidden">{t('sidebar.products')}</span>
             </Link>
           </Button>
           <Button variant="outline" asChild size="sm" className="flex-1 sm:flex-none">
             <Link to="/categories">
               <FolderTree className="mr-1.5 sm:mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Quản lý danh mục</span>
-              <span className="sm:hidden">Danh mục</span>
+              <span className="hidden sm:inline">{t('pages.dashboard.manageCategories')}</span>
+              <span className="sm:hidden">{t('sidebar.categories')}</span>
             </Link>
           </Button>
           <Button variant="outline" asChild size="sm" className="flex-1 sm:flex-none">
             <Link to="/suppliers">
               <Users className="mr-1.5 sm:mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Nhà cung cấp</span>
-              <span className="sm:hidden">NCC</span>
+              <span className="hidden sm:inline">{t('pages.dashboard.supplier')}</span>
+              <span className="sm:hidden">{t('pages.dashboard.supplierShort')}</span>
             </Link>
           </Button>
         </div>
