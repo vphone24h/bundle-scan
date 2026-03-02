@@ -273,7 +273,7 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickF
             entityId={selectedDebt.entity_id} entityName={selectedDebt.entity_name}
             entityPhone={selectedDebt.entity_phone} branchName={selectedDebt.branch_name}
             totalAmount={selectedDebt.total_amount} paidAmount={selectedDebt.paid_amount}
-            remainingAmount={selectedDebt.remaining_amount} />
+            remainingAmount={selectedDebt.remaining_amount} branchId={selectedDebt.branch_id} />
           <DebtPaymentDialog open={showPayment} onOpenChange={setShowPayment} entityType="supplier"
             entityId={selectedDebt.entity_id} entityName={selectedDebt.entity_name}
             remainingAmount={selectedDebt.remaining_amount} branchId={selectedDebt.branch_id} />
