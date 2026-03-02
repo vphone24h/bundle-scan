@@ -91,7 +91,7 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Thanh toán phiếu nhập</DialogTitle>
         </DialogHeader>
