@@ -117,13 +117,11 @@ export function useCustomerDebts(showSettled: boolean = false) {
         if (!receipt.customer_id || !receipt.customers) return;
         
         const customer = receipt.customers as { id: string; name: string; phone: string | null };
-        const receiptTotal = Number(receipt.total_amount) || 0;
-        const receiptPaid = Number(receipt.paid_amount) || 0;
+        const debtAmount = Number(receipt.debt_amount) || 0;
         const existing = customerMap.get(customer.id);
         
         if (existing) {
-          existing.total_amount += receiptTotal;
-          existing.paid_amount += receiptPaid;
+          existing.total_amount += debtAmount;
           if (!existing.first_debt_date || receipt.export_date < existing.first_debt_date) {
             existing.first_debt_date = receipt.export_date;
           }
@@ -134,8 +132,8 @@ export function useCustomerDebts(showSettled: boolean = false) {
             entity_phone: customer.phone,
             branch_id: receipt.branch_id,
             branch_name: (receipt.branches as { name: string } | null)?.name || null,
-            total_amount: receiptTotal,
-            paid_amount: receiptPaid,
+            total_amount: debtAmount,
+            paid_amount: 0,
             remaining_amount: 0,
             first_debt_date: receipt.export_date,
             days_overdue: 0,
@@ -279,13 +277,11 @@ export function useSupplierDebts(showSettled: boolean = false) {
         if (!receipt.supplier_id || !receipt.suppliers) return;
         
         const supplier = receipt.suppliers as { id: string; name: string; phone: string | null };
-        const receiptTotal = Number(receipt.total_amount) || 0;
-        const receiptPaid = Number(receipt.paid_amount) || 0;
+        const debtAmount = Number(receipt.debt_amount) || 0;
         const existing = supplierMap.get(supplier.id);
         
         if (existing) {
-          existing.total_amount += receiptTotal;
-          existing.paid_amount += receiptPaid;
+          existing.total_amount += debtAmount;
           if (!existing.first_debt_date || receipt.import_date < existing.first_debt_date) {
             existing.first_debt_date = receipt.import_date;
           }
@@ -296,8 +292,8 @@ export function useSupplierDebts(showSettled: boolean = false) {
             entity_phone: supplier.phone,
             branch_id: receipt.branch_id,
             branch_name: (receipt.branches as { name: string } | null)?.name || null,
-            total_amount: receiptTotal,
-            paid_amount: receiptPaid,
+            total_amount: debtAmount,
+            paid_amount: 0,
             remaining_amount: 0,
             first_debt_date: receipt.import_date,
             days_overdue: 0,

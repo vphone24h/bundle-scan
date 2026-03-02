@@ -180,7 +180,7 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
                 )}
                 <div className="flex items-center justify-between text-xs pt-1 border-t">
                   <div>
-                    <span className="text-muted-foreground">Tổng bán: </span>
+                    <span className="text-muted-foreground">Tổng nợ: </span>
                     <span className="font-medium">{formatNumber(debt.total_amount)}</span>
                   </div>
                   <div>
@@ -212,7 +212,7 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
             <TableHeader>
               <TableRow>
                 <TableHead>Tên / SĐT</TableHead>
-                <TableHead className="text-right">Tổng bán</TableHead>
+                <TableHead className="text-right">Tổng nợ</TableHead>
                 <TableHead className="text-right hidden sm:table-cell">Đã thu</TableHead>
                 <TableHead className="text-right">Còn nợ</TableHead>
                 <TableHead className="hidden lg:table-cell text-center">Số ngày</TableHead>
