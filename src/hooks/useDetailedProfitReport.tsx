@@ -141,21 +141,22 @@ export function useDetailedProfitReport(filters?: {
           ...(returnItems?.map((i: any) => i.product_id).filter(Boolean) || []),
         ])
       );
-      let productsMap: Record<string, { import_price: number; quantity: number }> = {};
+      let productsMap: Record<string, { import_price: number; quantity: number; category_id: string | null }> = {};
       
       if (productIds.length > 0) {
         const { data: products } = await supabase
           .from('products')
-          .select('id, import_price, quantity, imei')
+          .select('id, import_price, quantity, imei, category_id')
           .in('id', productIds);
         
         productsMap = (products || []).reduce((acc, p) => {
           acc[p.id] = { 
             import_price: Number(p.import_price),
             quantity: p.quantity || 1,
+            category_id: p.category_id,
           };
           return acc;
-        }, {} as Record<string, { import_price: number; quantity: number }>);
+        }, {} as Record<string, { import_price: number; quantity: number; category_id: string | null }>);
       }
 
       // 4. Xử lý dữ liệu bán hàng
@@ -220,8 +221,14 @@ export function useDetailedProfitReport(filters?: {
 
       // 5. Xử lý dữ liệu trả hàng
       returnItems?.forEach((item: any) => {
-        const originalSalePrice = Number(item.sale_price);
         const productInfo = item.product_id ? productsMap[item.product_id] : null;
+
+        // Lọc theo danh mục nếu có filter
+        if (filters?.categoryId && productInfo?.category_id !== filters.categoryId) {
+          return;
+        }
+
+        const originalSalePrice = Number(item.sale_price);
         const originalImportPrice = productInfo?.import_price || 0;
         const originalProfit = originalSalePrice - originalImportPrice;
 
