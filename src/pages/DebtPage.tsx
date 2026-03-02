@@ -106,14 +106,14 @@ export default function DebtPage() {
                 <div className="h-7 w-7 rounded-full bg-green-100 flex items-center justify-center">
                   <TrendingUp className="h-3.5 w-3.5 text-green-600" />
                 </div>
-                <span className="text-xs text-muted-foreground">Khách nợ mình</span>
+                <span className="text-xs text-muted-foreground">{t('pages.debt.customerOwes')}</span>
               </div>
               <p className="text-base sm:text-xl font-bold text-green-600">
                 {formatNumber(totalCustomerDebt)}đ
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 <UserCheck className="h-3 w-3 inline mr-0.5" />
-                {activeCustomerDebtors} khách đang nợ
+                {activeCustomerDebtors} {t('pages.debt.customersOwing')}
               </p>
             </CardContent>
           </Card>
@@ -124,13 +124,13 @@ export default function DebtPage() {
                 <div className="h-7 w-7 rounded-full bg-red-100 flex items-center justify-center">
                   <TrendingDown className="h-3.5 w-3.5 text-red-600" />
                 </div>
-                <span className="text-xs text-muted-foreground">Mình nợ NCC</span>
+                <span className="text-xs text-muted-foreground">{t('pages.debt.weOweSupplier')}</span>
               </div>
               <p className="text-base sm:text-xl font-bold text-destructive">
                 {formatNumber(totalSupplierDebt)}đ
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                {filteredSupplierDebts.filter(d => d.remaining_amount > 0).length} NCC
+                {filteredSupplierDebts.filter(d => d.remaining_amount > 0).length} {t('pages.debt.suppliers')}
               </p>
             </CardContent>
           </Card>
@@ -147,13 +147,13 @@ export default function DebtPage() {
                 <div className="h-7 w-7 rounded-full bg-orange-100 flex items-center justify-center">
                   <CalendarClock className="h-3.5 w-3.5 text-orange-600" />
                 </div>
-                <span className="text-xs text-muted-foreground">Cần thu hôm nay</span>
+                <span className="text-xs text-muted-foreground">{t('pages.debt.dueToday')}</span>
               </div>
               <p className="text-base sm:text-xl font-bold text-orange-600">
                 {formatNumber(dueTodayAmount)}đ
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                {dueTodayDebts.length} khoản
+                {dueTodayDebts.length} {t('pages.debt.items')}
               </p>
             </CardContent>
           </Card>
@@ -167,13 +167,13 @@ export default function DebtPage() {
                 <div className={`h-7 w-7 rounded-full flex items-center justify-center ${overdueDebts.length > 0 ? 'bg-red-100' : 'bg-muted'}`}>
                   <AlertTriangle className={`h-3.5 w-3.5 ${overdueDebts.length > 0 ? 'text-red-600' : 'text-muted-foreground'}`} />
                 </div>
-                <span className="text-xs text-muted-foreground">Quá hạn</span>
+                <span className="text-xs text-muted-foreground">{t('pages.debt.overdue')}</span>
               </div>
               <p className={`text-base sm:text-xl font-bold ${overdueDebts.length > 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
                 {formatNumber(overdueAmount)}đ
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                {overdueDebts.length > 0 ? `${overdueDebts.length} khoản · >${overdueDays} ngày` : 'Không có'}
+                {overdueDebts.length > 0 ? t('pages.debt.itemsOverDays', { count: overdueDebts.length, days: overdueDays }) : t('pages.debt.none')}
               </p>
             </CardContent>
           </Card>
@@ -188,7 +188,7 @@ export default function DebtPage() {
                 <SelectValue placeholder="Chi nhánh" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="_all_">Tất cả chi nhánh</SelectItem>
+                <SelectItem value="_all_">{t('pages.debt.allBranches')}</SelectItem>
                 {branches?.map(branch => (
                   <SelectItem key={branch.id} value={branch.id}>
                     {branch.name}
@@ -204,14 +204,14 @@ export default function DebtPage() {
               onCheckedChange={(checked) => setShowSettled(checked === true)}
             />
             <Label htmlFor="showSettled" className="text-xs sm:text-sm cursor-pointer">
-              <span className="hidden sm:inline">Hiện cả đối tượng đã trả hết nợ</span>
-              <span className="sm:hidden">Đã trả hết</span>
+              <span className="hidden sm:inline">{t('pages.debt.showSettled')}</span>
+              <span className="sm:hidden">{t('pages.debt.settledShort')}</span>
             </Label>
           </div>
           <div className="flex gap-1 ml-auto">
             <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1 text-xs sm:text-sm" onClick={() => setShowSettings(true)}>
               <Settings2 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Cài đặt</span>
+              <span className="hidden sm:inline">{t('pages.debt.settings')}</span>
             </Button>
             <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1 text-xs sm:text-sm" onClick={() => setShowTagManager(true)}>
               <Settings className="h-3.5 w-3.5" />
@@ -223,10 +223,10 @@ export default function DebtPage() {
         {/* Quick Filters */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           {([
-            { key: 'all' as QuickFilter, label: 'Tất cả', color: '' },
-            { key: 'due_today' as QuickFilter, label: `Hôm nay (${dueTodayDebts.length})`, color: 'bg-orange-500' },
-            { key: 'overdue' as QuickFilter, label: `Quá hạn (${overdueDebts.length})`, color: 'bg-red-500' },
-            { key: 'hard_collect' as QuickFilter, label: 'Khó đòi', color: 'bg-gray-500' },
+            { key: 'all' as QuickFilter, label: t('pages.debt.all'), color: '' },
+            { key: 'due_today' as QuickFilter, label: `${t('pages.debt.today')} (${dueTodayDebts.length})`, color: 'bg-orange-500' },
+            { key: 'overdue' as QuickFilter, label: `${t('pages.debt.overdue')} (${overdueDebts.length})`, color: 'bg-red-500' },
+            { key: 'hard_collect' as QuickFilter, label: t('pages.debt.hardCollect'), color: 'bg-gray-500' },
           ]).map((f) => (
             <button
               key={f.key}
@@ -261,7 +261,7 @@ export default function DebtPage() {
                 variant="outline"
                 className={`cursor-pointer transition-all whitespace-nowrap ${!tagFilter ? 'bg-foreground text-background' : 'hover:bg-muted'}`}
               >
-                Tất cả
+                {t('pages.debt.all')}
               </Badge>
             </button>
             {tags.map((tag) => (
@@ -288,13 +288,13 @@ export default function DebtPage() {
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="customer" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Khách hàng nợ mình</span>
-              <span className="sm:hidden">KH nợ mình</span>
+              <span className="hidden sm:inline">{t('pages.debt.customersTab')}</span>
+              <span className="sm:hidden">{t('pages.debt.customersTabShort')}</span>
             </TabsTrigger>
             <TabsTrigger value="supplier" className="flex items-center gap-2">
               <Truck className="h-4 w-4" />
-              <span className="hidden sm:inline">Mình nợ NCC</span>
-              <span className="sm:hidden">Nợ NCC</span>
+              <span className="hidden sm:inline">{t('pages.debt.suppliersTab')}</span>
+              <span className="sm:hidden">{t('pages.debt.suppliersTabShort')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -325,14 +325,14 @@ export default function DebtPage() {
       <DebtDueListDialog
         open={showDueToday}
         onOpenChange={setShowDueToday}
-        title="Công nợ cần thu hôm nay"
+        title={t('pages.debt.dueTodayTitle')}
         debts={dueTodayDebts}
         overdueDays={overdueDays}
       />
       <DebtDueListDialog
         open={showOverdue}
         onOpenChange={setShowOverdue}
-        title="Công nợ quá hạn"
+        title={t('pages.debt.overdueTitle')}
         debts={overdueDebts}
         overdueDays={overdueDays}
       />
