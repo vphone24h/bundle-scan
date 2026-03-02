@@ -1,9 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { usePagination } from '@/hooks/usePagination';
-import { TablePagination } from '@/components/ui/table-pagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -37,6 +35,8 @@ import {
   Eye,
   List,
   Trash2,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { format, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -71,6 +71,18 @@ type DatePreset = '_custom_' | 'today' | 'yesterday' | 'this_week' | 'last_week'
 type CombinedReturn = 
   | (ImportReturn & { returnType: 'import' })
   | (ExportReturn & { returnType: 'export' });
+
+interface GroupedReturn {
+  groupKey: string;
+  returnType: 'import' | 'export';
+  items: CombinedReturn[];
+  return_date: string;
+  totalRefundAmount: number;
+  totalStoreKeepAmount: number;
+  receiptCode: string | null; // original receipt code if available
+  firstItem: CombinedReturn;
+  productCount: number;
+}
 
 export default function ReturnsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -257,16 +269,61 @@ export default function ReturnsPage() {
     );
   }, [filteredImportReturns, filteredExportReturns]);
 
-  // Pagination for each tab
-  const allReturnsPagination = usePagination(combinedReturns, { storageKey: 'returns-all' });
-  const exportReturnsPagination = usePagination(
-    filteredExportReturns.map(r => ({ ...r, returnType: 'export' as const })),
-    { storageKey: 'returns-export' }
-  );
-  const importReturnsPagination = usePagination(
-    filteredImportReturns.map(r => ({ ...r, returnType: 'import' as const })),
-    { storageKey: 'returns-import' }
-  );
+  // Group returns by receipt
+  const groupedReturns = useMemo(() => {
+    const groups = new Map<string, GroupedReturn>();
+    
+    for (const r of combinedReturns) {
+      let groupKey: string;
+      if (r.returnType === 'export') {
+        groupKey = `export-${(r as ExportReturn).export_receipt_id || r.id}`;
+      } else {
+        groupKey = `import-${(r as ImportReturn).import_receipt_id || r.id}`;
+      }
+      
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          groupKey,
+          returnType: r.returnType,
+          items: [],
+          return_date: r.return_date,
+          totalRefundAmount: 0,
+          totalStoreKeepAmount: 0,
+          receiptCode: null,
+          firstItem: r,
+          productCount: 0,
+        });
+      }
+      
+      const group = groups.get(groupKey)!;
+      group.items.push(r);
+      group.productCount++;
+      
+      if (r.returnType === 'import') {
+        group.totalRefundAmount += (r as ImportReturn).total_refund_amount;
+      } else {
+        group.totalRefundAmount += (r as ExportReturn).refund_amount;
+        group.totalStoreKeepAmount += (r as ExportReturn).store_keep_amount;
+      }
+    }
+    
+    return Array.from(groups.values()).sort(
+      (a, b) => new Date(b.return_date).getTime() - new Date(a.return_date).getTime()
+    );
+  }, [combinedReturns]);
+
+  const groupedExportReturns = useMemo(() => groupedReturns.filter(g => g.returnType === 'export'), [groupedReturns]);
+  const groupedImportReturns = useMemo(() => groupedReturns.filter(g => g.returnType === 'import'), [groupedReturns]);
+
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const toggleGroup = (key: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const getEmployeeName = (userId: string | null) => {
     if (!userId || !profiles) return '-';
@@ -352,8 +409,8 @@ export default function ReturnsPage() {
     );
   }
 
-  const renderHistoryTable = (returns: CombinedReturn[]) => {
-    if (returns.length === 0) {
+  const renderGroupedTable = (groups: GroupedReturn[]) => {
+    if (groups.length === 0) {
       return (
         <div className="text-center py-8 text-muted-foreground">
           <RotateCcw className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -367,12 +424,11 @@ export default function ReturnsPage() {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-8"></TableHead>
             <TableHead>Ngày giờ</TableHead>
             <TableHead>Loại</TableHead>
-            <TableHead>Sản phẩm / IMEI</TableHead>
-            <TableHead className="text-right">Giá</TableHead>
-            <TableHead>Hình thức</TableHead>
-            <TableHead className="text-right">Hoàn trả</TableHead>
+            <TableHead>Sản phẩm</TableHead>
+            <TableHead className="text-right">Tổng hoàn trả</TableHead>
             <TableHead className="text-right">Phí giữ</TableHead>
             <TableHead>Đối tượng</TableHead>
             <TableHead>Chi nhánh</TableHead>
@@ -381,103 +437,157 @@ export default function ReturnsPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {returns.map((r) => {
-            const isImport = r.returnType === 'import';
+          {groups.map((group) => {
+            const isExpanded = expandedGroups.has(group.groupKey);
+            const isImport = group.returnType === 'import';
+            const firstItem = group.firstItem;
+            const isSingleItem = group.productCount === 1;
+
             return (
-              <TableRow key={`${r.returnType}-${r.id}`}>
-                <TableCell className="whitespace-nowrap">
-                  {format(new Date(r.return_date), 'dd/MM/yyyy', { locale: vi })}
-                  <div className="text-xs text-muted-foreground">
-                    {format(new Date(r.return_date), 'HH:mm', { locale: vi })}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {isImport ? (
-                    <Badge variant="outline" className="border-orange-500 text-orange-600 bg-orange-50">
-                      <Truck className="h-3 w-3 mr-1" />
-                      Nhập
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="border-blue-500 text-blue-600 bg-blue-50">
-                      <Package className="h-3 w-3 mr-1" />
-                      Bán
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="font-medium">{r.product_name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {r.imei ? `IMEI: ${r.imei}` : `SKU: ${r.sku}`}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  {isImport ? (
-                    <span>{formatNumberWithSpaces(r.import_price)}đ</span>
-                  ) : (
-                    <span>{formatNumberWithSpaces((r as ExportReturn).sale_price)}đ</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {isImport ? (
-                    <Badge variant="secondary">Hoàn NCC</Badge>
-                  ) : (
-                    <Badge variant={(r as ExportReturn).fee_type === 'none' ? 'default' : 'secondary'}>
-                      {(r as ExportReturn).fee_type === 'none' 
-                        ? 'Hoàn đủ' 
-                        : (r as ExportReturn).fee_type === 'percentage' 
-                          ? `Mất ${(r as ExportReturn).fee_percentage}%`
-                          : 'Mất phí'}
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-right font-medium">
-                  {isImport ? (
-                    <span className="text-green-600">{formatNumberWithSpaces((r as ImportReturn).total_refund_amount)}đ</span>
-                  ) : (
-                    <span className="text-red-600">{formatNumberWithSpaces((r as ExportReturn).refund_amount)}đ</span>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  {isImport ? (
-                    '-'
-                  ) : (r as ExportReturn).store_keep_amount > 0 ? (
-                    <span className="text-green-600">{formatNumberWithSpaces((r as ExportReturn).store_keep_amount)}đ</span>
-                  ) : (
-                    '-'
-                  )}
-                </TableCell>
-                <TableCell>
-                  {isImport ? (
-                    <div>{(r as ImportReturn).suppliers?.name || '-'}</div>
-                  ) : (
-                    <div>
-                      <div>{(r as ExportReturn).customers?.name || '-'}</div>
-                      <div className="text-xs text-muted-foreground">{(r as ExportReturn).customers?.phone}</div>
+              <React.Fragment key={group.groupKey}>
+                <TableRow 
+                  className={isSingleItem ? '' : 'cursor-pointer'}
+                  onClick={() => !isSingleItem && toggleGroup(group.groupKey)}
+                >
+                  <TableCell className="px-2">
+                    {!isSingleItem && (
+                      isExpanded 
+                        ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> 
+                        : <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {format(new Date(group.return_date), 'dd/MM/yyyy', { locale: vi })}
+                    <div className="text-xs text-muted-foreground">
+                      {format(new Date(group.return_date), 'HH:mm', { locale: vi })}
                     </div>
-                  )}
-                </TableCell>
-                <TableCell>{r.branches?.name || '-'}</TableCell>
-                <TableCell>{getEmployeeName(r.created_by)}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => openDetailDialog(r)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={(e) => { e.stopPropagation(); openDeleteDialog(r); }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
+                  </TableCell>
+                  <TableCell>
+                    {isImport ? (
+                      <Badge variant="outline" className="border-orange-500 text-orange-600 bg-orange-50">
+                        <Truck className="h-3 w-3 mr-1" />
+                        Nhập
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="border-blue-500 text-blue-600 bg-blue-50">
+                        <Package className="h-3 w-3 mr-1" />
+                        Bán
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {isSingleItem ? (
+                      <>
+                        <div className="font-medium">{firstItem.product_name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {firstItem.imei ? `IMEI: ${firstItem.imei}` : `SKU: ${firstItem.sku}`}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="font-medium">
+                        {group.productCount} sản phẩm
+                        <div className="text-xs text-muted-foreground">
+                          Nhấn để xem chi tiết
+                        </div>
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    {isImport ? (
+                      <span className="text-green-600">{formatNumberWithSpaces(group.totalRefundAmount)}đ</span>
+                    ) : (
+                      <span className="text-red-600">{formatNumberWithSpaces(group.totalRefundAmount)}đ</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {group.totalStoreKeepAmount > 0 ? (
+                      <span className="text-green-600">{formatNumberWithSpaces(group.totalStoreKeepAmount)}đ</span>
+                    ) : '-'}
+                  </TableCell>
+                  <TableCell>
+                    {isImport ? (
+                      <div>{(firstItem as ImportReturn & { returnType: 'import' }).suppliers?.name || '-'}</div>
+                    ) : (
+                      <div>
+                        <div>{(firstItem as ExportReturn & { returnType: 'export' }).customers?.name || '-'}</div>
+                        <div className="text-xs text-muted-foreground">{(firstItem as ExportReturn & { returnType: 'export' }).customers?.phone}</div>
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>{firstItem.branches?.name || '-'}</TableCell>
+                  <TableCell>{getEmployeeName(firstItem.created_by)}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); openDetailDialog(firstItem); }}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {isSingleItem && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={(e) => { e.stopPropagation(); openDeleteDialog(firstItem); }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+
+                {isExpanded && !isSingleItem && group.items.map((r) => (
+                  <TableRow key={`detail-${r.returnType}-${r.id}`} className="bg-muted/30">
+                    <TableCell></TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {format(new Date(r.return_date), 'HH:mm', { locale: vi })}
+                    </TableCell>
+                    <TableCell></TableCell>
+                    <TableCell>
+                      <div className="text-sm">{r.product_name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {r.imei ? `IMEI: ${r.imei}` : `SKU: ${r.sku}`}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right text-sm">
+                      {r.returnType === 'import' ? (
+                        <span className="text-green-600">{formatNumberWithSpaces((r as ImportReturn & { returnType: 'import' }).total_refund_amount)}đ</span>
+                      ) : (
+                        <span className="text-red-600">{formatNumberWithSpaces((r as ExportReturn & { returnType: 'export' }).refund_amount)}đ</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right text-sm">
+                      {r.returnType === 'export' && (r as ExportReturn & { returnType: 'export' }).store_keep_amount > 0 ? (
+                        <span className="text-green-600">{formatNumberWithSpaces((r as ExportReturn & { returnType: 'export' }).store_keep_amount)}đ</span>
+                      ) : '-'}
+                    </TableCell>
+                    <TableCell colSpan={2}></TableCell>
+                    <TableCell></TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => openDetailDialog(r)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={(e) => { e.stopPropagation(); openDeleteDialog(r); }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </React.Fragment>
             );
           })}
         </TableBody>
@@ -657,15 +767,15 @@ export default function ReturnsPage() {
         <TabsList>
           <TabsTrigger value="all" className="gap-2">
             <List className="h-4 w-4" />
-            Tất cả ({combinedReturns.length})
+            Tất cả ({groupedReturns.length})
           </TabsTrigger>
           <TabsTrigger value="export" className="gap-2">
             <Package className="h-4 w-4" />
-            Trả hàng bán ({filteredExportReturns.length})
+            Trả hàng bán ({groupedExportReturns.length})
           </TabsTrigger>
           <TabsTrigger value="import" className="gap-2">
             <Truck className="h-4 w-4" />
-            Trả hàng nhập ({filteredImportReturns.length})
+            Trả hàng nhập ({groupedImportReturns.length})
           </TabsTrigger>
         </TabsList>
 
@@ -677,21 +787,9 @@ export default function ReturnsPage() {
                 <div className="text-center py-8 text-muted-foreground">
                   Đang tải...
                 </div>
-              ) : renderHistoryTable(allReturnsPagination.paginatedData)}
+              ) : renderGroupedTable(groupedReturns)}
             </CardContent>
           </Card>
-          {combinedReturns.length > 0 && (
-            <TablePagination
-              currentPage={allReturnsPagination.currentPage}
-              totalPages={allReturnsPagination.totalPages}
-              pageSize={allReturnsPagination.pageSize}
-              totalItems={allReturnsPagination.totalItems}
-              startIndex={allReturnsPagination.startIndex}
-              endIndex={allReturnsPagination.endIndex}
-              onPageChange={allReturnsPagination.setPage}
-              onPageSizeChange={allReturnsPagination.setPageSize}
-            />
-          )}
         </TabsContent>
 
         {/* Tab: Export Returns */}
@@ -702,21 +800,9 @@ export default function ReturnsPage() {
                 <div className="text-center py-8 text-muted-foreground">
                   Đang tải...
                 </div>
-              ) : renderHistoryTable(exportReturnsPagination.paginatedData)}
+              ) : renderGroupedTable(groupedExportReturns)}
             </CardContent>
           </Card>
-          {filteredExportReturns.length > 0 && (
-            <TablePagination
-              currentPage={exportReturnsPagination.currentPage}
-              totalPages={exportReturnsPagination.totalPages}
-              pageSize={exportReturnsPagination.pageSize}
-              totalItems={exportReturnsPagination.totalItems}
-              startIndex={exportReturnsPagination.startIndex}
-              endIndex={exportReturnsPagination.endIndex}
-              onPageChange={exportReturnsPagination.setPage}
-              onPageSizeChange={exportReturnsPagination.setPageSize}
-            />
-          )}
         </TabsContent>
 
         {/* Tab: Import Returns */}
@@ -727,21 +813,9 @@ export default function ReturnsPage() {
                 <div className="text-center py-8 text-muted-foreground">
                   Đang tải...
                 </div>
-              ) : renderHistoryTable(importReturnsPagination.paginatedData)}
+              ) : renderGroupedTable(groupedImportReturns)}
             </CardContent>
           </Card>
-          {filteredImportReturns.length > 0 && (
-            <TablePagination
-              currentPage={importReturnsPagination.currentPage}
-              totalPages={importReturnsPagination.totalPages}
-              pageSize={importReturnsPagination.pageSize}
-              totalItems={importReturnsPagination.totalItems}
-              startIndex={importReturnsPagination.startIndex}
-              endIndex={importReturnsPagination.endIndex}
-              onPageChange={importReturnsPagination.setPage}
-              onPageSizeChange={importReturnsPagination.setPageSize}
-            />
-          )}
         </TabsContent>
       </Tabs>
 
