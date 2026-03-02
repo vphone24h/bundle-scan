@@ -607,6 +607,9 @@ export function LandingPageSettings() {
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitializedRef = useRef(false);
 
   const [formData, setFormData] = useState<Partial<TenantLandingSettings>>({
     is_enabled: true,
@@ -696,6 +699,7 @@ export function LandingPageSettings() {
   const handleAddAddress = () => {
     const current = formData.additional_addresses || [];
     setFormData(prev => ({ ...prev, additional_addresses: [...current, ''] }));
+    setHasChanges(true);
   };
 
   const handleRemoveAddress = (index: number) => {
@@ -704,6 +708,7 @@ export function LandingPageSettings() {
       ...prev, 
       additional_addresses: current.filter((_, i) => i !== index) 
     }));
+    setHasChanges(true);
   };
 
   const handleAddressChange = (index: number, value: string) => {
@@ -711,11 +716,37 @@ export function LandingPageSettings() {
     const updated = [...current];
     updated[index] = value;
     setFormData(prev => ({ ...prev, additional_addresses: updated }));
+    setHasChanges(true);
   };
 
   const handleChange = (field: keyof TenantLandingSettings, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    setHasChanges(true);
   };
+
+  // Auto-save: debounce 1.5s after any change
+  useEffect(() => {
+    if (!hasChanges || !isInitializedRef.current) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      updateSettings.mutateAsync(formData).then(() => {
+        setHasChanges(false);
+        toast({ title: '✓ Đã tự động lưu' });
+      }).catch(() => {
+        toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
+      });
+    }, 1500);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [formData, hasChanges]);
+
+  // Mark initialized after first settings load
+  useEffect(() => {
+    if (settings && !isInitializedRef.current) {
+      setTimeout(() => { isInitializedRef.current = true; }, 500);
+    }
+  }, [settings]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -964,6 +995,7 @@ export function LandingPageSettings() {
               // Auto-apply industry nav items when template changes
               const fullNav = getFullNavItems(id);
               setFormData(prev => ({ ...prev, custom_nav_items: fullNav }));
+              setHasChanges(true);
             }}
             editableSettings={{
               custom_trust_badges: (formData as any).custom_trust_badges || null,
@@ -971,6 +1003,7 @@ export function LandingPageSettings() {
             onSettingsChange={(editSettings) => {
               if (editSettings.custom_trust_badges !== undefined) {
                 setFormData(prev => ({ ...prev, custom_trust_badges: editSettings.custom_trust_badges as any }));
+                setHasChanges(true);
               }
             }}
           />
@@ -992,7 +1025,7 @@ export function LandingPageSettings() {
           <NavMenuEditor
             templateId={(formData as any).website_template || 'phone_store'}
             customNavItems={(formData as any).custom_nav_items}
-            onChange={(items) => setFormData(prev => ({ ...prev, custom_nav_items: items }))}
+            onChange={(items) => { setFormData(prev => ({ ...prev, custom_nav_items: items })); setHasChanges(true); }}
           />
         </CardContent>
       </Card>
@@ -1135,9 +1168,9 @@ export function LandingPageSettings() {
           <HomeSectionManager
             templateId={(formData as any).website_template || 'phone_store'}
             customSections={(formData as any).custom_home_sections || null}
-            onChange={(sections) => setFormData(prev => ({ ...prev, custom_home_sections: sections as any }))}
+            onChange={(sections) => { setFormData(prev => ({ ...prev, custom_home_sections: sections as any })); setHasChanges(true); }}
             customProductTabs={(formData as any).custom_product_tabs || []}
-            onTabsChange={(tabs) => setFormData(prev => ({ ...prev, custom_product_tabs: tabs as any }))}
+            onTabsChange={(tabs) => { setFormData(prev => ({ ...prev, custom_product_tabs: tabs as any })); setHasChanges(true); }}
           />
         </CardContent>
       </Card>
@@ -1618,21 +1651,13 @@ export function LandingPageSettings() {
         </CardContent>
       </Card>
 
-      {/* Nút lưu */}
-      <div className="flex justify-end">
-        <Button
-          onClick={handleSave}
-          disabled={updateSettings.isPending}
-          className="gap-2"
-        >
-          {updateSettings.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          Lưu cài đặt
-        </Button>
-      </div>
+      {/* Auto-save indicator */}
+      {updateSettings.isPending && (
+        <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Đang lưu...
+        </div>
+      )}
     </div>
   );
 }
