@@ -3289,10 +3289,19 @@ export type Database = {
           is_featured: boolean | null
           name: string
           price: number | null
+          promotion_content: string | null
+          promotion_title: string | null
           sale_price: number | null
           tenant_id: string
           updated_at: string
+          variant_group_1_name: string | null
+          variant_group_2_name: string | null
+          variant_options_1: Json | null
+          variant_options_2: Json | null
+          variant_prices: Json | null
           variants: Json | null
+          warranty_content: string | null
+          warranty_title: string | null
         }
         Insert: {
           category_id?: string | null
@@ -3307,10 +3316,19 @@ export type Database = {
           is_featured?: boolean | null
           name: string
           price?: number | null
+          promotion_content?: string | null
+          promotion_title?: string | null
           sale_price?: number | null
           tenant_id: string
           updated_at?: string
+          variant_group_1_name?: string | null
+          variant_group_2_name?: string | null
+          variant_options_1?: Json | null
+          variant_options_2?: Json | null
+          variant_prices?: Json | null
           variants?: Json | null
+          warranty_content?: string | null
+          warranty_title?: string | null
         }
         Update: {
           category_id?: string | null
@@ -3325,10 +3343,19 @@ export type Database = {
           is_featured?: boolean | null
           name?: string
           price?: number | null
+          promotion_content?: string | null
+          promotion_title?: string | null
           sale_price?: number | null
           tenant_id?: string
           updated_at?: string
+          variant_group_1_name?: string | null
+          variant_group_2_name?: string | null
+          variant_options_1?: Json | null
+          variant_options_2?: Json | null
+          variant_prices?: Json | null
           variants?: Json | null
+          warranty_content?: string | null
+          warranty_title?: string | null
         }
         Relationships: [
           {
@@ -5309,9 +5336,14 @@ export type Database = {
           primary_color: string | null
           show_banner: boolean | null
           show_branches: boolean
+          show_compare_products: boolean | null
           show_custom_domain_cta: boolean | null
+          show_installment_button: boolean | null
+          show_promotion_section: boolean | null
           show_store_info: boolean | null
+          show_trade_in: boolean | null
           show_warranty_lookup: boolean | null
+          show_warranty_section: boolean | null
           store_address: string | null
           store_description: string | null
           store_email: string | null
@@ -5353,9 +5385,14 @@ export type Database = {
           primary_color?: string | null
           show_banner?: boolean | null
           show_branches?: boolean
+          show_compare_products?: boolean | null
           show_custom_domain_cta?: boolean | null
+          show_installment_button?: boolean | null
+          show_promotion_section?: boolean | null
           show_store_info?: boolean | null
+          show_trade_in?: boolean | null
           show_warranty_lookup?: boolean | null
+          show_warranty_section?: boolean | null
           store_address?: string | null
           store_description?: string | null
           store_email?: string | null
@@ -5397,9 +5434,14 @@ export type Database = {
           primary_color?: string | null
           show_banner?: boolean | null
           show_branches?: boolean
+          show_compare_products?: boolean | null
           show_custom_domain_cta?: boolean | null
+          show_installment_button?: boolean | null
+          show_promotion_section?: boolean | null
           show_store_info?: boolean | null
+          show_trade_in?: boolean | null
           show_warranty_lookup?: boolean | null
+          show_warranty_section?: boolean | null
           store_address?: string | null
           store_description?: string | null
           store_email?: string | null

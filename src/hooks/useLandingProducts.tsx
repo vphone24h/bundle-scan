@@ -17,6 +17,20 @@ export interface LandingProductVariant {
   image_url?: string;
 }
 
+export interface VariantOption {
+  name: string;
+  image_url?: string;
+}
+
+export interface VariantPriceEntry {
+  option1: string;
+  option2?: string;
+  price: number;
+  sale_price?: number;
+  stock?: number;
+  image_url?: string;
+}
+
 export interface LandingProduct {
   id: string;
   tenant_id: string;
@@ -31,6 +45,17 @@ export interface LandingProduct {
   is_active: boolean;
   display_order: number;
   variants: LandingProductVariant[];
+  // 2-level variant system
+  variant_group_1_name: string;
+  variant_group_2_name: string;
+  variant_options_1: VariantOption[];
+  variant_options_2: VariantOption[];
+  variant_prices: VariantPriceEntry[];
+  // Sections
+  promotion_title: string;
+  promotion_content: string | null;
+  warranty_title: string;
+  warranty_content: string | null;
   created_at: string;
   updated_at: string;
 }

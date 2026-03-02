@@ -8,6 +8,7 @@ import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProduc
 import { LandingArticle, LandingArticleCategory } from '@/hooks/useLandingArticles';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { ProductDetailDialog } from '@/components/landing/ProductDetailDialog';
+import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { VoucherClaimForm } from '@/components/landing/VoucherClaimForm';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
@@ -115,7 +116,7 @@ export default function UniversalStoreTemplate({
   const [selectedProduct, setSelectedProduct] = useState<LandingProduct | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
-
+  const [showInstallmentCalc, setShowInstallmentCalc] = useState(false);
   // Load Google Font if needed
   useEffect(() => {
     const fontUrl = GOOGLE_FONTS[config.fontFamily];
@@ -1001,7 +1002,12 @@ export default function UniversalStoreTemplate({
         primaryColor={accentColor}
         warrantyHotline={warrantyHotline}
         onShare={() => selectedProduct && copyShareLink('product', selectedProduct.id)}
+        onInstallment={() => setShowInstallmentCalc(true)}
+        showPromotionSection={(settings as any)?.show_promotion_section !== false}
+        showWarrantySection={(settings as any)?.show_warranty_section !== false}
+        showInstallmentButton={(settings as any)?.show_installment_button !== false}
       />
+      <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
     </div>
     </PullToRefresh>
   );
