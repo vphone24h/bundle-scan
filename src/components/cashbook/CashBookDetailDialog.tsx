@@ -150,7 +150,7 @@ export function CashBookDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pr-6">
             <DialogTitle className="flex items-center gap-2">
               {entry.type === 'income' ? (
                 <TrendingUp className="h-5 w-5 text-green-600" />
