@@ -36,32 +36,36 @@ export function ScrollableTableWrapper({ children, className }: ScrollableTableW
     scrollRef.current?.scrollBy({ left: direction === 'right' ? 300 : -300, behavior: 'smooth' });
   };
 
-  const buttonClass =
-    'absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground shadow-lg cursor-pointer transition-transform hover:scale-110 active:scale-95';
+  const buttonBase =
+    'absolute z-10 flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground shadow-lg cursor-pointer transition-transform hover:scale-110 active:scale-95';
+
+  const positions = ['top-[20%]', 'top-1/2', 'top-[80%]'];
 
   return (
     <div className={cn('relative', className)}>
-      {canScrollLeft && (
+      {canScrollLeft && positions.map((pos) => (
         <button
+          key={`left-${pos}`}
           onClick={() => scroll('left')}
-          className={cn(buttonClass, 'left-1')}
+          className={cn(buttonBase, '-translate-y-1/2 left-1', pos)}
           aria-label="Cuộn sang trái"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
-      )}
+      ))}
       <div ref={scrollRef} className="overflow-x-auto">
         {children}
       </div>
-      {canScrollRight && (
+      {canScrollRight && positions.map((pos) => (
         <button
+          key={`right-${pos}`}
           onClick={() => scroll('right')}
-          className={cn(buttonClass, 'right-1')}
+          className={cn(buttonBase, '-translate-y-1/2 right-1', pos)}
           aria-label="Cuộn sang phải"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
-      )}
+      ))}
     </div>
   );
 }
