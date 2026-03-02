@@ -74,6 +74,14 @@ export function DebtDetailDialog({
     return allReceipts;
   }, [allReceipts, showOnlyUnpaid]);
 
+  // Calculate total sales amount from all receipts (to derive "paid at checkout")
+  const totalSalesAmount = useMemo(() => {
+    if (!allReceipts) return 0;
+    return allReceipts.reduce((sum: number, r: any) => sum + (Number(r.total_amount) || 0), 0);
+  }, [allReceipts]);
+
+  const paidAtCheckout = totalSalesAmount - totalAmount; // total sales - original debt = paid at checkout
+
   // Filter and enrich payment history with running balance
   const enrichedHistory = useMemo(() => {
     if (!paymentHistory) return [];
@@ -129,48 +137,61 @@ export function DebtDetailDialog({
             <Pencil className="h-4 w-4" />
           </Button>
           <CardContent className="p-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex items-center gap-2">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-bold text-primary">
-                    {entityName.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div>
-                  <p className="font-semibold">{entityName}</p>
-                  {entityPhone && (
-                    <p className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Phone className="h-3 w-3" />
-                      {entityPhone}
-                    </p>
-                  )}
-                </div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <span className="text-lg font-bold text-primary">
+                  {entityName.charAt(0).toUpperCase()}
+                </span>
               </div>
-              
+              <div className="flex-1">
+                <p className="font-semibold">{entityName}</p>
+                {entityPhone && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    {entityPhone}
+                  </p>
+                )}
+              </div>
               {branchName && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <Building2 className="h-4 w-4" />
                   <span>{branchName}</span>
                 </div>
               )}
+            </div>
 
-              <div className="text-center md:text-right">
+            {/* Row 1: Tổng đơn hàng & Trả tại quầy */}
+            {paidAtCheckout > 0 && (
+              <div className="flex items-center justify-between text-sm mb-2 pb-2 border-b border-dashed">
+                <div>
+                  <span className="text-muted-foreground">Tổng đơn hàng: </span>
+                  <span className="font-medium">{formatNumber(totalSalesAmount)}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Trả tại quầy: </span>
+                  <span className="font-medium text-blue-600">{formatNumber(paidAtCheckout)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Row 2: Tổng nợ, Đã thu, Còn lại */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+              <div>
                 <p className="text-sm text-muted-foreground">Tổng nợ</p>
                 <p className="font-semibold">{formatNumber(totalAmount)}</p>
               </div>
-
-              <div className="text-center md:text-right">
+              <div className="text-right">
                 <p className="text-sm text-muted-foreground">
-                  {entityType === 'customer' ? 'Đã thu' : 'Đã trả'}
+                  {entityType === 'customer' ? 'Đã thu nợ' : 'Đã trả nợ'}
                 </p>
                 <p className="font-semibold text-green-600">{formatNumber(paidAmount)}</p>
               </div>
+            </div>
 
-              <div className="col-span-2 md:col-span-4 flex justify-end">
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Còn lại</p>
-                  <p className="text-xl font-bold text-destructive">{formatNumber(remainingAmount)}</p>
-                </div>
+            <div className="flex justify-end mt-1">
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Còn lại</p>
+                <p className="text-xl font-bold text-destructive">{formatNumber(remainingAmount)}</p>
               </div>
             </div>
           </CardContent>
@@ -223,41 +244,47 @@ export function DebtDetailDialog({
                     <TableRow>
                       <TableHead>{entityType === 'customer' ? 'Ngày bán' : 'Ngày nhập'}</TableHead>
                       <TableHead>Mã phiếu</TableHead>
-                      <TableHead className="hidden md:table-cell">Sản phẩm</TableHead>
                       <TableHead className="text-right">
-                        {entityType === 'customer' ? 'Giá bán' : 'Giá nhập'}
+                        Tổng tiền
                       </TableHead>
+                      <TableHead className="text-right hidden sm:table-cell">Trả tại quầy</TableHead>
                       <TableHead className="text-right">Công nợ</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {receipts.map((receipt: any) => (
-                      <TableRow
-                        key={receipt.id}
-                        className="cursor-pointer hover:bg-accent/50"
-                        onClick={() => setSelectedReceipt(receipt)}
-                      >
-                        <TableCell>
-                          {format(
-                            new Date(entityType === 'customer' ? receipt.export_date : receipt.import_date),
-                            'dd/MM/yyyy',
-                            { locale: vi }
-                          )}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">{receipt.code}</TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          {entityType === 'customer'
-                            ? receipt.export_receipt_items?.map((item: any) => item.product_name).join(', ')
-                            : receipt.products?.map((item: any) => item.name).join(', ')}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatNumber(receipt.total_amount)}
-                        </TableCell>
-                        <TableCell className="text-right font-medium text-destructive">
-                          {formatNumber(receipt.debt_amount)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {receipts.map((receipt: any) => {
+                      const receiptTotal = Number(receipt.total_amount) || 0;
+                      const receiptDebt = Number(receipt.debt_amount) || 0;
+                      // paid_amount on receipt includes checkout + FIFO debt payments
+                      // We show total and current remaining debt
+                      return (
+                        <TableRow
+                          key={receipt.id}
+                          className="cursor-pointer hover:bg-accent/50"
+                          onClick={() => setSelectedReceipt(receipt)}
+                        >
+                          <TableCell>
+                            {format(
+                              new Date(entityType === 'customer' ? receipt.export_date : receipt.import_date),
+                              'dd/MM/yyyy',
+                              { locale: vi }
+                            )}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">{receipt.code}</TableCell>
+                          <TableCell className="text-right">
+                            {formatNumber(receiptTotal)}
+                          </TableCell>
+                          <TableCell className="text-right hidden sm:table-cell text-muted-foreground">
+                            {receiptTotal - receiptDebt > 0
+                              ? formatNumber(receiptTotal - receiptDebt)
+                              : '-'}
+                          </TableCell>
+                          <TableCell className="text-right font-medium text-destructive">
+                            {receiptDebt > 0 ? formatNumber(receiptDebt) : '-'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
