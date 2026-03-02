@@ -310,6 +310,9 @@ export function DebtDetailDialog({
                     date: p.created_at,
                     code: null,
                     amount: Number(p.amount),
+                    allocatedAmount: Number(p.allocated_amount) || 0,
+                    remainingDebt: Number(p.amount) - (Number(p.allocated_amount) || 0),
+                    isFullyPaid: (Number(p.allocated_amount) || 0) >= Number(p.amount),
                     description: p.description,
                     createdBy: p.profiles?.display_name || null,
                   }));
@@ -341,7 +344,10 @@ export function DebtDetailDialog({
                 ].sort((a, b) => b.sortDate - a.sortDate);
 
                 const filteredItems = onlyShowDebt
-                  ? allItems.filter(item => item.type === 'addition' || (item as any).originalDebt > 0)
+                  ? allItems.filter(item => {
+                      if (item.type === 'addition') return !(item as any).isFullyPaid;
+                      return (item as any).originalDebt > 0;
+                    })
                   : allItems;
 
                 if (filteredItems.length === 0) {
@@ -396,12 +402,22 @@ export function DebtDetailDialog({
                         return (
                           <div
                             key={a.id}
-                            className="border rounded-lg p-3 border-orange-200 bg-orange-50/50 dark:border-orange-900 dark:bg-orange-950/30"
+                            className={`border rounded-lg p-3 ${a.isFullyPaid ? 'border-muted bg-muted/30 opacity-80' : 'border-orange-200 bg-orange-50/50 dark:border-orange-900 dark:bg-orange-950/30'}`}
                           >
                             <div className="flex items-center gap-2 mb-1">
                               <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300">
                                 Phiếu thêm nợ
                               </Badge>
+                              {a.isFullyPaid && (
+                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800">
+                                  Đã trả hết
+                                </Badge>
+                              )}
+                              {!a.isFullyPaid && a.allocatedAmount > 0 && (
+                                <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950/50 dark:text-yellow-300 dark:border-yellow-800">
+                                  Đã trả một phần
+                                </Badge>
+                              )}
                               <span className="text-xs text-muted-foreground">
                                 {format(new Date(a.date), 'dd/MM/yyyy HH:mm', { locale: vi })}
                               </span>
@@ -412,9 +428,16 @@ export function DebtDetailDialog({
                                 {a.createdBy && (
                                   <p className="text-xs text-muted-foreground">Người tạo: {a.createdBy}</p>
                                 )}
+                                {a.allocatedAmount > 0 && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    Đã trả: <span className="text-green-600 dark:text-green-400">{formatNumber(a.allocatedAmount)}</span>
+                                    {!a.isFullyPaid && <span> · Còn: <span className="text-destructive">{formatNumber(a.remainingDebt)}</span></span>}
+                                  </p>
+                                )}
                               </div>
-                              <span className="font-semibold text-orange-600 shrink-0">
+                              <span className={`font-semibold shrink-0 ${a.isFullyPaid ? 'text-green-600 dark:text-green-400' : 'text-orange-600'}`}>
                                 +{formatNumber(a.amount)}
+                                {a.isFullyPaid && <span className="text-xs ml-1">✓</span>}
                               </span>
                             </div>
                           </div>

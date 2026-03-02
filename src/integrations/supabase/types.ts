@@ -1636,6 +1636,7 @@ export type Database = {
       }
       debt_payments: {
         Row: {
+          allocated_amount: number | null
           amount: number
           branch_id: string | null
           created_at: string
@@ -1649,6 +1650,7 @@ export type Database = {
           tenant_id: string | null
         }
         Insert: {
+          allocated_amount?: number | null
           amount: number
           branch_id?: string | null
           created_at?: string
@@ -1662,6 +1664,7 @@ export type Database = {
           tenant_id?: string | null
         }
         Update: {
+          allocated_amount?: number | null
           amount?: number
           branch_id?: string | null
           created_at?: string
