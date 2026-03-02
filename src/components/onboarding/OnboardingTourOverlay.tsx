@@ -79,6 +79,8 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
 
   useEffect(() => {
     if (!isActive || !step?.navigateTo) return;
+    // Only auto-navigate on mobile; on desktop the popup stays fixed at top
+    if (window.innerWidth >= 640) return;
     navigate(step.navigateTo);
   }, [isActive, currentStep, step?.navigateTo, navigate]);
 
@@ -255,23 +257,15 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
       };
     }
 
-    // Desktop positioning — ensure popup stays within viewport
-    const pos = step.position || 'bottom';
-    const left = Math.max(16, Math.min(targetRect.left, vw - popupW - 16));
-    const clampTop = (t: number) => Math.max(16, Math.min(t, vh - popupH - 16));
-
-    switch (pos) {
-      case 'bottom':
-        return { position: 'fixed', top: clampTop(targetRect.bottom + gap), left, maxWidth: popupW, zIndex: 10002 };
-      case 'top':
-        return { position: 'fixed', top: clampTop(targetRect.top - gap - popupH), left, maxWidth: popupW, zIndex: 10002 };
-      case 'right':
-        return { position: 'fixed', top: clampTop(targetRect.top - 20), left: Math.min(targetRect.right + gap, vw - popupW - 16), maxWidth: popupW, zIndex: 10002 };
-      case 'left':
-        return { position: 'fixed', top: clampTop(targetRect.top - 20), left: Math.max(16, targetRect.left - gap - popupW), maxWidth: popupW, zIndex: 10002 };
-      default:
-        return { position: 'fixed', top: clampTop(targetRect.bottom + gap), left, maxWidth: popupW, zIndex: 10002 };
-    }
+    // Desktop: always pin popup at top-center for stability
+    return {
+      position: 'fixed',
+      top: 24,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      maxWidth: popupW,
+      zIndex: 10002,
+    };
   };
 
   return (
