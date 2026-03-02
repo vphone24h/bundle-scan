@@ -79,8 +79,6 @@ export function OnboardingTourOverlay({ steps, isActive, onComplete, onSkip }: O
 
   useEffect(() => {
     if (!isActive || !step?.navigateTo) return;
-    // Only auto-navigate on mobile; on desktop the popup stays fixed at top
-    if (window.innerWidth >= 640) return;
     navigate(step.navigateTo);
   }, [isActive, currentStep, step?.navigateTo, navigate]);
 
