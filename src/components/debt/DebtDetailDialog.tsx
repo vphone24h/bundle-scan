@@ -216,6 +216,43 @@ export function DebtDetailDialog({
 
           {/* Orders Tab */}
           <TabsContent value="orders" className="flex-1 mt-4 min-h-0">
+            {/* Summary breakdown */}
+            {(() => {
+              const totalFromOrders = allReceipts?.reduce((sum: number, r: any) => {
+                const debtOnReceipt = Number(r.debt_amount) || 0;
+                // Original debt = current debt_amount + what was already paid via FIFO
+                // We use total_amount - paid_amount approach or just debt_amount
+                return sum + debtOnReceipt;
+              }, 0) || 0;
+
+              // Also need to account for original debt from receipts that have been fully paid
+              // Use the receipt's original debt: total_amount - (total_amount - debt_amount at creation)
+              // Since debt_amount gets reduced by FIFO, we need original value
+              // For now: total debt from orders = totalAmount - totalFromAdditions
+              const totalFromAdditions = paymentHistory
+                ?.filter(p => p.payment_type === 'addition')
+                .reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+
+              const totalFromOrdersCalc = totalAmount - totalFromAdditions;
+
+              return (
+                <div className="grid grid-cols-3 gap-2 mb-3 p-3 rounded-lg bg-muted/50 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Nợ từ đơn hàng</p>
+                    <p className="font-semibold">{formatNumber(totalFromOrdersCalc)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Nợ từ phiếu thêm</p>
+                    <p className="font-semibold">{formatNumber(totalFromAdditions)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Tổng nợ</p>
+                    <p className="font-bold">{formatNumber(totalAmount)}</p>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="flex items-center gap-2 mb-3">
               <Checkbox
                 id="showOnlyUnpaid"
@@ -227,67 +264,117 @@ export function DebtDetailDialog({
               </Label>
             </div>
 
-            <ScrollArea className="h-[300px]">
-              {receiptsLoading ? (
+            <ScrollArea className="h-[280px]">
+              {receiptsLoading || historyLoading ? (
                 <div className="space-y-2">
                   {[...Array(3)].map((_, i) => (
                     <Skeleton key={i} className="h-12 w-full" />
                   ))}
                 </div>
-              ) : !receipts || receipts.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Không có đơn hàng phát sinh công nợ
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{entityType === 'customer' ? 'Ngày bán' : 'Ngày nhập'}</TableHead>
-                      <TableHead>Mã phiếu</TableHead>
-                      <TableHead className="text-right">
-                        Tổng tiền
-                      </TableHead>
-                      <TableHead className="text-right hidden sm:table-cell">Trả tại quầy</TableHead>
-                      <TableHead className="text-right">Công nợ</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {receipts.map((receipt: any) => {
-                      const receiptTotal = Number(receipt.total_amount) || 0;
-                      const receiptDebt = Number(receipt.debt_amount) || 0;
-                      // paid_amount on receipt includes checkout + FIFO debt payments
-                      // We show total and current remaining debt
-                      return (
-                        <TableRow
-                          key={receipt.id}
-                          className="cursor-pointer hover:bg-accent/50"
-                          onClick={() => setSelectedReceipt(receipt)}
-                        >
-                          <TableCell>
-                            {format(
-                              new Date(entityType === 'customer' ? receipt.export_date : receipt.import_date),
-                              'dd/MM/yyyy',
-                              { locale: vi }
-                            )}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">{receipt.code}</TableCell>
-                          <TableCell className="text-right">
-                            {formatNumber(receiptTotal)}
-                          </TableCell>
-                          <TableCell className="text-right hidden sm:table-cell text-muted-foreground">
-                            {receiptTotal - receiptDebt > 0
-                              ? formatNumber(receiptTotal - receiptDebt)
-                              : '-'}
-                          </TableCell>
-                          <TableCell className="text-right font-medium text-destructive">
-                            {receiptDebt > 0 ? formatNumber(receiptDebt) : '-'}
-                          </TableCell>
-                        </TableRow>
-                      );
+              ) : (() => {
+                // Combine receipt rows and addition rows
+                const debtAdditions = (paymentHistory || [])
+                  .filter(p => p.payment_type === 'addition')
+                  .map(p => ({
+                    id: p.id,
+                    type: 'addition' as const,
+                    date: p.created_at,
+                    code: null,
+                    amount: Number(p.amount),
+                    description: p.description,
+                    createdBy: p.profiles?.display_name || null,
+                  }));
+
+                const receiptRows = (receipts || []).map((r: any) => ({
+                  id: r.id,
+                  type: 'order' as const,
+                  date: entityType === 'customer' ? r.export_date : r.import_date,
+                  code: r.code,
+                  totalAmount: Number(r.total_amount) || 0,
+                  debtAmount: Number(r.debt_amount) || 0,
+                  receipt: r,
+                }));
+
+                // Merge and sort by date descending
+                const allItems = [
+                  ...receiptRows.map(r => ({ ...r, sortDate: new Date(r.date).getTime() })),
+                  ...debtAdditions.map(a => ({ ...a, sortDate: new Date(a.date).getTime() })),
+                ].sort((a, b) => b.sortDate - a.sortDate);
+
+                if (allItems.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Không có dữ liệu phát sinh công nợ
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-2">
+                    {allItems.map((item) => {
+                      if (item.type === 'order') {
+                        const r = item as typeof receiptRows[0];
+                        return (
+                          <div
+                            key={r.id}
+                            className="border rounded-lg p-3 bg-card cursor-pointer hover:bg-accent/50 transition-colors"
+                            onClick={() => setSelectedReceipt(r.receipt)}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800">
+                                Đơn hàng
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(r.date), 'dd/MM/yyyy', { locale: vi })}
+                              </span>
+                              <span className="text-xs font-mono text-muted-foreground ml-auto">{r.code}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                              <div className="text-muted-foreground">
+                                Tổng: {formatNumber(r.totalAmount)}
+                                {r.totalAmount - r.debtAmount > 0 && (
+                                  <span className="ml-2">· Trả tại quầy: {formatNumber(r.totalAmount - r.debtAmount)}</span>
+                                )}
+                              </div>
+                              <span className="font-semibold text-destructive">
+                                {formatNumber(r.debtAmount)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      } else {
+                        const a = item as typeof debtAdditions[0];
+                        return (
+                          <div
+                            key={a.id}
+                            className="border rounded-lg p-3 border-orange-200 bg-orange-50/50 dark:border-orange-900 dark:bg-orange-950/30"
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/50 dark:text-orange-300">
+                                Phiếu thêm nợ
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(a.date), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                              <div>
+                                <p className="truncate">{a.description}</p>
+                                {a.createdBy && (
+                                  <p className="text-xs text-muted-foreground">Người tạo: {a.createdBy}</p>
+                                )}
+                              </div>
+                              <span className="font-semibold text-orange-600 shrink-0">
+                                +{formatNumber(a.amount)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      }
                     })}
-                  </TableBody>
-                </Table>
-              )}
+                  </div>
+                );
+              })()}
             </ScrollArea>
           </TabsContent>
 
