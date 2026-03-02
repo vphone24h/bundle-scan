@@ -242,8 +242,9 @@ Deno.serve(async (req) => {
       .single();
 
     if (!vapidKeys) {
-      return new Response(JSON.stringify({ error: 'VAPID keys not configured' }), {
-        status: 500,
+      // No VAPID keys yet — silently skip, push is best-effort
+      return new Response(JSON.stringify({ message: 'VAPID keys not configured yet, skipping push', sent: 0 }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
