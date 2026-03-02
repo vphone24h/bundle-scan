@@ -113,15 +113,27 @@ export function useCustomerDebts(showSettled: boolean = false) {
       // Group by customer
       const customerMap = new Map<string, DebtSummary>();
 
+      // First, build a map of total debt_payments per customer (payment type only)
+      const customerPaymentTotals = new Map<string, number>();
+      payments?.forEach(payment => {
+        if (payment.payment_type !== 'payment') return;
+        const current = customerPaymentTotals.get(payment.entity_id) || 0;
+        customerPaymentTotals.set(payment.entity_id, current + Number(payment.amount));
+      });
+
       receipts?.forEach(receipt => {
         if (!receipt.customer_id || !receipt.customers) return;
         
         const customer = receipt.customers as { id: string; name: string; phone: string | null };
-        const debtAmount = Number(receipt.debt_amount) || 0;
+        // Current debt_amount on receipt = remaining debt after FIFO payments
+        // Original debt = current debt_amount + payments already applied to this receipt
+        // But since FIFO distributes across receipts, we sum debt_amount across all receipts
+        // and add total debt_payments to get the original total debt
+        const currentDebt = Number(receipt.debt_amount) || 0;
         const existing = customerMap.get(customer.id);
         
         if (existing) {
-          existing.total_amount += debtAmount;
+          existing.remaining_amount += currentDebt; // accumulate current remaining debt from receipts
           if (!existing.first_debt_date || receipt.export_date < existing.first_debt_date) {
             existing.first_debt_date = receipt.export_date;
           }
@@ -132,21 +144,21 @@ export function useCustomerDebts(showSettled: boolean = false) {
             entity_phone: customer.phone,
             branch_id: receipt.branch_id,
             branch_name: (receipt.branches as { name: string } | null)?.name || null,
-            total_amount: debtAmount,
-            paid_amount: 0,
-            remaining_amount: 0,
+            total_amount: 0, // will be computed after
+            paid_amount: 0,  // will be computed after
+            remaining_amount: currentDebt,
             first_debt_date: receipt.export_date,
             days_overdue: 0,
           });
         }
       });
 
-      // First pass: process additions to ensure all customers are in the map
+      // Process additions: add to remaining_amount (these are new debts added manually)
       payments?.forEach(payment => {
         if (payment.payment_type !== 'addition') return;
         const existing = customerMap.get(payment.entity_id);
         if (existing) {
-          existing.total_amount += Number(payment.amount);
+          existing.remaining_amount += Number(payment.amount);
         } else {
           const customer = customersFromPayments.find(c => c.id === payment.entity_id);
           if (customer) {
@@ -156,9 +168,9 @@ export function useCustomerDebts(showSettled: boolean = false) {
               entity_phone: customer.phone,
               branch_id: payment.branch_id,
               branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
-              total_amount: Number(payment.amount),
+              total_amount: 0,
               paid_amount: 0,
-              remaining_amount: 0,
+              remaining_amount: Number(payment.amount),
               first_debt_date: payment.created_at,
               days_overdue: 0,
             });
@@ -166,27 +178,23 @@ export function useCustomerDebts(showSettled: boolean = false) {
         }
       });
 
-      // Second pass: process payments
-      payments?.forEach(payment => {
-        if (payment.payment_type !== 'payment') return;
-        const existing = customerMap.get(payment.entity_id);
-        if (existing) {
-          existing.paid_amount += Number(payment.amount);
-        }
-      });
-
-      // Calculate remaining and days overdue
+      // Compute total_amount and paid_amount for display
+      // remaining_amount = current debt_amount on receipts + additions (already accumulated above)
+      // paid_amount (Đã thu) = total debt_payments
+      // total_amount (Tổng nợ) = remaining + paid (original debt amount)
       const now = new Date();
       const result: DebtSummary[] = [];
       
       customerMap.forEach(summary => {
-        summary.remaining_amount = summary.total_amount - summary.paid_amount;
+        const totalCollected = customerPaymentTotals.get(summary.entity_id) || 0;
+        summary.paid_amount = totalCollected;
+        summary.total_amount = summary.remaining_amount + totalCollected;
+        
         if (summary.first_debt_date) {
           const firstDate = new Date(summary.first_debt_date);
           summary.days_overdue = Math.floor((now.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
         }
         
-        // Filter based on showSettled
         if (showSettled || summary.remaining_amount !== 0) {
           result.push(summary);
         }
@@ -271,17 +279,25 @@ export function useSupplierDebts(showSettled: boolean = false) {
       }
 
       // Group by supplier
+      // Build supplier payment totals
+      const supplierPaymentTotals = new Map<string, number>();
+      payments?.forEach(payment => {
+        if (payment.payment_type !== 'payment') return;
+        const current = supplierPaymentTotals.get(payment.entity_id) || 0;
+        supplierPaymentTotals.set(payment.entity_id, current + Number(payment.amount));
+      });
+
       const supplierMap = new Map<string, DebtSummary>();
 
       receipts?.forEach(receipt => {
         if (!receipt.supplier_id || !receipt.suppliers) return;
         
         const supplier = receipt.suppliers as { id: string; name: string; phone: string | null };
-        const debtAmount = Number(receipt.debt_amount) || 0;
+        const currentDebt = Number(receipt.debt_amount) || 0;
         const existing = supplierMap.get(supplier.id);
         
         if (existing) {
-          existing.total_amount += debtAmount;
+          existing.remaining_amount += currentDebt;
           if (!existing.first_debt_date || receipt.import_date < existing.first_debt_date) {
             existing.first_debt_date = receipt.import_date;
           }
@@ -292,21 +308,21 @@ export function useSupplierDebts(showSettled: boolean = false) {
             entity_phone: supplier.phone,
             branch_id: receipt.branch_id,
             branch_name: (receipt.branches as { name: string } | null)?.name || null,
-            total_amount: debtAmount,
+            total_amount: 0,
             paid_amount: 0,
-            remaining_amount: 0,
+            remaining_amount: currentDebt,
             first_debt_date: receipt.import_date,
             days_overdue: 0,
           });
         }
       });
 
-      // First pass: process additions to ensure all suppliers are in the map
+      // Process additions
       payments?.forEach(payment => {
         if (payment.payment_type !== 'addition') return;
         const existing = supplierMap.get(payment.entity_id);
         if (existing) {
-          existing.total_amount += Number(payment.amount);
+          existing.remaining_amount += Number(payment.amount);
         } else {
           const supplier = suppliersFromPayments.find(s => s.id === payment.entity_id);
           if (supplier) {
@@ -316,9 +332,9 @@ export function useSupplierDebts(showSettled: boolean = false) {
               entity_phone: supplier.phone,
               branch_id: payment.branch_id,
               branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
-              total_amount: Number(payment.amount),
+              total_amount: 0,
               paid_amount: 0,
-              remaining_amount: 0,
+              remaining_amount: Number(payment.amount),
               first_debt_date: payment.created_at,
               days_overdue: 0,
             });
@@ -326,27 +342,20 @@ export function useSupplierDebts(showSettled: boolean = false) {
         }
       });
 
-      // Second pass: process payments
-      payments?.forEach(payment => {
-        if (payment.payment_type !== 'payment') return;
-        const existing = supplierMap.get(payment.entity_id);
-        if (existing) {
-          existing.paid_amount += Number(payment.amount);
-        }
-      });
-
-      // Calculate remaining and days overdue
+      // Compute display values
       const now = new Date();
       const result: DebtSummary[] = [];
       
       supplierMap.forEach(summary => {
-        summary.remaining_amount = summary.total_amount - summary.paid_amount;
+        const totalPaid = supplierPaymentTotals.get(summary.entity_id) || 0;
+        summary.paid_amount = totalPaid;
+        summary.total_amount = summary.remaining_amount + totalPaid;
+        
         if (summary.first_debt_date) {
           const firstDate = new Date(summary.first_debt_date);
           summary.days_overdue = Math.floor((now.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
         }
         
-        // Filter based on showSettled
         if (showSettled || summary.remaining_amount !== 0) {
           result.push(summary);
         }
