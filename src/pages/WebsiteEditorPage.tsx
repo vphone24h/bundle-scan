@@ -26,6 +26,8 @@ export default function WebsiteEditorPage() {
 
   const [formData, setFormData] = useState<Partial<TenantLandingSettings>>({});
   const [hasChanges, setHasChanges] = useState(false);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitializedRef = useRef(false);
 
   // Initialize form data from settings
   useEffect(() => {
@@ -78,11 +80,37 @@ export default function WebsiteEditorPage() {
     setHasChanges(true);
   }, []);
 
+  // Auto-save: debounce 1.5s after any change
+  useEffect(() => {
+    if (!hasChanges || !isInitializedRef.current) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      updateSettings.mutateAsync(formData).then(() => {
+        setHasChanges(false);
+        toast({ title: '✓ Đã tự động lưu' });
+      }).catch(() => {
+        toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
+      });
+    }, 1500);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [formData, hasChanges]);
+
+  // Mark initialized after first settings load
+  useEffect(() => {
+    if (settings && !isInitializedRef.current) {
+      // Small delay to avoid triggering auto-save from initial setFormData
+      setTimeout(() => { isInitializedRef.current = true; }, 500);
+    }
+  }, [settings]);
+
   const handleSave = async () => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     try {
       await updateSettings.mutateAsync(formData);
       setHasChanges(false);
-      toast({ title: 'Đã lưu', description: 'Website đã được cập nhật' });
+      toast({ title: '✓ Đã lưu' });
     } catch {
       toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
     }

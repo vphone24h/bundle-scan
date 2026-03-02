@@ -556,13 +556,11 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
         </div>
       </SettingsBlock>
 
-      {/* Sticky save button */}
-      {onSave && (
-        <div className="sticky bottom-0 p-3 bg-background border-t">
-          <Button onClick={onSave} disabled={isSaving || !hasChanges} className="w-full">
-            {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-            Lưu cài đặt
-          </Button>
+      {/* Auto-save indicator */}
+      {isSaving && (
+        <div className="sticky bottom-0 p-2 bg-background/80 backdrop-blur border-t flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Đang lưu...
         </div>
       )}
 
