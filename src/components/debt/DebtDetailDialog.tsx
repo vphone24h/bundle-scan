@@ -24,6 +24,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, History, Phone, Building2, Filter, Pencil, ChevronDown, ChevronRight, Package } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { EditCustomerDebtDialog } from './EditCustomerDebtDialog';
 import {
@@ -62,6 +63,7 @@ export function DebtDetailDialog({
   const [historyFilter, setHistoryFilter] = useState<'all' | 'addition' | 'payment'>('all');
   const [showEditCustomer, setShowEditCustomer] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
+  const [onlyShowUnpaid, setOnlyShowUnpaid] = useState(true);
   const { data: allReceipts, isLoading: receiptsLoading } = useDebtDetail(entityType, entityId);
   const { data: paymentHistory, isLoading: historyLoading } = useDebtPaymentHistory(entityType, entityId);
 
@@ -254,9 +256,18 @@ export function DebtDetailDialog({
               );
             })()}
 
-            {/* No filter checkbox needed - all debt-originating orders always shown */}
+            <div className="flex items-center gap-2 mb-3">
+              <Checkbox
+                id="only-unpaid"
+                checked={onlyShowUnpaid}
+                onCheckedChange={(v) => setOnlyShowUnpaid(!!v)}
+              />
+              <Label htmlFor="only-unpaid" className="text-sm cursor-pointer">
+                Chỉ hiển thị các đơn còn công nợ
+              </Label>
+            </div>
 
-            <ScrollArea className="h-[280px]">
+            <ScrollArea className="h-[260px]">
               {receiptsLoading || historyLoading ? (
                 <div className="space-y-2">
                   {[...Array(3)].map((_, i) => (
@@ -300,7 +311,11 @@ export function DebtDetailDialog({
                   ...debtAdditions.map(a => ({ ...a, sortDate: new Date(a.date).getTime() })),
                 ].sort((a, b) => b.sortDate - a.sortDate);
 
-                if (allItems.length === 0) {
+                const filteredItems = onlyShowUnpaid
+                  ? allItems.filter(item => item.type === 'addition' || !(item as any).isFullyPaid)
+                  : allItems;
+
+                if (filteredItems.length === 0) {
                   return (
                     <div className="text-center py-8 text-muted-foreground">
                       Không có dữ liệu phát sinh công nợ
@@ -310,7 +325,7 @@ export function DebtDetailDialog({
 
                 return (
                   <div className="space-y-2">
-                    {allItems.map((item) => {
+                    {filteredItems.map((item) => {
                       if (item.type === 'order') {
                         const r = item as typeof receiptRows[0];
                         return (
