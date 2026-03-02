@@ -7,7 +7,7 @@ import { TenantLandingSettings, useWarrantyLookup, useCustomerPointsPublic, Warr
 import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProducts';
 import { LandingArticle, LandingArticleCategory } from '@/hooks/useLandingArticles';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
-import { ProductDetailDialog } from '@/components/landing/ProductDetailDialog';
+import { ProductDetailPage } from '@/components/landing/ProductDetailPage';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { VoucherClaimForm } from '@/components/landing/VoucherClaimForm';
@@ -268,6 +268,33 @@ export default function UniversalStoreTemplate({
     }
     return false;
   };
+
+  // If a product is selected, show full page instead of template
+  if (selectedProduct) {
+    return (
+      <>
+        <ProductDetailPage
+          product={selectedProduct}
+          onBack={() => {
+            setSelectedProduct(null);
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('product');
+            setSearchParams(newParams, { replace: true });
+          }}
+          tenantId={tenantId}
+          branches={branches.map(b => ({ id: b.id, name: b.name }))}
+          primaryColor={accentColor}
+          warrantyHotline={warrantyHotline}
+          onShare={() => copyShareLink('product', selectedProduct.id)}
+          onInstallment={() => setShowInstallmentCalc(true)}
+          showPromotionSection={(settings as any)?.show_promotion_section !== false}
+          showWarrantySection={(settings as any)?.show_warranty_section !== false}
+          showInstallmentButton={(settings as any)?.show_installment_button !== false}
+        />
+        <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
+      </>
+    );
+  }
 
   return (
     <PullToRefresh>
@@ -985,28 +1012,6 @@ export default function UniversalStoreTemplate({
         callLabel={config.stickyBarLabels.call}
       />
 
-      {/* PRODUCT DETAIL DIALOG */}
-      <ProductDetailDialog
-        product={selectedProduct}
-        open={!!selectedProduct}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelectedProduct(null);
-            const newParams = new URLSearchParams(searchParams);
-            newParams.delete('product');
-            setSearchParams(newParams, { replace: true });
-          }
-        }}
-        tenantId={tenantId}
-        branches={branches.map(b => ({ id: b.id, name: b.name }))}
-        primaryColor={accentColor}
-        warrantyHotline={warrantyHotline}
-        onShare={() => selectedProduct && copyShareLink('product', selectedProduct.id)}
-        onInstallment={() => setShowInstallmentCalc(true)}
-        showPromotionSection={(settings as any)?.show_promotion_section !== false}
-        showWarrantySection={(settings as any)?.show_warranty_section !== false}
-        showInstallmentButton={(settings as any)?.show_installment_button !== false}
-      />
       <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
     </div>
     </PullToRefresh>
