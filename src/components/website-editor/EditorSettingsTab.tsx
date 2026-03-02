@@ -86,6 +86,8 @@ const SECTION_TO_BLOCK: Record<string, string> = {
   'footer': 'social',
   'sticky-bar': 'social',
   'menu': 'menu',
+  'products-layout': 'products-layout',
+  'product-detail-layout': 'product-detail-layout',
 };
 
 export function EditorSettingsTab({ formData, onChange, focusSection, onClearFocus, tenantId, onSave, isSaving, hasChanges }: EditorSettingsTabProps) {
