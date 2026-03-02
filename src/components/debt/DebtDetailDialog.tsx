@@ -79,13 +79,37 @@ export function DebtDetailDialog({
     return allReceipts;
   }, [allReceipts]);
 
+  // Compute live totals from fetched data instead of stale props
+  const liveTotals = useMemo(() => {
+    const originalDebtFromReceipts = (allReceipts || []).reduce((sum: number, r: any) => {
+      const storedOriginal = Number(r.original_debt_amount) || 0;
+      const calculatedOriginal = Math.max((Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0), 0);
+      const original = storedOriginal > 0 ? storedOriginal : calculatedOriginal;
+      return sum + original;
+    }, 0);
+
+    const additions = (paymentHistory || [])
+      .filter((p: any) => p.payment_type === 'addition')
+      .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+    const payments = (paymentHistory || [])
+      .filter((p: any) => p.payment_type === 'payment')
+      .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+
+    const total = originalDebtFromReceipts + additions;
+    return { totalAmount: total, paidAmount: payments, remainingAmount: total - payments };
+  }, [allReceipts, paymentHistory]);
+
+  const liveTotal = liveTotals.totalAmount;
+  const livePaid = liveTotals.paidAmount;
+  const liveRemaining = liveTotals.remainingAmount;
+
   // Calculate total sales amount from all receipts (to derive "paid at checkout")
   const totalSalesAmount = useMemo(() => {
     if (!allReceipts) return 0;
     return allReceipts.reduce((sum: number, r: any) => sum + (Number(r.total_amount) || 0), 0);
   }, [allReceipts]);
 
-  const paidAtCheckout = totalSalesAmount - totalAmount; // total sales - original debt = paid at checkout
+  const paidAtCheckout = totalSalesAmount - liveTotal;
 
   // Filter and enrich payment history with running balance
   // Calculate backwards from current remainingAmount for accuracy
@@ -98,7 +122,7 @@ export function DebtDetailDialog({
     );
 
     // Work backwards from current remaining amount
-    let balance = remainingAmount;
+    let balance = liveRemaining;
     const enriched = sorted.map(payment => {
       const balanceAfterThis = balance;
       // Reverse the effect to get balance before this entry
@@ -116,7 +140,7 @@ export function DebtDetailDialog({
     // Apply filter
     if (historyFilter === 'all') return enriched;
     return enriched.filter(p => p.payment_type === historyFilter);
-  }, [paymentHistory, historyFilter, remainingAmount]);
+  }, [paymentHistory, historyFilter, liveRemaining]);
 
   const additionCount = paymentHistory?.filter(p => p.payment_type === 'addition').length || 0;
   const paymentCount = paymentHistory?.filter(p => p.payment_type === 'payment').length || 0;
@@ -184,20 +208,20 @@ export function DebtDetailDialog({
             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
               <div>
                 <p className="text-sm text-muted-foreground">Tổng nợ</p>
-                <p className="font-semibold">{formatNumber(totalAmount)}</p>
+                <p className="font-semibold">{formatNumber(liveTotal)}</p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">
                   {entityType === 'customer' ? 'Đã thu nợ' : 'Đã trả nợ'}
                 </p>
-                <p className="font-semibold text-green-600">{formatNumber(paidAmount)}</p>
+                <p className="font-semibold text-green-600">{formatNumber(livePaid)}</p>
               </div>
             </div>
 
             <div className="flex justify-end mt-1">
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Còn lại</p>
-                <p className="text-xl font-bold text-destructive">{formatNumber(remainingAmount)}</p>
+                <p className="text-xl font-bold text-destructive">{formatNumber(liveRemaining)}</p>
               </div>
             </div>
 
@@ -208,7 +232,7 @@ export function DebtDetailDialog({
                 variant="default"
                 className="flex-1 gap-1"
                 onClick={() => setShowPayment(true)}
-                disabled={remainingAmount <= 0}
+                disabled={liveRemaining <= 0}
               >
                 <Wallet className="h-4 w-4" />
                 Thu nợ
@@ -262,7 +286,7 @@ export function DebtDetailDialog({
                 ?.filter(p => p.payment_type === 'addition')
                 .reduce((sum, p) => sum + Number(p.amount), 0) || 0;
 
-              const totalFromOrdersCalc = totalAmount - totalFromAdditions;
+              const totalFromOrdersCalc = liveTotal - totalFromAdditions;
 
               return (
                 <div className="grid grid-cols-3 gap-2 mb-3 p-3 rounded-lg bg-muted/50 text-sm">
@@ -276,7 +300,7 @@ export function DebtDetailDialog({
                   </div>
                   <div>
                     <p className="text-muted-foreground">Tổng nợ</p>
-                    <p className="font-bold">{formatNumber(totalAmount)}</p>
+                    <p className="font-bold">{formatNumber(liveTotal)}</p>
                   </div>
                 </div>
               );
@@ -544,17 +568,17 @@ export function DebtDetailDialog({
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
                     <p className="text-sm text-muted-foreground">Tổng nợ</p>
-                    <p className="font-semibold">{formatNumber(totalAmount)}</p>
+                    <p className="font-semibold">{formatNumber(liveTotal)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">
                       Đã {entityType === 'customer' ? 'thu' : 'trả'}
                     </p>
-                    <p className="font-semibold text-green-600">{formatNumber(paidAmount)}</p>
+                    <p className="font-semibold text-green-600">{formatNumber(livePaid)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Còn lại</p>
-                    <p className="font-semibold text-destructive">{formatNumber(remainingAmount)}</p>
+                    <p className="font-semibold text-destructive">{formatNumber(liveRemaining)}</p>
                   </div>
                 </div>
               </div>
@@ -581,7 +605,7 @@ export function DebtDetailDialog({
         entityType={entityType}
         entityId={entityId}
         entityName={entityName}
-        remainingAmount={remainingAmount}
+        remainingAmount={liveRemaining}
         branchId={branchId || undefined}
       />
 
@@ -591,7 +615,7 @@ export function DebtDetailDialog({
         entityType={entityType}
         entityId={entityId}
         entityName={entityName}
-        remainingAmount={remainingAmount}
+        remainingAmount={liveRemaining}
         branchId={branchId || undefined}
       />
 
