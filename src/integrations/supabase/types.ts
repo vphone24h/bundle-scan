@@ -3244,6 +3244,7 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
+          parent_id: string | null
           tenant_id: string
           updated_at: string
         }
@@ -3253,6 +3254,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
+          parent_id?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -3262,10 +3264,18 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
+          parent_id?: string | null
           tenant_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "landing_product_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "landing_product_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "landing_product_categories_tenant_id_fkey"
             columns: ["tenant_id"]

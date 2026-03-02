@@ -7,8 +7,10 @@ export interface LandingProductCategory {
   name: string;
   display_order: number;
   image_url: string | null;
+  parent_id: string | null;
   created_at: string;
   updated_at: string;
+  children?: LandingProductCategory[];
 }
 
 export interface LandingProductVariant {
@@ -81,7 +83,7 @@ export function useLandingProductCategories() {
 export function useCreateLandingProductCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (cat: { name: string; image_url?: string }) => {
+    mutationFn: async (cat: { name: string; image_url?: string; parent_id?: string | null }) => {
       const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
       if (!tenantId) throw new Error('Không tìm thấy tenant');
       const { data, error } = await supabase
@@ -110,7 +112,7 @@ export function useDeleteLandingProductCategory() {
 export function useUpdateLandingProductCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; image_url?: string | null }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; image_url?: string | null; parent_id?: string | null }) => {
       const { data, error } = await supabase
         .from('landing_product_categories' as any)
         .update(updates)
