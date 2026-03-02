@@ -590,13 +590,13 @@ export default function AppleStyleLandingTemplate({
             })}
 
             {/* If no categories exist, show featured products in dark section */}
-            {categories.length === 0 && allProducts.length > 0 && (
+            {categories.length === 0 && featuredProducts.length > 0 && (
               <FadeSection>
                 <section className="min-h-screen bg-[#1d1d1f] text-white flex flex-col items-center justify-center py-20 px-6">
                   <p className="text-[#86868b] text-xs tracking-[0.2em] uppercase mb-3">Bán chạy nhất</p>
                   <h2 className="text-3xl sm:text-5xl font-bold tracking-tight mb-12">Sản phẩm nổi bật</h2>
                   <div className="max-w-[1024px] w-full grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    {(featuredProducts.length > 0 ? featuredProducts : allProducts).slice(0, 3).map(p => (
+                    {featuredProducts.slice(0, 3).map(p => (
                       <button key={p.id} onClick={() => openProduct(p)} className="group bg-white/10 backdrop-blur-md rounded-2xl overflow-hidden text-left hover:bg-white/20 transition-colors">
                         <div className="aspect-square flex items-center justify-center p-6">
                           {p.image_url ? (

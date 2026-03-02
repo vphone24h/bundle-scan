@@ -383,8 +383,8 @@ export default function UniversalStoreTemplate({
                   );
                 }
                 case 'featuredProducts': {
-                  const displayProducts = featuredProducts.length > 0 ? featuredProducts : allProducts;
-                  if (displayProducts.length === 0) return null;
+                  if (featuredProducts.length === 0) return null;
+                  const displayProducts = featuredProducts;
                   return (
                     <section key="featuredProducts" className="py-10 bg-white">
                       <div className="max-w-[1200px] mx-auto px-4">
