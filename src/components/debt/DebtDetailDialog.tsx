@@ -285,7 +285,7 @@ export function DebtDetailDialog({
                   }));
 
                 const receiptRows = (receipts || []).map((r: any) => {
-                  const originalDebt = (Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0);
+                  const originalDebt = Number(r.original_debt_amount) || ((Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0));
                   const currentDebt = Number(r.debt_amount) || 0;
                   const isFullyPaid = currentDebt === 0 && originalDebt > 0;
                   return {
@@ -351,8 +351,9 @@ export function DebtDetailDialog({
                                   <span className="ml-2">· Trả tại quầy: {formatNumber(r.totalAmount - r.originalDebt)}</span>
                                 )}
                               </div>
-                              <span className={`font-semibold ${r.isFullyPaid ? 'text-muted-foreground line-through' : 'text-destructive'}`}>
+                              <span className={`font-semibold ${r.isFullyPaid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
                                 {formatNumber(r.originalDebt)}
+                                {r.isFullyPaid && <span className="text-xs ml-1">✓</span>}
                               </span>
                             </div>
                           </div>

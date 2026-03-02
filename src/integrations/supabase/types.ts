@@ -2371,6 +2371,7 @@ export type Database = {
           export_date: string
           id: string
           note: string | null
+          original_debt_amount: number | null
           paid_amount: number
           points_discount: number | null
           points_earned: number | null
@@ -2393,6 +2394,7 @@ export type Database = {
           export_date?: string
           id?: string
           note?: string | null
+          original_debt_amount?: number | null
           paid_amount?: number
           points_discount?: number | null
           points_earned?: number | null
@@ -2415,6 +2417,7 @@ export type Database = {
           export_date?: string
           id?: string
           note?: string | null
+          original_debt_amount?: number | null
           paid_amount?: number
           points_discount?: number | null
           points_earned?: number | null
@@ -2684,6 +2687,7 @@ export type Database = {
           id: string
           import_date: string
           note: string | null
+          original_debt_amount: number | null
           paid_amount: number
           status: Database["public"]["Enums"]["receipt_status"]
           supplier_id: string | null
@@ -2700,6 +2704,7 @@ export type Database = {
           id?: string
           import_date?: string
           note?: string | null
+          original_debt_amount?: number | null
           paid_amount?: number
           status?: Database["public"]["Enums"]["receipt_status"]
           supplier_id?: string | null
@@ -2716,6 +2721,7 @@ export type Database = {
           id?: string
           import_date?: string
           note?: string | null
+          original_debt_amount?: number | null
           paid_amount?: number
           status?: Database["public"]["Enums"]["receipt_status"]
           supplier_id?: string | null
