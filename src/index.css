@@ -323,21 +323,10 @@
 
 /* PWA Standalone Mode - iOS/Android specific fixes */
 @media all and (display-mode: standalone) {
-  /* Ensure proper viewport handling in standalone mode */
-  html {
-    /* Prevent content from being hidden behind status bar */
-    padding-top: env(safe-area-inset-top);
-  }
-  
   body {
     /* Full height in standalone mode */
     min-height: 100vh;
     min-height: -webkit-fill-available;
-  }
-  
-  /* Sticky headers need to account for safe area */
-  .sticky {
-    top: env(safe-area-inset-top);
   }
 }
 
