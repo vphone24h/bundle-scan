@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Save, Info } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,10 +20,12 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
   const queryClient = useQueryClient();
 
   const [warranty, setWarranty] = useState('');
+  const [note, setNote] = useState('');
 
   useEffect(() => {
     if (item) {
       setWarranty(item.warranty || '');
+      setNote(item.note || '');
     }
   }, [item]);
 
@@ -33,8 +36,8 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
       oldData
     }: { 
       itemId: string; 
-      updates: { warranty?: string | null };
-      oldData: { warranty: string | null };
+      updates: { warranty?: string | null; note?: string | null };
+      oldData: { warranty: string | null; note: string | null };
     }) => {
       const { error } = await supabase
         .from('export_receipt_items')
@@ -72,12 +75,14 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
     try {
       const oldData = {
         warranty: item.warranty || null,
+        note: item.note || null,
       };
 
       await updateItem.mutateAsync({
         itemId: item.id,
         updates: {
           warranty: warranty.trim() || null,
+          note: note.trim() || null,
         },
         oldData,
       });
@@ -160,7 +165,7 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
               </div>
             </div>
 
-            {/* Editable field: Warranty only */}
+            {/* Editable fields */}
             <div className="space-y-2">
               <Label htmlFor="warranty">Thời gian bảo hành</Label>
               <Input
@@ -168,6 +173,17 @@ export function EditExportItemDialog({ item, open, onOpenChange }: EditExportIte
                 value={warranty}
                 onChange={(e) => setWarranty(e.target.value)}
                 placeholder="VD: 12 tháng"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="note">Ghi chú</Label>
+              <Textarea
+                id="note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Ghi chú cho sản phẩm..."
+                rows={2}
               />
             </div>
           </div>
