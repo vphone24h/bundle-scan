@@ -65,7 +65,6 @@ export default function SuppliersPage() {
   const { data: permissions } = usePermissions();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
 
-  // Auto-lock branch for non-super-admins
   useEffect(() => {
     if (!isSuperAdmin && permissions?.branchId) {
       setBranchId(permissions.branchId);
@@ -79,17 +78,14 @@ export default function SuppliersPage() {
     note: '',
   });
 
-  // Detect duplicate suppliers
   const duplicateGroups = useDuplicateSuppliers(allSuppliers);
 
-  // Fetch stats for sorting
   const { data: supplierStats } = useSupplierStats({
     startDate: startDate || undefined,
     endDate: endDate || undefined,
     branchId: branchId || undefined,
   });
 
-  // Build a stats map for quick lookup
   const statsMap = useMemo(() => {
     const map = new Map<string, { totalImportValue: number; totalDebt: number; receiptCount: number; avgReceiptValue: number }>();
     supplierStats?.forEach((s) => {
@@ -103,14 +99,12 @@ export default function SuppliersPage() {
     return map;
   }, [supplierStats]);
 
-  // Build branch name map for display
   const branchNameMap = useMemo(() => {
     const map = new Map<string, string>();
     branches?.forEach((b) => map.set(b.id, b.name));
     return map;
   }, [branches]);
 
-  // Filter by branch first, then search + sort
   const filteredSuppliers = useMemo(() => {
     let suppliers = allSuppliers || [];
     if (!isSuperAdmin && permissions?.branchId) {
@@ -138,10 +132,8 @@ export default function SuppliersPage() {
     return result;
   }, [allSuppliers, searchTerm, sortMode, statsMap, supplierStats, isSuperAdmin, permissions?.branchId, branchId]);
 
-  // Pagination
   const pagination = usePagination(filteredSuppliers, { storageKey: 'suppliers' });
 
-  // Find default branch for form
   const defaultBranch = useMemo(() => {
     return branches?.find(b => b.is_default) || branches?.[0];
   }, [branches]);
@@ -149,7 +141,6 @@ export default function SuppliersPage() {
   const handleAdd = () => {
     setEditSupplier(null);
     setForm({ name: '', phone: '', address: '', note: '' });
-    // Super admin: default to default branch; branch admin: locked to their branch
     setFormBranchId(isSuperAdmin ? (defaultBranch?.id || '') : (permissions?.branchId || ''));
     setDialogOpen(true);
   };
@@ -167,12 +158,12 @@ export default function SuppliersPage() {
   };
 
   const handleDelete = async (supplier: Supplier) => {
-    if (confirm(`Bạn có chắc muốn xoá nhà cung cấp "${supplier.name}"?`)) {
+    if (confirm(`${t('pages.suppliers.confirmDelete')} "${supplier.name}"?`)) {
       try {
         await deleteSupplier.mutateAsync(supplier.id);
-        toast({ title: 'Đã xoá nhà cung cấp' });
+        toast({ title: t('pages.suppliers.deleted') });
       } catch (error: any) {
-        toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+        toast({ title: t('pages.suppliers.error'), description: error.message, variant: 'destructive' });
       }
     }
   };
@@ -189,7 +180,7 @@ export default function SuppliersPage() {
           address: form.address.trim() || null,
           note: form.note.trim() || null,
         });
-        toast({ title: 'Đã cập nhật nhà cung cấp' });
+        toast({ title: t('pages.suppliers.updated') });
       } else {
         await createSupplier.mutateAsync({
           name: form.name.trim(),
@@ -198,15 +189,13 @@ export default function SuppliersPage() {
           note: form.note.trim() || null,
           branch_id: formBranchId || null,
         });
-        toast({ title: 'Đã thêm nhà cung cấp mới' });
+        toast({ title: t('pages.suppliers.added') });
       }
       setDialogOpen(false);
     } catch (error: any) {
-      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+      toast({ title: t('pages.suppliers.error'), description: error.message, variant: 'destructive' });
     }
   };
-
-  // Shell-first: no spinner
 
   return (
     <MainLayout>
@@ -219,7 +208,7 @@ export default function SuppliersPage() {
             {duplicateGroups.length > 0 && (
               <Button variant="outline" onClick={() => setMergeDialogOpen(true)} className="gap-1.5">
                 <Merge className="h-4 w-4" />
-                <span className="hidden sm:inline">Gộp trùng</span>
+                <span className="hidden sm:inline">{t('pages.suppliers.mergeDuplicates')}</span>
                 <Badge variant="destructive" className="ml-1 text-[10px] h-5 px-1.5">
                   {duplicateGroups.length}
                 </Badge>
@@ -227,20 +216,18 @@ export default function SuppliersPage() {
             )}
             <Button onClick={handleAdd}>
               <Plus className="mr-2 h-4 w-4" />
-              Thêm nhà cung cấp
+              {t('pages.suppliers.addSupplier')}
             </Button>
           </div>
         }
       />
 
       <div className="p-6 lg:p-8 space-y-4">
-        {/* Stats Dashboard */}
         <SupplierStats
           suppliers={filteredSuppliers}
           supplierStats={supplierStats}
         />
 
-        {/* Filters */}
         <SupplierFilters
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
@@ -255,7 +242,6 @@ export default function SuppliersPage() {
           isSuperAdmin={isSuperAdmin}
         />
 
-        {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {pagination.paginatedData.map((supplier) => {
             const stats = statsMap.get(supplier.id);
@@ -271,11 +257,11 @@ export default function SuppliersPage() {
                     {isSuperAdmin && supplier.branch_id && (
                       <p className="text-[10px] text-primary/70 flex items-center gap-1 mt-0.5">
                         <Building2 className="h-3 w-3" />
-                        {branchNameMap.get(supplier.branch_id) || 'Không rõ'}
+                        {branchNameMap.get(supplier.branch_id) || t('pages.suppliers.unknown')}
                       </p>
                     )}
                     <p className="text-xs text-muted-foreground mt-1">
-                      Thêm: {formatDate(new Date(supplier.created_at))}
+                      {t('pages.suppliers.addedDate')}: {formatDate(new Date(supplier.created_at))}
                     </p>
                   </div>
                   <DropdownMenu>
@@ -292,18 +278,18 @@ export default function SuppliersPage() {
                     <DropdownMenuContent align="end" className="bg-popover">
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDetailSupplier(supplier); }}>
                         <Eye className="mr-2 h-4 w-4" />
-                        Xem chi tiết
+                        {t('pages.suppliers.viewDetails')}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(supplier); }}>
                         <Pencil className="mr-2 h-4 w-4" />
-                        Chỉnh sửa
+                        {t('pages.suppliers.edit')}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={(e) => { e.stopPropagation(); handleDelete(supplier); }}
                         className="text-destructive"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Xoá
+                        {t('pages.suppliers.delete')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -324,27 +310,26 @@ export default function SuppliersPage() {
                   )}
                 </div>
 
-                {/* Stats badges when sorting */}
                 {sortMode !== 'name' && stats && (
                   <div className="mt-3 pt-3 border-t flex flex-wrap gap-1.5">
                     {sortMode === 'most_import_value' && (
                       <Badge variant="secondary" className="text-[10px]">
-                        Nhập: {formatCurrency(stats.totalImportValue)}
+                        {t('pages.suppliers.import')}: {formatCurrency(stats.totalImportValue)}
                       </Badge>
                     )}
                     {sortMode === 'highest_debt' && (
                       <Badge variant={stats.totalDebt > 0 ? "destructive" : "secondary"} className="text-[10px]">
-                        Nợ: {formatCurrency(stats.totalDebt)}
+                        {t('pages.suppliers.debt')}: {formatCurrency(stats.totalDebt)}
                       </Badge>
                     )}
                     {sortMode === 'most_receipts' && (
                       <Badge variant="secondary" className="text-[10px]">
-                        {stats.receiptCount} phiếu nhập
+                        {stats.receiptCount} {t('pages.suppliers.receipts')}
                       </Badge>
                     )}
                     {sortMode === 'highest_avg' && (
                       <Badge variant="secondary" className="text-[10px]">
-                        TB: {formatCurrency(stats.avgReceiptValue)}
+                        {t('pages.suppliers.avg')}: {formatCurrency(stats.avgReceiptValue)}
                       </Badge>
                     )}
                   </div>
@@ -362,7 +347,7 @@ export default function SuppliersPage() {
 
         {filteredSuppliers.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
-            Không tìm thấy nhà cung cấp nào
+            {t('pages.suppliers.noSuppliers')}
           </div>
         )}
 
@@ -385,45 +370,43 @@ export default function SuppliersPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editSupplier ? 'Chỉnh sửa nhà cung cấp' : 'Thêm nhà cung cấp'}
+              {editSupplier ? t('pages.suppliers.editSupplier') : t('pages.suppliers.addSupplier')}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="form-field">
-              <Label htmlFor="name">Tên nhà cung cấp *</Label>
+              <Label htmlFor="name">{t('pages.suppliers.supplierNameRequired')}</Label>
               <Input
                 id="name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Nhập tên nhà cung cấp"
+                placeholder={t('pages.suppliers.enterName')}
               />
             </div>
 
             <div className="form-field">
-              <Label htmlFor="phone">Số điện thoại</Label>
+              <Label htmlFor="phone">{t('pages.suppliers.phone')}</Label>
               <Input
                 id="phone"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="VD: 0901234567"
+                placeholder={t('pages.suppliers.enterPhone')}
               />
             </div>
 
-            {/* Branch selector - Super Admin can choose, Branch Admin locked */}
             <div className="form-field">
-              <Label>Chi nhánh</Label>
+              <Label>{t('pages.suppliers.branch')}</Label>
               {editSupplier ? (
-                // When editing: show branch as read-only
                 <Input
-                  value={formBranchId ? (branchNameMap.get(formBranchId) || 'Không rõ') : 'Chưa gán'}
+                  value={formBranchId ? (branchNameMap.get(formBranchId) || t('pages.suppliers.unknown')) : t('pages.suppliers.notAssigned')}
                   disabled
                   className="bg-muted"
                 />
               ) : isSuperAdmin ? (
                 <Select value={formBranchId} onValueChange={setFormBranchId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Chọn chi nhánh" />
+                    <SelectValue placeholder={t('pages.suppliers.selectBranch')} />
                   </SelectTrigger>
                   <SelectContent>
                     {branches?.map((branch) => (
@@ -443,22 +426,22 @@ export default function SuppliersPage() {
             </div>
 
             <div className="form-field">
-              <Label htmlFor="address">Địa chỉ</Label>
+              <Label htmlFor="address">{t('pages.suppliers.address')}</Label>
               <Input
                 id="address"
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
-                placeholder="Nhập địa chỉ"
+                placeholder={t('pages.suppliers.enterAddress')}
               />
             </div>
 
             <div className="form-field">
-              <Label htmlFor="note">Ghi chú</Label>
+              <Label htmlFor="note">{t('pages.suppliers.note')}</Label>
               <Textarea
                 id="note"
                 value={form.note}
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
-                placeholder="Ghi chú thêm (tuỳ chọn)"
+                placeholder={t('pages.suppliers.noteOptional')}
                 rows={3}
               />
             </div>
@@ -466,7 +449,7 @@ export default function SuppliersPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Huỷ
+              {t('pages.suppliers.cancel')}
             </Button>
             <Button
               onClick={handleSave}
@@ -475,20 +458,18 @@ export default function SuppliersPage() {
               {(createSupplier.isPending || updateSupplier.isPending) && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              {editSupplier ? 'Cập nhật' : 'Thêm mới'}
+              {editSupplier ? t('pages.suppliers.update') : t('pages.suppliers.addNew')}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Supplier Detail Dialog */}
       <SupplierDetailDialog
         supplier={detailSupplier}
         open={!!detailSupplier}
         onOpenChange={(open) => !open && setDetailSupplier(null)}
       />
 
-      {/* Supplier Merge Dialog */}
       <SupplierMergeDialog
         open={mergeDialogOpen}
         onOpenChange={setMergeDialogOpen}
