@@ -134,6 +134,8 @@ export function useReportStats(filters?: {
         .from('export_returns')
         .select(`
           id,
+          product_name,
+          imei,
           import_price,
           sale_price,
           return_date,
@@ -266,6 +268,8 @@ export function useReportStats(filters?: {
 
         returnDetails.push({
           date: item.return_date,
+          productName: item.product_name || 'Sản phẩm',
+          imei: item.imei || null,
           salePrice,
           importPrice,
           profit,
