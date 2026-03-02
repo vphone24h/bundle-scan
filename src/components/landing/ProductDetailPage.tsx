@@ -12,10 +12,16 @@ import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { useCustomerPointsPublic } from '@/hooks/useTenantLanding';
 import { toast } from 'sonner';
+import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
 
 interface BranchOption {
   id: string;
   name: string;
+}
+
+interface ProductDetailSectionConfig {
+  id: string;
+  enabled: boolean;
 }
 
 interface ProductDetailPageProps {
@@ -27,17 +33,23 @@ interface ProductDetailPageProps {
   warrantyHotline?: string | null;
   onShare?: () => void;
   onInstallment?: () => void;
-  showPromotionSection?: boolean;
-  showWarrantySection?: boolean;
   showInstallmentButton?: boolean;
+  detailSections?: ProductDetailSectionConfig[] | null;
+  relatedProducts?: LandingProduct[];
+  recentlyViewedProducts?: LandingProduct[];
+  onProductClick?: (p: LandingProduct) => void;
+  storeInfo?: { name?: string; phone?: string; address?: string; email?: string } | null;
 }
 
 export function ProductDetailPage({
   product, onBack, tenantId, branches, primaryColor,
   warrantyHotline, onShare, onInstallment,
-  showPromotionSection = true,
-  showWarrantySection = true,
   showInstallmentButton = true,
+  detailSections,
+  relatedProducts = [],
+  recentlyViewedProducts = [],
+  onProductClick,
+  storeInfo,
 }: ProductDetailPageProps) {
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
@@ -402,38 +414,134 @@ export function ProductDetailPage({
             </div>
           )}
 
-          {/* ===== PROMOTION SECTION ===== */}
-          {showPromotionSection && product.promotion_content && (
-            <div className="border rounded-lg overflow-hidden">
-              <div className="px-3 py-2.5 font-semibold text-sm flex items-center gap-1.5" style={{ backgroundColor: primaryColor, color: 'white' }}>
-                🎁 {promotionTitle}
-              </div>
-              <div className="p-3 text-sm prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.promotion_content) }} />
-            </div>
-          )}
+          {/* ===== DYNAMIC SECTIONS ===== */}
+          {(() => {
+            const defaultSections = [
+              { id: 'promotion', enabled: true },
+              { id: 'warranty', enabled: true },
+              { id: 'description', enabled: true },
+              { id: 'relatedProducts', enabled: true },
+              { id: 'reviews', enabled: false },
+              { id: 'recentlyViewed', enabled: false },
+              { id: 'storeInfo', enabled: false },
+            ];
+            const sections = (detailSections || defaultSections).filter(s => s.enabled);
 
-          {/* ===== WARRANTY SECTION ===== */}
-          {showWarrantySection && product.warranty_content && (
-            <div className="border rounded-lg overflow-hidden">
-              <div className="px-3 py-2.5 font-semibold text-sm flex items-center gap-1.5 bg-gray-100">
-                <Shield className="h-4 w-4" /> {warrantyTitle}
-              </div>
-              <div className="p-3 text-sm prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.warranty_content) }} />
-            </div>
-          )}
-
-          {/* ===== DESCRIPTION ===== */}
-          {product.description && (
-            <div className="border rounded-lg overflow-hidden">
-              <div className="px-3 py-2.5 font-semibold text-sm bg-gray-100">
-                📝 MÔ TẢ SẢN PHẨM
-              </div>
-              <div className="p-3 text-sm prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.description) }} />
-            </div>
-          )}
+            return sections.map(section => {
+              switch (section.id) {
+                case 'promotion':
+                  if (!product.promotion_content) return null;
+                  return (
+                    <div key="promotion" className="border rounded-lg overflow-hidden">
+                      <div className="px-3 py-2.5 font-semibold text-sm flex items-center gap-1.5" style={{ backgroundColor: primaryColor, color: 'white' }}>
+                        🎁 {promotionTitle}
+                      </div>
+                      <div className="p-3 text-sm prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.promotion_content) }} />
+                    </div>
+                  );
+                case 'warranty':
+                  if (!product.warranty_content) return null;
+                  return (
+                    <div key="warranty" className="border rounded-lg overflow-hidden">
+                      <div className="px-3 py-2.5 font-semibold text-sm flex items-center gap-1.5 bg-gray-100">
+                        <Shield className="h-4 w-4" /> {warrantyTitle}
+                      </div>
+                      <div className="p-3 text-sm prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.warranty_content) }} />
+                    </div>
+                  );
+                case 'description':
+                  if (!product.description) return null;
+                  return (
+                    <div key="description" className="border rounded-lg overflow-hidden">
+                      <div className="px-3 py-2.5 font-semibold text-sm bg-gray-100">
+                        📝 MÔ TẢ SẢN PHẨM
+                      </div>
+                      <div className="p-3 text-sm prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.description) }} />
+                    </div>
+                  );
+                case 'relatedProducts':
+                  if (relatedProducts.length === 0) return null;
+                  return (
+                    <div key="relatedProducts">
+                      <h3 className="font-bold text-base mb-3">📦 Sản phẩm liên quan</h3>
+                      <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+                        {relatedProducts.slice(0, 10).map(rp => (
+                          <button key={rp.id} onClick={() => onProductClick?.(rp)}
+                            className="min-w-[140px] max-w-[160px] shrink-0 rounded-xl border overflow-hidden text-left hover:shadow-md transition-shadow bg-white">
+                            {rp.image_url ? (
+                              <img src={rp.image_url} alt={rp.name} className="w-full aspect-square object-cover" />
+                            ) : (
+                              <div className="w-full aspect-square bg-gray-50 flex items-center justify-center">
+                                <Package className="h-8 w-8 text-gray-300" />
+                              </div>
+                            )}
+                            <div className="p-2">
+                              <p className="text-xs font-medium line-clamp-2 leading-tight">{rp.name}</p>
+                              <p className="text-xs font-bold mt-1" style={{ color: primaryColor }}>
+                                {formatNumber(rp.sale_price || rp.price)}đ
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                case 'reviews':
+                  if (!tenantId) return null;
+                  return (
+                    <div key="reviews">
+                      <StoreReviewsSection tenantId={tenantId} primaryColor={primaryColor} />
+                    </div>
+                  );
+                case 'recentlyViewed':
+                  if (recentlyViewedProducts.length === 0) return null;
+                  return (
+                    <div key="recentlyViewed">
+                      <h3 className="font-bold text-base mb-3">👁️ Đã xem gần đây</h3>
+                      <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+                        {recentlyViewedProducts.slice(0, 10).map(rp => (
+                          <button key={rp.id} onClick={() => onProductClick?.(rp)}
+                            className="min-w-[140px] max-w-[160px] shrink-0 rounded-xl border overflow-hidden text-left hover:shadow-md transition-shadow bg-white">
+                            {rp.image_url ? (
+                              <img src={rp.image_url} alt={rp.name} className="w-full aspect-square object-cover" />
+                            ) : (
+                              <div className="w-full aspect-square bg-gray-50 flex items-center justify-center">
+                                <Package className="h-8 w-8 text-gray-300" />
+                              </div>
+                            )}
+                            <div className="p-2">
+                              <p className="text-xs font-medium line-clamp-2 leading-tight">{rp.name}</p>
+                              <p className="text-xs font-bold mt-1" style={{ color: primaryColor }}>
+                                {formatNumber(rp.sale_price || rp.price)}đ
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                case 'storeInfo':
+                  if (!storeInfo) return null;
+                  return (
+                    <div key="storeInfo" className="border rounded-lg p-3 bg-gray-50 space-y-2">
+                      <h3 className="font-bold text-sm flex items-center gap-1.5">📞 Thông tin cửa hàng</h3>
+                      {storeInfo.name && <p className="text-sm font-medium">{storeInfo.name}</p>}
+                      {storeInfo.address && <p className="text-xs text-gray-500">{storeInfo.address}</p>}
+                      {storeInfo.phone && (
+                        <a href={`tel:${storeInfo.phone}`} className="text-xs font-medium flex items-center gap-1" style={{ color: primaryColor }}>
+                          <Phone className="h-3 w-3" /> {storeInfo.phone}
+                        </a>
+                      )}
+                    </div>
+                  );
+                default:
+                  return null;
+              }
+            });
+          })()}
 
           {/* ===== ORDER FORM (shown when user taps Đặt mua) ===== */}
           {showOrderForm && !orderSuccess && (

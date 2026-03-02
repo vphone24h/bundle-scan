@@ -71,6 +71,7 @@ export default function WebsiteEditorPage() {
         custom_layout_style: (settings as any).custom_layout_style || null,
         custom_products_page_sections: (settings as any).custom_products_page_sections || null,
         custom_products_page_tabs: (settings as any).custom_products_page_tabs || [],
+        custom_product_detail_sections: (settings as any).custom_product_detail_sections || null,
       });
     } else if (tenant) {
       setFormData(prev => ({ ...prev, store_name: tenant.name || '' }));

@@ -5333,6 +5333,7 @@ export type Database = {
           custom_home_sections: Json | null
           custom_layout_style: string | null
           custom_nav_items: Json | null
+          custom_product_detail_sections: Json | null
           custom_product_tabs: Json | null
           custom_products_page_sections: Json | null
           custom_products_page_tabs: Json | null
@@ -5384,6 +5385,7 @@ export type Database = {
           custom_home_sections?: Json | null
           custom_layout_style?: string | null
           custom_nav_items?: Json | null
+          custom_product_detail_sections?: Json | null
           custom_product_tabs?: Json | null
           custom_products_page_sections?: Json | null
           custom_products_page_tabs?: Json | null
@@ -5435,6 +5437,7 @@ export type Database = {
           custom_home_sections?: Json | null
           custom_layout_style?: string | null
           custom_nav_items?: Json | null
+          custom_product_detail_sections?: Json | null
           custom_product_tabs?: Json | null
           custom_products_page_sections?: Json | null
           custom_products_page_tabs?: Json | null

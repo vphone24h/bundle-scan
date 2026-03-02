@@ -3,6 +3,7 @@ import { TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLand
 import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, getFullNavItems, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, SYSTEM_PAGES, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
 import { HomeSectionManager, HomeSectionItem } from '@/components/admin/HomeSectionManager';
 import { ProductsPageSectionManager } from '@/components/admin/ProductsPageSectionManager';
+import { ProductDetailSectionManager } from '@/components/admin/ProductDetailSectionManager';
 import { NavMenuEditor } from '@/components/website-editor/NavMenuEditor';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
 import { Input } from '@/components/ui/input';
@@ -561,30 +562,31 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
         </div>
       </SettingsBlock>
 
-      {/* Tính năng trang sản phẩm */}
+      {/* Bố cục trang chi tiết sản phẩm */}
+      <SettingsBlock
+        id="product-detail-layout"
+        icon="📋"
+        title="Bố cục chi tiết sản phẩm"
+        description="Sắp xếp các phần bên dưới giá & biến thể"
+        isExpanded={expandedBlocks.has('product-detail-layout')}
+        onToggle={() => toggleBlock('product-detail-layout')}
+      >
+        <ProductDetailSectionManager
+          customSections={(formData as any).custom_product_detail_sections || null}
+          onChange={sections => onChange('custom_product_detail_sections', sections)}
+        />
+      </SettingsBlock>
+
+      {/* Tính năng sản phẩm */}
       <SettingsBlock
         id="product-features"
         icon="🛍️"
-        title="Trang sản phẩm"
-        description="Bật/tắt các mục trong trang chi tiết SP"
+        title="Tính năng sản phẩm"
+        description="Trả góp, so sánh, thu cũ đổi mới"
         isExpanded={expandedBlocks.has('product-features')}
         onToggle={() => toggleBlock('product-features')}
       >
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Khung khuyến mãi</Label>
-            <Switch
-              checked={(formData as any).show_promotion_section !== false}
-              onCheckedChange={checked => onChange('show_promotion_section', checked)}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Khung bảo hành</Label>
-            <Switch
-              checked={(formData as any).show_warranty_section !== false}
-              onCheckedChange={checked => onChange('show_warranty_section', checked)}
-            />
-          </div>
           <div className="flex items-center justify-between">
             <Label className="text-xs">Nút trả góp</Label>
             <Switch
