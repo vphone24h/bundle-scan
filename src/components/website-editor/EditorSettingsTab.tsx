@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
 import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, getFullNavItems, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, SYSTEM_PAGES, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
 import { HomeSectionManager, HomeSectionItem } from '@/components/admin/HomeSectionManager';
+import { ProductsPageSectionManager } from '@/components/admin/ProductsPageSectionManager';
 import { NavMenuEditor } from '@/components/website-editor/NavMenuEditor';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
 import { Input } from '@/components/ui/input';
@@ -478,6 +479,31 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
               toast({
                 title: `📦 ${tabName}`,
                 description: 'Vào "Sản phẩm" → Thêm/Sửa sản phẩm → chọn tab này trong mục "Hiển thị trên trang chủ"',
+              });
+            });
+          }}
+        />
+      </SettingsBlock>
+
+      {/* Layout trang sản phẩm */}
+      <SettingsBlock
+        id="products-layout"
+        icon="🛒"
+        title="Bố cục trang sản phẩm"
+        description="Bật/tắt, sắp xếp các phần trên trang SP"
+        isExpanded={expandedBlocks.has('products-layout')}
+        onToggle={() => toggleBlock('products-layout')}
+      >
+        <ProductsPageSectionManager
+          customSections={(formData as any).custom_products_page_sections || null}
+          onChange={sections => onChange('custom_products_page_sections', sections)}
+          customProductTabs={(formData as any).custom_products_page_tabs || []}
+          onTabsChange={tabs => onChange('custom_products_page_tabs', tabs)}
+          onManageTabProducts={(tabId, tabName) => {
+            import('@/hooks/use-toast').then(({ toast }) => {
+              toast({
+                title: `📦 ${tabName}`,
+                description: 'Vào "Sản phẩm" → Thêm/Sửa sản phẩm → chọn tab này trong mục "Hiển thị trên trang sản phẩm"',
               });
             });
           }}

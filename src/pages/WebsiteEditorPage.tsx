@@ -69,6 +69,8 @@ export default function WebsiteEditorPage() {
         custom_product_tabs: (settings as any).custom_product_tabs || [],
         custom_font_family: (settings as any).custom_font_family || null,
         custom_layout_style: (settings as any).custom_layout_style || null,
+        custom_products_page_sections: (settings as any).custom_products_page_sections || null,
+        custom_products_page_tabs: (settings as any).custom_products_page_tabs || [],
       });
     } else if (tenant) {
       setFormData(prev => ({ ...prev, store_name: tenant.name || '' }));
