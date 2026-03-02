@@ -445,9 +445,11 @@ export default function AppleStyleLandingTemplate({
           warrantyHotline={warrantyHotline}
           onShare={() => copyShareLink('product', selectedProduct.id)}
           onInstallment={() => setShowInstallmentCalc(true)}
-          showPromotionSection={(settings as any)?.show_promotion_section !== false}
-          showWarrantySection={(settings as any)?.show_warranty_section !== false}
           showInstallmentButton={(settings as any)?.show_installment_button !== false}
+          detailSections={(settings as any)?.custom_product_detail_sections || null}
+          relatedProducts={(productsData?.products || []).filter(p => p.category_id === selectedProduct.category_id && p.id !== selectedProduct.id).slice(0, 10)}
+          onProductClick={(p) => { setSelectedProduct(p); window.scrollTo(0, 0); }}
+          storeInfo={{ name: settings?.store_name || tenant.name, phone: settings?.store_phone || '', address: settings?.store_address || '' }}
         />
         <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
       </>

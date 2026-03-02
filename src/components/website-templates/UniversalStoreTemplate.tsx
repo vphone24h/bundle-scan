@@ -287,9 +287,11 @@ export default function UniversalStoreTemplate({
           warrantyHotline={warrantyHotline}
           onShare={() => copyShareLink('product', selectedProduct.id)}
           onInstallment={() => setShowInstallmentCalc(true)}
-          showPromotionSection={(settings as any)?.show_promotion_section !== false}
-          showWarrantySection={(settings as any)?.show_warranty_section !== false}
           showInstallmentButton={(settings as any)?.show_installment_button !== false}
+          detailSections={(settings as any)?.custom_product_detail_sections || null}
+          relatedProducts={allProducts.filter(p => p.category_id === selectedProduct.category_id && p.id !== selectedProduct.id).slice(0, 10)}
+          onProductClick={openProduct}
+          storeInfo={{ name: displayStoreName, phone: settings?.store_phone || '', address: settings?.store_address || '', email: settings?.store_email || '' }}
         />
         <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
       </>
