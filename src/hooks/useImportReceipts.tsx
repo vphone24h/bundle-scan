@@ -785,21 +785,26 @@ export function useReturnImportReceipt() {
             }]);
         }
 
-        // Ghi sổ quỹ (thu tiền từ NCC)
+        // Ghi sổ quỹ (thu tiền từ NCC) - 1 dòng gom cho cả phiếu
         if (recordToCashBook && payment.source !== 'debt') {
+          const productDetails = products.map(p => 
+            `${p.name}${p.imei ? ` (IMEI: ${p.imei})` : ''}: ${Number(p.import_price).toLocaleString('vi-VN')}đ`
+          ).join('\n');
+
           await supabase
             .from('cash_book')
             .insert([{
               type: 'income' as const,
               category: 'Tra hang nhap',
-              description: `Tra toan bo phieu nhap ${receipt.code}`,
+              description: `Trả hàng phiếu nhập ${receipt.code} (${products.length} SP)`,
               amount: payment.amount,
               payment_source: payment.source,
               is_business_accounting: false,
               branch_id: receipt.branch_id,
-              reference_id: returnIds[0],
+              reference_id: receiptId,
               reference_type: 'import_return',
               created_by: user.id,
+              note: productDetails,
             }]);
         }
       }

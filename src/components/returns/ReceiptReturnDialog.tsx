@@ -271,7 +271,8 @@ export function ReceiptReturnDialog({
     setIsSubmitting(true);
 
     try {
-      // Process each item sequentially
+      // Process each item sequentially - WITHOUT recording to cash book individually
+      const returnCodes: string[] = [];
       for (let i = 0; i < returnableItems.length; i++) {
         setCurrentIndex(i);
         const item = returnableItems[i];
@@ -280,7 +281,7 @@ export function ReceiptReturnDialog({
           .filter(p => p.amount > 0)
           .filter(p => !!p.source);
 
-        await createExportReturn.mutateAsync({
+        const result = await createExportReturn.mutateAsync({
           item: {
             id: item.id,
             product_id: item.product_id,
@@ -300,8 +301,59 @@ export function ReceiptReturnDialog({
           feeAmount: itemFee.feeAmount,
           payments: itemPayments,
           isBusinessAccounting,
+          recordToCashBook: false, // Don't record individually - we'll consolidate below
           note: i === 0 ? (note || `Trả toàn bộ phiếu ${receipt.code}`) : null,
         });
+        returnCodes.push(result.code);
+      }
+
+      // Consolidated cash book entry - ONE entry per payment source for the whole receipt
+      const validPayments = payments.filter(p => p.amount > 0 && !!p.source);
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user && tenantId) {
+        for (const payment of validPayments) {
+          if (payment.source !== 'debt') {
+            // Build product details for the note
+            const productDetails = returnableItems.map(item => 
+              `${item.product_name}${item.imei ? ` (IMEI: ${item.imei})` : ''}: ${formatCurrencyWithSpaces(item.sale_price)}`
+            ).join('\n');
+
+            await supabase.from('cash_book').insert([{
+              type: 'expense' as const,
+              category: 'Hoan tien khach hang',
+              description: `Trả hàng phiếu ${receipt.code} (${returnableItems.length} SP)`,
+              amount: payment.amount,
+              payment_source: payment.source,
+              is_business_accounting: false,
+              branch_id: receipt.branch_id,
+              reference_id: receipt.id,
+              reference_type: 'export_return_receipt',
+              created_by: user.id,
+              tenant_id: tenantId,
+              note: productDetails,
+            }]);
+          }
+        }
+
+        // Consolidated fee income entry if applicable
+        if (storeKeepAmount > 0) {
+          await supabase.from('cash_book').insert([{
+            type: 'income' as const,
+            category: 'Thu nhap khac',
+            description: `Phí trả hàng phiếu ${receipt.code} (${returnableItems.length} SP)`,
+            amount: storeKeepAmount,
+            payment_source: validPayments[0]?.source || 'cash',
+            is_business_accounting: false,
+            branch_id: receipt.branch_id,
+            reference_id: receipt.id,
+            reference_type: 'export_return_fee',
+            created_by: user.id,
+            tenant_id: tenantId,
+          }]);
+        }
       }
 
       toast({

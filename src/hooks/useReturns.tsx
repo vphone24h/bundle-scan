@@ -314,7 +314,7 @@ export function useCreateImportReturn() {
               .insert([{
                 type: 'income' as const,
                 category: 'Tra hang nhap',
-                description: `Tra hang nhap: ${product.name} (${code})`,
+                description: `Trả hàng nhập: ${product.name} (${code})`,
                 amount: payment.amount,
                 payment_source: payment.source,
                 is_business_accounting: false,
