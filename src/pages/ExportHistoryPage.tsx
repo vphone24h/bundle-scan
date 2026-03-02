@@ -69,6 +69,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useCategories } from '@/hooks/useCategories';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
+import { useTranslation } from 'react-i18next';
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   completed: { label: 'Hoàn tất', variant: 'default' },
@@ -136,6 +137,7 @@ const EXPORT_ITEM_TAB_TOUR_INFO: TourStep[] = [
 ];
 
 export default function ExportHistoryPage() {
+  const { t } = useTranslation();
   // Onboarding tour
   const { completeTour: completeHistoryTour } = useOnboardingTour('export_history');
   const { isCompleted: receiptTourDone, completeTour: completeReceiptTour } = useOnboardingTour('export_receipt_tab');
@@ -411,9 +413,9 @@ export default function ExportHistoryPage() {
   return (
     <MainLayout>
       <PageHeader
-        title="Lịch sử xuất hàng"
-        description="Xem và quản lý các phiếu xuất hàng"
-        helpText="Xem tất cả phiếu xuất (bán hàng) đã tạo. Lọc theo ngày, khách hàng, trạng thái. Nhấn vào phiếu để xem chi tiết, in hóa đơn hoặc xử lý trả hàng."
+        title={t('pages.exportHistory.title')}
+        description={t('pages.exportHistory.description')}
+        helpText={t('pages.exportHistory.helpText')}
         actions={
           <div className="flex gap-2">
             <Button

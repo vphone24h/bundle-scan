@@ -28,6 +28,7 @@ import { useUsersGuideUrl } from '@/hooks/useAppConfig';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface UserWithRole {
   id: string;
@@ -213,6 +214,7 @@ function BusinessModeSection({ tenantId, currentMode }: { tenantId: string; curr
 }
 
 export default function UsersPage() {
+  const { t } = useTranslation();
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
   const { data: currentTenant } = useCurrentTenant();
@@ -322,9 +324,9 @@ export default function UsersPage() {
     <MainLayout>
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <PageHeader 
-          title={isStaffOnly ? "Đánh giá nhân viên" : "Quản lý người dùng"}
-          description={isStaffOnly ? "Xem đánh giá từ khách hàng" : "Phân quyền và quản lý tài khoản nhân viên"}
-          helpText={isStaffOnly ? "Xem các đánh giá mà khách hàng đã gửi sau khi tra cứu bảo hành." : "Tạo tài khoản cho nhân viên, phân quyền (Admin, Kế toán, Nhân viên). Mỗi vai trò có quyền truy cập khác nhau: nhân viên chỉ thấy chức năng được cấp phép."}
+          title={isStaffOnly ? t('pages.users.staffReviewsTitle') : t('pages.users.title')}
+          description={isStaffOnly ? t('pages.users.staffReviewsDesc') : t('pages.users.description')}
+          helpText={isStaffOnly ? t('pages.users.staffReviewsHelp') : t('pages.users.helpText')}
         />
         {usersGuideUrl && !isStaffOnly && (
           <Button

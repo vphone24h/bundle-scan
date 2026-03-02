@@ -86,6 +86,7 @@ import { useLatestOpeningBalances } from '@/hooks/useOpeningBalance';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useProfile } from '@/hooks/useProfile';
 import { useCustomPaymentSources, useAddCustomPaymentSource, useDeleteCustomPaymentSource, useUpdateCustomPaymentSource } from '@/hooks/useCustomPaymentSources';
+import { useTranslation } from 'react-i18next';
 
 const defaultPaymentSourceLabels: Record<string, string> = {
   cash: 'Tiền mặt',
@@ -185,7 +186,7 @@ const cashBookTourSteps: TourStep[] = [
 ];
 
 export default function CashBookPage() {
-  // Onboarding tour
+  const { t } = useTranslation();
   const { isCompleted: cashTourDone, isLoading: cashTourLoading, completeTour: completeCashTour } = useOnboardingTour('cashbook_guide');
   const [manualTourActive, setManualTourActive] = useState(false);
   const showCashTour = manualTourActive || (!cashTourLoading && !cashTourDone);

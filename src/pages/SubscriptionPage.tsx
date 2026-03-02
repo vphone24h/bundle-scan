@@ -49,6 +49,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { getBankCode, generateVietQRUrl as generateQRUrl } from '@/lib/vietnameseBanks';
+import { useTranslation } from 'react-i18next';
 
 interface BankAccount {
   id: string;
@@ -64,6 +65,7 @@ interface PaymentConfig {
 }
 
 export default function SubscriptionPage() {
+  const { t } = useTranslation();
   const { data: tenant } = useCurrentTenant();
   const { data: plans } = useSubscriptionPlans();
   const { data: payments } = usePaymentRequests(tenant?.id);
@@ -177,9 +179,9 @@ export default function SubscriptionPage() {
     <MainLayout>
       <div className="p-4 sm:p-6 space-y-6">
         <PageHeader 
-          title="Gói dịch vụ" 
-          description="Quản lý gói đăng ký và thanh toán"
-          helpText="Xem gói dịch vụ hiện tại, gia hạn hoặc nâng cấp gói. Thanh toán qua chuyển khoản ngân hàng. Gói hết hạn sẽ bị giới hạn tính năng."
+          title={t('pages.subscription.title')}
+          description={t('pages.subscription.description')}
+          helpText={t('pages.subscription.helpText')}
         />
 
         {/* Feedback - Only for super_admin */}

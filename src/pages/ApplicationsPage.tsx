@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useState, useEffect, useCallback } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from 'react-i18next';
 
 export default function ApplicationsPage() {
+  const { t } = useTranslation();
   const { data: ads, isLoading } = useActiveAdvertisements();
   const trackClick = useTrackAdvertisementClick();
   const isMobile = useIsMobile();
@@ -41,7 +43,7 @@ export default function ApplicationsPage() {
 
   return (
     <MainLayout>
-      <PageHeader title="Ứng Dụng & Dịch Vụ" description="Khám phá các ứng dụng và dịch vụ đối tác" helpText="Danh sách các ứng dụng và dịch vụ đối tác hữu ích cho hoạt động kinh doanh. Nhấn vào để truy cập trực tiếp." />
+      <PageHeader title={t('pages.applications.title')} description={t('pages.applications.description')} helpText={t('pages.applications.helpText')} />
 
       <div className="p-4 sm:p-6 space-y-6">
         {!ads || ads.length === 0 ? (

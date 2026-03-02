@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   pending: { label: 'Chờ duyệt', className: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20' },
@@ -38,6 +39,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 };
 
 export default function StockTransferPage() {
+  const { t } = useTranslation();
   const { data: permissions } = usePermissions();
   const { data: branches } = useAccessibleBranches();
   const { data: requests, isLoading } = useStockTransferRequests();
@@ -208,9 +210,9 @@ export default function StockTransferPage() {
   return (
     <MainLayout>
       <PageHeader
-        title="Chuyển hàng"
-        description="Quản lý phiếu chuyển hàng giữa các chi nhánh"
-        helpText="Tạo phiếu chuyển hàng từ chi nhánh này sang chi nhánh khác. Chi nhánh nhận cần xác nhận trước khi hàng được cập nhật tồn kho. Theo dõi trạng thái: chờ duyệt, đã nhận, từ chối."
+        title={t('pages.stockTransfer.title')}
+        description={t('pages.stockTransfer.description')}
+        helpText={t('pages.stockTransfer.helpText')}
       />
 
       <div className="p-6 lg:p-8 space-y-4">
