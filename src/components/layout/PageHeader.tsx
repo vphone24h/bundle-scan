@@ -10,7 +10,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, actions, helpText }: PageHeaderProps) {
   return (
-    <div className="border-b bg-card px-4 py-2 sm:px-6 sm:py-5 lg:px-8">
+    <div className="border-b bg-card px-4 py-1 sm:px-6 sm:py-5 lg:px-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="pl-12 sm:pl-10 lg:pl-0">
           <div className="flex items-center gap-2">
