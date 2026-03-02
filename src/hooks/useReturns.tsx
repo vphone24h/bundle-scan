@@ -25,6 +25,7 @@ export interface ImportReturn {
   updated_at: string;
   suppliers?: { name: string } | null;
   branches?: { name: string } | null;
+  import_receipts?: { code: string } | null;
   profiles?: { display_name: string } | null;
 }
 
@@ -56,6 +57,7 @@ export interface ExportReturn {
   updated_at: string;
   customers?: { name: string; phone: string } | null;
   branches?: { name: string } | null;
+  export_receipts?: { code: string } | null;
   profiles?: { display_name: string } | null;
 }
 
@@ -87,7 +89,8 @@ export function useImportReturns(filters?: {
         .select(`
           *,
           suppliers(name),
-          branches(name)
+          branches(name),
+          import_receipts(code)
         `)
         .order('return_date', { ascending: false });
 
@@ -144,7 +147,8 @@ export function useExportReturns(filters?: {
         .select(`
           *,
           customers(name, phone),
-          branches(name)
+          branches(name),
+          export_receipts!export_returns_export_receipt_id_fkey(code)
         `)
         .order('return_date', { ascending: false });
 

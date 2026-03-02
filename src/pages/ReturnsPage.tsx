@@ -275,10 +275,15 @@ export default function ReturnsPage() {
     
     for (const r of combinedReturns) {
       let groupKey: string;
+      let receiptCode: string | null = null;
       if (r.returnType === 'export') {
-        groupKey = `export-${(r as ExportReturn).export_receipt_id || r.id}`;
+        const er = r as ExportReturn;
+        groupKey = `export-${er.export_receipt_id || r.id}`;
+        receiptCode = er.export_receipts?.code || null;
       } else {
-        groupKey = `import-${(r as ImportReturn).import_receipt_id || r.id}`;
+        const ir = r as ImportReturn;
+        groupKey = `import-${ir.import_receipt_id || r.id}`;
+        receiptCode = ir.import_receipts?.code || null;
       }
       
       if (!groups.has(groupKey)) {
@@ -289,7 +294,7 @@ export default function ReturnsPage() {
           return_date: r.return_date,
           totalRefundAmount: 0,
           totalStoreKeepAmount: 0,
-          receiptCode: null,
+          receiptCode,
           firstItem: r,
           productCount: 0,
         });
@@ -476,6 +481,11 @@ export default function ReturnsPage() {
                     )}
                   </TableCell>
                   <TableCell>
+                    {group.receiptCode && (
+                      <div className="text-xs text-muted-foreground mb-0.5">
+                        Phiếu: {group.receiptCode}
+                      </div>
+                    )}
                     {isSingleItem ? (
                       <>
                         <div className="font-medium">{firstItem.product_name}</div>
