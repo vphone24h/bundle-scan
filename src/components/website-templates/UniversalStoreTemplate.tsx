@@ -247,7 +247,6 @@ export default function UniversalStoreTemplate({
     baseUrl.hash = '';
     
     if (type === 'product') {
-      // Build SEO-friendly path: /category/product-slug-shortid
       const product = productsData?.products?.find(p => p.id === id);
       if (product) {
         const categories = productsData?.categories || [];
@@ -263,9 +262,7 @@ export default function UniversalStoreTemplate({
     }
     
     const cleanUrl = baseUrl.toString();
-    const ogProxyBase = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-meta`;
-    const ogUrl = `${ogProxyBase}?type=${type}&id=${id}&tenant_id=${tenantId || ''}&url=${encodeURIComponent(cleanUrl)}`;
-    navigator.clipboard.writeText(ogUrl).then(() => {
+    navigator.clipboard.writeText(cleanUrl).then(() => {
       import('sonner').then(({ toast }) => toast.success('Đã sao chép link chia sẻ'));
     }).catch(() => {});
   };

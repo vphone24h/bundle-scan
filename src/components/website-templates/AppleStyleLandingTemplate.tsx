@@ -420,9 +420,7 @@ export default function AppleStyleLandingTemplate({
     }
     
     const cleanUrl = baseUrl.toString();
-    const ogBase = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-meta`;
-    const ogUrl = `${ogBase}?type=${type}&id=${id}&tenant_id=${tenantId || ''}&url=${encodeURIComponent(cleanUrl)}`;
-    navigator.clipboard.writeText(ogUrl).then(() => { import('sonner').then(({ toast }) => toast.success('Đã sao chép link')); }).catch(() => {});
+    navigator.clipboard.writeText(cleanUrl).then(() => { import('sonner').then(({ toast }) => toast.success('Đã sao chép link')); }).catch(() => {});
   };
 
   // Nav items
