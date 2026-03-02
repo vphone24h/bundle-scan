@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -60,19 +59,21 @@ export function DebtDetailDialog({
   paidAmount,
   remainingAmount,
 }: DebtDetailDialogProps) {
-  const [showOnlyUnpaid, setShowOnlyUnpaid] = useState(true);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'addition' | 'payment'>('all');
   const [showEditCustomer, setShowEditCustomer] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const { data: allReceipts, isLoading: receiptsLoading } = useDebtDetail(entityType, entityId);
   const { data: paymentHistory, isLoading: historyLoading } = useDebtPaymentHistory(entityType, entityId);
 
-  // Filter receipts based on showOnlyUnpaid
+  // Filter receipts: only show orders that originally had debt (total_amount - paid_amount > 0)
   const receipts = useMemo(() => {
     if (!allReceipts) return [];
-    if (showOnlyUnpaid) return allReceipts.filter((r: any) => r.debt_amount > 0);
-    return allReceipts;
-  }, [allReceipts, showOnlyUnpaid]);
+    // Only include receipts that originally had debt
+    return allReceipts.filter((r: any) => {
+      const originalDebt = (Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0);
+      return originalDebt > 0;
+    });
+  }, [allReceipts]);
 
   // Calculate total sales amount from all receipts (to derive "paid at checkout")
   const totalSalesAmount = useMemo(() => {
@@ -253,16 +254,7 @@ export function DebtDetailDialog({
               );
             })()}
 
-            <div className="flex items-center gap-2 mb-3">
-              <Checkbox
-                id="showOnlyUnpaid"
-                checked={showOnlyUnpaid}
-                onCheckedChange={(checked) => setShowOnlyUnpaid(checked === true)}
-              />
-              <Label htmlFor="showOnlyUnpaid" className="text-sm cursor-pointer">
-                Chỉ hiển thị các đơn còn công nợ
-              </Label>
-            </div>
+            {/* No filter checkbox needed - all debt-originating orders always shown */}
 
             <ScrollArea className="h-[280px]">
               {receiptsLoading || historyLoading ? (
@@ -285,15 +277,22 @@ export function DebtDetailDialog({
                     createdBy: p.profiles?.display_name || null,
                   }));
 
-                const receiptRows = (receipts || []).map((r: any) => ({
-                  id: r.id,
-                  type: 'order' as const,
-                  date: entityType === 'customer' ? r.export_date : r.import_date,
-                  code: r.code,
-                  totalAmount: Number(r.total_amount) || 0,
-                  debtAmount: Number(r.debt_amount) || 0,
-                  receipt: r,
-                }));
+                const receiptRows = (receipts || []).map((r: any) => {
+                  const originalDebt = (Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0);
+                  const currentDebt = Number(r.debt_amount) || 0;
+                  const isFullyPaid = currentDebt === 0 && originalDebt > 0;
+                  return {
+                    id: r.id,
+                    type: 'order' as const,
+                    date: entityType === 'customer' ? r.export_date : r.import_date,
+                    code: r.code,
+                    totalAmount: Number(r.total_amount) || 0,
+                    originalDebt,
+                    currentDebt,
+                    isFullyPaid,
+                    receipt: r,
+                  };
+                });
 
                 // Merge and sort by date descending
                 const allItems = [
@@ -317,13 +316,18 @@ export function DebtDetailDialog({
                         return (
                           <div
                             key={r.id}
-                            className="border rounded-lg p-3 bg-card cursor-pointer hover:bg-accent/50 transition-colors"
+                            className={`border rounded-lg p-3 cursor-pointer hover:bg-accent/50 transition-colors ${r.isFullyPaid ? 'bg-muted/30 opacity-80' : 'bg-card'}`}
                             onClick={() => setSelectedReceipt(r.receipt)}
                           >
                             <div className="flex items-center gap-2 mb-1">
                               <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800">
                                 Đơn hàng
                               </Badge>
+                              {r.isFullyPaid && (
+                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800">
+                                  Đã trả hết
+                                </Badge>
+                              )}
                               <span className="text-xs text-muted-foreground">
                                 {format(new Date(r.date), 'dd/MM/yyyy', { locale: vi })}
                               </span>
@@ -332,12 +336,12 @@ export function DebtDetailDialog({
                             <div className="flex justify-between items-center text-sm">
                               <div className="text-muted-foreground">
                                 Tổng: {formatNumber(r.totalAmount)}
-                                {r.totalAmount - r.debtAmount > 0 && (
-                                  <span className="ml-2">· Trả tại quầy: {formatNumber(r.totalAmount - r.debtAmount)}</span>
+                                {r.totalAmount - r.originalDebt > 0 && (
+                                  <span className="ml-2">· Trả tại quầy: {formatNumber(r.totalAmount - r.originalDebt)}</span>
                                 )}
                               </div>
-                              <span className="font-semibold text-destructive">
-                                {formatNumber(r.debtAmount)}
+                              <span className={`font-semibold ${r.isFullyPaid ? 'text-muted-foreground line-through' : 'text-destructive'}`}>
+                                {formatNumber(r.originalDebt)}
                               </span>
                             </div>
                           </div>
