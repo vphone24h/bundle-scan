@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { PullToRefresh } from '@/components/layout/PullToRefresh';
 import DOMPurify from 'dompurify';
 import { SetURLSearchParams } from 'react-router-dom';
 import { QueryClient } from '@tanstack/react-query';
@@ -268,6 +269,7 @@ export default function UniversalStoreTemplate({
   };
 
   return (
+    <PullToRefresh>
     <div className="min-h-screen bg-white text-[#1d1d1f]" style={{ fontFamily: config.fontFamily }}>
       {/* === HEADER === */}
       <LayoutHeader
@@ -1001,6 +1003,7 @@ export default function UniversalStoreTemplate({
         onShare={() => selectedProduct && copyShareLink('product', selectedProduct.id)}
       />
     </div>
+    </PullToRefresh>
   );
 }
 
