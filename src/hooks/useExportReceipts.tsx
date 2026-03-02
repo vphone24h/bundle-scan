@@ -286,6 +286,7 @@ export function useCreateExportReceipt() {
             total_amount: totalAmount,
             paid_amount: paidAmount,
             debt_amount: debtAmount,
+            original_debt_amount: debtAmount,
             points_earned: pointsToEarn,
             points_redeemed: pointsRedeemed,
             points_discount: pointsDiscount,

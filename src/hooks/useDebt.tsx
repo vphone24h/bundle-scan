@@ -383,6 +383,7 @@ export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: str
             total_amount,
             paid_amount,
             debt_amount,
+            original_debt_amount,
             note,
             export_receipt_items(
               id,
@@ -411,6 +412,7 @@ export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: str
             total_amount,
             paid_amount,
             debt_amount,
+            original_debt_amount,
             note,
             products(
               id,

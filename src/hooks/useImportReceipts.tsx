@@ -202,6 +202,7 @@ export function useCreateImportReceipt() {
           total_amount: totalAmount,
           paid_amount: paidAmount,
           debt_amount: debtAmount,
+          original_debt_amount: debtAmount,
           supplier_id: supplierId,
           branch_id: branchId || null,
           created_by: user.id,
