@@ -63,18 +63,14 @@ export function DebtDetailDialog({
   const [historyFilter, setHistoryFilter] = useState<'all' | 'addition' | 'payment'>('all');
   const [showEditCustomer, setShowEditCustomer] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
-  const [onlyShowUnpaid, setOnlyShowUnpaid] = useState(true);
+  const [onlyShowDebt, setOnlyShowDebt] = useState(true);
   const { data: allReceipts, isLoading: receiptsLoading } = useDebtDetail(entityType, entityId);
   const { data: paymentHistory, isLoading: historyLoading } = useDebtPaymentHistory(entityType, entityId);
 
-  // Filter receipts: only show orders that originally had debt (total_amount - paid_amount > 0)
+  // Use all receipts - filtering is done in the UI based on checkbox
   const receipts = useMemo(() => {
     if (!allReceipts) return [];
-    // Only include receipts that originally had debt
-    return allReceipts.filter((r: any) => {
-      const originalDebt = (Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0);
-      return originalDebt > 0;
-    });
+    return allReceipts;
   }, [allReceipts]);
 
   // Calculate total sales amount from all receipts (to derive "paid at checkout")
@@ -258,12 +254,12 @@ export function DebtDetailDialog({
 
             <div className="flex items-center gap-2 mb-3">
               <Checkbox
-                id="only-unpaid"
-                checked={onlyShowUnpaid}
-                onCheckedChange={(v) => setOnlyShowUnpaid(!!v)}
+                id="only-debt"
+                checked={onlyShowDebt}
+                onCheckedChange={(v) => setOnlyShowDebt(!!v)}
               />
-              <Label htmlFor="only-unpaid" className="text-sm cursor-pointer">
-                Chỉ hiển thị các đơn còn công nợ
+              <Label htmlFor="only-debt" className="text-sm cursor-pointer">
+                Chỉ hiển thị đơn có công nợ
               </Label>
             </div>
 
@@ -311,8 +307,8 @@ export function DebtDetailDialog({
                   ...debtAdditions.map(a => ({ ...a, sortDate: new Date(a.date).getTime() })),
                 ].sort((a, b) => b.sortDate - a.sortDate);
 
-                const filteredItems = onlyShowUnpaid
-                  ? allItems.filter(item => item.type === 'addition' || !(item as any).isFullyPaid)
+                const filteredItems = onlyShowDebt
+                  ? allItems.filter(item => item.type === 'addition' || (item as any).originalDebt > 0)
                   : allItems;
 
                 if (filteredItems.length === 0) {
