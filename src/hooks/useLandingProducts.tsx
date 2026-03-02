@@ -46,8 +46,7 @@ export function useLandingProductCategories() {
         .from('landing_product_categories' as any)
         .select('*')
         .eq('tenant_id', tenantId)
-        .order('display_order', { ascending: true })
-        .order('name', { ascending: true });
+.order('created_at', { ascending: false });
       if (error) throw error;
       return data as unknown as LandingProductCategory[];
     },
@@ -174,7 +173,7 @@ export function usePublicLandingProducts(tenantId: string | null) {
     queryFn: async () => {
       if (!tenantId) return { categories: [], products: [] };
       const [catRes, prodRes] = await Promise.all([
-        supabase.from('landing_product_categories' as any).select('*').eq('tenant_id', tenantId).order('display_order'),
+        supabase.from('landing_product_categories' as any).select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false }),
         supabase.from('landing_products' as any).select('*').eq('tenant_id', tenantId).eq('is_active', true).order('display_order'),
       ]);
       return {
