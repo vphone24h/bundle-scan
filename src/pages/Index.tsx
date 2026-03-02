@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -130,6 +131,7 @@ const dashboardTourSteps: TourStep[] = [
 ];
 
 const Index = () => {
+  const { t } = useTranslation();
   const [productTab, setProductTab] = useState<'imported' | 'sold'>('imported');
   const [showInstallment, setShowInstallment] = useState(false);
   const [manualTourActive, setManualTourActive] = useState(false);
@@ -159,15 +161,15 @@ const Index = () => {
   return (
     <MainLayout>
       <PageHeader
-        title="Tổng quan kho hàng"
-        description="Theo dõi tình trạng kho và hoạt động nhập hàng"
-        helpText="Trang tổng quan hiển thị số liệu tóm tắt: tổng giá trị hàng tồn, doanh thu hôm nay, số sản phẩm nhập/xuất gần đây. Giúp bạn nắm bắt nhanh tình hình kinh doanh."
+        title={t('pages.dashboard.title')}
+        description={t('pages.dashboard.description')}
+        helpText={t('pages.dashboard.helpText')}
         actions={
           <div className="flex items-center gap-2 flex-wrap">
             {statsFetching && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                Đang cập nhật…
+                {t('pages.dashboard.updating')}
               </div>
             )}
             <Button
@@ -183,8 +185,8 @@ const Index = () => {
               className="h-8 text-xs sm:text-sm"
             >
               <PlayCircle className="mr-1.5 h-4 w-4" />
-              <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
-              <span className="sm:hidden">{manualTourActive ? 'Tắt HD' : 'Xem HD'}</span>
+              <span className="hidden sm:inline">{manualTourActive ? t('pages.dashboard.hideGuide') : t('pages.dashboard.viewGuide')}</span>
+              <span className="sm:hidden">{manualTourActive ? t('pages.dashboard.hideGuide') : t('pages.dashboard.viewGuide')}</span>
             </Button>
             <Button 
               variant="outline" 
@@ -193,8 +195,8 @@ const Index = () => {
               className="h-8 text-xs sm:text-sm"
             >
               <Calculator className="mr-1.5 sm:mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Tính trả góp</span>
-              <span className="sm:hidden">Trả góp</span>
+              <span className="hidden sm:inline">{t('pages.dashboard.installmentCalc')}</span>
+              <span className="sm:hidden">{t('pages.dashboard.installmentCalc')}</span>
             </Button>
             <Button
               variant="outline"
@@ -203,8 +205,8 @@ const Index = () => {
               className="h-8 text-xs sm:text-sm"
             >
               <MessageCircle className="mr-1.5 h-4 w-4" />
-              <span className="hidden sm:inline">Góp ý tính năng</span>
-              <span className="sm:hidden">Góp ý</span>
+              <span className="hidden sm:inline">{t('pages.dashboard.feedback')}</span>
+              <span className="sm:hidden">{t('pages.dashboard.feedback')}</span>
             </Button>
             {userGuideUrl && (
               <Button 
@@ -215,7 +217,7 @@ const Index = () => {
               >
                 <a href={userGuideUrl} target="_blank" rel="noopener noreferrer">
                   <BookOpen className="mr-2 h-4 w-4" />
-                  Hướng dẫn sử dụng
+                  {t('pages.dashboard.userGuide')}
                 </a>
               </Button>
             )}
@@ -231,7 +233,7 @@ const Index = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {canViewImportPrice && (
             <StatCard
-              title="Tổng sản phẩm"
+              title={t('pages.dashboard.totalProducts')}
               value={stats?.totalProducts || 0}
               icon={<Package className="h-5 w-5 sm:h-6 sm:w-6" />}
               onClick={() => navigate('/products')}
@@ -240,7 +242,7 @@ const Index = () => {
           )}
           {canViewImportPrice && (
             <StatCard
-              title="Tồn kho"
+              title={t('pages.dashboard.inStock')}
               value={stats?.inStockProducts || 0}
               icon={<TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />}
               onClick={() => navigate('/inventory')}
@@ -249,7 +251,7 @@ const Index = () => {
           )}
           {canViewImportPrice && (
             <StatCard
-              title="Giá trị kho"
+              title={t('pages.dashboard.stockValue')}
               value={formatCurrency(stats?.totalImportValue || 0)}
               icon={<Wallet className="h-5 w-5 sm:h-6 sm:w-6" />}
               onClick={() => navigate('/inventory')}
@@ -258,7 +260,7 @@ const Index = () => {
           )}
           {canViewImportPrice && (
             <StatCard
-              title="Đơn đặt hàng"
+              title={t('pages.dashboard.orders')}
               value={formatCurrency(stats?.pendingDebt || 0)}
               icon={<AlertCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
               onClick={() => navigate('/landing-admin?tab=orders')}
@@ -272,20 +274,20 @@ const Index = () => {
           {canViewImportPrice && (
             <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/reports')}>
               <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats?.todayProfit || 0)}</p>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Lợi nhuận hôm nay</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayProfit')}</p>
             </div>
           )}
           <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/reports')}>
             <p className="text-2xl sm:text-3xl font-bold text-primary">{formatCurrency(stats?.todayRevenue || 0)}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Doanh thu hôm nay</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayRevenue')}</p>
           </div>
           <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/export/history')}>
             <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats?.todaySold || 0}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Đã bán hôm nay</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.soldToday')}</p>
           </div>
           <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/import/history')}>
             <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats?.todayImports || 0}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Nhập hôm nay</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.importedToday')}</p>
           </div>
         </div>
 
@@ -297,14 +299,14 @@ const Index = () => {
               <div className="flex items-center justify-between p-3 sm:p-4 border-b">
                 <TabsList className="h-8 p-0.5">
                   <TabsTrigger value="imported" className="text-xs sm:text-sm px-2 sm:px-3 h-7">
-                    Mới nhập
+                    {t('pages.dashboard.recentlyImported')}
                   </TabsTrigger>
                   <TabsTrigger value="sold" className="text-xs sm:text-sm px-2 sm:px-3 h-7">
-                    Mới bán
+                    {t('pages.dashboard.recentlySold')}
                   </TabsTrigger>
                 </TabsList>
                 <Button variant="ghost" size="sm" asChild className="h-8 text-xs sm:text-sm">
-                  <Link to={productTab === 'imported' ? '/products' : '/export/history'}>Xem tất cả</Link>
+                  <Link to={productTab === 'imported' ? '/products' : '/export/history'}>{t('pages.dashboard.viewAll')}</Link>
                 </Button>
               </div>
               
@@ -312,7 +314,7 @@ const Index = () => {
                 <div className="divide-y">
                   {recentProducts.length === 0 ? (
                     <div className="p-6 sm:p-8 text-center text-muted-foreground text-sm">
-                      Chưa có sản phẩm nào
+                      {t('pages.dashboard.noProducts')}
                     </div>
                   ) : (
                     recentProducts.map((product) => (
@@ -322,7 +324,7 @@ const Index = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-xs sm:text-sm truncate">{product.name}</p>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{product.categories?.name || 'Không có danh mục'}</p>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{product.categories?.name || t('pages.dashboard.noCategory')}</p>
                         </div>
                         <div className="text-right shrink-0">
                           {canViewImportPrice && (
@@ -332,7 +334,7 @@ const Index = () => {
                             variant="outline"
                             className={`text-[10px] sm:text-xs ${product.status === 'in_stock' ? 'status-in-stock' : 'status-sold'}`}
                           >
-                            {product.status === 'in_stock' ? 'Tồn kho' : 'Đã bán'}
+                            {product.status === 'in_stock' ? t('pages.dashboard.inStockLabel') : t('pages.dashboard.soldLabel')}
                           </Badge>
                         </div>
                       </div>

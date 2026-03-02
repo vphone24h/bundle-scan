@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -199,6 +200,7 @@ const TOUR_STEPS: Record<string, TourStep[]> = {
 };
 
 export default function ReportsPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('revenue');
   const reportsGuideUrl = useReportsGuideUrl();
   const { data: permissions } = usePermissions();
@@ -329,9 +331,9 @@ export default function ReportsPage() {
       )}
 
       <PageHeader
-        title="Báo cáo"
-        description={activeReport?.description || 'Phân tích chi tiết hoạt động kinh doanh'}
-        helpText="Xem báo cáo chi tiết về doanh thu, lợi nhuận, hàng bán chạy, hiệu suất nhân viên và tình hình nhà cung cấp. Lọc theo khoảng thời gian và xuất Excel."
+        title={t('pages.reports.title')}
+        description={activeReport?.description || t('pages.reports.description')}
+        helpText={t('pages.reports.helpText')}
         actions={
           <div className="flex gap-2 flex-wrap">
             <Button

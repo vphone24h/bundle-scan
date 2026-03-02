@@ -56,6 +56,209 @@
     "appSettings": "App Settings",
     "save": "Save"
   },
+  "pages": {
+    "dashboard": {
+      "title": "Warehouse Overview",
+      "description": "Monitor stock status and import activities",
+      "helpText": "The overview page displays summary data: total stock value, today's revenue, recently imported/sold products. Helps you quickly grasp business performance.",
+      "totalProducts": "Total Products",
+      "inStock": "In Stock",
+      "stockValue": "Stock Value",
+      "orders": "Orders",
+      "todayProfit": "Today's Profit",
+      "todayRevenue": "Today's Revenue",
+      "soldToday": "Sold Today",
+      "importedToday": "Imported Today",
+      "recentlyImported": "Recently Imported",
+      "recentlySold": "Recently Sold",
+      "viewAll": "View All",
+      "noProducts": "No products yet",
+      "noSoldToday": "No products sold today",
+      "updating": "Updating…",
+      "viewGuide": "View Guide",
+      "hideGuide": "Hide Guide",
+      "installmentCalc": "Installment Calc",
+      "feedback": "Feature Feedback",
+      "userGuide": "User Guide",
+      "inStockLabel": "In Stock",
+      "soldLabel": "Sold",
+      "noCategory": "No category"
+    },
+    "products": {
+      "title": "Product Management",
+      "description": "View, edit and print barcodes for products",
+      "helpText": "List of all products in stock. You can search, filter by category, print barcodes, adjust quantities or delete products. Products are created automatically when importing.",
+      "addProduct": "Add Product",
+      "printBarcode": "Print Barcode",
+      "searchPlaceholder": "Search by name, SKU or IMEI...",
+      "filters": "Filters",
+      "exportExcel": "Export Excel",
+      "fromDate": "From Date",
+      "toDate": "To Date",
+      "category": "Category",
+      "supplier": "Supplier",
+      "branch": "Branch",
+      "status": "Status",
+      "all": "All",
+      "inStock": "In Stock",
+      "sold": "Sold",
+      "returned": "Returned",
+      "printed": "Printed",
+      "notPrinted": "Not Printed",
+      "selectProductFirst": "Select products first to print"
+    },
+    "inventory": {
+      "title": "Inventory",
+      "description": "Monitor and track inventory in real-time",
+      "helpText": "View detailed inventory by branch, IMEI status (selling, sold, warranty). Supports stock counting and reconciliation with actual quantities.",
+      "warranty": "Warranty Items",
+      "stockCount": "Stock Count",
+      "exportReimport": "Export for Re-import",
+      "exportExcel": "Export Excel",
+      "reminderTitle": "Remember to export to Excel daily for data backup!",
+      "reminderDesc": "Data is stored securely in the cloud, but export to Excel daily for easier recovery in case of any risk."
+    },
+    "categories": {
+      "title": "Category Management",
+      "description": "Organize products by parent-child categories",
+      "helpText": "Create a category tree to classify products (e.g., Phones > iPhone, Samsung). Categories help filter and search products faster in import/export receipts.",
+      "addCategory": "Add Category",
+      "editCategory": "Edit Category",
+      "addNewCategory": "Add New Category",
+      "categoryName": "Category Name",
+      "parentCategory": "Parent Category (optional)",
+      "noParent": "None (root category)",
+      "enterName": "Enter category name",
+      "selectParent": "Select parent category",
+      "cancel": "Cancel",
+      "update": "Update",
+      "addNew": "Add New",
+      "deleted": "Category deleted",
+      "updated": "Category updated",
+      "added": "New category added",
+      "confirmDelete": "Are you sure you want to delete category"
+    },
+    "importNew": {
+      "title": "Create Import Receipt",
+      "description": "Import goods from suppliers to warehouse",
+      "helpText": "Create a new import receipt: select supplier, add products (enter IMEI, name, price), pay to complete the receipt. Supports Excel import."
+    },
+    "importHistory": {
+      "title": "Import History",
+      "description": "View past import receipts",
+      "helpText": "List of all import receipts. View details, edit, cancel receipts or export to Excel."
+    },
+    "exportNew": {
+      "title": "New Sale",
+      "description": "Create a new sales receipt",
+      "helpText": "Scan barcode or search for products to create a sales receipt. Enter customer info, choose payment method and print invoice."
+    },
+    "exportHistory": {
+      "title": "Sales History",
+      "description": "View past sales receipts",
+      "helpText": "List of all sales receipts. View details, reprint invoices, process returns."
+    },
+    "suppliers": {
+      "title": "Supplier Management",
+      "description": "Supplier information and partners",
+      "helpText": "Manage supplier list: add new, edit info, view debts. Suppliers are linked to import receipts to track sourcing and debts.",
+      "addSupplier": "Add Supplier",
+      "editSupplier": "Edit Supplier",
+      "mergeDuplicates": "Merge Duplicates",
+      "viewDetails": "View Details",
+      "edit": "Edit",
+      "delete": "Delete",
+      "supplierName": "Supplier Name",
+      "phone": "Phone Number",
+      "address": "Address",
+      "note": "Notes",
+      "noSuppliers": "No suppliers found",
+      "added": "New supplier added",
+      "updated": "Supplier updated",
+      "deleted": "Supplier deleted",
+      "confirmDelete": "Are you sure you want to delete supplier"
+    },
+    "customers": {
+      "title": "Customers & CRM",
+      "helpText": "Manage customer information, track purchase history, loyalty points, schedule care activities and classify customers by groups/tags. CRM helps maintain good customer relationships.",
+      "totalCustomers": "Total Customers",
+      "hasPoints": "Has Points",
+      "vip": "VIP",
+      "purchased": "Purchased",
+      "list": "List",
+      "care": "Care",
+      "timeline": "Timeline",
+      "vouchers": "Vouchers",
+      "performance": "Performance",
+      "reports": "Reports"
+    },
+    "debt": {
+      "title": "Debt Management",
+      "description": "Track and manage customer and supplier debts",
+      "helpText": "Track amounts owed by customers (credit sales) and owed to suppliers (credit purchases). Record partial payments, view detailed payment history.",
+      "customerOwes": "Customers Owe Us",
+      "weOweSupplier": "We Owe Suppliers",
+      "dueToday": "Due Today",
+      "overdue": "Overdue",
+      "customersTab": "Customer Debts",
+      "suppliersTab": "Supplier Debts"
+    },
+    "reports": {
+      "title": "Reports",
+      "description": "Detailed business activity analysis",
+      "helpText": "View detailed reports on revenue, profit, best sellers, staff performance and supplier status. Filter by time period and export to Excel.",
+      "revenueProfit": "Revenue & Profit",
+      "products": "Products",
+      "customers": "Customers",
+      "suppliers": "Suppliers",
+      "staff": "Staff",
+      "taxReport": "Tax Report",
+      "salesStock": "Sales & Inventory",
+      "importExport": "Import – Export"
+    },
+    "cashBook": {
+      "title": "Cash Book",
+      "description": "Manage income, expenses and cash flow",
+      "helpText": "Record all financial transactions: cash, bank transfer, e-wallet. Track balances, reconcile at end of day."
+    },
+    "branches": {
+      "title": "Branch Management",
+      "description": "Add and manage store branches",
+      "helpText": "Create and manage branches: add new, edit info, set default branch. Assign staff permissions by branch."
+    },
+    "users": {
+      "title": "User Management",
+      "description": "Create accounts and assign staff permissions",
+      "helpText": "Create staff accounts, assign roles (Admin, Staff, Accountant), manage access permissions by branch."
+    },
+    "auditLogs": {
+      "title": "Audit Logs",
+      "description": "Track all changes in the system",
+      "helpText": "Records all user actions: create/edit/delete receipts, price changes, logins... Helps with control and transparency."
+    },
+    "returns": {
+      "title": "Returns Management",
+      "description": "Process customer returns and supplier returns",
+      "helpText": "Manage returns: customers returning products (sales returns) or returning goods to suppliers (purchase returns)."
+    },
+    "stockTransfer": {
+      "title": "Inter-Branch Transfer",
+      "description": "Manage stock transfer requests between branches",
+      "helpText": "Create and approve stock transfer requests between branches. Track the status of each transfer."
+    },
+    "eInvoice": {
+      "title": "E-Invoice",
+      "description": "Manage and issue electronic invoices connected to tax authorities",
+      "helpText": "Connect with e-invoice providers to issue VAT invoices. Configure business info, tax ID, then create invoices from sales receipts.",
+      "invoices": "Invoices",
+      "stats": "Statistics",
+      "logs": "Logs",
+      "config": "Configuration",
+      "notEnabled": "Feature not activated",
+      "notEnabledDesc": "The E-Invoice feature has not been enabled for your store. Please contact your administrator for activation.",
+      "goBack": "Go Back"
+    }
+  },
   "common": {
     "loading": "Loading...",
     "save": "Save",
@@ -66,6 +269,12 @@
     "search": "Search",
     "back": "Back",
     "confirm": "Confirm",
-    "close": "Close"
+    "close": "Close",
+    "error": "Error",
+    "success": "Success",
+    "all": "All",
+    "guide": "Guide",
+    "viewGuide": "View Guide",
+    "hideGuide": "Hide Guide"
   }
 }

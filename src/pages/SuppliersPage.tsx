@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier, Supplier } from '@/hooks/useSuppliers';
@@ -43,6 +44,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useDuplicateSuppliers } from '@/hooks/useSupplierMerge';
 
 export default function SuppliersPage() {
+  const { t } = useTranslation();
   const { data: allSuppliers, isLoading } = useSuppliers();
   const { data: branches } = useBranches();
   const createSupplier = useCreateSupplier();
@@ -209,9 +211,9 @@ export default function SuppliersPage() {
   return (
     <MainLayout>
       <PageHeader
-        title="Quản lý nhà cung cấp"
-        description="Thông tin nhà cung cấp và đối tác"
-        helpText="Quản lý danh sách nhà cung cấp: thêm mới, sửa thông tin, xem công nợ. Nhà cung cấp được liên kết với phiếu nhập hàng để theo dõi nguồn hàng và công nợ."
+        title={t('pages.suppliers.title')}
+        description={t('pages.suppliers.description')}
+        helpText={t('pages.suppliers.helpText')}
         actions={
           <div className="flex items-center gap-2">
             {duplicateGroups.length > 0 && (
