@@ -83,35 +83,35 @@ export function DebtDetailDialog({
   const paidAtCheckout = totalSalesAmount - totalAmount; // total sales - original debt = paid at checkout
 
   // Filter and enrich payment history with running balance
+  // Calculate backwards from current remainingAmount for accuracy
   const enrichedHistory = useMemo(() => {
     if (!paymentHistory) return [];
 
-    // Sort ascending by time to calculate running balance
+    // Sort descending (newest first)
     const sorted = [...paymentHistory].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
-    let runningTotal = 0;
-    let runningPaid = 0;
+    // Work backwards from current remaining amount
+    let balance = remainingAmount;
     const enriched = sorted.map(payment => {
+      const balanceAfterThis = balance;
+      // Reverse the effect to get balance before this entry
       if (payment.payment_type === 'addition') {
-        runningTotal += Number(payment.amount);
+        balance -= Number(payment.amount); // before this addition, balance was lower
       } else {
-        runningPaid += Number(payment.amount);
+        balance += Number(payment.amount); // before this payment, balance was higher
       }
       return {
         ...payment,
-        balance_after: runningTotal - runningPaid,
+        balance_after: balanceAfterThis,
       };
     });
-
-    // Reverse to show newest first
-    enriched.reverse();
 
     // Apply filter
     if (historyFilter === 'all') return enriched;
     return enriched.filter(p => p.payment_type === historyFilter);
-  }, [paymentHistory, historyFilter]);
+  }, [paymentHistory, historyFilter, remainingAmount]);
 
   const additionCount = paymentHistory?.filter(p => p.payment_type === 'addition').length || 0;
   const paymentCount = paymentHistory?.filter(p => p.payment_type === 'payment').length || 0;
