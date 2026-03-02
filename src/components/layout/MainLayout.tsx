@@ -9,6 +9,7 @@ import { usePlatformUser } from '@/hooks/useTenant';
 import { StartupNotificationPopup } from '@/components/notifications/StartupNotificationPopup';
 import { PushPermissionPopup } from '@/components/notifications/PushPermissionPopup';
 import { PopupPriorityProvider, usePopupPriority } from '@/hooks/usePopupPriority';
+import { PullToRefresh } from './PullToRefresh';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -90,9 +91,11 @@ function MainLayoutInner({ children }: MainLayoutProps) {
           paddingTop: 'max(3.5rem, calc(env(safe-area-inset-top) + 4rem))',
         }}
       >
-        <div className="min-h-screen">
-          {children}
-        </div>
+        <PullToRefresh>
+          <div className="min-h-screen">
+            {children}
+          </div>
+        </PullToRefresh>
       </main>
 
       {/* Popup priority: tour → notification → push → adgate */}
