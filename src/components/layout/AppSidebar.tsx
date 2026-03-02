@@ -61,7 +61,8 @@ interface NavItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   children?: { title: string; href: string; permission?: string; badgeKey?: string; hideInSecretMode?: boolean }[];
-  permission?: string; // Tên permission cần để hiển thị menu này
+  permission?: string;
+  badge?: string;
 }
 
 const getRoleName = (role: UserRole | undefined): string => {
@@ -119,7 +120,7 @@ const allNavItems: NavItem[] = [
   { title: 'Quản lý người dùng', href: '/users', icon: Shield, permission: 'canManageBranchStaff' },
   { title: 'Đánh giá nhân viên', href: '/users', icon: Star, permission: 'canViewStaffReviews' },
   { title: 'Lịch sử thao tác', href: '/audit-logs', icon: History, permission: 'canViewAuditLogs' },
-  { title: 'Website bán hàng', href: '/landing-settings', icon: Globe, permission: 'canViewProducts' },
+  { title: 'Website bán hàng', href: '/landing-settings', icon: Globe, permission: 'canViewProducts', badge: 'HOT' },
   { title: 'Mạng xã hội', href: '/social', icon: MessageCircleMore, permission: 'canManageBranches' },
   { title: 'Ứng dụng', href: '/applications', icon: AppWindow },
   { title: 'Affiliate', href: '/affiliate', icon: Share2, permission: 'canManageBranches' },
@@ -287,6 +288,11 @@ export function AppSidebar() {
               >
                 <item.icon className="h-5 w-5" />
                 <span className="flex-1">{item.title}</span>
+                {item.badge && (
+                  <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded px-1.5 py-0.5 leading-none animate-pulse">
+                    {item.badge}
+                  </span>
+                )}
                 {item.href === '/landing-settings' && (pendingOrderCount || 0) > 0 && (
                   <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
                     {pendingOrderCount}
