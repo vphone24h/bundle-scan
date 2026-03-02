@@ -660,71 +660,196 @@ export default function UniversalStoreTemplate({
         )}
 
         {/* === PRODUCTS PAGE === */}
-        {pageView === 'products' && (
-          <div className="max-w-[1200px] mx-auto px-4 py-8">
-            <div className="flex items-center gap-3 mb-4">
-              <button onClick={() => navigateTo('home')} className="h-8 w-8 rounded-full bg-[#f5f5f7] flex items-center justify-center hover:bg-black/10 transition-colors">
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-              <h2 className="text-2xl font-bold tracking-tight flex-1">{config.navLabels.products}</h2>
-            </div>
+        {pageView === 'products' && (() => {
+          // Build products page sections from settings
+          const ppSections = (settings as any)?.custom_products_page_sections as { id: string; enabled: boolean }[] | null;
+          const ppTabs = (settings as any)?.custom_products_page_tabs as { id: string; name: string; displayStyle: string; enabled: boolean }[] || [];
+          
+          const defaultSections = [
+            { id: 'search', enabled: true },
+            { id: 'categoryFilter', enabled: true },
+            { id: 'allProducts', enabled: true },
+          ];
+          const activeSections = (ppSections || defaultSections).filter(s => s.enabled);
 
-            {/* Product search */}
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#86868b]" />
-              <input
-                id="product-search-input"
-                type="text"
-                placeholder="Tìm kiếm sản phẩm..."
-                value={productSearchQuery}
-                onChange={(e) => setProductSearchQuery(e.target.value)}
-                className="w-full h-10 pl-10 pr-4 text-sm rounded-xl border border-black/10 bg-[#f5f5f7] focus:outline-none focus:ring-2 focus:border-transparent"
-                style={{ '--tw-ring-color': accentColor } as any}
-              />
-              {productSearchQuery && (
-                <button
-                  onClick={() => setProductSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-black/10 flex items-center justify-center hover:bg-black/20"
-                >
-                  <X className="h-3 w-3" />
+          return (
+            <div className="max-w-[1200px] mx-auto px-4 py-8">
+              <div className="flex items-center gap-3 mb-4">
+                <button onClick={() => navigateTo('home')} className="h-8 w-8 rounded-full bg-[#f5f5f7] flex items-center justify-center hover:bg-black/10 transition-colors">
+                  <ArrowLeft className="h-4 w-4" />
                 </button>
-              )}
-            </div>
-
-            {productsData && productsData.categories.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
-                <button
-                  onClick={() => setSelectedCategoryId(null)}
-                  className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all ${!selectedCategoryId ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-black/10'}`}
-                >
-                  Tất cả
-                </button>
-                {productsData.categories.map(cat => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategoryId(cat.id)}
-                    className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all ${selectedCategoryId === cat.id ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-black/10'}`}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
+                <h2 className="text-2xl font-bold tracking-tight flex-1">{config.navLabels.products}</h2>
               </div>
-            )}
-            <div className={getProductGridClass(config.layoutStyle)}>
-              {filteredProducts.map((p, i) => (
-                <ScrollReveal key={p.id} animation="fade-up" delay={i * 50} once>
-                  <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
-                </ScrollReveal>
-              ))}
-              {filteredProducts.length === 0 && (
-                <div className="col-span-full text-center py-16">
-                  <Package className="h-12 w-12 mx-auto text-[#86868b] mb-3" />
-                  <p className="text-sm text-[#86868b]">{config.emptyProductText}</p>
-                </div>
-              )}
+
+              {activeSections.map(section => {
+                switch (section.id) {
+                  case 'search':
+                    return (
+                      <div key="search" className="relative mb-4">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#86868b]" />
+                        <input
+                          id="product-search-input"
+                          type="text"
+                          placeholder="Tìm kiếm sản phẩm..."
+                          value={productSearchQuery}
+                          onChange={(e) => setProductSearchQuery(e.target.value)}
+                          className="w-full h-10 pl-10 pr-4 text-sm rounded-xl border border-black/10 bg-[#f5f5f7] focus:outline-none focus:ring-2 focus:border-transparent"
+                          style={{ '--tw-ring-color': accentColor } as any}
+                        />
+                        {productSearchQuery && (
+                          <button
+                            onClick={() => setProductSearchQuery('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-black/10 flex items-center justify-center hover:bg-black/20"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  case 'categoryFilter':
+                    if (!productsData || productsData.categories.length === 0) return null;
+                    return (
+                      <div key="categoryFilter" className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+                        <button
+                          onClick={() => setSelectedCategoryId(null)}
+                          className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all ${!selectedCategoryId ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-black/10'}`}
+                        >
+                          Tất cả
+                        </button>
+                        {productsData.categories.map(cat => (
+                          <button
+                            key={cat.id}
+                            onClick={() => setSelectedCategoryId(cat.id)}
+                            className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all ${selectedCategoryId === cat.id ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-black/10'}`}
+                          >
+                            {cat.name}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  case 'allProducts':
+                    return (
+                      <div key="allProducts">
+                        <div className={getProductGridClass(config.layoutStyle)}>
+                          {filteredProducts.map((p, i) => (
+                            <ScrollReveal key={p.id} animation="fade-up" delay={i * 50} once>
+                              <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
+                            </ScrollReveal>
+                          ))}
+                          {filteredProducts.length === 0 && (
+                            <div className="col-span-full text-center py-16">
+                              <Package className="h-12 w-12 mx-auto text-[#86868b] mb-3" />
+                              <p className="text-sm text-[#86868b]">{config.emptyProductText}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  case 'featuredProducts': {
+                    if (featuredProducts.length === 0) return null;
+                    return (
+                      <div key="featuredProducts" className="mb-8">
+                        <ScrollReveal animation="fade-up">
+                          <h3 className="text-lg font-bold tracking-tight mb-4 flex items-center gap-2">⭐ Sản phẩm nổi bật</h3>
+                        </ScrollReveal>
+                        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                          {featuredProducts.slice(0, 12).map((p, i) => (
+                            <div key={p.id} className="min-w-[180px] max-w-[200px] shrink-0">
+                              <ScrollReveal animation="fade-up" delay={i * 60}>
+                                <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
+                              </ScrollReveal>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  case 'flashSale': {
+                    const flashProducts = allProducts.filter(p => (p as any).home_tab_ids?.includes('flashSale'));
+                    if (flashProducts.length === 0) return null;
+                    return (
+                      <div key="flashSale" className="mb-8 -mx-4 px-4 py-6 bg-red-50/60 rounded-2xl">
+                        <ScrollReveal animation="fade-up">
+                          <h3 className="text-lg font-bold tracking-tight mb-4 flex items-center gap-2">⚡ Flash Sale</h3>
+                        </ScrollReveal>
+                        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                          {flashProducts.slice(0, 12).map((p, i) => (
+                            <div key={p.id} className="min-w-[180px] max-w-[200px] shrink-0">
+                              <ScrollReveal animation="fade-up" delay={i * 60}>
+                                <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
+                              </ScrollReveal>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  case 'combo': {
+                    const comboProducts = allProducts.filter(p => (p as any).home_tab_ids?.includes('combo'));
+                    if (comboProducts.length === 0) return null;
+                    return (
+                      <div key="combo" className="mb-8 -mx-4 px-4 py-6 bg-amber-50/40 rounded-2xl">
+                        <ScrollReveal animation="fade-up">
+                          <h3 className="text-lg font-bold tracking-tight mb-4 flex items-center gap-2">🎁 Combo ưu đãi</h3>
+                        </ScrollReveal>
+                        <div className={getProductGridClass(config.layoutStyle)}>
+                          {comboProducts.slice(0, 8).map((p, i) => (
+                            <ScrollReveal key={p.id} animation="fade-up" delay={i * 60}>
+                              <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
+                            </ScrollReveal>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }
+                  case 'reviews':
+                    if (!tenantId) return null;
+                    return (
+                      <div key="reviews" className="mb-8">
+                        <StoreReviewsSection tenantId={tenantId} primaryColor={accentColor} />
+                      </div>
+                    );
+                  default: {
+                    // Handle custom products page tabs (ppTab_xxx)
+                    if (section.id.startsWith('ppTab_')) {
+                      const tab = ppTabs.find(t => t.id === section.id);
+                      if (!tab) return null;
+                      const tabProducts = allProducts.filter(p => (p as any).products_page_tab_ids?.includes(section.id));
+                      if (tabProducts.length === 0) return null;
+                      return (
+                        <div key={section.id} className="mb-8">
+                          <ScrollReveal animation="fade-up">
+                            <h3 className="text-lg font-bold tracking-tight mb-4">{tab.name}</h3>
+                          </ScrollReveal>
+                          {tab.displayStyle === 'slide' ? (
+                            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                              {tabProducts.slice(0, 12).map((p, i) => (
+                                <div key={p.id} className="min-w-[180px] max-w-[200px] shrink-0">
+                                  <ScrollReveal animation="fade-up" delay={i * 60}>
+                                    <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
+                                  </ScrollReveal>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className={tab.displayStyle === 'list' ? 'space-y-3' : getProductGridClass(config.layoutStyle)}>
+                              {tabProducts.slice(0, 8).map((p, i) => (
+                                <ScrollReveal key={p.id} animation="fade-up" delay={i * 60}>
+                                  <LayoutProductCard layoutStyle={config.layoutStyle} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />
+                                </ScrollReveal>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  }
+                }
+              })}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* === NEWS PAGE === */}
         {pageView === 'news' && (

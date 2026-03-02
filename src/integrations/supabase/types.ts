@@ -5334,6 +5334,8 @@ export type Database = {
           custom_layout_style: string | null
           custom_nav_items: Json | null
           custom_product_tabs: Json | null
+          custom_products_page_sections: Json | null
+          custom_products_page_tabs: Json | null
           custom_trust_badges: Json | null
           facebook_url: string | null
           hero_cta: string | null
@@ -5383,6 +5385,8 @@ export type Database = {
           custom_layout_style?: string | null
           custom_nav_items?: Json | null
           custom_product_tabs?: Json | null
+          custom_products_page_sections?: Json | null
+          custom_products_page_tabs?: Json | null
           custom_trust_badges?: Json | null
           facebook_url?: string | null
           hero_cta?: string | null
@@ -5432,6 +5436,8 @@ export type Database = {
           custom_layout_style?: string | null
           custom_nav_items?: Json | null
           custom_product_tabs?: Json | null
+          custom_products_page_sections?: Json | null
+          custom_products_page_tabs?: Json | null
           custom_trust_badges?: Json | null
           facebook_url?: string | null
           hero_cta?: string | null
