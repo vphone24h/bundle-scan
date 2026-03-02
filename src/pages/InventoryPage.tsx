@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download, Package, ClipboardList, FileUp, AlertTriangle, Wrench, ExternalLink, PlayCircle } from 'lucide-react';
 import { differenceInDays, format } from 'date-fns';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -53,6 +54,7 @@ const INVENTORY_TOUR_STEPS: TourStep[] = [
 ];
 
 export default function InventoryPage() {
+  const { t } = useTranslation();
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('inventory');
   const [tourDismissed, setTourDismissed] = useState(false);
   const [manualTourActive, setManualTourActive] = useState(false);
@@ -274,21 +276,15 @@ export default function InventoryPage() {
   return (
     <MainLayout>
       <PageHeader
-        title={activeTab === 'inventory' ? 'Tồn kho' : activeTab === 'warranty' ? 'Hàng bảo hành' : 'Kiểm kho'}
+        title={activeTab === 'inventory' ? t('pages.inventory.title') : activeTab === 'warranty' ? t('pages.inventory.warranty') : t('pages.inventory.stockCount')}
         description={
           activeTab === 'inventory' 
-            ? 'Quản lý và theo dõi tồn kho theo thời gian thực'
+            ? t('pages.inventory.description')
             : activeTab === 'warranty'
-            ? 'Quản lý hàng bảo hành'
-            : 'Quản lý kiểm kho theo kỳ kiểm'
+            ? t('pages.inventory.warranty')
+            : t('pages.inventory.stockCount')
         }
-        helpText={
-          activeTab === 'inventory'
-            ? 'Xem chi tiết tồn kho theo từng chi nhánh, trạng thái IMEI (đang bán, đã bán, bảo hành). Hỗ trợ kiểm kê và đối soát số lượng thực tế với hệ thống.'
-            : activeTab === 'warranty'
-            ? 'Theo dõi các sản phẩm đang được bảo hành'
-            : 'Tạo phiếu kiểm kho, quét barcode và xác nhận kiểm kho. Hỗ trợ tính toán chênh lệch tồn kho thực tế so với hệ thống.'
-        }
+        helpText={t('pages.inventory.helpText')}
         actions={
           <div className="flex gap-2 flex-wrap">
             <Button

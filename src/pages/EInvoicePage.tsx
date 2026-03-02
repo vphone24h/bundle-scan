@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 
 export default function EInvoicePage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('invoices');
   const { data: tenant, isLoading: loadingTenant } = useCurrentTenant();
 
@@ -23,9 +25,9 @@ export default function EInvoicePage() {
       <MainLayout>
         <div className="p-4 sm:p-6 space-y-6">
           <PageHeader
-            title="Hoá Đơn Điện Tử"
-            description="Quản lý và phát hành hoá đơn điện tử kết nối cơ quan thuế"
-            helpText="Kết nối với nhà cung cấp hoá đơn điện tử để phát hành hóa đơn VAT. Cấu hình thông tin doanh nghiệp, mã số thuế, sau đó tạo hóa đơn từ phiếu xuất."
+            title={t('pages.eInvoice.title')}
+            description={t('pages.eInvoice.description')}
+            helpText={t('pages.eInvoice.helpText')}
           />
           
           <Card className="max-w-lg mx-auto">
@@ -33,15 +35,14 @@ export default function EInvoicePage() {
               <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                 <Lock className="h-8 w-8 text-muted-foreground" />
               </div>
-              <CardTitle>Tính năng chưa được kích hoạt</CardTitle>
+              <CardTitle>{t('pages.eInvoice.notEnabled')}</CardTitle>
               <CardDescription>
-                Tính năng Hoá đơn điện tử chưa được bật cho cửa hàng của bạn.
-                Vui lòng liên hệ quản trị viên để được hỗ trợ kích hoạt.
+                {t('pages.eInvoice.notEnabledDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
               <Button variant="outline" onClick={() => window.history.back()}>
-                Quay lại
+                {t('pages.eInvoice.goBack')}
               </Button>
             </CardContent>
           </Card>
@@ -54,9 +55,9 @@ export default function EInvoicePage() {
     <MainLayout>
       <div className="space-y-6">
         <PageHeader
-          title="Hoá Đơn Điện Tử"
-          description="Quản lý và phát hành hoá đơn điện tử kết nối cơ quan thuế"
-          helpText="Kết nối với nhà cung cấp hoá đơn điện tử để phát hành hóa đơn VAT. Cấu hình thông tin doanh nghiệp, mã số thuế, sau đó tạo hóa đơn từ phiếu xuất."
+          title={t('pages.eInvoice.title')}
+          description={t('pages.eInvoice.description')}
+          helpText={t('pages.eInvoice.helpText')}
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>

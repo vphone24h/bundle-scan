@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { CategoryTree } from '@/components/categories/CategoryTree';
@@ -24,6 +25,7 @@ import { FolderPlus, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export default function CategoriesPage() {
+  const { t } = useTranslation();
   const { data: categories, isLoading } = useCategories();
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
@@ -108,9 +110,9 @@ export default function CategoriesPage() {
   return (
     <MainLayout>
       <PageHeader
-        title="Quản lý danh mục"
-        description="Phân loại sản phẩm theo danh mục cha - con"
-        helpText="Tạo cây danh mục để phân loại sản phẩm (VD: Điện thoại > iPhone, Samsung). Danh mục giúp lọc và tìm kiếm sản phẩm nhanh hơn trong các phiếu nhập/xuất."
+        title={t('pages.categories.title')}
+        description={t('pages.categories.description')}
+        helpText={t('pages.categories.helpText')}
         actions={
           <Button onClick={handleAdd}>
             <FolderPlus className="mr-2 h-4 w-4" />

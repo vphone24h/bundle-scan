@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,6 +25,7 @@ import { Users, Truck, TrendingUp, TrendingDown, Building2, Hash, Settings, Aler
 type QuickFilter = 'all' | 'due_today' | 'overdue' | 'hard_collect';
 
 export default function DebtPage() {
+  const { t } = useTranslation();
   const [showSettled, setShowSettled] = useState(false);
   const [branchFilter, setBranchFilter] = useState('_all_');
   const [tagFilter, setTagFilter] = useState<string | null>(null);
@@ -90,9 +92,9 @@ export default function DebtPage() {
   return (
     <MainLayout>
       <PageHeader
-        title="Quản lý Công nợ"
-        description="Theo dõi và quản lý công nợ khách hàng và nhà cung cấp"
-        helpText="Theo dõi số tiền còn nợ của khách hàng (bán chịu) và nợ nhà cung cấp (nhập chịu). Ghi nhận thanh toán từng phần, xem lịch sử thanh toán chi tiết."
+        title={t('pages.debt.title')}
+        description={t('pages.debt.description')}
+        helpText={t('pages.debt.helpText')}
       />
 
       <div className="space-y-4">

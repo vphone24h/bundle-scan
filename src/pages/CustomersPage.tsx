@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+ import { useTranslation } from 'react-i18next';
  import { MainLayout } from '@/components/layout/MainLayout';
  import { PageHeader } from '@/components/layout/PageHeader';
  import { Card, CardContent } from '@/components/ui/card';
@@ -18,6 +19,7 @@ import { useState, useMemo, useEffect } from 'react';
   import { usePermissions } from '@/hooks/usePermissions';
  
   export default function CustomersPage() {
+    const { t } = useTranslation();
     const [searchParams, setSearchParams] = useSearchParams();
     const tabFromUrl = searchParams.get('tab') || 'list';
     const customerIdFromUrl = searchParams.get('customerId');
@@ -79,7 +81,7 @@ import { useState, useMemo, useEffect } from 'react';
  
    return (
      <MainLayout>
-       <PageHeader title="Khách hàng & CRM" helpText="Quản lý thông tin khách hàng, theo dõi lịch sử mua hàng, tích điểm, lên lịch chăm sóc và phân loại khách hàng theo nhóm/tag. CRM giúp duy trì mối quan hệ tốt với khách." />
+       <PageHeader title={t('pages.customers.title')} helpText={t('pages.customers.helpText')} />
  
        {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6">
@@ -91,7 +93,7 @@ import { useState, useMemo, useEffect } from 'react';
                </div>
               <div className="text-center sm:text-left">
                 <p className="text-lg sm:text-2xl font-bold">{totalCustomers}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Tổng khách</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{t('pages.customers.totalCustomers')}</p>
                </div>
              </div>
            </CardContent>
@@ -104,7 +106,7 @@ import { useState, useMemo, useEffect } from 'react';
                </div>
               <div className="text-center sm:text-left">
                 <p className="text-lg sm:text-2xl font-bold">{customersWithPoints}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Có điểm</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{t('pages.customers.hasPoints')}</p>
                </div>
              </div>
            </CardContent>
@@ -117,7 +119,7 @@ import { useState, useMemo, useEffect } from 'react';
                </div>
               <div className="text-center sm:text-left">
                 <p className="text-lg sm:text-2xl font-bold">{vipCustomers}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">VIP</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{t('pages.customers.vip')}</p>
                </div>
              </div>
            </CardContent>
@@ -130,7 +132,7 @@ import { useState, useMemo, useEffect } from 'react';
                </div>
               <div className="text-center sm:text-left">
                 <p className="text-lg sm:text-2xl font-bold">{customersWithPurchase}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Đã mua</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{t('pages.customers.purchased')}</p>
                </div>
              </div>
            </CardContent>

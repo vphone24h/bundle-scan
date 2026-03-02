@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProductTable } from '@/components/products/ProductTable';
@@ -92,6 +93,7 @@ function mapProductForTable(product: Product) {
 }
 
 export default function ProductsPage() {
+  const { t } = useTranslation();
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('products-page-v1');
   const [tourDismissed, setTourDismissed] = useState(false);
   const [manualTourActive, setManualTourActive] = useState(false);
@@ -246,9 +248,9 @@ export default function ProductsPage() {
   return (
     <MainLayout>
       <PageHeader
-        title="Quản lý sản phẩm"
-        description="Xem, chỉnh sửa và in mã vạch cho sản phẩm"
-        helpText="Danh sách tất cả sản phẩm trong kho. Bạn có thể tìm kiếm, lọc theo danh mục, in mã vạch, điều chỉnh số lượng hoặc xóa sản phẩm. Sản phẩm được tạo tự động khi nhập hàng."
+        title={t('pages.products.title')}
+        description={t('pages.products.description')}
+        helpText={t('pages.products.helpText')}
         actions={
           <div className="flex gap-2 flex-wrap">
             <Button
