@@ -68,6 +68,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCategories } from '@/hooks/useCategories';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   completed: { label: 'Hoàn tất', variant: 'default' },
@@ -621,7 +622,8 @@ export default function ExportHistoryPage() {
                   Không có phiếu xuất nào
                 </div>
               ) : (
-                <Table>
+                <ScrollableTableWrapper className="rounded-lg border bg-card">
+                <Table wrapperClassName="overflow-visible">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Mã phiếu</TableHead>
@@ -720,6 +722,7 @@ export default function ExportHistoryPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </ScrollableTableWrapper>
               )}
               {(filteredReceipts?.length || 0) > 0 && (
                 <TablePagination
@@ -750,7 +753,8 @@ export default function ExportHistoryPage() {
                   Không có sản phẩm nào
                 </div>
               ) : (
-                <Table>
+                <ScrollableTableWrapper className="rounded-lg border bg-card">
+                <Table wrapperClassName="overflow-visible">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Sản phẩm</TableHead>
@@ -865,6 +869,7 @@ export default function ExportHistoryPage() {
                     })}
                   </TableBody>
                 </Table>
+                </ScrollableTableWrapper>
               )}
               {groupedItems.length > 0 && (
                 <TablePagination

@@ -39,6 +39,7 @@ import { Label } from '@/components/ui/label';
 import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loader2, Filter, X, StickyNote, Trash2, Settings2, AlertTriangle, Wrench, ArrowRightLeft, CheckSquare, Square, PlayCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
@@ -738,7 +739,7 @@ export default function ImportHistoryPage() {
                 Xuất Excel ({filteredReceipts.length})
               </Button>
             </div>
-            <div className="overflow-x-auto rounded-lg border bg-card">
+            <ScrollableTableWrapper className="rounded-lg border bg-card">
               <table className="data-table">
                 <thead>
                   <tr>
@@ -837,7 +838,7 @@ export default function ImportHistoryPage() {
                   {hasActiveFilters ? 'Không tìm thấy phiếu nhập phù hợp' : 'Chưa có phiếu nhập nào'}
                 </div>
               )}
-            </div>
+            </ScrollableTableWrapper>
             {filteredReceipts.length > 0 && (
               <TablePagination
                 currentPage={receiptsPagination.currentPage}
@@ -898,7 +899,7 @@ export default function ImportHistoryPage() {
                 Xuất Excel ({filteredProducts.length})
               </Button>
             </div>
-            <div className="overflow-x-auto rounded-lg border bg-card">
+            <ScrollableTableWrapper className="rounded-lg border bg-card">
               <table className="data-table">
                 <thead>
                   <tr>
@@ -1101,7 +1102,7 @@ export default function ImportHistoryPage() {
                   {hasActiveFilters ? 'Không tìm thấy sản phẩm phù hợp' : 'Không có sản phẩm nào'}
                 </div>
               )}
-            </div>
+            </ScrollableTableWrapper>
             {filteredProducts.length > 0 && (
               <TablePagination
                 currentPage={productsPagination.currentPage}
