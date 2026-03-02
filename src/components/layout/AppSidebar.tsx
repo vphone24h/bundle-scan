@@ -398,6 +398,7 @@ export function AppSidebar() {
           'fixed inset-y-0 left-0 z-40 w-64 bg-sidebar transform transition-transform duration-300 lg:hidden flex flex-col',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <NavContent />
       </aside>
