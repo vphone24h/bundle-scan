@@ -43,15 +43,75 @@ export function CashBookDetailDialog({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (open && entry?.reference_id && entry?.reference_type === 'export_receipt') {
+    if (!open || !entry?.reference_id) {
+      setItems([]);
+      return;
+    }
+
+    if (entry.reference_type === 'export_receipt') {
       setLoading(true);
       supabase
         .from('export_receipt_items')
         .select('id, product_name, imei, sale_price, sku')
         .eq('receipt_id', entry.reference_id)
         .then(({ data, error }) => {
+          if (!error && data) setItems(data);
+          setLoading(false);
+        });
+    } else if (entry.reference_type === 'export_return_receipt') {
+      // Consolidated export return - load returned items from export_returns
+      setLoading(true);
+      supabase
+        .from('export_returns')
+        .select('id, product_name, imei, sku, sale_price, refund_amount')
+        .eq('export_receipt_id', entry.reference_id)
+        .then(({ data, error }) => {
           if (!error && data) {
-            setItems(data);
+            setItems(data.map(r => ({
+              id: r.id,
+              product_name: r.product_name,
+              imei: r.imei,
+              sale_price: r.refund_amount || r.sale_price,
+              sku: r.sku,
+            })));
+          }
+          setLoading(false);
+        });
+    } else if (entry.reference_type === 'import_return') {
+      // Import return - load returned products
+      setLoading(true);
+      supabase
+        .from('import_returns')
+        .select('id, product_name, imei, sku, import_price, total_refund_amount, import_receipt_id')
+        .eq('import_receipt_id', entry.reference_id)
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setItems(data.map(r => ({
+              id: r.id,
+              product_name: r.product_name,
+              imei: r.imei,
+              sale_price: r.total_refund_amount || r.import_price,
+              sku: r.sku,
+            })));
+          }
+          setLoading(false);
+        });
+    } else if (entry.reference_type === 'export_return') {
+      // Single export return - load the return record
+      setLoading(true);
+      supabase
+        .from('export_returns')
+        .select('id, product_name, imei, sku, sale_price, refund_amount')
+        .eq('id', entry.reference_id)
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setItems(data.map(r => ({
+              id: r.id,
+              product_name: r.product_name,
+              imei: r.imei,
+              sale_price: r.refund_amount || r.sale_price,
+              sku: r.sku,
+            })));
           }
           setLoading(false);
         });
@@ -62,7 +122,12 @@ export function CashBookDetailDialog({
 
   if (!entry) return null;
 
-  const hasProducts = entry.reference_type === 'export_receipt' && items.length > 0;
+  const hasProducts = ['export_receipt', 'export_return_receipt', 'export_return', 'import_return'].includes(entry.reference_type || '') && items.length > 0;
+  const productSectionTitle = (entry.reference_type === 'export_return_receipt' || entry.reference_type === 'export_return')
+    ? 'Sản phẩm trả hàng'
+    : entry.reference_type === 'import_return'
+    ? 'Sản phẩm trả NCC'
+    : 'Sản phẩm trong phiếu';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -161,11 +226,11 @@ export function CashBookDetailDialog({
           )}
 
           {/* Products List */}
-          {entry.reference_type === 'export_receipt' && (
+          {['export_receipt', 'export_return_receipt', 'export_return', 'import_return'].includes(entry.reference_type || '') && (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Package className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Sản phẩm trong phiếu ({items.length})</span>
+                <span className="text-sm font-medium">{productSectionTitle} ({items.length})</span>
               </div>
               
               {loading ? (
