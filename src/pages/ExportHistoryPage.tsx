@@ -748,6 +748,7 @@ export default function ExportHistoryPage() {
                       <TableHead className="text-right">Đơn giá</TableHead>
                       <TableHead className="text-right">Thành tiền</TableHead>
                       <TableHead>Bảo hành</TableHead>
+                      <TableHead>Ghi chú</TableHead>
                       <TableHead>Khách hàng</TableHead>
                       <TableHead>Nhân viên</TableHead>
                       <TableHead>Ngày bán</TableHead>
@@ -792,7 +793,12 @@ export default function ExportHistoryPage() {
                             {totalPrice.toLocaleString('vi-VN')}đ
                           </TableCell>
                           <TableCell>
-                            {(item as any).warranty || '-'}
+                            {item.warranty || '-'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="max-w-[150px] truncate text-sm" title={item.note || ''}>
+                              {item.note || '-'}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div>{item.export_receipts?.customers?.name || '-'}</div>
