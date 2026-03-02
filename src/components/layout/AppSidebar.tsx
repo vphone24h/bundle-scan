@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { usePendingTransferCount } from '@/hooks/useStockTransfers';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useUnreadReviewCount } from '@/hooks/useUnreadReviews';
@@ -37,6 +38,7 @@ import {
   Percent,
   Star,
   MessageCircleMore,
+  Settings,
 } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
 import { cn } from '@/lib/utils';
@@ -58,78 +60,81 @@ import {
 
 interface NavItem {
   title: string;
+  titleKey?: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  children?: { title: string; href: string; permission?: string; badgeKey?: string; hideInSecretMode?: boolean }[];
+  children?: { title: string; titleKey?: string; href: string; permission?: string; badgeKey?: string; hideInSecretMode?: boolean }[];
   permission?: string;
   badge?: string;
 }
 
-const getRoleName = (role: UserRole | undefined): string => {
+const getRoleKey = (role: UserRole | undefined): string => {
   switch (role) {
-    case 'super_admin': return 'Admin Tổng';
-    case 'branch_admin': return 'Admin CN';
-    case 'cashier': return 'Kế Toán';
-    case 'staff': return 'Nhân viên';
-    default: return 'Nhân viên';
+    case 'super_admin': return 'roles.super_admin';
+    case 'branch_admin': return 'roles.branch_admin';
+    case 'cashier': return 'roles.cashier';
+    case 'staff': return 'roles.staff';
+    default: return 'roles.staff';
   }
 };
 
 // Menu cho Platform Admin
 const platformAdminNavItems: NavItem[] = [
-  { title: 'Quản trị nền tảng', href: '/platform-admin', icon: Crown },
+  { title: 'Quản trị nền tảng', titleKey: 'sidebar.platformAdmin', href: '/platform-admin', icon: Crown },
 ];
 
 // Menu cho Tenant users
 const allNavItems: NavItem[] = [
-  { title: 'Tổng quan', href: '/', icon: LayoutDashboard },
-  { title: 'Sản phẩm', href: '/products', icon: Package, permission: 'canViewProducts' },
-  { title: 'Tồn kho', href: '/inventory', icon: Boxes, permission: 'canViewInventory' },
-  { title: 'Danh mục', href: '/categories', icon: FolderTree, permission: 'canManageCategories' },
+  { title: 'Tổng quan', titleKey: 'sidebar.overview', href: '/', icon: LayoutDashboard },
+  { title: 'Sản phẩm', titleKey: 'sidebar.products', href: '/products', icon: Package, permission: 'canViewProducts' },
+  { title: 'Tồn kho', titleKey: 'sidebar.inventory', href: '/inventory', icon: Boxes, permission: 'canViewInventory' },
+  { title: 'Danh mục', titleKey: 'sidebar.categories', href: '/categories', icon: FolderTree, permission: 'canManageCategories' },
   {
-    title: 'Nhập hàng',
+    title: 'Nhập hàng', titleKey: 'sidebar.import',
     href: '/import',
     icon: FileDown,
     permission: 'canImportProducts',
     children: [
-      { title: 'Tạo phiếu nhập', href: '/import/new', permission: 'canCreateImportReceipt' },
-      { title: 'Lịch sử nhập', href: '/import/history' },
-      { title: 'Chuyển hàng', href: '/import/transfer', badgeKey: 'pendingTransfer', permission: 'canCreateImportReceipt' },
+      { title: 'Tạo phiếu nhập', titleKey: 'sidebar.createImport', href: '/import/new', permission: 'canCreateImportReceipt' },
+      { title: 'Lịch sử nhập', titleKey: 'sidebar.importHistory', href: '/import/history' },
+      { title: 'Chuyển hàng', titleKey: 'sidebar.transfer', href: '/import/transfer', badgeKey: 'pendingTransfer', permission: 'canCreateImportReceipt' },
     ],
   },
   {
-    title: 'Xuất hàng / Bán hàng',
+    title: 'Xuất hàng / Bán hàng', titleKey: 'sidebar.export',
     href: '/export',
     icon: FileUp,
     permission: 'canExportProducts',
     children: [
-      { title: 'Bán Hàng', href: '/export/new', permission: 'canCreateExportReceipt' },
-      { title: 'Lịch sử Bán hàng', href: '/export/history' },
-      { title: 'Mẫu in hóa đơn', href: '/export/template', permission: 'canManageInvoiceTemplates' },
-      { title: 'Hoá đơn điện tử', href: '/einvoice', permission: 'canManageInvoiceTemplates', hideInSecretMode: true },
-       { title: 'Mức Thuế 2026', href: '/export/tax-policy', hideInSecretMode: true },
+      { title: 'Bán Hàng', titleKey: 'sidebar.sell', href: '/export/new', permission: 'canCreateExportReceipt' },
+      { title: 'Lịch sử Bán hàng', titleKey: 'sidebar.exportHistory', href: '/export/history' },
+      { title: 'Mẫu in hóa đơn', titleKey: 'sidebar.invoiceTemplate', href: '/export/template', permission: 'canManageInvoiceTemplates' },
+      { title: 'Hoá đơn điện tử', titleKey: 'sidebar.eInvoice', href: '/einvoice', permission: 'canManageInvoiceTemplates', hideInSecretMode: true },
+      { title: 'Mức Thuế 2026', titleKey: 'sidebar.taxPolicy', href: '/export/tax-policy', hideInSecretMode: true },
     ],
   },
-  { title: 'Trả hàng', href: '/returns', icon: RotateCcw, permission: 'canImportProducts' },
-  { title: 'Nhà cung cấp', href: '/suppliers', icon: Users, permission: 'canManageSuppliers' },
-   { title: 'Khách hàng & CRM', href: '/customers', icon: HeartHandshake, permission: 'canViewProducts' },
-  { title: 'Công nợ', href: '/debt', icon: Receipt, permission: 'canViewCashBook' },
-  { title: 'Báo cáo', href: '/reports', icon: BarChart3, permission: 'canViewReports' },
-  { title: 'Sổ quỹ', href: '/cash-book', icon: Wallet, permission: 'canViewCashBook' },
-  { title: 'Quản lý chi nhánh', href: '/branches', icon: Building2, permission: 'canManageBranches' },
-  { title: 'Quản lý người dùng', href: '/users', icon: Shield, permission: 'canManageBranchStaff' },
-  { title: 'Đánh giá nhân viên', href: '/users', icon: Star, permission: 'canViewStaffReviews' },
-  { title: 'Lịch sử thao tác', href: '/audit-logs', icon: History, permission: 'canViewAuditLogs' },
-  { title: 'Website bán hàng', href: '/landing-settings', icon: Globe, permission: 'canViewProducts', badge: 'HOT' },
-  { title: 'Mạng xã hội', href: '/social', icon: MessageCircleMore, permission: 'canManageBranches' },
-  { title: 'Ứng dụng', href: '/applications', icon: AppWindow },
-  { title: 'Affiliate', href: '/affiliate', icon: Share2, permission: 'canManageBranches' },
-  { title: 'Tải ứng dụng', href: '/install-app', icon: Download },
-  { title: 'Gói dịch vụ', href: '/subscription', icon: CreditCard, permission: 'canManageBranches' },
-  { title: 'Hướng dẫn & Thông tin', href: '/guides', icon: FileText },
+  { title: 'Trả hàng', titleKey: 'sidebar.returns', href: '/returns', icon: RotateCcw, permission: 'canImportProducts' },
+  { title: 'Nhà cung cấp', titleKey: 'sidebar.suppliers', href: '/suppliers', icon: Users, permission: 'canManageSuppliers' },
+  { title: 'Khách hàng & CRM', titleKey: 'sidebar.customers', href: '/customers', icon: HeartHandshake, permission: 'canViewProducts' },
+  { title: 'Công nợ', titleKey: 'sidebar.debt', href: '/debt', icon: Receipt, permission: 'canViewCashBook' },
+  { title: 'Báo cáo', titleKey: 'sidebar.reports', href: '/reports', icon: BarChart3, permission: 'canViewReports' },
+  { title: 'Sổ quỹ', titleKey: 'sidebar.cashBook', href: '/cash-book', icon: Wallet, permission: 'canViewCashBook' },
+  { title: 'Quản lý chi nhánh', titleKey: 'sidebar.branches', href: '/branches', icon: Building2, permission: 'canManageBranches' },
+  { title: 'Quản lý người dùng', titleKey: 'sidebar.users', href: '/users', icon: Shield, permission: 'canManageBranchStaff' },
+  { title: 'Đánh giá nhân viên', titleKey: 'sidebar.staffReviews', href: '/users', icon: Star, permission: 'canViewStaffReviews' },
+  { title: 'Lịch sử thao tác', titleKey: 'sidebar.auditLogs', href: '/audit-logs', icon: History, permission: 'canViewAuditLogs' },
+  { title: 'Website bán hàng', titleKey: 'sidebar.website', href: '/landing-settings', icon: Globe, permission: 'canViewProducts', badge: 'HOT' },
+  { title: 'Mạng xã hội', titleKey: 'sidebar.social', href: '/social', icon: MessageCircleMore, permission: 'canManageBranches' },
+  { title: 'Ứng dụng', titleKey: 'sidebar.applications', href: '/applications', icon: AppWindow },
+  { title: 'Affiliate', titleKey: 'sidebar.affiliate', href: '/affiliate', icon: Share2, permission: 'canManageBranches' },
+  { title: 'Tải ứng dụng', titleKey: 'sidebar.installApp', href: '/install-app', icon: Download },
+  { title: 'Gói dịch vụ', titleKey: 'sidebar.subscription', href: '/subscription', icon: CreditCard, permission: 'canManageBranches' },
+  { title: 'Hướng dẫn & Thông tin', titleKey: 'sidebar.guides', href: '/guides', icon: FileText },
+  { title: 'Cài đặt', titleKey: 'sidebar.settings', href: '/settings', icon: Settings },
 ];
 
 export function AppSidebar() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
@@ -207,7 +212,7 @@ export function AppSidebar() {
         <img src={vkhoLogo} alt="vkho.vn" className="h-10 w-10 object-contain rounded-lg" />
         <div className="flex flex-col">
           <span className="text-lg font-bold text-sidebar-foreground">{currentTenant?.name || 'vkho.vn'}</span>
-          <span className="text-xs text-sidebar-muted">{currentTenant?.subdomain ? `${currentTenant.subdomain}.vkho.vn` : 'Quản lý thông minh'}</span>
+          <span className="text-xs text-sidebar-muted">{currentTenant?.subdomain ? `${currentTenant.subdomain}.vkho.vn` : t('sidebar.smartManagement')}</span>
         </div>
         <div className="ml-auto hidden lg:flex items-center gap-0 shrink-0 [&_button]:text-sidebar-foreground [&_button]:hover:bg-sidebar-accent [&_button]:opacity-100 [&_button]:h-8 [&_button]:w-8 [&_.h-5]:h-4 [&_.w-5]:w-4">
           <SystemNotificationBell />
@@ -232,7 +237,7 @@ export function AppSidebar() {
                   )}
                 >
                   <item.icon className="h-5 w-5" />
-                  <span className="flex-1 text-left">{item.title}</span>
+                  <span className="flex-1 text-left">{item.titleKey ? t(item.titleKey) : item.title}</span>
                   <svg
                     className={cn('h-4 w-4 transition-transform', expandedItems.includes(item.title) && 'rotate-180')}
                     fill="none"
@@ -261,7 +266,7 @@ export function AppSidebar() {
                         <span className="w-5 h-5 flex items-center justify-center">
                           <span className="w-1.5 h-1.5 rounded-full bg-current" />
                         </span>
-                        <span className="flex-1">{child.title}</span>
+                        <span className="flex-1">{child.titleKey ? t(child.titleKey) : child.title}</span>
                         {child.badgeKey === 'pendingTransfer' && (pendingTransferCount || 0) > 0 && (
                           <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
                             +{pendingTransferCount}
@@ -287,7 +292,7 @@ export function AppSidebar() {
                 )}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="flex-1">{item.title}</span>
+                <span className="flex-1">{item.titleKey ? t(item.titleKey) : item.title}</span>
                 {item.badge && (
                   <span className="bg-destructive text-destructive-foreground text-[10px] font-bold rounded px-1.5 py-0.5 leading-none animate-pulse">
                     {item.badge}
@@ -326,7 +331,7 @@ export function AppSidebar() {
                 </p>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-sidebar-muted text-sidebar-muted">
-                    {getRoleName(permissions?.role)}
+                    {t(getRoleKey(permissions?.role))}
                   </Badge>
                 </div>
               </div>
@@ -335,7 +340,7 @@ export function AppSidebar() {
           <DropdownMenuContent align="end" className="w-48 bg-popover">
             <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
-              Đăng xuất
+              {t('sidebar.signOut')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
