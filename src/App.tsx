@@ -49,6 +49,7 @@ const StockTransferPage = lazy(() => import("./pages/StockTransferPage"));
 const PlatformArticlesPage = lazy(() => import("./pages/PlatformArticlesPage"));
 const SocialPage = lazy(() => import("./pages/SocialPage"));
 const WebsiteEditorPage = lazy(() => import("./pages/WebsiteEditorPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Aggressively preload all main page chunks after initial render
@@ -218,6 +219,7 @@ const App = () => (
                 <Route path="/website-editor" element={<SubscriptionRoute><WebsiteEditorPage /></SubscriptionRoute>} />
                 <Route path="/install-app" element={<GuardedRoute><InstallAppPage /></GuardedRoute>} />
                 <Route path="/guides" element={<GuardedRoute><PlatformArticlesPage /></GuardedRoute>} />
+                <Route path="/settings" element={<GuardedRoute><SettingsPage /></GuardedRoute>} />
                 <Route path="/social" element={<GuardedRoute><SocialPage /></GuardedRoute>} />
                 {/* Platform Admin route - also guarded */}
                 <Route path="/platform-admin" element={<GuardedRoute><PlatformAdminPage /></GuardedRoute>} />
