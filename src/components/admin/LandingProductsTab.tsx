@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   useLandingProductCategories,
   useCreateLandingProductCategory,
@@ -11,6 +11,7 @@ import {
   uploadLandingProductImage,
   LandingProduct,
   LandingProductVariant,
+  LandingProductCategory,
   VariantOption,
   VariantPriceEntry,
 } from '@/hooks/useLandingProducts';
@@ -26,12 +27,121 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { Separator } from '@/components/ui/separator';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { PriceInput } from '@/components/ui/price-input';
 import { ImportFromWarehouseDialog } from './ImportFromWarehouseDialog';
+
+// Helper: build tree from flat categories
+function buildCategoryTree(categories: LandingProductCategory[]): LandingProductCategory[] {
+  const map = new Map<string, LandingProductCategory>();
+  const roots: LandingProductCategory[] = [];
+  categories.forEach(c => map.set(c.id, { ...c, children: [] }));
+  categories.forEach(c => {
+    const node = map.get(c.id)!;
+    if (c.parent_id && map.has(c.parent_id)) {
+      map.get(c.parent_id)!.children!.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+  return roots;
+}
+
+// Helper: flatten tree for select with indentation
+function flattenCategoriesForSelect(categories: LandingProductCategory[], level = 0): { id: string; name: string; level: number }[] {
+  const result: { id: string; name: string; level: number }[] = [];
+  for (const cat of categories) {
+    result.push({ id: cat.id, name: cat.name, level });
+    if (cat.children && cat.children.length > 0) {
+      result.push(...flattenCategoriesForSelect(cat.children, level + 1));
+    }
+  }
+  return result;
+}
+// Category tree node component
+function CategoryTreeNode({
+  categories, level, onEdit, onAddChild, onDelete, onUploadImage, onRemoveImage, uploadingCatId,
+}: {
+  categories: LandingProductCategory[];
+  level: number;
+  onEdit: (cat: LandingProductCategory) => void;
+  onAddChild: (parentId: string) => void;
+  onDelete: (cat: LandingProductCategory) => void;
+  onUploadImage: (catId: string) => void;
+  onRemoveImage: (catId: string) => void;
+  uploadingCatId: string | null;
+}) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  return (
+    <>
+      {categories.map(cat => {
+        const hasChildren = cat.children && cat.children.length > 0;
+        const isExpanded = expanded[cat.id] !== false; // default expanded
+        return (
+          <div key={cat.id}>
+            <div className={`flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-muted/50 group ${level > 0 ? 'ml-5' : ''}`}>
+              <button
+                onClick={() => setExpanded(prev => ({ ...prev, [cat.id]: !isExpanded }))}
+                className={`h-6 w-6 flex items-center justify-center rounded hover:bg-muted shrink-0 ${!hasChildren ? 'invisible' : ''}`}
+              >
+                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => onUploadImage(cat.id)}
+                className="shrink-0 h-10 w-10 rounded-lg border border-dashed border-border overflow-hidden flex items-center justify-center bg-muted/30 hover:bg-muted/60 transition-colors"
+                disabled={uploadingCatId === cat.id}
+              >
+                {uploadingCatId === cat.id ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                ) : cat.image_url ? (
+                  <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
+                ) : (
+                  <ImagePlus className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
+              </button>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{cat.name}</p>
+                {hasChildren && <p className="text-[10px] text-muted-foreground">{cat.children!.length} danh mục con</p>}
+              </div>
+              <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity shrink-0">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAddChild(cat.id)} title="Thêm danh mục con">
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(cat)} title="Sửa">
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                {cat.image_url && (
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => onRemoveImage(cat.id)} title="Xóa ảnh">
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(cat)} title="Xóa">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+            {hasChildren && isExpanded && (
+              <CategoryTreeNode
+                categories={cat.children!}
+                level={level + 1}
+                onEdit={onEdit}
+                onAddChild={onAddChild}
+                onDelete={onDelete}
+                onUploadImage={onUploadImage}
+                onRemoveImage={onRemoveImage}
+                uploadingCatId={uploadingCatId}
+              />
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
 
 export function LandingProductsTab() {
   const { data: tenant } = useCurrentTenant();
@@ -46,6 +156,10 @@ export function LandingProductsTab() {
   const deleteProduct = useDeleteLandingProduct();
 
   const [catName, setCatName] = useState('');
+  const [catDialog, setCatDialog] = useState(false);
+  const [editingCat, setEditingCat] = useState<LandingProductCategory | null>(null);
+  const [catParentId, setCatParentId] = useState<string>('_none_');
+  const [catEditName, setCatEditName] = useState('');
   const [warehouseDialog, setWarehouseDialog] = useState(false);
   const [productDialog, setProductDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LandingProduct | null>(null);
@@ -57,6 +171,9 @@ export function LandingProductsTab() {
   const catImageRef = useRef<HTMLInputElement>(null);
   const [pendingCatId, setPendingCatId] = useState<string | null>(null);
   const [pendingVariantIdx, setPendingVariantIdx] = useState<number | null>(null);
+
+  const categoryTree = useMemo(() => buildCategoryTree(categories || []), [categories]);
+  const flatCategories = useMemo(() => flattenCategoriesForSelect(categoryTree), [categoryTree]);
 
   const customProductTabs = (landingSettings as any)?.custom_product_tabs || [];
 
@@ -91,6 +208,37 @@ export function LandingProductsTab() {
       await createCat.mutateAsync({ name: catName.trim() });
       setCatName('');
       toast({ title: 'Đã thêm danh mục' });
+    } catch (e: any) {
+      toast({ title: 'Lỗi', description: e.message, variant: 'destructive' });
+    }
+  };
+
+  const openEditCat = (cat: LandingProductCategory) => {
+    setEditingCat(cat);
+    setCatEditName(cat.name);
+    setCatParentId(cat.parent_id || '_none_');
+    setCatDialog(true);
+  };
+
+  const openAddChildCat = (parentId: string) => {
+    setEditingCat(null);
+    setCatEditName('');
+    setCatParentId(parentId);
+    setCatDialog(true);
+  };
+
+  const handleSaveCat = async () => {
+    if (!catEditName.trim()) return;
+    const parentVal = catParentId === '_none_' ? null : catParentId;
+    try {
+      if (editingCat) {
+        await updateCat.mutateAsync({ id: editingCat.id, name: catEditName.trim(), parent_id: parentVal } as any);
+        toast({ title: 'Đã cập nhật danh mục' });
+      } else {
+        await createCat.mutateAsync({ name: catEditName.trim(), parent_id: parentVal });
+        toast({ title: 'Đã thêm danh mục' });
+      }
+      setCatDialog(false);
     } catch (e: any) {
       toast({ title: 'Lỗi', description: e.message, variant: 'destructive' });
     }
@@ -300,72 +448,84 @@ export function LandingProductsTab() {
       {/* Danh mục sản phẩm */}
       <Card data-tour="landing-products-category">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <FolderPlus className="h-4 w-4" />
-            Danh mục sản phẩm
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FolderPlus className="h-4 w-4" />
+              Danh mục sản phẩm
+            </CardTitle>
+            <Button size="sm" variant="outline" onClick={() => { setEditingCat(null); setCatEditName(''); setCatParentId('_none_'); setCatDialog(true); }}>
+              <Plus className="h-4 w-4 mr-1" /> Thêm
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Quick add */}
           <div className="flex gap-2">
             <Input
               value={catName}
               onChange={e => setCatName(e.target.value)}
-              placeholder="Tên danh mục mới..."
+              placeholder="Thêm nhanh danh mục gốc..."
               onKeyDown={e => e.key === 'Enter' && handleAddCategory()}
             />
             <Button onClick={handleAddCategory} disabled={!catName.trim() || createCat.isPending} size="sm">
               {createCat.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             </Button>
           </div>
-          <div className="space-y-2">
-            {categories?.map(cat => (
-              <div key={cat.id} className="flex items-center gap-3 p-2.5 rounded-lg border bg-card">
-                <button
-                  onClick={() => { setPendingCatId(cat.id); catImageRef.current?.click(); }}
-                  className="shrink-0 h-14 w-14 rounded-lg border border-dashed border-border overflow-hidden flex items-center justify-center bg-muted/30 hover:bg-muted/60 transition-colors relative"
-                  disabled={uploadingCatId === cat.id}
-                >
-                  {uploadingCatId === cat.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  ) : cat.image_url ? (
-                    <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <ImagePlus className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </button>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{cat.name}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {cat.image_url ? 'Bấm ảnh để đổi' : 'Bấm để thêm ảnh bìa'}
-                  </p>
-                </div>
-                {cat.image_url && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
-                    onClick={async () => {
-                      await updateCat.mutateAsync({ id: cat.id, image_url: null });
-                      toast({ title: 'Đã xóa ảnh bìa' });
-                    }}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                )}
-                <button
-                  onClick={() => { if (confirm(`Xoá danh mục "${cat.name}"?`)) deleteCat.mutate(cat.id); }}
-                  className="shrink-0 h-7 w-7 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
-            {(!categories || categories.length === 0) && (
-              <p className="text-sm text-muted-foreground">Chưa có danh mục nào</p>
+          {/* Category tree */}
+          <div className="space-y-1">
+            {categoryTree.length > 0 ? (
+              <CategoryTreeNode
+                categories={categoryTree}
+                level={0}
+                onEdit={openEditCat}
+                onAddChild={openAddChildCat}
+                onDelete={async (cat) => { if (confirm(`Xoá danh mục "${cat.name}"?`)) deleteCat.mutate(cat.id); }}
+                onUploadImage={(catId) => { setPendingCatId(catId); catImageRef.current?.click(); }}
+                onRemoveImage={async (catId) => { await updateCat.mutateAsync({ id: catId, image_url: null }); toast({ title: 'Đã xóa ảnh bìa' }); }}
+                uploadingCatId={uploadingCatId}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground py-4 text-center">Chưa có danh mục nào</p>
             )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog thêm/sửa danh mục */}
+      <Dialog open={catDialog} onOpenChange={setCatDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingCat ? 'Sửa danh mục' : 'Thêm danh mục'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tên danh mục</Label>
+              <Input value={catEditName} onChange={e => setCatEditName(e.target.value)} placeholder="Nhập tên danh mục" />
+            </div>
+            <div className="space-y-2">
+              <Label>Danh mục cha</Label>
+              <Select value={catParentId} onValueChange={setCatParentId}>
+                <SelectTrigger><SelectValue placeholder="Chọn danh mục cha" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="_none_">Không có (danh mục gốc)</SelectItem>
+                  {flatCategories.filter(c => c.id !== editingCat?.id).map(c => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {'— '.repeat(c.level)}{c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCatDialog(false)}>Huỷ</Button>
+            <Button onClick={handleSaveCat} disabled={!catEditName.trim() || createCat.isPending || updateCat.isPending}>
+              {(createCat.isPending || updateCat.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingCat ? 'Cập nhật' : 'Thêm'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Danh sách sản phẩm */}
       <Card>
@@ -452,7 +612,11 @@ export function LandingProductsTab() {
                 <SelectTrigger><SelectValue placeholder="Chọn danh mục" /></SelectTrigger>
                 <SelectContent className="bg-popover">
                   <SelectItem value="_none_">Không phân loại</SelectItem>
-                  {categories?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  {flatCategories.map(c => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {'— '.repeat(c.level)}{c.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
