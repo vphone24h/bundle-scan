@@ -186,7 +186,7 @@ export function useCustomerDebts(showSettled: boolean = false) {
         }
         
         // Filter based on showSettled
-        if (showSettled || summary.remaining_amount > 0) {
+        if (showSettled || summary.remaining_amount !== 0) {
           result.push(summary);
         }
       });
@@ -345,7 +345,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
         }
         
         // Filter based on showSettled
-        if (showSettled || summary.remaining_amount > 0) {
+        if (showSettled || summary.remaining_amount !== 0) {
           result.push(summary);
         }
       });
