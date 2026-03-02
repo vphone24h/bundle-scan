@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, ReactNode } from 'react';
+import { useRef, useCallback, ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface PullToRefreshProps {
@@ -6,56 +6,79 @@ interface PullToRefreshProps {
 }
 
 export function PullToRefresh({ children }: PullToRefreshProps) {
-  const [pulling, setPulling] = useState(false);
-  const [pullDistance, setPullDistance] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const startY = useRef(0);
+  const pullRef = useRef(0);
+  const startYRef = useRef(0);
+  const pullingRef = useRef(false);
+  const refreshingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const indicatorRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const iconRef = useRef<HTMLDivElement>(null);
 
   const THRESHOLD = 80;
 
-  const isAtTop = useCallback(() => {
-    // Check if the page is scrolled to top
-    return window.scrollY <= 0;
+  const updateVisuals = useCallback((distance: number, isPulling: boolean) => {
+    const progress = Math.min(distance / THRESHOLD, 1);
+
+    if (indicatorRef.current) {
+      indicatorRef.current.style.transform = `translateY(${distance - 44}px)`;
+      indicatorRef.current.style.opacity = String(progress);
+      indicatorRef.current.style.transition = isPulling ? 'none' : 'transform 0.35s cubic-bezier(0.2,0.9,0.3,1), opacity 0.25s ease';
+    }
+    if (contentRef.current) {
+      contentRef.current.style.transform = distance > 0 ? `translateY(${distance}px)` : '';
+      contentRef.current.style.transition = isPulling ? 'none' : 'transform 0.35s cubic-bezier(0.2,0.9,0.3,1)';
+    }
+    if (iconRef.current && !refreshingRef.current) {
+      iconRef.current.style.transform = `rotate(${progress * 540}deg) scale(${0.6 + progress * 0.4})`;
+      iconRef.current.style.transition = isPulling ? 'none' : 'transform 0.3s ease';
+    }
   }, []);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (refreshing) return;
-    if (isAtTop()) {
-      startY.current = e.touches[0].clientY;
-      setPulling(true);
+    if (refreshingRef.current) return;
+    if (window.scrollY <= 0) {
+      startYRef.current = e.touches[0].clientY;
+      pullingRef.current = true;
     }
-  }, [refreshing, isAtTop]);
+  }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!pulling || refreshing) return;
-    if (!isAtTop()) {
-      setPulling(false);
-      setPullDistance(0);
+    if (!pullingRef.current || refreshingRef.current) return;
+    if (window.scrollY > 0) {
+      pullingRef.current = false;
+      pullRef.current = 0;
+      updateVisuals(0, false);
       return;
     }
-    const currentY = e.touches[0].clientY;
-    const diff = Math.max(0, currentY - startY.current);
-    // Diminishing pull effect
-    const distance = Math.min(diff * 0.4, 120);
-    setPullDistance(distance);
-  }, [pulling, refreshing, isAtTop]);
+    const diff = Math.max(0, e.touches[0].clientY - startYRef.current);
+    // Rubber-band diminishing effect
+    const distance = Math.min(diff * 0.45, 130);
+    pullRef.current = distance;
+    updateVisuals(distance, true);
+  }, [updateVisuals]);
 
   const handleTouchEnd = useCallback(() => {
-    if (!pulling) return;
-    setPulling(false);
+    if (!pullingRef.current) return;
+    pullingRef.current = false;
 
-    if (pullDistance >= THRESHOLD && !refreshing) {
-      setRefreshing(true);
-      setPullDistance(THRESHOLD);
-      // Reload the page data by using router refresh
-      window.location.reload();
+    if (pullRef.current >= THRESHOLD && !refreshingRef.current) {
+      refreshingRef.current = true;
+      pullRef.current = 56;
+      updateVisuals(56, false);
+      // Add spin class
+      if (iconRef.current) {
+        iconRef.current.style.transform = 'rotate(0deg) scale(1)';
+        iconRef.current.style.transition = 'none';
+        iconRef.current.classList.add('animate-spin');
+      }
+      // Small delay for visual feedback then reload
+      setTimeout(() => window.location.reload(), 600);
     } else {
-      setPullDistance(0);
+      pullRef.current = 0;
+      updateVisuals(0, false);
     }
-  }, [pulling, pullDistance, refreshing]);
-
-  const progress = Math.min(pullDistance / THRESHOLD, 1);
+  }, [updateVisuals]);
 
   return (
     <div
@@ -65,33 +88,26 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
       onTouchEnd={handleTouchEnd}
       className="relative"
     >
-      {/* Pull indicator */}
+      {/* Pull indicator - positioned absolutely, starts hidden above */}
       <div
-        className="absolute left-0 right-0 flex items-center justify-center z-50 pointer-events-none overflow-hidden transition-opacity"
+        ref={indicatorRef}
+        className="absolute left-0 right-0 flex items-center justify-center z-50 pointer-events-none"
         style={{
-          top: -40 + pullDistance,
-          height: 40,
-          opacity: progress,
+          top: 0,
+          height: 44,
+          transform: 'translateY(-44px)',
+          opacity: 0,
         }}
       >
-        <div className="bg-background border rounded-full p-2 shadow-md">
-          <Loader2
-            className={`h-5 w-5 text-primary ${refreshing ? 'animate-spin' : ''}`}
-            style={{
-              transform: refreshing ? undefined : `rotate(${progress * 360}deg)`,
-              transition: pulling ? 'none' : 'transform 0.2s',
-            }}
-          />
+        <div className="bg-background border border-border rounded-full p-2.5 shadow-lg">
+          <div ref={iconRef}>
+            <Loader2 className="h-5 w-5 text-primary" />
+          </div>
         </div>
       </div>
 
-      {/* Content with pull offset */}
-      <div
-        style={{
-          transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : undefined,
-          transition: pulling ? 'none' : 'transform 0.3s ease-out',
-        }}
-      >
+      {/* Content */}
+      <div ref={contentRef}>
         {children}
       </div>
     </div>
