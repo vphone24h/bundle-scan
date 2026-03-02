@@ -54,9 +54,9 @@ function SettingsBlock({
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors text-left"
+        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/30 transition-colors text-left"
       >
-        <span className="text-lg shrink-0">{icon}</span>
+        <span className="text-base shrink-0">{icon}</span>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium">{title}</p>
           {description && <p className="text-[10px] text-muted-foreground mt-0.5">{description}</p>}
@@ -64,7 +64,7 @@ function SettingsBlock({
         {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
       </button>
       {isExpanded && (
-        <div className="px-4 pb-4 space-y-4 animate-in slide-in-from-top-1 duration-200">
+        <div className="px-3 pb-3 space-y-3 animate-in slide-in-from-top-1 duration-200">
           {children}
         </div>
       )}
@@ -153,7 +153,7 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-background">
+    <div className="h-full overflow-y-auto overscroll-contain bg-background">
       <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
       <input ref={bannerInputRef} type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" />
 
