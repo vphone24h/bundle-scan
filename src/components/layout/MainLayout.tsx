@@ -88,7 +88,7 @@ function MainLayoutInner({ children }: MainLayoutProps) {
       <main
         className="lg:pl-64 lg:pt-0 safe-bottom"
         style={{
-          paddingTop: 'max(3.5rem, calc(env(safe-area-inset-top) + 4rem))',
+          paddingTop: 'max(3.5rem, calc(env(safe-area-inset-top) + 3.25rem))',
         }}
       >
         <PullToRefresh>
