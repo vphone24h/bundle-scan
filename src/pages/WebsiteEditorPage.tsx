@@ -187,12 +187,14 @@ export default function WebsiteEditorPage() {
       {/* Content area */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {activeTab === 'preview' ? (
-          <EditorPreviewTab
-            formData={formData}
-            deviceMode={deviceMode}
-            tenant={tenant}
-            onEditSection={handleEditSection}
-          />
+          <div className="h-full overflow-y-auto">
+            <EditorPreviewTab
+              formData={formData}
+              deviceMode={deviceMode}
+              tenant={tenant}
+              onEditSection={handleEditSection}
+            />
+          </div>
         ) : (
           <EditorSettingsTab
             formData={formData}
