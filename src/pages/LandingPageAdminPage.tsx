@@ -15,6 +15,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { BookOpen, Pencil } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 const LANDING_TOUR_STEPS: TourStep[] = [
   {
@@ -71,6 +72,7 @@ function PendingBadge() {
 }
 
 export default function LandingPageAdminPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: permissions, isLoading } = usePermissions();
   const landingGuideUrl = useLandingGuideUrl();
@@ -104,9 +106,9 @@ export default function LandingPageAdminPage() {
     <MainLayout>
       <div className="p-4 sm:p-6">
         <PageHeader 
-          title="Website bán hàng" 
-          description="Cấu hình website bán hàng cho khách hàng"
-          helpText="Thiết lập website bán hàng công khai: sản phẩm, tin tức, tra cứu bảo hành. Khách hàng có thể truy cập qua subdomain hoặc tên miền riêng của bạn."
+          title={t('pages.landingPage.title')}
+          description={t('pages.landingPage.description')}
+          helpText={t('pages.landingPage.helpText')}
           actions={
             isSuperAdmin ? (
               <Button onClick={() => navigate('/website-editor')} className="gap-1.5">

@@ -1,15 +1,17 @@
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { AffiliateUserDashboard } from '@/components/affiliate/AffiliateUserDashboard';
+import { useTranslation } from 'react-i18next';
 
 export default function AffiliatePage() {
+  const { t } = useTranslation();
   return (
     <MainLayout>
       <div className="p-4 sm:p-6 space-y-6">
         <PageHeader 
-          title="Chương trình Affiliate" 
-          description="Giới thiệu khách hàng mới và nhận hoa hồng"
-          helpText="Chia sẻ link giới thiệu để mời người dùng mới đăng ký vkho.vn. Khi họ mua gói dịch vụ, bạn nhận hoa hồng. Theo dõi lượt click, đăng ký và số tiền hoa hồng."
+          title={t('pages.affiliate.title')}
+          description={t('pages.affiliate.description')}
+          helpText={t('pages.affiliate.helpText')}
         />
         <AffiliateUserDashboard />
       </div>

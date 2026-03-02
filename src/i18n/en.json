@@ -87,36 +87,12 @@
     "products": {
       "title": "Product Management",
       "description": "View, edit and print barcodes for products",
-      "helpText": "List of all products in stock. You can search, filter by category, print barcodes, adjust quantities or delete products. Products are created automatically when importing.",
-      "addProduct": "Add Product",
-      "printBarcode": "Print Barcode",
-      "searchPlaceholder": "Search by name, SKU or IMEI...",
-      "filters": "Filters",
-      "exportExcel": "Export Excel",
-      "fromDate": "From Date",
-      "toDate": "To Date",
-      "category": "Category",
-      "supplier": "Supplier",
-      "branch": "Branch",
-      "status": "Status",
-      "all": "All",
-      "inStock": "In Stock",
-      "sold": "Sold",
-      "returned": "Returned",
-      "printed": "Printed",
-      "notPrinted": "Not Printed",
-      "selectProductFirst": "Select products first to print"
+      "helpText": "List of all products in stock. You can search, filter by category, print barcodes, adjust quantities or delete products. Products are created automatically when importing."
     },
     "inventory": {
       "title": "Inventory",
       "description": "Monitor and track inventory in real-time",
-      "helpText": "View detailed inventory by branch, IMEI status (selling, sold, warranty). Supports stock counting and reconciliation with actual quantities.",
-      "warranty": "Warranty Items",
-      "stockCount": "Stock Count",
-      "exportReimport": "Export for Re-import",
-      "exportExcel": "Export Excel",
-      "reminderTitle": "Remember to export to Excel daily for data backup!",
-      "reminderDesc": "Data is stored securely in the cloud, but export to Excel daily for easier recovery in case of any risk."
+      "helpText": "View detailed inventory by branch, IMEI status (selling, sold, warranty). Supports stock counting and reconciliation with actual quantities."
     },
     "categories": {
       "title": "Category Management",
@@ -229,22 +205,37 @@
     "users": {
       "title": "User Management",
       "description": "Create accounts and assign staff permissions",
-      "helpText": "Create staff accounts, assign roles (Admin, Staff, Accountant), manage access permissions by branch."
+      "helpText": "Create staff accounts, assign roles (Admin, Staff, Accountant), manage access permissions by branch.",
+      "staffReviewsTitle": "Staff Reviews",
+      "staffReviewsDesc": "View customer reviews",
+      "staffReviewsHelp": "View reviews submitted by customers after warranty lookups."
     },
     "auditLogs": {
       "title": "Audit Logs",
       "description": "Track all changes in the system",
+      "descriptionBranch": "Track branch operations",
       "helpText": "Records all user actions: create/edit/delete receipts, price changes, logins... Helps with control and transparency."
     },
     "returns": {
       "title": "Returns Management",
       "description": "Process customer returns and supplier returns",
-      "helpText": "Manage returns: customers returning products (sales returns) or returning goods to suppliers (purchase returns)."
+      "helpText": "Manage returns: customers returning products (sales returns) or returning goods to suppliers (purchase returns).",
+      "importReturnTitle": "Supplier Return",
+      "importReturnDesc": "Return products to supplier",
+      "importReturnHelp": "Return defective or wrong products to supplier. Select original import receipt and products to return. System auto-updates inventory and debts.",
+      "exportReturnTitle": "Customer Return",
+      "exportReturnDesc": "Customer returns a product",
+      "exportReturnHelp": "Process customer product returns. Select original sales receipt and products, stock is auto-restored and refund recorded."
     },
     "stockTransfer": {
       "title": "Inter-Branch Transfer",
       "description": "Manage stock transfer requests between branches",
       "helpText": "Create and approve stock transfer requests between branches. Track the status of each transfer."
+    },
+    "invoiceTemplate": {
+      "title": "Invoice Template Setup",
+      "description": "Each branch has its own invoice template with different addresses",
+      "helpText": "Customize invoice templates per branch: logo, store name, address, phone, notes. Choose paper size (K57, K80, A4) for your printer."
     },
     "eInvoice": {
       "title": "E-Invoice",
@@ -257,6 +248,35 @@
       "notEnabled": "Feature not activated",
       "notEnabledDesc": "The E-Invoice feature has not been enabled for your store. Please contact your administrator for activation.",
       "goBack": "Go Back"
+    },
+    "social": {
+      "title": "Social Media",
+      "description": "VKHO Community Network"
+    },
+    "subscription": {
+      "title": "Subscription Plans",
+      "description": "Manage subscription and payments",
+      "helpText": "View current plan, renew or upgrade. Pay via bank transfer. Expired plans will have limited features."
+    },
+    "advertisements": {
+      "title": "App / Ad Management",
+      "description": "Add, edit, delete and sort advertisement banners",
+      "helpText": "Create and manage ad banners displayed in the Applications page. Set links, display duration, priority order."
+    },
+    "landingPage": {
+      "title": "Sales Website",
+      "description": "Configure sales website for customers",
+      "helpText": "Set up a public sales website: products, news, warranty lookup. Customers can access via subdomain or your custom domain."
+    },
+    "applications": {
+      "title": "Apps & Services",
+      "description": "Explore partner applications and services",
+      "helpText": "List of useful partner apps and services for your business. Click to access directly."
+    },
+    "affiliate": {
+      "title": "Affiliate Program",
+      "description": "Refer new customers and earn commissions",
+      "helpText": "Share referral links to invite new users to register on vkho.vn. When they purchase a plan, you earn commission. Track clicks, signups and earnings."
     }
   },
   "common": {

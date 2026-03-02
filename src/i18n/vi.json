@@ -56,6 +56,168 @@
     "appSettings": "Cài đặt ứng dụng",
     "save": "Lưu"
   },
+  "pages": {
+    "dashboard": {
+      "title": "Tổng quan kho",
+      "description": "Theo dõi trạng thái kho và hoạt động nhập hàng",
+      "helpText": "Trang tổng quan hiển thị dữ liệu tổng hợp: tổng giá trị tồn kho, doanh thu hôm nay, sản phẩm nhập/bán gần đây. Giúp bạn nắm nhanh tình hình kinh doanh.",
+      "totalProducts": "Tổng sản phẩm",
+      "inStock": "Đang tồn kho",
+      "stockValue": "Giá trị tồn kho",
+      "orders": "Đơn hàng",
+      "todayProfit": "Lợi nhuận hôm nay",
+      "todayRevenue": "Doanh thu hôm nay",
+      "soldToday": "Bán hôm nay",
+      "importedToday": "Nhập hôm nay",
+      "recentlyImported": "Nhập gần đây",
+      "recentlySold": "Bán gần đây",
+      "viewAll": "Xem tất cả",
+      "noProducts": "Chưa có sản phẩm nào",
+      "noSoldToday": "Chưa bán sản phẩm nào hôm nay",
+      "updating": "Đang cập nhật…",
+      "viewGuide": "Xem hướng dẫn",
+      "hideGuide": "Ẩn hướng dẫn",
+      "installmentCalc": "Tính trả góp",
+      "feedback": "Góp ý tính năng",
+      "userGuide": "Hướng dẫn sử dụng",
+      "inStockLabel": "Tồn kho",
+      "soldLabel": "Đã bán",
+      "noCategory": "Chưa phân loại"
+    },
+    "products": {
+      "title": "Quản lý sản phẩm",
+      "description": "Xem, chỉnh sửa và in mã vạch sản phẩm",
+      "helpText": "Danh sách tất cả sản phẩm tồn kho. Tìm kiếm, lọc theo danh mục, in mã vạch, điều chỉnh số lượng hoặc xóa sản phẩm. Sản phẩm được tạo tự động khi nhập hàng."
+    },
+    "inventory": {
+      "title": "Tồn kho",
+      "description": "Theo dõi tồn kho theo thời gian thực",
+      "helpText": "Xem chi tiết tồn kho theo chi nhánh, trạng thái IMEI (đang bán, đã bán, bảo hành). Hỗ trợ kiểm kho và đối chiếu số lượng thực tế."
+    },
+    "categories": {
+      "title": "Quản lý danh mục",
+      "description": "Phân loại sản phẩm theo nhóm cha-con",
+      "helpText": "Tạo cây danh mục để phân loại sản phẩm (VD: Điện thoại > iPhone, Samsung). Danh mục giúp lọc và tìm kiếm nhanh hơn."
+    },
+    "importNew": {
+      "title": "Tạo phiếu nhập",
+      "description": "Nhập hàng từ nhà cung cấp vào kho",
+      "helpText": "Tạo phiếu nhập mới: chọn NCC, thêm sản phẩm (nhập IMEI, tên, giá), thanh toán để hoàn tất. Hỗ trợ nhập từ Excel."
+    },
+    "importHistory": {
+      "title": "Lịch sử nhập hàng",
+      "description": "Xem các phiếu nhập đã tạo",
+      "helpText": "Danh sách tất cả phiếu nhập. Xem chi tiết, chỉnh sửa, hủy phiếu hoặc xuất Excel."
+    },
+    "exportNew": {
+      "title": "Bán Hàng",
+      "description": "Tạo phiếu bán hàng mới",
+      "helpText": "Quét mã vạch hoặc tìm sản phẩm để tạo phiếu xuất. Nhập thông tin khách hàng, chọn phương thức thanh toán và in hóa đơn."
+    },
+    "exportHistory": {
+      "title": "Lịch sử xuất hàng",
+      "description": "Xem và quản lý các phiếu xuất hàng",
+      "helpText": "Xem tất cả phiếu xuất (bán hàng) đã tạo. Lọc theo ngày, khách hàng, trạng thái. Nhấn vào phiếu để xem chi tiết, in hóa đơn hoặc xử lý trả hàng."
+    },
+    "suppliers": {
+      "title": "Quản lý nhà cung cấp",
+      "description": "Thông tin nhà cung cấp và đối tác",
+      "helpText": "Quản lý danh sách NCC: thêm mới, sửa thông tin, xem công nợ. NCC được liên kết với phiếu nhập để theo dõi nguồn hàng và công nợ."
+    },
+    "customers": {
+      "title": "Khách hàng & CRM",
+      "helpText": "Quản lý thông tin khách hàng, theo dõi lịch sử mua hàng, tích điểm, lên lịch chăm sóc và phân loại khách hàng theo nhóm/tag. CRM giúp duy trì quan hệ khách hàng tốt."
+    },
+    "debt": {
+      "title": "Quản lý công nợ",
+      "description": "Theo dõi và quản lý công nợ khách hàng và nhà cung cấp",
+      "helpText": "Theo dõi số tiền khách hàng nợ (bán chịu) và nợ nhà cung cấp (mua chịu). Ghi nhận từng lần thanh toán, xem lịch sử chi tiết."
+    },
+    "reports": {
+      "title": "Báo cáo",
+      "description": "Phân tích chi tiết hoạt động kinh doanh",
+      "helpText": "Xem báo cáo chi tiết: doanh thu, lợi nhuận, sản phẩm bán chạy, hiệu suất nhân viên, tình trạng NCC. Lọc theo thời gian và xuất Excel."
+    },
+    "cashBook": {
+      "title": "Sổ quỹ",
+      "description": "Quản lý thu chi và dòng tiền",
+      "helpText": "Ghi nhận tất cả giao dịch tài chính: tiền mặt, chuyển khoản, ví điện tử. Theo dõi số dư, đối soát cuối ngày."
+    },
+    "branches": {
+      "title": "Quản lý chi nhánh",
+      "description": "Thêm, sửa, xóa thông tin các chi nhánh",
+      "helpText": "Tạo và quản lý các chi nhánh/cửa hàng. Mỗi chi nhánh có kho hàng riêng, nhân viên riêng. Dữ liệu nhập/xuất được phân tách theo chi nhánh."
+    },
+    "users": {
+      "title": "Quản lý người dùng",
+      "description": "Phân quyền và quản lý tài khoản nhân viên",
+      "helpText": "Tạo tài khoản cho nhân viên, phân quyền (Admin, Kế toán, Nhân viên). Mỗi vai trò có quyền truy cập khác nhau: nhân viên chỉ thấy chức năng được cấp phép.",
+      "staffReviewsTitle": "Đánh giá nhân viên",
+      "staffReviewsDesc": "Xem đánh giá từ khách hàng",
+      "staffReviewsHelp": "Xem các đánh giá mà khách hàng đã gửi sau khi tra cứu bảo hành."
+    },
+    "auditLogs": {
+      "title": "Lịch sử thao tác",
+      "description": "Theo dõi toàn bộ thao tác trong hệ thống",
+      "descriptionBranch": "Theo dõi thao tác của chi nhánh",
+      "helpText": "Ghi lại mọi thao tác quan trọng: tạo/sửa/xóa phiếu, thay đổi giá, điều chỉnh tồn kho. Giúp kiểm soát và truy vết khi có sai sót hoặc gian lận."
+    },
+    "returns": {
+      "title": "Trả hàng",
+      "description": "Xử lý trả hàng từ khách và trả hàng nhà cung cấp",
+      "helpText": "Quản lý trả hàng: khách trả sản phẩm (trả hàng bán) hoặc trả hàng cho NCC (trả hàng nhập).",
+      "importReturnTitle": "Trả hàng nhập",
+      "importReturnDesc": "Hoàn trả sản phẩm cho nhà cung cấp",
+      "importReturnHelp": "Trả lại sản phẩm đã nhập cho nhà cung cấp (hàng lỗi, sai mẫu). Chọn phiếu nhập gốc, chọn sản phẩm cần trả, hệ thống tự động cập nhật tồn kho và công nợ.",
+      "exportReturnTitle": "Trả hàng bán",
+      "exportReturnDesc": "Khách hàng trả lại sản phẩm",
+      "exportReturnHelp": "Xử lý khi khách hàng trả lại sản phẩm đã mua. Chọn phiếu xuất gốc, chọn sản phẩm trả, hàng tự động nhập lại kho và ghi nhận hoàn tiền."
+    },
+    "stockTransfer": {
+      "title": "Chuyển hàng",
+      "description": "Quản lý phiếu chuyển hàng giữa các chi nhánh",
+      "helpText": "Tạo phiếu chuyển hàng từ chi nhánh này sang chi nhánh khác. Chi nhánh nhận cần xác nhận trước khi hàng được cập nhật tồn kho. Theo dõi trạng thái: chờ duyệt, đã nhận, từ chối."
+    },
+    "invoiceTemplate": {
+      "title": "Thiết lập mẫu in hóa đơn",
+      "description": "Mỗi chi nhánh có mẫu in riêng với địa chỉ khác nhau",
+      "helpText": "Tùy chỉnh mẫu in hóa đơn cho từng chi nhánh: logo, tên cửa hàng, địa chỉ, số điện thoại, ghi chú. Chọn khổ giấy (K57, K80, A4) phù hợp với máy in."
+    },
+    "eInvoice": {
+      "title": "Hoá đơn điện tử",
+      "description": "Quản lý và phát hành hoá đơn điện tử kết nối cơ quan thuế",
+      "helpText": "Kết nối với nhà cung cấp hoá đơn điện tử để xuất hoá đơn VAT. Cấu hình thông tin doanh nghiệp, mã số thuế, sau đó tạo hoá đơn từ phiếu xuất."
+    },
+    "social": {
+      "title": "Mạng xã hội",
+      "description": "Kết nối cộng đồng VKHO"
+    },
+    "subscription": {
+      "title": "Gói dịch vụ",
+      "description": "Quản lý gói đăng ký và thanh toán",
+      "helpText": "Xem gói dịch vụ hiện tại, gia hạn hoặc nâng cấp gói. Thanh toán qua chuyển khoản ngân hàng. Gói hết hạn sẽ bị giới hạn tính năng."
+    },
+    "advertisements": {
+      "title": "Quản lý Ứng Dụng / Quảng Cáo",
+      "description": "Thêm, sửa, xóa và sắp xếp các banner quảng cáo",
+      "helpText": "Tạo và quản lý banner quảng cáo hiển thị trong trang Ứng dụng. Thiết lập link, thời gian hiển thị, thứ tự ưu tiên."
+    },
+    "landingPage": {
+      "title": "Website bán hàng",
+      "description": "Cấu hình website bán hàng cho khách hàng",
+      "helpText": "Thiết lập website bán hàng công khai: sản phẩm, tin tức, tra cứu bảo hành. Khách hàng có thể truy cập qua subdomain hoặc tên miền riêng của bạn."
+    },
+    "applications": {
+      "title": "Ứng Dụng & Dịch Vụ",
+      "description": "Khám phá các ứng dụng và dịch vụ đối tác",
+      "helpText": "Danh sách các ứng dụng và dịch vụ đối tác hữu ích cho hoạt động kinh doanh. Nhấn vào để truy cập trực tiếp."
+    },
+    "affiliate": {
+      "title": "Chương trình Affiliate",
+      "description": "Giới thiệu khách hàng mới và nhận hoa hồng",
+      "helpText": "Chia sẻ link giới thiệu để mời người dùng mới đăng ký vkho.vn. Khi họ mua gói dịch vụ, bạn nhận hoa hồng. Theo dõi lượt click, đăng ký và số tiền hoa hồng."
+    }
+  },
   "common": {
     "loading": "Đang tải...",
     "save": "Lưu",
@@ -66,6 +228,12 @@
     "search": "Tìm kiếm",
     "back": "Quay lại",
     "confirm": "Xác nhận",
-    "close": "Đóng"
+    "close": "Đóng",
+    "error": "Lỗi",
+    "success": "Thành công",
+    "all": "Tất cả",
+    "guide": "Hướng dẫn",
+    "viewGuide": "Xem hướng dẫn",
+    "hideGuide": "Ẩn hướng dẫn"
   }
 }

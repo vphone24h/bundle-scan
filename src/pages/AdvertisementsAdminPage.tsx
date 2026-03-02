@@ -7,8 +7,10 @@ import { useAdvertisements } from '@/hooks/useAdvertisements';
 import { AdvertisementList } from '@/components/advertisements/AdvertisementList';
 import { AdvertisementFormDialog } from '@/components/advertisements/AdvertisementFormDialog';
 import { Advertisement } from '@/hooks/useAdvertisements';
+import { useTranslation } from 'react-i18next';
 
 export default function AdvertisementsAdminPage() {
+  const { t } = useTranslation();
   const { data: ads, isLoading } = useAdvertisements();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAd, setEditingAd] = useState<Advertisement | null>(null);
@@ -33,9 +35,9 @@ export default function AdvertisementsAdminPage() {
   return (
     <MainLayout>
       <PageHeader 
-        title="Quản lý Ứng Dụng / Quảng Cáo" 
-        description="Thêm, sửa, xóa và sắp xếp các banner quảng cáo"
-        helpText="Tạo và quản lý banner quảng cáo hiển thị trong trang Ứng dụng. Thiết lập link, thời gian hiển thị, thứ tự ưu tiên."
+        title={t('pages.advertisements.title')}
+        description={t('pages.advertisements.description')}
+        helpText={t('pages.advertisements.helpText')}
       />
 
       <div className="p-4 sm:p-6 space-y-6">

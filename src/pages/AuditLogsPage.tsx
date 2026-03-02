@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ShieldCheck, ChevronDown, ChevronUp, Eye, History, AlertTriangle, UserCheck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const defaultFilters: AuditLogFilters = {
   search: '',
@@ -24,6 +25,7 @@ const defaultFilters: AuditLogFilters = {
 };
 
 export default function AuditLogsPage() {
+  const { t } = useTranslation();
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
   const { data: users } = useAuditLogUsers();
@@ -104,11 +106,11 @@ export default function AuditLogsPage() {
   return (
     <MainLayout>
       <PageHeader 
-        title="Lịch sử thao tác" 
-        helpText="Ghi lại mọi thao tác quan trọng: tạo/sửa/xóa phiếu, thay đổi giá, điều chỉnh tồn kho. Giúp kiểm soát và truy vết khi có sai sót hoặc gian lận."
+        title={t('pages.auditLogs.title')}
+        helpText={t('pages.auditLogs.helpText')}
         description={permissions?.role === 'super_admin'
-          ? "Theo dõi toàn bộ thao tác trong hệ thống"
-          : "Theo dõi thao tác của chi nhánh"
+          ? t('pages.auditLogs.description')
+          : t('pages.auditLogs.descriptionBranch')
         }
       />
 

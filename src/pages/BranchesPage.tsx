@@ -36,8 +36,10 @@ import { useBranches, useCreateBranch, useUpdateBranch, useDeleteBranch, Branch 
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 export default function BranchesPage() {
+  const { t } = useTranslation();
   const { data: branches = [], isLoading } = useBranches();
   const createBranch = useCreateBranch();
   const updateBranch = useUpdateBranch();
@@ -142,9 +144,9 @@ export default function BranchesPage() {
     <MainLayout>
       <div className="space-y-6">
         <PageHeader
-          title="Quản lý chi nhánh"
-          description="Thêm, sửa, xóa thông tin các chi nhánh"
-          helpText="Tạo và quản lý các chi nhánh/cửa hàng. Mỗi chi nhánh có kho hàng riêng, nhân viên riêng. Dữ liệu nhập/xuất được phân tách theo chi nhánh."
+          title={t('pages.branches.title')}
+          description={t('pages.branches.description')}
+          helpText={t('pages.branches.helpText')}
         />
 
         <div className="flex justify-end">

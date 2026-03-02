@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { useTranslation } from 'react-i18next';
 
 const SocialProfileTab = lazy(() => import('@/components/social/SocialProfileTab').then(m => ({ default: m.SocialProfileTab })));
 const SocialFeedTab = lazy(() => import('@/components/social/SocialFeedTab').then(m => ({ default: m.SocialFeedTab })));
@@ -19,6 +20,7 @@ const TabFallback = () => <div className="text-center py-8 text-muted-foreground
 const PULL_THRESHOLD = 80;
 
 const SocialPage = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('feed');
   const [viewUserId, setViewUserId] = useState<string | undefined>();
   const { data: unreadCount } = useUnreadSocialNotifCount();
@@ -89,7 +91,7 @@ const SocialPage = () => {
       {/* Sticky header with title and search icon */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b pb-2 -mx-4 px-4 pt-2 sm:static sm:border-0 sm:pb-0 sm:mx-0 sm:px-0 sm:pt-0 sm:bg-transparent sm:backdrop-blur-none">
         <div className="flex items-center justify-between">
-          <PageHeader title="Mạng xã hội" description="Kết nối cộng đồng VKHO" />
+          <PageHeader title={t('pages.social.title')} description={t('pages.social.description')} />
           <Button
             variant="ghost"
             size="icon"
