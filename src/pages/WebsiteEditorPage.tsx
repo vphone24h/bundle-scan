@@ -139,20 +139,19 @@ export default function WebsiteEditorPage() {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-background">
-      {/* Top toolbar */}
-      <header className="flex items-center justify-between px-3 py-2 border-b bg-card shrink-0 gap-2">
+      {/* Top toolbar - hidden on mobile, shown on tablet/desktop */}
+      <header className="hidden sm:flex items-center justify-between px-3 py-2 border-b bg-card shrink-0 gap-2">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/landing-settings')}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm font-semibold truncate max-w-[120px] sm:max-w-none">
+          <span className="text-sm font-semibold truncate max-w-none">
             {formData.store_name || 'Website Editor'}
           </span>
         </div>
 
         <div className="flex items-center gap-1.5">
-          {/* Device toggle - hidden on mobile since preview IS mobile */}
-          <div className="hidden sm:flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
+          <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
             <button
               onClick={() => setDeviceMode('mobile')}
               className={`p-1.5 rounded-md transition-colors ${deviceMode === 'mobile' ? 'bg-background shadow-sm' : 'hover:bg-background/50'}`}
@@ -208,8 +207,39 @@ export default function WebsiteEditorPage() {
         )}
       </div>
 
-      {/* Bottom tab bar - mobile only */}
-      <div className="flex items-center border-t bg-card shrink-0">
+      {/* Bottom tab bar */}
+      <div className="flex items-center border-t bg-card shrink-0 sm:hidden">
+        <button
+          onClick={() => navigate('/landing-settings')}
+          className="flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors text-muted-foreground"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          <span className="text-[10px] font-medium">Quay lại</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('preview')}
+          className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors ${
+            activeTab === 'preview' ? 'text-primary' : 'text-muted-foreground'
+          }`}
+        >
+          <Eye className="h-5 w-5" />
+          <span className="text-[10px] font-medium">Xem trước</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('edit')}
+          className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors relative ${
+            activeTab === 'edit' ? 'text-primary' : 'text-muted-foreground'
+          }`}
+        >
+          <Settings2 className="h-5 w-5" />
+          <span className="text-[10px] font-medium">Chỉnh sửa</span>
+          {hasChanges && (
+            <span className="absolute top-1.5 right-[calc(50%-8px)] h-2 w-2 rounded-full bg-destructive" />
+          )}
+        </button>
+      </div>
+      {/* Desktop bottom bar */}
+      <div className="hidden sm:flex items-center border-t bg-card shrink-0">
         <button
           onClick={() => setActiveTab('preview')}
           className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors ${
