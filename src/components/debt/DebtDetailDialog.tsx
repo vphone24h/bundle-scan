@@ -23,10 +23,12 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, History, Phone, Building2, Filter, Pencil, ChevronDown, ChevronRight, Package } from 'lucide-react';
+import { FileText, History, Phone, Building2, Filter, Pencil, ChevronDown, ChevronRight, Package, Wallet, Plus } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { EditCustomerDebtDialog } from './EditCustomerDebtDialog';
+import { DebtPaymentDialog } from './DebtPaymentDialog';
+import { DebtAdditionDialog } from './DebtAdditionDialog';
 import {
   Select,
   SelectContent,
@@ -46,6 +48,7 @@ interface DebtDetailDialogProps {
   totalAmount: number;
   paidAmount: number;
   remainingAmount: number;
+  branchId?: string | null;
 }
 
 export function DebtDetailDialog({
@@ -59,9 +62,12 @@ export function DebtDetailDialog({
   totalAmount,
   paidAmount,
   remainingAmount,
+  branchId,
 }: DebtDetailDialogProps) {
   const [historyFilter, setHistoryFilter] = useState<'all' | 'addition' | 'payment'>('all');
   const [showEditCustomer, setShowEditCustomer] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [showAddition, setShowAddition] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const [onlyShowDebt, setOnlyShowDebt] = useState(true);
   const { data: allReceipts, isLoading: receiptsLoading } = useDebtDetail(entityType, entityId);
@@ -193,6 +199,29 @@ export function DebtDetailDialog({
                 <p className="text-xl font-bold text-destructive">{formatNumber(remainingAmount)}</p>
               </div>
             </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-2 mt-3 pt-3 border-t">
+              <Button
+                size="sm"
+                variant="default"
+                className="flex-1 gap-1"
+                onClick={() => setShowPayment(true)}
+                disabled={remainingAmount <= 0}
+              >
+                <Wallet className="h-4 w-4" />
+                Thu nợ
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 gap-1"
+                onClick={() => setShowAddition(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Thêm nợ
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -263,7 +292,7 @@ export function DebtDetailDialog({
               </Label>
             </div>
 
-            <ScrollArea className="h-[260px]">
+            <ScrollArea className="flex-1 min-h-0 max-h-[40vh]">
               {receiptsLoading || historyLoading ? (
                 <div className="space-y-2">
                   {[...Array(3)].map((_, i) => (
@@ -414,7 +443,7 @@ export function DebtDetailDialog({
               </Select>
             </div>
 
-            <ScrollArea className="h-[300px]">
+            <ScrollArea className="flex-1 min-h-0 max-h-[40vh]">
               {historyLoading ? (
                 <div className="space-y-2">
                   {[...Array(3)].map((_, i) => (
@@ -509,6 +538,7 @@ export function DebtDetailDialog({
           </TabsContent>
         </Tabs>
       </DialogContent>
+
       {entityType === 'customer' && (
         <EditCustomerDebtDialog
           open={showEditCustomer}
@@ -519,6 +549,26 @@ export function DebtDetailDialog({
           branchName={branchName}
         />
       )}
+
+      <DebtPaymentDialog
+        open={showPayment}
+        onOpenChange={setShowPayment}
+        entityType={entityType}
+        entityId={entityId}
+        entityName={entityName}
+        remainingAmount={remainingAmount}
+        branchId={branchId || undefined}
+      />
+
+      <DebtAdditionDialog
+        open={showAddition}
+        onOpenChange={setShowAddition}
+        entityType={entityType}
+        entityId={entityId}
+        entityName={entityName}
+        remainingAmount={remainingAmount}
+        branchId={branchId || undefined}
+      />
 
       {/* Receipt Detail Popup */}
       <Dialog open={!!selectedReceipt} onOpenChange={(open) => !open && setSelectedReceipt(null)}>
