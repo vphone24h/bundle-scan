@@ -26,6 +26,52 @@ function getClientIP(req: Request): string {
     || '0.0.0.0'
 }
 
+async function createCloudflareDNSRecord(subdomain: string): Promise<void> {
+  const apiToken = Deno.env.get('CLOUDFLARE_API_TOKEN')
+  const zoneId = Deno.env.get('CLOUDFLARE_ZONE_ID')
+  
+  if (!apiToken || !zoneId) {
+    console.error('Cloudflare credentials not configured, skipping DNS record creation')
+    return
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'A',
+          name: `${subdomain}.vkho.vn`,
+          content: '185.158.133.1',
+          proxied: true,
+          ttl: 1, // Auto TTL when proxied
+        }),
+      }
+    )
+
+    const result = await response.json()
+    
+    if (result.success) {
+      console.log(`Cloudflare DNS record created for ${subdomain}.vkho.vn`)
+    } else {
+      // Error code 81057 = record already exists, which is fine
+      const alreadyExists = result.errors?.some((e: any) => e.code === 81057)
+      if (alreadyExists) {
+        console.log(`DNS record for ${subdomain}.vkho.vn already exists`)
+      } else {
+        console.error('Cloudflare DNS error:', JSON.stringify(result.errors))
+      }
+    }
+  } catch (error) {
+    console.error('Failed to create Cloudflare DNS record:', error)
+  }
+}
+
 async function sendRegistrationNotification(businessName: string, subdomain: string, email: string, adminName: string) {
   try {
     const smtpUser = Deno.env.get('SMTP_USER')
@@ -554,6 +600,10 @@ Deno.serve(async (req) => {
         { tenant_id: tenant.id, tier: 'gold', min_spent: 20000000, points_multiplier: 1.5 },
         { tenant_id: tenant.id, tier: 'vip', min_spent: 50000000, points_multiplier: 2 },
       ])
+
+    // Create Cloudflare DNS record for subdomain (non-blocking)
+    createCloudflareDNSRecord(subdomain)
+      .catch(err => console.error('Cloudflare DNS error:', err))
 
     // Send notification email to admin (non-blocking)
     sendRegistrationNotification(businessName, subdomain, email, adminName)
