@@ -165,10 +165,18 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   // Loading / error states
   if (isLoading || (!hasIdentifier && resolvedTenant.status === 'loading')) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-3">
-          <Loader2 className="h-10 w-10 animate-spin text-foreground/30 mx-auto" />
-          <p className="text-sm text-muted-foreground">Đang tải...</p>
+      <div className="min-h-screen bg-white">
+        {/* Skeleton header */}
+        <div className="h-14 bg-muted/30 animate-pulse" />
+        {/* Skeleton hero */}
+        <div className="h-48 bg-muted/20 animate-pulse" />
+        {/* Skeleton content */}
+        <div className="p-4 space-y-3">
+          <div className="h-6 w-40 bg-muted/30 rounded animate-pulse" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="h-32 bg-muted/20 rounded-lg animate-pulse" />
+            <div className="h-32 bg-muted/20 rounded-lg animate-pulse" />
+          </div>
         </div>
       </div>
     );

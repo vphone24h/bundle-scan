@@ -140,24 +140,23 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
 
       if (!tenantInfo) return null;
 
-      // Lấy landing settings
-      const { data, error } = await supabase
-        .from('tenant_landing_settings' as any)
-        .select('*')
-        .eq('tenant_id', tenantInfo.id)
-        .eq('is_enabled', true)
-        .maybeSingle();
+      // Fetch settings + branches IN PARALLEL (thay vì tuần tự)
+      const [settingsResult, branchesResult] = await Promise.all([
+        supabase
+          .from('tenant_landing_settings' as any)
+          .select('*')
+          .eq('tenant_id', tenantInfo.id)
+          .eq('is_enabled', true)
+          .maybeSingle(),
+        supabase
+          .rpc('get_tenant_branches', { _tenant_id: tenantInfo.id }),
+      ]);
 
-      if (error) return null;
+      if (settingsResult.error) return null;
 
-      // Luôn lấy danh sách chi nhánh qua RPC (cho phép anonymous truy cập)
-      const { data: branchesData } = await supabase
-        .rpc('get_tenant_branches', { _tenant_id: tenantInfo.id });
+      const branches: BranchInfo[] = (branchesResult.data || []) as BranchInfo[];
+      const settings = settingsResult.data as unknown as TenantLandingSettings | null;
       
-      const branches: BranchInfo[] = (branchesData || []) as BranchInfo[];
-      const settings = data as unknown as TenantLandingSettings | null;
-      
-      // Trả về kết hợp tenant info + settings + branches
       return {
         tenant: tenantInfo,
         settings,
@@ -165,6 +164,8 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
       };
     },
     enabled: !!subdomain || !!tenantIdFromDomain,
+    staleTime: 1000 * 60 * 5, // 5 phút - tránh refetch không cần thiết
+    gcTime: 1000 * 60 * 15, // 15 phút cache
   });
 }
 
