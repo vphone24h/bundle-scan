@@ -123,15 +123,16 @@ export function DebtDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
           <DialogTitle className="flex flex-col gap-1">
             <span>Chi tiết công nợ</span>
           </DialogTitle>
         </DialogHeader>
 
+        <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-4">
         {/* Header Summary */}
-        <Card className="bg-muted/50 relative">
+        <Card className="bg-muted/50 relative shrink-0">
           <Button
             variant="ghost"
             size="icon"
@@ -226,7 +227,7 @@ export function DebtDetailDialog({
         </Card>
 
         {/* Tabs */}
-        <Tabs defaultValue="orders" className="flex-1 flex flex-col min-h-0">
+        <Tabs defaultValue="orders" className="flex flex-col">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -292,7 +293,7 @@ export function DebtDetailDialog({
               </Label>
             </div>
 
-            <ScrollArea className="flex-1 min-h-0 max-h-[40vh]">
+            <div>
               {receiptsLoading || historyLoading ? (
                 <div className="space-y-2">
                   {[...Array(3)].map((_, i) => (
@@ -423,7 +424,7 @@ export function DebtDetailDialog({
                   </div>
                 );
               })()}
-            </ScrollArea>
+            </div>
           </TabsContent>
 
           {/* Payment History Tab */}
@@ -443,7 +444,7 @@ export function DebtDetailDialog({
               </Select>
             </div>
 
-            <ScrollArea className="flex-1 min-h-0 max-h-[40vh]">
+            <div>
               {historyLoading ? (
                 <div className="space-y-2">
                   {[...Array(3)].map((_, i) => (
@@ -512,7 +513,7 @@ export function DebtDetailDialog({
                   })}
                 </div>
               )}
-            </ScrollArea>
+            </div>
 
             {/* Summary */}
             {paymentHistory && paymentHistory.length > 0 && (
@@ -537,6 +538,7 @@ export function DebtDetailDialog({
             )}
           </TabsContent>
         </Tabs>
+        </div>
       </DialogContent>
 
       {entityType === 'customer' && (
