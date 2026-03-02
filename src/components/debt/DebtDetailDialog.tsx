@@ -285,9 +285,10 @@ export function DebtDetailDialog({
                   }));
 
                 const receiptRows = (receipts || []).map((r: any) => {
-                  // Use original_debt_amount if set, otherwise fall back to current debt_amount
-                  // (for old records that were backfilled, original_debt_amount = debt_amount at backfill time)
-                  const originalDebt = r.original_debt_amount != null ? Number(r.original_debt_amount) : (Number(r.debt_amount) || 0);
+                  // Use original_debt_amount if available and > 0, otherwise calculate from total - paid
+                  const storedOriginal = Number(r.original_debt_amount) || 0;
+                  const calculatedOriginal = Math.max((Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0), 0);
+                  const originalDebt = storedOriginal > 0 ? storedOriginal : calculatedOriginal;
                   const currentDebt = Number(r.debt_amount) || 0;
                   const isFullyPaid = currentDebt === 0 && originalDebt > 0;
                   return {
