@@ -1087,6 +1087,7 @@ export default function ExportNewPage() {
                       <TableHead className="hidden sm:table-cell">Danh mục</TableHead>
                       <TableHead className="text-center w-20">SL</TableHead>
                       <TableHead className="text-right">Đơn giá</TableHead>
+                      <TableHead className="w-28">Bảo hành</TableHead>
                       <TableHead className="text-right">Thành tiền</TableHead>
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
@@ -1122,6 +1123,14 @@ export default function ExportNewPage() {
                             value={item.sale_price}
                             onChange={(val) => handleUpdateCartPrice(item.tempId, val)}
                             className="w-28 text-right font-medium"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={item.warranty || ''}
+                            onChange={(e) => setCart(prev => prev.map(c => c.tempId === item.tempId ? { ...c, warranty: e.target.value } : c))}
+                            placeholder="VD: 12 tháng"
+                            className="w-24 h-8 text-xs"
                           />
                         </TableCell>
                         <TableCell className="text-right font-medium text-primary">
