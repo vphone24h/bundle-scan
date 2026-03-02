@@ -58,8 +58,26 @@ export function CashBookDetailDialog({
           if (!error && data) setItems(data);
           setLoading(false);
         });
+    } else if (entry.reference_type === 'import_receipt') {
+      // Import receipt - load products via product_imports joined with products
+      setLoading(true);
+      supabase
+        .from('product_imports')
+        .select('id, import_price, quantity, products(name, imei, sku)')
+        .eq('import_receipt_id', entry.reference_id)
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setItems(data.map(r => ({
+              id: r.id,
+              product_name: (r.products as any)?.name || 'Sản phẩm',
+              imei: (r.products as any)?.imei || null,
+              sale_price: r.import_price,
+              sku: (r.products as any)?.sku || '',
+            })));
+          }
+          setLoading(false);
+        });
     } else if (entry.reference_type === 'export_return_receipt') {
-      // Consolidated export return - load returned items from export_returns
       setLoading(true);
       supabase
         .from('export_returns')
@@ -78,7 +96,6 @@ export function CashBookDetailDialog({
           setLoading(false);
         });
     } else if (entry.reference_type === 'import_return') {
-      // Import return - load returned products
       setLoading(true);
       supabase
         .from('import_returns')
@@ -97,7 +114,6 @@ export function CashBookDetailDialog({
           setLoading(false);
         });
     } else if (entry.reference_type === 'export_return') {
-      // Single export return - load the return record
       setLoading(true);
       supabase
         .from('export_returns')
@@ -122,7 +138,8 @@ export function CashBookDetailDialog({
 
   if (!entry) return null;
 
-  const hasProducts = ['export_receipt', 'export_return_receipt', 'export_return', 'import_return'].includes(entry.reference_type || '') && items.length > 0;
+  const supportedRefTypes = ['export_receipt', 'import_receipt', 'export_return_receipt', 'export_return', 'import_return'];
+  const hasProducts = supportedRefTypes.includes(entry.reference_type || '') && items.length > 0;
   const productSectionTitle = (entry.reference_type === 'export_return_receipt' || entry.reference_type === 'export_return')
     ? 'Sản phẩm trả hàng'
     : entry.reference_type === 'import_return'
@@ -226,7 +243,7 @@ export function CashBookDetailDialog({
           )}
 
           {/* Products List */}
-          {['export_receipt', 'export_return_receipt', 'export_return', 'import_return'].includes(entry.reference_type || '') && (
+          {supportedRefTypes.includes(entry.reference_type || '') && (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Package className="h-4 w-4 text-primary" />
