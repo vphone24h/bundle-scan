@@ -21,6 +21,8 @@ export interface SaleDetailItem {
 
 export interface ReturnDetailItem {
   date: string;
+  productName: string;
+  imei: string | null;
   salePrice: number;
   importPrice: number;
   profit: number;
@@ -143,15 +145,20 @@ function ReturnsTable({ items }: { items: ReturnDetailItem[] }) {
       <div className="space-y-2 md:hidden">
         {items.map((item, idx) => (
           <div key={idx} className="border rounded-lg p-3 space-y-1">
-            <div className="flex justify-between">
-              <span className="text-xs text-muted-foreground">{formatDate(item.date)}</span>
-              <span className="text-sm font-medium">{formatCurrency(item.salePrice)}</span>
+            <div className="flex justify-between items-start">
+              <div className="flex-1 min-w-0 mr-2">
+                <div className="font-medium text-sm truncate">{item.productName}</div>
+                {item.imei && <div className="text-xs text-muted-foreground font-mono">{item.imei}</div>}
+              </div>
+              <div className="text-right shrink-0">
+                <div className="text-sm font-medium">{formatCurrency(item.salePrice)}</div>
+                <div className="text-xs text-destructive font-medium">Lãi mất: -{formatCurrency(item.profit)}</div>
+              </div>
             </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Nhập: {formatCurrency(item.importPrice)}</span>
-              <span className="text-destructive font-medium">Lãi mất: -{formatCurrency(item.profit)}</span>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{formatDate(item.date)}</span>
+              <span>Nhập: {formatCurrency(item.importPrice)}</span>
             </div>
-            <div className="text-xs text-muted-foreground">{item.branchName}</div>
           </div>
         ))}
       </div>
@@ -160,20 +167,23 @@ function ReturnsTable({ items }: { items: ReturnDetailItem[] }) {
           <TableHeader>
             <TableRow>
               <TableHead>Ngày</TableHead>
+              <TableHead>Sản phẩm</TableHead>
               <TableHead className="text-right">Giá bán</TableHead>
               <TableHead className="text-right">Giá nhập</TableHead>
               <TableHead className="text-right">Lãi mất</TableHead>
-              <TableHead>Chi nhánh</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.map((item, idx) => (
               <TableRow key={idx}>
                 <TableCell className="text-xs whitespace-nowrap">{formatDate(item.date)}</TableCell>
+                <TableCell>
+                  <div className="font-medium text-sm">{item.productName}</div>
+                  {item.imei && <div className="text-xs text-muted-foreground font-mono">{item.imei}</div>}
+                </TableCell>
                 <TableCell className="text-right">{formatCurrency(item.salePrice)}</TableCell>
                 <TableCell className="text-right text-muted-foreground">{formatCurrency(item.importPrice)}</TableCell>
                 <TableCell className="text-right text-destructive font-medium">-{formatCurrency(item.profit)}</TableCell>
-                <TableCell className="text-sm">{item.branchName}</TableCell>
               </TableRow>
             ))}
           </TableBody>
