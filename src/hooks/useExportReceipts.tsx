@@ -5,6 +5,22 @@ import { useBranchFilter } from './useBranchFilter';
 import { sendBusinessPush, formatVND } from '@/lib/pushNotify';
 import { sendActivityAlert } from '@/lib/activityAlert';
 
+// Fetch all rows bypassing Supabase 1000-row default limit
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchAllRows<T>(queryBuilder: () => any, pageSize = 1000): Promise<T[]> {
+  const allData: T[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await queryBuilder().range(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    allData.push(...(data as T[]));
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return allData;
+}
+
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
   const { data } = await supabase.rpc('get_user_tenant_id_secure');
@@ -96,26 +112,25 @@ export function useExportReceipts() {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as ExportReceipt[];
 
-      let query = supabase
-        .from('export_receipts')
-        .select(`
-          *,
-          customers(name, phone, address),
-          branches(name),
-          export_receipt_items(*),
-          export_receipt_payments(*)
-        `)
-        .order('export_date', { ascending: false });
+      const buildQuery = () => {
+        let query = supabase
+          .from('export_receipts')
+          .select(`
+            *,
+            customers(name, phone, address),
+            branches(name),
+            export_receipt_items(*),
+            export_receipt_payments(*)
+          `)
+          .order('export_date', { ascending: false });
 
-      // Apply branch filter for non-Super Admin users
-      if (shouldFilter && branchId) {
-        query = query.eq('branch_id', branchId);
-      }
+        if (shouldFilter && branchId) {
+          query = query.eq('branch_id', branchId);
+        }
+        return query;
+      };
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as ExportReceipt[];
+      return await fetchAllRows<ExportReceipt>(buildQuery);
     },
     enabled: !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,
@@ -145,38 +160,41 @@ export function useExportReceiptItems() {
         receiptIds = receipts?.map(r => r.id) || [];
       }
 
-      let query = supabase
-        .from('export_receipt_items')
-        .select(`
-          *,
-          categories(name),
-          products(import_price),
-          export_receipts(
-            code,
-            export_date,
-            branch_id,
-            customer_id,
-            created_by,
-            status,
-            customers(name, phone),
-            branches(name),
-            export_receipt_payments(payment_type, amount)
-          )
-        `)
-        .order('created_at', { ascending: false });
+      const buildQuery = () => {
+        let query = supabase
+          .from('export_receipt_items')
+          .select(`
+            *,
+            categories(name),
+            products(import_price),
+            export_receipts(
+              code,
+              export_date,
+              branch_id,
+              customer_id,
+              created_by,
+              status,
+              customers(name, phone),
+              branches(name),
+              export_receipt_payments(payment_type, amount)
+            )
+          `)
+          .order('created_at', { ascending: false });
 
-      // Apply branch filter via receipt_id
-      if (receiptIds !== null) {
-        if (receiptIds.length === 0) {
-          return [] as ExportReceiptItemDetail[];
+        if (receiptIds !== null) {
+          if (receiptIds.length === 0) {
+            return query.eq('id', '00000000-0000-0000-0000-000000000000'); // return empty
+          }
+          query = query.in('receipt_id', receiptIds);
         }
-        query = query.in('receipt_id', receiptIds);
+        return query;
+      };
+
+      if (receiptIds !== null && receiptIds.length === 0) {
+        return [] as ExportReceiptItemDetail[];
       }
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as ExportReceiptItemDetail[];
+      return await fetchAllRows<ExportReceiptItemDetail>(buildQuery);
     },
     enabled: !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,

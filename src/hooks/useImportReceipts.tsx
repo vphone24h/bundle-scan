@@ -6,8 +6,25 @@ import { useBranchFilter } from './useBranchFilter';
 import { sendBusinessPush, formatVND } from '@/lib/pushNotify';
 import { sendActivityAlert } from '@/lib/activityAlert';
 
+// Fetch all rows bypassing Supabase 1000-row default limit
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchAllRows<T>(queryBuilder: () => any, pageSize = 1000): Promise<T[]> {
+  const allData: T[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await queryBuilder().range(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    allData.push(...(data as T[]));
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return allData;
+}
+
 type ReceiptStatus = Database['public']['Enums']['receipt_status'];
 type PaymentType = Database['public']['Enums']['payment_type'];
+
 
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
@@ -55,24 +72,23 @@ export function useImportReceipts() {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as ImportReceipt[];
 
-      let query = supabase
-        .from('import_receipts')
-        .select(`
-          *,
-          suppliers(name),
-          branches(name)
-        `)
-        .order('import_date', { ascending: false });
+      const buildQuery = () => {
+        let query = supabase
+          .from('import_receipts')
+          .select(`
+            *,
+            suppliers(name),
+            branches(name)
+          `)
+          .order('import_date', { ascending: false });
 
-      // Apply branch filter for non-Super Admin users
-      if (shouldFilter && branchId) {
-        query = query.eq('branch_id', branchId);
-      }
+        if (shouldFilter && branchId) {
+          query = query.eq('branch_id', branchId);
+        }
+        return query;
+      };
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as ImportReceipt[];
+      return await fetchAllRows<ImportReceipt>(buildQuery);
     },
     enabled: !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,
