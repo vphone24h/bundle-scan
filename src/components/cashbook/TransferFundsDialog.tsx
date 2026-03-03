@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IntraBranchTransferTab } from './IntraBranchTransferTab';
 import { InterBranchTransferTab } from './InterBranchTransferTab';
+import { useTranslation } from 'react-i18next';
 
 interface TransferFundsDialogProps {
   open: boolean;
@@ -23,22 +24,23 @@ export function TransferFundsDialog({
   viewMode,
   selectedBranchId,
 }: TransferFundsDialogProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('intra');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Chuyển tiền</DialogTitle>
+          <DialogTitle>{t('common.transferFunds')}</DialogTitle>
           <DialogDescription>
-            Chuyển dòng tiền trong chi nhánh hoặc giữa các chi nhánh
+            {t('common.transferDesc')}
           </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="intra">Trong chi nhánh</TabsTrigger>
-            <TabsTrigger value="inter">Ngoài chi nhánh</TabsTrigger>
+            <TabsTrigger value="intra">{t('common.intraBranch')}</TabsTrigger>
+            <TabsTrigger value="inter">{t('common.interBranch')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="intra" className="flex-1 overflow-hidden flex flex-col mt-2">

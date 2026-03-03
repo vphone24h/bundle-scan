@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Banknote, CreditCard, Wallet, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
+import { useTranslation } from 'react-i18next';
 
 interface PaymentDialogProps {
   open: boolean;
@@ -26,15 +27,16 @@ interface PaymentDialogProps {
 
 type PaymentType = string;
 
-const builtInPaymentOptions: { type: string; label: string; icon: React.ReactNode }[] = [
-  { type: 'cash', label: 'Tiền mặt', icon: <Banknote className="h-5 w-5" /> },
-  { type: 'bank_card', label: 'Thẻ ngân hàng', icon: <CreditCard className="h-5 w-5" /> },
-  { type: 'e_wallet', label: 'Ví điện tử', icon: <Wallet className="h-5 w-5" /> },
-  { type: 'debt', label: 'Công nợ', icon: <Clock className="h-5 w-5" /> },
-];
-
 export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitting = false }: PaymentDialogProps) {
+  const { t } = useTranslation();
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
+
+  const builtInPaymentOptions = useMemo(() => [
+    { type: 'cash', label: t('common.cash'), icon: <Banknote className="h-5 w-5" /> },
+    { type: 'bank_card', label: t('common.bankCard'), icon: <CreditCard className="h-5 w-5" /> },
+    { type: 'e_wallet', label: t('common.eWallet'), icon: <Wallet className="h-5 w-5" /> },
+    { type: 'debt', label: t('common.debt'), icon: <Clock className="h-5 w-5" /> },
+  ], [t]);
 
   const paymentOptions = useMemo(() => {
     const custom = customPaymentSources.map(s => ({
@@ -43,7 +45,7 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
       icon: <Wallet className="h-5 w-5" />,
     }));
     return [...builtInPaymentOptions, ...custom];
-  }, [customPaymentSources]);
+  }, [customPaymentSources, builtInPaymentOptions]);
 
   const [selectedTypes, setSelectedTypes] = useState<PaymentType[]>(['cash']);
   const [addToCashBook, setAddToCashBook] = useState(true);
@@ -69,7 +71,7 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
 
   const togglePaymentType = (type: PaymentType) => {
     if (selectedTypes.includes(type)) {
-      if (selectedTypes.length === 1) return; // Keep at least one
+      if (selectedTypes.length === 1) return;
       setSelectedTypes(selectedTypes.filter((t) => t !== type));
       setAmounts({ ...amounts, [type]: 0 });
     } else {
@@ -93,12 +95,12 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Thanh toán phiếu nhập</DialogTitle>
+          <DialogTitle>{t('common.importPayment')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           <div className="rounded-lg bg-primary/5 p-4">
-            <p className="text-sm text-muted-foreground">Tổng tiền phiếu nhập</p>
+            <p className="text-sm text-muted-foreground">{t('common.totalImportAmount')}</p>
             <p className="text-2xl font-bold text-primary">{formatCurrency(totalAmount)}</p>
           </div>
 
@@ -110,20 +112,20 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
               onCheckedChange={(checked) => setAddToCashBook(checked === true)}
             />
             <Label htmlFor="add-to-cashbook" className="cursor-pointer text-sm">
-              Ghi dòng tiền vào sổ quỹ
+              {t('common.recordToCashBook')}
             </Label>
           </div>
           {!addToCashBook && (
             <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
-              Giao dịch này sẽ không ảnh hưởng đến sổ quỹ
+              {t('common.noCashBookImpact')}
             </p>
           )}
 
           {addToCashBook && (
             <>
               <div className="space-y-3">
-                <Label>Chọn nguồn thanh toán (có thể chọn nhiều)</Label>
+                <Label>{t('common.selectPaymentSource')}</Label>
                 <div className="grid grid-cols-2 gap-3">
                   {paymentOptions.map((option) => (
                     <button
@@ -144,7 +146,7 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
               </div>
 
               <div className="space-y-3">
-                <Label>Nhập số tiền cho từng nguồn</Label>
+                <Label>{t('common.enterAmountPerSource')}</Label>
                 {selectedTypes.map((type) => {
                   const option = paymentOptions.find((o) => o.type === type)!;
                   return (
@@ -169,11 +171,11 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
 
               <div className="rounded-lg border p-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Tổng đã nhập:</span>
+                  <span className="text-muted-foreground">{t('common.totalEntered')}:</span>
                   <span className="font-medium">{formatCurrency(totalPaid)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Cần thanh toán:</span>
+                  <span className="text-muted-foreground">{t('common.needToPay')}:</span>
                   <span className="font-medium">{formatCurrency(totalAmount)}</span>
                 </div>
                 {!isValid && (
@@ -186,8 +188,8 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
                     <AlertCircle className="h-4 w-4" />
                     <span>
                       {difference > 0
-                        ? `Thừa ${formatCurrency(difference)}`
-                        : `Thiếu ${formatCurrency(Math.abs(difference))}`}
+                        ? `${t('common.surplus')} ${formatCurrency(difference)}`
+                        : `${t('common.shortage')} ${formatCurrency(Math.abs(difference))}`}
                     </span>
                   </div>
                 )}
@@ -198,10 +200,10 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Huỷ
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleConfirm} disabled={addToCashBook && !isValid}>
-            Xác nhận thanh toán
+            {t('common.confirmPayment')}
           </Button>
         </DialogFooter>
       </DialogContent>
