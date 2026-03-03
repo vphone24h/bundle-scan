@@ -27,7 +27,7 @@ import { formatNumber } from '@/lib/formatNumber';
 import { format, addMonths, isAfter, differenceInDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import {
-  Search, MapPin, Phone, Mail, Shield, CheckCircle, XCircle,
+  Search, MapPin, Phone, Mail, Shield, CheckCircle, XCircle, Smartphone,
   Loader2, Building2, Headphones, Calendar, Package,
   Clock, Users, Star, Gift, ChevronDown,
   ShoppingBag, Newspaper, ArrowLeft,
@@ -985,6 +985,17 @@ export default function UniversalStoreTemplate({
                     <p className="text-sm font-semibold text-red-600">Tham gia nhóm hỗ trợ →</p>
                   </div>
                 </a>
+              )}
+
+              {/* Add to Home Screen hint - hidden in standalone/PWA mode */}
+              {typeof window !== 'undefined' && !window.matchMedia('(display-mode: standalone)').matches && !(window.navigator as any).standalone && (
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-50/80 border border-blue-100">
+                  <div className="p-2 rounded-full bg-blue-100 shrink-0 mt-0.5"><Smartphone className="h-4 w-4 text-blue-600" /></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-blue-700">Thêm trang này vào màn hình chính</p>
+                    <p className="text-[11px] text-blue-600/70 mt-0.5 leading-relaxed">Để mỗi lần mở ứng dụng đều thấy thông tin bảo hành và các ưu đãi mới nhất.</p>
+                  </div>
+                </div>
               )}
             </div>
 
