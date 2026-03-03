@@ -1,26 +1,125 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCurrentTenant } from '@/hooks/useTenant';
+import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Settings, Globe, Store, Save } from 'lucide-react';
+import { toast as sonnerToast } from 'sonner';
+import { Globe, Store, Save, Eye, EyeOff } from 'lucide-react';
 import { ImportHistoricalOrdersSection } from '@/components/admin/ImportHistoricalOrdersSection';
+import { DataManagementSection } from '@/components/admin/DataManagementSection';
+import { cn } from '@/lib/utils';
+
+function BusinessModeSection({ tenantId, currentMode }: { tenantId: string; currentMode: string }) {
+  const queryClient = useQueryClient();
+  const [mode, setMode] = useState(currentMode);
+
+  useEffect(() => {
+    setMode(currentMode);
+  }, [currentMode]);
+
+  const updateMode = useMutation({
+    mutationFn: async (newMode: string) => {
+      const { error } = await supabase
+        .from('tenants')
+        .update({ business_mode: newMode } as any)
+        .eq('id', tenantId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'] });
+      sonnerToast.success('Đã cập nhật hình thức quản lý');
+    },
+    onError: () => {
+      setMode(currentMode);
+      sonnerToast.error('Lỗi khi cập nhật');
+    },
+  });
+
+  const handleChange = (newMode: string) => {
+    setMode(newMode);
+    updateMode.mutate(newMode);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          {mode === 'secret' ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          Hình thức quản lý
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-3 max-w-md">
+          <label
+            className={cn(
+              'flex flex-col items-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all text-center',
+              mode === 'public'
+                ? 'border-primary bg-primary/5'
+                : 'border-muted hover:border-primary/40'
+            )}
+          >
+            <input
+              type="radio"
+              name="businessMode"
+              value="public"
+              checked={mode === 'public'}
+              onChange={() => handleChange('public')}
+              className="sr-only"
+            />
+            <span className="text-2xl">🏪</span>
+            <span className="font-medium text-sm">Công khai</span>
+            <span className="text-[11px] text-muted-foreground leading-tight">Đầy đủ: thuế, HĐĐT, báo cáo thuế</span>
+          </label>
+          <label
+            className={cn(
+              'flex flex-col items-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all text-center',
+              mode === 'secret'
+                ? 'border-primary bg-primary/5'
+                : 'border-muted hover:border-primary/40'
+            )}
+          >
+            <input
+              type="radio"
+              name="businessMode"
+              value="secret"
+              checked={mode === 'secret'}
+              onChange={() => handleChange('secret')}
+              className="sr-only"
+            />
+            <span className="text-2xl">🔒</span>
+            <span className="font-medium text-sm">Bí mật</span>
+            <span className="text-[11px] text-muted-foreground leading-tight">Ẩn thuế, HĐĐT, báo cáo thuế</span>
+          </label>
+        </div>
+        <p className="text-xs text-muted-foreground mt-3">
+          Khi chọn "Bí mật", tất cả tài khoản trong cửa hàng sẽ không thấy các chức năng liên quan đến thuế và hoá đơn điện tử.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
   const { data: tenant } = useCurrentTenant();
+  const { data: permissions } = usePermissions();
 
   const [storeName, setStoreName] = useState('');
   const [storePhone, setStorePhone] = useState('');
   const [language, setLanguage] = useState(i18n.language);
   const [saving, setSaving] = useState(false);
+
+  const isSuperAdmin = permissions?.role === 'super_admin';
 
   useEffect(() => {
     if (tenant) {
@@ -107,8 +206,20 @@ export default function SettingsPage() {
           {t('settings.save')}
         </Button>
 
-        {/* Historical order import */}
-        <ImportHistoricalOrdersSection />
+        {/* Business Mode - Super Admin only */}
+        {isSuperAdmin && tenant && (
+          <BusinessModeSection tenantId={tenant.id} currentMode={tenant.business_mode || 'public'} />
+        )}
+
+        {/* Data Management (Backup, Test mode, etc.) - Super Admin only */}
+        {isSuperAdmin && (
+          <DataManagementSection />
+        )}
+
+        {/* Historical order import - Super Admin only */}
+        {isSuperAdmin && (
+          <ImportHistoricalOrdersSection />
+        )}
       </div>
     </MainLayout>
   );
