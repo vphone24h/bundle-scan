@@ -56,6 +56,7 @@ import { useBranches } from '@/hooks/useBranches';
 import { 
   useExportReceipts, 
   useExportReceiptItems, 
+  useExportReceiptDetail,
   useReturnProduct,
   type ExportReceipt,
   type ExportReceiptItemDetail 
@@ -176,6 +177,9 @@ export default function ExportHistoryPage() {
   // Hooks
   const { data: receipts, isLoading: receiptsLoading } = useExportReceipts();
   const { data: items, isLoading: itemsLoading } = useExportReceiptItems();
+  // On-demand detail items for selected receipt (detail/print)
+  const detailReceiptId = selectedReceipt?.id || printReceipt?.receiptId || null;
+  const { data: detailItems } = useExportReceiptDetail(detailReceiptId);
   const { data: branches } = useBranches();
   const { data: categories } = useCategories();
   const returnProduct = useReturnProduct();
@@ -319,11 +323,12 @@ export default function ExportHistoryPage() {
   // Handle print
   const handlePrint = (receipt: ExportReceipt) => {
     setPrintReceipt({
+      receiptId: receipt.id,
       code: receipt.code,
       export_date: receipt.export_date,
       branch_id: receipt.branch_id,
       customer: receipt.customers,
-      items: receipt.export_receipt_items,
+      items: [], // will be filled by detailItems
       payments: receipt.export_receipt_payments,
       total_amount: receipt.total_amount,
       paid_amount: receipt.paid_amount,
@@ -351,6 +356,7 @@ export default function ExportHistoryPage() {
   
   // Handle return receipt - Open dialog for full receipt return
   const handleReturnReceipt = (receipt: ExportReceipt) => {
+    setSelectedReceipt(receipt); // trigger detailItems loading
     setReturnReceipt(receipt);
     setShowReturnDialog(true);
   };
@@ -941,11 +947,11 @@ export default function ExportHistoryPage() {
 
               {/* Items - Mobile Card View */}
               <div>
-                <div className="font-medium mb-2 text-sm">Sản phẩm ({selectedReceipt.export_receipt_items?.length || 0})</div>
+                <div className="font-medium mb-2 text-sm">Sản phẩm ({detailItems?.length || selectedReceipt.export_receipt_items?.length || 0})</div>
                 
                 {/* Mobile Card View */}
                 <div className="sm:hidden space-y-2">
-                  {selectedReceipt.export_receipt_items?.map((item, index) => {
+                  {(detailItems || selectedReceipt.export_receipt_items)?.map((item, index) => {
                     const quantity = (item as any).quantity || 1;
                     const totalPrice = item.sale_price * quantity;
                     return (
@@ -988,7 +994,7 @@ export default function ExportHistoryPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {selectedReceipt.export_receipt_items?.map((item, index) => {
+                      {(detailItems || selectedReceipt.export_receipt_items)?.map((item, index) => {
                         const quantity = (item as any).quantity || 1;
                         const totalPrice = item.sale_price * quantity;
                         return (
@@ -1063,7 +1069,7 @@ export default function ExportHistoryPage() {
       <InvoicePrintDialog
         open={showPrintDialog}
         onOpenChange={setShowPrintDialog}
-        receipt={printReceipt}
+        receipt={printReceipt ? { ...printReceipt, items: detailItems || printReceipt.items } : null}
         template={template}
         branchInfo={printBranch}
       />
@@ -1079,7 +1085,7 @@ export default function ExportHistoryPage() {
       <ReceiptReturnDialog
         open={showReturnDialog}
         onOpenChange={setShowReturnDialog}
-        receipt={returnReceipt}
+        receipt={returnReceipt ? { ...returnReceipt, export_receipt_items: detailItems || returnReceipt.export_receipt_items } : null}
         onSuccess={() => {
           setShowReturnDialog(false);
           setReturnReceipt(null);
