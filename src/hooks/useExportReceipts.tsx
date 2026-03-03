@@ -130,7 +130,7 @@ export function useExportReceipts() {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as ExportReceipt[];
+      return (data || []) as unknown as ExportReceipt[];
     },
     enabled: !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,
