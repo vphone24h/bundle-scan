@@ -184,58 +184,58 @@ export function ImportHistoricalOrdersSection() {
     }
   };
 
-  const handleImport = async () => {
+  const handleImport = () => {
     if (!parsedOrders.length) return;
 
     setImporting(true);
     setProgress(0);
 
-    const totalBatches = Math.ceil(parsedOrders.length / BATCH_SIZE);
-    let totalResult: ImportResult = {
-      totalOrders: 0,
-      completedOrders: 0,
-      createdReceipts: 0,
-      createdItems: 0,
-      customersCreated: 0,
-      skipped: 0,
-    };
+    // Run in background
+    (async () => {
+      const totalBatches = Math.ceil(parsedOrders.length / BATCH_SIZE);
+      let totalResult: ImportResult = {
+        totalOrders: 0, completedOrders: 0, createdReceipts: 0,
+        createdItems: 0, customersCreated: 0, skipped: 0,
+      };
 
-    try {
-      for (let i = 0; i < totalBatches; i++) {
-        const batch = parsedOrders.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
-
-        const { data, error } = await supabase.functions.invoke('import-historical-orders', {
-          body: { orders: batch, sourceId },
-        });
-
-        if (error) throw error;
-
-        if (data) {
-          totalResult.totalOrders += data.totalOrders || 0;
-          totalResult.completedOrders += data.completedOrders || 0;
-          totalResult.createdReceipts += data.createdReceipts || 0;
-          totalResult.createdItems += data.createdItems || 0;
-          totalResult.customersCreated += data.customersCreated || 0;
-          totalResult.skipped += data.skipped || 0;
+      try {
+        for (let i = 0; i < totalBatches; i++) {
+          const batch = parsedOrders.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
+          const { data, error } = await supabase.functions.invoke('import-historical-orders', {
+            body: { orders: batch, sourceId },
+          });
+          if (error) throw error;
+          if (data) {
+            totalResult.totalOrders += data.totalOrders || 0;
+            totalResult.completedOrders += data.completedOrders || 0;
+            totalResult.createdReceipts += data.createdReceipts || 0;
+            totalResult.createdItems += data.createdItems || 0;
+            totalResult.customersCreated += data.customersCreated || 0;
+            totalResult.skipped += data.skipped || 0;
+          }
+          setProgress(Math.round(((i + 1) / totalBatches) * 100));
         }
 
-        setProgress(Math.round(((i + 1) / totalBatches) * 100));
+        setResults(totalResult);
+        toast({
+          title: '✅ Nhập dữ liệu thành công!',
+          description: `Đã tạo ${totalResult.createdReceipts} phiếu bán, ${totalResult.createdItems} sản phẩm cho ${totalResult.customersCreated} khách hàng.`,
+        });
+      } catch (err: any) {
+        toast({
+          title: 'Lỗi nhập dữ liệu',
+          description: err.message || String(err),
+          variant: 'destructive',
+        });
+      } finally {
+        setImporting(false);
       }
+    })();
 
-      setResults(totalResult);
-      toast({
-        title: 'Nhập dữ liệu thành công!',
-        description: `Đã tạo ${totalResult.createdReceipts} phiếu bán, ${totalResult.createdItems} sản phẩm cho ${totalResult.customersCreated} khách hàng.`,
-      });
-    } catch (err: any) {
-      toast({
-        title: 'Lỗi nhập dữ liệu',
-        description: err.message || String(err),
-        variant: 'destructive',
-      });
-    } finally {
-      setImporting(false);
-    }
+    toast({
+      title: 'Đang nhập dữ liệu ngầm...',
+      description: 'Bạn có thể tiếp tục sử dụng ứng dụng. Sẽ có thông báo khi hoàn tất.',
+    });
   };
 
   const completedCount = parsedOrders.filter(
