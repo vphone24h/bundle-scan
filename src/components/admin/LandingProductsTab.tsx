@@ -65,7 +65,7 @@ function flattenCategoriesForSelect(categories: LandingProductCategory[], level 
 }
 // Category tree node component
 function CategoryTreeNode({
-  categories, level, onEdit, onAddChild, onDelete, onUploadImage, onRemoveImage, uploadingCatId, onToggleHidden,
+  categories, level, onEdit, onAddChild, onDelete, onUploadImage, onRemoveImage, uploadingCatId, onToggleHidden, onMoveUp, onMoveDown,
 }: {
   categories: LandingProductCategory[];
   level: number;
@@ -76,14 +76,18 @@ function CategoryTreeNode({
   onRemoveImage: (catId: string) => void;
   uploadingCatId: string | null;
   onToggleHidden: (cat: LandingProductCategory) => void;
+  onMoveUp: (cat: LandingProductCategory, siblings: LandingProductCategory[]) => void;
+  onMoveDown: (cat: LandingProductCategory, siblings: LandingProductCategory[]) => void;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   return (
     <>
-      {categories.map(cat => {
+      {categories.map((cat, idx) => {
         const hasChildren = cat.children && cat.children.length > 0;
         const isExpanded = expanded[cat.id] !== false; // default expanded
+        const isFirst = idx === 0;
+        const isLast = idx === categories.length - 1;
         return (
           <div key={cat.id}>
             <div className={`flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-muted/50 group ${level > 0 ? 'ml-5' : ''}`}>
@@ -111,6 +115,13 @@ function CategoryTreeNode({
                 {hasChildren && <p className="text-[10px] text-muted-foreground">{cat.children!.length} danh mục con</p>}
               </div>
               <div className="flex items-center gap-0.5 shrink-0">
+                {/* Move up/down */}
+                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isFirst} onClick={() => onMoveUp(cat, categories)} title="Di chuyển lên">
+                  <ArrowUp className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isLast} onClick={() => onMoveDown(cat, categories)} title="Di chuyển xuống">
+                  <ArrowDown className="h-3.5 w-3.5" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -149,6 +160,8 @@ function CategoryTreeNode({
                 onRemoveImage={onRemoveImage}
                 uploadingCatId={uploadingCatId}
                 onToggleHidden={onToggleHidden}
+                onMoveUp={onMoveUp}
+                onMoveDown={onMoveDown}
               />
             )}
           </div>
