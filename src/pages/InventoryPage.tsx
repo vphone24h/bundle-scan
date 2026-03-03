@@ -20,14 +20,17 @@ import { exportToExcel } from '@/lib/exportExcel';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 
-const INVENTORY_TOUR_STEPS: TourStep[] = [
-  { title: 'Tồn kho 📦', description: 'Đây là trang quản lý **tồn kho** — nơi bạn theo dõi toàn bộ hàng hóa đang có trong cửa hàng theo thời gian thực.', isInfo: true },
-  { title: '📊 Bảng tồn kho', description: 'Sau khi **nhập hàng**, danh sách sản phẩm sẽ hiện ở đây với đầy đủ thông tin: **tên**, **SKU**, **chi nhánh**, **số lượng tồn**. Nếu chưa có sản phẩm, hãy vào **Nhập hàng** để thêm trước nhé!', isInfo: true },
-  { title: '👆 Vuốt sang phải để xem thêm', description: 'Trên điện thoại, bảng có nhiều cột bị ẩn. Dùng ngón tay **vuốt sang phải** trên bảng để xem thêm thông tin như **giá nhập**, **tổng nhập**, **đã bán**.', isInfo: true },
-  { title: '🔍 Xem chi tiết sản phẩm', description: 'Mỗi dòng có nút **"IMEI"** hoặc **"Chi tiết"** để mở popup xem toàn bộ thông tin: **danh sách IMEI**, **giá nhập**, **giá bán**, **trạng thái** từng máy.', isInfo: true },
-  { title: '🔎 Bộ lọc & Tìm kiếm', description: 'Dùng thanh **tìm kiếm** để tìm nhanh theo tên, SKU hoặc IMEI. Bộ lọc giúp xem theo **danh mục**, **chi nhánh**, **loại sản phẩm** hay **trạng thái tồn kho**.', isInfo: true },
-  { title: '✅ Hàng bảo hành & Kiểm kho', description: 'Tab **"Hàng bảo hành"** theo dõi hàng lỗi cần xử lý. Tab **"Kiểm kho"** giúp đối soát số lượng thực tế với hệ thống định kỳ. Vậy là xong! 🎊', isInfo: true },
-];
+function useInventoryTourSteps(): TourStep[] {
+  const { t } = useTranslation();
+  return [
+    { title: t('tours.inventory.tourTitle1'), description: t('tours.inventory.tourDesc1'), isInfo: true },
+    { title: t('tours.inventory.tourTitle2'), description: t('tours.inventory.tourDesc2'), isInfo: true },
+    { title: t('tours.inventory.tourTitle3'), description: t('tours.inventory.tourDesc3'), isInfo: true },
+    { title: t('tours.inventory.tourTitle4'), description: t('tours.inventory.tourDesc4'), isInfo: true },
+    { title: t('tours.inventory.tourTitle5'), description: t('tours.inventory.tourDesc5'), isInfo: true },
+    { title: t('tours.inventory.tourTitle6'), description: t('tours.inventory.tourDesc6'), isInfo: true },
+  ];
+}
 
 export default function InventoryPage() {
   const { t } = useTranslation();
@@ -217,7 +220,7 @@ export default function InventoryPage() {
           <TabsContent value="stock-count"><StockCountTab /></TabsContent>
         </Tabs>
       </div>
-      <OnboardingTourOverlay steps={INVENTORY_TOUR_STEPS} isActive={manualTourActive || (!tourCompleted && !tourDismissed)} onComplete={() => { completeTour(); setManualTourActive(false); }} onSkip={() => { completeTour(); setTourDismissed(true); setManualTourActive(false); }} tourKey="inventory" />
+      <OnboardingTourOverlay steps={useInventoryTourSteps()} isActive={manualTourActive || (!tourCompleted && !tourDismissed)} onComplete={() => { completeTour(); setManualTourActive(false); }} onSkip={() => { completeTour(); setTourDismissed(true); setManualTourActive(false); }} tourKey="inventory" />
     </MainLayout>
   );
 }

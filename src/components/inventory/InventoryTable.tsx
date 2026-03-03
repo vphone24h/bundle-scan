@@ -1,12 +1,8 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Smartphone, FileText, Package } from 'lucide-react';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +19,7 @@ interface InventoryTableProps {
 }
 
 export function InventoryTable({ data, isLoading }: InventoryTableProps) {
+  const { t } = useTranslation();
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
@@ -31,11 +28,8 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
 
   const handleViewDetail = (item: InventoryItem) => {
     setSelectedItem(item);
-    if (item.hasImei) {
-      setShowIMEIDialog(true);
-    } else {
-      setShowNonIMEIDialog(true);
-    }
+    if (item.hasImei) setShowIMEIDialog(true);
+    else setShowNonIMEIDialog(true);
   };
 
   const getStockBadgeClass = (stock: number) => {
@@ -57,10 +51,8 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <Package className="h-16 w-16 text-muted-foreground/50 mb-4" />
-        <h3 className="text-lg font-medium">Không có dữ liệu tồn kho</h3>
-        <p className="text-muted-foreground">
-          Chưa có sản phẩm nào hoặc không có kết quả phù hợp với bộ lọc
-        </p>
+        <h3 className="text-lg font-medium">{t('tours.inventory.noInventoryData')}</h3>
+        <p className="text-muted-foreground">{t('tours.inventory.noInventoryDataDesc')}</p>
       </div>
     );
   }
@@ -72,14 +64,14 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[50px] whitespace-nowrap">#</TableHead>
-              <TableHead className="min-w-[200px]">Sản phẩm</TableHead>
-              <TableHead className="whitespace-nowrap hidden md:table-cell">Chi nhánh</TableHead>
-              <TableHead className="text-center whitespace-nowrap hidden sm:table-cell">Loại</TableHead>
-              <TableHead className="text-center whitespace-nowrap hidden lg:table-cell">Tổng nhập</TableHead>
-              <TableHead className="text-center whitespace-nowrap hidden lg:table-cell">Đã bán</TableHead>
-              <TableHead className="text-center whitespace-nowrap">Tồn kho</TableHead>
-              {canViewImportPrice && <TableHead className="text-right whitespace-nowrap hidden md:table-cell">Giá nhập TB</TableHead>}
-              <TableHead className="text-right whitespace-nowrap">Thao tác</TableHead>
+              <TableHead className="min-w-[200px]">{t('tours.inventory.productCol')}</TableHead>
+              <TableHead className="whitespace-nowrap hidden md:table-cell">{t('tours.inventory.branchCol')}</TableHead>
+              <TableHead className="text-center whitespace-nowrap hidden sm:table-cell">{t('tours.inventory.typeCol')}</TableHead>
+              <TableHead className="text-center whitespace-nowrap hidden lg:table-cell">{t('tours.inventory.totalImportedCol')}</TableHead>
+              <TableHead className="text-center whitespace-nowrap hidden lg:table-cell">{t('tours.inventory.soldCol')}</TableHead>
+              <TableHead className="text-center whitespace-nowrap">{t('tours.inventory.stockCol')}</TableHead>
+              {canViewImportPrice && <TableHead className="text-right whitespace-nowrap hidden md:table-cell">{t('tours.inventory.avgImportPriceCol')}</TableHead>}
+              <TableHead className="text-right whitespace-nowrap">{t('tours.inventory.actionsCol')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -89,69 +81,32 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
                 <TableCell>
                   <div className="flex flex-col gap-1">
                     <span className="font-medium line-clamp-2">{item.productName}</span>
-                    <span className="text-xs text-muted-foreground">
-                      SKU: {item.sku}
-                    </span>
-                    {item.categoryName && (
-                      <Badge variant="outline" className="w-fit text-xs">
-                        {item.categoryName}
-                      </Badge>
-                    )}
-                    {/* Mobile only: Show branch */}
-                    <span className="text-xs text-muted-foreground md:hidden">
-                      {item.branchName || '-'}
-                    </span>
+                    <span className="text-xs text-muted-foreground">SKU: {item.sku}</span>
+                    {item.categoryName && <Badge variant="outline" className="w-fit text-xs">{item.categoryName}</Badge>}
+                    <span className="text-xs text-muted-foreground md:hidden">{item.branchName || '-'}</span>
                   </div>
                 </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {item.branchName || (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </TableCell>
+                <TableCell className="hidden md:table-cell">{item.branchName || <span className="text-muted-foreground">-</span>}</TableCell>
                 <TableCell className="text-center hidden sm:table-cell">
                   {item.hasImei ? (
-                    <Badge variant="secondary" className="gap-1">
-                      <Smartphone className="h-3 w-3" />
-                      IMEI
-                    </Badge>
+                    <Badge variant="secondary" className="gap-1"><Smartphone className="h-3 w-3" />IMEI</Badge>
                   ) : (
-                    <Badge variant="outline">Thường</Badge>
+                    <Badge variant="outline">{t('tours.inventory.normalType')}</Badge>
                   )}
                 </TableCell>
-                <TableCell className="text-center hidden lg:table-cell">
-                  <Badge variant="outline">{item.totalImported}</Badge>
-                </TableCell>
-                <TableCell className="text-center hidden lg:table-cell">
-                  <Badge variant="secondary">{item.totalSold}</Badge>
-                </TableCell>
-                <TableCell className="text-center">
-                  <Badge className={cn('min-w-[40px]', getStockBadgeClass(item.stock))}>
-                    {item.stock}
-                  </Badge>
-                </TableCell>
-                {canViewImportPrice && (
-                  <TableCell className="text-right hidden md:table-cell font-medium">
-                    {formatCurrencyWithSpaces(item.avgImportPrice)}
-                  </TableCell>
-                )}
+                <TableCell className="text-center hidden lg:table-cell"><Badge variant="outline">{item.totalImported}</Badge></TableCell>
+                <TableCell className="text-center hidden lg:table-cell"><Badge variant="secondary">{item.totalSold}</Badge></TableCell>
+                <TableCell className="text-center"><Badge className={cn('min-w-[40px]', getStockBadgeClass(item.stock))}>{item.stock}</Badge></TableCell>
+                {canViewImportPrice && <TableCell className="text-right hidden md:table-cell font-medium">{formatCurrencyWithSpaces(item.avgImportPrice)}</TableCell>}
                 <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewDetail(item)}
+                  <Button variant="outline" size="sm" onClick={() => handleViewDetail(item)}
                     className="flex-col gap-0.5 h-auto py-1.5 px-2 sm:flex-row sm:gap-2 sm:py-2 sm:px-3 text-xs"
                     {...(index === 0 ? { 'data-tour': 'inventory-detail-btn' } : {})}
                   >
                     {item.hasImei ? (
-                      <>
-                        <Smartphone className="h-4 w-4" />
-                        <span className="text-[10px] sm:text-xs leading-none">IMEI</span>
-                      </>
+                      <><Smartphone className="h-4 w-4" /><span className="text-[10px] sm:text-xs leading-none">IMEI</span></>
                     ) : (
-                      <>
-                        <FileText className="h-4 w-4" />
-                        <span className="text-[10px] sm:text-xs leading-none">Chi tiết</span>
-                      </>
+                      <><FileText className="h-4 w-4" /><span className="text-[10px] sm:text-xs leading-none">{t('tours.inventory.detailBtn')}</span></>
                     )}
                   </Button>
                 </TableCell>
@@ -161,30 +116,8 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
         </Table>
       </div>
 
-      {/* IMEI Detail Dialog */}
-      {selectedItem && (
-        <IMEIDetailDialog
-          open={showIMEIDialog}
-          onOpenChange={setShowIMEIDialog}
-          productName={selectedItem.productName}
-          sku={selectedItem.sku}
-          products={selectedItem.products}
-        />
-      )}
-
-      {/* Non-IMEI Detail Dialog */}
-      {selectedItem && (
-        <NonIMEIDetailDialog
-          open={showNonIMEIDialog}
-          onOpenChange={setShowNonIMEIDialog}
-          productId={selectedItem.productId}
-          productName={selectedItem.productName}
-          sku={selectedItem.sku}
-          totalStock={selectedItem.stock}
-          avgImportPrice={selectedItem.avgImportPrice}
-          branchId={selectedItem.branchId}
-        />
-      )}
+      {selectedItem && <IMEIDetailDialog open={showIMEIDialog} onOpenChange={setShowIMEIDialog} productName={selectedItem.productName} sku={selectedItem.sku} products={selectedItem.products} />}
+      {selectedItem && <NonIMEIDetailDialog open={showNonIMEIDialog} onOpenChange={setShowNonIMEIDialog} productId={selectedItem.productId} productName={selectedItem.productName} sku={selectedItem.sku} totalStock={selectedItem.stock} avgImportPrice={selectedItem.avgImportPrice} branchId={selectedItem.branchId} />}
     </>
   );
 }
