@@ -446,6 +446,37 @@ export function LandingProductsTab() {
     }
   };
 
+  const handleMoveCat = async (cat: LandingProductCategory, siblings: LandingProductCategory[], direction: 'up' | 'down') => {
+    const idx = siblings.findIndex(c => c.id === cat.id);
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= siblings.length) return;
+    const updates = [
+      { id: siblings[idx].id, display_order: siblings[swapIdx].display_order },
+      { id: siblings[swapIdx].id, display_order: siblings[idx].display_order },
+    ];
+    // If both have same display_order, use index-based
+    if (updates[0].display_order === updates[1].display_order) {
+      updates[0].display_order = swapIdx;
+      updates[1].display_order = idx;
+    }
+    await reorderCats.mutateAsync(updates);
+  };
+
+  const handleMoveProduct = async (idx: number, direction: 'up' | 'down') => {
+    if (!products) return;
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= products.length) return;
+    const updates = [
+      { id: products[idx].id, display_order: products[swapIdx].display_order },
+      { id: products[swapIdx].id, display_order: products[idx].display_order },
+    ];
+    if (updates[0].display_order === updates[1].display_order) {
+      updates[0].display_order = swapIdx;
+      updates[1].display_order = idx;
+    }
+    await reorderProds.mutateAsync(updates);
+  };
+
   if (catLoading || prodLoading) {
     return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
