@@ -56,6 +56,7 @@ import { useBranches } from '@/hooks/useBranches';
 import { 
   useExportReceipts, 
   useExportReceiptItems, 
+  useExportReceiptDetail,
   useReturnProduct,
   type ExportReceipt,
   type ExportReceiptItemDetail 
