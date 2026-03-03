@@ -356,6 +356,7 @@ export default function ExportHistoryPage() {
   
   // Handle return receipt - Open dialog for full receipt return
   const handleReturnReceipt = (receipt: ExportReceipt) => {
+    setSelectedReceipt(receipt); // trigger detailItems loading
     setReturnReceipt(receipt);
     setShowReturnDialog(true);
   };
