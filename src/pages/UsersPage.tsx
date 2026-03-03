@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -15,19 +15,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Shield, Edit2, UserPlus, Info, ChevronDown, ChevronUp, Star, ExternalLink, Eye, EyeOff } from 'lucide-react';
+import { Shield, Edit2, UserPlus, Info, ChevronDown, ChevronUp, Star, ExternalLink } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions, UserRole } from '@/hooks/usePermissions';
 import { EditUserDialog } from '@/components/users/EditUserDialog';
 import { CreateUserDialog } from '@/components/users/CreateUserDialog';
-import { DataManagementSection } from '@/components/admin/DataManagementSection';
 import { StaffReviewsTab } from '@/components/users/StaffReviewsTab';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useUsersGuideUrl } from '@/hooks/useAppConfig';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
 interface UserWithRole {
@@ -123,96 +120,6 @@ const roleDescriptions: Record<UserRole, { title: string; permissions: string[] 
   },
 };
 
-function BusinessModeSection({ tenantId, currentMode }: { tenantId: string; currentMode: string }) {
-  const queryClient = useQueryClient();
-  const [mode, setMode] = useState(currentMode);
-
-  useEffect(() => {
-    setMode(currentMode);
-  }, [currentMode]);
-
-  const updateMode = useMutation({
-    mutationFn: async (newMode: string) => {
-      const { error } = await supabase
-        .from('tenants')
-        .update({ business_mode: newMode } as any)
-        .eq('id', tenantId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['current-tenant-combined'] });
-      toast.success('Đã cập nhật hình thức quản lý');
-    },
-    onError: () => {
-      setMode(currentMode);
-      toast.error('Lỗi khi cập nhật');
-    },
-  });
-
-  const handleChange = (newMode: string) => {
-    setMode(newMode);
-    updateMode.mutate(newMode);
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          {mode === 'secret' ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-          Hình thức quản lý
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-3 max-w-md">
-          <label
-            className={cn(
-              'flex flex-col items-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all text-center',
-              mode === 'public'
-                ? 'border-primary bg-primary/5'
-                : 'border-muted hover:border-primary/40'
-            )}
-          >
-            <input
-              type="radio"
-              name="businessMode"
-              value="public"
-              checked={mode === 'public'}
-              onChange={() => handleChange('public')}
-              className="sr-only"
-            />
-            <span className="text-2xl">🏪</span>
-            <span className="font-medium text-sm">Công khai</span>
-            <span className="text-[11px] text-muted-foreground leading-tight">Đầy đủ: thuế, HĐĐT, báo cáo thuế</span>
-          </label>
-          <label
-            className={cn(
-              'flex flex-col items-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all text-center',
-              mode === 'secret'
-                ? 'border-primary bg-primary/5'
-                : 'border-muted hover:border-primary/40'
-            )}
-          >
-            <input
-              type="radio"
-              name="businessMode"
-              value="secret"
-              checked={mode === 'secret'}
-              onChange={() => handleChange('secret')}
-              className="sr-only"
-            />
-            <span className="text-2xl">🔒</span>
-            <span className="font-medium text-sm">Bí mật</span>
-            <span className="text-[11px] text-muted-foreground leading-tight">Ẩn thuế, HĐĐT, báo cáo thuế</span>
-          </label>
-        </div>
-        <p className="text-xs text-muted-foreground mt-3">
-          Khi chọn "Bí mật", tất cả tài khoản trong cửa hàng sẽ không thấy các chức năng liên quan đến thuế và hoá đơn điện tử.
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
 export default function UsersPage() {
   const { t } = useTranslation();
   const { data: permissions } = usePermissions();
@@ -242,7 +149,6 @@ export default function UsersPage() {
           created_at,
           branches(name)
         `)
-        // Support legacy rows where tenant_id was not set yet
         .or(`tenant_id.eq.${currentTenant.id},tenant_id.is.null`)
         .order('created_at', { ascending: false });
 
@@ -250,7 +156,6 @@ export default function UsersPage() {
 
       if (rolesError) throw rolesError;
 
-      // Branch Admin: lọc bỏ Super Admin và chỉ hiển thị user cùng chi nhánh
       let filteredRoles = rolesData || [];
       if (permissions?.role === 'branch_admin') {
         filteredRoles = filteredRoles.filter(r => 
@@ -262,7 +167,6 @@ export default function UsersPage() {
       const userIds = filteredRoles.map(r => r.user_id);
       if (userIds.length === 0) return [];
       
-      // Fetch profiles
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, display_name, phone')
@@ -270,7 +174,6 @@ export default function UsersPage() {
 
       if (profilesError) throw profilesError;
 
-      // Fetch platform_users for email
       const { data: platformUsersData, error: platformUsersError } = await supabase
         .from('platform_users')
         .select('user_id, email')
@@ -296,13 +199,9 @@ export default function UsersPage() {
     setIsEditOpen(true);
   };
 
-  // Staff/Cashier chỉ xem tab Đánh giá, không xem danh sách người dùng
   const isStaffOnly = !permissions?.canManageUsers && !permissions?.canManageBranchStaff;
-
-  // Force reviews tab for staff-only access
   const effectiveTab = isStaffOnly ? 'reviews' : activeTab;
 
-  // Mark reviews as viewed (clear red dot)
   useEffect(() => {
     if (effectiveTab === 'reviews' && user?.id) {
       localStorage.setItem(`reviews_last_viewed_${user.id}`, new Date().toISOString());
@@ -310,13 +209,10 @@ export default function UsersPage() {
   }, [effectiveTab, user?.id]);
 
   const isSuperAdmin = permissions?.role === 'super_admin';
-  const isBranchAdmin = permissions?.role === 'branch_admin';
 
-  // Chỉ Super Admin mới có quyền chỉnh sửa tài khoản
   const canEditUser = (user: UserWithRole) => {
     if (user.user_role === 'super_admin') return false;
     if (isSuperAdmin) return true;
-    // Branch Admin không được chỉnh sửa bất kỳ tài khoản nào
     return false;
   };
 
@@ -524,16 +420,6 @@ export default function UsersPage() {
               )}
             </CardContent>
           </Card>
-
-          {/* Data Management Section - Only for Super Admin */}
-          {isSuperAdmin && (
-            <DataManagementSection />
-          )}
-
-          {/* Business Mode Section - Only for Super Admin */}
-          {isSuperAdmin && currentTenant && (
-            <BusinessModeSection tenantId={currentTenant.id} currentMode={currentTenant.business_mode || 'public'} />
-          )}
         </TabsContent>
 
         <TabsContent value="reviews">
