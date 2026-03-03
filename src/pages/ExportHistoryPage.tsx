@@ -323,11 +323,12 @@ export default function ExportHistoryPage() {
   // Handle print
   const handlePrint = (receipt: ExportReceipt) => {
     setPrintReceipt({
+      receiptId: receipt.id,
       code: receipt.code,
       export_date: receipt.export_date,
       branch_id: receipt.branch_id,
       customer: receipt.customers,
-      items: receipt.export_receipt_items,
+      items: [], // will be filled by detailItems
       payments: receipt.export_receipt_payments,
       total_amount: receipt.total_amount,
       paid_amount: receipt.paid_amount,
