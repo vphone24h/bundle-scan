@@ -5,6 +5,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useBranches } from '@/hooks/useBranches';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Star, Search, Loader2, MessageSquare } from 'lucide-react';
@@ -207,15 +208,11 @@ export function StaffReviewsTab() {
 
             {/* Staff name search - not for staff role */}
             {!isStaff && (
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Tìm tên nhân viên..."
-                  value={searchStaffName}
-                  onChange={e => setSearchStaffName(e.target.value)}
-                  className="pl-9 search-input-highlight"
-                />
-              </div>
+              <SearchInput
+                placeholder="Tìm tên nhân viên..."
+                value={searchStaffName}
+                onChange={setSearchStaffName}
+              />
             )}
           </div>
 

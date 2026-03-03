@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Bot, Image as ImageIcon, Loader2, Search, Phone, MessageCircle, Save } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Button } from '@/components/ui/button';
 
 interface TenantAISetting {
@@ -164,15 +165,11 @@ export function PlatformAISettings() {
 
         <Separator />
 
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Tìm cửa hàng..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+        <SearchInput
+          placeholder="Tìm cửa hàng..."
+          value={search}
+          onChange={setSearch}
+        />
 
         <div className="space-y-2 max-h-[400px] overflow-y-auto">
           {filtered?.map(t => (

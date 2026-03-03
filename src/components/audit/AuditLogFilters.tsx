@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Search, Filter, Calendar, Users, Building2, Wallet, Download, Upload, CreditCard, ClipboardList, Settings, List, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -94,15 +95,11 @@ export function AuditLogFiltersComponent({ filters, onFiltersChange }: AuditLogF
     <Card>
       <CardContent className="pt-4 space-y-4">
         {/* Search bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Tìm theo mã thao tác, IMEI, tên sản phẩm, mã phiếu, nội dung..."
-            value={filters.search}
-            onChange={(e) => updateFilter('search', e.target.value)}
-            className="pl-9 search-input-highlight"
-          />
-        </div>
+        <SearchInput
+          placeholder="Tìm theo mã thao tác, IMEI, tên sản phẩm, mã phiếu, nội dung..."
+          value={filters.search}
+          onChange={(v) => updateFilter('search', v)}
+        />
 
         {/* Quick filters row */}
         <div className="flex flex-wrap gap-2">

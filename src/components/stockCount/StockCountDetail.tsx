@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
@@ -468,15 +469,12 @@ export function StockCountDetail({ stockCountId, onBack }: StockCountDetailProps
 
       {/* Search & Filter */}
       <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[200px] max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Tìm sản phẩm, SKU, IMEI..."
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <SearchInput
+          placeholder="Tìm sản phẩm, SKU, IMEI..."
+          value={search}
+          onChange={handleSearchChange}
+          containerClassName="flex-1 min-w-[200px] max-w-md"
+        />
         <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
           <SelectTrigger className="w-[160px]">
             <Filter className="h-4 w-4 mr-2" />
