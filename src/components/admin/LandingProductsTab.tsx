@@ -549,6 +549,8 @@ export function LandingProductsTab() {
                   await updateCat.mutateAsync({ id: cat.id, is_hidden: !cat.is_hidden } as any);
                   toast({ title: cat.is_hidden ? 'Đã hiện danh mục' : 'Đã ẩn danh mục' });
                 }}
+                onMoveUp={(cat, siblings) => handleMoveCat(cat, siblings, 'up')}
+                onMoveDown={(cat, siblings) => handleMoveCat(cat, siblings, 'down')}
               />
             ) : (
               <p className="text-sm text-muted-foreground py-4 text-center">Chưa có danh mục nào</p>
