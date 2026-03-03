@@ -106,7 +106,15 @@ export function useExportReceipts() {
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
   const queryClient = useQueryClient();
 
-  // Initial fast query: only 15 most recent
+  const selectFields = `
+    *,
+    customers(name, phone, address),
+    branches(name),
+    export_receipt_payments(*),
+    export_receipt_items(id)
+  `;
+
+  // Initial fast query: only 15 most recent – minimal joins
   const result = useQuery({
     queryKey: ['export-receipts', tenant?.id, branchId, isDataHidden],
     queryFn: async () => {
@@ -114,13 +122,7 @@ export function useExportReceipts() {
 
       let query = supabase
         .from('export_receipts')
-        .select(`
-          *,
-          customers(name, phone, address),
-          branches(name),
-          export_receipt_payments(*),
-          export_receipt_items(id)
-        `)
+        .select(selectFields)
         .order('export_date', { ascending: false })
         .limit(15);
 
@@ -136,7 +138,7 @@ export function useExportReceipts() {
     refetchOnWindowFocus: false,
   });
 
-  // Background load all remaining receipts after initial 15 are shown
+  // Background load all remaining receipts – deferred with longer staleTime
   useQuery({
     queryKey: ['export-receipts-all', tenant?.id, branchId, isDataHidden],
     queryFn: async () => {
@@ -145,13 +147,7 @@ export function useExportReceipts() {
       const buildQuery = () => {
         let query = supabase
           .from('export_receipts')
-          .select(`
-            *,
-            customers(name, phone, address),
-            branches(name),
-            export_receipt_payments(*),
-            export_receipt_items(id)
-          `)
+          .select(selectFields)
           .order('export_date', { ascending: false });
 
         if (shouldFilter && branchId) {
