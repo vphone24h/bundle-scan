@@ -104,12 +104,42 @@ export function useExportReceipts() {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+  const queryClient = useQueryClient();
 
-  return useQuery({
-    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
+  // Initial fast query: only 15 most recent
+  const result = useQuery({
     queryKey: ['export-receipts', tenant?.id, branchId, isDataHidden],
     queryFn: async () => {
-      // Chế độ test: trả về dữ liệu rỗng
+      if (isDataHidden) return [] as ExportReceipt[];
+
+      let query = supabase
+        .from('export_receipts')
+        .select(`
+          *,
+          customers(name, phone, address),
+          branches(name),
+          export_receipt_payments(*),
+          export_receipt_items(id)
+        `)
+        .order('export_date', { ascending: false })
+        .limit(15);
+
+      if (shouldFilter && branchId) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as unknown as ExportReceipt[];
+    },
+    enabled: !isTenantLoading && !branchLoading,
+    refetchOnWindowFocus: false,
+  });
+
+  // Background load all remaining receipts after initial 15 are shown
+  useQuery({
+    queryKey: ['export-receipts-all', tenant?.id, branchId, isDataHidden],
+    queryFn: async () => {
       if (isDataHidden) return [] as ExportReceipt[];
 
       const buildQuery = () => {
@@ -130,11 +160,17 @@ export function useExportReceipts() {
         return query;
       };
 
-      return await fetchAllRows<ExportReceipt>(buildQuery);
+      const allData = await fetchAllRows<ExportReceipt>(buildQuery);
+      // Replace the initial 15 with the full dataset
+      queryClient.setQueryData(['export-receipts', tenant?.id, branchId, isDataHidden], allData);
+      return allData;
     },
-    enabled: !isTenantLoading && !branchLoading,
+    enabled: !isTenantLoading && !branchLoading && !!result.data && result.data.length > 0,
     refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 10,
   });
+
+  return result;
 }
 
 // Fetch full items for a single receipt on-demand (detail/print views)
@@ -159,16 +195,62 @@ export function useExportReceiptItems() {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+  const queryClient = useQueryClient();
 
-  return useQuery({
-    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
+  // Initial fast query: only 15 most recent items
+  const result = useQuery({
     queryKey: ['export-receipt-items', tenant?.id, branchId, isDataHidden],
     queryFn: async () => {
-      // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as ExportReceiptItemDetail[];
 
-      // For branch filtering, we need to filter via export_receipts
-      // First get export_receipt_ids for the branch
+      let query = supabase
+        .from('export_receipt_items')
+        .select(`
+          *,
+          categories(name),
+          products(import_price),
+          export_receipts(
+            code,
+            export_date,
+            branch_id,
+            customer_id,
+            created_by,
+            status,
+            customers(name, phone),
+            branches(name),
+            export_receipt_payments(payment_type, amount)
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (shouldFilter && branchId) {
+        // Get receipt IDs for branch (limited for speed)
+        const { data: branchReceipts } = await supabase
+          .from('export_receipts')
+          .select('id')
+          .eq('branch_id', branchId)
+          .order('export_date', { ascending: false })
+          .limit(15);
+        const receiptIds = branchReceipts?.map(r => r.id) || [];
+        if (receiptIds.length === 0) return [] as ExportReceiptItemDetail[];
+        query = query.in('receipt_id', receiptIds);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as ExportReceiptItemDetail[];
+    },
+    enabled: !isTenantLoading && !branchLoading,
+    refetchOnWindowFocus: false,
+  });
+
+  // Background load all items
+  useQuery({
+    queryKey: ['export-receipt-items-all', tenant?.id, branchId, isDataHidden],
+    queryFn: async () => {
+      if (isDataHidden) return [] as ExportReceiptItemDetail[];
+
       let receiptIds: string[] | null = null;
       if (shouldFilter && branchId) {
         const allReceipts = await fetchAllRows<{ id: string }>(() =>
@@ -200,7 +282,7 @@ export function useExportReceiptItems() {
 
         if (receiptIds !== null) {
           if (receiptIds.length === 0) {
-            return query.eq('id', '00000000-0000-0000-0000-000000000000'); // return empty
+            return query.eq('id', '00000000-0000-0000-0000-000000000000');
           }
           query = query.in('receipt_id', receiptIds);
         }
@@ -211,11 +293,16 @@ export function useExportReceiptItems() {
         return [] as ExportReceiptItemDetail[];
       }
 
-      return await fetchAllRows<ExportReceiptItemDetail>(buildQuery);
+      const allData = await fetchAllRows<ExportReceiptItemDetail>(buildQuery);
+      queryClient.setQueryData(['export-receipt-items', tenant?.id, branchId, isDataHidden], allData);
+      return allData;
     },
-    enabled: !isTenantLoading && !branchLoading,
+    enabled: !isTenantLoading && !branchLoading && !!result.data && result.data.length > 0,
     refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 10,
   });
+
+  return result;
 }
 
 export function useCreateExportReceipt() {
