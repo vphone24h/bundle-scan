@@ -119,8 +119,8 @@ export function useExportReceipts() {
             *,
             customers(name, phone, address),
             branches(name),
-            export_receipt_items(*),
-            export_receipt_payments(*)
+            export_receipt_payments(*),
+            export_receipt_items(id)
           `)
           .order('export_date', { ascending: false });
 
