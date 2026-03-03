@@ -74,7 +74,8 @@ export function useLandingProductCategories() {
         .from('landing_product_categories' as any)
         .select('*')
         .eq('tenant_id', tenantId)
-.order('created_at', { ascending: false });
+        .order('display_order', { ascending: true })
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data as unknown as LandingProductCategory[];
     },
@@ -125,6 +126,44 @@ export function useUpdateLandingProductCategory() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['landing-product-categories'] });
+      qc.invalidateQueries({ queryKey: ['public-landing-products'] });
+    },
+  });
+}
+
+export function useReorderLandingProductCategories() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (items: { id: string; display_order: number }[]) => {
+      for (const item of items) {
+        const { error } = await supabase
+          .from('landing_product_categories' as any)
+          .update({ display_order: item.display_order })
+          .eq('id', item.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['landing-product-categories'] });
+      qc.invalidateQueries({ queryKey: ['public-landing-products'] });
+    },
+  });
+}
+
+export function useReorderLandingProducts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (items: { id: string; display_order: number }[]) => {
+      for (const item of items) {
+        const { error } = await supabase
+          .from('landing_products' as any)
+          .update({ display_order: item.display_order })
+          .eq('id', item.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['landing-products'] });
       qc.invalidateQueries({ queryKey: ['public-landing-products'] });
     },
   });
@@ -201,7 +240,7 @@ export function usePublicLandingProducts(tenantId: string | null) {
     queryFn: async () => {
       if (!tenantId) return { categories: [], products: [] };
       const [catRes, prodRes] = await Promise.all([
-        supabase.from('landing_product_categories' as any).select('*').eq('tenant_id', tenantId).eq('is_hidden', false).order('created_at', { ascending: false }),
+        supabase.from('landing_product_categories' as any).select('*').eq('tenant_id', tenantId).eq('is_hidden', false).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
         supabase.from('landing_products' as any).select('*').eq('tenant_id', tenantId).eq('is_active', true).order('display_order'),
       ]);
       return {

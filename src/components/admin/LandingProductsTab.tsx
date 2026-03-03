@@ -4,6 +4,8 @@ import {
   useCreateLandingProductCategory,
   useDeleteLandingProductCategory,
   useUpdateLandingProductCategory,
+  useReorderLandingProductCategories,
+  useReorderLandingProducts,
   useLandingProducts,
   useCreateLandingProduct,
   useUpdateLandingProduct,
@@ -27,7 +29,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { Separator } from '@/components/ui/separator';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
@@ -63,7 +65,7 @@ function flattenCategoriesForSelect(categories: LandingProductCategory[], level 
 }
 // Category tree node component
 function CategoryTreeNode({
-  categories, level, onEdit, onAddChild, onDelete, onUploadImage, onRemoveImage, uploadingCatId, onToggleHidden,
+  categories, level, onEdit, onAddChild, onDelete, onUploadImage, onRemoveImage, uploadingCatId, onToggleHidden, onMoveUp, onMoveDown,
 }: {
   categories: LandingProductCategory[];
   level: number;
@@ -74,14 +76,18 @@ function CategoryTreeNode({
   onRemoveImage: (catId: string) => void;
   uploadingCatId: string | null;
   onToggleHidden: (cat: LandingProductCategory) => void;
+  onMoveUp: (cat: LandingProductCategory, siblings: LandingProductCategory[]) => void;
+  onMoveDown: (cat: LandingProductCategory, siblings: LandingProductCategory[]) => void;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   return (
     <>
-      {categories.map(cat => {
+      {categories.map((cat, idx) => {
         const hasChildren = cat.children && cat.children.length > 0;
         const isExpanded = expanded[cat.id] !== false; // default expanded
+        const isFirst = idx === 0;
+        const isLast = idx === categories.length - 1;
         return (
           <div key={cat.id}>
             <div className={`flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-muted/50 group ${level > 0 ? 'ml-5' : ''}`}>
@@ -109,6 +115,13 @@ function CategoryTreeNode({
                 {hasChildren && <p className="text-[10px] text-muted-foreground">{cat.children!.length} danh mục con</p>}
               </div>
               <div className="flex items-center gap-0.5 shrink-0">
+                {/* Move up/down */}
+                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isFirst} onClick={() => onMoveUp(cat, categories)} title="Di chuyển lên">
+                  <ArrowUp className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isLast} onClick={() => onMoveDown(cat, categories)} title="Di chuyển xuống">
+                  <ArrowDown className="h-3.5 w-3.5" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -147,6 +160,8 @@ function CategoryTreeNode({
                 onRemoveImage={onRemoveImage}
                 uploadingCatId={uploadingCatId}
                 onToggleHidden={onToggleHidden}
+                onMoveUp={onMoveUp}
+                onMoveDown={onMoveDown}
               />
             )}
           </div>
@@ -167,6 +182,9 @@ export function LandingProductsTab() {
   const createProduct = useCreateLandingProduct();
   const updateProduct = useUpdateLandingProduct();
   const deleteProduct = useDeleteLandingProduct();
+
+  const reorderCats = useReorderLandingProductCategories();
+  const reorderProds = useReorderLandingProducts();
 
   const [catName, setCatName] = useState('');
   const [catDialog, setCatDialog] = useState(false);
@@ -428,6 +446,37 @@ export function LandingProductsTab() {
     }
   };
 
+  const handleMoveCat = async (cat: LandingProductCategory, siblings: LandingProductCategory[], direction: 'up' | 'down') => {
+    const idx = siblings.findIndex(c => c.id === cat.id);
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= siblings.length) return;
+    const updates = [
+      { id: siblings[idx].id, display_order: siblings[swapIdx].display_order },
+      { id: siblings[swapIdx].id, display_order: siblings[idx].display_order },
+    ];
+    // If both have same display_order, use index-based
+    if (updates[0].display_order === updates[1].display_order) {
+      updates[0].display_order = swapIdx;
+      updates[1].display_order = idx;
+    }
+    await reorderCats.mutateAsync(updates);
+  };
+
+  const handleMoveProduct = async (idx: number, direction: 'up' | 'down') => {
+    if (!products) return;
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= products.length) return;
+    const updates = [
+      { id: products[idx].id, display_order: products[swapIdx].display_order },
+      { id: products[swapIdx].id, display_order: products[idx].display_order },
+    ];
+    if (updates[0].display_order === updates[1].display_order) {
+      updates[0].display_order = swapIdx;
+      updates[1].display_order = idx;
+    }
+    await reorderProds.mutateAsync(updates);
+  };
+
   if (catLoading || prodLoading) {
     return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
@@ -500,6 +549,8 @@ export function LandingProductsTab() {
                   await updateCat.mutateAsync({ id: cat.id, is_hidden: !cat.is_hidden } as any);
                   toast({ title: cat.is_hidden ? 'Đã hiện danh mục' : 'Đã ẩn danh mục' });
                 }}
+                onMoveUp={(cat, siblings) => handleMoveCat(cat, siblings, 'up')}
+                onMoveDown={(cat, siblings) => handleMoveCat(cat, siblings, 'down')}
               />
             ) : (
               <p className="text-sm text-muted-foreground py-4 text-center">Chưa có danh mục nào</p>
@@ -567,8 +618,17 @@ export function LandingProductsTab() {
         <CardContent>
           {products && products.length > 0 ? (
             <div className="space-y-2">
-              {products.map(p => (
+              {products.map((p, idx) => (
                 <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+                  {/* Move up/down */}
+                  <div className="flex flex-col gap-0.5 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === 0 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'up')}>
+                      <ArrowUp className="h-3 w-3" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === products.length - 1 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'down')}>
+                      <ArrowDown className="h-3 w-3" />
+                    </Button>
+                  </div>
                   {p.image_url ? (
                     <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-lg object-cover border" />
                   ) : (
