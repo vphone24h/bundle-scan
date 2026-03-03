@@ -242,7 +242,7 @@ export default function ExportNewPage() {
         // ⛔ Block export from other branches
         if (!canExportFromBranch(matchedProduct.branch_id)) {
           toast({
-            title: 'Không thể xuất hàng',
+            title: t('pages.exportNew.cannotExport'),
             description: getBlockedExportMessage(matchedProduct.branches?.name),
             variant: 'destructive',
           });
@@ -261,7 +261,7 @@ export default function ExportNewPage() {
           ));
           
           toast({
-            title: 'Đã tăng số lượng',
+            title: t('pages.exportNew.quantityIncreased'),
             description: `${nonImeiProductName} x${existingItem.quantity + 1}`,
           });
         } else {
@@ -285,7 +285,7 @@ export default function ExportNewPage() {
           setCart(prevCart => [...prevCart, newItem]);
           
           toast({
-            title: 'Đã thêm vào giỏ',
+            title: t('pages.exportNew.addedToCart'),
             description: `${nonImeiProductName} - ${encodedPrice.toLocaleString('vi-VN')}đ`,
           });
         }
@@ -300,8 +300,8 @@ export default function ExportNewPage() {
         setProductSuggestions([]);
       } else {
         toast({
-          title: 'Không tìm thấy',
-          description: `Sản phẩm "${nonImeiProductName}" không tồn tại trong kho`,
+          title: t('pages.exportNew.notFound'),
+          description: `"${nonImeiProductName}" ${t('pages.exportNew.productNotInStock')}`,
           variant: 'destructive',
         });
       }
@@ -312,8 +312,8 @@ export default function ExportNewPage() {
     
     if (!result) {
       toast({
-        title: 'Không tìm thấy',
-        description: `Mã "${searchCode}" không tồn tại trong hệ thống`,
+        title: t('pages.exportNew.notFound'),
+        description: t('pages.exportNew.codeNotFound', { code: searchCode }),
         variant: 'destructive',
       });
       return;
@@ -321,8 +321,8 @@ export default function ExportNewPage() {
 
     if (result.status !== 'in_stock') {
       toast({
-        title: 'Không thể bán',
-        description: `Sản phẩm này đang ở trạng thái "${result.status === 'sold' ? 'Đã bán' : 'Đã trả'}" và chưa được nhập lại`,
+        title: t('pages.exportNew.cannotSell'),
+        description: t('pages.exportNew.statusNotAvailable', { status: result.status === 'sold' ? t('common.sold') : t('common.returned') }),
         variant: 'destructive',
       });
       return;
@@ -331,7 +331,7 @@ export default function ExportNewPage() {
     // ⛔ Block export from other branches
     if (!canExportFromBranch(result.branch_id)) {
       toast({
-        title: 'Không thể xuất hàng',
+        title: t('pages.exportNew.cannotExport'),
         description: getBlockedExportMessage(result.branches?.name),
         variant: 'destructive',
       });
@@ -350,8 +350,8 @@ export default function ExportNewPage() {
       pendingProductIdsRef.current.has(productKey)
     ) {
       toast({
-        title: 'Đã có trong giỏ',
-        description: 'Sản phẩm này đã được thêm vào giỏ hàng',
+        title: t('pages.exportNew.alreadyInCart'),
+        description: t('pages.exportNew.alreadyInCartDesc'),
         variant: 'destructive',
       });
       return;
@@ -395,8 +395,8 @@ export default function ExportNewPage() {
       setImeiSearch('');
       
       toast({
-        title: 'Đã thêm vào giỏ',
-        description: `${result.name} - ${encodedPrice.toLocaleString('vi-VN')}đ (BH: ${scanWarranty})`,
+        title: t('pages.exportNew.addedToCart'),
+        description: `${result.name} - ${encodedPrice.toLocaleString('vi-VN')}đ (${t('pages.exportNew.warrantyShort')}: ${scanWarranty})`,
       });
       return;
     }
@@ -436,8 +436,8 @@ export default function ExportNewPage() {
       setImeiSearch('');
       
       toast({
-        title: 'Đã thêm vào giỏ',
-        description: `${result.name} - ${result.sale_price.toLocaleString('vi-VN')}đ (BH: ${scanWarranty})`,
+        title: t('pages.exportNew.addedToCart'),
+        description: `${result.name} - ${result.sale_price.toLocaleString('vi-VN')}đ (${t('pages.exportNew.warrantyShort')}: ${scanWarranty})`,
       });
       return;
     }
@@ -453,8 +453,8 @@ export default function ExportNewPage() {
     setProductSuggestions([]);
     
     toast({
-      title: 'Đã quét thành công',
-      description: `${result.name} - Vui lòng nhập giá bán và nhấn "Thêm vào giỏ"`,
+      title: t('pages.exportNew.scannedSuccess'),
+      description: `${result.name} - ${t('pages.exportNew.enterSalePriceHint')}`,
     });
   };
 
@@ -466,22 +466,22 @@ export default function ExportNewPage() {
     
     const result = await checkProduct.mutateAsync(code);
     if (!result) {
-      toast({ title: 'Không tìm thấy', description: `IMEI "${code}" không tồn tại`, variant: 'destructive' });
+      toast({ title: t('pages.exportNew.notFound'), description: t('pages.exportNew.codeNotFound', { code }), variant: 'destructive' });
       return;
     }
     if (result.status !== 'in_stock') {
-      toast({ title: 'Không thể bán', description: `Sản phẩm đang ở trạng thái "${result.status === 'sold' ? 'Đã bán' : result.status}"`, variant: 'destructive' });
+      toast({ title: t('pages.exportNew.cannotSell'), description: t('pages.exportNew.statusNotAvailable', { status: result.status === 'sold' ? t('common.sold') : result.status }), variant: 'destructive' });
       return;
     }
     if (!canExportFromBranch(result.branch_id)) {
-      toast({ title: 'Không thể xuất hàng', description: getBlockedExportMessage(result.branches?.name), variant: 'destructive' });
+      toast({ title: t('pages.exportNew.cannotExport'), description: getBlockedExportMessage(result.branches?.name), variant: 'destructive' });
       return;
     }
     const alreadyInCart = result.imei
       ? cart.some(item => item.imei && item.imei === result.imei)
       : cart.some(item => item.product_id === result.id);
     if (alreadyInCart) {
-      toast({ title: 'Đã có trong giỏ', description: 'Sản phẩm này đã được thêm vào giỏ hàng', variant: 'destructive' });
+      toast({ title: t('pages.exportNew.alreadyInCart'), description: t('pages.exportNew.alreadyInCartDesc'), variant: 'destructive' });
       return;
     }
     
@@ -495,8 +495,8 @@ export default function ExportNewPage() {
     setProductSuggestions([]);
     
     toast({
-      title: 'Đã tìm thấy',
-      description: `${result.name} - Vui lòng nhập bảo hành và nhấn "Thêm vào giỏ"`,
+      title: t('pages.exportNew.foundProduct'),
+      description: `${result.name} - ${t('pages.exportNew.enterWarrantyHint')}`,
     });
   };
 
@@ -518,7 +518,7 @@ export default function ExportNewPage() {
     // ⛔ Block selecting products from other branches
     if (!canExportFromBranch(product.branch_id)) {
       toast({
-        title: 'Không thể xuất hàng',
+        title: t('pages.exportNew.cannotExport'),
         description: getBlockedExportMessage(product.branches?.name),
         variant: 'destructive',
       });
@@ -537,8 +537,8 @@ export default function ExportNewPage() {
   const handleAddToCart = () => {
     if (!selectedProduct) {
       toast({
-        title: 'Lỗi',
-        description: 'Vui lòng chọn sản phẩm',
+        title: t('pages.exportNew.error'),
+        description: t('pages.exportNew.errorSelectProduct'),
         variant: 'destructive',
       });
       return;
@@ -546,8 +546,8 @@ export default function ExportNewPage() {
 
     if (salePrice === '' || salePrice === null || salePrice === undefined || parseFloat(salePrice) < 0) {
       toast({
-        title: 'Lỗi',
-        description: 'Vui lòng nhập giá bán hợp lệ',
+        title: t('pages.exportNew.error'),
+        description: t('pages.exportNew.errorValidPrice'),
         variant: 'destructive',
       });
       return;
@@ -555,8 +555,8 @@ export default function ExportNewPage() {
 
     if (!itemWarranty.trim()) {
       toast({
-        title: 'Lỗi',
-        description: 'Vui lòng nhập thời gian bảo hành',
+        title: t('pages.exportNew.error'),
+        description: t('pages.exportNew.errorEnterWarranty'),
         variant: 'destructive',
       });
       return;
@@ -565,7 +565,7 @@ export default function ExportNewPage() {
     // ⛔ Safety check: block export from other branches
     if (!canExportFromBranch(selectedProduct.branch_id)) {
       toast({
-        title: 'Không thể xuất hàng',
+        title: t('pages.exportNew.cannotExport'),
         description: getBlockedExportMessage(selectedProduct.branches?.name),
         variant: 'destructive',
       });
@@ -598,8 +598,8 @@ export default function ExportNewPage() {
     setItemWarranty('');
     
     toast({
-      title: 'Đã thêm vào giỏ',
-      description: `${newItem.product_name} đã được thêm vào giỏ hàng`,
+      title: t('pages.exportNew.addedToCart'),
+      description: `${newItem.product_name}`,
     });
   };
 
@@ -632,8 +632,8 @@ export default function ExportNewPage() {
   const handleProceedToPayment = () => {
     if (cart.length === 0) {
       toast({
-        title: 'Giỏ hàng trống',
-        description: 'Vui lòng thêm sản phẩm vào giỏ hàng',
+        title: t('pages.exportNew.emptyCartError'),
+        description: t('pages.exportNew.emptyCartErrorDesc'),
         variant: 'destructive',
       });
       return;
@@ -654,8 +654,8 @@ export default function ExportNewPage() {
         }, [] as { id: string; name: string }[]);
       
       toast({
-        title: 'Lỗi nhiều chi nhánh',
-        description: `Phiếu xuất không thể chứa sản phẩm từ nhiều chi nhánh khác nhau: ${branchNames.map(b => b.name).join(', ')}. Vui lòng xóa bớt sản phẩm để chỉ còn 1 chi nhánh.`,
+        title: t('pages.exportNew.multiBranchError'),
+        description: t('pages.exportNew.multiBranchErrorDesc', { branches: branchNames.map(b => b.name).join(', ') }),
         variant: 'destructive',
       });
       return;
@@ -663,8 +663,8 @@ export default function ExportNewPage() {
 
     if (!customerName.trim() || !customerPhone.trim()) {
       toast({
-        title: 'Thiếu thông tin',
-        description: 'Vui lòng nhập tên và số điện thoại khách hàng',
+        title: t('pages.exportNew.missingInfo'),
+        description: t('pages.exportNew.missingCustomerInfo'),
         variant: 'destructive',
       });
       return;
@@ -673,8 +673,8 @@ export default function ExportNewPage() {
     // Super Admin must select sales staff
     if (isSuperAdmin && !salesStaffId) {
       toast({
-        title: 'Thiếu thông tin',
-        description: 'Vui lòng chọn nhân viên bán hàng',
+        title: t('pages.exportNew.missingInfo'),
+        description: t('pages.exportNew.missingSalesStaff'),
         variant: 'destructive',
       });
       return;
@@ -780,11 +780,11 @@ export default function ExportNewPage() {
         tax_amount: savedTaxEnabled ? savedTaxAmount : 0,
       }));
 
-      let successMessage = `Phiếu xuất ${receipt.code} đã được tạo`;
+      let successMessage = t('pages.exportNew.receiptCreated', { code: receipt.code });
       if (receipt.points_earned > 0) {
         successMessage += receipt.points_pending 
-          ? `. Khách được ${receipt.points_earned} điểm (treo - chờ thanh toán đủ)`
-          : `. Khách được cộng ${receipt.points_earned} điểm`;
+          ? `. ${t('pages.exportNew.pointsPending', { points: receipt.points_earned })}`
+          : `. ${t('pages.exportNew.pointsEarned', { points: receipt.points_earned })}`;
       }
 
       // Issue voucher if selected
@@ -799,21 +799,21 @@ export default function ExportNewPage() {
             branch_id: branchId || undefined,
             source: 'export',
           });
-          successMessage += '. Đã tặng voucher cho khách';
+          successMessage += `. ${t('pages.exportNew.voucherIssued')}`;
         } catch {
           // Non-critical, don't block
-          successMessage += '. Lỗi tặng voucher';
+          successMessage += `. ${t('pages.exportNew.voucherError')}`;
         }
       }
 
       toast({
-        title: 'Xuất hàng thành công',
+        title: t('pages.exportNew.exportSuccess'),
         description: successMessage,
       });
     } catch (error: any) {
       toast({
-        title: 'Lỗi',
-        description: error.message || 'Không thể tạo phiếu xuất',
+        title: t('pages.exportNew.error'),
+        description: error.message || t('pages.exportNew.cannotCreateReceipt'),
         variant: 'destructive',
       });
     } finally {
@@ -903,7 +903,7 @@ export default function ExportNewPage() {
                         >
                           <div className="font-medium">{product.name}</div>
                           <div className="text-muted-foreground text-xs">
-                            SKU: {product.sku} | {product.categories?.name || 'Chưa phân loại'}
+                            SKU: {product.sku} | {product.categories?.name || t('pages.exportNew.notCategorized')}
                             {product.imei && <span className="ml-1 text-foreground/70">| IMEI: {product.imei}</span>}
                           </div>
                         </button>
@@ -928,15 +928,14 @@ export default function ExportNewPage() {
                   variant={showBarcodeScanner ? 'default' : 'outline'}
                   size="icon"
                   onClick={() => setShowBarcodeScanner(v => !v)}
-                  title="Quét mã vạch / QR"
+                  title={t('pages.exportNew.scanBarcode')}
                   data-tour="export-barcode"
                 >
                   <ScanBarcode className="h-5 w-5" />
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                <strong>IMEI/Serial:</strong> Nhập đúng mã → Enter → sản phẩm tự xuất hiện &nbsp;|&nbsp; 
-                <strong>Tên:</strong> Nhập 2-3 chữ đầu → hiện gợi ý để chọn
+                {t('pages.exportNew.searchHint')}
               </p>
 
               {/* Collapsible Barcode Scanner */}
@@ -944,15 +943,15 @@ export default function ExportNewPage() {
                 <div className="p-4 border rounded-lg bg-muted/30 space-y-3 animate-fade-in">
                   <BarcodeScannerInput
                     onScan={handleBarcodeScan}
-                    placeholder="Quét mã vạch sản phẩm (IMEI/SKU)..."
+                    placeholder={t('pages.exportNew.scanBarcodePlaceholder')}
                     disabled={checkProduct.isPending}
                     continuousCamera
                   />
                   <p className="text-xs text-muted-foreground">
-                    Quét mã vạch có giá → tự động thêm vào giỏ kèm bảo hành bên dưới.
+                    {t('pages.exportNew.scanBarcodeHint')}
                   </p>
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Bảo hành khi quét</Label>
+                    <Label className="text-sm font-medium">{t('pages.exportNew.warrantyOnScan')}</Label>
                     <div className="flex flex-wrap gap-2">
                       {['Không BH', '30 Ngày', '3 Tháng', '6 Tháng', '12 Tháng'].map((opt) => (
                         <Button
@@ -967,7 +966,7 @@ export default function ExportNewPage() {
                       ))}
                     </div>
                     <Input
-                      placeholder="Hoặc nhập tùy chỉnh..."
+                      placeholder={t('pages.exportNew.customWarranty')}
                       value={!['Không BH', '30 Ngày', '3 Tháng', '6 Tháng', '12 Tháng'].includes(scanWarranty) ? scanWarranty : ''}
                       onChange={(e) => setScanWarranty(e.target.value)}
                       className="max-w-xs"
@@ -987,26 +986,26 @@ export default function ExportNewPage() {
                         {selectedProduct.imei && ` | IMEI: ${selectedProduct.imei}`}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Danh mục: {selectedProduct.categories?.name || 'Chưa phân loại'}
+                        {t('pages.exportNew.categoryLabel')}: {selectedProduct.categories?.name || t('pages.exportNew.notCategorized')}
                       </p>
                     </div>
                     <Badge variant="secondary">
-                      {selectedProduct.status === 'in_stock' ? 'Còn hàng' : selectedProduct.status}
+                      {selectedProduct.status === 'in_stock' ? t('pages.exportNew.inStockBadge') : selectedProduct.status}
                     </Badge>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>Giá bán</Label>
+                      <Label>{t('pages.exportNew.salePrice')}</Label>
                       <PriceInput
-                        placeholder="Nhập giá bán"
+                        placeholder={t('pages.exportNew.enterSalePrice')}
                         value={salePrice}
                         onChange={(val) => setSalePrice(val.toString())}
                       />
                     </div>
                     {!selectedProduct.imei && (
                       <div>
-                        <Label>Số lượng</Label>
+                        <Label>{t('pages.exportNew.quantity')}</Label>
                         <Input
                           type="number"
                           min={1}
@@ -1020,17 +1019,17 @@ export default function ExportNewPage() {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>Bảo hành <span className="text-destructive">*</span></Label>
+                      <Label>{t('pages.exportNew.warranty')} <span className="text-destructive">*</span></Label>
                       <Input
-                        placeholder="VD: 12 tháng"
+                        placeholder={t('pages.exportNew.warrantyExample')}
                         value={itemWarranty}
                         onChange={(e) => setItemWarranty(e.target.value)}
                       />
                     </div>
                     <div>
-                      <Label>Ghi chú</Label>
+                      <Label>{t('common.note')}</Label>
                       <Input
-                        placeholder="Ghi chú (tùy chọn)"
+                        placeholder={t('pages.exportNew.noteOptional')}
                         value={itemNote}
                         onChange={(e) => setItemNote(e.target.value)}
                       />
@@ -1039,7 +1038,7 @@ export default function ExportNewPage() {
 
                   <Button onClick={handleAddToCart} className="w-full">
                     <Plus className="h-4 w-4 mr-2" />
-                    Thêm vào giỏ hàng
+                    {t('pages.exportNew.addToCart')}
                   </Button>
                 </div>
               )}
@@ -1110,7 +1109,7 @@ export default function ExportNewPage() {
                           <Input
                             value={item.warranty || ''}
                             onChange={(e) => setCart(prev => prev.map(c => c.tempId === item.tempId ? { ...c, warranty: e.target.value } : c))}
-                            placeholder="VD: 12 tháng"
+                            placeholder={t('pages.exportNew.warrantyExample')}
                             className="w-24 h-8 text-xs"
                           />
                         </TableCell>

@@ -877,7 +877,7 @@ export default function ImportNewPage() {
                         handleProductNameChange(e.target.value);
                         if (fieldErrors.productName) setFieldErrors(prev => { const { productName, ...rest } = prev; return rest; });
                       }}
-                      placeholder="Nhập tên sản phẩm"
+                      placeholder={t('pages.importNew.enterProductName')}
                       autoComplete="off"
                       className={fieldErrors.productName ? 'border-destructive ring-destructive/30 ring-2' : ''}
                       data-error={!!fieldErrors.productName || undefined}
@@ -914,7 +914,7 @@ export default function ImportNewPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     {/* SKU */}
                     <div className="form-field" data-error={!!fieldErrors.sku || undefined}>
-                      <Label htmlFor="sku">SKU *</Label>
+                      <Label htmlFor="sku">{t('pages.importNew.sku')}</Label>
                       <div className="flex gap-2">
                         <Input
                           id="sku"
@@ -923,14 +923,14 @@ export default function ImportNewPage() {
                             setForm({ ...form, sku: e.target.value });
                             if (fieldErrors.sku) setFieldErrors(prev => { const { sku, ...rest } = prev; return rest; });
                           }}
-                          placeholder="Mã viết tắt tên sản phẩm"
+                          placeholder={t('pages.importNew.skuPlaceholder')}
                           className={`flex-1 ${fieldErrors.sku ? 'border-destructive ring-destructive/30 ring-2' : ''}`}
                         />
                         <Button
                           type="button"
                           variant="outline"
                           size="icon"
-                          title="Copy tên sản phẩm làm SKU"
+                          title={t('pages.importNew.copySku')}
                           onClick={() => {
                             if (form.productName.trim()) {
                               setForm({ ...form, sku: form.productName.trim() });
@@ -946,30 +946,28 @@ export default function ImportNewPage() {
                         <p className="text-xs text-destructive mt-1">{fieldErrors.sku}</p>
                       ) : (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Mã viết tắt của tên sản phẩm, để dễ nhớ và tìm kiếm.
-                          <br />Bạn copy tên sản phẩm xuống luôn cũng được (bấm nút <strong>A→</strong>)
+                          {t('pages.importNew.skuHint')}
                         </p>
                       )}
                     </div>
 
                     {/* IMEI / Serial */}
                     <div className="form-field">
-                      <Label htmlFor="imei">IMEI / Serial (nếu có)</Label>
+                      <Label htmlFor="imei">{t('pages.importNew.imeiSerial')}</Label>
                       <Input
                         id="imei"
                         value={form.imei}
                         onChange={(e) => setForm({ ...form, imei: e.target.value })}
-                        placeholder="Số IMEI / Serial"
+                        placeholder={t('pages.importNew.imeiPlaceholder')}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Chỉ nhập đối với thiết bị có <strong>IMEI</strong> hoặc <strong>Serial</strong> (điện thoại, laptop, máy ảnh…).
-                        <br />Nếu là phụ kiện (cáp, sạc, linh kiện, sản phẩm khác…) → <strong>không</strong> cần nhập.
+                        {t('pages.importNew.imeiHint')}
                       </p>
                     </div>
 
                     {/* Category */}
                     <div className="form-field" data-error={!!fieldErrors.categoryId || undefined}>
-                      <Label>Danh mục *</Label>
+                      <Label>{t('pages.importNew.category')}</Label>
                       <div className="flex gap-2">
                         <Select
                           value={form.categoryId}
@@ -979,7 +977,7 @@ export default function ImportNewPage() {
                           }}
                         >
                           <SelectTrigger className={`flex-1 ${fieldErrors.categoryId ? 'border-destructive ring-destructive/30 ring-2' : ''}`}>
-                            <SelectValue placeholder="Chọn danh mục" />
+                            <SelectValue placeholder={t('pages.importNew.selectCategory')} />
                           </SelectTrigger>
                           <SelectContent className="bg-popover">
                             {categories?.map((cat) => (
@@ -1003,7 +1001,7 @@ export default function ImportNewPage() {
 
                     {/* Import Price */}
                     <div className="form-field" data-error={!!fieldErrors.importPrice || undefined}>
-                      <Label htmlFor="importPrice">Giá nhập (đơn vị) *</Label>
+                      <Label htmlFor="importPrice">{t('pages.importNew.importPrice')}</Label>
                       <PriceInput
                         id="importPrice"
                         value={form.importPrice}
@@ -1019,7 +1017,7 @@ export default function ImportNewPage() {
                           setForm({ ...form, importPrice: newImportPrice, salePrice: autoSalePrice });
                           if (fieldErrors.importPrice) setFieldErrors(prev => { const { importPrice, ...rest } = prev; return rest; });
                         }}
-                        placeholder="VD: 28 000 000"
+                        placeholder={t('pages.importNew.importPricePlaceholder')}
                         className={fieldErrors.importPrice ? 'border-destructive ring-destructive/30 ring-2' : ''}
                       />
                       {fieldErrors.importPrice && <p className="text-xs text-destructive mt-1">{fieldErrors.importPrice}</p>}
@@ -1027,22 +1025,22 @@ export default function ImportNewPage() {
 
                     {/* Sale Price */}
                     <div className="form-field">
-                      <Label htmlFor="salePrice">Giá bán (gợi ý)</Label>
+                      <Label htmlFor="salePrice">{t('pages.importNew.salePrice')}</Label>
                       <PriceInput
                         id="salePrice"
                         value={form.salePrice}
                         onChange={(val) => setForm({ ...form, salePrice: val.toString() })}
-                        placeholder={form.imei ? 'Giá nhập + 2 triệu' : 'Giá nhập x2'}
+                        placeholder={form.imei ? t('pages.importNew.salePriceImei') : t('pages.importNew.salePriceNonImei')}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        {form.imei ? 'Mặc định: Giá nhập + 2.000.000đ' : 'Mặc định: Giá nhập x2'}. Có thể sửa.
+                        {form.imei ? t('pages.importNew.salePriceHintImei') : t('pages.importNew.salePriceHintNonImei')}{t('pages.importNew.salePriceEditable')}
                       </p>
                     </div>
 
                     {/* Quantity */}
                     <div className="form-field">
                       <Label htmlFor="quantity">
-                        Số lượng {form.imei ? '(IMEI = 1)' : '*'}
+                        {t('pages.importNew.quantityLabel')} {form.imei ? t('pages.importNew.quantityImei') : '*'}
                       </Label>
                       <Input
                         id="quantity"
@@ -1056,30 +1054,30 @@ export default function ImportNewPage() {
                       />
                       <p className="text-xs text-muted-foreground mt-1">
                         {form.imei ? (
-                          <>Thiết bị có <strong>IMEI / Serial</strong> → mặc định 1 (mỗi cái 1 mã riêng).</>
+                          <>{t('pages.importNew.quantityImeiHint')}</>
                         ) : form.importPrice && form.quantity ? (
-                          <>Phụ kiện <strong>không</strong> có IMEI / Serial → có thể nhập số lượng theo lô.
-                            <br />Thành tiền: {(Number(form.importPrice) * Number(form.quantity)).toLocaleString('vi-VN')} VND
+                          <>{t('pages.importNew.quantityBatchHint')}
+                            <br />{t('pages.importNew.quantitySubtotal', { amount: (Number(form.importPrice) * Number(form.quantity)).toLocaleString('vi-VN') })}
                           </>
                         ) : (
-                          <>Phụ kiện <strong>không</strong> có IMEI / Serial → có thể nhập số lượng theo lô.</>
+                          <>{t('pages.importNew.quantityBatchHint')}</>
                         )}
                       </p>
                     </div>
 
                     {/* Note */}
                     <div className="form-field md:col-span-2">
-                      <Label htmlFor="note">Ghi chú</Label>
+                      <Label htmlFor="note">{t('pages.importNew.note')}</Label>
                       <Textarea
                         id="note"
                         value={form.note}
                         onChange={(e) => setForm({ ...form, note: e.target.value })}
-                        placeholder="VD: pin 95%, sạc 300 lần, mất Face ID..."
+                        placeholder={t('pages.importNew.notePlaceholder')}
                         rows={1}
                         className="min-h-[2.5rem] resize-y"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Ghi cụ thể tình trạng SP để dễ tư vấn, nhìn vào kho biết ngay (VD: pin 95%, sạc 300 lần, mất Face ID...)
+                        {t('pages.importNew.noteHint')}
                       </p>
                     </div>
                   </div>
@@ -1091,7 +1089,7 @@ export default function ImportNewPage() {
                       ) : (
                         <ShoppingCart className="mr-2 h-4 w-4" />
                       )}
-                      {isCheckingIMEI ? 'Đang kiểm tra IMEI...' : 'Thêm vào giỏ'}
+                      {isCheckingIMEI ? t('pages.importNew.checkingImei') : t('pages.importNew.addToCart')}
                     </Button>
                   </div>
                 </>
@@ -1147,44 +1145,44 @@ export default function ImportNewPage() {
       <Dialog open={supplierDialogOpen} onOpenChange={setSupplierDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Thêm nhà cung cấp mới</DialogTitle>
+            <DialogTitle>{t('pages.importNew.addSupplierTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="form-field">
-              <Label>Tên nhà cung cấp *</Label>
+              <Label>{t('pages.importNew.supplierName')}</Label>
               <Input
                 value={newSupplierForm.name}
                 onChange={(e) => setNewSupplierForm({ ...newSupplierForm, name: e.target.value })}
-                placeholder="Nhập tên"
+                placeholder={t('pages.importNew.enterSupplierName')}
               />
             </div>
             <div className="form-field">
-              <Label>Số điện thoại</Label>
+              <Label>{t('pages.importNew.phone')}</Label>
               <Input
                 value={newSupplierForm.phone}
                 onChange={(e) => setNewSupplierForm({ ...newSupplierForm, phone: e.target.value })}
-                placeholder="VD: 0901234567"
+                placeholder={t('pages.importNew.phonePlaceholder')}
               />
             </div>
             <div className="form-field">
-              <Label>Địa chỉ</Label>
+              <Label>{t('pages.importNew.address')}</Label>
               <Input
                 value={newSupplierForm.address}
                 onChange={(e) => setNewSupplierForm({ ...newSupplierForm, address: e.target.value })}
-                placeholder="Nhập địa chỉ"
+                placeholder={t('pages.importNew.enterAddress')}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSupplierDialogOpen(false)}>
-              Huỷ
+              {t('pages.importNew.cancel')}
             </Button>
             <Button
               onClick={handleAddNewSupplier}
               disabled={!newSupplierForm.name.trim() || createSupplier.isPending}
             >
               {createSupplier.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Thêm mới
+              {t('pages.importNew.addNew')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1194,26 +1192,26 @@ export default function ImportNewPage() {
       <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Thêm danh mục mới</DialogTitle>
+            <DialogTitle>{t('pages.importNew.addCategoryTitle')}</DialogTitle>
           </DialogHeader>
           <div className="form-field">
-            <Label>Tên danh mục *</Label>
+            <Label>{t('pages.importNew.categoryName')}</Label>
             <Input
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
-              placeholder="Nhập tên danh mục"
+              placeholder={t('pages.importNew.enterCategoryName')}
             />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCategoryDialogOpen(false)}>
-              Huỷ
+              {t('pages.importNew.cancel')}
             </Button>
             <Button
               onClick={handleAddNewCategory}
               disabled={!newCategoryName.trim() || createCategory.isPending}
             >
               {createCategory.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Thêm mới
+              {t('pages.importNew.addNew')}
             </Button>
           </DialogFooter>
         </DialogContent>
