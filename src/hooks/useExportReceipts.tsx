@@ -114,26 +114,25 @@ export function useExportReceipts() {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as ExportReceipt[];
 
-      let query = supabase
-        .from('export_receipts')
-        .select(`
-          *,
-          customers(name, phone, address),
-          branches(name),
-          export_receipt_items(*),
-          export_receipt_payments(*)
-        `)
-        .order('export_date', { ascending: false });
+      const buildQuery = () => {
+        let query = supabase
+          .from('export_receipts')
+          .select(`
+            *,
+            customers(name, phone, address),
+            branches(name),
+            export_receipt_items(*),
+            export_receipt_payments(*)
+          `)
+          .order('export_date', { ascending: false });
 
-      // Apply branch filter for non-Super Admin users
-      if (shouldFilter && branchId) {
-        query = query.eq('branch_id', branchId);
-      }
+        if (shouldFilter && branchId) {
+          query = query.eq('branch_id', branchId);
+        }
+        return query;
+      };
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as ExportReceipt[];
+      return await fetchAllRows<ExportReceipt>(buildQuery);
     },
     enabled: !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,
