@@ -11,6 +11,7 @@ import { useCurrentTenant } from '@/hooks/useTenant';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Settings, Globe, Store, Save } from 'lucide-react';
+import { ImportHistoricalOrdersSection } from '@/components/admin/ImportHistoricalOrdersSection';
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
@@ -105,6 +106,9 @@ export default function SettingsPage() {
           <Save className="h-4 w-4 mr-2" />
           {t('settings.save')}
         </Button>
+
+        {/* Historical order import */}
+        <ImportHistoricalOrdersSection />
       </div>
     </MainLayout>
   );
