@@ -1085,7 +1085,7 @@ export default function ExportHistoryPage() {
       <ReceiptReturnDialog
         open={showReturnDialog}
         onOpenChange={setShowReturnDialog}
-        receipt={returnReceipt}
+        receipt={returnReceipt ? { ...returnReceipt, export_receipt_items: detailItems || returnReceipt.export_receipt_items } : null}
         onSuccess={() => {
           setShowReturnDialog(false);
           setReturnReceipt(null);
