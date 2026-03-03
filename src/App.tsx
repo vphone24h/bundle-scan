@@ -50,6 +50,7 @@ const PlatformArticlesPage = lazy(() => import("./pages/PlatformArticlesPage"));
 const SocialPage = lazy(() => import("./pages/SocialPage"));
 const WebsiteEditorPage = lazy(() => import("./pages/WebsiteEditorPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const WarrantyCheckPage = lazy(() => import("./pages/WarrantyCheckPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Aggressively preload all main page chunks after initial render
