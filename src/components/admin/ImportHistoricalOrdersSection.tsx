@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,31 @@ import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, Loader2 } from 'l
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
+
+const STORAGE_KEY = 'import-historical-orders-state';
+
+interface PersistedState {
+  importing: boolean;
+  progress: number;
+  fileName: string;
+  results: ImportResult | null;
+  startedAt: number | null;
+}
+
+function loadPersistedState(): PersistedState {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { importing: false, progress: 0, fileName: '', results: null, startedAt: null };
+}
+
+function savePersistedState(state: Partial<PersistedState>) {
+  try {
+    const current = loadPersistedState();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, ...state }));
+  } catch {}
+}
 
 interface ParsedOrder {
   orderId: string;
@@ -144,10 +169,41 @@ export function ImportHistoricalOrdersSection() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [sourceId, setSourceId] = useState('backup');
   const [parsedOrders, setParsedOrders] = useState<ParsedOrder[]>([]);
-  const [importing, setImporting] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [results, setResults] = useState<ImportResult | null>(null);
-  const [fileName, setFileName] = useState('');
+  
+  // Restore persisted state on mount
+  const persisted = loadPersistedState();
+  const [importing, setImporting] = useState(persisted.importing);
+  const [progress, setProgress] = useState(persisted.progress);
+  const [results, setResults] = useState<ImportResult | null>(persisted.results);
+  const [fileName, setFileName] = useState(persisted.fileName);
+
+  // Persist state changes
+  const updateProgress = useCallback((value: number) => {
+    setProgress(value);
+    savePersistedState({ progress: value });
+  }, []);
+
+  const updateImporting = useCallback((value: boolean) => {
+    setImporting(value);
+    savePersistedState({ importing: value, startedAt: value ? Date.now() : null });
+  }, []);
+
+  const updateResults = useCallback((value: ImportResult | null) => {
+    setResults(value);
+    savePersistedState({ results: value, importing: false, progress: 100 });
+  }, []);
+
+  // Auto-expire stale imports (> 30 min) on mount
+  useEffect(() => {
+    if (persisted.importing && persisted.startedAt) {
+      const elapsed = Date.now() - persisted.startedAt;
+      if (elapsed > 30 * 60 * 1000) {
+        // Stale import, reset
+        setImporting(false);
+        savePersistedState({ importing: false, progress: 0, startedAt: null });
+      }
+    }
+  }, []);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -187,8 +243,9 @@ export function ImportHistoricalOrdersSection() {
   const handleImport = () => {
     if (!parsedOrders.length) return;
 
-    setImporting(true);
-    setProgress(0);
+    updateImporting(true);
+    updateProgress(0);
+    savePersistedState({ fileName, importing: true, progress: 0, results: null, startedAt: Date.now() });
 
     // Run in background
     (async () => {
@@ -213,22 +270,22 @@ export function ImportHistoricalOrdersSection() {
             totalResult.customersCreated += data.customersCreated || 0;
             totalResult.skipped += data.skipped || 0;
           }
-          setProgress(Math.round(((i + 1) / totalBatches) * 100));
+          updateProgress(Math.round(((i + 1) / totalBatches) * 100));
         }
 
-        setResults(totalResult);
+        updateResults(totalResult);
         toast({
           title: '✅ Nhập dữ liệu thành công!',
           description: `Đã tạo ${totalResult.createdReceipts} phiếu bán, ${totalResult.createdItems} sản phẩm cho ${totalResult.customersCreated} khách hàng.`,
         });
       } catch (err: any) {
+        updateImporting(false);
+        savePersistedState({ importing: false });
         toast({
           title: 'Lỗi nhập dữ liệu',
           description: err.message || String(err),
           variant: 'destructive',
         });
-      } finally {
-        setImporting(false);
       }
     })();
 
