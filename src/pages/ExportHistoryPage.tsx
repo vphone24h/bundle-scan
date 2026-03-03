@@ -71,73 +71,71 @@ import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
 import { useTranslation } from 'react-i18next';
 
-const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  completed: { label: 'Hoàn tất', variant: 'default' },
-  cancelled: { label: 'Đã hủy', variant: 'destructive' },
-  partial_return: { label: 'Trả một phần', variant: 'secondary' },
-  full_return: { label: 'Đã trả hàng', variant: 'outline' },
+const useExportHistoryConstants = () => {
+  const { t } = useTranslation();
+  return {
+    statusLabels: {
+      completed: { label: t('common.completed'), variant: 'default' as const },
+      cancelled: { label: t('common.cancelled'), variant: 'destructive' as const },
+      partial_return: { label: t('exportHistory.partialReturn'), variant: 'secondary' as const },
+      full_return: { label: t('exportHistory.fullReturn'), variant: 'outline' as const },
+    },
+    paymentLabels: {
+      cash: t('common.cash'),
+      bank_card: t('common.bankCard'),
+      e_wallet: t('common.eWallet'),
+      debt: t('common.debt'),
+    },
+    receiptTour: [
+      {
+        title: t('tours.exportHistory.receiptTabTitle'),
+        description: t('tours.exportHistory.receiptTabDesc'),
+        targetSelector: '[data-tour="export-tab-receipts"]',
+        position: 'bottom',
+      },
+      {
+        title: t('tours.exportHistory.actionBtnTitle'),
+        description: t('tours.exportHistory.actionBtnDesc'),
+        targetSelector: '[data-tour="export-receipt-actions"]',
+        position: 'left',
+      },
+    ],
+    receiptTourInfo: [
+      {
+        title: t('tours.exportHistory.receiptTabInfoTitle'),
+        description: t('tours.exportHistory.receiptTabInfoDesc'),
+        isInfo: true,
+        position: 'center',
+      },
+    ],
+    itemTour: [
+      {
+        title: t('tours.exportHistory.itemTabTitle'),
+        description: t('tours.exportHistory.itemTabDesc'),
+        targetSelector: '[data-tour="export-tab-items"]',
+        position: 'bottom',
+      },
+      {
+        title: t('tours.exportHistory.returnBtnTitle'),
+        description: t('tours.exportHistory.returnBtnDesc'),
+        targetSelector: '[data-tour="export-item-return"]',
+        position: 'left',
+      },
+    ],
+    itemTourInfo: [
+      {
+        title: t('tours.exportHistory.itemTabInfoTitle'),
+        description: t('tours.exportHistory.itemTabInfoDesc'),
+        isInfo: true,
+        position: 'center',
+      },
+    ],
+  };
 };
-
-const paymentLabels: Record<string, string> = {
-  cash: 'Tiền mặt',
-  bank_card: 'Thẻ NH',
-  e_wallet: 'Ví điện tử',
-  debt: 'Công nợ',
-};
-
-// Tour đầy đủ khi đã có dữ liệu
-const EXPORT_RECEIPT_TAB_TOUR: TourStep[] = [
-  {
-    title: '📄 Tab "Theo phiếu xuất"',
-    description: 'Tab này liệt kê từng **phiếu bán hàng**. Nhấn vào **mã phiếu** để xem chi tiết đơn hàng.',
-    targetSelector: '[data-tour="export-tab-receipts"]',
-    position: 'bottom',
-  },
-  {
-    title: '⚙️ Thao tác với phiếu xuất',
-    description: 'Mỗi phiếu xuất có 3 nút thao tác:\n• 👁️ **Xem chi tiết** — xem sản phẩm, khách hàng, thanh toán\n• 🖨️ **In hóa đơn** — in theo mẫu hóa đơn đã cài đặt\n• 🔄 **Trả hàng** — xử lý trả toàn bộ đơn hàng',
-    targetSelector: '[data-tour="export-receipt-actions"]',
-    position: 'left',
-  },
-];
-
-// Tour mô tả khi chưa có phiếu xuất
-const EXPORT_RECEIPT_TAB_TOUR_INFO: TourStep[] = [
-  {
-    title: '📄 Tab "Theo phiếu xuất"',
-    description: 'Sau khi bạn **tạo phiếu bán hàng**, tab này sẽ hiển thị danh sách các đơn. Bạn có thể xem chi tiết, in hóa đơn hoặc xử lý trả hàng từ đây.',
-    isInfo: true,
-    position: 'center',
-  },
-];
-
-const EXPORT_ITEM_TAB_TOUR: TourStep[] = [
-  {
-    title: '📦 Tab "Theo chi tiết SP"',
-    description: 'Xem từng **sản phẩm đã bán** với IMEI, giá bán, khách hàng. Tìm nhanh từng món hoặc **trả hàng** lẻ từng sản phẩm.',
-    targetSelector: '[data-tour="export-tab-items"]',
-    position: 'bottom',
-  },
-  {
-    title: '🔄 Nút "Trả" — Trả hàng từng món',
-    description: 'Mỗi dòng sản phẩm có nút **"Trả"** để xử lý trả hàng riêng lẻ cho từng sản phẩm. Sản phẩm đã trả sẽ hiển thị badge **"Đã trả"**.',
-    targetSelector: '[data-tour="export-item-return"]',
-    position: 'left',
-  },
-];
-
-// Tour mô tả khi chưa có sản phẩm đã bán
-const EXPORT_ITEM_TAB_TOUR_INFO: TourStep[] = [
-  {
-    title: '📦 Tab "Theo chi tiết SP"',
-    description: 'Khi bạn **bán hàng**, từng sản phẩm sẽ xuất hiện ở tab này. Bạn có thể tìm theo IMEI, tên khách hàng và trả hàng lẻ từng sản phẩm.',
-    isInfo: true,
-    position: 'center',
-  },
-];
 
 export default function ExportHistoryPage() {
   const { t } = useTranslation();
+  const { statusLabels, paymentLabels, receiptTour, receiptTourInfo, itemTour, itemTourInfo } = useExportHistoryConstants();
   // Onboarding tour
   const { completeTour: completeHistoryTour } = useOnboardingTour('export_history');
   const { isCompleted: receiptTourDone, completeTour: completeReceiptTour } = useOnboardingTour('export_receipt_tab');
@@ -1075,14 +1073,14 @@ export default function ExportHistoryPage() {
         }}
       />
       <OnboardingTourOverlay
-        steps={(receipts?.length ?? 0) > 0 ? EXPORT_RECEIPT_TAB_TOUR : EXPORT_RECEIPT_TAB_TOUR_INFO}
+        steps={(receipts?.length ?? 0) > 0 ? receiptTour : receiptTourInfo}
         isActive={activeTour === 'receipt-tab' || (manualTourActive && activeTab === 'receipts')}
         onComplete={() => { setActiveTour(null); setManualTourActive(false); if ((receipts?.length ?? 0) > 0) { completeReceiptTour(); completeHistoryTour(); } }}
         onSkip={() => { setActiveTour(null); setManualTourActive(false); if ((receipts?.length ?? 0) > 0) { completeReceiptTour(); completeHistoryTour(); } }}
         tourKey="export_receipt_tab"
       />
       <OnboardingTourOverlay
-        steps={(items?.length ?? 0) > 0 ? EXPORT_ITEM_TAB_TOUR : EXPORT_ITEM_TAB_TOUR_INFO}
+        steps={(items?.length ?? 0) > 0 ? itemTour : itemTourInfo}
         isActive={activeTour === 'item-tab' || (manualTourActive && activeTab === 'items')}
         onComplete={() => { setActiveTour(null); setManualTourActive(false); if ((items?.length ?? 0) > 0) { completeItemTour(); completeHistoryTour(); } }}
         onSkip={() => { setActiveTour(null); setManualTourActive(false); if ((items?.length ?? 0) > 0) { completeItemTour(); completeHistoryTour(); } }}

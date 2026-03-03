@@ -1133,5 +1133,55 @@
     "printBtn": "In",
     "returnReceiptBtn": "Trả hàng",
     "editBtn": "Sửa"
+  },
+  "tours": {
+    "exportHistory": {
+      "receiptTabTitle": "📄 Tab \"Theo phiếu xuất\"",
+      "receiptTabDesc": "Tab này liệt kê từng **phiếu bán hàng**. Nhấn vào **mã phiếu** để xem chi tiết đơn hàng.",
+      "actionBtnTitle": "⚙️ Thao tác với phiếu xuất",
+      "actionBtnDesc": "Mỗi phiếu xuất có 3 nút thao tác:\n• 👁️ **Xem chi tiết** — xem sản phẩm, khách hàng, thanh toán\n• 🖨️ **In hóa đơn** — in theo mẫu hóa đơn đã cài đặt\n• 🔄 **Trả hàng** — xử lý trả toàn bộ đơn hàng",
+      "itemTabTitle": "📦 Tab \"Theo chi tiết SP\"",
+      "itemTabDesc": "Xem từng **sản phẩm đã bán** với IMEI, giá bán, khách hàng. Tìm nhanh từng món hoặc **trả hàng** lẻ từng sản phẩm.",
+      "returnBtnTitle": "🔄 Nút \"Trả\" — Trả hàng từng món",
+      "returnBtnDesc": "Mỗi dòng sản phẩm có nút **\"Trả\"** để xử lý trả hàng riêng lẻ cho từng sản phẩm. Sản phẩm đã trả sẽ hiển thị badge **\"Đã trả\"**.",
+      "receiptTabInfoTitle": "📄 Tab \"Theo phiếu xuất\"",
+      "receiptTabInfoDesc": "Sau khi bạn **tạo phiếu bán hàng**, tab này sẽ hiển thị danh sách các đơn. Bạn có thể xem chi tiết, in hóa đơn hoặc xử lý trả hàng từ đây.",
+      "itemTabInfoTitle": "📦 Tab \"Theo chi tiết SP\"",
+      "itemTabInfoDesc": "Khi bạn **bán hàng**, từng sản phẩm sẽ xuất hiện ở tab này. Bạn có thể tìm theo IMEI, tên khách hàng và trả hàng lẻ từng sản phẩm."
+    },
+    "cashBook": {
+      "introTitle": "📒 Sổ quỹ dùng để làm gì?",
+      "introDesc": "Đây là nơi quản lý toàn bộ **tiền mặt** và **chuyển khoản**. Mỗi lần thu tiền – chi tiền, hệ thống sẽ tự cập nhật **số dư**.",
+      "tabsTitle": "🏦 Tab Tổng sổ quỹ / Theo chi nhánh",
+      "tabsDesc": "Chuyển giữa **Tổng sổ quỹ** (xem toàn bộ tiền của cả hệ thống) và **Theo chi nhánh** (xem riêng từng chi nhánh). Super Admin mới thấy tab này.",
+      "openingBalanceTitle": "🏦 Bổ sung quỹ kỳ đầu",
+      "openingBalanceDesc": "Nếu bạn đã có sẵn tiền trong quỹ trước khi dùng phần mềm, hãy nhấn **\"Kỳ đầu\"** để nhập **số dư ban đầu** cho từng nguồn tiền (**Tiền mặt**, **Thẻ ngân hàng**, **Ví điện tử**…).",
+      "incomeTitle": "② Thêm phiếu thu",
+      "incomeDesc": "Khi khách thanh toán tiền, hãy tạo **Phiếu Thu** để ghi nhận khoản **tiền vào**.",
+      "expenseTitle": "③ Thêm phiếu chi",
+      "expenseDesc": "Khi trả tiền nhập hàng, chi phí, lương… hãy tạo **Phiếu Chi** để ghi nhận khoản **tiền ra**.",
+      "filterTitle": "📊 Tổng quan – Bộ lọc thời gian",
+      "filterDesc": "Chọn nhanh **Hôm nay** / **Hôm qua** / **Tuần này**… để xem **tiền vào – tiền ra** theo khoảng thời gian bất kỳ. Lịch sử số dư cũng cập nhật theo bộ lọc này.",
+      "historyTitle": "🕐 Lịch sử số dư",
+      "historyDesc": "Ghi nhận **số dư cuối ngày** của toàn bộ quỹ. Nhấn vào để mở rộng, xem từng ngày **thu bao nhiêu – chi bao nhiêu – còn lại bao nhiêu**. Xuất Excel để lưu báo cáo.",
+      "detailTitle": "📋 Chi tiết – Bộ lọc giao dịch",
+      "detailDesc": "Lọc giao dịch theo **ngày**, **danh mục**, **nguồn tiền**, **nhân viên** lập phiếu. Nhấn \"Bộ lọc\" để mở rộng thêm tùy chọn. **Xuất Excel** để in báo cáo.",
+      "autoUpdateTitle": "🎉 Số dư cập nhật tự động!",
+      "autoUpdateDesc": "Mỗi khi tạo **phiếu thu/chi**, số dư quỹ sẽ được **cập nhật tự động** theo thời gian thực. Bạn có thể theo dõi **dòng tiền** bất cứ lúc nào."
+    },
+    "importHistory": {
+      "receiptTabTitle": "📄 Tab \"Theo phiếu nhập\"",
+      "receiptTabDesc": "Tab này liệt kê từng **phiếu nhập hàng**. Nhấn vào **mã phiếu** để xem chi tiết sản phẩm bên trong.",
+      "menuBtnTitle": "⚙️ Nút \"⋯\" — Thao tác với phiếu",
+      "menuBtnDesc": "Nhấn nút **\"⋯\"** ở cuối mỗi hàng để mở menu thao tác:\n• 👁️ **Xem chi tiết** — xem toàn bộ sản phẩm trong phiếu\n• ✏️ **Chỉnh sửa** — sửa ngày nhập, NCC, ghi chú\n• 🔄 **Trả hàng** — tạo phiếu trả lại cho nhà cung cấp",
+      "receiptTabInfoTitle": "📄 Tab \"Theo phiếu nhập\"",
+      "receiptTabInfoDesc": "Sau khi bạn **tạo phiếu nhập hàng**, tab này sẽ liệt kê từng phiếu. Bạn có thể xem chi tiết, chỉnh sửa hoặc trả hàng cho nhà cung cấp từ đây.",
+      "productTabTitle": "📦 Tab \"Theo sản phẩm\"",
+      "productTabDesc": "Xem từng **sản phẩm đã nhập** với đầy đủ IMEI, giá, trạng thái. Lọc theo danh mục, nhà cung cấp, trạng thái...",
+      "productActionTitle": "🔧 Thao tác với từng sản phẩm",
+      "productActionDesc": "Mỗi dòng sản phẩm tồn kho có các nút:\n• ✏️ **Sửa** — chỉnh sửa thông tin sản phẩm\n• 🔄 **Trả** — trả sản phẩm về nhà cung cấp\n• 🔑 **BH** — đánh dấu bảo hành (chỉ hàng có IMEI)\n• 🔀 **Chuyển** — chuyển sản phẩm sang chi nhánh khác (trước nút Xóa)\n\nNgoài ra có thể **tích chọn nhiều sản phẩm** rồi nhấn **Chuyển hàng** ở thanh trên để chuyển hàng loạt.",
+      "productTabInfoTitle": "📦 Tab \"Theo sản phẩm\"",
+      "productTabInfoDesc": "Khi bạn **nhập hàng vào kho**, các sản phẩm sẽ xuất hiện ở tab này. Bạn có thể lọc, tìm kiếm, sửa thông tin và thao tác với từng sản phẩm riêng lẻ."
+    }
   }
 }

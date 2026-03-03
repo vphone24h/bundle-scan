@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -58,59 +59,59 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 
-// Tour đầy đủ khi đã có dữ liệu
-const IMPORT_RECEIPT_TAB_TOUR: TourStep[] = [
-  {
-    title: '📄 Tab "Theo phiếu nhập"',
-    description: 'Tab này liệt kê từng **phiếu nhập hàng**. Nhấn vào **mã phiếu** để xem chi tiết sản phẩm bên trong.',
-    targetSelector: '[data-tour="import-history-receipts-tab"]',
-    position: 'bottom',
-  },
-  {
-    title: '⚙️ Nút "⋯" — Thao tác với phiếu',
-    description: 'Nhấn nút **"⋯"** ở cuối mỗi hàng để mở menu thao tác:\n• 👁️ **Xem chi tiết** — xem toàn bộ sản phẩm trong phiếu\n• ✏️ **Chỉnh sửa** — sửa ngày nhập, NCC, ghi chú\n• 🔄 **Trả hàng** — tạo phiếu trả lại cho nhà cung cấp',
-    targetSelector: '[data-tour="import-receipt-menu"]',
-    position: 'left',
-  },
-];
-
-// Tour mô tả khi chưa có dữ liệu
-const IMPORT_RECEIPT_TAB_TOUR_INFO: TourStep[] = [
-  {
-    title: '📄 Tab "Theo phiếu nhập"',
-    description: 'Sau khi bạn **tạo phiếu nhập hàng**, tab này sẽ liệt kê từng phiếu. Bạn có thể xem chi tiết, chỉnh sửa hoặc trả hàng cho nhà cung cấp từ đây.',
-    isInfo: true,
-    position: 'center',
-  },
-];
-
-const IMPORT_PRODUCT_TAB_TOUR: TourStep[] = [
-  {
-    title: '📦 Tab "Theo sản phẩm"',
-    description: 'Xem từng **sản phẩm đã nhập** với đầy đủ IMEI, giá, trạng thái. Lọc theo danh mục, nhà cung cấp, trạng thái...',
-    targetSelector: '[data-tour="import-history-products-tab"]',
-    position: 'bottom',
-  },
-  {
-    title: '🔧 Thao tác với từng sản phẩm',
-    description: 'Mỗi dòng sản phẩm tồn kho có các nút:\n• ✏️ **Sửa** — chỉnh sửa thông tin sản phẩm\n• 🔄 **Trả** — trả sản phẩm về nhà cung cấp\n• 🔑 **BH** — đánh dấu bảo hành (chỉ hàng có IMEI)\n• 🔀 **Chuyển** — chuyển sản phẩm sang chi nhánh khác (trước nút Xóa)\n\nNgoài ra có thể **tích chọn nhiều sản phẩm** rồi nhấn **Chuyển hàng** ở thanh trên để chuyển hàng loạt.',
-    targetSelector: '[data-tour="import-product-actions"]',
-    position: 'left',
-  },
-];
-
-// Tour mô tả khi chưa có sản phẩm
-const IMPORT_PRODUCT_TAB_TOUR_INFO: TourStep[] = [
-  {
-    title: '📦 Tab "Theo sản phẩm"',
-    description: 'Khi bạn **nhập hàng vào kho**, các sản phẩm sẽ xuất hiện ở tab này. Bạn có thể lọc, tìm kiếm, sửa thông tin và thao tác với từng sản phẩm riêng lẻ.',
-    isInfo: true,
-    position: 'center',
-  },
-];
+const useImportHistoryConstants = () => {
+  const { t } = useTranslation();
+  return {
+    receiptTour: [
+      {
+        title: t('tours.importHistory.receiptTabTitle'),
+        description: t('tours.importHistory.receiptTabDesc'),
+        targetSelector: '[data-tour="import-history-receipts-tab"]',
+        position: 'bottom',
+      },
+      {
+        title: t('tours.importHistory.menuBtnTitle'),
+        description: t('tours.importHistory.menuBtnDesc'),
+        targetSelector: '[data-tour="import-receipt-menu"]',
+        position: 'left',
+      },
+    ],
+    receiptTourInfo: [
+      {
+        title: t('tours.importHistory.receiptTabInfoTitle'),
+        description: t('tours.importHistory.receiptTabInfoDesc'),
+        isInfo: true,
+        position: 'center',
+      },
+    ],
+    productTour: [
+      {
+        title: t('tours.importHistory.productTabTitle'),
+        description: t('tours.importHistory.productTabDesc'),
+        targetSelector: '[data-tour="import-history-products-tab"]',
+        position: 'bottom',
+      },
+      {
+        title: t('tours.importHistory.productActionTitle'),
+        description: t('tours.importHistory.productActionDesc'),
+        targetSelector: '[data-tour="import-product-actions"]',
+        position: 'left',
+      },
+    ],
+    productTourInfo: [
+      {
+        title: t('tours.importHistory.productTabInfoTitle'),
+        description: t('tours.importHistory.productTabInfoDesc'),
+        isInfo: true,
+        position: 'center',
+      },
+    ]
+  };
+};
 
 
 export default function ImportHistoryPage() {
+  const { receiptTour, receiptTourInfo, productTour, productTourInfo } = useImportHistoryConstants();
   const { completeTour } = useOnboardingTour('import_history');
   const { isCompleted: receiptTourDone, completeTour: completeReceiptTour } = useOnboardingTour('import_receipt_tab');
   const { isCompleted: productTourDone, completeTour: completeProductTour } = useOnboardingTour('import_product_tab');
@@ -1412,14 +1413,14 @@ export default function ImportHistoryPage() {
         />
       )}
       <OnboardingTourOverlay
-        steps={(receipts?.length ?? 0) > 0 ? IMPORT_RECEIPT_TAB_TOUR : IMPORT_RECEIPT_TAB_TOUR_INFO}
+        steps={(receipts?.length ?? 0) > 0 ? receiptTour : receiptTourInfo}
         isActive={activeTour === 'receipt-tab' || (manualTourActive && activeTab === 'receipts')}
         onComplete={() => { setActiveTour(null); setManualTourActive(false); if ((receipts?.length ?? 0) > 0) { completeReceiptTour(); completeTour(); } }}
         onSkip={() => { setActiveTour(null); setManualTourActive(false); if ((receipts?.length ?? 0) > 0) { completeReceiptTour(); completeTour(); } }}
         tourKey="import_receipt_tab"
       />
       <OnboardingTourOverlay
-        steps={(products?.length ?? 0) > 0 ? IMPORT_PRODUCT_TAB_TOUR : IMPORT_PRODUCT_TAB_TOUR_INFO}
+        steps={(products?.length ?? 0) > 0 ? productTour : productTourInfo}
         isActive={activeTour === 'product-tab' || (manualTourActive && activeTab === 'products')}
         onComplete={() => { setActiveTour(null); setManualTourActive(false); if ((products?.length ?? 0) > 0) { completeProductTour(); completeTour(); } }}
         onSkip={() => { setActiveTour(null); setManualTourActive(false); if ((products?.length ?? 0) > 0) { completeProductTour(); completeTour(); } }}
