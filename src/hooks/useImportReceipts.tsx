@@ -6,9 +6,9 @@ import { useBranchFilter } from './useBranchFilter';
 import { sendBusinessPush, formatVND } from '@/lib/pushNotify';
 import { sendActivityAlert } from '@/lib/activityAlert';
 
-// Fetch all rows bypassing Supabase 1000-row default limit
+// Fetch all rows bypassing Supabase 1000-row default limit via pagination
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchAllRows<T>(queryBuilder: () => any, pageSize = 100000): Promise<T[]> {
+async function fetchAllRows<T>(queryBuilder: () => any, pageSize = 1000): Promise<T[]> {
   const allData: T[] = [];
   let from = 0;
   while (true) {
