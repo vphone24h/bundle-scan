@@ -121,6 +121,9 @@ export default function SubscriptionPage() {
   const feedbackZaloUrl = configs?.find(c => c.config_key === 'feedback_zalo_url')?.config_value || '';
   const feedbackFbUrl = configs?.find(c => c.config_key === 'feedback_fb_url')?.config_value || '';
   const feedbackHotline = configs?.find(c => c.config_key === 'feedback_hotline')?.config_value || '';
+  const paypalEmail = configs?.find(c => c.config_key === 'paypal_email')?.config_value || '';
+  const paypalNoteTemplate = configs?.find(c => c.config_key === 'paypal_note_template')?.config_value || 'MUA {GOI} - {SDT}';
+  const usdExchangeRate = parseFloat(configs?.find(c => c.config_key === 'usd_exchange_rate')?.config_value || '25000');
   const primaryBank = bankAccounts?.[0];
 
   const isSuperAdmin = permissions?.role === 'super_admin';
@@ -174,6 +177,17 @@ export default function SubscriptionPage() {
   };
 
   const getTransferContent = () => `${tenant?.subdomain?.toUpperCase() || ''} ${paymentCode}`;
+
+  const convertToUsd = (vnd: number) => {
+    if (!usdExchangeRate || usdExchangeRate <= 0) return 0;
+    return Math.ceil(vnd / usdExchangeRate);
+  };
+
+  const getPaypalNote = () => {
+    return paypalNoteTemplate
+      .replace('{GOI}', activePlan?.name || '')
+      .replace('{SDT}', tenant?.phone || tenant?.subdomain || '');
+  };
 
   return (
     <MainLayout>
@@ -430,9 +444,13 @@ export default function SubscriptionPage() {
                   <CardDescription>{plan.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-primary mb-4">
+                  <div className="text-3xl font-bold text-primary mb-1">
                     {formatNumber(plan.price)}đ
                   </div>
+                  {paypalEmail && usdExchangeRate > 0 && (
+                    <p className="text-sm text-muted-foreground mb-4">≈ {convertToUsd(plan.price)} USD</p>
+                  )}
+                  {!paypalEmail && <div className="mb-4" />}
                   <ul className="space-y-2 text-sm mb-4">
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
@@ -514,7 +532,12 @@ export default function SubscriptionPage() {
             <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Số tiền:</span>
-                <span className="text-2xl font-bold text-primary">{formatNumber(activePlan?.price || 0)}đ</span>
+                <div className="text-right">
+                  <span className="text-2xl font-bold text-primary">{formatNumber(activePlan?.price || 0)}đ</span>
+                  {paypalEmail && usdExchangeRate > 0 && (
+                    <p className="text-xs text-muted-foreground">≈ {convertToUsd(activePlan?.price || 0)} USD</p>
+                  )}
+                </div>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Thời hạn:</span>
@@ -540,6 +563,12 @@ export default function SubscriptionPage() {
                   <RadioGroupItem value="bank_transfer" id="bank2" />
                   <Label htmlFor="bank2" className="cursor-pointer">🏦 Chuyển khoản ngân hàng</Label>
                 </div>
+                {paypalEmail && (
+                  <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-muted/50" onClick={() => setPaymentMethod('paypal')}>
+                    <RadioGroupItem value="paypal" id="paypal2" />
+                    <Label htmlFor="paypal2" className="cursor-pointer">🅿️ PayPal ({convertToUsd(activePlan?.price || 0)} USD)</Label>
+                  </div>
+                )}
                 <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-muted/50" onClick={() => setPaymentMethod('momo')}>
                   <RadioGroupItem value="momo" id="momo2" />
                   <Label htmlFor="momo2" className="cursor-pointer">💜 Ví MoMo</Label>
@@ -558,98 +587,154 @@ export default function SubscriptionPage() {
             <Button variant="outline" onClick={() => setShowPlanDialog(false)}>Hủy</Button>
             <Button onClick={handleSubmitPayment} disabled={createPayment.isPending} className="flex-1 sm:flex-none">
               {createPayment.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <QrCode className="h-4 w-4 mr-2" />
-              Xem QR thanh toán
+              {paymentMethod === 'paypal' ? (
+                <>🅿️ Tạo yêu cầu PayPal</>
+              ) : (
+                <><QrCode className="h-4 w-4 mr-2" /> Xem QR thanh toán</>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Step 2: Payment QR Dialog */}
+      {/* Step 2: Payment Dialog (Bank Transfer or PayPal) */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <QrCode className="h-5 w-5" />
-              Thanh toán qua QR
+              {paymentMethod === 'paypal' ? (
+                <><span className="text-lg">🅿️</span> Thanh toán qua PayPal</>
+              ) : (
+                <><QrCode className="h-5 w-5" /> Thanh toán qua QR</>
+              )}
             </DialogTitle>
             <DialogDescription>
-              Quét mã QR hoặc chuyển khoản thủ công
+              {paymentMethod === 'paypal'
+                ? 'Gửi tiền qua PayPal theo thông tin bên dưới'
+                : 'Quét mã QR hoặc chuyển khoản thủ công'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* QR Code */}
-            {primaryBank && (
-              <div className="flex justify-center">
-                <div className="bg-white p-4 rounded-lg border shadow-sm">
-                  <img 
-                    src={generateVietQRUrl(primaryBank, selectedAmount, getTransferContent()) || ''} 
-                    alt="QR thanh toán"
-                    className="w-48 h-48 object-contain"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Bank Info */}
-            <div className="bg-muted p-4 rounded-lg space-y-3">
-              {primaryBank ? (
-                <>
+            {paymentMethod === 'paypal' ? (
+              <>
+                {/* PayPal payment info */}
+                <div className="bg-muted p-4 rounded-lg space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Ngân hàng:</span>
-                    <span className="font-medium">{primaryBank.bank_name}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Số tài khoản:</span>
+                    <span className="text-sm text-muted-foreground">Email PayPal:</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-medium">{primaryBank.account_number}</span>
-                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(primaryBank.account_number)}>
+                      <span className="font-medium">{paypalEmail}</span>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(paypalEmail)}>
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Chủ tài khoản:</span>
-                    <span className="font-medium">{primaryBank.account_holder}</span>
+                    <span className="text-sm text-muted-foreground">Số tiền USD:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-primary text-lg">${convertToUsd(selectedAmount)} USD</span>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(convertToUsd(selectedAmount).toString())}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                </>
-              ) : (
-                <p className="text-center text-muted-foreground">Chưa có thông tin ngân hàng</p>
-              )}
-              
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Số tiền:</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-primary">{formatNumber(selectedAmount)}đ</span>
-                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(selectedAmount.toString())}>
-                    <Copy className="h-3 w-3" />
-                  </Button>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground">Tương đương:</span>
+                    <span>{formatNumber(selectedAmount)}đ (tỷ giá 1 USD = {formatNumber(usdExchangeRate)}đ)</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Nội dung:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-medium text-primary text-sm">{getPaypalNote()}</span>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(getPaypalNote())}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Nội dung CK:</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-medium text-primary">{getTransferContent()}</span>
-                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(getTransferContent())}>
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            </div>
 
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p>⚠️ Vui lòng nhập đúng nội dung chuyển khoản để được xử lý tự động.</p>
-              <p className="flex items-center gap-1">
-                <Phone className="h-3 w-3" />
-                Hotline hỗ trợ: <a href={`tel:${hotline}`} className="text-primary font-medium">{hotline}</a>
-              </p>
-            </div>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>📌 Gửi tiền đến email PayPal ở trên với đúng số tiền và nội dung.</p>
+                  <p>⏳ Sau khi gửi, nhấn <strong>"Tôi đã thanh toán"</strong> — admin sẽ xác nhận và kích hoạt gói cho bạn.</p>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Bank QR Code */}
+                {primaryBank && (
+                  <div className="flex justify-center">
+                    <div className="bg-white p-4 rounded-lg border shadow-sm">
+                      <img 
+                        src={generateVietQRUrl(primaryBank, selectedAmount, getTransferContent()) || ''} 
+                        alt="QR thanh toán"
+                        className="w-48 h-48 object-contain"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Bank Info */}
+                <div className="bg-muted p-4 rounded-lg space-y-3">
+                  {primaryBank ? (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Ngân hàng:</span>
+                        <span className="font-medium">{primaryBank.bank_name}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Số tài khoản:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-medium">{primaryBank.account_number}</span>
+                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(primaryBank.account_number)}>
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Chủ tài khoản:</span>
+                        <span className="font-medium">{primaryBank.account_holder}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-center text-muted-foreground">Chưa có thông tin ngân hàng</p>
+                  )}
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Số tiền:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-primary">{formatNumber(selectedAmount)}đ</span>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(selectedAmount.toString())}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Nội dung CK:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-medium text-primary">{getTransferContent()}</span>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(getTransferContent())}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>⚠️ Vui lòng nhập đúng nội dung chuyển khoản để được xử lý tự động.</p>
+                  <p className="flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    Hotline hỗ trợ: <a href={`tel:${hotline}`} className="text-primary font-medium">{hotline}</a>
+                  </p>
+                </div>
+              </>
+            )}
           </div>
 
           <DialogFooter>
-            <Button onClick={() => setShowPaymentDialog(false)}>Đã hiểu</Button>
+            <Button onClick={() => setShowPaymentDialog(false)}>
+              {paymentMethod === 'paypal' ? 'Tôi đã thanh toán' : 'Đã hiểu'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

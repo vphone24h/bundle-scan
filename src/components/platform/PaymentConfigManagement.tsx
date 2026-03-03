@@ -70,6 +70,9 @@ export function PaymentConfigManagement() {
   const [landingGuideUrl, setLandingGuideUrl] = useState('');
   const [usersGuideUrl, setUsersGuideUrl] = useState('');
   const [stockCountGuideUrl, setStockCountGuideUrl] = useState('');
+  const [paypalEmail, setPaypalEmail] = useState('');
+  const [paypalNoteTemplate, setPaypalNoteTemplate] = useState('MUA {GOI} - {SDT}');
+  const [usdExchangeRate, setUsdExchangeRate] = useState('25000');
   const [savingConfig, setSavingConfig] = useState(false);
 
   // Bank account dialog
@@ -143,6 +146,12 @@ export function PaymentConfigManagement() {
       if (usersGuideConfig?.config_value) setUsersGuideUrl(usersGuideConfig.config_value);
       const stockCountGuideConfig = configs.find(c => c.config_key === 'stock_count_guide_url');
       if (stockCountGuideConfig?.config_value) setStockCountGuideUrl(stockCountGuideConfig.config_value);
+      const paypalEmailConfig = configs.find(c => c.config_key === 'paypal_email');
+      if (paypalEmailConfig?.config_value) setPaypalEmail(paypalEmailConfig.config_value);
+      const paypalNoteConfig = configs.find(c => c.config_key === 'paypal_note_template');
+      if (paypalNoteConfig?.config_value) setPaypalNoteTemplate(paypalNoteConfig.config_value);
+      const usdRateConfig = configs.find(c => c.config_key === 'usd_exchange_rate');
+      if (usdRateConfig?.config_value) setUsdExchangeRate(usdRateConfig.config_value);
     }
   }, [configs]);
 
@@ -167,6 +176,9 @@ export function PaymentConfigManagement() {
         { config_key: 'landing_guide_url', config_value: landingGuideUrl },
         { config_key: 'users_guide_url', config_value: usersGuideUrl },
         { config_key: 'stock_count_guide_url', config_value: stockCountGuideUrl },
+        { config_key: 'paypal_email', config_value: paypalEmail },
+        { config_key: 'paypal_note_template', config_value: paypalNoteTemplate },
+        { config_key: 'usd_exchange_rate', config_value: usdExchangeRate },
       ];
 
       for (const update of updates) {
@@ -451,6 +463,47 @@ export function PaymentConfigManagement() {
               minHeight="200px"
             />
           </div>
+          {/* PayPal & USD Config */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="font-medium text-sm mb-3 flex items-center gap-2">
+              💲 Cấu hình PayPal & Tỷ giá USD
+            </h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Cấu hình thanh toán PayPal quốc tế. Hệ thống sẽ tự quy đổi giá VNĐ sang USD theo tỷ giá bạn thiết lập.
+            </p>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label>Email PayPal nhận tiền</Label>
+                <Input
+                  type="email"
+                  value={paypalEmail}
+                  onChange={(e) => setPaypalEmail(e.target.value)}
+                  placeholder="example@gmail.com"
+                />
+                <p className="text-xs text-muted-foreground">Email PayPal để nhận thanh toán (Gmail cũng được)</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Tỷ giá USD (1 USD = ? VNĐ)</Label>
+                <Input
+                  type="number"
+                  value={usdExchangeRate}
+                  onChange={(e) => setUsdExchangeRate(e.target.value)}
+                  placeholder="25000"
+                />
+                <p className="text-xs text-muted-foreground">Ví dụ: 25000 → gói 1.000.000đ = 40 USD</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Mẫu nội dung thanh toán PayPal</Label>
+                <Input
+                  value={paypalNoteTemplate}
+                  onChange={(e) => setPaypalNoteTemplate(e.target.value)}
+                  placeholder="MUA {GOI} - {SDT}"
+                />
+                <p className="text-xs text-muted-foreground">Dùng {'{GOI}'} = tên gói, {'{SDT}'} = SĐT khách</p>
+              </div>
+            </div>
+          </div>
+
           <Button onClick={saveConfig} disabled={savingConfig}>
             {savingConfig && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <Save className="mr-2 h-4 w-4" />
