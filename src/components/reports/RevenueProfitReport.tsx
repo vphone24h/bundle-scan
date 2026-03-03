@@ -54,18 +54,9 @@ import { useCategories } from '@/hooks/useCategories';
 import { formatCurrency } from '@/lib/mockData';
 import { exportToExcel, formatCurrencyForExcel } from '@/lib/exportExcel';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useTranslation } from 'react-i18next';
 
 const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-
-const timePresets = [
-  { label: 'Hôm nay', value: 'today' },
-  { label: 'Hôm qua', value: 'yesterday' },
-  { label: 'Tuần này', value: 'this_week' },
-  { label: 'Tuần trước', value: 'last_week' },
-  { label: 'Tháng này', value: 'this_month' },
-  { label: 'Tháng trước', value: 'last_month' },
-  { label: 'Tất cả', value: 'all_time' },
-];
 
 function StatCard({
   title,
@@ -109,6 +100,7 @@ function StatCard({
 }
 
 export function RevenueProfitReport() {
+  const { t } = useTranslation();
   const today = format(new Date(), 'yyyy-MM-dd');
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
@@ -116,6 +108,16 @@ export function RevenueProfitReport() {
   const [categoryId, setCategoryId] = useState('_all_');
   const [chartGroupBy, setChartGroupBy] = useState<'day' | 'week' | 'month'>('day');
   const [detailType, setDetailType] = useState<DetailType | null>(null);
+
+  const timePresets = [
+    { label: t('common.today'), value: 'today' },
+    { label: t('common.yesterday'), value: 'yesterday' },
+    { label: t('common.thisWeek'), value: 'this_week' },
+    { label: t('common.lastWeek'), value: 'last_week' },
+    { label: t('common.thisMonth'), value: 'this_month' },
+    { label: t('common.lastMonth'), value: 'last_month' },
+    { label: t('common.allTime'), value: 'all_time' },
+  ];
 
   const { data: branches } = useBranches();
   const { data: categories } = useCategories();
@@ -202,10 +204,10 @@ export function RevenueProfitReport() {
   };
 
   const paymentPieData = stats ? [
-    { name: 'Tiền mặt', value: stats.paymentsBySource.cash },
-    { name: 'Thẻ NH', value: stats.paymentsBySource.bank_card },
-    { name: 'Ví điện tử', value: stats.paymentsBySource.e_wallet },
-    { name: 'Công nợ', value: stats.paymentsBySource.debt },
+    { name: t('common.cash'), value: stats.paymentsBySource.cash },
+    { name: t('common.bankCard'), value: stats.paymentsBySource.bank_card },
+    { name: t('common.eWallet'), value: stats.paymentsBySource.e_wallet },
+    { name: t('common.debt'), value: stats.paymentsBySource.debt },
   ].filter(d => d.value > 0) : [];
 
   const expensePieData = stats ? Object.entries(stats.expensesByCategory).map(([name, value]) => ({
@@ -242,36 +244,36 @@ export function RevenueProfitReport() {
             <div className="flex-1" />
             <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!stats}>
               <Download className="h-4 w-4 mr-1" />
-              Xuất Excel
+              {t('common.exportExcel')}
             </Button>
             <div className="flex gap-2 items-end" data-tour="report-date-filter">
               <div>
-                <Label>Từ ngày</Label>
+                <Label>{t('common.fromDate')}</Label>
                 <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" />
               </div>
               <div>
-                <Label>Đến ngày</Label>
+                <Label>{t('common.toDate')}</Label>
                 <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" />
               </div>
             </div>
             {isSuperAdmin && (
               <div>
-                <Label>Chi nhánh</Label>
+                <Label>{t('common.branch')}</Label>
                 <Select value={branchId} onValueChange={setBranchId}>
-                  <SelectTrigger className="w-40"><SelectValue placeholder="Tất cả" /></SelectTrigger>
+                  <SelectTrigger className="w-40"><SelectValue placeholder={t('common.all')} /></SelectTrigger>
                   <SelectContent className="bg-popover">
-                    <SelectItem value="_all_">Tất cả</SelectItem>
+                    <SelectItem value="_all_">{t('common.all')}</SelectItem>
                     {branches?.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             )}
             <div>
-              <Label>Danh mục</Label>
+              <Label>{t('common.category')}</Label>
               <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger className="w-40"><SelectValue placeholder="Tất cả" /></SelectTrigger>
+                <SelectTrigger className="w-40"><SelectValue placeholder={t('common.all')} /></SelectTrigger>
                 <SelectContent className="bg-popover">
-                  <SelectItem value="_all_">Tất cả</SelectItem>
+                  <SelectItem value="_all_">{t('common.all')}</SelectItem>
                   {categories?.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -282,28 +284,28 @@ export function RevenueProfitReport() {
 
       {/* Main Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatCard title="1. Tổng doanh thu bán hàng" value={formatCurrency(stats?.totalSalesRevenue || 0)} icon={<ShoppingCart className="h-5 w-5" />} description={`${stats?.productsSold || 0} sản phẩm đã bán`} onClick={() => setDetailType('sales')} />
-        <StatCard title="2. Doanh thu trả hàng" value={formatCurrency(stats?.totalReturnRevenue || 0)} icon={<RotateCcw className="h-5 w-5" />} trend="down" description={`${stats?.productsReturned || 0} sản phẩm trả`} className="border-destructive/20" onClick={() => setDetailType('returns')} />
-        <StatCard title="3. Doanh thu thuần" value={formatCurrency(stats?.netRevenue || 0)} icon={<DollarSign className="h-5 w-5" />} description="= DT bán hàng - DT trả hàng" onClick={() => setDetailType('netRevenue')} />
-        <StatCard title="3.1 Lợi nhuận kinh doanh" value={formatCurrency(stats?.businessProfit || 0)} icon={<Calculator className="h-5 w-5" />} trend={stats?.businessProfit && stats.businessProfit > 0 ? 'up' : 'down'} description="Σ(Giá bán - Giá nhập) từng SP" className={(stats?.businessProfit || 0) > 0 ? 'border-green-500/30' : 'border-destructive/30'} onClick={() => setDetailType('businessProfit')} />
-        <StatCard title="4. Chi phí" value={formatCurrency(stats?.totalExpenses || 0)} icon={<Wallet className="h-5 w-5" />} trend="down" description="Từ sổ quỹ (hạch toán KD)" onClick={() => setDetailType('expenses')} />
-        <StatCard title="5. Thu nhập khác" value={formatCurrency(stats?.otherIncome || 0)} icon={<TrendingUp className="h-5 w-5" />} description="Bo, hỗ trợ, thu nhập ngoài" onClick={() => setDetailType('otherIncome')} />
+        <StatCard title={`1. ${t('common.salesRevenue')}`} value={formatCurrency(stats?.totalSalesRevenue || 0)} icon={<ShoppingCart className="h-5 w-5" />} description={`${stats?.productsSold || 0} ${t('common.productsSold')}`} onClick={() => setDetailType('sales')} />
+        <StatCard title={`2. ${t('common.returnRevenue')}`} value={formatCurrency(stats?.totalReturnRevenue || 0)} icon={<RotateCcw className="h-5 w-5" />} trend="down" description={`${stats?.productsReturned || 0} ${t('common.productsReturned')}`} className="border-destructive/20" onClick={() => setDetailType('returns')} />
+        <StatCard title={`3. ${t('common.netRevenue')}`} value={formatCurrency(stats?.netRevenue || 0)} icon={<DollarSign className="h-5 w-5" />} description={t('common.salesMinusReturns')} onClick={() => setDetailType('netRevenue')} />
+        <StatCard title={`3.1 ${t('common.businessProfit')}`} value={formatCurrency(stats?.businessProfit || 0)} icon={<Calculator className="h-5 w-5" />} trend={stats?.businessProfit && stats.businessProfit > 0 ? 'up' : 'down'} description={t('common.sumSaleMinusImport')} className={(stats?.businessProfit || 0) > 0 ? 'border-green-500/30' : 'border-destructive/30'} onClick={() => setDetailType('businessProfit')} />
+        <StatCard title={`4. ${t('common.expenses')}`} value={formatCurrency(stats?.totalExpenses || 0)} icon={<Wallet className="h-5 w-5" />} trend="down" description={t('common.fromCashBook')} onClick={() => setDetailType('expenses')} />
+        <StatCard title={`5. ${t('common.otherIncome')}`} value={formatCurrency(stats?.otherIncome || 0)} icon={<TrendingUp className="h-5 w-5" />} description={t('common.tipsOtherIncome')} onClick={() => setDetailType('otherIncome')} />
       </div>
 
       {/* Net Profit */}
       <Card className={`border-2 cursor-pointer hover:shadow-md transition-shadow ${(stats?.netProfit || 0) >= 0 ? 'border-green-500 bg-green-50/50 dark:bg-green-950/20' : 'border-destructive bg-red-50/50 dark:bg-red-950/20'}`} onClick={() => setDetailType('netProfit')}>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-lg font-medium">6. LỢI NHUẬN THUẦN (Lợi nhuận thật)</p>
-              <p className="text-sm text-muted-foreground mt-1">= (Lợi nhuận KD + Thu nhập khác) - Chi phí</p>
+           <div>
+              <p className="text-lg font-medium">6. {t('common.netProfit')}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('common.netProfitFormula')}</p>
             </div>
             <div className="text-right">
               <p className={`text-4xl font-bold ${(stats?.netProfit || 0) >= 0 ? 'text-green-600' : 'text-destructive'}`}>
                 {formatCurrency(stats?.netProfit || 0)}
               </p>
               <Badge variant={(stats?.netProfit || 0) >= 0 ? 'default' : 'destructive'} className="mt-2">
-                {(stats?.netProfit || 0) >= 0 ? 'Có lãi' : 'Lỗ'}
+                {(stats?.netProfit || 0) >= 0 ? t('common.profitable') : t('common.loss')}
               </Badge>
             </div>
           </div>
@@ -314,13 +316,13 @@ export function RevenueProfitReport() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Biểu đồ Doanh thu & Lợi nhuận</CardTitle>
+            <CardTitle className="text-lg">{t('common.revenueChart')}</CardTitle>
             <Select value={chartGroupBy} onValueChange={(v) => setChartGroupBy(v as any)}>
               <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
               <SelectContent className="bg-popover">
-                <SelectItem value="day">Theo ngày</SelectItem>
-                <SelectItem value="week">Theo tuần</SelectItem>
-                <SelectItem value="month">Theo tháng</SelectItem>
+                <SelectItem value="day">{t('common.byDay')}</SelectItem>
+                <SelectItem value="week">{t('common.byWeek')}</SelectItem>
+                <SelectItem value="month">{t('common.byMonth')}</SelectItem>
               </SelectContent>
             </Select>
           </CardHeader>
@@ -333,20 +335,20 @@ export function RevenueProfitReport() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" tickFormatter={(value) => chartGroupBy === 'month' ? format(new Date(value + '-01'), 'MM/yyyy') : format(new Date(value), 'dd/MM', { locale: vi })} />
                   <YAxis tickFormatter={(v) => `${(v / 1000000).toFixed(0)}tr`} />
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} labelFormatter={(label) => `Ngày: ${label}`} />
+                  <Tooltip formatter={(value: number) => formatCurrency(value)} labelFormatter={(label) => `${t('common.date')}: ${label}`} />
                   <Legend />
-                  <Bar dataKey="revenue" name="Doanh thu" fill="#3b82f6" />
-                  <Bar dataKey="profit" name="Lợi nhuận" fill="#10b981" />
+                  <Bar dataKey="revenue" name={t('common.revenue')} fill="#3b82f6" />
+                  <Bar dataKey="profit" name={t('common.profit')} fill="#10b981" />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle className="text-lg">Thống kê nguồn tiền</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-lg">{t('common.paymentSourceStats')}</CardTitle></CardHeader>
           <CardContent>
             {paymentPieData.length === 0 ? (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">Chưa có dữ liệu</div>
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">{t('common.noDataYet')}</div>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -364,9 +366,9 @@ export function RevenueProfitReport() {
       {/* Details Tables */}
       <Tabs defaultValue="detailed" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="detailed">Chi tiết lợi nhuận</TabsTrigger>
-          <TabsTrigger value="category">Theo danh mục</TabsTrigger>
-          <TabsTrigger value="expenses">Chi tiết chi phí</TabsTrigger>
+          <TabsTrigger value="detailed">{t('common.profitDetails')}</TabsTrigger>
+          <TabsTrigger value="category">{t('common.byCategory')}</TabsTrigger>
+          <TabsTrigger value="expenses">{t('common.expenseDetails')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="detailed">
@@ -377,16 +379,16 @@ export function RevenueProfitReport() {
           <Card>
             <CardContent className="pt-6">
               {stats?.profitByCategory.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">Chưa có dữ liệu</div>
+                <div className="text-center py-8 text-muted-foreground">{t('common.noDataYet')}</div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Danh mục</TableHead>
-                      <TableHead className="text-center">SL bán</TableHead>
-                      <TableHead className="text-right">Doanh thu</TableHead>
-                      <TableHead className="text-right">Lợi nhuận</TableHead>
-                      <TableHead className="text-right">Tỷ lệ lãi</TableHead>
+                      <TableHead>{t('common.category')}</TableHead>
+                      <TableHead className="text-center">{t('common.categorySales')}</TableHead>
+                      <TableHead className="text-right">{t('common.revenue')}</TableHead>
+                      <TableHead className="text-right">{t('common.profit')}</TableHead>
+                      <TableHead className="text-right">{t('common.profitMargin')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -410,15 +412,15 @@ export function RevenueProfitReport() {
           <Card>
             <CardContent className="pt-6">
               {expensePieData.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">Chưa có dữ liệu chi phí</div>
+                <div className="text-center py-8 text-muted-foreground">{t('common.noExpenseData')}</div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Loại chi phí</TableHead>
-                        <TableHead className="text-right">Số tiền</TableHead>
-                        <TableHead className="text-right">Tỷ lệ</TableHead>
+                        <TableHead>{t('common.expenseType')}</TableHead>
+                        <TableHead className="text-right">{t('common.amount')}</TableHead>
+                        <TableHead className="text-right">{t('common.percentage')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

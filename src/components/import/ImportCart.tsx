@@ -3,6 +3,7 @@ import { formatCurrency } from '@/lib/mockData';
 import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
 import { Button } from '@/components/ui/button';
 import { Trash2, ShoppingCart } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface ImportCartProps {
   items: ImportReceiptItem[];
@@ -11,6 +12,7 @@ interface ImportCartProps {
 }
 
 export function ImportCart({ items, onRemove, onCheckout }: ImportCartProps) {
+  const { t } = useTranslation();
   const total = items.reduce((sum, item) => sum + item.importPrice * item.quantity, 0);
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -18,15 +20,15 @@ export function ImportCart({ items, onRemove, onCheckout }: ImportCartProps) {
     <div className="bg-card border rounded-xl p-4 lg:sticky lg:top-4">
       <div className="flex items-center gap-2 mb-4">
         <ShoppingCart className="h-5 w-5 text-primary" />
-        <h3 className="font-semibold">Giỏ nhập hàng</h3>
+        <h3 className="font-semibold">{t('common.importCart')}</h3>
         <span className="ml-auto bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
-          {items.length} dòng / {totalQuantity} SP
+          {items.length} {t('common.lines')} / {totalQuantity} {t('common.products')}
         </span>
       </div>
 
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">
-          Chưa có sản phẩm trong giỏ
+          {t('common.noProductsInCart')}
         </p>
       ) : (
         <>
@@ -58,7 +60,7 @@ export function ImportCart({ items, onRemove, onCheckout }: ImportCartProps) {
                   </div>
                   {item.salePrice && item.salePrice > 0 && (
                     <p className="text-xs text-success mt-0.5">
-                      Giá bán: {formatCurrencyWithSpaces(item.salePrice)}đ
+                      {t('common.salePrice')}: {formatCurrencyWithSpaces(item.salePrice)}đ
                     </p>
                   )}
                 </div>
@@ -76,13 +78,13 @@ export function ImportCart({ items, onRemove, onCheckout }: ImportCartProps) {
 
           <div className="border-t mt-4 pt-4">
             <div className="flex justify-between items-center mb-4">
-              <span className="font-medium">Tổng tiền</span>
+              <span className="font-medium">{t('common.totalPrice')}</span>
               <span className="text-xl font-bold text-primary">
                 {formatCurrency(total)}
               </span>
             </div>
             <Button className="w-full" size="lg" onClick={onCheckout}>
-              Thanh toán & Nhập kho
+              {t('common.payAndImport')}
             </Button>
           </div>
         </>

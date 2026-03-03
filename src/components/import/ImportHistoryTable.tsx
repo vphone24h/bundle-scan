@@ -11,6 +11,7 @@ import {
 import { MoreHorizontal, Eye, Pencil, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useTranslation } from 'react-i18next';
 
 interface ImportHistoryTableProps {
   receipts: ImportReceipt[];
@@ -25,6 +26,7 @@ export function ImportHistoryTable({
   onEdit,
   onReturn,
 }: ImportHistoryTableProps) {
+  const { t } = useTranslation();
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
 
@@ -33,15 +35,15 @@ export function ImportHistoryTable({
       <table className="data-table">
         <thead>
           <tr>
-            <th>Mã phiếu</th>
-            <th>Ngày nhập</th>
-            <th className="text-center">Số lượng SP</th>
-            {canViewImportPrice && <th className="text-right">Tổng tiền</th>}
-            {canViewImportPrice && <th className="text-right">Đã thanh toán</th>}
-            {canViewImportPrice && <th className="text-right">Còn nợ</th>}
-            <th>Nhà cung cấp</th>
-            <th>Người tạo</th>
-            <th>Trạng thái</th>
+            <th>{t('importHistory.receiptCode')}</th>
+            <th>{t('importHistory.importDate')}</th>
+            <th className="text-center">{t('importHistory.productCount')}</th>
+            {canViewImportPrice && <th className="text-right">{t('importHistory.totalAmount')}</th>}
+            {canViewImportPrice && <th className="text-right">{t('importHistory.paidAmount')}</th>}
+            {canViewImportPrice && <th className="text-right">{t('importHistory.debtAmount')}</th>}
+            <th>{t('importHistory.supplier')}</th>
+            <th>{t('importHistory.createdBy')}</th>
+            <th>{t('importHistory.status')}</th>
             <th className="w-16"></th>
           </tr>
         </thead>
@@ -74,7 +76,7 @@ export function ImportHistoryTable({
                       : 'bg-destructive/10 text-destructive border-destructive/20'
                   )}
                 >
-                  {receipt.status === 'completed' ? 'Hoàn tất' : 'Đã huỷ'}
+                  {receipt.status === 'completed' ? t('importHistory.completed') : t('importHistory.cancelled')}
                 </Badge>
               </td>
               <td>
@@ -87,15 +89,15 @@ export function ImportHistoryTable({
                   <DropdownMenuContent align="end" className="bg-popover">
                     <DropdownMenuItem onClick={() => onView(receipt)}>
                       <Eye className="mr-2 h-4 w-4" />
-                      Xem chi tiết
+                      {t('importHistory.viewDetail')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onEdit(receipt)}>
                       <Pencil className="mr-2 h-4 w-4" />
-                      Chỉnh sửa
+                      {t('importHistory.edit')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onReturn(receipt)}>
                       <RotateCcw className="mr-2 h-4 w-4" />
-                      Trả hàng
+                      {t('importHistory.returnGoods')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -106,7 +108,7 @@ export function ImportHistoryTable({
       </table>
       {receipts.length === 0 && (
         <div className="py-12 text-center text-muted-foreground">
-          Chưa có phiếu nhập nào
+          {t('importHistory.noReceipts')}
         </div>
       )}
     </div>
