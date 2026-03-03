@@ -1068,7 +1068,7 @@ export default function ExportHistoryPage() {
       <InvoicePrintDialog
         open={showPrintDialog}
         onOpenChange={setShowPrintDialog}
-        receipt={printReceipt}
+        receipt={printReceipt ? { ...printReceipt, items: detailItems || printReceipt.items } : null}
         template={template}
         branchInfo={printBranch}
       />
