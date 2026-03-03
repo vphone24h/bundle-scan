@@ -308,6 +308,11 @@ export default function PublicLandingPage() {
                 <li>Báo cáo lợi nhuận</li>
                 <li>Quản lý công nợ</li>
                 <li>Website bán hàng miễn phí</li>
+                <li>
+                  <button onClick={() => navigate('/warranty-check')} className="hover:text-primary transition-colors underline underline-offset-2">
+                    🔍 Tra cứu bảo hành
+                  </button>
+                </li>
               </ul>
             </div>
           </div>
