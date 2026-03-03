@@ -183,6 +183,9 @@ export function LandingProductsTab() {
   const updateProduct = useUpdateLandingProduct();
   const deleteProduct = useDeleteLandingProduct();
 
+  const reorderCats = useReorderLandingProductCategories();
+  const reorderProds = useReorderLandingProducts();
+
   const [catName, setCatName] = useState('');
   const [catDialog, setCatDialog] = useState(false);
   const [editingCat, setEditingCat] = useState<LandingProductCategory | null>(null);
