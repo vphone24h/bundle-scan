@@ -265,7 +265,7 @@ const Index = () => {
               title={t('pages.dashboard.orders')}
               value={pendingOrderCount || 0}
               icon={<ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />}
-              onClick={() => navigate('/landing-admin?tab=orders')}
+              onClick={() => navigate('/landing-settings?tab=orders')}
               className={`cursor-pointer hover:shadow-md transition-shadow ${(pendingOrderCount || 0) > 0 ? 'border-warning/50' : ''}`}
             />
           )}
