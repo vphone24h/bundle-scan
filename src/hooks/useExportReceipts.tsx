@@ -153,11 +153,10 @@ export function useExportReceiptItems() {
       // First get export_receipt_ids for the branch
       let receiptIds: string[] | null = null;
       if (shouldFilter && branchId) {
-        const { data: receipts } = await supabase
-          .from('export_receipts')
-          .select('id')
-          .eq('branch_id', branchId);
-        receiptIds = receipts?.map(r => r.id) || [];
+        const allReceipts = await fetchAllRows<{ id: string }>(() =>
+          supabase.from('export_receipts').select('id').eq('branch_id', branchId)
+        );
+        receiptIds = allReceipts.map(r => r.id);
       }
 
       const buildQuery = () => {
