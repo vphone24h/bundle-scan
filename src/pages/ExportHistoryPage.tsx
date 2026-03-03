@@ -950,7 +950,7 @@ export default function ExportHistoryPage() {
                 
                 {/* Mobile Card View */}
                 <div className="sm:hidden space-y-2">
-                  {selectedReceipt.export_receipt_items?.map((item, index) => {
+                  {(detailItems || selectedReceipt.export_receipt_items)?.map((item, index) => {
                     const quantity = (item as any).quantity || 1;
                     const totalPrice = item.sale_price * quantity;
                     return (
