@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { SearchInput } from '@/components/ui/search-input';
 import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -281,15 +282,12 @@ export default function ProductsPage() {
           <CardContent className="pt-4 sm:pt-6">
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <div className="relative flex-1" data-tour="product-search">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder={t('pages.products.searchPlaceholder')}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 search-input-highlight"
-                  />
-                </div>
+                <SearchInput
+                  placeholder={t('pages.products.searchPlaceholder')}
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                  containerClassName="flex-1 data-[tour='product-search']"
+                />
                 <div className="flex gap-2">
                   <Button
                     variant={showFilters ? 'secondary' : 'outline'}

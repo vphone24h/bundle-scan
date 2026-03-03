@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -271,15 +272,12 @@ export function TenantsManagement() {
       {/* Search & Filters */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Tìm doanh nghiệp..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 search-input-highlight"
-            />
-          </div>
+          <SearchInput
+            placeholder="Tìm doanh nghiệp..."
+            value={search}
+            onChange={setSearch}
+            containerClassName="flex-1 max-w-sm"
+          />
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary">{selectedIds.size} đã chọn</Badge>

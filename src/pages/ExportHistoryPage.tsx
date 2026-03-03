@@ -8,6 +8,7 @@ import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SearchInput } from '@/components/ui/search-input';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -452,15 +453,11 @@ export default function ExportHistoryPage() {
           <div className="space-y-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Tìm theo mã phiếu, IMEI, tên SP, khách hàng, SĐT..."
-                    className="pl-9 search-input-highlight"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
+                <SearchInput
+                  placeholder="Tìm theo mã phiếu, IMEI, tên SP, khách hàng, SĐT..."
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                />
               </div>
               <Button
                 variant={showFilters ? 'secondary' : 'outline'}

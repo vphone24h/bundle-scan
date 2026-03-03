@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { History, User, Bell, Mail, MonitorSmartphone, Pin, PinOff, Search, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -130,15 +130,13 @@ function UnifiedNotificationHistory() {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Tìm theo tên thông báo..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 h-9 text-sm"
-          />
-        </div>
+        <SearchInput
+          placeholder="Tìm theo tên thông báo..."
+          value={search}
+          onChange={setSearch}
+          containerClassName="flex-1"
+          className="h-9 text-sm"
+        />
         <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as any)}>
           <SelectTrigger className="w-full sm:w-[160px] h-9">
             <Filter className="h-3.5 w-3.5 mr-1.5" />

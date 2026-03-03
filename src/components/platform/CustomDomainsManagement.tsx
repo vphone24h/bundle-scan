@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -122,15 +123,12 @@ export function CustomDomainsManagement() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Tìm domain hoặc tên DN..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 search-input-highlight"
-          />
-        </div>
+        <SearchInput
+          placeholder="Tìm domain hoặc tên DN..."
+          value={search}
+          onChange={setSearch}
+          containerClassName="flex-1 max-w-sm"
+        />
         <Button onClick={() => setShowAddDialog(true)}>
           <Plus className="h-4 w-4 mr-1.5" />
           Gắn domain
