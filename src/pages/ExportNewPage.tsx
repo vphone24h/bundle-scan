@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
+import { useTranslation } from 'react-i18next';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -78,40 +79,20 @@ interface CartItem extends ExportReceiptItem {
   warranty?: string;
 }
 
-const exportNewTourSteps: TourStep[] = [
-  {
-    title: '📦 Chào mừng đến trang Xuất hàng!',
-    description: 'Đây là nơi bạn tạo **phiếu bán hàng**. Hãy cùng tìm hiểu các bước cơ bản.',
-    isInfo: true,
-    position: 'center',
-  },
-  {
-    title: '① Quét mã vạch',
-    description: 'Nhấn nút **quét mã vạch** bên cạnh ô tìm kiếm để mở camera quét **IMEI/SKU**. Sản phẩm được thêm tự động vào giỏ hàng.',
-    targetSelector: '[data-tour="export-barcode"]',
-    position: 'bottom',
-  },
-  {
-    title: '② Tìm thủ công',
-    description: 'Không có mã vạch? Tìm sản phẩm theo **IMEI** hoặc **tên**, nhập **giá bán** rồi thêm vào giỏ.',
-    targetSelector: '[data-tour="export-manual-search"]',
-    position: 'bottom',
-  },
-  {
-    title: '③ Giỏ hàng & Thanh toán',
-    description: 'Xem danh sách sản phẩm đã chọn, nhập **thông tin khách hàng**, sau đó nhấn **"Thanh toán"** để hoàn tất.',
-    targetSelector: '[data-tour="export-cart"]',
-    position: 'left',
-  },
-  {
-    title: '✓ Sẵn sàng bán hàng!',
-    description: 'Bạn đã nắm được quy trình. Bắt đầu **quét mã** hoặc **tìm sản phẩm** để tạo phiếu xuất đầu tiên!',
-    isInfo: true,
-    position: 'center',
-  },
-];
+function useExportNewTourSteps(): TourStep[] {
+  const { t } = useTranslation();
+  return [
+    { title: t('tours.exportNew.tourTitle1'), description: t('tours.exportNew.tourDesc1'), isInfo: true, position: 'center' as const },
+    { title: t('tours.exportNew.tourTitle2'), description: t('tours.exportNew.tourDesc2'), targetSelector: '[data-tour="export-barcode"]', position: 'bottom' as const },
+    { title: t('tours.exportNew.tourTitle3'), description: t('tours.exportNew.tourDesc3'), targetSelector: '[data-tour="export-manual-search"]', position: 'bottom' as const },
+    { title: t('tours.exportNew.tourTitle4'), description: t('tours.exportNew.tourDesc4'), targetSelector: '[data-tour="export-cart"]', position: 'left' as const },
+    { title: t('tours.exportNew.tourTitle5'), description: t('tours.exportNew.tourDesc5'), isInfo: true, position: 'center' as const },
+  ];
+}
 
 export default function ExportNewPage() {
+  const { t } = useTranslation();
+  const exportNewTourSteps = useExportNewTourSteps();
   // Onboarding tour
   const { isCompleted: exportTourDone, isLoading: exportTourLoading, completeTour: completeExportTour } = useOnboardingTour('export_new');
   const [manualTourActive, setManualTourActive] = useState(false);
@@ -186,8 +167,8 @@ export default function ExportNewPage() {
   };
 
   const getBlockedExportMessage = (branchName?: string | null): string => {
-    const name = branchName || 'chi nhánh khác';
-    return `Sản phẩm thuộc "${name}". Bạn chỉ được xuất hàng từ chi nhánh của mình. Muốn xuất sản phẩm này, vui lòng yêu cầu chuyển hàng về chi nhánh của bạn.`;
+    const name = branchName || t('pages.exportNew.cannotExport');
+    return t('pages.exportNew.cannotExport') + `: ${name}`;
   };
 
   // Calculate tax
@@ -843,9 +824,9 @@ export default function ExportNewPage() {
   return (
     <MainLayout>
       <PageHeader
-        title="Tạo phiếu xuất hàng"
-        description="Xuất hàng và ghi nhận bán hàng"
-        helpText="Tạo phiếu xuất (bán hàng) bằng cách quét mã vạch hoặc tìm sản phẩm. Chọn khách hàng, áp dụng chiết khấu, sau đó thanh toán và in hóa đơn."
+        title={t('tours.exportNew.pageTitle')}
+        description={t('tours.exportNew.pageDesc')}
+        helpText={t('tours.exportNew.pageHelp')}
         actions={
           <div className="flex gap-2 flex-wrap">
             <Button
@@ -855,8 +836,8 @@ export default function ExportNewPage() {
               className="h-8 text-xs sm:text-sm"
             >
               <PlayCircle className="mr-1.5 h-4 w-4" />
-              <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
-              <span className="sm:hidden">{manualTourActive ? 'Tắt HD' : 'Xem HD'}</span>
+              <span className="hidden sm:inline">{manualTourActive ? t('tours.importNew.turnOffGuide') : t('tours.importNew.viewGuide')}</span>
+              <span className="sm:hidden">{manualTourActive ? t('tours.importNew.turnOffGuideShort') : t('tours.importNew.viewGuideShort')}</span>
             </Button>
             <Button 
               variant="outline" 
@@ -865,8 +846,8 @@ export default function ExportNewPage() {
               className="h-8 text-xs sm:text-sm"
             >
               <Calculator className="mr-1.5 h-4 w-4" />
-              <span className="hidden sm:inline">Tính trả góp</span>
-              <span className="sm:hidden">Trả góp</span>
+              <span className="hidden sm:inline">{t('pages.exportNew.installmentCalc')}</span>
+              <span className="sm:hidden">{t('pages.exportNew.installmentShort')}</span>
             </Button>
           </div>
         }
@@ -881,14 +862,14 @@ export default function ExportNewPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Search className="h-5 w-5" />
-                Tìm sản phẩm
+                {t('tours.exportNew.searchProduct')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="relative flex gap-2">
                 <div className="flex-1">
                   <Input
-                    placeholder="Nhập IMEI/Serial hoặc tên sản phẩm..."
+                    placeholder={t('tours.exportNew.searchPlaceholder')}
                     value={imeiSearch || nameSearch}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -941,7 +922,7 @@ export default function ExportNewPage() {
                   }}
                   disabled={checkProduct.isPending}
                 >
-                  Tìm
+                  {t('tours.exportNew.findBtn')}
                 </Button>
                 <Button
                   variant={showBarcodeScanner ? 'default' : 'outline'}
@@ -1070,25 +1051,25 @@ export default function ExportNewPage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5" />
-                Giỏ hàng ({cart.length} sản phẩm)
+                {t('tours.exportNew.cart')} ({cart.length} {t('pages.exportNew.cartProducts', { count: cart.length })})
               </CardTitle>
             </CardHeader>
             <CardContent>
               {cart.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Chưa có sản phẩm nào trong giỏ hàng
+                  {t('tours.exportNew.emptyCart')}
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Sản phẩm</TableHead>
-                      <TableHead className="hidden md:table-cell">IMEI/SKU</TableHead>
-                      <TableHead className="hidden sm:table-cell">Danh mục</TableHead>
-                      <TableHead className="text-center w-20">SL</TableHead>
-                      <TableHead className="text-right">Đơn giá</TableHead>
-                      <TableHead className="w-28">Bảo hành</TableHead>
-                      <TableHead className="text-right">Thành tiền</TableHead>
+                      <TableHead>{t('tours.exportNew.productCol')}</TableHead>
+                      <TableHead className="hidden md:table-cell">{t('tours.exportNew.imeiSkuCol')}</TableHead>
+                      <TableHead className="hidden sm:table-cell">{t('tours.exportNew.categoryCol')}</TableHead>
+                      <TableHead className="text-center w-20">{t('tours.exportNew.qtyCol')}</TableHead>
+                      <TableHead className="text-right">{t('tours.exportNew.unitPriceCol')}</TableHead>
+                      <TableHead className="w-28">{t('tours.exportNew.warrantyCol')}</TableHead>
+                      <TableHead className="text-right">{t('tours.exportNew.subtotalCol')}</TableHead>
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1171,7 +1152,7 @@ export default function ExportNewPage() {
                       />
                       <Label htmlFor="enable-tax" className="flex items-center gap-2 cursor-pointer font-medium">
                         <Percent className="h-4 w-4" />
-                        Tính thuế VAT
+                        {t('tours.exportNew.vatTax')}
                       </Label>
                     </div>
                     
@@ -1193,7 +1174,7 @@ export default function ExportNewPage() {
                         <div className="flex items-center gap-1">
                           <Input
                             type="number"
-                            placeholder="Khác"
+                            placeholder={t('tours.exportNew.otherRate')}
                             value={customTaxRate}
                             onChange={(e) => {
                               setCustomTaxRate(e.target.value);
@@ -1213,17 +1194,17 @@ export default function ExportNewPage() {
                   {/* Totals */}
                   <div className="space-y-1">
                     <div className="flex justify-between text-sm">
-                      <span>Tiền hàng:</span>
+                      <span>{t('tours.exportNew.subtotal')}:</span>
                       <span className="font-medium">{subtotalAmount.toLocaleString('vi-VN')}đ</span>
                     </div>
                     {taxEnabled && effectiveTaxRate > 0 && (
                       <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>Thuế VAT ({effectiveTaxRate}%):</span>
+                        <span>{t('tours.exportNew.vatLabel', { rate: effectiveTaxRate })}:</span>
                         <span>{taxAmount.toLocaleString('vi-VN')}đ</span>
                       </div>
                     )}
                     <div className="flex justify-between pt-1 border-t">
-                      <span className="font-medium">Tổng tiền:</span>
+                      <span className="font-medium">{t('tours.exportNew.totalAmount')}:</span>
                       <span className="text-xl font-bold text-primary">
                         {totalAmount.toLocaleString('vi-VN')}đ
                       </span>
@@ -1241,7 +1222,7 @@ export default function ExportNewPage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <User className="h-5 w-5" />
-                Thông tin khách hàng
+                {t('tours.exportNew.customerInfo')}
               </CardTitle>
             </CardHeader>
              <CardContent className="space-y-4">
@@ -1268,27 +1249,27 @@ export default function ExportNewPage() {
                  <div className="space-y-2 pt-2 border-t">
                    <Label className="flex items-center gap-2">
                      <User className="h-4 w-4" />
-                     Nhân viên bán hàng <span className="text-destructive">*</span>
+                      {t('tours.exportNew.salesStaff')} <span className="text-destructive">*</span>
                    </Label>
                    <Select
                      value={salesStaffId || ''}
                      onValueChange={(v) => setSalesStaffId(v || null)}
                    >
                      <SelectTrigger>
-                       <SelectValue placeholder="Chọn nhân viên bán..." />
+                       <SelectValue placeholder={t('tours.exportNew.selectSalesStaff')} />
                      </SelectTrigger>
                      <SelectContent>
                        {staffList?.map((staff) => (
                          <SelectItem key={staff.user_id} value={staff.user_id}>
-                           {staff.display_name || 'Nhân viên'}
-                           {staff.user_role === 'super_admin' && ' (Admin)'}
-                           {staff.user_role === 'branch_admin' && ' (QL)'}
+                            {staff.display_name || t('tours.exportNew.staffLabel')}
+                            {staff.user_role === 'super_admin' && ` ${t('tours.exportNew.adminLabel')}`}
+                            {staff.user_role === 'branch_admin' && ` ${t('tours.exportNew.managerLabel')}`}
                          </SelectItem>
                        ))}
                      </SelectContent>
                    </Select>
                    <p className="text-xs text-muted-foreground">
-                     Doanh số đơn hàng sẽ được tính cho nhân viên này
+                     {t('tours.exportNew.salesStaffNote')}
                    </p>
                  </div>
                )}
@@ -1300,27 +1281,27 @@ export default function ExportNewPage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-                Thanh toán
+                {t('tours.exportNew.payment')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Số lượng sản phẩm:</span>
+                  <span>{t('tours.exportNew.productCount')}:</span>
                   <span className="font-medium">{cart.length}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Tiền hàng:</span>
+                  <span>{t('tours.exportNew.subtotal')}:</span>
                   <span className="font-medium">{subtotalAmount.toLocaleString('vi-VN')}đ</span>
                 </div>
                 {taxEnabled && effectiveTaxRate > 0 && (
                   <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Thuế VAT ({effectiveTaxRate}%):</span>
+                    <span>{t('tours.exportNew.vatLabel', { rate: effectiveTaxRate })}:</span>
                     <span>{taxAmount.toLocaleString('vi-VN')}đ</span>
                   </div>
                 )}
                 <div className="flex justify-between pt-1 border-t">
-                  <span className="font-medium">Tổng thanh toán:</span>
+                  <span className="font-medium">{t('tours.exportNew.totalPayment')}:</span>
                   <span className="text-xl font-bold text-primary">
                     {totalAmount.toLocaleString('vi-VN')}đ
                   </span>
@@ -1334,7 +1315,7 @@ export default function ExportNewPage() {
                 disabled={cart.length === 0 || createReceipt.isPending}
               >
                 <Banknote className="h-4 w-4 mr-2" />
-                Tiến hành thanh toán
+                {t('tours.exportNew.proceedPayment')}
               </Button>
             </CardContent>
           </Card>
