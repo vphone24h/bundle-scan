@@ -169,7 +169,7 @@ export function useReorderLandingProducts() {
   });
 }
 
-
+export function useLandingProducts() {
   return useQuery({
     queryKey: ['landing-products'],
     queryFn: async () => {
