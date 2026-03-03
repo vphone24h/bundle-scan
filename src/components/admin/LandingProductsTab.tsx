@@ -618,8 +618,17 @@ export function LandingProductsTab() {
         <CardContent>
           {products && products.length > 0 ? (
             <div className="space-y-2">
-              {products.map(p => (
+              {products.map((p, idx) => (
                 <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+                  {/* Move up/down */}
+                  <div className="flex flex-col gap-0.5 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === 0 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'up')}>
+                      <ArrowUp className="h-3 w-3" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === products.length - 1 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'down')}>
+                      <ArrowDown className="h-3 w-3" />
+                    </Button>
+                  </div>
                   {p.image_url ? (
                     <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-lg object-cover border" />
                   ) : (
