@@ -38,6 +38,7 @@ export interface SubscriptionPlan {
   duration_days: number | null;
   max_branches: number;
   max_users: number;
+  max_purchases: number | null;
   description: string | null;
   is_active: boolean;
 }

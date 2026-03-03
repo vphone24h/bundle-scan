@@ -5070,6 +5070,7 @@ export type Database = {
           id: string
           is_active: boolean
           max_branches: number | null
+          max_purchases: number | null
           max_users: number | null
           name: string
           plan_type: Database["public"]["Enums"]["subscription_plan"]
@@ -5086,6 +5087,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_branches?: number | null
+          max_purchases?: number | null
           max_users?: number | null
           name: string
           plan_type: Database["public"]["Enums"]["subscription_plan"]
@@ -5102,6 +5104,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_branches?: number | null
+          max_purchases?: number | null
           max_users?: number | null
           name?: string
           plan_type?: Database["public"]["Enums"]["subscription_plan"]
