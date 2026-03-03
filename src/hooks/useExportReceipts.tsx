@@ -293,7 +293,7 @@ export function useExportReceiptItems(enabled = true) {
       queryClient.setQueryData(['export-receipt-items', tenant?.id, branchId, isDataHidden], allData);
       return allData;
     },
-    enabled: !isTenantLoading && !branchLoading && !!result.data && result.data.length > 0,
+    enabled: enabled && !isTenantLoading && !branchLoading && !!result.data && result.data.length > 0,
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 10,
   });
