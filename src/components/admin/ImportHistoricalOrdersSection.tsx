@@ -162,7 +162,7 @@ function parseVPhoneRow(row: any[]): ParsedOrder | null {
   }
 }
 
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 500;
 
 export function ImportHistoricalOrdersSection() {
   const { toast } = useToast();
