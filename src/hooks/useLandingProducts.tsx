@@ -8,6 +8,7 @@ export interface LandingProductCategory {
   display_order: number;
   image_url: string | null;
   parent_id: string | null;
+  is_hidden: boolean;
   created_at: string;
   updated_at: string;
   children?: LandingProductCategory[];
@@ -112,7 +113,7 @@ export function useDeleteLandingProductCategory() {
 export function useUpdateLandingProductCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; image_url?: string | null; parent_id?: string | null }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; image_url?: string | null; parent_id?: string | null; is_hidden?: boolean }) => {
       const { data, error } = await supabase
         .from('landing_product_categories' as any)
         .update(updates)
@@ -200,7 +201,7 @@ export function usePublicLandingProducts(tenantId: string | null) {
     queryFn: async () => {
       if (!tenantId) return { categories: [], products: [] };
       const [catRes, prodRes] = await Promise.all([
-        supabase.from('landing_product_categories' as any).select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false }),
+        supabase.from('landing_product_categories' as any).select('*').eq('tenant_id', tenantId).eq('is_hidden', false).order('created_at', { ascending: false }),
         supabase.from('landing_products' as any).select('*').eq('tenant_id', tenantId).eq('is_active', true).order('display_order'),
       ]);
       return {

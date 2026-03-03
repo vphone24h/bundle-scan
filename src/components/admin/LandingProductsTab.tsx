@@ -27,7 +27,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Eye, EyeOff } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { Separator } from '@/components/ui/separator';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
@@ -63,7 +63,7 @@ function flattenCategoriesForSelect(categories: LandingProductCategory[], level 
 }
 // Category tree node component
 function CategoryTreeNode({
-  categories, level, onEdit, onAddChild, onDelete, onUploadImage, onRemoveImage, uploadingCatId,
+  categories, level, onEdit, onAddChild, onDelete, onUploadImage, onRemoveImage, uploadingCatId, onToggleHidden,
 }: {
   categories: LandingProductCategory[];
   level: number;
@@ -73,6 +73,7 @@ function CategoryTreeNode({
   onUploadImage: (catId: string) => void;
   onRemoveImage: (catId: string) => void;
   uploadingCatId: string | null;
+  onToggleHidden: (cat: LandingProductCategory) => void;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -104,24 +105,35 @@ function CategoryTreeNode({
                 )}
               </button>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{cat.name}</p>
+                <p className={`font-medium text-sm truncate ${cat.is_hidden ? 'text-muted-foreground line-through' : ''}`}>{cat.name}</p>
                 {hasChildren && <p className="text-[10px] text-muted-foreground">{cat.children!.length} danh mục con</p>}
               </div>
-              <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity shrink-0">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAddChild(cat.id)} title="Thêm danh mục con">
-                  <Plus className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-0.5 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-7 w-7 ${cat.is_hidden ? 'text-muted-foreground' : 'text-primary'}`}
+                  onClick={() => onToggleHidden(cat)}
+                  title={cat.is_hidden ? 'Hiện danh mục trên website' : 'Ẩn danh mục trên website'}
+                >
+                  {cat.is_hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(cat)} title="Sửa">
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-                {cat.image_url && (
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => onRemoveImage(cat.id)} title="Xóa ảnh">
-                    <X className="h-3 w-3" />
+                <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAddChild(cat.id)} title="Thêm danh mục con">
+                    <Plus className="h-3.5 w-3.5" />
                   </Button>
-                )}
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(cat)} title="Xóa">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(cat)} title="Sửa">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  {cat.image_url && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => onRemoveImage(cat.id)} title="Xóa ảnh">
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(cat)} title="Xóa">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
             </div>
             {hasChildren && isExpanded && (
@@ -134,6 +146,7 @@ function CategoryTreeNode({
                 onUploadImage={onUploadImage}
                 onRemoveImage={onRemoveImage}
                 uploadingCatId={uploadingCatId}
+                onToggleHidden={onToggleHidden}
               />
             )}
           </div>
@@ -483,6 +496,10 @@ export function LandingProductsTab() {
                 onUploadImage={(catId) => { setPendingCatId(catId); catImageRef.current?.click(); }}
                 onRemoveImage={async (catId) => { await updateCat.mutateAsync({ id: catId, image_url: null }); toast({ title: 'Đã xóa ảnh bìa' }); }}
                 uploadingCatId={uploadingCatId}
+                onToggleHidden={async (cat) => {
+                  await updateCat.mutateAsync({ id: cat.id, is_hidden: !cat.is_hidden } as any);
+                  toast({ title: cat.is_hidden ? 'Đã hiện danh mục' : 'Đã ẩn danh mục' });
+                }}
               />
             ) : (
               <p className="text-sm text-muted-foreground py-4 text-center">Chưa có danh mục nào</p>
