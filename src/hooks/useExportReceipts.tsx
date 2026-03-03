@@ -237,7 +237,7 @@ export function useExportReceiptItems(enabled = true) {
       if (error) throw error;
       return (data || []) as ExportReceiptItemDetail[];
     },
-    enabled: !isTenantLoading && !branchLoading,
+    enabled: enabled && !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,
   });
 
