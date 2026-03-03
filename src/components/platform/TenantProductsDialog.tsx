@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,15 +61,7 @@ export function TenantProductsDialog({
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
           {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Tìm theo tên, SKU..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 search-input-highlight"
-            />
-          </div>
+          <SearchInput placeholder="Tìm theo tên, SKU..." value={search} onChange={setSearch} />
 
           {/* Stats */}
           <div className="flex gap-4 text-sm">
