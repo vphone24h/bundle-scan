@@ -9,8 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import vkhoLogo from '@/assets/vkho-logo.png';
+import { useTranslation } from 'react-i18next';
 
 export default function PlatformAuthPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -27,9 +29,9 @@ export default function PlatformAuthPage() {
       
       if (error) {
         toast({
-          title: 'Đăng nhập thất bại',
+          title: t('pages.platformAuth.loginFailed'),
           description: error.message === 'Invalid login credentials' 
-            ? 'Email hoặc mật khẩu không đúng'
+            ? t('pages.platformAuth.wrongCredentials')
             : error.message,
           variant: 'destructive',
         });
@@ -37,7 +39,6 @@ export default function PlatformAuthPage() {
         return;
       }
 
-      // Verify user is platform admin
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
@@ -50,8 +51,8 @@ export default function PlatformAuthPage() {
         if (platformUser?.platform_role !== 'platform_admin') {
           await supabase.auth.signOut();
           toast({
-            title: 'Không có quyền truy cập',
-            description: 'Tài khoản của bạn không phải Platform Admin.',
+            title: t('pages.platformAuth.noAccess'),
+            description: t('pages.platformAuth.notAdmin'),
             variant: 'destructive',
           });
           setLoading(false);
@@ -59,15 +60,15 @@ export default function PlatformAuthPage() {
         }
 
         toast({
-          title: 'Đăng nhập thành công',
-          description: 'Chào mừng Platform Admin!',
+          title: t('pages.platformAuth.loginSuccess'),
+          description: t('pages.platformAuth.welcomeAdmin'),
         });
         navigate('/platform-admin');
       }
     } catch (error: any) {
       toast({
-        title: 'Lỗi',
-        description: error.message || 'Đã xảy ra lỗi khi đăng nhập',
+        title: t('pages.platformAuth.error'),
+        description: error.message || t('pages.platformAuth.loginError'),
         variant: 'destructive',
       });
     }
@@ -86,13 +87,13 @@ export default function PlatformAuthPage() {
               className="h-20 w-20 object-contain"
             />
           </div>
-          <CardTitle className="text-2xl">Quản trị Nền tảng</CardTitle>
-          <CardDescription>Đăng nhập dành cho Platform Admin</CardDescription>
+          <CardTitle className="text-2xl">{t('pages.platformAuth.title')}</CardTitle>
+          <CardDescription>{t('pages.platformAuth.description')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="admin-email">Email</Label>
+              <Label htmlFor="admin-email">{t('pages.platformAuth.email')}</Label>
               <Input
                 id="admin-email"
                 type="email"
@@ -103,7 +104,7 @@ export default function PlatformAuthPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="admin-password">Mật khẩu</Label>
+              <Label htmlFor="admin-password">{t('pages.platformAuth.password')}</Label>
               <Input
                 id="admin-password"
                 type="password"
@@ -115,7 +116,7 @@ export default function PlatformAuthPage() {
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Đăng nhập Admin
+              {t('pages.platformAuth.loginBtn')}
             </Button>
           </form>
 
@@ -125,19 +126,19 @@ export default function PlatformAuthPage() {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-card px-2 text-muted-foreground">
-                Hoặc
+                {t('pages.platformAuth.or')}
               </span>
             </div>
           </div>
 
           <Button variant="outline" className="w-full" asChild>
             <Link to="/auth">
-              Đăng nhập với tư cách người dùng
+              {t('pages.platformAuth.loginAsUser')}
             </Link>
           </Button>
 
           <p className="text-center text-xs text-muted-foreground">
-            Trang này chỉ dành cho quản trị viên hệ thống
+            {t('pages.platformAuth.adminOnly')}
           </p>
         </CardContent>
       </Card>
