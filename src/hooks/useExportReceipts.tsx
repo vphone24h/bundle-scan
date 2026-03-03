@@ -137,6 +137,24 @@ export function useExportReceipts() {
   });
 }
 
+// Fetch full items for a single receipt on-demand (detail/print views)
+export function useExportReceiptDetail(receiptId: string | null) {
+  return useQuery({
+    queryKey: ['export-receipt-detail', receiptId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('export_receipt_items')
+        .select('*')
+        .eq('receipt_id', receiptId!)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data as ExportReceiptItemDetail[];
+    },
+    enabled: !!receiptId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
 export function useExportReceiptItems() {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
