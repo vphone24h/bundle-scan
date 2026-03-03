@@ -62,17 +62,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (currentSession) {
           setSession(currentSession);
           setUser(currentSession.user);
+        } else {
+          setSession(null);
+          setUser(null);
+          queryClient.clear();
         }
       });
     };
 
+    // Cross-tab sync: detect logout from another tab via localStorage change
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key && e.key.includes('auth-token')) {
+        supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+          if (!currentSession) {
+            setSession(null);
+            setUser(null);
+            queryClient.clear();
+          } else {
+            setSession(currentSession);
+            setUser(currentSession.user);
+          }
+        });
+      }
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleFocus);
+    window.addEventListener('storage', handleStorageChange);
 
     return () => {
       subscription.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
