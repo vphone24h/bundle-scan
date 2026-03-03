@@ -1133,5 +1133,55 @@
     "printBtn": "Print",
     "returnReceiptBtn": "Return",
     "editBtn": "Edit"
+  },
+  "tours": {
+    "exportHistory": {
+      "receiptTabTitle": "📄 Receipts Tab",
+      "receiptTabDesc": "This tab lists each **sales receipt**. Click on **receipt code** to view order details.",
+      "actionBtnTitle": "⚙️ Receipt Actions",
+      "actionBtnDesc": "Each receipt has 3 action buttons:\n• 👁️ **View Details** — view products, customers, payment\n• 🖨️ **Print Invoice** — print using configured template\n• 🔄 **Return** — process full order return",
+      "itemTabTitle": "📦 Product Details Tab",
+      "itemTabDesc": "View each **sold product** with IMEI, sale price, customer. Quick search or **return** individual items.",
+      "returnBtnTitle": "🔄 \"Return\" Button — Return Single Item",
+      "returnBtnDesc": "Each product row has a **\"Return\"** button to process individual returns. Returned products will show a **\"Returned\"** badge.",
+      "receiptTabInfoTitle": "📄 Receipts Tab",
+      "receiptTabInfoDesc": "After you **create a sales receipt**, this tab will display the list of orders. You can view details, print invoices or process returns from here.",
+      "itemTabInfoTitle": "📦 Product Details Tab",
+      "itemTabInfoDesc": "When you **sell products**, each item will appear in this tab. You can search by IMEI, customer name and return individual items."
+    },
+    "cashBook": {
+      "introTitle": "📒 What is Cash Book?",
+      "introDesc": "This is where you manage all **cash** and **transfer** transactions. Each income/expense entry automatically updates the **balance**.",
+      "tabsTitle": "🏦 Total / Branch Tabs",
+      "tabsDesc": "Switch between **Total Cash Book** (view all system funds) and **By Branch** (view specific branch). Visible to Super Admin only.",
+      "openingBalanceTitle": "🏦 Opening Balance",
+      "openingBalanceDesc": "If you already have funds before using the software, click **\"Opening Balance\"** to enter **initial amounts** for each source (**Cash**, **Bank Card**, **E-Wallet**...).",
+      "incomeTitle": "② Add Income",
+      "incomeDesc": "When receiving payment from customers, create an **Income Receipt** to record **money in**.",
+      "expenseTitle": "③ Add Expense",
+      "expenseDesc": "When paying for imports, expenses, salaries... create an **Expense Receipt** to record **money out**.",
+      "filterTitle": "📊 Overview – Time Filter",
+      "filterDesc": "Quickly select **Today** / **Yesterday** / **This Week**... to view **inflows – outflows** for any period. Balance history also updates based on this filter.",
+      "historyTitle": "🕐 Balance History",
+      "historyDesc": "Records **end-of-day balance** for the entire fund. Click to expand and see daily **income – expense – remaining balance**. Export to Excel for reporting.",
+      "detailTitle": "📋 Details – Transaction Filter",
+      "detailDesc": "Filter transactions by **date**, **category**, **source**, **staff**. Click \"Filter\" for more options. **Export Excel** for reports.",
+      "autoUpdateTitle": "🎉 Auto-updated Balance!",
+      "autoUpdateDesc": "Every time you create an **income/expense receipt**, the fund balance updates **automatically** in real-time. You can track **cash flow** anytime."
+    },
+    "importHistory": {
+      "receiptTabTitle": "📄 Receipts Tab",
+      "receiptTabDesc": "This tab lists each **import receipt**. Click on **receipt code** to view products inside.",
+      "menuBtnTitle": "⚙️ \"⋯\" Button — Receipt Actions",
+      "menuBtnDesc": "Click **\"⋯\"** at the end of each row to open action menu:\n• 👁️ **View Details** — view all products in receipt\n• ✏️ **Edit** — edit date, supplier, note\n• 🔄 **Return** — create return receipt to supplier",
+      "receiptTabInfoTitle": "📄 Receipts Tab",
+      "receiptTabInfoDesc": "After you **create an import receipt**, this tab will list each receipt. You can view details, edit or return goods to supplier from here.",
+      "productTabTitle": "📦 Products Tab",
+      "productTabDesc": "View each **imported product** with full IMEI, price, status. Filter by category, supplier, status...",
+      "productActionTitle": "🔧 Product Actions",
+      "productActionDesc": "Each inventory row has buttons:\n• ✏️ **Edit** — edit product info\n• 🔄 **Return** — return product to supplier\n• 🔑 **Warranty** — mark for warranty (IMEI items only)\n• 🔀 **Transfer** — transfer product to another branch\n\nYou can also **select multiple products** and click **Transfer Stock** on the top bar for bulk transfer.",
+      "productTabInfoTitle": "📦 Products Tab",
+      "productTabInfoDesc": "When you **import goods**, products will appear in this tab. You can filter, search, edit info and perform actions on individual products."
+    }
   }
 }

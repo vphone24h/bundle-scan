@@ -88,105 +88,105 @@ import { useProfile } from '@/hooks/useProfile';
 import { useCustomPaymentSources, useAddCustomPaymentSource, useDeleteCustomPaymentSource, useUpdateCustomPaymentSource } from '@/hooks/useCustomPaymentSources';
 import { useTranslation } from 'react-i18next';
 
-const defaultPaymentSourceLabels: Record<string, string> = {
-  cash: 'Tiền mặt',
-  bank_card: 'Thẻ ngân hàng',
-  e_wallet: 'Ví điện tử',
+const useCashBookConstants = () => {
+  const { t } = useTranslation();
+  return {
+    defaultPaymentSourceLabels: {
+      cash: t('cashBook.cash'),
+      bank_card: t('cashBook.bankCard'),
+      e_wallet: t('cashBook.eWallet'),
+    },
+    builtInPaymentSources: [
+      { id: 'cash', name: t('cashBook.cash'), icon: 'banknote', color: 'green' },
+      { id: 'bank_card', name: t('cashBook.bankCard'), icon: 'credit-card', color: 'blue' },
+      { id: 'e_wallet', name: t('cashBook.eWallet'), icon: 'wallet', color: 'purple' },
+    ],
+    getSourceOrigin: (entry: CashBookEntry): { label: string; className: string } | null => {
+      const cat = entry.category;
+      if (cat === 'Chuyển tiền nội bộ' || cat === 'Chuyển tiền liên chi nhánh') {
+        return { label: `🔄 ${t('cashBook.moneyTransfer')}`, className: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300' };
+      }
+      switch (entry.reference_type) {
+        case 'export_receipt':
+          return { label: `🛒 ${t('cashBook.sales')}`, className: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300' };
+        case 'import_receipt':
+          return { label: `📦 ${t('cashBook.importGoods')}`, className: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300' };
+        case 'import_return':
+          return { label: `↩️ ${t('cashBook.importReturn')}`, className: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300' };
+        case 'export_return':
+          return { label: `↩️ ${t('cashBook.exportReturn')}`, className: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300' };
+        case 'export_return_fee':
+          return { label: `💰 ${t('cashBook.returnFee')}`, className: 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300' };
+        case 'debt_payment':
+          return { label: `💳 ${t('cashBook.debtCollection')}`, className: 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300' };
+        case 'defective_return':
+          return { label: `⚠️ ${t('cashBook.defectiveReturn')}`, className: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300' };
+        default:
+          return { label: `✏️ ${t('cashBook.manual')}`, className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300' };
+      }
+    },
+    cashBookTourSteps: [
+      {
+        title: t('tours.cashBook.introTitle'),
+        description: t('tours.cashBook.introDesc'),
+        isInfo: true,
+        position: 'center',
+      },
+      {
+        title: t('tours.cashBook.tabsTitle'),
+        description: t('tours.cashBook.tabsDesc'),
+        targetSelector: '[data-tour="cashbook-view-tabs"]',
+        position: 'bottom',
+      },
+      {
+        title: t('tours.cashBook.openingBalanceTitle'),
+        description: t('tours.cashBook.openingBalanceDesc'),
+        targetSelector: '[data-tour="cashbook-opening-balance"]',
+        position: 'bottom',
+      },
+      {
+        title: t('tours.cashBook.incomeTitle'),
+        description: t('tours.cashBook.incomeDesc'),
+        targetSelector: '[data-tour="cashbook-income"]',
+        position: 'bottom',
+      },
+      {
+        title: t('tours.cashBook.expenseTitle'),
+        description: t('tours.cashBook.expenseDesc'),
+        targetSelector: '[data-tour="cashbook-expense"]',
+        position: 'bottom',
+      },
+      {
+        title: t('tours.cashBook.filterTitle'),
+        description: t('tours.cashBook.filterDesc'),
+        targetSelector: '[data-tour="cashbook-summary-filter"]',
+        position: 'bottom',
+      },
+      {
+        title: t('tours.cashBook.historyTitle'),
+        description: t('tours.cashBook.historyDesc'),
+        targetSelector: '[data-tour="cashbook-balance-history"]',
+        position: 'bottom',
+      },
+      {
+        title: t('tours.cashBook.detailTitle'),
+        description: t('tours.cashBook.detailDesc'),
+        targetSelector: '[data-tour="cashbook-detail-filter"]',
+        position: 'bottom',
+      },
+      {
+        title: t('tours.cashBook.autoUpdateTitle'),
+        description: t('tours.cashBook.autoUpdateDesc'),
+        isInfo: true,
+        position: 'center',
+      },
+    ] as TourStep[]
+  };
 };
-
-const builtInPaymentSources = [
-  { id: 'cash', name: 'Tiền mặt', icon: 'banknote', color: 'green' },
-  { id: 'bank_card', name: 'Thẻ ngân hàng', icon: 'credit-card', color: 'blue' },
-  { id: 'e_wallet', name: 'Ví điện tử', icon: 'wallet', color: 'purple' },
-];
-
-// Custom payment sources are now stored in the database (see useCustomPaymentSources hook)
-
-// Helper: get source origin label & color based on reference_type and category
-function getSourceOrigin(entry: CashBookEntry): { label: string; className: string } | null {
-  const cat = entry.category;
-  if (cat === 'Chuyển tiền nội bộ' || cat === 'Chuyển tiền liên chi nhánh') {
-    return { label: '🔄 Chuyển tiền', className: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300' };
-  }
-  switch (entry.reference_type) {
-    case 'export_receipt':
-      return { label: '🛒 Bán hàng', className: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300' };
-    case 'import_receipt':
-      return { label: '📦 Nhập hàng', className: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300' };
-    case 'import_return':
-      return { label: '↩️ Trả hàng nhập', className: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300' };
-    case 'export_return':
-      return { label: '↩️ Trả hàng xuất', className: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300' };
-    case 'export_return_fee':
-      return { label: '💰 Phí trả hàng', className: 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300' };
-    case 'debt_payment':
-      return { label: '💳 Thu nợ', className: 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300' };
-    case 'defective_return':
-      return { label: '⚠️ Trả lỗi', className: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300' };
-    default:
-      return { label: '✏️ Thủ công', className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300' };
-  }
-}
-
-const cashBookTourSteps: TourStep[] = [
-  {
-    title: '📒 Sổ quỹ dùng để làm gì?',
-    description: 'Đây là nơi quản lý toàn bộ **tiền mặt** và **chuyển khoản**. Mỗi lần thu tiền – chi tiền, hệ thống sẽ tự cập nhật **số dư**.',
-    isInfo: true,
-    position: 'center',
-  },
-  {
-    title: '🏦 Tab Tổng sổ quỹ / Theo chi nhánh',
-    description: 'Chuyển giữa **Tổng sổ quỹ** (xem toàn bộ tiền của cả hệ thống) và **Theo chi nhánh** (xem riêng từng chi nhánh). Super Admin mới thấy tab này.',
-    targetSelector: '[data-tour="cashbook-view-tabs"]',
-    position: 'bottom',
-  },
-  {
-    title: '🏦 Bổ sung quỹ kỳ đầu',
-    description: 'Nếu bạn đã có sẵn tiền trong quỹ trước khi dùng phần mềm, hãy nhấn **"Kỳ đầu"** để nhập **số dư ban đầu** cho từng nguồn tiền (**Tiền mặt**, **Thẻ ngân hàng**, **Ví điện tử**…).',
-    targetSelector: '[data-tour="cashbook-opening-balance"]',
-    position: 'bottom',
-  },
-  {
-    title: '② Thêm phiếu thu',
-    description: 'Khi khách thanh toán tiền, hãy tạo **Phiếu Thu** để ghi nhận khoản **tiền vào**.',
-    targetSelector: '[data-tour="cashbook-income"]',
-    position: 'bottom',
-  },
-  {
-    title: '③ Thêm phiếu chi',
-    description: 'Khi trả tiền nhập hàng, chi phí, lương… hãy tạo **Phiếu Chi** để ghi nhận khoản **tiền ra**.',
-    targetSelector: '[data-tour="cashbook-expense"]',
-    position: 'bottom',
-  },
-  {
-    title: '📊 Tổng quan – Bộ lọc thời gian',
-    description: 'Chọn nhanh **Hôm nay** / **Hôm qua** / **Tuần này**… để xem **tiền vào – tiền ra** theo khoảng thời gian bất kỳ. Lịch sử số dư cũng cập nhật theo bộ lọc này.',
-    targetSelector: '[data-tour="cashbook-summary-filter"]',
-    position: 'bottom',
-  },
-  {
-    title: '🕐 Lịch sử số dư',
-    description: 'Ghi nhận **số dư cuối ngày** của toàn bộ quỹ. Nhấn vào để mở rộng, xem từng ngày **thu bao nhiêu – chi bao nhiêu – còn lại bao nhiêu**. Xuất Excel để lưu báo cáo.',
-    targetSelector: '[data-tour="cashbook-balance-history"]',
-    position: 'bottom',
-  },
-  {
-    title: '📋 Chi tiết – Bộ lọc giao dịch',
-    description: 'Lọc giao dịch theo **ngày**, **danh mục**, **nguồn tiền**, **nhân viên** lập phiếu. Nhấn "Bộ lọc" để mở rộng thêm tùy chọn. **Xuất Excel** để in báo cáo.',
-    targetSelector: '[data-tour="cashbook-detail-filter"]',
-    position: 'bottom',
-  },
-  {
-    title: '🎉 Số dư cập nhật tự động!',
-    description: 'Mỗi khi tạo **phiếu thu/chi**, số dư quỹ sẽ được **cập nhật tự động** theo thời gian thực. Bạn có thể theo dõi **dòng tiền** bất cứ lúc nào.',
-    isInfo: true,
-    position: 'center',
-  },
-];
 
 export default function CashBookPage() {
   const { t } = useTranslation();
+  const { builtInPaymentSources, defaultPaymentSourceLabels, getSourceOrigin, cashBookTourSteps } = useCashBookConstants();
   const { isCompleted: cashTourDone, isLoading: cashTourLoading, completeTour: completeCashTour } = useOnboardingTour('cashbook_guide');
   const [manualTourActive, setManualTourActive] = useState(false);
   const showCashTour = manualTourActive || (!cashTourLoading && !cashTourDone);
