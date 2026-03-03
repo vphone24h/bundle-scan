@@ -187,7 +187,7 @@ export function useExportReceiptDetail(receiptId: string | null) {
   });
 }
 
-export function useExportReceiptItems() {
+export function useExportReceiptItems(enabled = true) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
