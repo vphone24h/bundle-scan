@@ -4,6 +4,8 @@ import {
   useCreateLandingProductCategory,
   useDeleteLandingProductCategory,
   useUpdateLandingProductCategory,
+  useReorderLandingProductCategories,
+  useReorderLandingProducts,
   useLandingProducts,
   useCreateLandingProduct,
   useUpdateLandingProduct,
