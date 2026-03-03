@@ -1,0 +1,1 @@
+ALTER TABLE public.landing_product_categories ADD COLUMN is_hidden boolean NOT NULL DEFAULT false;

@@ -3243,6 +3243,7 @@ export type Database = {
           display_order: number | null
           id: string
           image_url: string | null
+          is_hidden: boolean
           name: string
           parent_id: string | null
           tenant_id: string
@@ -3253,6 +3254,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           image_url?: string | null
+          is_hidden?: boolean
           name: string
           parent_id?: string | null
           tenant_id: string
@@ -3263,6 +3265,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           image_url?: string | null
+          is_hidden?: boolean
           name?: string
           parent_id?: string | null
           tenant_id?: string
