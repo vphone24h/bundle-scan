@@ -162,38 +162,41 @@ export function useExportReceiptItems() {
         receiptIds = receipts?.map(r => r.id) || [];
       }
 
-      let query = supabase
-        .from('export_receipt_items')
-        .select(`
-          *,
-          categories(name),
-          products(import_price),
-          export_receipts(
-            code,
-            export_date,
-            branch_id,
-            customer_id,
-            created_by,
-            status,
-            customers(name, phone),
-            branches(name),
-            export_receipt_payments(payment_type, amount)
-          )
-        `)
-        .order('created_at', { ascending: false });
+      const buildQuery = () => {
+        let query = supabase
+          .from('export_receipt_items')
+          .select(`
+            *,
+            categories(name),
+            products(import_price),
+            export_receipts(
+              code,
+              export_date,
+              branch_id,
+              customer_id,
+              created_by,
+              status,
+              customers(name, phone),
+              branches(name),
+              export_receipt_payments(payment_type, amount)
+            )
+          `)
+          .order('created_at', { ascending: false });
 
-      // Apply branch filter via receipt_id
-      if (receiptIds !== null) {
-        if (receiptIds.length === 0) {
-          return [] as ExportReceiptItemDetail[];
+        if (receiptIds !== null) {
+          if (receiptIds.length === 0) {
+            return query.eq('id', '00000000-0000-0000-0000-000000000000'); // return empty
+          }
+          query = query.in('receipt_id', receiptIds);
         }
-        query = query.in('receipt_id', receiptIds);
+        return query;
+      };
+
+      if (receiptIds !== null && receiptIds.length === 0) {
+        return [] as ExportReceiptItemDetail[];
       }
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as ExportReceiptItemDetail[];
+      return await fetchAllRows<ExportReceiptItemDetail>(buildQuery);
     },
     enabled: !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,
