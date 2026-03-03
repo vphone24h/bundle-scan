@@ -4,6 +4,7 @@ import { vi } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -96,15 +97,12 @@ export function EInvoiceList() {
       <CardContent>
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Tìm theo số HĐ, khách hàng, MST..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 search-input-highlight"
-            />
-          </div>
+          <SearchInput
+            placeholder="Tìm theo số HĐ, khách hàng, MST..."
+            value={search}
+            onChange={setSearch}
+            containerClassName="flex-1"
+          />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Trạng thái" />

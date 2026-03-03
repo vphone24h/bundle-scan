@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -305,15 +306,11 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
               {/* Search */}
               <div>
                 <Label className="text-xs text-muted-foreground">Tìm kiếm</Label>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Tên SP, SKU, IMEI..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
+                <SearchInput
+                  placeholder="Tên SP, SKU, IMEI..."
+                  value={search}
+                  onChange={setSearch}
+                />
               </div>
             </div>
           </CardContent>
@@ -322,15 +319,12 @@ export function DetailedProfitTable({ externalFilters }: DetailedProfitTableProp
 
       {/* Search only when using external filters */}
       {useExternalFilters && (
-        <div className="relative max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Tìm kiếm sản phẩm, SKU, IMEI..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 search-input-highlight"
-          />
-        </div>
+        <SearchInput
+          placeholder="Tìm kiếm sản phẩm, SKU, IMEI..."
+          value={search}
+          onChange={setSearch}
+          containerClassName="max-w-sm"
+        />
       )}
 
       {/* Results Card */}

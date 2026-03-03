@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import {
   Collapsible,
   CollapsibleContent,
@@ -81,15 +82,12 @@ export function SupplierFilters({
     <div className="space-y-3">
       {/* Search */}
       <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Tìm theo tên hoặc số điện thoại..."
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 search-input-highlight"
-          />
-        </div>
+        <SearchInput
+          placeholder="Tìm theo tên hoặc số điện thoại..."
+          value={searchTerm}
+          onChange={onSearchChange}
+          containerClassName="flex-1 max-w-md"
+        />
         <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
           <CollapsibleTrigger asChild>
             <Button variant="outline" size="sm" className="gap-1.5 relative">

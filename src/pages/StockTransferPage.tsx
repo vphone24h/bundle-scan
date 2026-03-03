@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Loader2, Search, ArrowRight, Eye, Check, X, Package, ArrowRightLeft, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/mockData';
@@ -224,15 +224,12 @@ export default function StockTransferPage() {
           </p>
         </div>
         {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Tìm theo chi nhánh, ghi chú..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 search-input-highlight"
-          />
-        </div>
+        <SearchInput
+          placeholder="Tìm theo chi nhánh, ghi chú..."
+          value={searchTerm}
+          onChange={setSearchTerm}
+          containerClassName="max-w-md"
+        />
 
         <Tabs defaultValue="incoming" className="space-y-4">
           <TabsList>

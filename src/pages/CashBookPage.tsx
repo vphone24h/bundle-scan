@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -1251,15 +1252,12 @@ export default function CashBookPage() {
           <CardContent className="pt-6">
             <div className="space-y-4">
               <div data-tour="cashbook-detail-filter" className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Tìm theo mô tả, danh mục..."
-                    className="pl-9 search-input-highlight"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
+                <SearchInput
+                  placeholder="Tìm theo mô tả, danh mục..."
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                  containerClassName="flex-1"
+                />
                 <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as 'all' | 'expense' | 'income' | 'transfer')}>
                   <SelectTrigger className="w-36">
                     <SelectValue />

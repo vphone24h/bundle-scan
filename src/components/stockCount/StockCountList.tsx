@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Plus, Eye, Edit, Search, X } from 'lucide-react';
+import { Plus, Eye, Edit, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -45,10 +45,7 @@ export function StockCountList({ onCreateNew, onView, onEdit }: StockCountListPr
 
       <div className="flex flex-wrap items-center gap-3 p-4 bg-card rounded-lg border">
         <div className="flex-1 min-w-[200px]">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder={t('stockCount.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 search-input-highlight" />
-          </div>
+          <SearchInput placeholder={t('stockCount.searchPlaceholder')} value={search} onChange={setSearch} />
         </div>
         <Select value={branchId} onValueChange={setBranchId}>
           <SelectTrigger className="w-[180px]"><SelectValue placeholder={t('tours.inventory.branchLabel')} /></SelectTrigger>

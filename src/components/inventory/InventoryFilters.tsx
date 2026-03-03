@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Filter, X } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Filter, X } from 'lucide-react';
+import { SearchInput } from '@/components/ui/search-input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -46,15 +46,13 @@ export function InventoryFiltersComponent({ filters, onFiltersChange }: Inventor
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-primary" />
-          <Input
-            placeholder={t('tours.inventory.searchPlaceholder')}
-            value={filters.search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-10 h-11 text-base search-input-highlight border-2 border-primary bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary shadow-md ring-2 ring-primary/20"
-          />
-        </div>
+        <SearchInput
+          placeholder={t('tours.inventory.searchPlaceholder')}
+          value={filters.search}
+          onChange={handleSearchChange}
+          containerClassName="flex-1"
+          className="h-11 text-base border-2 border-primary bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary shadow-md ring-2 ring-primary/20"
+        />
         <div className="flex gap-2">
           <Button variant={showAdvancedFilters ? 'secondary' : 'outline'} onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} className="gap-2 flex-1 sm:flex-none">
             <Filter className="h-4 w-4" />

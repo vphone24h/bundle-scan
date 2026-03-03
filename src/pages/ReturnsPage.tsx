@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { SearchInput } from '@/components/ui/search-input';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -621,15 +622,11 @@ export default function ReturnsPage() {
           <div className="space-y-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder={t('pages.returns.searchPlaceholder')}
-                    className="pl-9 search-input-highlight"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
+                <SearchInput
+                  placeholder={t('pages.returns.searchPlaceholder')}
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                />
               </div>
               <Button
                 variant={showFilters ? 'secondary' : 'outline'}
