@@ -17,9 +17,25 @@ interface OrderRow {
   productVariant: string;
   salePrice: number;
   note: string;
-  orderDate: string; // dd/MM/yyyy
+  orderDate: string;
   status: string;
   warranty: string;
+}
+
+function parseDate(dateStr: string): string {
+  try {
+    const parts = dateStr.split("/");
+    if (parts.length === 3) {
+      return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}T12:00:00+07:00`;
+    }
+  } catch { /* ignore */ }
+  return new Date().toISOString();
+}
+
+function cleanImei(raw: string | null | undefined): string | null {
+  const v = raw?.trim() || null;
+  if (!v || v === "-" || v === "empty" || v.startsWith("empty")) return null;
+  return v;
 }
 
 Deno.serve(async (req) => {
@@ -31,74 +47,71 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify user with their token
     const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get tenant_id
     const { data: tenantId } = await userClient.rpc("get_user_tenant_id_secure");
     if (!tenantId) {
       return new Response(JSON.stringify({ error: "Tenant not found" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check admin
     const { data: isAdmin } = await userClient.rpc("is_tenant_admin", { _user_id: user.id });
     if (!isAdmin) {
       return new Response(JSON.stringify({ error: "Forbidden: Admin only" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Use service role for inserts to bypass RLS
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-
     const { orders, sourceId = "vphone1" }: { orders: OrderRow[]; sourceId?: string } = await req.json();
 
-    if (!orders || !Array.isArray(orders) || orders.length === 0) {
+    if (!orders?.length) {
       return new Response(JSON.stringify({ error: "No orders provided" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // Get default branch
     const { data: branches } = await adminClient
-      .from("branches")
-      .select("id")
-      .eq("tenant_id", tenantId)
-      .eq("is_default", true)
-      .limit(1);
+      .from("branches").select("id").eq("tenant_id", tenantId).eq("is_default", true).limit(1);
     const defaultBranchId = branches?.[0]?.id || null;
 
-    // Filter only completed orders
+    // Filter completed orders only
     const completedOrders = orders.filter(
       (o) => o.status === "Hoàn tất" || o.status === "Đã giao hàng"
     );
 
-    // Collect unique phones
+    // --- STEP 1: Batch fetch existing receipt codes to skip duplicates ---
+    const allCodes = completedOrders.map(o => `${sourceId.toUpperCase()}-${o.orderId.slice(-8)}`);
+    const existingCodesSet = new Set<string>();
+    // Fetch in chunks of 500 to avoid query size limits
+    for (let i = 0; i < allCodes.length; i += 500) {
+      const chunk = allCodes.slice(i, i + 500);
+      const { data: existing } = await adminClient
+        .from("export_receipts").select("code").eq("tenant_id", tenantId).in("code", chunk);
+      existing?.forEach(r => existingCodesSet.add(r.code));
+    }
+
+    // --- STEP 2: Collect unique phones and batch upsert customers ---
     const phoneMap = new Map<string, { name: string; email: string; address: string; phone: string }>();
     for (const o of completedOrders) {
-      if (o.customerPhone && o.customerPhone.length >= 9) {
+      if (o.customerPhone?.length >= 9) {
         const cleaned = o.customerPhone.replace(/\s+/g, "");
         if (!phoneMap.has(cleaned)) {
           phoneMap.set(cleaned, {
@@ -111,89 +124,64 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Upsert customers
     const customerIdMap = new Map<string, string>();
-    for (const [phone, info] of phoneMap) {
-      // Check existing
-      const { data: existing } = await adminClient
-        .from("customers")
-        .select("id")
-        .eq("phone", phone)
-        .eq("tenant_id", tenantId)
-        .maybeSingle();
+    const allPhones = [...phoneMap.keys()];
+    
+    // Batch fetch existing customers
+    for (let i = 0; i < allPhones.length; i += 500) {
+      const chunk = allPhones.slice(i, i + 500);
+      const { data: existingCusts } = await adminClient
+        .from("customers").select("id, phone").eq("tenant_id", tenantId).in("phone", chunk);
+      existingCusts?.forEach(c => customerIdMap.set(c.phone, c.id));
+    }
 
-      if (existing) {
-        customerIdMap.set(phone, existing.id);
-      } else {
-        const { data: newCust, error: custErr } = await adminClient
-          .from("customers")
-          .insert({
-            name: info.name,
-            phone: info.phone,
-            email: info.email || null,
-            address: info.address || null,
-            tenant_id: tenantId,
-            source: sourceId,
-          })
-          .select("id")
-          .single();
+    // Batch insert new customers
+    const newCustomers = allPhones
+      .filter(p => !customerIdMap.has(p))
+      .map(p => {
+        const info = phoneMap.get(p)!;
+        return { name: info.name, phone: info.phone, email: info.email || null, address: info.address || null, tenant_id: tenantId, source: sourceId };
+      });
 
+    if (newCustomers.length > 0) {
+      // Insert in chunks of 200
+      for (let i = 0; i < newCustomers.length; i += 200) {
+        const chunk = newCustomers.slice(i, i + 200);
+        const { data: inserted, error: custErr } = await adminClient
+          .from("customers").insert(chunk).select("id, phone");
         if (custErr) {
-          console.error("Customer insert error:", custErr);
-          continue;
+          console.error("Batch customer insert error:", custErr);
+        } else {
+          inserted?.forEach(c => customerIdMap.set(c.phone, c.id));
         }
-        customerIdMap.set(phone, newCust.id);
       }
     }
 
-    // Create export receipts + items
+    // --- STEP 3: Batch insert receipts and items ---
     let createdReceipts = 0;
     let createdItems = 0;
     let skipped = 0;
 
-    for (const order of completedOrders) {
-      const cleanPhone = order.customerPhone?.replace(/\s+/g, "") || "";
-      const customerId = customerIdMap.get(cleanPhone) || null;
+    // Prepare non-duplicate orders
+    const newOrders = completedOrders.filter(o => {
+      const code = `${sourceId.toUpperCase()}-${o.orderId.slice(-8)}`;
+      if (existingCodesSet.has(code)) { skipped++; return false; }
+      return true;
+    });
 
-      // Parse date: dd/MM/yyyy -> ISO
-      let exportDate: string;
-      try {
-        const parts = order.orderDate.split("/");
-        if (parts.length === 3) {
-          const day = parts[0].padStart(2, "0");
-          const month = parts[1].padStart(2, "0");
-          const year = parts[2];
-          exportDate = `${year}-${month}-${day}T12:00:00+07:00`;
-        } else {
-          exportDate = new Date().toISOString();
-        }
-      } catch {
-        exportDate = new Date().toISOString();
-      }
+    // Process in chunks of 200 receipts at a time
+    const CHUNK = 200;
+    for (let i = 0; i < newOrders.length; i += CHUNK) {
+      const chunk = newOrders.slice(i, i + CHUNK);
 
-      const receiptCode = `${sourceId.toUpperCase()}-${order.orderId.slice(-8)}`;
-
-      // Check duplicate receipt by code
-      const { data: existingReceipt } = await adminClient
-        .from("export_receipts")
-        .select("id")
-        .eq("code", receiptCode)
-        .eq("tenant_id", tenantId)
-        .maybeSingle();
-
-      if (existingReceipt) {
-        skipped++;
-        continue;
-      }
-
-      const { data: receipt, error: receiptErr } = await adminClient
-        .from("export_receipts")
-        .insert({
-          code: receiptCode,
+      const receiptRows = chunk.map(order => {
+        const cleanPhone = order.customerPhone?.replace(/\s+/g, "") || "";
+        return {
+          code: `${sourceId.toUpperCase()}-${order.orderId.slice(-8)}`,
           tenant_id: tenantId,
-          customer_id: customerId,
+          customer_id: customerIdMap.get(cleanPhone) || null,
           branch_id: defaultBranchId,
-          export_date: exportDate,
+          export_date: parseDate(order.orderDate),
           total_amount: order.salePrice || 0,
           paid_amount: order.salePrice || 0,
           debt_amount: 0,
@@ -202,41 +190,50 @@ Deno.serve(async (req) => {
           status: "completed",
           note: `[${sourceId}] ${order.note || ""}`.trim(),
           created_by: user.id,
-        })
-        .select("id")
-        .single();
+        };
+      });
+
+      const { data: insertedReceipts, error: receiptErr } = await adminClient
+        .from("export_receipts").insert(receiptRows).select("id, code");
 
       if (receiptErr) {
-        console.error("Receipt insert error:", receiptErr);
-        skipped++;
+        console.error("Batch receipt insert error:", receiptErr);
+        skipped += chunk.length;
         continue;
       }
 
-      createdReceipts++;
+      createdReceipts += insertedReceipts.length;
 
-      // Clean IMEI
-      let imei = order.imei?.trim() || null;
-      if (imei === "-" || imei === "" || imei === "empty" || imei?.startsWith("empty")) {
-        imei = null;
-      }
+      // Map code -> receipt id
+      const codeToId = new Map(insertedReceipts.map(r => [r.code, r.id]));
 
-      const { error: itemErr } = await adminClient
-        .from("export_receipt_items")
-        .insert({
-          receipt_id: receipt.id,
-          product_name: order.productName || "Sản phẩm",
-          sku: order.productVariant || "",
-          imei: imei,
-          sale_price: order.salePrice || 0,
-          status: "sold",
-          warranty: order.warranty || null,
-          note: order.note || null,
-        });
+      // Build items
+      const itemRows = chunk
+        .map(order => {
+          const code = `${sourceId.toUpperCase()}-${order.orderId.slice(-8)}`;
+          const receiptId = codeToId.get(code);
+          if (!receiptId) return null;
+          return {
+            receipt_id: receiptId,
+            product_name: order.productName || "Sản phẩm",
+            sku: order.productVariant || "",
+            imei: cleanImei(order.imei),
+            sale_price: order.salePrice || 0,
+            status: "sold",
+            warranty: order.warranty || null,
+            note: order.note || null,
+          };
+        })
+        .filter(Boolean);
 
-      if (itemErr) {
-        console.error("Item insert error:", itemErr);
-      } else {
-        createdItems++;
+      if (itemRows.length > 0) {
+        const { error: itemErr } = await adminClient
+          .from("export_receipt_items").insert(itemRows);
+        if (itemErr) {
+          console.error("Batch item insert error:", itemErr);
+        } else {
+          createdItems += itemRows.length;
+        }
       }
     }
 
@@ -247,19 +244,15 @@ Deno.serve(async (req) => {
         completedOrders: completedOrders.length,
         createdReceipts,
         createdItems,
-        customersCreated: phoneMap.size,
+        customersCreated: newCustomers.length,
         skipped,
       }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
     console.error("Error:", err);
     return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
