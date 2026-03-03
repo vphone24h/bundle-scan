@@ -40,41 +40,47 @@ import { toast } from '@/hooks/use-toast';
 import { downloadImportTemplate } from '@/lib/excelTemplates';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
+import { useTranslation } from 'react-i18next';
 
-const IMPORT_NEW_TOUR_STEPS: TourStep[] = [
-  {
-    title: 'Chào mừng đến trang Nhập hàng! 🎉',
-    description: 'Đây là nơi bạn tạo **phiếu nhập hàng** mới. Hãy làm theo từng bước để nhập thử 1 sản phẩm nhé!',
-    isInfo: true,
-  },
-  {
-    title: '① Chọn nhà cung cấp',
-    description: 'Kéo lên trên, chọn **chi nhánh** và **nhà cung cấp**. Nếu chưa có NCC, nhấn nút **"+"** bên cạnh để tạo mới. Sau đó nhấn "Tiếp" ở đây.',
-    targetSelector: '[data-tour="import-receipt-info"]',
-    position: 'bottom',
-  },
-  {
-    title: '② Điền thông tin sản phẩm',
-    description: 'Nhập: **Tên SP** → **SKU** (bấm A→ để copy tên) → **IMEI** (nếu có) → Chọn **danh mục** → **Giá nhập**. Các ô có dấu * là bắt buộc. Điền xong nhấn "Tiếp".',
-    targetSelector: '[data-tour="import-product-form"]',
-    position: 'center',
-  },
-  {
-    title: '③ Nhấn "Thêm vào giỏ"',
-    description: 'Kéo xuống dưới cùng và nhấn nút màu xanh **"Thêm vào giỏ"** để đưa sản phẩm vào **giỏ nhập hàng**.',
-    targetSelector: '[data-tour="import-add-to-cart"]',
-    position: 'top',
-  },
-  {
-    title: '④ Thanh toán để hoàn tất',
-    description: 'Sau khi thêm sản phẩm, kéo xuống phần **"Giỏ nhập hàng"** → nhấn **"Thanh toán"** để hoàn tất phiếu nhập. Chúc bạn nhập hàng thành công! 🎊',
-    targetSelector: '[data-tour="import-cart"]',
-    position: 'center',
-  },
-];
+function useImportNewTourSteps(): TourStep[] {
+  const { t } = useTranslation();
+  return [
+    {
+      title: t('tours.importNew.tourTitle1'),
+      description: t('tours.importNew.tourDesc1'),
+      isInfo: true,
+    },
+    {
+      title: t('tours.importNew.tourTitle2'),
+      description: t('tours.importNew.tourDesc2'),
+      targetSelector: '[data-tour="import-receipt-info"]',
+      position: 'bottom' as const,
+    },
+    {
+      title: t('tours.importNew.tourTitle3'),
+      description: t('tours.importNew.tourDesc3'),
+      targetSelector: '[data-tour="import-product-form"]',
+      position: 'center' as const,
+    },
+    {
+      title: t('tours.importNew.tourTitle4'),
+      description: t('tours.importNew.tourDesc4'),
+      targetSelector: '[data-tour="import-add-to-cart"]',
+      position: 'top' as const,
+    },
+    {
+      title: t('tours.importNew.tourTitle5'),
+      description: t('tours.importNew.tourDesc5'),
+      targetSelector: '[data-tour="import-cart"]',
+      position: 'center' as const,
+    },
+  ];
+}
 
 export default function ImportNewPage() {
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('import_new');
+  const { t } = useTranslation();
+  const IMPORT_NEW_TOUR_STEPS = useImportNewTourSteps();
   const [tourDismissed, setTourDismissed] = useState(false);
   const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
@@ -204,10 +210,10 @@ export default function ImportNewPage() {
 
   const handleAddToCart = async () => {
     const errors: Record<string, string> = {};
-    if (!form.productName.trim()) errors.productName = 'Vui lòng nhập tên sản phẩm';
-    if (!form.sku.trim()) errors.sku = 'Vui lòng nhập SKU';
-    if (!form.categoryId) errors.categoryId = 'Vui lòng chọn danh mục';
-    if (!form.importPrice) errors.importPrice = 'Vui lòng nhập giá nhập';
+    if (!form.productName.trim()) errors.productName = t('tours.importNew.enterProductName');
+    if (!form.sku.trim()) errors.sku = t('tours.importNew.enterSku');
+    if (!form.categoryId) errors.categoryId = t('tours.importNew.selectCategoryError');
+    if (!form.importPrice) errors.importPrice = t('tours.importNew.enterImportPrice');
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -224,8 +230,8 @@ export default function ImportNewPage() {
       const inCart = cart.find(item => item.imei === form.imei.trim());
       if (inCart) {
         toast({
-          title: 'IMEI trùng trong giỏ',
-          description: `IMEI "${form.imei}" đã được thêm vào giỏ nhập hàng`,
+          title: t('tours.importNew.imeiDuplicateCart'),
+          description: t('tours.importNew.imeiDuplicateCartDesc', { imei: form.imei }),
           variant: 'destructive',
         });
         return;
@@ -236,10 +242,10 @@ export default function ImportNewPage() {
         setIsCheckingIMEI(true);
         const existingProduct = await checkIMEI.mutateAsync(form.imei.trim());
         if (existingProduct) {
-          const statusText = existingProduct.status === 'in_stock' ? 'tồn kho' : 'đang bảo hành';
+          const statusText = existingProduct.status === 'in_stock' ? t('tours.importNew.inStockStatus') : t('tours.importNew.warrantyStatus');
           toast({
-            title: 'IMEI đã tồn tại trong kho',
-            description: `Sản phẩm "${existingProduct.name}" (${existingProduct.sku}) đang có IMEI "${form.imei}" với trạng thái: ${statusText}. Không thể nhập trùng.`,
+            title: t('tours.importNew.imeiExistsInStock'),
+            description: `${existingProduct.name} (${existingProduct.sku}) - IMEI "${form.imei}" - ${statusText}`,
             variant: 'destructive',
           });
           setIsCheckingIMEI(false);
@@ -248,10 +254,10 @@ export default function ImportNewPage() {
       } catch (error: any) {
         console.error('Error checking IMEI:', error);
         toast({
-          title: 'Lỗi kiểm tra IMEI',
-          description: error.message || 'Không thể kiểm tra IMEI',
-          variant: 'destructive',
-        });
+            title: t('tours.importNew.imeiCheckError'),
+            description: error.message || t('tours.importNew.cannotCheckImei'),
+            variant: 'destructive',
+          });
         setIsCheckingIMEI(false);
         return;
       }
@@ -298,8 +304,8 @@ export default function ImportNewPage() {
     });
     setProductFormMode('search');
     toast({
-      title: 'Đã thêm vào giỏ',
-      description: `${newItem.productName} x${quantity} đã được thêm vào giỏ nhập hàng`,
+      title: t('tours.importNew.addedToCart'),
+      description: t('tours.importNew.addedToCartDesc', { name: newItem.productName, qty: quantity }),
     });
   };
 
@@ -310,14 +316,14 @@ export default function ImportNewPage() {
   const handleCheckout = () => {
     if (cart.length === 0) {
       toast({
-        title: 'Giỏ trống',
-        description: 'Vui lòng thêm sản phẩm vào giỏ trước khi thanh toán',
+        title: t('tours.importNew.emptyCart'),
+        description: t('tours.importNew.addProductsFirst'),
         variant: 'destructive',
       });
       return;
     }
     if (!selectedSupplierId) {
-      setFieldErrors(prev => ({ ...prev, supplier: 'Vui lòng chọn nhà cung cấp' }));
+      setFieldErrors(prev => ({ ...prev, supplier: t('tours.importNew.selectSupplierError') }));
       document.querySelector('[data-error="true"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
@@ -337,8 +343,8 @@ export default function ImportNewPage() {
     setCart([]);
     navigate('/import/history');
     toast({
-      title: 'Đang xử lý nhập hàng...',
-      description: `${cartSnapshot.length} sản phẩm đang được lưu vào hệ thống`,
+      title: t('tours.importNew.processingImport'),
+      description: t('tours.importNew.processingImportDesc', { count: cartSnapshot.length }),
     });
 
     // Process in background
@@ -363,12 +369,12 @@ export default function ImportNewPage() {
       skipCashBook,
     }).then(() => {
       toast({
-        title: 'Nhập hàng thành công!',
-        description: `Đã nhập ${cartSnapshot.length} sản phẩm với tổng giá trị ${totalSnapshot.toLocaleString('vi-VN')} VND`,
+        title: t('tours.importNew.importSuccess'),
+        description: t('tours.importNew.importSuccessDesc', { count: cartSnapshot.length, total: totalSnapshot.toLocaleString('vi-VN') }),
       });
     }).catch((error: any) => {
       toast({
-        title: 'Lỗi nhập hàng',
+        title: t('tours.importNew.importError'),
         description: error.message,
         variant: 'destructive',
       });
@@ -378,8 +384,8 @@ export default function ImportNewPage() {
   const handleExportTemplate = () => {
     downloadImportTemplate();
     toast({
-      title: 'Tải file mẫu thành công',
-      description: 'File Excel mẫu đã được tải xuống',
+      title: t('tours.importNew.templateDownloaded'),
+      description: t('tours.importNew.templateDownloadedDesc'),
     });
   };
 
@@ -394,13 +400,13 @@ export default function ImportNewPage() {
           await createSupplier.mutateAsync({ name, branch_id: selectedBranchId || null });
         }
         toast({
-          title: 'Đã tạo nhà cung cấp mới',
-          description: `Tự động tạo ${newSupplierNames.length} NCC: ${newSupplierNames.join(', ')}`,
+          title: t('tours.importNew.createdNewSuppliers'),
+          description: t('tours.importNew.autoCreatedSuppliers', { count: newSupplierNames.length, names: newSupplierNames.join(', ') }),
         });
       } catch (error: any) {
         console.error('Error creating suppliers:', error);
         toast({
-          title: 'Lỗi tạo NCC',
+          title: t('tours.importNew.createSupplierError'),
           description: error.message,
           variant: 'destructive',
         });
@@ -448,7 +454,7 @@ export default function ImportNewPage() {
       try {
         // Find supplier ID (either existing or newly created)
         let supplierId: string | null = null;
-        if (group.supplierName && group.supplierName !== 'Không có NCC') {
+      if (group.supplierName && group.supplierName !== t('tours.importNew.noSupplierNCC')) {
           // Re-query suppliers to get fresh data
           const { data: freshSuppliers } = await supabase
             .from('suppliers')
@@ -504,14 +510,16 @@ export default function ImportNewPage() {
     
     if (successCount > 0) {
       toast({
-        title: 'Nhập hàng thành công!',
-        description: `Đã tạo ${successCount} phiếu nhập${failCount > 0 ? `, ${failCount} phiếu lỗi` : ''}`,
+        title: t('tours.importNew.importedSuccessMulti'),
+        description: failCount > 0 
+          ? t('tours.importNew.importedSuccessMultiWithError', { success: successCount, fail: failCount })
+          : t('tours.importNew.importedSuccessMultiDesc', { success: successCount }),
       });
       navigate('/import/history');
     } else {
       toast({
-        title: 'Lỗi nhập hàng',
-        description: 'Không thể tạo phiếu nhập. Vui lòng thử lại.',
+        title: t('tours.importNew.importError'),
+        description: t('tours.importNew.importErrorRetry'),
         variant: 'destructive',
       });
     }
@@ -531,11 +539,11 @@ export default function ImportNewPage() {
       if (newSupplier?.id) {
         setSelectedSupplierId(newSupplier.id);
       }
-      toast({ title: 'Đã thêm nhà cung cấp', description: newSupplierForm.name });
+      toast({ title: t('tours.importNew.addedSupplier'), description: newSupplierForm.name });
       setSupplierDialogOpen(false);
       setNewSupplierForm({ name: '', phone: '', address: '' });
     } catch (error: any) {
-      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+      toast({ title: t('pages.importNew.error'), description: error.message, variant: 'destructive' });
     }
   };
 
@@ -547,11 +555,11 @@ export default function ImportNewPage() {
       if (newCat?.id) {
         setForm(prev => ({ ...prev, categoryId: newCat.id }));
       }
-      toast({ title: 'Đã thêm danh mục', description: newCategoryName });
+      toast({ title: t('tours.importNew.addedCategory'), description: newCategoryName });
       setCategoryDialogOpen(false);
       setNewCategoryName('');
     } catch (error: any) {
-      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' });
+      toast({ title: t('pages.importNew.error'), description: error.message, variant: 'destructive' });
     }
   };
 
@@ -570,7 +578,7 @@ export default function ImportNewPage() {
       if (data.imei) {
         const inCart = cart.find(item => item.imei === data.imei);
         if (inCart) {
-          toast({ title: 'Đã có trong giỏ', description: `IMEI "${data.imei}" đã được thêm trước đó` });
+          toast({ title: t('tours.importNew.inCartAlready'), description: t('tours.importNew.inCartAlreadyDesc', { imei: data.imei }) });
           return;
         }
       } else if (data.productName) {
@@ -584,12 +592,12 @@ export default function ImportNewPage() {
               ? { ...item, quantity: item.quantity + 1 }
               : item
           ));
-          toast({ title: 'Đã tăng số lượng', description: `${data.productName}: +1` });
+          toast({ title: t('tours.importNew.quantityIncreased'), description: `${data.productName}: +1` });
           return;
         }
       }
 
-      const productName = data.productName || matchedProduct?.name || data.imei || 'Sản phẩm QR';
+      const productName = data.productName || matchedProduct?.name || data.imei || t('tours.importNew.qrProduct');
       const sku = data.sku || (matchedProduct && 'sku' in matchedProduct ? matchedProduct.sku : '') || productName;
       // QR price = giá kho cũ → không dùng, để trống cả importPrice và salePrice
       const salePrice = 0;
@@ -609,7 +617,7 @@ export default function ImportNewPage() {
       };
 
       setCart(prev => [...prev, newItem]);
-      toast({ title: 'Đã thêm vào giỏ', description: `${productName}${data.imei ? ` (${data.imei})` : ''} - Cần nhập giá nhập` });
+      toast({ title: t('tours.importNew.addedToCart'), description: `${productName}${data.imei ? ` (${data.imei})` : ''} - ${t('tours.importNew.needImportPrice')}` });
     } else {
       // Single scan mode: fill form
       if (data.productName) {
@@ -641,9 +649,9 @@ export default function ImportNewPage() {
   return (
     <MainLayout>
       <PageHeader
-        title="Tạo phiếu nhập hàng"
-        description="Nhập hàng thủ công hoặc từ file Excel"
-        helpText="Tạo phiếu nhập mới bằng cách thêm sản phẩm thủ công hoặc import từ Excel. Chọn nhà cung cấp, nhập IMEI/serial cho từng sản phẩm, sau đó thanh toán để hoàn tất phiếu nhập."
+        title={t('tours.importNew.pageTitle')}
+        description={t('tours.importNew.pageDesc')}
+        helpText={t('tours.importNew.pageHelp')}
         actions={
           <div className="flex gap-2 flex-wrap">
             <Button
@@ -653,8 +661,8 @@ export default function ImportNewPage() {
               className="h-8 text-xs sm:text-sm"
             >
               <PlayCircle className="mr-1.5 h-4 w-4" />
-              <span className="hidden sm:inline">{manualTourActive ? 'Tắt hướng dẫn' : 'Xem hướng dẫn'}</span>
-              <span className="sm:hidden">{manualTourActive ? 'Tắt HD' : 'Xem HD'}</span>
+              <span className="hidden sm:inline">{manualTourActive ? t('tours.importNew.turnOffGuide') : t('tours.importNew.viewGuide')}</span>
+              <span className="sm:hidden">{manualTourActive ? t('tours.importNew.turnOffGuideShort') : t('tours.importNew.viewGuideShort')}</span>
             </Button>
             {importGuideUrl && (
               <Button 
@@ -665,26 +673,26 @@ export default function ImportNewPage() {
               >
                 <a href={importGuideUrl} target="_blank" rel="noopener noreferrer">
                   <BookOpen className="mr-1.5 h-4 w-4" />
-                  Hướng dẫn
+                  {t('tours.importNew.guideBtn')}
                 </a>
               </Button>
             )}
             <Button variant="outline" size="sm" asChild>
               <a href="/templates/Bang_ke_thu_mua_iPhone_cu.xlsx" download="Bang_ke_thu_mua_iPhone_cu.xlsx">
                 <Download className="mr-1.5 h-4 w-4" />
-                <span className="hidden sm:inline">Mẫu bảng kê thu mua</span>
-                <span className="sm:hidden">Mẫu thu mua</span>
+                <span className="hidden sm:inline">{t('tours.importNew.purchaseTemplate')}</span>
+                <span className="sm:hidden">{t('tours.importNew.purchaseTemplateShort')}</span>
               </a>
             </Button>
             <Button variant="outline" size="sm" onClick={handleExportTemplate}>
               <Download className="mr-1.5 h-4 w-4" />
-              <span className="hidden sm:inline">Tải file mẫu</span>
-              <span className="sm:hidden">File mẫu</span>
+              <span className="hidden sm:inline">{t('tours.importNew.downloadTemplate')}</span>
+              <span className="sm:hidden">{t('tours.importNew.downloadTemplateShort')}</span>
             </Button>
             <Button variant="outline" size="sm" onClick={() => setExcelImportOpen(true)}>
               <FileSpreadsheet className="mr-1.5 h-4 w-4" />
-              <span className="hidden sm:inline">Nhập từ Excel</span>
-              <span className="sm:hidden">Excel</span>
+              <span className="hidden sm:inline">{t('tours.importNew.importFromExcel')}</span>
+              <span className="sm:hidden">{t('tours.importNew.importFromExcelShort')}</span>
             </Button>
           </div>
         }
@@ -697,12 +705,12 @@ export default function ImportNewPage() {
             <div className="bg-card border rounded-xl p-4 sm:p-6" data-tour="import-receipt-info">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
-                Thông tin phiếu nhập
+                {t('tours.importNew.receiptInfo')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Branch Selection */}
                 <div className="form-field">
-                  <Label>Chi nhánh nhập hàng *</Label>
+                  <Label>{t('tours.importNew.importBranch')}</Label>
                   {isSuperAdmin ? (
                     <Select
                       value={selectedBranchId}
@@ -713,19 +721,19 @@ export default function ImportNewPage() {
                       }}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Chọn chi nhánh" />
+                        <SelectValue placeholder={t('tours.importNew.selectBranch')} />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
                         {branches?.map((branch) => (
                           <SelectItem key={branch.id} value={branch.id}>
-                            {branch.name} {branch.is_default && '(Mặc định)'}
+                            {branch.name} {branch.is_default && t('tours.importNew.defaultBranch')}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   ) : (
                     <Input
-                      value={branches?.find(b => b.id === selectedBranchId)?.name || 'Đang tải...'}
+                      value={branches?.find(b => b.id === selectedBranchId)?.name || t('tours.importNew.loadingBranch')}
                       disabled
                       className="bg-muted"
                     />
@@ -734,7 +742,7 @@ export default function ImportNewPage() {
 
                 {/* Supplier Selection */}
                 <div className="form-field" data-error={!!fieldErrors.supplier || undefined}>
-                  <Label>Nhà cung cấp *</Label>
+                  <Label>{t('tours.importNew.supplierLabel')}</Label>
                   <div className="flex gap-2">
                     <Select
                       value={selectedSupplierId}
@@ -744,7 +752,7 @@ export default function ImportNewPage() {
                       }}
                     >
                       <SelectTrigger className={`flex-1 ${fieldErrors.supplier ? 'border-destructive ring-destructive/30 ring-2' : ''}`}>
-                        <SelectValue placeholder="Chọn nhà cung cấp" />
+                        <SelectValue placeholder={t('tours.importNew.selectSupplier')} />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
                         {suppliers?.map((sup) => (
@@ -770,7 +778,7 @@ export default function ImportNewPage() {
 
             <div className="bg-card border rounded-xl p-4 sm:p-6" data-tour="import-product-form">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <h3 className="font-semibold">Thông tin sản phẩm</h3>
+                <h3 className="font-semibold">{t('tours.importNew.productInfo')}</h3>
                 {productFormMode === 'form' && (
                   <Button
                     variant="ghost"
@@ -783,14 +791,14 @@ export default function ImportNewPage() {
                     }}
                   >
                     <ArrowLeft className="mr-1.5 h-4 w-4" />
-                    Tìm SP khác
+                    {t('tours.importNew.searchOther')}
                   </Button>
                 )}
               </div>
 
               {/* Product Name - always visible */}
               <div className="form-field relative mb-4">
-                <Label htmlFor="productName">Tên sản phẩm *</Label>
+                <Label htmlFor="productName">{t('tours.importNew.productName')}</Label>
                 {productFormMode === 'search' ? (
                   <>
                     <div className="flex gap-2">
@@ -800,7 +808,7 @@ export default function ImportNewPage() {
                           id="productName"
                           value={form.productName}
                           onChange={(e) => handleProductNameChange(e.target.value)}
-                          placeholder="Nhập tên sản phẩm để tìm hoặc thêm mới"
+                          placeholder={t('tours.importNew.searchOrAddProduct')}
                           className="pl-9"
                           autoComplete="off"
                         />
@@ -808,7 +816,7 @@ export default function ImportNewPage() {
                       <ImportQRScanner onScanResult={handleQRScanResult} />
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Tìm sản phẩm cũ trong kho hoặc thêm sản phẩm mới.
+                      {t('tours.importNew.searchHint')}
                     </p>
 
                     {/* Search Results Dropdown */}
@@ -826,7 +834,7 @@ export default function ImportNewPage() {
                                   <div className="min-w-0 flex-1">
                                     <p className="font-medium text-sm truncate">{s.name}</p>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                      SKU: {s.sku} | Tồn kho: <span className="font-medium text-foreground">{s.totalQty}</span>
+                                      SKU: {s.sku} | {t('tours.importNew.stockQty')}<span className="font-medium text-foreground">{s.totalQty}</span>
                                     </p>
                                   </div>
                                   <Package className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
@@ -837,7 +845,7 @@ export default function ImportNewPage() {
                         )}
                         {suggestions.length === 0 && (
                           <div className="px-4 py-3 text-sm text-muted-foreground">
-                            Không tìm thấy sản phẩm nào phù hợp.
+                            {t('tours.importNew.noMatchingProducts')}
                           </div>
                         )}
                         <button
@@ -845,7 +853,7 @@ export default function ImportNewPage() {
                           className="w-full px-4 py-3 text-left hover:bg-muted border-t border-border transition-colors flex items-center gap-2 text-primary font-medium text-sm"
                         >
                           <Plus className="h-4 w-4" />
-                          Thêm sản phẩm mới{form.productName.trim() ? `: "${form.productName.trim()}"` : ''}
+                          {t('tours.importNew.addNewProduct')}{form.productName.trim() ? `: "${form.productName.trim()}"` : ''}
                         </button>
                       </div>
                     )}
@@ -857,7 +865,7 @@ export default function ImportNewPage() {
                       onClick={handleAddNewProduct}
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Thêm sản phẩm mới
+                      {t('tours.importNew.addNewProduct')}
                     </Button>
                   </>
                 ) : (
