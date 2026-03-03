@@ -91,13 +91,13 @@ const useExportHistoryConstants = () => {
         title: t('tours.exportHistory.receiptTabTitle'),
         description: t('tours.exportHistory.receiptTabDesc'),
         targetSelector: '[data-tour="export-tab-receipts"]',
-        position: 'bottom',
+        position: 'bottom' as const,
       },
       {
         title: t('tours.exportHistory.actionBtnTitle'),
         description: t('tours.exportHistory.actionBtnDesc'),
         targetSelector: '[data-tour="export-receipt-actions"]',
-        position: 'left',
+        position: 'left' as const,
       },
     ],
     receiptTourInfo: [
@@ -105,7 +105,7 @@ const useExportHistoryConstants = () => {
         title: t('tours.exportHistory.receiptTabInfoTitle'),
         description: t('tours.exportHistory.receiptTabInfoDesc'),
         isInfo: true,
-        position: 'center',
+        position: 'center' as const,
       },
     ],
     itemTour: [
@@ -113,13 +113,13 @@ const useExportHistoryConstants = () => {
         title: t('tours.exportHistory.itemTabTitle'),
         description: t('tours.exportHistory.itemTabDesc'),
         targetSelector: '[data-tour="export-tab-items"]',
-        position: 'bottom',
+        position: 'bottom' as const,
       },
       {
         title: t('tours.exportHistory.returnBtnTitle'),
         description: t('tours.exportHistory.returnBtnDesc'),
         targetSelector: '[data-tour="export-item-return"]',
-        position: 'left',
+        position: 'left' as const,
       },
     ],
     itemTourInfo: [
@@ -127,7 +127,7 @@ const useExportHistoryConstants = () => {
         title: t('tours.exportHistory.itemTabInfoTitle'),
         description: t('tours.exportHistory.itemTabInfoDesc'),
         isInfo: true,
-        position: 'center',
+        position: 'center' as const,
       },
     ],
   };
