@@ -50,6 +50,7 @@ const PlatformArticlesPage = lazy(() => import("./pages/PlatformArticlesPage"));
 const SocialPage = lazy(() => import("./pages/SocialPage"));
 const WebsiteEditorPage = lazy(() => import("./pages/WebsiteEditorPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const WarrantyCheckPage = lazy(() => import("./pages/WarrantyCheckPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Aggressively preload all main page chunks after initial render
@@ -186,6 +187,7 @@ const App = () => (
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/forgot-store-id" element={<ForgotStoreIdPage />} />
+                <Route path="/warranty-check" element={<WarrantyCheckPage />} />
                 
                 {/* Subscription page - accessible even when expired */}
                 <Route path="/subscription" element={<SubscriptionRoute><SubscriptionPage /></SubscriptionRoute>} />

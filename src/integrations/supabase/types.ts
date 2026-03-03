@@ -5937,6 +5937,42 @@ export type Database = {
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       get_user_tenant_id_secure: { Args: never; Returns: string }
       get_vapid_public_key: { Args: never; Returns: string }
+      global_warranty_lookup_by_imei: {
+        Args: { _imei: string; _ip_address?: string }
+        Returns: {
+          branch_name: string
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          export_date: string
+          id: string
+          imei: string
+          product_name: string
+          sale_price: number
+          sku: string
+          store_name: string
+          tenant_id: string
+          warranty: string
+        }[]
+      }
+      global_warranty_lookup_by_phone: {
+        Args: { _ip_address?: string; _phone: string }
+        Returns: {
+          branch_name: string
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          export_date: string
+          id: string
+          imei: string
+          product_name: string
+          sale_price: number
+          sku: string
+          store_name: string
+          tenant_id: string
+          warranty: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
