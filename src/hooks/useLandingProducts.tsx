@@ -131,7 +131,45 @@ export function useUpdateLandingProductCategory() {
   });
 }
 
-export function useLandingProducts() {
+export function useReorderLandingProductCategories() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (items: { id: string; display_order: number }[]) => {
+      for (const item of items) {
+        const { error } = await supabase
+          .from('landing_product_categories' as any)
+          .update({ display_order: item.display_order })
+          .eq('id', item.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['landing-product-categories'] });
+      qc.invalidateQueries({ queryKey: ['public-landing-products'] });
+    },
+  });
+}
+
+export function useReorderLandingProducts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (items: { id: string; display_order: number }[]) => {
+      for (const item of items) {
+        const { error } = await supabase
+          .from('landing_products' as any)
+          .update({ display_order: item.display_order })
+          .eq('id', item.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['landing-products'] });
+      qc.invalidateQueries({ queryKey: ['public-landing-products'] });
+    },
+  });
+}
+
+
   return useQuery({
     queryKey: ['landing-products'],
     queryFn: async () => {
