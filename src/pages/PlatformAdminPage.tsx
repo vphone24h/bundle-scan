@@ -28,8 +28,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function PlatformAdminPage() {
+  const { t } = useTranslation();
   const { data: platformUser, isLoading } = usePlatformUser();
   const [activeTab, setActiveTab] = useState('overview');
   const [isExportingAll, setIsExportingAll] = useState(false);
@@ -39,7 +41,7 @@ export default function PlatformAdminPage() {
     try {
       const { data, error } = await supabase.functions.invoke('export-all-data');
       if (error) throw error;
-      if (!data) throw new Error('Không có dữ liệu trả về');
+      if (!data) throw new Error(t('pages.platformAdmin.noDataReturned'));
 
       const jsonString = JSON.stringify(data, null, 2);
       const blob = new Blob([jsonString], { type: 'application/json' });
@@ -55,18 +57,15 @@ export default function PlatformAdminPage() {
 
       const totalRows = data._metadata?.total_rows || 0;
       const totalTables = data._metadata?.total_tables || 0;
-      toast.success(`Đã xuất ${totalRows.toLocaleString()} bản ghi từ ${totalTables} bảng`);
+      toast.success(t('pages.platformAdmin.exportSuccess', { rows: totalRows.toLocaleString(), tables: totalTables }));
     } catch (error) {
       console.error('Full export error:', error);
-      toast.error('Lỗi khi xuất dữ liệu: ' + (error as Error).message);
+      toast.error(t('pages.platformAdmin.exportError') + ': ' + (error as Error).message);
     } finally {
       setIsExportingAll(false);
     }
   };
 
-  // Shell-first: no spinner
-
-  // Only platform admins can access this page (skip guard while loading)
   if (!isLoading && (!platformUser || platformUser.platform_role !== 'platform_admin')) {
     return <Navigate to="/" replace />;
   }
@@ -75,53 +74,53 @@ export default function PlatformAdminPage() {
     <MainLayout>
       <div className="p-4 sm:p-6 space-y-6">
         <PageHeader 
-          title="Quản trị nền tảng" 
-          description="Quản lý doanh nghiệp, gói dịch vụ và thanh toán"
+          title={t('pages.platformAdmin.title')} 
+          description={t('pages.platformAdmin.description')}
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="flex flex-wrap h-auto gap-1 p-1">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm px-2 sm:px-3">Tổng quan</TabsTrigger>
-            <TabsTrigger value="tenants" className="text-xs sm:text-sm px-2 sm:px-3">DN</TabsTrigger>
-            <TabsTrigger value="payments" className="text-xs sm:text-sm px-2 sm:px-3">Thanh toán</TabsTrigger>
-            <TabsTrigger value="history" className="text-xs sm:text-sm px-2 sm:px-3">Lịch sử</TabsTrigger>
-            <TabsTrigger value="plans" className="text-xs sm:text-sm px-2 sm:px-3">Gói DV</TabsTrigger>
+            <TabsTrigger value="overview" className="text-xs sm:text-sm px-2 sm:px-3">{t('pages.platformAdmin.overview')}</TabsTrigger>
+            <TabsTrigger value="tenants" className="text-xs sm:text-sm px-2 sm:px-3">{t('pages.platformAdmin.tenants')}</TabsTrigger>
+            <TabsTrigger value="payments" className="text-xs sm:text-sm px-2 sm:px-3">{t('pages.platformAdmin.payments')}</TabsTrigger>
+            <TabsTrigger value="history" className="text-xs sm:text-sm px-2 sm:px-3">{t('pages.platformAdmin.history')}</TabsTrigger>
+            <TabsTrigger value="plans" className="text-xs sm:text-sm px-2 sm:px-3">{t('pages.platformAdmin.plans')}</TabsTrigger>
             <TabsTrigger value="affiliate" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
               <Users className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Affiliate</span>
             </TabsTrigger>
             <TabsTrigger value="ads" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
               <Megaphone className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Quảng cáo</span>
+              <span className="hidden sm:inline">{t('pages.platformAdmin.ads')}</span>
             </TabsTrigger>
              <TabsTrigger value="domains" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
                <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
-               <span className="hidden sm:inline">Domain</span>
+               <span className="hidden sm:inline">{t('pages.platformAdmin.domains')}</span>
              </TabsTrigger>
-             <TabsTrigger value="config" className="text-xs sm:text-sm px-2 sm:px-3">Cấu hình</TabsTrigger>
+             <TabsTrigger value="config" className="text-xs sm:text-sm px-2 sm:px-3">{t('pages.platformAdmin.config')}</TabsTrigger>
             <TabsTrigger value="welcome-email" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
               <MailPlus className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Email tự động</span>
+              <span className="hidden sm:inline">{t('pages.platformAdmin.welcomeEmail')}</span>
             </TabsTrigger>
             <TabsTrigger value="email-history" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
               <Mail className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">LS Email</span>
+              <span className="hidden sm:inline">{t('pages.platformAdmin.emailHistory')}</span>
             </TabsTrigger>
              <TabsTrigger value="tax-article" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-               <span className="hidden sm:inline">Thuế 2026</span>
+               <span className="hidden sm:inline">{t('pages.platformAdmin.taxArticle')}</span>
              </TabsTrigger>
              <TabsTrigger value="guides" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-               <span className="hidden sm:inline">Bài viết</span>
+               <span className="hidden sm:inline">{t('pages.platformAdmin.guides')}</span>
              </TabsTrigger>
               <TabsTrigger value="system-notifications" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
                 <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Thông báo</span>
+                <span className="hidden sm:inline">{t('pages.platformAdmin.notifications')}</span>
               </TabsTrigger>
               <TabsTrigger value="export-all" className="text-xs sm:text-sm px-2 sm:px-3 flex items-center gap-1">
                 <Database className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Xuất DB</span>
+                <span className="hidden sm:inline">{t('pages.platformAdmin.exportDB')}</span>
               </TabsTrigger>
             </TabsList>
 
@@ -152,11 +151,11 @@ export default function PlatformAdminPage() {
           <TabsContent value="ads" className="mt-6">
             <div className="grid gap-6 lg:grid-cols-2">
               <div>
-                <h3 className="text-base font-semibold mb-4">Danh sách quảng cáo</h3>
+                <h3 className="text-base font-semibold mb-4">{t('pages.platformAdmin.adList')}</h3>
                 <PlatformAdvertisementsManagement />
               </div>
               <div>
-                <h3 className="text-base font-semibold mb-4">Cài đặt Ad Gate (người dùng hết hạn)</h3>
+                <h3 className="text-base font-semibold mb-4">{t('pages.platformAdmin.adGateSettings')}</h3>
                 <AdGateManagement />
               </div>
             </div>
@@ -194,15 +193,15 @@ export default function PlatformAdminPage() {
                 <TabsList className="mb-4">
                   <TabsTrigger value="manual" className="text-xs sm:text-sm">
                     <Bell className="h-3 w-3 mr-1" />
-                    Thông báo thủ công
+                    {t('pages.platformAdmin.manualNotifications')}
                   </TabsTrigger>
                   <TabsTrigger value="automation" className="text-xs sm:text-sm">
                     <Zap className="h-3 w-3 mr-1" />
-                    Automation
+                    {t('pages.platformAdmin.automation')}
                   </TabsTrigger>
                   <TabsTrigger value="send-history" className="text-xs sm:text-sm">
                     <History className="h-3 w-3 mr-1" />
-                    Lịch sử gửi
+                    {t('pages.platformAdmin.sendHistory')}
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="manual">
@@ -225,17 +224,17 @@ export default function PlatformAdminPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-green-700">
                     <Database className="h-5 w-5" />
-                    Xuất toàn bộ dữ liệu dự án
+                    {t('pages.platformAdmin.exportAllTitle')}
                   </CardTitle>
                   <CardDescription>
-                    Xuất tất cả dữ liệu của toàn bộ các cửa hàng (tenants) thành 1 file JSON duy nhất để đồng bộ sang Supabase khác.
+                    {t('pages.platformAdmin.exportAllDesc')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-sm text-muted-foreground space-y-1">
-                    <p>• Bao gồm tất cả bảng: tenants, branches, products, customers, receipts, cash_book, audit_logs, v.v.</p>
-                    <p>• Không giới hạn theo cửa hàng — xuất toàn bộ dự án.</p>
-                    <p>• File JSON có thể import vào Supabase bằng SQL Editor hoặc script migration.</p>
+                    <p>• {t('pages.platformAdmin.exportAllNote1')}</p>
+                    <p>• {t('pages.platformAdmin.exportAllNote2')}</p>
+                    <p>• {t('pages.platformAdmin.exportAllNote3')}</p>
                   </div>
                   <Button
                     onClick={handleExportAllData}
@@ -245,17 +244,17 @@ export default function PlatformAdminPage() {
                     {isExportingAll ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Đang xuất toàn bộ dữ liệu...
+                        {t('pages.platformAdmin.exportingAll')}
                       </>
                     ) : (
                       <>
                         <Database className="h-4 w-4 mr-2" />
-                        Xuất toàn bộ Database (JSON)
+                        {t('pages.platformAdmin.exportAllBtn')}
                       </>
                     )}
                   </Button>
                   <p className="text-xs text-muted-foreground text-center">
-                    ⚠️ Quá trình xuất có thể mất vài phút nếu dữ liệu lớn
+                    {t('pages.platformAdmin.exportWarning')}
                   </p>
                 </CardContent>
               </Card>
