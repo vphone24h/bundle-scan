@@ -29,7 +29,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { Separator } from '@/components/ui/separator';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
