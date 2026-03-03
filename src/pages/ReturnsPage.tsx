@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -85,6 +86,7 @@ interface GroupedReturn {
 }
 
 export default function ReturnsPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   
   // Search & Filters
@@ -354,9 +356,9 @@ export default function ReturnsPage() {
       } else {
         await deleteExportReturn.mutateAsync(itemToDelete as ExportReturn);
       }
-      toast.success('Đã xóa phiếu trả hàng thành công');
+      toast.success(t('pages.returns.deleteSuccess'));
     } catch (error: any) {
-      toast.error('Lỗi xóa phiếu trả hàng: ' + (error?.message || 'Không xác định'));
+      toast.error(t('pages.returns.deleteError') + ': ' + (error?.message || ''));
     } finally {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
@@ -368,13 +370,13 @@ export default function ReturnsPage() {
     return (
       <MainLayout>
         <PageHeader
-          title="Trả hàng nhập"
-          description="Hoàn trả sản phẩm cho nhà cung cấp"
-          helpText="Trả lại sản phẩm đã nhập cho nhà cung cấp (hàng lỗi, sai mẫu). Chọn phiếu nhập gốc, chọn sản phẩm cần trả, hệ thống tự động cập nhật tồn kho và công nợ."
+          title={t('pages.returns.importReturnTitle')}
+          description={t('pages.returns.importReturnDesc')}
+          helpText={t('pages.returns.importReturnHelp')}
           actions={
             <Button variant="outline" onClick={handleCancel}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Quay lại
+              {t('pages.returns.goBack')}
             </Button>
           }
         />
@@ -393,13 +395,13 @@ export default function ReturnsPage() {
     return (
       <MainLayout>
         <PageHeader
-          title="Trả hàng bán"
-          description="Khách hàng trả lại sản phẩm"
-          helpText="Xử lý khi khách hàng trả lại sản phẩm đã mua. Chọn phiếu xuất gốc, chọn sản phẩm trả, hàng tự động nhập lại kho và ghi nhận hoàn tiền."
+          title={t('pages.returns.exportReturnTitle')}
+          description={t('pages.returns.exportReturnDesc')}
+          helpText={t('pages.returns.exportReturnHelp')}
           actions={
             <Button variant="outline" onClick={handleCancel}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Quay lại
+              {t('pages.returns.goBack')}
             </Button>
           }
         />
@@ -419,8 +421,8 @@ export default function ReturnsPage() {
       return (
         <div className="text-center py-8 text-muted-foreground">
           <RotateCcw className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Chưa có phiếu trả hàng nào</p>
-          <p className="text-sm mt-1">Trả hàng từ Lịch sử nhập/xuất hàng</p>
+          <p>{t('pages.returns.noReturns')}</p>
+          <p className="text-sm mt-1">{t('pages.returns.noReturnsHint')}</p>
         </div>
       );
     }
@@ -430,14 +432,14 @@ export default function ReturnsPage() {
         <TableHeader>
           <TableRow>
             <TableHead className="w-8"></TableHead>
-            <TableHead>Ngày giờ</TableHead>
-            <TableHead>Loại</TableHead>
-            <TableHead>Sản phẩm</TableHead>
-            <TableHead className="text-right">Tổng hoàn trả</TableHead>
-            <TableHead className="text-right">Phí giữ</TableHead>
-            <TableHead>Đối tượng</TableHead>
-            <TableHead>Chi nhánh</TableHead>
-            <TableHead>Nhân viên</TableHead>
+            <TableHead>{t('pages.returns.dateTime')}</TableHead>
+            <TableHead>{t('pages.returns.type')}</TableHead>
+            <TableHead>{t('pages.returns.product')}</TableHead>
+            <TableHead className="text-right">{t('pages.returns.totalRefund')}</TableHead>
+            <TableHead className="text-right">{t('pages.returns.keepFee')}</TableHead>
+            <TableHead>{t('pages.returns.target')}</TableHead>
+            <TableHead>{t('common.branch')}</TableHead>
+            <TableHead>{t('pages.returns.employee')}</TableHead>
             <TableHead className="w-[80px]"></TableHead>
           </TableRow>
         </TableHeader>
@@ -471,19 +473,19 @@ export default function ReturnsPage() {
                     {isImport ? (
                       <Badge variant="outline" className="border-orange-500 text-orange-600 bg-orange-50">
                         <Truck className="h-3 w-3 mr-1" />
-                        Nhập
+                        {t('pages.returns.importType')}
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="border-blue-500 text-blue-600 bg-blue-50">
                         <Package className="h-3 w-3 mr-1" />
-                        Bán
+                        {t('pages.returns.exportType')}
                       </Badge>
                     )}
                   </TableCell>
                   <TableCell>
                     {group.receiptCode && (
                       <div className="text-xs text-muted-foreground mb-0.5">
-                        Phiếu: {group.receiptCode}
+                        {t('pages.returns.receipt')}: {group.receiptCode}
                       </div>
                     )}
                     {isSingleItem ? (
@@ -495,9 +497,9 @@ export default function ReturnsPage() {
                       </>
                     ) : (
                       <div className="font-medium">
-                        {group.productCount} sản phẩm
+                        {t('pages.returns.products_count', { count: group.productCount })}
                         <div className="text-xs text-muted-foreground">
-                          Nhấn để xem chi tiết
+                          {t('pages.returns.clickToView')}
                         </div>
                       </div>
                     )}
@@ -608,9 +610,9 @@ export default function ReturnsPage() {
   return (
     <MainLayout>
       <PageHeader
-        title="Lịch sử trả hàng"
-        description="Xem lịch sử trả hàng nhập và trả hàng bán"
-        helpText="Xem toàn bộ lịch sử trả hàng: trả cho nhà cung cấp và nhận trả từ khách hàng. Lọc theo ngày, loại trả hàng để đối soát."
+        title={t('pages.returns.historyTitle')}
+        description={t('pages.returns.historyDesc')}
+        helpText={t('pages.returns.historyHelp')}
       />
 
       {/* Filters */}
@@ -622,7 +624,7 @@ export default function ReturnsPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Tìm theo mã phiếu, IMEI, SKU, tên SP, khách hàng, NCC..."
+                    placeholder={t('pages.returns.searchPlaceholder')}
                     className="pl-9 search-input-highlight"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -634,7 +636,7 @@ export default function ReturnsPage() {
                 onClick={() => setShowFilters(!showFilters)}
               >
                 <Filter className="mr-2 h-4 w-4" />
-                Bộ lọc
+                {t('pages.returns.filtersBtn')}
                 {hasActiveFilters && (
                   <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
                     !
@@ -648,24 +650,24 @@ export default function ReturnsPage() {
                 {/* Row 1: Date & Branch */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs">Khoảng thời gian</Label>
+                    <Label className="text-xs">{t('pages.returns.dateRange')}</Label>
                     <Select value={datePreset} onValueChange={(v) => setDatePreset(v as DatePreset)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Chọn" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="_custom_">Tuỳ chọn</SelectItem>
-                        <SelectItem value="today">Hôm nay</SelectItem>
-                        <SelectItem value="yesterday">Hôm qua</SelectItem>
-                        <SelectItem value="this_week">Tuần này</SelectItem>
-                        <SelectItem value="last_week">Tuần trước</SelectItem>
-                        <SelectItem value="this_month">Tháng này</SelectItem>
-                        <SelectItem value="last_month">Tháng trước</SelectItem>
+                        <SelectItem value="_custom_">{t('pages.returns.custom')}</SelectItem>
+                        <SelectItem value="today">{t('pages.returns.today')}</SelectItem>
+                        <SelectItem value="yesterday">{t('pages.returns.yesterday')}</SelectItem>
+                        <SelectItem value="this_week">{t('pages.returns.thisWeek')}</SelectItem>
+                        <SelectItem value="last_week">{t('pages.returns.lastWeek')}</SelectItem>
+                        <SelectItem value="this_month">{t('pages.returns.thisMonth')}</SelectItem>
+                        <SelectItem value="last_month">{t('pages.returns.lastMonth')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">Từ ngày</Label>
+                    <Label className="text-xs">{t('pages.returns.fromDate')}</Label>
                     <Input
                       type="date"
                       value={dateFrom}
@@ -673,7 +675,7 @@ export default function ReturnsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">Đến ngày</Label>
+                    <Label className="text-xs">{t('pages.returns.toDate')}</Label>
                     <Input
                       type="date"
                       value={dateTo}
@@ -682,13 +684,13 @@ export default function ReturnsPage() {
                   </div>
                   {isSuperAdmin && (
                     <div className="space-y-2">
-                      <Label className="text-xs">Chi nhánh</Label>
+                      <Label className="text-xs">{t('pages.returns.branchLabel')}</Label>
                       <Select value={branchFilter} onValueChange={setBranchFilter}>
                         <SelectTrigger>
                           <SelectValue placeholder="Tất cả" />
                         </SelectTrigger>
                         <SelectContent className="bg-popover">
-                          <SelectItem value="_all_">Tất cả chi nhánh</SelectItem>
+                          <SelectItem value="_all_">{t('pages.returns.allBranches')}</SelectItem>
                           {branches?.map((branch) => (
                             <SelectItem key={branch.id} value={branch.id}>
                               {branch.name}
@@ -699,13 +701,13 @@ export default function ReturnsPage() {
                     </div>
                   )}
                   <div className="space-y-2">
-                    <Label className="text-xs">Nhân viên</Label>
+                    <Label className="text-xs">{t('pages.returns.employeeLabel')}</Label>
                     <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
                       <SelectTrigger>
                         <SelectValue placeholder="Tất cả" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả nhân viên</SelectItem>
+                        <SelectItem value="_all_">{t('pages.returns.allEmployees')}</SelectItem>
                         {profiles?.map((profile) => (
                           <SelectItem key={profile.user_id} value={profile.user_id}>
                             {profile.display_name}
@@ -719,28 +721,28 @@ export default function ReturnsPage() {
                 {/* Row 2: Fee type & Payment sources */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs">Hình thức trả (Trả hàng bán)</Label>
+                    <Label className="text-xs">{t('pages.returns.returnMethod')}</Label>
                     <Select value={feeTypeFilter} onValueChange={(v) => setFeeTypeFilter(v as FeeTypeFilter)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Tất cả" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="_all_">Tất cả</SelectItem>
-                        <SelectItem value="none">Trả đủ tiền</SelectItem>
-                        <SelectItem value="percentage">Mất phí (%)</SelectItem>
-                        <SelectItem value="fixed_amount">Mất phí (số tiền)</SelectItem>
+                        <SelectItem value="_all_">{t('pages.returns.allMethods')}</SelectItem>
+                        <SelectItem value="none">{t('pages.returns.fullRefund')}</SelectItem>
+                        <SelectItem value="percentage">{t('pages.returns.percentFee')}</SelectItem>
+                        <SelectItem value="fixed_amount">{t('pages.returns.fixedFee')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">Nguồn tiền</Label>
+                    <Label className="text-xs">{t('pages.returns.paymentSource')}</Label>
                     <div className="flex flex-wrap gap-3">
                       {['cash', 'bank_card', 'e_wallet', 'debt'].map((source) => {
-                        const labels: Record<string, string> = {
-                          cash: 'Tiền mặt',
-                          bank_card: 'Thẻ',
-                          e_wallet: 'Ví điện tử',
-                          debt: 'Công nợ',
+                        const labelKey: Record<string, string> = {
+                          cash: 'pages.returns.cashSource',
+                          bank_card: 'pages.returns.cardSource',
+                          e_wallet: 'pages.returns.eWalletSource',
+                          debt: 'pages.returns.debtSource',
                         };
                         return (
                           <div key={source} className="flex items-center space-x-2">
@@ -750,7 +752,7 @@ export default function ReturnsPage() {
                               onCheckedChange={() => togglePaymentSource(source)}
                             />
                             <label htmlFor={`source-${source}`} className="text-sm cursor-pointer">
-                              {labels[source]}
+                              {t(labelKey[source])}
                             </label>
                           </div>
                         );
@@ -763,7 +765,7 @@ export default function ReturnsPage() {
                 <div className="flex justify-end">
                   <Button variant="ghost" size="sm" onClick={clearFilters}>
                     <X className="h-4 w-4 mr-1" />
-                    Xóa bộ lọc
+                    {t('pages.returns.clearFilters')}
                   </Button>
                 </div>
               </div>
@@ -777,15 +779,15 @@ export default function ReturnsPage() {
         <TabsList>
           <TabsTrigger value="all" className="gap-2">
             <List className="h-4 w-4" />
-            Tất cả ({groupedReturns.length})
+            {t('pages.returns.allTab')} ({groupedReturns.length})
           </TabsTrigger>
           <TabsTrigger value="export" className="gap-2">
             <Package className="h-4 w-4" />
-            Trả hàng bán ({groupedExportReturns.length})
+            {t('pages.returns.exportReturnTab')} ({groupedExportReturns.length})
           </TabsTrigger>
           <TabsTrigger value="import" className="gap-2">
             <Truck className="h-4 w-4" />
-            Trả hàng nhập ({groupedImportReturns.length})
+            {t('pages.returns.importReturnTab')} ({groupedImportReturns.length})
           </TabsTrigger>
         </TabsList>
 
@@ -795,7 +797,7 @@ export default function ReturnsPage() {
             <CardContent className="pt-6">
               {(importLoading || exportLoading) ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Đang tải...
+                  {t('pages.returns.loading')}
                 </div>
               ) : renderGroupedTable(groupedReturns)}
             </CardContent>
@@ -808,7 +810,7 @@ export default function ReturnsPage() {
             <CardContent className="pt-6">
               {exportLoading ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Đang tải...
+                  {t('pages.returns.loading')}
                 </div>
               ) : renderGroupedTable(groupedExportReturns)}
             </CardContent>
@@ -821,7 +823,7 @@ export default function ReturnsPage() {
             <CardContent className="pt-6">
               {importLoading ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Đang tải...
+                  {t('pages.returns.loading')}
                 </div>
               ) : renderGroupedTable(groupedImportReturns)}
             </CardContent>
@@ -841,27 +843,25 @@ export default function ReturnsPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận xóa phiếu trả hàng</AlertDialogTitle>
+            <AlertDialogTitle>{t('pages.returns.confirmDeleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               {itemToDelete && (
                 <>
-                  Bạn có chắc muốn xóa phiếu <strong>{itemToDelete.code}</strong> ({itemToDelete.product_name})?
+                  <span dangerouslySetInnerHTML={{ __html: t('pages.returns.confirmDeleteDesc', { code: itemToDelete.code, name: itemToDelete.product_name }) }} />
                   <br />
-                  Hệ thống sẽ hoàn tác trạng thái sản phẩm, sổ quỹ và ghi nhận vào lịch sử thao tác.
-                  <br />
-                  <span className="text-destructive font-medium">Thao tác này không thể hoàn tác.</span>
+                  <span className="text-destructive font-medium">{t('pages.returns.cannotUndo')}</span>
                 </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={deleteImportReturn.isPending || deleteExportReturn.isPending}
             >
-              {(deleteImportReturn.isPending || deleteExportReturn.isPending) ? 'Đang xóa...' : 'Xóa'}
+              {(deleteImportReturn.isPending || deleteExportReturn.isPending) ? t('pages.returns.deleting') : t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
