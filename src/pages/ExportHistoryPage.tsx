@@ -579,6 +579,22 @@ export default function ExportHistoryPage() {
         </CardContent>
       </Card>
 
+      {/* Order count summary */}
+      <div className="flex items-center gap-3 mb-4 px-1">
+        <div className="flex items-center gap-2 bg-muted/60 rounded-lg px-4 py-2">
+          <FileText className="h-4 w-4 text-primary" />
+          <span className="text-sm text-muted-foreground">Tổng đơn hàng:</span>
+          <span className="text-lg font-bold text-foreground">
+            {activeTab === 'receipts' ? (filteredReceipts?.length || 0) : groupedItems.length}
+          </span>
+          {hasActiveFilters && (
+            <span className="text-xs text-muted-foreground">
+              / {activeTab === 'receipts' ? (receipts?.length || 0) : (items?.length || 0)}
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => {
         const tab = v as 'receipts' | 'items';
