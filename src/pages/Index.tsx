@@ -4,6 +4,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useDashboardStats, useTodaySoldProducts, useRecentProducts, useRecentImportReceipts } from '@/hooks/useDashboardStats';
+import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
 import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator, PlayCircle, Crown, MessageCircle } from 'lucide-react';
@@ -146,6 +147,7 @@ const Index = () => {
   const { data: recentProductsData } = useRecentProducts(5);
   const { data: recentReceiptsData } = useRecentImportReceipts(3);
   const { data: todaySoldProducts, isLoading: soldLoading } = useTodaySoldProducts();
+  const { data: pendingOrderCount } = usePendingOrderCount();
   const userGuideUrl = useUserGuideUrl();
 
   const recentProducts = recentProductsData || [];
@@ -261,10 +263,10 @@ const Index = () => {
           {canViewImportPrice && (
             <StatCard
               title={t('pages.dashboard.orders')}
-              value={formatCurrency(stats?.pendingDebt || 0)}
-              icon={<AlertCircle className="h-5 w-5 sm:h-6 sm:w-6" />}
+              value={pendingOrderCount || 0}
+              icon={<ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />}
               onClick={() => navigate('/landing-admin?tab=orders')}
-              className={`cursor-pointer hover:shadow-md transition-shadow ${(stats?.pendingDebt || 0) > 0 ? 'border-warning/50' : ''}`}
+              className={`cursor-pointer hover:shadow-md transition-shadow ${(pendingOrderCount || 0) > 0 ? 'border-warning/50' : ''}`}
             />
           )}
         </div>
