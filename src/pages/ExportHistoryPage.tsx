@@ -946,7 +946,7 @@ export default function ExportHistoryPage() {
 
               {/* Items - Mobile Card View */}
               <div>
-                <div className="font-medium mb-2 text-sm">Sản phẩm ({selectedReceipt.export_receipt_items?.length || 0})</div>
+                <div className="font-medium mb-2 text-sm">Sản phẩm ({detailItems?.length || selectedReceipt.export_receipt_items?.length || 0})</div>
                 
                 {/* Mobile Card View */}
                 <div className="sm:hidden space-y-2">
