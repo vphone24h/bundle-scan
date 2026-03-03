@@ -142,7 +142,7 @@ const BATCH_SIZE = 100;
 export function ImportHistoricalOrdersSection() {
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [sourceId, setSourceId] = useState('vphone1');
+  const [sourceId, setSourceId] = useState('backup');
   const [parsedOrders, setParsedOrders] = useState<ParsedOrder[]>([]);
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -272,7 +272,7 @@ export function ImportHistoricalOrdersSection() {
             <Input
               value={sourceId}
               onChange={(e) => setSourceId(e.target.value)}
-              placeholder="vphone1"
+              placeholder="backup"
               disabled={importing}
             />
             <p className="text-xs text-muted-foreground mt-1">Dùng để phân biệt dữ liệu cũ với dữ liệu VKho</p>
