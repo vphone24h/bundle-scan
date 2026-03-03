@@ -74,7 +74,8 @@ export function useLandingProductCategories() {
         .from('landing_product_categories' as any)
         .select('*')
         .eq('tenant_id', tenantId)
-.order('created_at', { ascending: false });
+        .order('display_order', { ascending: true })
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data as unknown as LandingProductCategory[];
     },
