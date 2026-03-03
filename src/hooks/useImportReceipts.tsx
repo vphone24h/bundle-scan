@@ -72,24 +72,23 @@ export function useImportReceipts() {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as ImportReceipt[];
 
-      let query = supabase
-        .from('import_receipts')
-        .select(`
-          *,
-          suppliers(name),
-          branches(name)
-        `)
-        .order('import_date', { ascending: false });
+      const buildQuery = () => {
+        let query = supabase
+          .from('import_receipts')
+          .select(`
+            *,
+            suppliers(name),
+            branches(name)
+          `)
+          .order('import_date', { ascending: false });
 
-      // Apply branch filter for non-Super Admin users
-      if (shouldFilter && branchId) {
-        query = query.eq('branch_id', branchId);
-      }
+        if (shouldFilter && branchId) {
+          query = query.eq('branch_id', branchId);
+        }
+        return query;
+      };
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as ImportReceipt[];
+      return await fetchAllRows<ImportReceipt>(buildQuery);
     },
     enabled: !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,
