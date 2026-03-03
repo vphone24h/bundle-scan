@@ -34,6 +34,7 @@ export function PlansManagement() {
       duration_days: 30,
       max_branches: 1,
       max_users: 5,
+      max_purchases: null,
       description: '',
       is_active: true,
     });
@@ -49,6 +50,7 @@ export function PlansManagement() {
       duration_days: plan.duration_days,
       max_branches: plan.max_branches,
       max_users: plan.max_users,
+      max_purchases: plan.max_purchases,
       description: plan.description,
       is_active: plan.is_active,
     });
@@ -73,6 +75,7 @@ export function PlansManagement() {
           duration_days: formData.duration_days || null,
           max_branches: formData.max_branches || 1,
           max_users: formData.max_users || 5,
+          max_purchases: formData.max_purchases || null,
           description: formData.description || null,
           is_active: formData.is_active ?? true,
         });
@@ -199,6 +202,10 @@ export function PlansManagement() {
                   <span className="text-muted-foreground">Nhân viên:</span>
                   <span>Tối đa {plan.max_users}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Số lần mua:</span>
+                  <span>{plan.max_purchases ? `Tối đa ${plan.max_purchases} lần` : 'Không giới hạn'}</span>
+                </div>
               </div>
 
               {plan.description && (
@@ -290,6 +297,19 @@ export function PlansManagement() {
                   type="number"
                   value={formData.max_users || 5}
                   onChange={(e) => setFormData({ ...formData, max_users: parseInt(e.target.value) || 5 })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Số lần mua tối đa (để trống = không giới hạn)</Label>
+                <Input
+                  type="number"
+                  value={formData.max_purchases || ''}
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    max_purchases: e.target.value ? parseInt(e.target.value) : null 
+                  })}
+                  placeholder="Không giới hạn"
                 />
               </div>
 
