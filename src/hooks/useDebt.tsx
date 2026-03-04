@@ -3,6 +3,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from './usePermissions';
 import { useAuth } from './useAuth';
 
+// Fetch all rows bypassing Supabase 1000-row default limit via pagination
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchAllRows<T>(queryBuilder: () => any, pageSize = 1000): Promise<T[]> {
+  const allData: T[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await queryBuilder().range(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    allData.push(...(data as T[]));
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return allData;
+}
+
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
   const { data } = await supabase.rpc('get_user_tenant_id_secure');
