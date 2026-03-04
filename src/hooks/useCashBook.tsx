@@ -98,7 +98,7 @@ export function useCashBook(filters?: {
       return { items: (data || []) as CashBookEntry[], totalCount: count || 0 };
     },
     enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 min cache
     refetchOnWindowFocus: false,
     placeholderData: (previous) => previous,
   });

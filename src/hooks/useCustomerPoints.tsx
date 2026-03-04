@@ -122,9 +122,9 @@ export function usePointSettings() {
       return globalSettings as PointSettings | null;
     },
     enabled: !!user?.id,
-    staleTime: 0, // Always consider data stale to get fresh data on refetch
+    staleTime: 60 * 1000, // 1 min cache for point settings
     gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: true, // Refetch when window regains focus
+    refetchOnWindowFocus: false,
     refetchOnMount: 'always', // Always refetch on mount
   });
 }
