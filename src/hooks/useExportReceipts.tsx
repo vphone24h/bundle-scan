@@ -214,18 +214,25 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
 
       const effectiveBranchId = filters?.branchId && filters.branchId !== '_all_' ? filters.branchId : (shouldFilter && branchId ? branchId : null);
 
-      // Use !inner join for branch filtering
-      const selectStr = effectiveBranchId
-        ? `
-          *,
-          categories(name),
-          export_receipts!inner(
-            code, export_date, branch_id, customer_id, created_by, status, sales_staff_id,
-            customers(name, phone),
-            branches(name)
-          )
-        `
-        : `
+      // Step 1: If branch filter, get receipt IDs for that branch first
+      let receiptIdFilter: string[] | null = null;
+      if (effectiveBranchId) {
+        const { data: receiptIds } = await supabase
+          .from('export_receipts')
+          .select('id')
+          .eq('branch_id', effectiveBranchId)
+          .order('export_date', { ascending: false })
+          .limit(1000);
+        receiptIdFilter = receiptIds?.map(r => r.id) || [];
+        if (receiptIdFilter.length === 0) {
+          return { items: [] as ExportReceiptItemDetail[], totalCount: 0 };
+        }
+      }
+
+      // Step 2: Query items with simple select (no nested joins that conflict with RLS)
+      let query = supabase
+        .from('export_receipt_items')
+        .select(`
           *,
           categories(name),
           export_receipts(
@@ -233,15 +240,12 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
             customers(name, phone),
             branches(name)
           )
-        `;
-
-      let query = supabase
-        .from('export_receipt_items')
-        .select(selectStr, { count: 'estimated' })
+        `, { count: 'exact' })
         .order('created_at', { ascending: false });
 
-      if (effectiveBranchId) {
-        query = query.eq('export_receipts.branch_id', effectiveBranchId);
+      if (receiptIdFilter) {
+        // Apply branch filter via receipt IDs in batches
+        query = query.in('receipt_id', receiptIdFilter);
       }
 
       if (filters?.search) {
