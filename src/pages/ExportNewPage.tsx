@@ -144,6 +144,8 @@ export default function ExportNewPage() {
 
   // Auto email toggle
   const [autoEmailEnabled, setAutoEmailEnabled] = useState(true);
+  // Auto Zalo toggle
+  const [autoZaloEnabled, setAutoZaloEnabled] = useState(true);
 
   // Hooks
   const { user } = useAuth();
