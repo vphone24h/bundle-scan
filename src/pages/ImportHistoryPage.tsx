@@ -715,10 +715,10 @@ export default function ImportHistoryPage() {
           <div className="flex items-center justify-between">
             <TabsList>
               <TabsTrigger value="receipts" data-tour="import-history-receipts-tab">
-                Theo phiếu nhập ({filteredReceipts.length})
+                Theo phiếu nhập
               </TabsTrigger>
               <TabsTrigger value="products" data-tour="import-history-products-tab">
-                Theo sản phẩm ({filteredProducts.length})
+                Theo sản phẩm
               </TabsTrigger>
             </TabsList>
           </div>
