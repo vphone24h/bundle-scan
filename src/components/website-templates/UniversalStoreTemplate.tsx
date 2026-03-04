@@ -718,8 +718,23 @@ export default function UniversalStoreTemplate({
                 <button onClick={() => navigateTo('home')} className="h-8 w-8 rounded-full bg-[#f5f5f7] flex items-center justify-center hover:bg-black/10 transition-colors">
                   <ArrowLeft className="h-4 w-4" />
                 </button>
-                <h2 className="text-2xl font-bold tracking-tight flex-1">{config.navLabels.products}</h2>
+                <h2 className="text-2xl font-bold tracking-tight flex-1">
+                  {productFilterTag === 'featured' ? config.productSectionTitle
+                    : productFilterTag === 'flashSale' ? '⚡ Flash Sale'
+                    : productFilterTag === 'combo' ? '🎁 Combo ưu đãi'
+                    : productFilterTag?.startsWith('productTab_')
+                      ? ((settings as any)?.custom_product_tabs as { id: string; name: string }[] || []).find(t => t.id === productFilterTag)?.name || config.navLabels.products
+                    : config.navLabels.products}
+                </h2>
               </div>
+              {productFilterTag && (
+                <button
+                  onClick={() => setProductFilterTag(null)}
+                  className="mb-4 px-3 py-1.5 rounded-full text-xs font-medium bg-[#f5f5f7] hover:bg-black/10 transition-colors flex items-center gap-1.5"
+                >
+                  <X className="h-3 w-3" /> Xem tất cả sản phẩm
+                </button>
+              )}
 
               {activeSections.map(section => {
                 switch (section.id) {
