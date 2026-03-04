@@ -5420,6 +5420,7 @@ export type Database = {
           order_email_app_password: string | null
           order_email_enabled: boolean | null
           order_email_on_confirmed: boolean | null
+          order_email_on_export: boolean
           order_email_on_shipping: boolean | null
           order_email_on_warranty: boolean | null
           order_email_sender: string | null
@@ -5480,6 +5481,7 @@ export type Database = {
           order_email_app_password?: string | null
           order_email_enabled?: boolean | null
           order_email_on_confirmed?: boolean | null
+          order_email_on_export?: boolean
           order_email_on_shipping?: boolean | null
           order_email_on_warranty?: boolean | null
           order_email_sender?: string | null
@@ -5540,6 +5542,7 @@ export type Database = {
           order_email_app_password?: string | null
           order_email_enabled?: boolean | null
           order_email_on_confirmed?: boolean | null
+          order_email_on_export?: boolean
           order_email_on_shipping?: boolean | null
           order_email_on_warranty?: boolean | null
           order_email_sender?: string | null

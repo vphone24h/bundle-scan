@@ -1,0 +1,1 @@
+ALTER TABLE public.tenant_landing_settings ADD COLUMN IF NOT EXISTS order_email_on_export boolean NOT NULL DEFAULT false;

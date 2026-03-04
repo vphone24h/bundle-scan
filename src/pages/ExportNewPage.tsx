@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 import { 
   ShoppingCart, 
@@ -35,6 +36,7 @@ import {
   Percent,
   Calculator,
   PlayCircle,
+  Mail,
 } from 'lucide-react';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { useCheckProductForSale, useSearchProductsByName, useCreateExportReceipt, type ExportReceiptItem, type ExportPayment } from '@/hooks/useExportReceipts';
@@ -46,6 +48,8 @@ import { usePointSettings } from '@/hooks/useCustomerPoints';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useStaffList } from '@/hooks/useCRM';
 import { useAuth } from '@/hooks/useAuth';
+import { useTenantLandingSettings } from '@/hooks/useTenantLanding';
+import { supabase } from '@/integrations/supabase/client';
 import { ExportPaymentDialog } from '@/components/export/ExportPaymentDialog';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
@@ -138,6 +142,9 @@ export default function ExportNewPage() {
   const [createdReceipt, setCreatedReceipt] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Auto email toggle
+  const [autoEmailEnabled, setAutoEmailEnabled] = useState(false);
+
   // Hooks
   const { user } = useAuth();
   const checkProduct = useCheckProductForSale();
@@ -149,7 +156,15 @@ export default function ExportNewPage() {
   const { data: branches } = useBranches();
   const { data: permissions } = usePermissions();
   const { data: staffList } = useStaffList();
+  const { data: landingSettings } = useTenantLandingSettings();
   const isSuperAdmin = permissions?.role === 'super_admin';
+
+  // Sync auto email toggle with landing settings
+  useEffect(() => {
+    if (landingSettings?.order_email_on_export) {
+      setAutoEmailEnabled(true);
+    }
+  }, [landingSettings?.order_email_on_export]);
   
   // Get branch_id from first cart item for invoice template
   const cartBranchId = cart.find(item => item.branch_id)?.branch_id || null;
@@ -806,6 +821,32 @@ export default function ExportNewPage() {
         }
       }
 
+      // Send auto email if enabled
+      if (autoEmailEnabled && savedCustomerEmail) {
+        supabase.functions.invoke('send-export-email', {
+          body: {
+            tenant_id: landingSettings?.tenant_id,
+            customer_name: savedCustomerName,
+            customer_email: savedCustomerEmail,
+            customer_phone: savedCustomerPhone,
+            items: savedCart.map(item => ({
+              product_name: item.product_name,
+              imei: item.imei,
+              sale_price: item.sale_price,
+              quantity: item.quantity,
+              warranty: item.warranty,
+            })),
+            total_amount: totalAmount,
+            receipt_code: receipt.code,
+            branch_id: branchId,
+            export_date: new Date().toISOString(),
+          },
+        }).then(({ error }) => {
+          if (error) console.warn('Export email failed:', error.message);
+        }).catch(() => {});
+        successMessage += '. Email đã được gửi cho khách hàng';
+      }
+
       toast({
         title: t('pages.exportNew.exportSuccess'),
         description: successMessage,
@@ -1327,7 +1368,28 @@ export default function ExportNewPage() {
                     {totalAmount.toLocaleString('vi-VN')}đ
                   </span>
                 </div>
-              </div>
+               </div>
+
+              {/* Auto email toggle */}
+              {landingSettings?.order_email_enabled && (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <Label htmlFor="auto-email-export" className="flex items-center gap-2 cursor-pointer text-sm">
+                    <Mail className="h-4 w-4 text-primary" />
+                    Tự động gửi email cho khách
+                  </Label>
+                  <Switch
+                    id="auto-email-export"
+                    checked={autoEmailEnabled}
+                    onCheckedChange={setAutoEmailEnabled}
+                  />
+                </div>
+              )}
+              {autoEmailEnabled && !customerEmail && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  Khách chưa có email — sẽ không gửi được
+                </p>
+              )}
 
               <Button 
                 className="w-full" 
