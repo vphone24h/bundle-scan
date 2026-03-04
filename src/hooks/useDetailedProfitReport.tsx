@@ -98,7 +98,8 @@ export function useDetailedProfitReport(filters?: {
         return q;
       };
 
-      const soldItems = await fetchAllRows<any>(buildSoldQuery);
+      const { data: soldItems, error: soldError } = await buildSoldQuery().limit(5000);
+      if (soldError) throw soldError;
 
       // 2. Lấy dữ liệu trả hàng từ export_returns
       let returnQuery = supabase

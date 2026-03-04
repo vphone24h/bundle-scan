@@ -315,8 +315,9 @@ export function useCustomersWithPoints(filters?: {
         return query;
       };
 
-      const data = await fetchAllRows<CustomerWithPointsCRM>(buildQuery);
-      return data;
+      const { data, error } = await buildQuery().limit(5000);
+      if (error) throw error;
+      return (data || []) as CustomerWithPointsCRM[];
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 2, // 2 phút

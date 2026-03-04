@@ -75,7 +75,8 @@ export function useProductReport(filters?: {
         return q;
       };
 
-      const soldItems = await fetchAllRows<any>(buildSoldQuery);
+      const { data: soldItems, error: soldError } = await buildSoldQuery().limit(5000);
+      if (soldError) throw soldError;
 
       // Get product import prices
       const productIds = Array.from(new Set(soldItems?.map(i => i.product_id).filter(Boolean) || []));

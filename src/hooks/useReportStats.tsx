@@ -128,7 +128,8 @@ export function useReportStats(filters?: {
         return q;
       };
 
-      const exportReceipts = await fetchAllRows<any>(buildExportQuery);
+      const { data: exportReceipts, error: exportError } = await buildExportQuery().limit(5000);
+      if (exportError) throw exportError;
 
       // 2. Lấy dữ liệu trả hàng KHÔNG CÓ PHÍ để tính lợi nhuận âm
       let returnQuery = supabase

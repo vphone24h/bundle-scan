@@ -317,7 +317,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
         return q;
       };
 
-      const payments = await fetchAllRows<any>(buildPaymentsQuery);
+      const payments = await fetchLimited<any>(buildPaymentsQuery);
 
       const paymentSupplierIds = [...new Set(payments?.map(p => p.entity_id) || [])];
       let suppliersFromPayments: { id: string; name: string; phone: string | null; address: string | null }[] = [];
