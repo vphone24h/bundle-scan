@@ -6304,6 +6304,8 @@ export type Database = {
         Returns: string
       }
       resolve_tenant_by_domain: { Args: { _domain: string }; Returns: string }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       submit_staff_review: {
         Args: {
           _branch_id: string
