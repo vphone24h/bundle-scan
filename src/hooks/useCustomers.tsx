@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { fetchAllRows } from '@/lib/fetchAllRows';
 
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
@@ -22,25 +21,54 @@ export interface Customer {
   updated_at: string;
 }
 
-export function useCustomers() {
+export interface CustomerFilters {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  totalCount: number;
+}
+
+export function useCustomers(filters?: CustomerFilters) {
   const { user } = useAuth();
+  const page = filters?.page ?? 1;
+  const pageSize = filters?.pageSize ?? 50;
+
   return useQuery({
-    // Keyed by user to prevent cross-tenant cache leakage
-    queryKey: ['customers', user?.id],
-    queryFn: async () => {
-      const data = await fetchAllRows<Customer>(() =>
-        supabase
-          .from('customers')
-          .select('id, name, phone, address, email, note, source, tenant_id, created_at, updated_at')
-          .order('created_at', { ascending: false })
-      );
-      return data;
+    queryKey: ['customers', user?.id, filters],
+    queryFn: async (): Promise<PaginatedResult<Customer>> => {
+      let query = supabase
+        .from('customers')
+        .select('id, name, phone, address, email, note, source, tenant_id, created_at, updated_at', { count: 'exact' })
+        .order('created_at', { ascending: false });
+
+      if (filters?.search) {
+        const s = filters.search.trim();
+        if (s) {
+          query = query.or(`name.ilike.%${s}%,phone.ilike.%${s}%`);
+        }
+      }
+
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+      return {
+        data: (data || []) as Customer[],
+        totalCount: count || 0,
+      };
     },
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 2, // 2 phút
+    staleTime: 1000 * 60 * 2,
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    placeholderData: (previous) => previous,
   });
 }
 
@@ -101,11 +129,9 @@ export function useUpsertCustomer() {
       birthday?: string | null;
       source?: string | null;
     }) => {
-      // Get tenant_id first to ensure we're looking within the right tenant
       const tenantId = await getCurrentTenantId();
       if (!tenantId) throw new Error('Không tìm thấy tenant');
 
-      // First try to find existing customer by phone within the same tenant
       const { data: existing } = await supabase
         .from('customers')
         .select('*')
@@ -114,11 +140,8 @@ export function useUpsertCustomer() {
         .maybeSingle();
 
       if (existing) {
-        // Return existing customer as-is (keep original name, just use for order)
-        // No update needed - the customer already exists
         return existing as Customer;
       } else {
-        // Create new customer only if not found
         const { data, error } = await supabase
           .from('customers')
           .insert([{ ...customer, tenant_id: tenantId }])
