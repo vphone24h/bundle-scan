@@ -728,6 +728,7 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
           { id: 'home' as PreviewPage, icon: <Home className="h-3.5 w-3.5" />, label: 'Trang chủ' },
           { id: 'products' as PreviewPage, icon: <ShoppingBag className="h-3.5 w-3.5" />, label: 'Sản phẩm' },
           { id: 'product-detail' as PreviewPage, icon: <FileText className="h-3.5 w-3.5" />, label: 'Chi tiết SP' },
+          { id: 'news' as PreviewPage, icon: <Newspaper className="h-3.5 w-3.5" />, label: newsNavLabel as string },
         ]).map(tab => (
           <button
             key={tab.id}
