@@ -863,7 +863,7 @@ export default function AppleStyleLandingTemplate({
                 <>
                   <div className="flex items-center gap-3 mb-6">
                     <button onClick={() => navigateTo('home')} className="h-8 w-8 rounded-full bg-[#f5f5f7] flex items-center justify-center hover:bg-[#e8e8ed] transition-colors"><ArrowLeft className="h-4 w-4" /></button>
-                    <h2 className="text-2xl font-bold tracking-tight">{activeNav?.label || 'Tin tức'}</h2>
+                    <h2 className="text-2xl font-bold tracking-tight">{navItems.find(n => n.pageView === 'news')?.label || 'Tin tức'}</h2>
                   </div>
 
                   {newsSections.map((section: any) => {
