@@ -26,6 +26,156 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+function AppPasswordHelpDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-primary" />
+            Hướng dẫn lấy App Password Gmail
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 text-sm">
+          <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+            <p className="font-medium">Bước 1: Bật xác minh 2 bước</p>
+            <p className="text-muted-foreground text-xs">Vào <span className="font-medium">Google Account</span> → <span className="font-medium">Security</span> → <span className="font-medium">2-Step Verification</span> → Bật lên</p>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+            <p className="font-medium">Bước 2: Tạo App Password</p>
+            <p className="text-muted-foreground text-xs">Vào <span className="font-medium">Google Account</span> → <span className="font-medium">Security</span> → <span className="font-medium">App Passwords</span></p>
+            <p className="text-muted-foreground text-xs">Hoặc truy cập trực tiếp:</p>
+            <a
+              href="https://myaccount.google.com/apppasswords"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary underline break-all"
+            >
+              https://myaccount.google.com/apppasswords
+            </a>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+            <p className="font-medium">Bước 3: Tạo mật khẩu mới</p>
+            <p className="text-muted-foreground text-xs">Đặt tên app (VD: "VKho Email") → Nhấn <span className="font-medium">Create</span></p>
+            <p className="text-muted-foreground text-xs">Copy mật khẩu 16 ký tự được tạo ra và dán vào ô <span className="font-medium">Mail App Password</span> ở trên.</p>
+          </div>
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+            <p className="text-xs text-amber-800 dark:text-amber-200">⚠️ <span className="font-medium">Lưu ý:</span> Không dùng mật khẩu Gmail thường. Phải tạo App Password riêng mới gửi được email tự động.</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function OrderEmailConfigSection({ formData, handleChange, tenantId }: { formData: any; handleChange: (field: string, value: any) => void; tenantId: string | null }) {
+  const [showHelp, setShowHelp] = useState(false);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Mail className="h-4 w-4 text-primary" />
+          <Label className="text-sm font-medium">Email tự động đơn hàng</Label>
+        </div>
+        <Switch
+          checked={formData.order_email_enabled ?? false}
+          onCheckedChange={(checked) => handleChange('order_email_enabled', checked)}
+        />
+      </div>
+      {formData.order_email_enabled && (
+        <div className="ml-0 space-y-3 pl-0 border-l-2 border-primary/20 ml-2 pl-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Email gửi (Gmail)</Label>
+            <Input
+              value={formData.order_email_sender || ''}
+              onChange={e => handleChange('order_email_sender', e.target.value)}
+              placeholder="yourstore@gmail.com"
+              type="email"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Mail App Password</Label>
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-primary" onClick={() => setShowHelp(true)}>
+                <HelpCircle className="h-3.5 w-3.5 mr-1" />
+                Hướng dẫn
+              </Button>
+            </div>
+            <Input
+              value={formData.order_email_app_password || ''}
+              onChange={e => handleChange('order_email_app_password', e.target.value)}
+              placeholder="Mật khẩu ứng dụng Gmail"
+              type="password"
+            />
+          </div>
+          <Separator />
+          <p className="text-xs font-medium text-muted-foreground">Loại email gửi:</p>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Email xác nhận đơn hàng</Label>
+            <Switch checked={true} disabled />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Email khi đơn đã xác nhận</Label>
+            <Switch
+              checked={formData.order_email_on_confirmed ?? false}
+              onCheckedChange={checked => handleChange('order_email_on_confirmed', checked)}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Email khi giao hàng</Label>
+            <Switch
+              checked={formData.order_email_on_shipping ?? false}
+              onCheckedChange={checked => handleChange('order_email_on_shipping', checked)}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Email bảo hành</Label>
+            <Switch
+              checked={formData.order_email_on_warranty ?? false}
+              onCheckedChange={checked => handleChange('order_email_on_warranty', checked)}
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            disabled={!formData.order_email_sender || !formData.order_email_app_password}
+            onClick={async () => {
+              try {
+                const { supabase } = await import('@/integrations/supabase/client');
+                const { error } = await supabase.functions.invoke('send-order-email', {
+                  body: {
+                    tenant_id: tenantId,
+                    order_id: 'test-' + Date.now(),
+                    customer_name: 'Khách test',
+                    customer_email: formData.order_email_sender,
+                    customer_phone: '0123456789',
+                    product_name: 'Sản phẩm test',
+                    product_price: 10000000,
+                    order_code: '#TEST01',
+                    variant: 'Đen',
+                    quantity: 1,
+                    branch_id: null,
+                    email_type: 'order_confirmation',
+                  },
+                });
+                if (error) throw error;
+                toast({ title: '✅ Đã gửi email test thành công!' });
+              } catch (err: any) {
+                toast({ title: 'Lỗi gửi email', description: err.message, variant: 'destructive' });
+              }
+            }}
+          >
+            📨 Test gửi mail
+          </Button>
+        </div>
+      )}
+      <AppPasswordHelpDialog open={showHelp} onOpenChange={setShowHelp} />
+    </div>
+  );
+}
+
 function CustomDomainCTA() {
   const [open, setOpen] = useState(false);
   const { data: article } = useCustomDomainArticlePublic();
