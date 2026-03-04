@@ -3,6 +3,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from './usePermissions';
 import { useAuth } from './useAuth';
 
+// Fetch all rows bypassing Supabase 1000-row default limit via pagination
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchAllRows<T>(queryBuilder: () => any, pageSize = 1000): Promise<T[]> {
+  const allData: T[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await queryBuilder().range(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    allData.push(...(data as T[]));
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return allData;
+}
+
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
   const { data } = await supabase.rpc('get_user_tenant_id_secure');
@@ -48,43 +64,45 @@ export function useCustomerDebts(showSettled: boolean = false) {
   return useQuery({
     queryKey: ['customer-debts', user?.id, showSettled, permissions?.branchId, permissions?.role],
     queryFn: async () => {
-      // Get ALL export receipts for customers (not just debt > 0)
-      // We need original_debt_amount to calculate total original debt
-      let query = supabase
-        .from('export_receipts')
-        .select(`
-          id,
-          customer_id,
-          total_amount,
-          paid_amount,
-          debt_amount,
-          original_debt_amount,
-          export_date,
-          branch_id,
-          customers(id, name, phone),
-          branches(name)
-        `)
-        .eq('status', 'completed');
+      const buildReceiptsQuery = () => {
+        let q = supabase
+          .from('export_receipts')
+          .select(`
+            id,
+            customer_id,
+            total_amount,
+            paid_amount,
+            debt_amount,
+            original_debt_amount,
+            export_date,
+            branch_id,
+            customers(id, name, phone),
+            branches(name)
+          `)
+          .eq('status', 'completed');
 
-      if (permissions?.role !== 'super_admin' && permissions?.branchId) {
-        query = query.eq('branch_id', permissions.branchId);
-      }
+        if (permissions?.role !== 'super_admin' && permissions?.branchId) {
+          q = q.eq('branch_id', permissions.branchId);
+        }
+        return q;
+      };
 
-      const { data: receipts, error: receiptsError } = await query;
-      if (receiptsError) throw receiptsError;
+      const receipts = await fetchAllRows<any>(buildReceiptsQuery);
 
       // Get debt payments for customers
-      let paymentsQuery = supabase
-        .from('debt_payments')
-        .select('*')
-        .eq('entity_type', 'customer');
+      const buildPaymentsQuery = () => {
+        let q = supabase
+          .from('debt_payments')
+          .select('*')
+          .eq('entity_type', 'customer');
 
-      if (permissions?.role !== 'super_admin' && permissions?.branchId) {
-        paymentsQuery = paymentsQuery.eq('branch_id', permissions.branchId);
-      }
+        if (permissions?.role !== 'super_admin' && permissions?.branchId) {
+          q = q.eq('branch_id', permissions.branchId);
+        }
+        return q;
+      };
 
-      const { data: payments, error: paymentsError } = await paymentsQuery;
-      if (paymentsError) throw paymentsError;
+      const payments = await fetchAllRows<any>(buildPaymentsQuery);
 
       // Get unique customer IDs from payments
       const paymentCustomerIds = [...new Set(payments?.map(p => p.entity_id) || [])];
@@ -270,40 +288,44 @@ export function useSupplierDebts(showSettled: boolean = false) {
   return useQuery({
     queryKey: ['supplier-debts', user?.id, showSettled, permissions?.branchId, permissions?.role],
     queryFn: async () => {
-      let query = supabase
-        .from('import_receipts')
-        .select(`
-          id,
-          supplier_id,
-          total_amount,
-          paid_amount,
-          debt_amount,
-          original_debt_amount,
-          import_date,
-          branch_id,
-          suppliers(id, name, phone, address),
-          branches(name)
-        `)
-        .eq('status', 'completed');
+      const buildReceiptsQuery = () => {
+        let q = supabase
+          .from('import_receipts')
+          .select(`
+            id,
+            supplier_id,
+            total_amount,
+            paid_amount,
+            debt_amount,
+            original_debt_amount,
+            import_date,
+            branch_id,
+            suppliers(id, name, phone, address),
+            branches(name)
+          `)
+          .eq('status', 'completed');
 
-      if (permissions?.role !== 'super_admin' && permissions?.branchId) {
-        query = query.eq('branch_id', permissions.branchId);
-      }
+        if (permissions?.role !== 'super_admin' && permissions?.branchId) {
+          q = q.eq('branch_id', permissions.branchId);
+        }
+        return q;
+      };
 
-      const { data: receipts, error: receiptsError } = await query;
-      if (receiptsError) throw receiptsError;
+      const receipts = await fetchAllRows<any>(buildReceiptsQuery);
 
-      let paymentsQuery = supabase
-        .from('debt_payments')
-        .select('*')
-        .eq('entity_type', 'supplier');
+      const buildPaymentsQuery = () => {
+        let q = supabase
+          .from('debt_payments')
+          .select('*')
+          .eq('entity_type', 'supplier');
 
-      if (permissions?.role !== 'super_admin' && permissions?.branchId) {
-        paymentsQuery = paymentsQuery.eq('branch_id', permissions.branchId);
-      }
+        if (permissions?.role !== 'super_admin' && permissions?.branchId) {
+          q = q.eq('branch_id', permissions.branchId);
+        }
+        return q;
+      };
 
-      const { data: payments, error: paymentsError } = await paymentsQuery;
-      if (paymentsError) throw paymentsError;
+      const payments = await fetchAllRows<any>(buildPaymentsQuery);
 
       const paymentSupplierIds = [...new Set(payments?.map(p => p.entity_id) || [])];
       let suppliersFromPayments: { id: string; name: string; phone: string | null; address: string | null }[] = [];
