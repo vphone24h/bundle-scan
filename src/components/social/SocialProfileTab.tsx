@@ -1,4 +1,5 @@
 import { useState, useRef, memo } from 'react';
+import { AvatarPreviewDialog } from './AvatarPreviewDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocialProfile, useUpsertSocialProfile, useSocialFeed, useIsFollowing, useToggleFollow } from '@/hooks/useSocial';
 import { Card, CardContent } from '@/components/ui/card';
