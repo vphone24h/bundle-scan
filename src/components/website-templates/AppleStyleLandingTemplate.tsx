@@ -379,6 +379,7 @@ export default function AppleStyleLandingTemplate({
     return p;
   }, [allProducts, selectedCategoryId, productSearchQuery]);
   const featuredArticles = articlesData?.articles?.filter(a => a.is_featured) || [];
+  const homeArticles = articlesData?.articles?.filter((a: any) => a.is_featured_home) || [];
 
   const handlePointsAwarded = useCallback(() => { queryClient.invalidateQueries({ queryKey: ['customer-points-public'] }); }, [queryClient]);
   const handleWarrantyLogout = () => { if (warrantyStorageKey) localStorage.removeItem(warrantyStorageKey); setSearchValue(''); setSubmittedValue(''); setPageView('home'); };
