@@ -79,26 +79,30 @@ export function DebtDetailDialog({
     return allReceipts;
   }, [allReceipts]);
 
-  // Compute live totals using current debt_amount (already updated by FIFO)
-  // remaining = sum(receipt.debt_amount) + sum(addition.amount - addition.allocated_amount)
-  // total_paid = sum(payments)
-  // total_debt = remaining + total_paid
+  // Simple formula:
+  // total_from_orders = sum of original_debt_amount from receipts
+  // total_from_additions = sum of addition amounts
+  // total_debt = total_from_orders + total_from_additions
+  // total_paid = sum of payment amounts
+  // remaining = total_debt - total_paid
   const liveTotals = useMemo(() => {
-    const currentDebtFromReceipts = (allReceipts || []).reduce((sum: number, r: any) => {
-      return sum + (Number(r.debt_amount) || 0);
+    const totalFromOrders = (allReceipts || []).reduce((sum: number, r: any) => {
+      const originalDebt = Number(r.original_debt_amount) || 
+        Math.max((Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0), 0);
+      return sum + originalDebt;
     }, 0);
 
-    const additionsRemaining = (paymentHistory || [])
+    const totalFromAdditions = (paymentHistory || [])
       .filter((p: any) => p.payment_type === 'addition')
-      .reduce((sum: number, p: any) => sum + (Number(p.amount) - (Number(p.allocated_amount) || 0)), 0);
+      .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
     
-    const payments = (paymentHistory || [])
+    const totalPaid = (paymentHistory || [])
       .filter((p: any) => p.payment_type === 'payment')
       .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
 
-    const remaining = currentDebtFromReceipts + additionsRemaining;
-    const total = remaining + payments;
-    return { totalAmount: total, paidAmount: payments, remainingAmount: remaining };
+    const totalDebt = totalFromOrders + totalFromAdditions;
+    const remaining = totalDebt - totalPaid;
+    return { totalAmount: totalDebt, paidAmount: totalPaid, remainingAmount: remaining, totalFromOrders, totalFromAdditions };
   }, [allReceipts, paymentHistory]);
 
   const liveTotal = liveTotals.totalAmount;
