@@ -581,28 +581,28 @@ export function useCustomerStats(branchFilter?: string) {
   return useQuery({
     queryKey: ['customer-stats', user?.id, branchFilter],
     queryFn: async () => {
-      // Use a single select with count to be more reliable with RLS
-      const buildQuery = () => {
-        let q = supabase.from('customers').select('id, current_points, membership_tier, total_spent', { count: 'exact' });
+      const applyBranch = (q: any) => {
         if (branchFilter && branchFilter !== '_all_') {
-          q = q.eq('preferred_branch_id', branchFilter);
+          return q.eq('preferred_branch_id', branchFilter);
         }
         return q;
       };
 
-      const { data, count, error } = await buildQuery();
-      
-      if (error) {
-        console.error('[useCustomerStats] Error:', error);
-        throw error;
-      }
+      // Use select('id') with count:'exact' and limit(0) for lightweight counting
+      const [totalRes, withPointsRes, vipRes, withPurchaseRes] = await Promise.all([
+        applyBranch(supabase.from('customers').select('id', { count: 'exact', head: true })),
+        applyBranch(supabase.from('customers').select('id', { count: 'exact', head: true }).gt('current_points', 0)),
+        applyBranch(supabase.from('customers').select('id', { count: 'exact', head: true }).eq('membership_tier', 'vip')),
+        applyBranch(supabase.from('customers').select('id', { count: 'exact', head: true }).gt('total_spent', 0)),
+      ]);
 
-      const rows = data || [];
+      if (totalRes.error) console.error('[useCustomerStats] totalRes error:', totalRes.error);
+
       return {
-        totalCustomers: count ?? rows.length,
-        customersWithPoints: rows.filter(r => (r.current_points ?? 0) > 0).length,
-        vipCustomers: rows.filter(r => r.membership_tier === 'vip').length,
-        customersWithPurchase: rows.filter(r => (r.total_spent ?? 0) > 0).length,
+        totalCustomers: totalRes.count ?? 0,
+        customersWithPoints: withPointsRes.count ?? 0,
+        vipCustomers: vipRes.count ?? 0,
+        customersWithPurchase: withPurchaseRes.count ?? 0,
       };
     },
     enabled: !!user?.id,
