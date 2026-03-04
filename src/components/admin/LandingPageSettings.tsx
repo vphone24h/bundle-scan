@@ -197,6 +197,114 @@ function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave }: {
   );
 }
 
+function ZaloOAConfigSection({ formData, handleChange, tenantId, onSave }: { formData: any; handleChange: (field: string, value: any) => void; tenantId: string | null; onSave?: () => void }) {
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <MessageCircle className="h-4 w-4 text-blue-500" />
+          <Label className="text-sm font-medium">Zalo OA gửi tin nhắn tự động</Label>
+        </div>
+        <Switch
+          checked={formData.zalo_enabled ?? false}
+          onCheckedChange={(checked) => handleChange('zalo_enabled', checked)}
+        />
+      </div>
+      {formData.zalo_enabled && (
+        <div className="ml-0 space-y-3 pl-0 border-l-2 border-blue-500/20 ml-2 pl-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Zalo OA ID</Label>
+            <Input
+              value={formData.zalo_oa_id || ''}
+              onChange={e => handleChange('zalo_oa_id', e.target.value)}
+              placeholder="VD: 4318038921XXXXXX"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Access Token / API Key</Label>
+            <Input
+              value={formData.zalo_access_token || ''}
+              onChange={e => handleChange('zalo_access_token', e.target.value)}
+              placeholder="Zalo OA Access Token"
+              type="password"
+            />
+          </div>
+          <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+            <p className="font-medium">📌 Hướng dẫn lấy Access Token:</p>
+            <p>1. Vào <a href="https://oa.zalo.me" target="_blank" rel="noopener noreferrer" className="text-primary underline">oa.zalo.me</a> → Đăng nhập</p>
+            <p>2. Vào <a href="https://developers.zalo.me" target="_blank" rel="noopener noreferrer" className="text-primary underline">developers.zalo.me</a> → Tạo ứng dụng</p>
+            <p>3. Cấu hình Webhook & lấy Access Token</p>
+          </div>
+          <Separator />
+          <p className="text-xs font-medium text-muted-foreground">Gửi tin nhắn khi:</p>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Khách đặt hàng trên website</Label>
+            <Switch checked={true} disabled />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Xuất hàng (bán hàng)</Label>
+            <Switch
+              checked={formData.zalo_on_export ?? false}
+              onCheckedChange={checked => handleChange('zalo_on_export', checked)}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              className="flex-1 gap-1.5"
+              disabled={!formData.zalo_oa_id || !formData.zalo_access_token || saving}
+              onClick={async () => {
+                setSaving(true);
+                try {
+                  if (onSave) onSave();
+                  toast({ title: '✅ Đã lưu cài đặt Zalo!' });
+                } finally {
+                  setSaving(false);
+                }
+              }}
+            >
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              Lưu cài đặt Zalo
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              disabled={!formData.zalo_oa_id || !formData.zalo_access_token || testing}
+              onClick={async () => {
+                setTesting(true);
+                try {
+                  const { supabase } = await import('@/integrations/supabase/client');
+                  const { error } = await supabase.functions.invoke('send-zalo-message', {
+                    body: {
+                      tenant_id: tenantId,
+                      customer_name: 'Test',
+                      customer_phone: formData.store_phone || '0123456789',
+                      message_type: 'test',
+                    },
+                  });
+                  if (error) throw error;
+                  toast({ title: '✅ Đã gửi tin nhắn Zalo test!' });
+                } catch (err: any) {
+                  toast({ title: 'Lỗi gửi Zalo', description: err.message, variant: 'destructive' });
+                } finally {
+                  setTesting(false);
+                }
+              }}
+            >
+              {testing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageCircle className="h-3.5 w-3.5" />}
+              Test gửi Zalo
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
 function CustomDomainCTA() {
   const [open, setOpen] = useState(false);
   const { data: article } = useCustomDomainArticlePublic();
