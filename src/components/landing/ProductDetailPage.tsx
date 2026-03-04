@@ -587,6 +587,11 @@ export function ProductDetailPage({
               </div>
 
               <div>
+                <Label className="text-sm flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> Email <span className="text-muted-foreground text-xs">(nhận thông tin đơn hàng)</span></Label>
+                <Input value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder="Nhập email (không bắt buộc)" inputMode="email" type="email" className="h-11 text-base" />
+              </div>
+
+              <div>
                 <Label className="text-sm">Chi nhánh nhận hàng <span className="text-red-500">*</span></Label>
                 <select value={selectedBranch} onChange={e => setSelectedBranch(e.target.value)}
                   className={`flex h-11 w-full rounded-md border bg-white px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${attempted && !selectedBranch ? 'border-red-400 ring-red-400' : 'border-input'}`}>
