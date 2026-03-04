@@ -14,7 +14,7 @@ import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { VoucherClaimForm } from '@/components/landing/VoucherClaimForm';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
 import { ScrollReveal, useParallax } from '@/hooks/useScrollReveal';
-import { ResolvedIndustryConfig, getIndustryConfig, GOOGLE_FONTS, NavItemConfig, getDefaultNavItems, getSystemPageById, HomeSection, LayoutStyle } from '@/lib/industryConfig';
+import { ResolvedIndustryConfig, getIndustryConfig, GOOGLE_FONTS, NavItemConfig, getDefaultNavItems, getSystemPageById, SYSTEM_PAGES, HomeSection, LayoutStyle } from '@/lib/industryConfig';
 import {
   RepairPage, TradeInPage, InstallmentPage, PriceListPage,
   BookingPage, BranchesPage, ContactPage, AccessoriesPage,
@@ -692,6 +692,31 @@ export default function UniversalStoreTemplate({
                       </section>
                     );
                   }
+                  // Handle layout sections from SYSTEM_PAGES
+                  if (typeof sectionId === 'string' && (sectionId as string).startsWith('layout_')) {
+                    const pageId = (sectionId as string).replace(/^layout_\d+_/, '').replace(/^layout_/, '');
+                    const page = SYSTEM_PAGES.find(p => p.id === pageId);
+                    if (!page) return null;
+                    const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
+                    return (
+                      <section key={sectionId}>
+                        <ScrollReveal animation="fade-up">
+                          {pageId === 'pricelist' && <PriceListPage {...sysProps} />}
+                          {pageId === 'booking' && <BookingPage {...sysProps} />}
+                          {pageId === 'branches' && <BranchesPage {...sysProps} />}
+                          {pageId === 'contact' && <ContactPage {...sysProps} />}
+                          {pageId === 'repair' && <RepairPage {...sysProps} />}
+                          {pageId === 'tradein' && <TradeInPage {...sysProps} />}
+                          {pageId === 'installment' && <InstallmentPage {...sysProps} />}
+                          {pageId === 'accessories' && <AccessoriesPage {...sysProps} />}
+                          {pageId === 'compare' && <ComparePage {...sysProps} />}
+                          {!['pricelist','booking','branches','contact','repair','tradein','installment','accessories','compare'].includes(pageId) && (
+                            <GenericSystemPage pageId={pageId} pageLabel={page.label} {...sysProps} />
+                          )}
+                        </ScrollReveal>
+                      </section>
+                    );
+                  }
                   return null;
                 }
               }
@@ -898,6 +923,29 @@ export default function UniversalStoreTemplate({
                         </div>
                       );
                     }
+                    // Handle layout sections from SYSTEM_PAGES
+                    if (section.id.startsWith('layout_')) {
+                      const pageId = section.id.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
+                      const page = SYSTEM_PAGES.find(p => p.id === pageId);
+                      if (!page) return null;
+                      const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
+                      return (
+                        <div key={section.id} className="mb-8">
+                          {pageId === 'pricelist' && <PriceListPage {...sysProps} />}
+                          {pageId === 'booking' && <BookingPage {...sysProps} />}
+                          {pageId === 'branches' && <BranchesPage {...sysProps} />}
+                          {pageId === 'contact' && <ContactPage {...sysProps} />}
+                          {pageId === 'repair' && <RepairPage {...sysProps} />}
+                          {pageId === 'tradein' && <TradeInPage {...sysProps} />}
+                          {pageId === 'installment' && <InstallmentPage {...sysProps} />}
+                          {pageId === 'accessories' && <AccessoriesPage {...sysProps} />}
+                          {pageId === 'compare' && <ComparePage {...sysProps} />}
+                          {!['pricelist','booking','branches','contact','repair','tradein','installment','accessories','compare'].includes(pageId) && (
+                            <GenericSystemPage pageId={pageId} pageLabel={page.label} {...sysProps} />
+                          )}
+                        </div>
+                      );
+                    }
                     return null;
                   }
                 }
@@ -1055,6 +1103,29 @@ export default function UniversalStoreTemplate({
                           </div>
                         );
                       default:
+                        // Handle layout sections from SYSTEM_PAGES
+                        if (section.id.startsWith('layout_')) {
+                          const pageId = section.id.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
+                          const page = SYSTEM_PAGES.find(p => p.id === pageId);
+                          if (!page) return null;
+                          const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
+                          return (
+                            <div key={section.id} className="mb-8">
+                              {pageId === 'pricelist' && <PriceListPage {...sysProps} />}
+                              {pageId === 'booking' && <BookingPage {...sysProps} />}
+                              {pageId === 'branches' && <BranchesPage {...sysProps} />}
+                              {pageId === 'contact' && <ContactPage {...sysProps} />}
+                              {pageId === 'repair' && <RepairPage {...sysProps} />}
+                              {pageId === 'tradein' && <TradeInPage {...sysProps} />}
+                              {pageId === 'installment' && <InstallmentPage {...sysProps} />}
+                              {pageId === 'accessories' && <AccessoriesPage {...sysProps} />}
+                              {pageId === 'compare' && <ComparePage {...sysProps} />}
+                              {!['pricelist','booking','branches','contact','repair','tradein','installment','accessories','compare'].includes(pageId) && (
+                                <GenericSystemPage pageId={pageId} pageLabel={page.label} {...sysProps} />
+                              )}
+                            </div>
+                          );
+                        }
                         return null;
                     }
                   })}
