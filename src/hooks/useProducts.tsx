@@ -143,12 +143,25 @@ export function useProducts(filters?: ProductFilters) {
 }
 
 // Hook to get ALL products including deleted (for Import History page)
-export function useAllProducts() {
+export function useAllProducts(filters?: {
+  search?: string;
+  categoryId?: string;
+  supplierId?: string;
+  branchId?: string;
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+}) {
   const { user } = useAuth();
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
-  return useQuery({
-    queryKey: ['all-products', user?.id, branchId],
+  const page = filters?.page ?? 1;
+  const pageSize = filters?.pageSize ?? 100;
+
+  const result = useQuery({
+    queryKey: ['all-products', user?.id, branchId, filters],
     queryFn: async () => {
       let query = supabase
         .from('products')
@@ -157,20 +170,58 @@ export function useAllProducts() {
           supplier_id, branch_id, import_receipt_id, status, note,
           quantity, total_import_cost, created_at, updated_at,
           categories(name), suppliers(name), branches(name)
-        `)
-        .order('import_date', { ascending: false })
-        .limit(500);
+        `, { count: 'exact' })
+        .order('import_date', { ascending: false });
 
-      if (shouldFilter && branchId) {
-        query = query.eq('branch_id', branchId);
+      const effectiveBranchId = filters?.branchId && filters.branchId !== '_all_'
+        ? filters.branchId
+        : (shouldFilter && branchId ? branchId : null);
+
+      if (effectiveBranchId) {
+        query = query.eq('branch_id', effectiveBranchId);
       }
 
-      const { data, error } = await query;
+      if (filters?.search) {
+        const s = filters.search.trim();
+        if (s) {
+          query = query.or(`name.ilike.%${s}%,sku.ilike.%${s}%,imei.ilike.%${s}%`);
+        }
+      }
+      if (filters?.categoryId && filters.categoryId !== '_all_') {
+        query = query.eq('category_id', filters.categoryId);
+      }
+      if (filters?.supplierId && filters.supplierId !== '_all_') {
+        query = query.eq('supplier_id', filters.supplierId);
+      }
+      if (filters?.status && filters.status !== '_all_') {
+        query = query.eq('status', filters.status as any);
+      }
+      if (filters?.dateFrom) {
+        query = query.gte('import_date', filters.dateFrom);
+      }
+      if (filters?.dateTo) {
+        query = query.lte('import_date', filters.dateTo + 'T23:59:59');
+      }
+
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
       if (error) throw error;
-      return data as Product[];
+      return { items: (data || []) as Product[], totalCount: count || 0 };
     },
     enabled: !!user?.id && !branchLoading,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    placeholderData: (previous) => previous,
   });
+
+  return {
+    ...result,
+    data: result.data?.items || [],
+    totalCount: result.data?.totalCount || 0,
+  };
 }
 
 /**
