@@ -281,7 +281,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
           original_debt_amount,
           import_date,
           branch_id,
-          suppliers(id, name, phone),
+          suppliers(id, name, phone, address),
           branches(name)
         `)
         .eq('status', 'completed');
