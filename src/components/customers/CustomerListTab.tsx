@@ -1,6 +1,5 @@
- import { useState, useEffect } from 'react';
+ import { useState, useEffect, useCallback } from 'react';
  import { Card, CardContent } from '@/components/ui/card';
- import { usePagination } from '@/hooks/usePagination';
  import { TablePagination } from '@/components/ui/table-pagination';
  import { Input } from '@/components/ui/input';
  import { SearchInput } from '@/components/ui/search-input';
