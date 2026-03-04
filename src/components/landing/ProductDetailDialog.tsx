@@ -261,7 +261,7 @@ export function ProductDetailDialog({
           : '';
       const fullNote = [discountNote, note.trim()].filter(Boolean).join(' ');
 
-      await placeOrder.mutateAsync({
+      const result = await placeOrder.mutateAsync({
         tenant_id: tenantId,
         branch_id: selectedBranch,
         product_id: product.id,
@@ -276,6 +276,22 @@ export function ProductDetailDialog({
         note: fullNote || undefined,
       });
       setOrderSuccess(true);
+
+      // Fire-and-forget: send Zalo OA message
+      import('@/integrations/supabase/client').then(({ supabase }) => {
+        supabase.functions.invoke('send-zalo-message', {
+          body: {
+            tenant_id: tenantId,
+            customer_name: customerName.trim(),
+            customer_phone: customerPhone.trim(),
+            message_type: 'order_confirmation',
+            order_code: (result as any)?.order_code || '',
+            product_name: product.name,
+            product_price: displayPrice,
+            branch_id: selectedBranch,
+          },
+        }).catch(err => console.warn('Zalo message failed:', err));
+      });
     } catch (err: any) {
       console.error('Order placement failed:', err?.message || err, JSON.stringify(err));
       toast.error('Đặt hàng thất bại, vui lòng thử lại');

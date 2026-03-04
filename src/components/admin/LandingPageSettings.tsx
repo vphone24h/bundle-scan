@@ -1271,6 +1271,18 @@ export function LandingPageSettings() {
               toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
             });
           }} />
+
+          <Separator className="my-3" />
+
+          {/* Zalo OA gửi tin nhắn tự động */}
+          <ZaloOAConfigSection formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
+            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+            updateSettings.mutateAsync(formData).then(() => {
+              setHasChanges(false);
+            }).catch(() => {
+              toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
+            });
+          }} />
         </CardContent>
       </Card>
 

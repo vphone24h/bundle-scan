@@ -37,6 +37,7 @@ import {
   Calculator,
   PlayCircle,
   Mail,
+  MessageCircle,
 } from 'lucide-react';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { useCheckProductForSale, useSearchProductsByName, useCreateExportReceipt, type ExportReceiptItem, type ExportPayment } from '@/hooks/useExportReceipts';
@@ -144,6 +145,8 @@ export default function ExportNewPage() {
 
   // Auto email toggle
   const [autoEmailEnabled, setAutoEmailEnabled] = useState(true);
+  // Auto Zalo toggle
+  const [autoZaloEnabled, setAutoZaloEnabled] = useState(true);
 
   // Hooks
   const { user } = useAuth();
@@ -847,6 +850,30 @@ export default function ExportNewPage() {
         successMessage += '. Email đã được gửi cho khách hàng';
       }
 
+      // Send auto Zalo if enabled
+      if (autoZaloEnabled && savedCustomerPhone) {
+        supabase.functions.invoke('send-zalo-message', {
+          body: {
+            tenant_id: landingSettings?.tenant_id,
+            customer_name: savedCustomerName,
+            customer_phone: savedCustomerPhone,
+            message_type: 'export_confirmation',
+            items: savedCart.map(item => ({
+              product_name: item.product_name,
+              imei: item.imei,
+              sale_price: item.sale_price,
+              warranty: item.warranty,
+            })),
+            total_amount: totalAmount,
+            receipt_code: receipt.code,
+            branch_id: branchId,
+          },
+        }).then(({ error }) => {
+          if (error) console.warn('Zalo message failed:', error.message);
+        }).catch(() => {});
+        successMessage += '. Zalo đã được gửi cho khách hàng';
+      }
+
       toast({
         title: t('pages.exportNew.exportSuccess'),
         description: successMessage,
@@ -1389,6 +1416,21 @@ export default function ExportNewPage() {
                   <Mail className="h-3 w-3" />
                   Khách chưa có email — sẽ không gửi được
                 </p>
+              )}
+
+              {/* Auto Zalo toggle */}
+              {(landingSettings as any)?.zalo_enabled && (landingSettings as any)?.zalo_on_export && (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <Label htmlFor="auto-zalo-export" className="flex items-center gap-2 cursor-pointer text-sm">
+                    <MessageCircle className="h-4 w-4 text-primary" />
+                    Tự động gửi Zalo cho khách
+                  </Label>
+                  <Switch
+                    id="auto-zalo-export"
+                    checked={autoZaloEnabled}
+                    onCheckedChange={setAutoZaloEnabled}
+                  />
+                </div>
               )}
 
               <Button 
