@@ -57,48 +57,72 @@ export function useCashBook(filters?: {
   const isDataHidden = tenant?.is_data_hidden ?? false;
   const { branchId: userBranchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
+  // If caller provides page/pageSize, use server-side pagination
+  // Otherwise fetch ALL entries for client-side filtering (CashBookPage)
+  const useServerPagination = filters?.page !== undefined;
   const page = filters?.page ?? 1;
-  const pageSize = filters?.pageSize ?? 100;
+  const pageSize = filters?.pageSize ?? 1000;
 
   const result = useQuery({
     queryKey: ['cash-book', tenant?.id, userBranchId, filters, isDataHidden],
     queryFn: async () => {
       if (isDataHidden) return { items: [] as CashBookEntry[], totalCount: 0 };
 
-      let q = supabase
-        .from('cash_book')
-        .select('*, branches(name)', { count: 'exact' })
-        .order('transaction_date', { ascending: false });
+      const buildQuery = () => {
+        let q = supabase
+          .from('cash_book')
+          .select('*, branches(name)', { count: 'exact' })
+          .order('transaction_date', { ascending: false });
 
-      if (filters?.startDate) {
-        q = q.gte('transaction_date', filters.startDate);
-      }
-      if (filters?.endDate) {
-        q = q.lte('transaction_date', filters.endDate + 'T23:59:59');
-      }
-      if (filters?.type) {
-        q = q.eq('type', filters.type);
-      }
-
-      if (filters?.branchId) {
-        if (shouldFilter && userBranchId && filters.branchId !== userBranchId) {
-          return { items: [] as CashBookEntry[], totalCount: 0 };
+        if (filters?.startDate) {
+          q = q.gte('transaction_date', filters.startDate);
         }
-        q = q.eq('branch_id', filters.branchId);
-      } else if (shouldFilter && userBranchId) {
-        q = q.eq('branch_id', userBranchId);
+        if (filters?.endDate) {
+          q = q.lte('transaction_date', filters.endDate + 'T23:59:59');
+        }
+        if (filters?.type) {
+          q = q.eq('type', filters.type);
+        }
+
+        if (filters?.branchId) {
+          if (shouldFilter && userBranchId && filters.branchId !== userBranchId) {
+            return null; // no access
+          }
+          q = q.eq('branch_id', filters.branchId);
+        } else if (shouldFilter && userBranchId) {
+          q = q.eq('branch_id', userBranchId);
+        }
+
+        return q;
+      };
+
+      const baseQuery = buildQuery();
+      if (!baseQuery) return { items: [] as CashBookEntry[], totalCount: 0 };
+
+      if (useServerPagination) {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        const { data, error, count } = await baseQuery.range(from, to);
+        if (error) throw error;
+        return { items: (data || []) as CashBookEntry[], totalCount: count || 0 };
       }
 
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-      q = q.range(from, to);
-
-      const { data, error, count } = await q;
-      if (error) throw error;
-      return { items: (data || []) as CashBookEntry[], totalCount: count || 0 };
+      // Fetch all rows via pagination to bypass 1000-row limit
+      const allData: CashBookEntry[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      while (true) {
+        const { data, error } = await buildQuery()!.range(from, from + batchSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData.push(...(data as CashBookEntry[]));
+        if (data.length < batchSize) break;
+        from += batchSize;
+      }
+      return { items: allData, totalCount: allData.length };
     },
     enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
-    staleTime: 2 * 60 * 1000, // 2 min cache
+    staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
     placeholderData: (previous) => previous,
   });
