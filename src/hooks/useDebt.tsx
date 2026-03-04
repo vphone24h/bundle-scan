@@ -162,11 +162,14 @@ export function useCustomerDebts(showSettled: boolean = false) {
       // Process additions and payments
       payments?.forEach(payment => {
         const amount = Number(payment.amount);
+        const allocated = Number(payment.allocated_amount) || 0;
         const existing = customerMap.get(payment.entity_id);
         
         if (payment.payment_type === 'addition') {
+          const additionRemaining = amount - allocated;
           if (existing) {
-            existing.additions += amount;
+            existing.additions_remaining += additionRemaining;
+            existing.has_any_debt_history = true;
           } else {
             const customer = customersFromPayments.find(c => c.id === payment.entity_id);
             if (customer) {
@@ -176,8 +179,9 @@ export function useCustomerDebts(showSettled: boolean = false) {
                 entity_phone: customer.phone,
                 branch_id: payment.branch_id,
                 branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
-                original_debt_from_receipts: 0,
-                additions: amount,
+                current_debt_from_receipts: 0,
+                has_any_debt_history: true,
+                additions_remaining: additionRemaining,
                 total_paid: 0,
                 first_debt_date: payment.created_at,
               });
@@ -187,7 +191,6 @@ export function useCustomerDebts(showSettled: boolean = false) {
           if (existing) {
             existing.total_paid += amount;
           } else {
-            // Payment exists but no receipt/addition yet - create entry
             const customer = customersFromPayments.find(c => c.id === payment.entity_id);
             if (customer) {
               customerMap.set(payment.entity_id, {
@@ -196,8 +199,9 @@ export function useCustomerDebts(showSettled: boolean = false) {
                 entity_phone: customer.phone,
                 branch_id: payment.branch_id,
                 branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
-                original_debt_from_receipts: 0,
-                additions: 0,
+                current_debt_from_receipts: 0,
+                has_any_debt_history: true,
+                additions_remaining: 0,
                 total_paid: amount,
                 first_debt_date: payment.created_at,
               });
