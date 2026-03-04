@@ -218,8 +218,9 @@ export default function UniversalStoreTemplate({
   const handleSearch = () => { if (searchValue.trim()) { setSubmittedValue(searchValue.trim()); if (pageView === 'home') setPageView('warranty'); } };
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
-  const navigateTo = (view: PageView) => {
-    setPageView(view); setSelectedArticle(null); setSelectedCategoryId(null);
+  const navigateTo = (view: PageView, keepCategory?: boolean) => {
+    setPageView(view); setSelectedArticle(null);
+    if (!keepCategory) setSelectedCategoryId(null);
     const newParams = new URLSearchParams(searchParams);
     newParams.delete('product'); newParams.delete('article');
     setSearchParams(newParams, { replace: true });
