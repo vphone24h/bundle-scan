@@ -63,7 +63,7 @@ function AppPasswordHelpDialog({ open, onOpenChange }: { open: boolean; onOpenCh
           <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
             <p className="font-medium text-xs flex items-center gap-1">🎬 Video hướng dẫn:</p>
             <a
-              href="https://youtube.com/shorts/Qy-ekAcoO4g?si=CSc2-nOheNlGBfGd"
+              href="https://youtube.com/shorts/Qy-ekAcoO4g?si=IgnAJD3Z0qAFp_x1"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-primary underline break-all"
