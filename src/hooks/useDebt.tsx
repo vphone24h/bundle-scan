@@ -324,16 +324,18 @@ export function useSupplierDebts(showSettled: boolean = false) {
         branchData?.forEach(b => branchNameMap.set(b.id, b.name));
       }
 
-      // Simple formula: same as customer
+      // Same reliable formula as customer
       const supplierMap = new Map<string, {
         entity_id: string;
         entity_name: string;
         entity_phone: string | null;
         branch_id: string | null;
         branch_name: string | null;
-        total_from_orders: number;
+        current_debt_from_receipts: number;
+        additions_remaining: number;
         total_from_additions: number;
         total_paid: number;
+        has_any_debt_history: boolean;
         first_debt_date: string | null;
       }>();
 
@@ -341,14 +343,17 @@ export function useSupplierDebts(showSettled: boolean = false) {
         if (!receipt.supplier_id || !receipt.suppliers) return;
         const supplier = receipt.suppliers as { id: string; name: string; phone: string | null };
         
-        const originalDebt = Number(receipt.original_debt_amount) || 
-          Math.max((Number(receipt.total_amount) || 0) - (Number(receipt.paid_amount) || 0), 0);
+        const currentDebt = Number(receipt.debt_amount) || 0;
+        const originalDebt = Number(receipt.original_debt_amount) || 0;
+        const hadDebt = currentDebt > 0 || originalDebt > 0 || 
+          (Number(receipt.total_amount) || 0) > (Number(receipt.paid_amount) || 0);
         
-        if (originalDebt <= 0) return;
+        if (currentDebt <= 0 && !hadDebt) return;
 
         const existing = supplierMap.get(supplier.id);
         if (existing) {
-          existing.total_from_orders += originalDebt;
+          existing.current_debt_from_receipts += currentDebt;
+          existing.has_any_debt_history = true;
           if (!existing.first_debt_date || receipt.import_date < existing.first_debt_date) {
             existing.first_debt_date = receipt.import_date;
           }
@@ -359,9 +364,11 @@ export function useSupplierDebts(showSettled: boolean = false) {
             entity_phone: supplier.phone,
             branch_id: receipt.branch_id,
             branch_name: (receipt.branches as { name: string } | null)?.name || null,
-            total_from_orders: originalDebt,
+            current_debt_from_receipts: currentDebt,
+            additions_remaining: 0,
             total_from_additions: 0,
             total_paid: 0,
+            has_any_debt_history: true,
             first_debt_date: receipt.import_date,
           });
         }
@@ -369,11 +376,15 @@ export function useSupplierDebts(showSettled: boolean = false) {
 
       payments?.forEach(payment => {
         const amount = Number(payment.amount);
+        const allocated = Number(payment.allocated_amount) || 0;
         const existing = supplierMap.get(payment.entity_id);
         
         if (payment.payment_type === 'addition') {
+          const additionRemaining = amount - allocated;
           if (existing) {
+            existing.additions_remaining += additionRemaining;
             existing.total_from_additions += amount;
+            existing.has_any_debt_history = true;
           } else {
             const supplier = suppliersFromPayments.find(s => s.id === payment.entity_id);
             if (supplier) {
@@ -383,9 +394,11 @@ export function useSupplierDebts(showSettled: boolean = false) {
                 entity_phone: supplier.phone,
                 branch_id: payment.branch_id,
                 branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
-                total_from_orders: 0,
+                current_debt_from_receipts: 0,
+                additions_remaining: additionRemaining,
                 total_from_additions: amount,
                 total_paid: 0,
+                has_any_debt_history: true,
                 first_debt_date: payment.created_at,
               });
             }
@@ -393,6 +406,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
         } else if (payment.payment_type === 'payment') {
           if (existing) {
             existing.total_paid += amount;
+            existing.has_any_debt_history = true;
           } else {
             const supplier = suppliersFromPayments.find(s => s.id === payment.entity_id);
             if (supplier) {
@@ -402,9 +416,11 @@ export function useSupplierDebts(showSettled: boolean = false) {
                 entity_phone: supplier.phone,
                 branch_id: payment.branch_id,
                 branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
-                total_from_orders: 0,
+                current_debt_from_receipts: 0,
+                additions_remaining: 0,
                 total_from_additions: 0,
                 total_paid: amount,
+                has_any_debt_history: true,
                 first_debt_date: payment.created_at,
               });
             }
@@ -416,8 +432,10 @@ export function useSupplierDebts(showSettled: boolean = false) {
       const result: DebtSummary[] = [];
       
       supplierMap.forEach(summary => {
-        const totalAmount = summary.total_from_orders + summary.total_from_additions;
-        const remainingAmount = totalAmount - summary.total_paid;
+        if (!summary.has_any_debt_history) return;
+        
+        const remainingAmount = summary.current_debt_from_receipts + summary.additions_remaining;
+        const totalAmount = remainingAmount + summary.total_paid;
         
         let daysOverdue = 0;
         if (summary.first_debt_date) {
@@ -425,7 +443,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
           daysOverdue = Math.floor((now.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
         }
         
-        if (showSettled || remainingAmount > 0) {
+        if (showSettled ? (totalAmount > 0 || summary.total_paid > 0) : remainingAmount > 0) {
           result.push({
             entity_id: summary.entity_id,
             entity_name: summary.entity_name,
