@@ -106,37 +106,40 @@ export function useCustomerDebts(showSettled: boolean = false) {
         branchData?.forEach(b => branchNameMap.set(b.id, b.name));
       }
 
-      // Group by customer - use reconstruction approach:
-      // total_debt = sum(original_debt from receipts) + sum(additions)
+      // Correct approach: use current debt_amount on receipts (already updated by FIFO)
+      // remaining = sum(receipt.debt_amount) + sum(addition.amount - addition.allocated_amount)
       // total_paid = sum(payments)
-      // remaining = total_debt - total_paid
+      // total_debt = remaining + total_paid
       const customerMap = new Map<string, {
         entity_id: string;
         entity_name: string;
         entity_phone: string | null;
         branch_id: string | null;
         branch_name: string | null;
-        original_debt_from_receipts: number;
-        additions: number;
+        current_debt_from_receipts: number; // sum of current debt_amount
+        has_any_debt_history: boolean; // whether customer ever had debt
+        additions_remaining: number; // sum of (amount - allocated_amount) from additions
         total_paid: number;
         first_debt_date: string | null;
       }>();
 
-      // Sum original debt from receipts per customer
+      // Sum CURRENT debt_amount from receipts per customer
       receipts?.forEach(receipt => {
         if (!receipt.customer_id || !receipt.customers) return;
         const customer = receipt.customers as { id: string; name: string; phone: string | null };
         
-        // Calculate original debt for this receipt
+        const currentDebt = Number(receipt.debt_amount) || 0;
         const originalDebt = Number(receipt.original_debt_amount) || 
           Math.max((Number(receipt.total_amount) || 0) - (Number(receipt.paid_amount) || 0), 0);
         
-        // Only count receipts that originally had debt
-        if (originalDebt <= 0) return;
+        // Track if this customer ever had debt (either current or original)
+        const hadDebt = currentDebt > 0 || originalDebt > 0;
+        if (!hadDebt) return;
 
         const existing = customerMap.get(customer.id);
         if (existing) {
-          existing.original_debt_from_receipts += originalDebt;
+          existing.current_debt_from_receipts += currentDebt;
+          existing.has_any_debt_history = true;
           if (!existing.first_debt_date || receipt.export_date < existing.first_debt_date) {
             existing.first_debt_date = receipt.export_date;
           }
@@ -147,8 +150,9 @@ export function useCustomerDebts(showSettled: boolean = false) {
             entity_phone: customer.phone,
             branch_id: receipt.branch_id,
             branch_name: (receipt.branches as { name: string } | null)?.name || null,
-            original_debt_from_receipts: originalDebt,
-            additions: 0,
+            current_debt_from_receipts: currentDebt,
+            has_any_debt_history: true,
+            additions_remaining: 0,
             total_paid: 0,
             first_debt_date: receipt.export_date,
           });
@@ -158,11 +162,14 @@ export function useCustomerDebts(showSettled: boolean = false) {
       // Process additions and payments
       payments?.forEach(payment => {
         const amount = Number(payment.amount);
+        const allocated = Number(payment.allocated_amount) || 0;
         const existing = customerMap.get(payment.entity_id);
         
         if (payment.payment_type === 'addition') {
+          const additionRemaining = amount - allocated;
           if (existing) {
-            existing.additions += amount;
+            existing.additions_remaining += additionRemaining;
+            existing.has_any_debt_history = true;
           } else {
             const customer = customersFromPayments.find(c => c.id === payment.entity_id);
             if (customer) {
@@ -172,8 +179,9 @@ export function useCustomerDebts(showSettled: boolean = false) {
                 entity_phone: customer.phone,
                 branch_id: payment.branch_id,
                 branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
-                original_debt_from_receipts: 0,
-                additions: amount,
+                current_debt_from_receipts: 0,
+                has_any_debt_history: true,
+                additions_remaining: additionRemaining,
                 total_paid: 0,
                 first_debt_date: payment.created_at,
               });
@@ -183,7 +191,6 @@ export function useCustomerDebts(showSettled: boolean = false) {
           if (existing) {
             existing.total_paid += amount;
           } else {
-            // Payment exists but no receipt/addition yet - create entry
             const customer = customersFromPayments.find(c => c.id === payment.entity_id);
             if (customer) {
               customerMap.set(payment.entity_id, {
@@ -192,8 +199,9 @@ export function useCustomerDebts(showSettled: boolean = false) {
                 entity_phone: customer.phone,
                 branch_id: payment.branch_id,
                 branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
-                original_debt_from_receipts: 0,
-                additions: 0,
+                current_debt_from_receipts: 0,
+                has_any_debt_history: true,
+                additions_remaining: 0,
                 total_paid: amount,
                 first_debt_date: payment.created_at,
               });
@@ -202,13 +210,15 @@ export function useCustomerDebts(showSettled: boolean = false) {
         }
       });
 
-      // Compute final values
+      // Compute final values using correct formula:
+      // remaining = current_debt_from_receipts + additions_remaining
+      // total_amount = remaining + total_paid
       const now = new Date();
       const result: DebtSummary[] = [];
       
       customerMap.forEach(summary => {
-        const totalAmount = summary.original_debt_from_receipts + summary.additions;
-        const remainingAmount = totalAmount - summary.total_paid;
+        const remainingAmount = summary.current_debt_from_receipts + summary.additions_remaining;
+        const totalAmount = remainingAmount + summary.total_paid;
         
         let daysOverdue = 0;
         if (summary.first_debt_date) {
@@ -301,15 +311,16 @@ export function useSupplierDebts(showSettled: boolean = false) {
         branchData?.forEach(b => branchNameMap.set(b.id, b.name));
       }
 
-      // Reconstruction approach: total_debt = original_receipt_debt + additions, remaining = total_debt - payments
+      // Correct approach: use current debt_amount from receipts
       const supplierMap = new Map<string, {
         entity_id: string;
         entity_name: string;
         entity_phone: string | null;
         branch_id: string | null;
         branch_name: string | null;
-        original_debt_from_receipts: number;
-        additions: number;
+        current_debt_from_receipts: number;
+        has_any_debt_history: boolean;
+        additions_remaining: number;
         total_paid: number;
         first_debt_date: string | null;
       }>();
@@ -318,14 +329,17 @@ export function useSupplierDebts(showSettled: boolean = false) {
         if (!receipt.supplier_id || !receipt.suppliers) return;
         const supplier = receipt.suppliers as { id: string; name: string; phone: string | null };
         
+        const currentDebt = Number(receipt.debt_amount) || 0;
         const originalDebt = Number(receipt.original_debt_amount) || 
           Math.max((Number(receipt.total_amount) || 0) - (Number(receipt.paid_amount) || 0), 0);
         
-        if (originalDebt <= 0) return;
+        const hadDebt = currentDebt > 0 || originalDebt > 0;
+        if (!hadDebt) return;
 
         const existing = supplierMap.get(supplier.id);
         if (existing) {
-          existing.original_debt_from_receipts += originalDebt;
+          existing.current_debt_from_receipts += currentDebt;
+          existing.has_any_debt_history = true;
           if (!existing.first_debt_date || receipt.import_date < existing.first_debt_date) {
             existing.first_debt_date = receipt.import_date;
           }
@@ -336,8 +350,9 @@ export function useSupplierDebts(showSettled: boolean = false) {
             entity_phone: supplier.phone,
             branch_id: receipt.branch_id,
             branch_name: (receipt.branches as { name: string } | null)?.name || null,
-            original_debt_from_receipts: originalDebt,
-            additions: 0,
+            current_debt_from_receipts: currentDebt,
+            has_any_debt_history: true,
+            additions_remaining: 0,
             total_paid: 0,
             first_debt_date: receipt.import_date,
           });
@@ -346,11 +361,14 @@ export function useSupplierDebts(showSettled: boolean = false) {
 
       payments?.forEach(payment => {
         const amount = Number(payment.amount);
+        const allocated = Number(payment.allocated_amount) || 0;
         const existing = supplierMap.get(payment.entity_id);
         
         if (payment.payment_type === 'addition') {
+          const additionRemaining = amount - allocated;
           if (existing) {
-            existing.additions += amount;
+            existing.additions_remaining += additionRemaining;
+            existing.has_any_debt_history = true;
           } else {
             const supplier = suppliersFromPayments.find(s => s.id === payment.entity_id);
             if (supplier) {
@@ -360,8 +378,9 @@ export function useSupplierDebts(showSettled: boolean = false) {
                 entity_phone: supplier.phone,
                 branch_id: payment.branch_id,
                 branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
-                original_debt_from_receipts: 0,
-                additions: amount,
+                current_debt_from_receipts: 0,
+                has_any_debt_history: true,
+                additions_remaining: additionRemaining,
                 total_paid: 0,
                 first_debt_date: payment.created_at,
               });
@@ -379,8 +398,9 @@ export function useSupplierDebts(showSettled: boolean = false) {
                 entity_phone: supplier.phone,
                 branch_id: payment.branch_id,
                 branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
-                original_debt_from_receipts: 0,
-                additions: 0,
+                current_debt_from_receipts: 0,
+                has_any_debt_history: true,
+                additions_remaining: 0,
                 total_paid: amount,
                 first_debt_date: payment.created_at,
               });
@@ -393,8 +413,8 @@ export function useSupplierDebts(showSettled: boolean = false) {
       const result: DebtSummary[] = [];
       
       supplierMap.forEach(summary => {
-        const totalAmount = summary.original_debt_from_receipts + summary.additions;
-        const remainingAmount = totalAmount - summary.total_paid;
+        const remainingAmount = summary.current_debt_from_receipts + summary.additions_remaining;
+        const totalAmount = remainingAmount + summary.total_paid;
         
         let daysOverdue = 0;
         if (summary.first_debt_date) {

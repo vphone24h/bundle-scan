@@ -79,24 +79,26 @@ export function DebtDetailDialog({
     return allReceipts;
   }, [allReceipts]);
 
-  // Compute live totals from fetched data instead of stale props
+  // Compute live totals using current debt_amount (already updated by FIFO)
+  // remaining = sum(receipt.debt_amount) + sum(addition.amount - addition.allocated_amount)
+  // total_paid = sum(payments)
+  // total_debt = remaining + total_paid
   const liveTotals = useMemo(() => {
-    const originalDebtFromReceipts = (allReceipts || []).reduce((sum: number, r: any) => {
-      const storedOriginal = Number(r.original_debt_amount) || 0;
-      const calculatedOriginal = Math.max((Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0), 0);
-      const original = storedOriginal > 0 ? storedOriginal : calculatedOriginal;
-      return sum + original;
+    const currentDebtFromReceipts = (allReceipts || []).reduce((sum: number, r: any) => {
+      return sum + (Number(r.debt_amount) || 0);
     }, 0);
 
-    const additions = (paymentHistory || [])
+    const additionsRemaining = (paymentHistory || [])
       .filter((p: any) => p.payment_type === 'addition')
-      .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+      .reduce((sum: number, p: any) => sum + (Number(p.amount) - (Number(p.allocated_amount) || 0)), 0);
+    
     const payments = (paymentHistory || [])
       .filter((p: any) => p.payment_type === 'payment')
       .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
 
-    const total = originalDebtFromReceipts + additions;
-    return { totalAmount: total, paidAmount: payments, remainingAmount: total - payments };
+    const remaining = currentDebtFromReceipts + additionsRemaining;
+    const total = remaining + payments;
+    return { totalAmount: total, paidAmount: payments, remainingAmount: remaining };
   }, [allReceipts, paymentHistory]);
 
   const liveTotal = liveTotals.totalAmount;
