@@ -167,6 +167,11 @@ export default function LandingPageAdminPage() {
                 <LandingOrdersTab />
               </TabsContent>
             )}
+            {showSettings && (
+              <TabsContent value="zalo-mail">
+                <LandingZaloMailTab />
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </div>
