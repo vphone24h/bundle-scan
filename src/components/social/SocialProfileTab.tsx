@@ -273,6 +273,12 @@ export const SocialProfileTab = memo(function SocialProfileTab({ userId, onViewP
           <SocialPostCard key={post.id} post={post} onViewProfile={onViewProfile} />
         ))
       )}
+      <AvatarPreviewDialog
+        open={showAvatarPreview}
+        onOpenChange={setShowAvatarPreview}
+        imageUrl={profile?.avatar_url}
+        name={profile?.display_name}
+      />
     </div>
   );
 });
