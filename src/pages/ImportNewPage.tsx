@@ -356,7 +356,12 @@ export default function ImportNewPage() {
       salePrice: item.salePrice,
     }));
     setPrintQRProducts(qrProducts);
-    setPrintQRPromptOpen(true);
+    const hidePrompt = localStorage.getItem('hide_qr_print_prompt') === 'true';
+    if (hidePrompt) {
+      // Don't show prompt, go directly to history
+    } else {
+      setPrintQRPromptOpen(true);
+    }
 
     toast({
       title: t('tours.importNew.processingImport'),
