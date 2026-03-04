@@ -408,6 +408,13 @@ export default function ImportNewPage() {
     navigate('/import/history');
   };
 
+  const handleNeverShowQR = () => {
+    localStorage.setItem('hide_qr_print_prompt', 'true');
+    setPrintQRPromptOpen(false);
+    setPrintQRProducts([]);
+    navigate('/import/history');
+  };
+
   const handleExportTemplate = () => {
     downloadImportTemplate();
     toast({
