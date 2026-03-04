@@ -269,7 +269,7 @@ export function useUpdateMembershipTier() {
   });
 }
 
-// Hook: Lấy danh sách khách hàng với thông tin điểm (server-side pagination)
+// Hook: Lấy danh sách khách hàng với thông tin điểm (server-side pagination, N+1 pattern)
 export function useCustomersWithPoints(filters?: {
   search?: string;
   branchId?: string;
@@ -284,14 +284,14 @@ export function useCustomersWithPoints(filters?: {
 }) {
   const { user } = useAuth();
   const page = filters?.page ?? 1;
-  const pageSize = filters?.pageSize ?? 100;
+  const pageSize = filters?.pageSize ?? 25;
 
   const result = useQuery({
     queryKey: ['customers-with-points', user?.id, filters],
     queryFn: async () => {
       let query = supabase
         .from('customers')
-        .select('id, name, phone, email, address, note, source, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at, crm_status, assigned_staff_id, last_care_date', { count: 'exact' })
+        .select('id, name, phone, email, address, note, source, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at, crm_status, assigned_staff_id, last_care_date')
         .order('created_at', { ascending: false });
 
       if (filters?.search) {
@@ -316,13 +316,19 @@ export function useCustomersWithPoints(filters?: {
         query = query.eq('assigned_staff_id', filters.staffId);
       }
 
+      // N+1 pattern: fetch one extra to determine hasMore
       const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
+      const to = from + pageSize; // fetch pageSize + 1
       query = query.range(from, to);
 
-      const { data, error, count } = await query;
+      const { data, error } = await query;
       if (error) throw error;
-      return { items: (data || []) as CustomerWithPointsCRM[], totalCount: count || 0 };
+      
+      const items = (data || []) as CustomerWithPointsCRM[];
+      const hasMore = items.length > pageSize;
+      const pageItems = hasMore ? items.slice(0, pageSize) : items;
+      
+      return { items: pageItems, hasMore };
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 2,
@@ -335,7 +341,7 @@ export function useCustomersWithPoints(filters?: {
   return {
     ...result,
     data: result.data?.items || [],
-    totalCount: result.data?.totalCount || 0,
+    hasMore: result.data?.hasMore ?? false,
   };
 }
 
@@ -575,34 +581,22 @@ export const POINT_TRANSACTION_TYPE_NAMES: Record<string, string> = {
   expire: 'Hết hạn',
 };
 
-// Hook: Server-side COUNT stats for customer summary cards
+// Hook: Server-side COUNT stats for customer summary cards (single RPC)
 export function useCustomerStats(branchFilter?: string) {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['customer-stats', user?.id, branchFilter],
     queryFn: async () => {
-      const applyBranch = (q: any) => {
-        if (branchFilter && branchFilter !== '_all_') {
-          return q.eq('preferred_branch_id', branchFilter);
-        }
-        return q;
-      };
-
-      // Use select('id') with count:'exact' and limit(0) for lightweight counting
-      const [totalRes, withPointsRes, vipRes, withPurchaseRes] = await Promise.all([
-        applyBranch(supabase.from('customers').select('id', { count: 'exact' }).limit(0)),
-        applyBranch(supabase.from('customers').select('id', { count: 'exact' }).gt('current_points', 0).limit(0)),
-        applyBranch(supabase.from('customers').select('id', { count: 'exact' }).eq('membership_tier', 'vip').limit(0)),
-        applyBranch(supabase.from('customers').select('id', { count: 'exact' }).gt('total_spent', 0).limit(0)),
-      ]);
-
-      if (totalRes.error) console.error('[useCustomerStats] totalRes error:', totalRes.error);
-
-      return {
-        totalCustomers: totalRes.count ?? 0,
-        customersWithPoints: withPointsRes.count ?? 0,
-        vipCustomers: vipRes.count ?? 0,
-        customersWithPurchase: withPurchaseRes.count ?? 0,
+      const branchId = branchFilter && branchFilter !== '_all_' ? branchFilter : null;
+      const { data, error } = await supabase.rpc('get_customer_stats', {
+        _branch_id: branchId,
+      });
+      if (error) throw error;
+      return data as {
+        totalCustomers: number;
+        customersWithPoints: number;
+        vipCustomers: number;
+        customersWithPurchase: number;
       };
     },
     enabled: !!user?.id,

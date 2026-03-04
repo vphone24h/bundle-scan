@@ -1,6 +1,6 @@
  import { useState, useEffect, useCallback } from 'react';
  import { Card, CardContent } from '@/components/ui/card';
- import { TablePagination } from '@/components/ui/table-pagination';
+ import { TablePagination } from '@/components/ui/table-pagination'; // kept for possible future use
  import { Input } from '@/components/ui/input';
  import { SearchInput } from '@/components/ui/search-input';
  import { Button } from '@/components/ui/button';
@@ -90,7 +90,7 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
       return permissions?.branchId === customerBranchId;
     };
 
-    const { data: customers, isLoading, totalCount } = useCustomersWithPoints({
+    const { data: customers, isLoading, hasMore } = useCustomersWithPoints({
       search: search || undefined,
       branchId: branchFilter !== '_all_' ? branchFilter : undefined,
       tier: tierFilter !== '_all_' ? tierFilter : undefined,
@@ -110,10 +110,6 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
       if (sourceFilter === '_none_') return !c.source;
       return c.source === sourceFilter;
     });
-
-    const totalPages = Math.ceil(totalCount / pageSize);
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = Math.min(startIndex + pageSize, totalCount);
 
     // Reset page when filters change
     const handleSearchChange = useCallback((val: string) => {
@@ -372,17 +368,40 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
              </Table>
            </div>
            
-            {totalCount > 0 && (
-              <TablePagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                pageSize={pageSize}
-                totalItems={totalCount}
-                startIndex={startIndex + 1}
-                endIndex={endIndex}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={handlePageSizeChange}
-              />
+            {(filteredCustomers?.length || 0) > 0 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t">
+                <div className="text-sm text-muted-foreground">
+                  Trang {currentPage} · {filteredCustomers?.length || 0} kết quả
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select value={String(pageSize)} onValueChange={(v) => handlePageSizeChange(Number(v))}>
+                    <SelectTrigger className="w-[80px] h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="15">15</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                  >
+                    Trước
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    disabled={!hasMore}
+                  >
+                    Sau
+                  </Button>
+                </div>
+              </div>
             )}
          </CardContent>
        </Card>
