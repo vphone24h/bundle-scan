@@ -851,8 +851,26 @@ export default function AppleStyleLandingTemplate({
               <button onClick={() => navigateTo('home')} className="h-8 w-8 rounded-full bg-[#f5f5f7] flex items-center justify-center hover:bg-[#e8e8ed] transition-colors"><ArrowLeft className="h-4 w-4" /></button>
               <h2 className="text-2xl font-bold tracking-tight">Tin tức</h2>
             </div>
+            {/* Featured articles */}
+            {featuredArticles.length > 0 && (
+              <div className="mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {featuredArticles.map(a => (
+                    <button key={a.id} onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden border border-[#d2d2d7] hover:shadow-lg transition-all text-left group w-full">
+                      {a.thumbnail_url ? <img src={a.thumbnail_url} alt={a.title} className="w-full h-56 object-cover group-hover:scale-[1.02] transition-transform" /> : <div className="w-full h-56 bg-[#f5f5f7] flex items-center justify-center"><Newspaper className="h-12 w-12 text-[#86868b]" /></div>}
+                      <div className="p-5">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary mb-2 inline-block">Nổi bật</span>
+                        <p className="font-bold text-base line-clamp-2 mb-2">{a.title}</p>
+                        {a.summary && <p className="text-sm text-[#86868b] line-clamp-2">{a.summary}</p>}
+                        <p className="text-[10px] text-[#86868b] mt-2">{format(new Date(a.created_at), 'dd/MM/yyyy', { locale: vi })}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {articlesData?.articles?.map(a => (
+              {(articlesData?.articles || []).filter(a => !a.is_featured).map(a => (
                 <button key={a.id} onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden border border-[#d2d2d7] hover:shadow-lg transition-all text-left group w-full">
                   {a.thumbnail_url ? <img src={a.thumbnail_url} alt={a.title} className="w-full h-48 object-cover group-hover:scale-[1.02] transition-transform" /> : <div className="w-full h-48 bg-[#f5f5f7] flex items-center justify-center"><Newspaper className="h-10 w-10 text-[#86868b]" /></div>}
                   <div className="p-5">
