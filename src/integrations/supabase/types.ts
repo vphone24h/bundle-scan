@@ -3163,6 +3163,47 @@ export type Database = {
           },
         ]
       }
+      landing_order_email_logs: {
+        Row: {
+          created_at: string
+          email_type: string
+          error_message: string | null
+          id: string
+          order_id: string
+          recipient_email: string
+          status: string
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          order_id: string
+          recipient_email: string
+          status?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          order_id?: string
+          recipient_email?: string
+          status?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_order_email_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_orders: {
         Row: {
           approved_at: string | null
@@ -3179,6 +3220,7 @@ export type Database = {
           customer_phone: string
           id: string
           note: string | null
+          order_code: string | null
           product_id: string
           product_image_url: string | null
           product_name: string
@@ -3204,6 +3246,7 @@ export type Database = {
           customer_phone: string
           id?: string
           note?: string | null
+          order_code?: string | null
           product_id: string
           product_image_url?: string | null
           product_name: string
@@ -3229,6 +3272,7 @@ export type Database = {
           customer_phone?: string
           id?: string
           note?: string | null
+          order_code?: string | null
           product_id?: string
           product_image_url?: string | null
           product_name?: string
@@ -5373,6 +5417,12 @@ export type Database = {
           is_enabled: boolean | null
           meta_description: string | null
           meta_title: string | null
+          order_email_app_password: string | null
+          order_email_enabled: boolean | null
+          order_email_on_confirmed: boolean | null
+          order_email_on_shipping: boolean | null
+          order_email_on_warranty: boolean | null
+          order_email_sender: string | null
           primary_color: string | null
           show_banner: boolean | null
           show_branches: boolean
@@ -5427,6 +5477,12 @@ export type Database = {
           is_enabled?: boolean | null
           meta_description?: string | null
           meta_title?: string | null
+          order_email_app_password?: string | null
+          order_email_enabled?: boolean | null
+          order_email_on_confirmed?: boolean | null
+          order_email_on_shipping?: boolean | null
+          order_email_on_warranty?: boolean | null
+          order_email_sender?: string | null
           primary_color?: string | null
           show_banner?: boolean | null
           show_branches?: boolean
@@ -5481,6 +5537,12 @@ export type Database = {
           is_enabled?: boolean | null
           meta_description?: string | null
           meta_title?: string | null
+          order_email_app_password?: string | null
+          order_email_enabled?: boolean | null
+          order_email_on_confirmed?: boolean | null
+          order_email_on_shipping?: boolean | null
+          order_email_on_warranty?: boolean | null
+          order_email_sender?: string | null
           primary_color?: string | null
           show_banner?: boolean | null
           show_branches?: boolean
