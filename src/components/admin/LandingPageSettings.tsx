@@ -973,6 +973,11 @@ export function LandingPageSettings() {
               onCheckedChange={(checked) => handleChange('is_enabled', checked)}
             />
           </div>
+
+          <Separator className="my-3" />
+
+          {/* Email tự động đơn hàng */}
+          <OrderEmailConfigSection formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} />
         </CardContent>
       </Card>
 
