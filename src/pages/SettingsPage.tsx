@@ -207,6 +207,9 @@ export default function SettingsPage() {
           {t('settings.save')}
         </Button>
 
+        {/* QR Print Prompt Toggle */}
+        <QRPrintPromptToggle />
+
         {/* Business Mode - Super Admin only */}
         {isSuperAdmin && tenant && (
           <BusinessModeSection tenantId={tenant.id} currentMode={tenant.business_mode || 'public'} />
