@@ -4,6 +4,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { sendActivityAlert } from '@/lib/activityAlert';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 type CashBookType = Database['public']['Enums']['cash_book_type'];
 
