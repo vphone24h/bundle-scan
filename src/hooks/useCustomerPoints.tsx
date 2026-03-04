@@ -581,25 +581,28 @@ export function useCustomerStats(branchFilter?: string) {
   return useQuery({
     queryKey: ['customer-stats', user?.id, branchFilter],
     queryFn: async () => {
-      const applyBranch = (q: any) => {
+      // Use a single select with count to be more reliable with RLS
+      const buildQuery = () => {
+        let q = supabase.from('customers').select('id, current_points, membership_tier, total_spent', { count: 'exact' });
         if (branchFilter && branchFilter !== '_all_') {
-          return q.eq('preferred_branch_id', branchFilter);
+          q = q.eq('preferred_branch_id', branchFilter);
         }
         return q;
       };
 
-      const [totalRes, withPointsRes, vipRes, withPurchaseRes] = await Promise.all([
-        applyBranch(supabase.from('customers').select('*', { count: 'exact', head: true })),
-        applyBranch(supabase.from('customers').select('*', { count: 'exact', head: true }).gt('current_points', 0)),
-        applyBranch(supabase.from('customers').select('*', { count: 'exact', head: true }).eq('membership_tier', 'vip')),
-        applyBranch(supabase.from('customers').select('*', { count: 'exact', head: true }).gt('total_spent', 0)),
-      ]);
+      const { data, count, error } = await buildQuery();
+      
+      if (error) {
+        console.error('[useCustomerStats] Error:', error);
+        throw error;
+      }
 
+      const rows = data || [];
       return {
-        totalCustomers: totalRes.count || 0,
-        customersWithPoints: withPointsRes.count || 0,
-        vipCustomers: vipRes.count || 0,
-        customersWithPurchase: withPurchaseRes.count || 0,
+        totalCustomers: count ?? rows.length,
+        customersWithPoints: rows.filter(r => (r.current_points ?? 0) > 0).length,
+        vipCustomers: rows.filter(r => r.membership_tier === 'vip').length,
+        customersWithPurchase: rows.filter(r => (r.total_spent ?? 0) > 0).length,
       };
     },
     enabled: !!user?.id,
