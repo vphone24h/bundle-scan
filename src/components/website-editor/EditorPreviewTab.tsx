@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { TenantLandingSettings } from '@/hooks/useTenantLanding';
-import { getIndustryConfig, getFullNavItems, LayoutStyle, HomeSection } from '@/lib/industryConfig';
+import { getIndustryConfig, getFullNavItems, LayoutStyle, HomeSection, SYSTEM_PAGES } from '@/lib/industryConfig';
 import { HomeSectionItem, CustomProductTab } from '@/components/admin/HomeSectionManager';
 import { ProductsPageSectionItem } from '@/components/admin/ProductsPageSectionManager';
 import { ProductDetailSectionItem } from '@/components/admin/ProductDetailSectionManager';
@@ -362,6 +362,23 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
                 </SectionOverlay>
               );
             }
+            // Layout sections from SYSTEM_PAGES
+            if (section.id.startsWith('layout_')) {
+              const pageId = section.id.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
+              const page = SYSTEM_PAGES.find(p => p.id === pageId);
+              if (!page) return null;
+              return (
+                <SectionOverlay key={section.id} sectionId="products-layout" label={page.label} onEdit={onEditSection}>
+                  <section className="py-4 px-4 bg-white">
+                    <div className="rounded-xl border border-black/5 p-4 text-center space-y-2">
+                      <span className="text-3xl">{page.icon}</span>
+                      <h3 className="text-sm font-bold">{page.label}</h3>
+                      <p className="text-[10px] text-[#86868b]">{page.description}</p>
+                    </div>
+                  </section>
+                </SectionOverlay>
+              );
+            }
             return null;
         }
       })}
@@ -545,6 +562,23 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
               </SectionOverlay>
             );
           default:
+            // Layout sections from SYSTEM_PAGES
+            if (section.id.startsWith('layout_')) {
+              const pageId = section.id.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
+              const page = SYSTEM_PAGES.find(p => p.id === pageId);
+              if (!page) return null;
+              return (
+                <SectionOverlay key={section.id} sectionId="product-detail-layout" label={page.label} onEdit={onEditSection}>
+                  <div className="px-4 py-3 bg-white border-b border-black/5">
+                    <div className="rounded-xl border border-black/5 p-4 text-center space-y-2">
+                      <span className="text-2xl">{page.icon}</span>
+                      <h3 className="text-xs font-bold">{page.label}</h3>
+                      <p className="text-[10px] text-[#86868b]">{page.description}</p>
+                    </div>
+                  </div>
+                </SectionOverlay>
+              );
+            }
             return null;
         }
       })}
@@ -707,6 +741,23 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </section>
+                </SectionOverlay>
+              );
+            }
+            // Layout sections from SYSTEM_PAGES
+            if (section.id.startsWith('layout_')) {
+              const pageId = section.id.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
+              const page = SYSTEM_PAGES.find(p => p.id === pageId);
+              if (!page) return null;
+              return (
+                <SectionOverlay key={section.id} sectionId="news-layout" label={page.label} onEdit={onEditSection}>
+                  <section className="py-4 px-4 bg-white">
+                    <div className="rounded-xl border border-black/5 p-4 text-center space-y-2">
+                      <span className="text-3xl">{page.icon}</span>
+                      <h3 className="text-sm font-bold">{page.label}</h3>
+                      <p className="text-[10px] text-[#86868b]">{page.description}</p>
                     </div>
                   </section>
                 </SectionOverlay>
@@ -1076,6 +1127,23 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
                       );
 
                     default:
+                      // Layout sections from SYSTEM_PAGES
+                      if (sectionId.startsWith('layout_')) {
+                        const pageId = sectionId.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
+                        const page = SYSTEM_PAGES.find(p => p.id === pageId);
+                        if (!page) return null;
+                        return (
+                          <SectionOverlay key={sectionId} sectionId="layout" label={page.label} onEdit={onEditSection}>
+                            <section className="py-6 px-4 bg-white">
+                              <div className="rounded-xl border border-black/5 p-5 text-center space-y-2">
+                                <span className="text-3xl">{page.icon}</span>
+                                <h3 className="text-sm font-bold">{page.label}</h3>
+                                <p className="text-[10px] text-[#86868b]">{page.description}</p>
+                              </div>
+                            </section>
+                          </SectionOverlay>
+                        );
+                      }
                       return null;
                   }
                 })}
