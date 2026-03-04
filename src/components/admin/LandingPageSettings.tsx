@@ -871,6 +871,10 @@ export function LandingPageSettings() {
         zalo_oa_id: (settings as any).zalo_oa_id || '',
         zalo_access_token: (settings as any).zalo_access_token || '',
         zalo_on_export: (settings as any).zalo_on_export ?? false,
+        zalo_app_id: (settings as any).zalo_app_id || '',
+        zalo_app_secret: (settings as any).zalo_app_secret || '',
+        zalo_refresh_token: (settings as any).zalo_refresh_token || '',
+        zalo_zns_template_id: (settings as any).zalo_zns_template_id || '',
       } as any);
     } else if (tenant) {
       setFormData(prev => ({
