@@ -77,7 +77,7 @@ export function useImportReceipts() {
     },
     enabled: !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,
-    staleTime: 1000 * 30,
+    staleTime: 2 * 60 * 1000, // 2 min cache
   });
 }
 

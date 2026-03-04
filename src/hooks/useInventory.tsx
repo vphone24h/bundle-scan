@@ -266,8 +266,8 @@ export function useInventory() {
 
       return processProductsToInventory(correctedProducts);
     },
-    staleTime: 30000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 min cache - inventory doesn't change frequently
+    gcTime: 10 * 60 * 1000,
     // Chờ tenant data và branch filter sẵn sàng trước khi fetch
     enabled: !isTenantLoading && !branchLoading,
     // Không refetch khi focus window để tránh reset trạng thái

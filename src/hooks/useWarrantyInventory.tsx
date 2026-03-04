@@ -141,8 +141,8 @@ export function useWarrantyInventory() {
       if (error) throw error;
       return processProductsToWarrantyInventory(products || []);
     },
-    staleTime: 30000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 min cache
+    gcTime: 10 * 60 * 1000,
     enabled: !isTenantLoading && !branchLoading,
     refetchOnWindowFocus: false,
   });
