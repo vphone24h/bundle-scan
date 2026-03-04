@@ -988,7 +988,7 @@ export default function ExportHistoryPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {(detailItems || selectedReceipt.export_receipt_items)?.map((item, index) => {
+                      {detailItems.map((item, index) => {
                         const quantity = (item as any).quantity || 1;
                         const totalPrice = item.sale_price * quantity;
                         return (
@@ -1014,6 +1014,8 @@ export default function ExportHistoryPage() {
                     </TableBody>
                   </Table>
                 </div>
+                </>
+                )}
               </div>
 
               {/* Payment */}
