@@ -436,15 +436,85 @@ export function useApproveTransfer() {
 
       if (itemsErr) throw itemsErr;
 
-      // Move products
+      // Process each item - handle partial quantities for non-IMEI
       const productIds = (items || []).map((i: any) => i.product_id);
-      const { error: updateError } = await supabase
+
+      // Fetch current product data
+      const { data: currentProducts } = await supabase
         .from('products')
-        .update({ branch_id: request.to_branch_id })
+        .select('id, name, sku, imei, quantity, import_price, total_import_cost, supplier_id, category_id, sale_price, note')
         .in('id', productIds)
         .eq('tenant_id', tenantId);
 
-      if (updateError) throw updateError;
+      const productMap = new Map((currentProducts || []).map((p: any) => [p.id, p]));
+
+      for (const item of (items || []) as any[]) {
+        const product = productMap.get(item.product_id);
+        if (!product) continue;
+
+        const isIMEI = !!item.imei;
+        const isPartial = !isIMEI && item.quantity < product.quantity;
+
+        if (isPartial) {
+          // Partial transfer: reduce source, create/update at destination
+          const remainQty = product.quantity - item.quantity;
+          const unitCost = product.total_import_cost ? Number(product.total_import_cost) / product.quantity : Number(product.import_price);
+          const transferCost = unitCost * item.quantity;
+          const remainCost = product.total_import_cost ? Number(product.total_import_cost) - transferCost : unitCost * remainQty;
+
+          await supabase
+            .from('products')
+            .update({ quantity: remainQty, total_import_cost: remainCost })
+            .eq('id', product.id)
+            .eq('tenant_id', tenantId);
+
+          // Check if same SKU exists at destination
+          const { data: existingProduct } = await supabase
+            .from('products')
+            .select('id, quantity, total_import_cost')
+            .eq('tenant_id', tenantId)
+            .eq('branch_id', request.to_branch_id)
+            .eq('sku', product.sku)
+            .is('imei', null)
+            .eq('status', 'in_stock')
+            .maybeSingle();
+
+          if (existingProduct) {
+            await supabase
+              .from('products')
+              .update({
+                quantity: existingProduct.quantity + item.quantity,
+                total_import_cost: (Number(existingProduct.total_import_cost) || 0) + transferCost,
+              })
+              .eq('id', existingProduct.id);
+          } else {
+            await supabase
+              .from('products')
+              .insert({
+                tenant_id: tenantId,
+                branch_id: request.to_branch_id,
+                name: product.name,
+                sku: product.sku,
+                imei: null,
+                quantity: item.quantity,
+                import_price: Number(product.import_price),
+                total_import_cost: transferCost,
+                supplier_id: product.supplier_id,
+                category_id: product.category_id,
+                sale_price: product.sale_price ? Number(product.sale_price) : null,
+                note: product.note,
+                status: 'in_stock' as const,
+              });
+          }
+        } else {
+          // Full transfer: just move branch
+          await supabase
+            .from('products')
+            .update({ branch_id: request.to_branch_id })
+            .eq('id', product.id)
+            .eq('tenant_id', tenantId);
+        }
+      }
 
       // Update request status
       const { error: statusError } = await supabase
