@@ -1634,6 +1634,72 @@ export type Database = {
           },
         ]
       }
+      daily_stats: {
+        Row: {
+          branch_id: string | null
+          created_at: string | null
+          id: string
+          new_customers: number | null
+          stat_date: string
+          tenant_id: string
+          total_expenses: number | null
+          total_imports: number | null
+          total_orders: number | null
+          total_other_income: number | null
+          total_profit: number | null
+          total_revenue: number | null
+          total_sold_items: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string | null
+          id?: string
+          new_customers?: number | null
+          stat_date: string
+          tenant_id: string
+          total_expenses?: number | null
+          total_imports?: number | null
+          total_orders?: number | null
+          total_other_income?: number | null
+          total_profit?: number | null
+          total_revenue?: number | null
+          total_sold_items?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string | null
+          id?: string
+          new_customers?: number | null
+          stat_date?: string
+          tenant_id?: string
+          total_expenses?: number | null
+          total_imports?: number | null
+          total_orders?: number | null
+          total_other_income?: number | null
+          total_profit?: number | null
+          total_revenue?: number | null
+          total_sold_items?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_stats_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_stats_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       debt_payments: {
         Row: {
           allocated_amount: number | null
@@ -6302,6 +6368,11 @@ export type Database = {
           _tenant_id: string
         }
         Returns: string
+      }
+      rebuild_all_daily_stats_today: { Args: never; Returns: undefined }
+      rebuild_daily_stats: {
+        Args: { _branch_id?: string; _stat_date: string; _tenant_id: string }
+        Returns: undefined
       }
       resolve_tenant_by_domain: { Args: { _domain: string }; Returns: string }
       show_limit: { Args: never; Returns: number }
