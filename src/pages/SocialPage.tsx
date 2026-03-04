@@ -23,6 +23,8 @@ const SocialPage = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('feed');
   const [viewUserId, setViewUserId] = useState<string | undefined>();
+  const [focusPostId, setFocusPostId] = useState<string | null>(null);
+  const [focusCommentId, setFocusCommentId] = useState<string | null>(null);
   const { data: unreadCount } = useUnreadSocialNotifCount();
   const queryClient = useQueryClient();
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
