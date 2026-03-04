@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { fetchAllRows } from '@/lib/fetchAllRows';
+// fetchAllRows removed - using server-side limited queries
 
 // Types
 export interface PointSettings {
