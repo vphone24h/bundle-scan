@@ -1634,6 +1634,72 @@ export type Database = {
           },
         ]
       }
+      daily_stats: {
+        Row: {
+          branch_id: string | null
+          created_at: string | null
+          id: string
+          new_customers: number | null
+          stat_date: string
+          tenant_id: string
+          total_expenses: number | null
+          total_imports: number | null
+          total_orders: number | null
+          total_other_income: number | null
+          total_profit: number | null
+          total_revenue: number | null
+          total_sold_items: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string | null
+          id?: string
+          new_customers?: number | null
+          stat_date: string
+          tenant_id: string
+          total_expenses?: number | null
+          total_imports?: number | null
+          total_orders?: number | null
+          total_other_income?: number | null
+          total_profit?: number | null
+          total_revenue?: number | null
+          total_sold_items?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string | null
+          id?: string
+          new_customers?: number | null
+          stat_date?: string
+          tenant_id?: string
+          total_expenses?: number | null
+          total_imports?: number | null
+          total_orders?: number | null
+          total_other_income?: number | null
+          total_profit?: number | null
+          total_revenue?: number | null
+          total_sold_items?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_stats_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_stats_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       debt_payments: {
         Row: {
           allocated_amount: number | null
@@ -6023,6 +6089,101 @@ export type Database = {
           },
         ]
       }
+      mv_customer_debt: {
+        Row: {
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          tenant_id: string | null
+          total_receipts: number | null
+          total_remaining_debt: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_receipts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_receipts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mv_revenue_daily: {
+        Row: {
+          branch_id: string | null
+          completed_revenue: number | null
+          stat_date: string | null
+          tenant_id: string | null
+          total_orders: number | null
+          total_revenue: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_receipts_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_receipts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mv_revenue_monthly: {
+        Row: {
+          branch_id: string | null
+          stat_month: string | null
+          tenant_id: string | null
+          total_orders: number | null
+          total_revenue: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_receipts_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_receipts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mv_top_products: {
+        Row: {
+          product_name: string | null
+          sku: string | null
+          tenant_id: string | null
+          total_revenue: number | null
+          total_sold: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_receipts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       add_review_reward_points: {
@@ -6082,6 +6243,16 @@ export type Database = {
       generate_domain_verification_token: { Args: never; Returns: string }
       generate_voucher_code: { Args: never; Returns: string }
       get_current_tenant: { Args: never; Returns: string }
+      get_customer_debt_summary: {
+        Args: { _tenant_id: string }
+        Returns: {
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          total_receipts: number
+          total_remaining_debt: number
+        }[]
+      }
       get_public_reviews:
         | {
             Args: { _limit?: number }
@@ -6103,6 +6274,20 @@ export type Database = {
               rating: number
             }[]
           }
+      get_revenue_daily: {
+        Args: {
+          _branch_id?: string
+          _end_date: string
+          _start_date: string
+          _tenant_id: string
+        }
+        Returns: {
+          completed_revenue: number
+          stat_date: string
+          total_orders: number
+          total_revenue: number
+        }[]
+      }
       get_staff_kpi_stats: {
         Args: {
           p_end_date: string
@@ -6134,6 +6319,15 @@ export type Database = {
           has_usage: boolean
           landing_domain: string
           tenant_id: string
+        }[]
+      }
+      get_top_products: {
+        Args: { _limit?: number; _tenant_id: string }
+        Returns: {
+          product_name: string
+          sku: string
+          total_revenue: number
+          total_sold: number
         }[]
       }
       get_user_accessible_branch_ids: {
@@ -6303,7 +6497,15 @@ export type Database = {
         }
         Returns: string
       }
+      rebuild_all_daily_stats_today: { Args: never; Returns: undefined }
+      rebuild_daily_stats: {
+        Args: { _branch_id?: string; _stat_date: string; _tenant_id: string }
+        Returns: undefined
+      }
+      refresh_materialized_views: { Args: never; Returns: undefined }
       resolve_tenant_by_domain: { Args: { _domain: string }; Returns: string }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       submit_staff_review: {
         Args: {
           _branch_id: string
