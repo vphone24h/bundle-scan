@@ -210,13 +210,15 @@ export function useCustomerDebts(showSettled: boolean = false) {
         }
       });
 
-      // Compute final values
+      // Compute final values using correct formula:
+      // remaining = current_debt_from_receipts + additions_remaining
+      // total_amount = remaining + total_paid
       const now = new Date();
       const result: DebtSummary[] = [];
       
       customerMap.forEach(summary => {
-        const totalAmount = summary.original_debt_from_receipts + summary.additions;
-        const remainingAmount = totalAmount - summary.total_paid;
+        const remainingAmount = summary.current_debt_from_receipts + summary.additions_remaining;
+        const totalAmount = remainingAmount + summary.total_paid;
         
         let daysOverdue = 0;
         if (summary.first_debt_date) {
