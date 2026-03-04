@@ -303,7 +303,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
         return q;
       };
 
-      const receipts = await fetchAllRows<any>(buildReceiptsQuery);
+      const receipts = await fetchLimited<any>(buildReceiptsQuery);
 
       const buildPaymentsQuery = () => {
         let q = supabase
