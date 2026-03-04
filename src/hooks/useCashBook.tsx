@@ -50,51 +50,64 @@ export function useCashBook(filters?: {
   endDate?: string;
   type?: CashBookType;
   branchId?: string;
+  page?: number;
+  pageSize?: number;
 }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
   const { branchId: userBranchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
-  return useQuery({
-    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
+  const page = filters?.page ?? 1;
+  const pageSize = filters?.pageSize ?? 100;
+
+  const result = useQuery({
     queryKey: ['cash-book', tenant?.id, userBranchId, filters, isDataHidden],
     queryFn: async () => {
-      // Chế độ test: trả về dữ liệu rỗng
-      if (isDataHidden) return [] as CashBookEntry[];
+      if (isDataHidden) return { items: [] as CashBookEntry[], totalCount: 0 };
 
-      const buildQuery = () => {
-        let q = supabase
-          .from('cash_book')
-          .select('*, branches(name)')
-          .order('transaction_date', { ascending: false });
+      let q = supabase
+        .from('cash_book')
+        .select('*, branches(name)', { count: 'exact' })
+        .order('transaction_date', { ascending: false });
 
-        if (filters?.startDate) {
-          q = q.gte('transaction_date', filters.startDate);
-        }
-        if (filters?.endDate) {
-          q = q.lte('transaction_date', filters.endDate + 'T23:59:59');
-        }
-        if (filters?.type) {
-          q = q.eq('type', filters.type);
-        }
+      if (filters?.startDate) {
+        q = q.gte('transaction_date', filters.startDate);
+      }
+      if (filters?.endDate) {
+        q = q.lte('transaction_date', filters.endDate + 'T23:59:59');
+      }
+      if (filters?.type) {
+        q = q.eq('type', filters.type);
+      }
 
-        if (filters?.branchId) {
-          if (shouldFilter && userBranchId && filters.branchId !== userBranchId) {
-            return q.eq('branch_id', 'impossible_id'); // return empty
-          }
-          q = q.eq('branch_id', filters.branchId);
-        } else if (shouldFilter && userBranchId) {
-          q = q.eq('branch_id', userBranchId);
+      if (filters?.branchId) {
+        if (shouldFilter && userBranchId && filters.branchId !== userBranchId) {
+          return { items: [] as CashBookEntry[], totalCount: 0 };
         }
-        return q;
-      };
+        q = q.eq('branch_id', filters.branchId);
+      } else if (shouldFilter && userBranchId) {
+        q = q.eq('branch_id', userBranchId);
+      }
 
-      const data = await fetchAllRows<CashBookEntry>(buildQuery);
-      return data;
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      q = q.range(from, to);
+
+      const { data, error, count } = await q;
+      if (error) throw error;
+      return { items: (data || []) as CashBookEntry[], totalCount: count || 0 };
     },
     enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
+    staleTime: 30 * 1000,
     refetchOnWindowFocus: false,
+    placeholderData: (previous) => previous,
   });
+
+  return {
+    ...result,
+    data: result.data?.items || [],
+    totalCount: result.data?.totalCount || 0,
+  };
 }
 
 export function useCashBookCategories(type?: CashBookType) {
