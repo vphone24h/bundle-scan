@@ -3051,7 +3051,10 @@ export type Database = {
           created_at: string
           display_order: number | null
           id: string
+          image_url: string | null
+          is_visible: boolean
           name: string
+          parent_id: string | null
           tenant_id: string
           updated_at: string
         }
@@ -3059,7 +3062,10 @@ export type Database = {
           created_at?: string
           display_order?: number | null
           id?: string
+          image_url?: string | null
+          is_visible?: boolean
           name: string
+          parent_id?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -3067,11 +3073,21 @@ export type Database = {
           created_at?: string
           display_order?: number | null
           id?: string
+          image_url?: string | null
+          is_visible?: boolean
           name?: string
+          parent_id?: string | null
           tenant_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "landing_article_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "landing_article_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "landing_article_categories_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -3089,6 +3105,7 @@ export type Database = {
           display_order: number | null
           id: string
           is_featured: boolean | null
+          is_featured_home: boolean
           is_published: boolean | null
           slug: string | null
           summary: string | null
@@ -3104,6 +3121,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           is_featured?: boolean | null
+          is_featured_home?: boolean
           is_published?: boolean | null
           slug?: string | null
           summary?: string | null
@@ -3119,6 +3137,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           is_featured?: boolean | null
+          is_featured_home?: boolean
           is_published?: boolean | null
           slug?: string | null
           summary?: string | null
