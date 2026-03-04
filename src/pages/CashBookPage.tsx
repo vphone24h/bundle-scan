@@ -366,7 +366,7 @@ export default function CashBookPage() {
       }
       
       // Payment source filter
-      const matchesPaymentSource = paymentSourceFilter === '_all_' || entry.payment_source === paymentSourceFilter;
+      const matchesPaymentSource = paymentSourceFilter === '_all_' || normalizePaymentSource(entry.payment_source) === paymentSourceFilter;
       
       // Accounting filter
       const matchesAccounting = accountingFilter === '_all_' || 
