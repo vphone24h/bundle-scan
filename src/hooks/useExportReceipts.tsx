@@ -213,7 +213,7 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   const page = filters?.page ?? 1;
-  const pageSize = filters?.pageSize ?? 50;
+  const pageSize = filters?.pageSize ?? 15;
 
   const result = useQuery({
     queryKey: ['export-receipt-items', tenant?.id, branchId, isDataHidden, filters],
@@ -222,66 +222,51 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
 
       const effectiveBranchId = filters?.branchId && filters.branchId !== '_all_' ? filters.branchId : (shouldFilter && branchId ? branchId : null);
 
-      // Step 1: If branch filter, get receipt IDs for that branch first
-      let receiptIdFilter: string[] | null = null;
-      if (effectiveBranchId) {
-        const { data: receiptIds } = await supabase
-          .from('export_receipts')
-          .select('id')
-          .eq('branch_id', effectiveBranchId)
-          .order('export_date', { ascending: false })
-          .limit(1000);
-        receiptIdFilter = receiptIds?.map(r => r.id) || [];
-        if (receiptIdFilter.length === 0) {
-          return { items: [] as ExportReceiptItemDetail[], hasMore: false };
-        }
-      }
+      const { data, error } = await supabase.rpc('get_export_receipt_items_paginated', {
+        _page: page,
+        _page_size: pageSize,
+        _search: filters?.search?.trim() || null,
+        _category_id: (filters?.categoryId && filters.categoryId !== '_all_') ? filters.categoryId : null,
+        _branch_id: effectiveBranchId || null,
+      });
 
-      // Step 2: Query items WITHOUT count to avoid RLS timeout on 16K+ rows
-      // Fetch pageSize+1 to detect if there are more pages
-      const fetchSize = pageSize + 1;
-      let query = supabase
-        .from('export_receipt_items')
-        .select(`
-          *,
-          categories(name),
-          export_receipts(
-            code, export_date, branch_id, customer_id, created_by, status, sales_staff_id,
-            customers(name, phone),
-            branches(name)
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (receiptIdFilter) {
-        query = query.in('receipt_id', receiptIdFilter);
-      }
-
-      if (filters?.search) {
-        const s = filters.search.trim();
-        if (s) {
-          query = query.or(`product_name.ilike.%${s}%,sku.ilike.%${s}%,imei.ilike.%${s}%`);
-        }
-      }
-      if (filters?.categoryId && filters.categoryId !== '_all_') {
-        query = query.eq('category_id', filters.categoryId);
-      }
-
-      const from = (page - 1) * pageSize;
-      const to = from + fetchSize - 1;
-      query = query.range(from, to);
-
-      const { data, error } = await query;
       if (error) {
-        console.error('Export receipt items query error:', error);
+        console.error('Export receipt items RPC error:', error);
         throw error;
       }
-      const items = (data || []) as ExportReceiptItemDetail[];
-      const hasMore = items.length > pageSize;
-      return {
-        items: hasMore ? items.slice(0, pageSize) : items,
-        hasMore,
-      };
+
+      const rows = (data || []) as any[];
+      const hasMore = rows.length > 0 ? rows[0].has_more === true : false;
+
+      // Map RPC flat rows to the shape components expect
+      const items: ExportReceiptItemDetail[] = rows.map((r: any) => ({
+        id: r.id,
+        receipt_id: r.receipt_id,
+        product_id: r.product_id,
+        product_name: r.product_name,
+        sku: r.sku,
+        imei: r.imei,
+        category_id: r.category_id,
+        sale_price: r.sale_price,
+        status: r.status,
+        note: r.note,
+        warranty: r.warranty,
+        created_at: r.created_at,
+        categories: r.category_name ? { name: r.category_name } : null,
+        export_receipts: {
+          code: r.receipt_code,
+          export_date: r.export_date,
+          branch_id: r.receipt_branch_id,
+          customer_id: r.receipt_customer_id,
+          created_by: r.receipt_created_by,
+          status: r.receipt_status,
+          sales_staff_id: r.receipt_sales_staff_id,
+          customers: r.customer_name ? { name: r.customer_name, phone: r.customer_phone } : null,
+          branches: r.branch_name ? { name: r.branch_name } : null,
+        },
+      }));
+
+      return { items, hasMore };
     },
     enabled: enabled && !isTenantLoading && !branchLoading,
     staleTime: 2 * 60 * 1000,
