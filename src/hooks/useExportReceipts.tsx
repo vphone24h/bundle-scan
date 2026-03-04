@@ -162,7 +162,10 @@ export function useExportReceipts(filters?: {
       query = query.range(from, to);
 
       const { data, error, count } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error('Export receipts query error:', error);
+        throw error;
+      }
       return { items: (data || []) as unknown as ExportReceipt[], totalCount: count || 0 };
     },
     enabled: !isTenantLoading && !branchLoading,
