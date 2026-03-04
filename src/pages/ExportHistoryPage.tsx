@@ -242,27 +242,10 @@ export default function ExportHistoryPage() {
       });
   }, [items, receipts]);
 
-  // Filter receipts
-  const filteredReceipts = receipts?.filter((receipt) => {
-    const matchesSearch =
-      receipt.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      receipt.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      receipt.customers?.phone?.includes(searchTerm);
-    
-    const matchesStatus = statusFilter === '_all_' || receipt.status === statusFilter;
-    
-    const exportDateStr = format(new Date(receipt.export_date), 'yyyy-MM-dd');
-    const matchesDate = !dateFilter || exportDateStr === dateFilter;
-    const matchesDateFrom = !dateFromFilter || exportDateStr >= dateFromFilter;
-    const matchesDateTo = !dateToFilter || exportDateStr <= dateToFilter;
-    
-    const matchesBranch = branchFilter === '_all_' || receipt.branch_id === branchFilter;
-
-    const matchesPaymentSource = paymentSourceFilter === '_all_' || 
-      receipt.export_receipt_payments?.some(p => p.payment_type === paymentSourceFilter);
-
-    return matchesSearch && matchesStatus && matchesDate && matchesDateFrom && matchesDateTo && matchesBranch && matchesPaymentSource;
-  });
+  // Server-side filters handle search, status, date, branch. Only payment source is client-side.
+  const filteredReceipts = paymentSourceFilter === '_all_'
+    ? receipts
+    : receipts?.filter(r => r.export_receipt_payments?.some(p => p.payment_type === paymentSourceFilter));
 
   const hasActiveFilters = dateFilter || dateFromFilter || dateToFilter || statusFilter !== '_all_' || branchFilter !== '_all_' || categoryFilter !== '_all_' || paymentSourceFilter !== '_all_';
 
@@ -276,38 +259,11 @@ export default function ExportHistoryPage() {
     setPaymentSourceFilter('_all_');
   };
 
-  // Filter items
-  const filteredItemsRaw = items?.filter((item) => {
-    const matchesSearch =
-      item.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.imei?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.export_receipts?.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.export_receipts?.customers?.phone?.includes(searchTerm);
-
-    const matchesCategory = categoryFilter === '_all_' || item.category_id === categoryFilter;
-
-    const matchesStatus = statusFilter === '_all_' || item.export_receipts?.status === statusFilter;
-
-    const exportDateStr = item.export_receipts?.export_date ? format(new Date(item.export_receipts.export_date), 'yyyy-MM-dd') : '';
-    const matchesDate = !dateFilter || exportDateStr === dateFilter;
-    const matchesDateFrom = !dateFromFilter || exportDateStr >= dateFromFilter;
-    const matchesDateTo = !dateToFilter || exportDateStr <= dateToFilter;
-
-    const matchesBranch = branchFilter === '_all_' || item.export_receipts?.branch_id === branchFilter;
-
-    const matchesPaymentSource = paymentSourceFilter === '_all_' || 
-      item.export_receipts?.export_receipt_payments?.some(p => p.payment_type === paymentSourceFilter);
-
-    return matchesSearch && matchesCategory && matchesStatus && matchesDate && matchesDateFrom && matchesDateTo && matchesBranch && matchesPaymentSource;
-  }) || [];
-
-  // Group non-IMEI items by: product_name + branch + receipt_id + sale_price
+  // Group non-IMEI items (items are already server-filtered)
   const groupedItems = useMemo(() => {
     const grouped: Map<string, ExportReceiptItemDetail & { quantity: number; groupedIds: string[] }> = new Map();
     
-    filteredItemsRaw.forEach((item) => {
-      // Only group items without IMEI
+    (items || []).forEach((item) => {
       if (!item.imei) {
         const groupKey = `${item.product_name}|${item.export_receipts?.branch_id || ''}|${item.receipt_id}|${item.sale_price}`;
         
@@ -316,33 +272,19 @@ export default function ExportHistoryPage() {
           existing.quantity += 1;
           existing.groupedIds.push(item.id);
         } else {
-          grouped.set(groupKey, {
-            ...item,
-            quantity: 1,
-            groupedIds: [item.id],
-          });
+          grouped.set(groupKey, { ...item, quantity: 1, groupedIds: [item.id] });
         }
       } else {
-        // IMEI products are not grouped, keep as individual rows
-        grouped.set(item.id, {
-          ...item,
-          quantity: 1,
-          groupedIds: [item.id],
-        });
+        grouped.set(item.id, { ...item, quantity: 1, groupedIds: [item.id] });
       }
     });
     
     return Array.from(grouped.values());
-  }, [filteredItemsRaw]);
+  }, [items]);
 
-  // Pagination for receipts tab
-  const receiptsPagination = usePagination(filteredReceipts || [], { 
-    storageKey: 'export-receipts'
-  });
-
-  // Pagination for items tab - use grouped items
-  const itemsPagination = usePagination(groupedItems, { 
-    storageKey: 'export-items'
+  // Server pagination helpers
+  const receiptTotalPages = Math.max(1, Math.ceil(receiptsTotalCount / receiptPageSize));
+  const itemTotalPages = Math.max(1, Math.ceil(itemsTotalCount / itemPageSize));
   });
 
   // Handle view detail
