@@ -157,6 +157,25 @@ export default function ExportHistoryPage() {
   const [paymentSourceFilter, setPaymentSourceFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('_all_');
+
+  // Debounced search for server queries
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Server pagination state
+  const [receiptPage, setReceiptPage] = useState(1);
+  const [receiptPageSize, setReceiptPageSize] = useState(15);
+  const [itemPage, setItemPage] = useState(1);
+  const [itemPageSize, setItemPageSize] = useState(15);
+
+  // Reset pages on filter change
+  useEffect(() => {
+    setReceiptPage(1);
+    setItemPage(1);
+  }, [debouncedSearch, statusFilter, dateFromFilter, dateToFilter, branchFilter, paymentSourceFilter, categoryFilter]);
   
   // Detail dialog
   const [selectedReceipt, setSelectedReceipt] = useState<ExportReceipt | null>(null);
@@ -174,8 +193,21 @@ export default function ExportHistoryPage() {
   const [returnReceipt, setReturnReceipt] = useState<ExportReceipt | null>(null);
 
   // Hooks
-  const { data: receipts, isLoading: receiptsLoading } = useExportReceipts();
-  const { data: items, isLoading: itemsLoading } = useExportReceiptItems(activeTab === 'items');
+  const { data: receipts, isLoading: receiptsLoading, totalCount: receiptsTotalCount } = useExportReceipts({
+    search: debouncedSearch || undefined,
+    status: statusFilter !== '_all_' ? statusFilter : undefined,
+    dateFrom: dateFromFilter || undefined,
+    dateTo: dateToFilter || undefined,
+    branchId: branchFilter !== '_all_' ? branchFilter : undefined,
+    page: receiptPage,
+    pageSize: receiptPageSize,
+  });
+  const { data: items, isLoading: itemsLoading, totalCount: itemsTotalCount } = useExportReceiptItems(activeTab === 'items', {
+    search: debouncedSearch || undefined,
+    categoryId: categoryFilter !== '_all_' ? categoryFilter : undefined,
+    page: itemPage,
+    pageSize: itemPageSize,
+  });
   // On-demand detail items for selected receipt (detail/print)
   const detailReceiptId = selectedReceipt?.id || printReceipt?.receiptId || null;
   const { data: detailItems, isLoading: detailItemsLoading } = useExportReceiptDetail(detailReceiptId);
