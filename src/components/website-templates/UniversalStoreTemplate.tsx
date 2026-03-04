@@ -692,6 +692,31 @@ export default function UniversalStoreTemplate({
                       </section>
                     );
                   }
+                  // Handle layout sections from SYSTEM_PAGES
+                  if (typeof sectionId === 'string' && (sectionId as string).startsWith('layout_')) {
+                    const pageId = (sectionId as string).replace(/^layout_\d+_/, '').replace(/^layout_/, '');
+                    const page = SYSTEM_PAGES.find(p => p.id === pageId);
+                    if (!page) return null;
+                    const sysProps = { accentColor, storeName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
+                    return (
+                      <section key={sectionId}>
+                        <ScrollReveal animation="fade-up">
+                          {pageId === 'pricelist' && <PriceListPage {...sysProps} />}
+                          {pageId === 'booking' && <BookingPage {...sysProps} />}
+                          {pageId === 'branches' && <BranchesPage {...sysProps} />}
+                          {pageId === 'contact' && <ContactPage {...sysProps} />}
+                          {pageId === 'repair' && <RepairPage {...sysProps} />}
+                          {pageId === 'tradein' && <TradeInPage {...sysProps} />}
+                          {pageId === 'installment' && <InstallmentPage {...sysProps} />}
+                          {pageId === 'accessories' && <AccessoriesPage {...sysProps} />}
+                          {pageId === 'compare' && <ComparePage {...sysProps} />}
+                          {!['pricelist','booking','branches','contact','repair','tradein','installment','accessories','compare'].includes(pageId) && (
+                            <GenericSystemPage pageId={pageId} pageLabel={page.label} {...sysProps} />
+                          )}
+                        </ScrollReveal>
+                      </section>
+                    );
+                  }
                   return null;
                 }
               }
