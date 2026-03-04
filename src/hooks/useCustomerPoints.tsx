@@ -285,40 +285,37 @@ export function useCustomersWithPoints(filters?: {
     // Keyed by user to prevent cross-tenant cache leakage
     queryKey: ['customers-with-points', user?.id, filters],
     queryFn: async () => {
-      let query = supabase
-        .from('customers')
-        .select('id, name, phone, email, address, note, source, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at, crm_status, assigned_staff_id, last_care_date')
-        .order('created_at', { ascending: false });
+      const buildQuery = () => {
+        let query = supabase
+          .from('customers')
+          .select('id, name, phone, email, address, note, source, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at, crm_status, assigned_staff_id, last_care_date')
+          .order('created_at', { ascending: false });
 
-      if (filters?.search) {
-        query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
-      }
+        if (filters?.search) {
+          query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
+        }
+        if (filters?.branchId && filters.branchId !== '_all_') {
+          query = query.eq('preferred_branch_id', filters.branchId);
+        }
+        if (filters?.tier && filters.tier !== '_all_') {
+          query = query.eq('membership_tier', filters.tier as 'regular' | 'silver' | 'gold' | 'vip');
+        }
+        if (filters?.hasPoints === true) {
+          query = query.gt('current_points', 0);
+        }
+        if (filters?.status && filters.status !== '_all_') {
+          query = query.eq('status', filters.status as 'active' | 'inactive');
+        }
+        if (filters?.crmStatus && filters.crmStatus !== '_all_') {
+          query = query.eq('crm_status', filters.crmStatus);
+        }
+        if (filters?.staffId && filters.staffId !== '_all_') {
+          query = query.eq('assigned_staff_id', filters.staffId);
+        }
+        return query;
+      };
 
-      if (filters?.branchId && filters.branchId !== '_all_') {
-        query = query.eq('preferred_branch_id', filters.branchId);
-      }
-
-      if (filters?.tier && filters.tier !== '_all_') {
-        query = query.eq('membership_tier', filters.tier as 'regular' | 'silver' | 'gold' | 'vip');
-      }
-
-      if (filters?.hasPoints === true) {
-        query = query.gt('current_points', 0);
-      }
-
-      if (filters?.status && filters.status !== '_all_') {
-        query = query.eq('status', filters.status as 'active' | 'inactive');
-      }
-
-      if (filters?.crmStatus && filters.crmStatus !== '_all_') {
-        query = query.eq('crm_status', filters.crmStatus);
-      }
-
-      if (filters?.staffId && filters.staffId !== '_all_') {
-        query = query.eq('assigned_staff_id', filters.staffId);
-      }
-
-      const data = await fetchAllRows<CustomerWithPointsCRM>(() => query);
+      const data = await fetchAllRows<CustomerWithPointsCRM>(buildQuery);
       return data;
     },
     enabled: !!user?.id,
