@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.send-zalo-message]
 verify_jwt = false
+
+[functions.zalo-oauth-callback]
+verify_jwt = false

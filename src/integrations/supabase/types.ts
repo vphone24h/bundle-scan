@@ -5450,9 +5450,12 @@ export type Database = {
           warranty_hotline: string | null
           website_template: string | null
           zalo_access_token: string | null
+          zalo_app_id: string | null
+          zalo_app_secret: string | null
           zalo_enabled: boolean | null
           zalo_oa_id: string | null
           zalo_on_export: boolean | null
+          zalo_refresh_token: string | null
           zalo_url: string | null
         }
         Insert: {
@@ -5515,9 +5518,12 @@ export type Database = {
           warranty_hotline?: string | null
           website_template?: string | null
           zalo_access_token?: string | null
+          zalo_app_id?: string | null
+          zalo_app_secret?: string | null
           zalo_enabled?: boolean | null
           zalo_oa_id?: string | null
           zalo_on_export?: boolean | null
+          zalo_refresh_token?: string | null
           zalo_url?: string | null
         }
         Update: {
@@ -5580,9 +5586,12 @@ export type Database = {
           warranty_hotline?: string | null
           website_template?: string | null
           zalo_access_token?: string | null
+          zalo_app_id?: string | null
+          zalo_app_secret?: string | null
           zalo_enabled?: boolean | null
           zalo_oa_id?: string | null
           zalo_on_export?: boolean | null
+          zalo_refresh_token?: string | null
           zalo_url?: string | null
         }
         Relationships: [
