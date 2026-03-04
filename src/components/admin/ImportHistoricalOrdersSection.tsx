@@ -222,6 +222,21 @@ export function ImportHistoricalOrdersSection() {
       // Skip header row if exists (check if first row looks like header)
       const startRow = rawData.length > 0 && typeof rawData[0][4] !== 'number' ? 1 : 0;
 
+      // DEBUG: Log first 5 data rows to see column structure
+      for (let i = startRow; i < Math.min(startRow + 5, rawData.length); i++) {
+        const row = rawData[i];
+        console.log(`[DEBUG ROW ${i}] cols=${row?.length}`, {
+          col0: String(row?.[0] || '').substring(0, 30),
+          col1: String(row?.[1] || '').substring(0, 30),
+          col2: String(row?.[2] || '').substring(0, 30),
+          col3_type: typeof row?.[3], col3: row?.[3],
+          col4_type: typeof row?.[4], col4: row?.[4],
+          col5_type: typeof row?.[5], col5: row?.[5],
+          col6: String(row?.[6] || '').substring(0, 30),
+          col7: String(row?.[7] || '').substring(0, 30),
+        });
+      }
+
       const orders: ParsedOrder[] = [];
       for (let i = startRow; i < rawData.length; i++) {
         const row = rawData[i];
@@ -230,10 +245,16 @@ export function ImportHistoricalOrdersSection() {
         if (parsed) orders.push(parsed);
       }
 
+      // DEBUG: Log price distribution
+      const withPrice = orders.filter(o => o.salePrice > 0);
+      const withoutPrice = orders.filter(o => o.salePrice === 0);
+      console.log(`[DEBUG PRICES] total=${orders.length}, withPrice=${withPrice.length}, withoutPrice=${withoutPrice.length}`);
+      console.log('[DEBUG SAMPLE PRICES]', orders.slice(0, 5).map(o => ({ id: o.orderId, price: o.salePrice })));
+
       setParsedOrders(orders);
       toast({
         title: 'Đọc file thành công',
-        description: `Tìm thấy ${orders.length} đơn hàng, trong đó ${orders.filter(o => o.status === 'Hoàn tất' || o.status === 'Đã giao hàng').length} đơn hoàn tất sẽ được nhập.`,
+        description: `Tìm thấy ${orders.length} đơn hàng (${withPrice.length} có giá, ${withoutPrice.length} giá 0đ), ${orders.filter(o => o.status === 'Hoàn tất' || o.status === 'Đã giao hàng').length} đơn hoàn tất.`,
       });
     } catch (err) {
       toast({ title: 'Lỗi đọc file', description: String(err), variant: 'destructive' });
