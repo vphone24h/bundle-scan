@@ -128,10 +128,12 @@ export const SocialProfileTab = memo(function SocialProfileTab({ userId, onViewP
           <div className="flex items-start gap-4">
             {/* Avatar with upload */}
             <div className="relative group">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={profile?.avatar_url || undefined} />
-                <AvatarFallback className="text-lg">{(profile?.display_name || 'U')[0]}</AvatarFallback>
-              </Avatar>
+              <button onClick={() => setShowAvatarPreview(true)} className="cursor-pointer">
+                <Avatar className="h-16 w-16 hover:ring-2 ring-primary transition-all">
+                  <AvatarImage src={profile?.avatar_url || undefined} />
+                  <AvatarFallback className="text-lg">{(profile?.display_name || 'U')[0]}</AvatarFallback>
+                </Avatar>
+              </button>
               {isOwnProfile && (
                 <>
                   <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
