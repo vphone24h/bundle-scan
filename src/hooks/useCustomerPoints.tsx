@@ -590,10 +590,10 @@ export function useCustomerStats(branchFilter?: string) {
 
       // Use select('id') with count:'exact' and limit(0) for lightweight counting
       const [totalRes, withPointsRes, vipRes, withPurchaseRes] = await Promise.all([
-        applyBranch(supabase.from('customers').select('id', { count: 'exact', head: true })),
-        applyBranch(supabase.from('customers').select('id', { count: 'exact', head: true }).gt('current_points', 0)),
-        applyBranch(supabase.from('customers').select('id', { count: 'exact', head: true }).eq('membership_tier', 'vip')),
-        applyBranch(supabase.from('customers').select('id', { count: 'exact', head: true }).gt('total_spent', 0)),
+        applyBranch(supabase.from('customers').select('id', { count: 'exact' }).limit(0)),
+        applyBranch(supabase.from('customers').select('id', { count: 'exact' }).gt('current_points', 0).limit(0)),
+        applyBranch(supabase.from('customers').select('id', { count: 'exact' }).eq('membership_tier', 'vip').limit(0)),
+        applyBranch(supabase.from('customers').select('id', { count: 'exact' }).gt('total_spent', 0).limit(0)),
       ]);
 
       if (totalRes.error) console.error('[useCustomerStats] totalRes error:', totalRes.error);
