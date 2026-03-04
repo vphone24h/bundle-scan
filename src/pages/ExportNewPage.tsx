@@ -849,6 +849,30 @@ export default function ExportNewPage() {
         successMessage += '. Email đã được gửi cho khách hàng';
       }
 
+      // Send auto Zalo if enabled
+      if (autoZaloEnabled && savedCustomerPhone) {
+        supabase.functions.invoke('send-zalo-message', {
+          body: {
+            tenant_id: landingSettings?.tenant_id,
+            customer_name: savedCustomerName,
+            customer_phone: savedCustomerPhone,
+            message_type: 'export_confirmation',
+            items: savedCart.map(item => ({
+              product_name: item.product_name,
+              imei: item.imei,
+              sale_price: item.sale_price,
+              warranty: item.warranty,
+            })),
+            total_amount: totalAmount,
+            receipt_code: receipt.code,
+            branch_id: branchId,
+          },
+        }).then(({ error }) => {
+          if (error) console.warn('Zalo message failed:', error.message);
+        }).catch(() => {});
+        successMessage += '. Zalo đã được gửi cho khách hàng';
+      }
+
       toast({
         title: t('pages.exportNew.exportSuccess'),
         description: successMessage,
