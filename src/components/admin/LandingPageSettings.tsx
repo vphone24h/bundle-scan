@@ -83,6 +83,25 @@ function AppPasswordHelpDialog({ open, onOpenChange }: { open: boolean; onOpenCh
 function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave }: { formData: any; handleChange: (field: string, value: any) => void; tenantId: string | null; onSave?: () => void }) {
   const [showHelp, setShowHelp] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
+
+  const hasCredentials = !!(formData.order_email_sender && formData.order_email_app_password);
+  const showFields = !hasCredentials || editing;
+
+  const maskEmail = (email: string) => {
+    if (!email) return '';
+    const [user, domain] = email.split('@');
+    if (!domain) return email;
+    return user.slice(0, 2) + '•••' + '@' + domain;
+  };
+
+  const handleDelete = () => {
+    handleChange('order_email_sender', '');
+    handleChange('order_email_app_password', '');
+    setEditing(false);
+    if (onSave) onSave();
+    toast({ title: '🗑️ Đã xóa thông tin email' });
+  };
 
   return (
     <div className="space-y-3">
@@ -98,30 +117,63 @@ function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave }: {
       </div>
       {formData.order_email_enabled && (
         <div className="ml-0 space-y-3 pl-0 border-l-2 border-primary/20 ml-2 pl-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Email gửi (Gmail)</Label>
-            <Input
-              value={formData.order_email_sender || ''}
-              onChange={e => handleChange('order_email_sender', e.target.value)}
-              placeholder="yourstore@gmail.com"
-              type="email"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs">Mail App Password</Label>
-              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-primary" onClick={() => setShowHelp(true)}>
-                <HelpCircle className="h-3.5 w-3.5 mr-1" />
-                Hướng dẫn
-              </Button>
+          {/* Collapsed view when credentials exist and not editing */}
+          {hasCredentials && !editing && (
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <p className="text-xs text-muted-foreground">Tài khoản gửi mail</p>
+                  <p className="text-sm font-medium">{maskEmail(formData.order_email_sender)}</p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => setEditing(true)}>
+                    <Save className="h-3 w-3" />
+                    Sửa
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1 text-destructive hover:text-destructive" onClick={handleDelete}>
+                    <Trash2 className="h-3 w-3" />
+                    Xóa
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">App Password: ••••••••••••••••</p>
             </div>
-            <Input
-              value={formData.order_email_app_password || ''}
-              onChange={e => handleChange('order_email_app_password', e.target.value)}
-              placeholder="Mật khẩu ứng dụng Gmail"
-              type="password"
-            />
-          </div>
+          )}
+
+          {/* Editable fields */}
+          {showFields && (
+            <>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Email gửi (Gmail)</Label>
+                <Input
+                  value={formData.order_email_sender || ''}
+                  onChange={e => handleChange('order_email_sender', e.target.value)}
+                  placeholder="yourstore@gmail.com"
+                  type="email"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Mail App Password</Label>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-primary" onClick={() => setShowHelp(true)}>
+                    <HelpCircle className="h-3.5 w-3.5 mr-1" />
+                    Hướng dẫn
+                  </Button>
+                </div>
+                <Input
+                  value={formData.order_email_app_password || ''}
+                  onChange={e => handleChange('order_email_app_password', e.target.value)}
+                  placeholder="Mật khẩu ứng dụng Gmail"
+                  type="password"
+                />
+              </div>
+              {editing && (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="text-xs" onClick={() => setEditing(false)}>Hủy</Button>
+                </div>
+              )}
+            </>
+          )}
           <Separator />
           <p className="text-xs font-medium text-muted-foreground">Loại email gửi:</p>
           <div className="flex items-center justify-between">
@@ -159,6 +211,7 @@ function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave }: {
                 setSaving(true);
                 try {
                   if (onSave) onSave();
+                  setEditing(false);
                   toast({ title: '✅ Đã lưu cài đặt email!' });
                 } finally {
                   setSaving(false);
