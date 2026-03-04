@@ -889,7 +889,7 @@ export default function CashBookPage() {
         { header: 'Danh mục', key: 'category', width: 20 },
         { header: 'Mô tả', key: 'description', width: 35 },
         { header: 'Số tiền', key: 'signed_amount', width: 15, isNumeric: true },
-        { header: 'Nguồn tiền', key: 'payment_source', width: 15, format: (v) => paymentSourceLabels[v] || v },
+        { header: 'Nguồn tiền', key: 'payment_source', width: 15, format: (v) => paymentSourceLabels[normalizePaymentSource(v)] || v },
         { header: 'Nhân viên', key: 'created_by_name', width: 20 },
         { header: 'Người nhận', key: 'recipient_name', width: 20 },
         { header: 'SĐT người nhận', key: 'recipient_phone', width: 15 },
