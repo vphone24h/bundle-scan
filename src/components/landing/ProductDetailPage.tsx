@@ -417,6 +417,9 @@ export function ProductDetailPage({
           {/* ===== DYNAMIC SECTIONS ===== */}
           {(() => {
             const defaultSections = [
+              { id: 'installment', enabled: true },
+              { id: 'compare', enabled: false },
+              { id: 'tradeIn', enabled: false },
               { id: 'promotion', enabled: true },
               { id: 'warranty', enabled: true },
               { id: 'description', enabled: true },
