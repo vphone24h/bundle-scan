@@ -6257,6 +6257,41 @@ export type Database = {
         Args: { p_branch_id?: string; p_tenant_id: string }
         Returns: Json
       }
+      get_export_receipt_items_paginated: {
+        Args: {
+          _branch_id?: string
+          _category_id?: string
+          _page?: number
+          _page_size?: number
+          _search?: string
+        }
+        Returns: {
+          branch_name: string
+          category_id: string
+          category_name: string
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          export_date: string
+          has_more: boolean
+          id: string
+          imei: string
+          note: string
+          product_id: string
+          product_name: string
+          receipt_branch_id: string
+          receipt_code: string
+          receipt_created_by: string
+          receipt_customer_id: string
+          receipt_id: string
+          receipt_sales_staff_id: string
+          receipt_status: string
+          sale_price: number
+          sku: string
+          status: string
+          warranty: string
+        }[]
+      }
       get_public_reviews:
         | {
             Args: { _limit?: number }
