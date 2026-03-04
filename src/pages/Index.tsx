@@ -8,6 +8,7 @@ import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
 import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator, PlayCircle, Crown, MessageCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { GettingStartedChecklist } from '@/components/dashboard/GettingStartedChecklist';
@@ -140,6 +141,7 @@ const Index = () => {
   const { isCompleted: dashTourDone, isLoading: dashTourLoading, completeTour: completeDashTour } = useOnboardingTour('dashboard_overview');
   const { mutate: resetAllTours } = useResetAllTours();
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
+  const isFirstLoad = statsLoading && !stats;
   const { data: permissions } = usePermissions();
   const { data: platformUser } = usePlatformUser();
   const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
@@ -234,64 +236,81 @@ const Index = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {canViewImportPrice && (
-            <StatCard
-              title={t('pages.dashboard.totalProducts')}
-              value={stats?.totalProducts || 0}
-              icon={<Package className="h-5 w-5 sm:h-6 sm:w-6" />}
-              onClick={() => navigate('/products')}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-            />
-          )}
-          {canViewImportPrice && (
-            <StatCard
-              title={t('pages.dashboard.inStock')}
-              value={stats?.inStockProducts || 0}
-              icon={<TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />}
-              onClick={() => navigate('/inventory')}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-            />
-          )}
-          {canViewImportPrice && (
-            <StatCard
-              title={t('pages.dashboard.stockValue')}
-              value={formatCurrency(stats?.totalImportValue || 0)}
-              icon={<Wallet className="h-5 w-5 sm:h-6 sm:w-6" />}
-              onClick={() => navigate('/inventory')}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-            />
-          )}
-          {canViewImportPrice && (
-            <StatCard
-              title={t('pages.dashboard.orders')}
-              value={pendingOrderCount || 0}
-              icon={<ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />}
-              onClick={() => navigate('/landing-settings?tab=orders')}
-              className={`cursor-pointer hover:shadow-md transition-shadow ${(pendingOrderCount || 0) > 0 ? 'border-warning/50' : ''}`}
-            />
+            isFirstLoad ? (
+              <>
+                <Skeleton className="h-[88px] sm:h-[104px] rounded-xl" />
+                <Skeleton className="h-[88px] sm:h-[104px] rounded-xl" />
+                <Skeleton className="h-[88px] sm:h-[104px] rounded-xl" />
+                <Skeleton className="h-[88px] sm:h-[104px] rounded-xl" />
+              </>
+            ) : (
+              <>
+                <StatCard
+                  title={t('pages.dashboard.totalProducts')}
+                  value={stats?.totalProducts || 0}
+                  icon={<Package className="h-5 w-5 sm:h-6 sm:w-6" />}
+                  onClick={() => navigate('/products')}
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                />
+                <StatCard
+                  title={t('pages.dashboard.inStock')}
+                  value={stats?.inStockProducts || 0}
+                  icon={<TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />}
+                  onClick={() => navigate('/inventory')}
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                />
+                <StatCard
+                  title={t('pages.dashboard.stockValue')}
+                  value={formatCurrency(stats?.totalImportValue || 0)}
+                  icon={<Wallet className="h-5 w-5 sm:h-6 sm:w-6" />}
+                  onClick={() => navigate('/inventory')}
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                />
+                <StatCard
+                  title={t('pages.dashboard.orders')}
+                  value={pendingOrderCount || 0}
+                  icon={<ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />}
+                  onClick={() => navigate('/landing-settings?tab=orders')}
+                  className={`cursor-pointer hover:shadow-md transition-shadow ${(pendingOrderCount || 0) > 0 ? 'border-warning/50' : ''}`}
+                />
+              </>
+            )
           )}
         </div>
 
         {/* Quick stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          {canViewImportPrice && (
-            <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/reports')}>
-              <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats?.todayProfit || 0)}</p>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayProfit')}</p>
-            </div>
+          {isFirstLoad ? (
+            <>
+              <Skeleton className="h-[72px] sm:h-[80px] rounded-lg" />
+              <Skeleton className="h-[72px] sm:h-[80px] rounded-lg" />
+              <Skeleton className="h-[72px] sm:h-[80px] rounded-lg" />
+              <Skeleton className="h-[72px] sm:h-[80px] rounded-lg" />
+            </>
+          ) : (
+            <>
+              {canViewImportPrice && (
+                <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/reports')}>
+                  <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats?.todayProfit || 0)}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayProfit')}</p>
+                </div>
+              )}
+              <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/reports')}>
+                <p className="text-2xl sm:text-3xl font-bold text-primary">{formatCurrency(stats?.todayRevenue || 0)}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayRevenue')}</p>
+              </div>
+              <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/export/history')}>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats?.todaySold || 0}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.soldToday')}</p>
+              </div>
+              <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/import/history')}>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats?.todayImports || 0}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.importedToday')}</p>
+              </div>
+            </>
           )}
-          <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/reports')}>
-            <p className="text-2xl sm:text-3xl font-bold text-primary">{formatCurrency(stats?.todayRevenue || 0)}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayRevenue')}</p>
-          </div>
-          <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/export/history')}>
-            <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats?.todaySold || 0}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.soldToday')}</p>
-          </div>
-          <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/import/history')}>
-            <p className="text-2xl sm:text-3xl font-bold text-foreground">{stats?.todayImports || 0}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.importedToday')}</p>
-          </div>
         </div>
+
 
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
