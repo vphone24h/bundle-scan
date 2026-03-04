@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { AvatarPreviewDialog } from './AvatarPreviewDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,6 +30,7 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
   const [showLikers, setShowLikers] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<{ url?: string | null; name?: string } | null>(null);
 
   const toggleLike = useToggleLike();
   const { data: comments } = usePostComments(showComments ? post.id : null);
@@ -87,7 +89,7 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
       <CardContent className="pt-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-3">
-          <button onClick={() => onViewProfile(post.user_id)}>
+          <button onClick={() => setAvatarPreview({ url: post.avatar_url, name: post.display_name })}>
             <Avatar className="h-10 w-10 cursor-pointer hover:ring-2 ring-primary transition-all">
               <AvatarImage src={post.avatar_url || undefined} />
               <AvatarFallback>{(post.display_name || 'U')[0]}</AvatarFallback>
@@ -286,6 +288,13 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
       {showEditDialog && (
         <EditPostDialog post={post} open={showEditDialog} onOpenChange={setShowEditDialog} />
       )}
+
+      <AvatarPreviewDialog
+        open={!!avatarPreview}
+        onOpenChange={(open) => !open && setAvatarPreview(null)}
+        imageUrl={avatarPreview?.url}
+        name={avatarPreview?.name}
+      />
     </Card>
   );
 }

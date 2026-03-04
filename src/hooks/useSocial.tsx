@@ -161,10 +161,10 @@ export function useSocialFeed(filterUserId?: string) {
         query = query.eq('user_id', filterUserId)
           .order('created_at', { ascending: false });
       } else {
-        // Feed view: engagement + recency blend
+        // Feed view: newest first, then engagement
         query = query
-          .order('engagement_score', { ascending: false })
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .order('engagement_score', { ascending: false });
       }
 
       query = query.range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);

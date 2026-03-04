@@ -1,4 +1,5 @@
 import { useState, useRef, memo } from 'react';
+import { AvatarPreviewDialog } from './AvatarPreviewDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocialProfile, useUpsertSocialProfile, useSocialFeed, useIsFollowing, useToggleFollow } from '@/hooks/useSocial';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,6 +37,7 @@ export const SocialProfileTab = memo(function SocialProfileTab({ userId, onViewP
   const toggleFollow = useToggleFollow();
   const [editing, setEditing] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showAvatarPreview, setShowAvatarPreview] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     display_name: '',
@@ -126,10 +128,12 @@ export const SocialProfileTab = memo(function SocialProfileTab({ userId, onViewP
           <div className="flex items-start gap-4">
             {/* Avatar with upload */}
             <div className="relative group">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={profile?.avatar_url || undefined} />
-                <AvatarFallback className="text-lg">{(profile?.display_name || 'U')[0]}</AvatarFallback>
-              </Avatar>
+              <button onClick={() => setShowAvatarPreview(true)} className="cursor-pointer">
+                <Avatar className="h-16 w-16 hover:ring-2 ring-primary transition-all">
+                  <AvatarImage src={profile?.avatar_url || undefined} />
+                  <AvatarFallback className="text-lg">{(profile?.display_name || 'U')[0]}</AvatarFallback>
+                </Avatar>
+              </button>
               {isOwnProfile && (
                 <>
                   <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
@@ -269,6 +273,12 @@ export const SocialProfileTab = memo(function SocialProfileTab({ userId, onViewP
           <SocialPostCard key={post.id} post={post} onViewProfile={onViewProfile} />
         ))
       )}
+      <AvatarPreviewDialog
+        open={showAvatarPreview}
+        onOpenChange={setShowAvatarPreview}
+        imageUrl={profile?.avatar_url}
+        name={profile?.display_name}
+      />
     </div>
   );
 });
