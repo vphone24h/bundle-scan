@@ -848,17 +848,20 @@ export default function ExportHistoryPage() {
                 </Table>
                 </ScrollableTableWrapper>
               )}
-              {itemsTotalCount > 0 && (
-                <TablePagination
-                  currentPage={itemPage}
-                  totalPages={itemTotalPages}
-                  pageSize={itemPageSize}
-                  totalItems={itemsTotalCount}
-                  startIndex={(itemPage - 1) * itemPageSize + 1}
-                  endIndex={Math.min(itemPage * itemPageSize, itemsTotalCount)}
-                  onPageChange={setItemPage}
-                  onPageSizeChange={(size) => { setItemPageSize(size); setItemPage(1); }}
-                />
+              {groupedItems.length > 0 && (
+                <div className="flex items-center justify-between py-4">
+                  <span className="text-sm text-muted-foreground">
+                    Trang {itemPage} · {groupedItems.length} kết quả
+                  </span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setItemPage(p => Math.max(1, p - 1))} disabled={itemPage <= 1}>
+                      ← Trước
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setItemPage(p => p + 1)} disabled={!itemsHasMore}>
+                      Sau →
+                    </Button>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
