@@ -124,7 +124,10 @@ export default function ImportHistoryPage() {
   const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
   const { data: receipts, isLoading: receiptsLoading } = useImportReceipts({ pageSize: 500 });
-  const { data: products, isLoading: productsLoading } = useAllProducts({ pageSize: 100 });
+
+  // Server-side pagination state for products tab
+  const [productPage, setProductPage] = useState(1);
+  const [productPageSize, setProductPageSize] = useState(100);
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
   const { data: branches } = useBranches();
@@ -183,6 +186,21 @@ export default function ImportHistoryPage() {
   const [statusFilter, setStatusFilter] = useState('_all_');
   const [branchFilter, setBranchFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Server-side filtered products query
+  const productServerFilters = useMemo(() => ({
+    search: searchTerm || undefined,
+    categoryId: categoryFilter,
+    supplierId: supplierFilter,
+    branchId: branchFilter,
+    status: statusFilter,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    page: productPage,
+    pageSize: productPageSize,
+  }), [searchTerm, categoryFilter, supplierFilter, branchFilter, statusFilter, dateFrom, dateTo, productPage, productPageSize]);
+
+  const { data: products, isLoading: productsLoading, totalCount: productsTotalCount } = useAllProducts(productServerFilters);
   
   const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
   const { data: receiptDetails, isLoading: detailsLoading } = useImportReceiptDetails(selectedReceiptId);
@@ -254,58 +272,31 @@ export default function ImportHistoryPage() {
     });
   }, [receipts, searchTerm, dateFrom, dateTo, supplierFilter, branchFilter]);
 
-  // Filter products
-  const filteredProducts = useMemo(() => {
-    if (!products) return [];
-    
-    return products.filter((p) => {
-      // Search filter
-      const matchesSearch = 
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.imei?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.sku.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // Date filter
-      let matchesDate = true;
-      if (dateFrom || dateTo) {
-        const productDate = startOfDay(new Date(p.import_date));
-        if (dateFrom && dateTo) {
-          matchesDate = isWithinInterval(productDate, {
-            start: startOfDay(parseISO(dateFrom)),
-            end: endOfDay(parseISO(dateTo))
-          });
-        } else if (dateFrom) {
-          matchesDate = productDate >= startOfDay(parseISO(dateFrom));
-        } else if (dateTo) {
-          matchesDate = productDate <= endOfDay(parseISO(dateTo));
-        }
-      }
-      
-      // Category filter
-      const matchesCategory = categoryFilter === '_all_' || p.category_id === categoryFilter;
-      
-      // Supplier filter
-      const matchesSupplier = supplierFilter === '_all_' || p.supplier_id === supplierFilter;
-      
-      // Status filter
-      const matchesStatus = statusFilter === '_all_' || p.status === statusFilter;
-      
-      // Branch filter
-      const matchesBranch = branchFilter === '_all_' || p.branch_id === branchFilter;
-      
-      return matchesSearch && matchesDate && matchesCategory && matchesSupplier && matchesStatus && matchesBranch;
-    });
-  }, [products, searchTerm, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter]);
+  // Products are already server-side filtered & paginated
+  const filteredProducts = products || [];
+  const productsTotalPages = Math.max(1, Math.ceil(productsTotalCount / productPageSize));
 
-  // Pagination for receipts tab
+  // Pagination for receipts tab (client-side)
   const receiptsPagination = usePagination(filteredReceipts, { 
     storageKey: 'import-receipts'
   });
 
-  // Pagination for products tab
-  const productsPagination = usePagination(filteredProducts, { 
-    storageKey: 'import-products'
-  });
+  // Server-side pagination wrapper for products tab
+  const productsPagination = {
+    paginatedData: filteredProducts as Product[],
+    currentPage: productPage,
+    pageSize: productPageSize,
+    totalItems: productsTotalCount,
+    totalPages: productsTotalPages,
+    setPage: setProductPage,
+    setPageSize: (size: number) => { setProductPageSize(size); setProductPage(1); },
+    goToFirstPage: () => setProductPage(1),
+    goToLastPage: () => setProductPage(productsTotalPages),
+    goToNextPage: () => setProductPage(p => Math.min(p + 1, productsTotalPages)),
+    goToPreviousPage: () => setProductPage(p => Math.max(1, p - 1)),
+    startIndex: (productPage - 1) * productPageSize + 1,
+    endIndex: Math.min(productPage * productPageSize, productsTotalCount),
+  };
 
   const handleView = (receipt: ImportReceipt) => {
     setSelectedReceiptId(receipt.id);
@@ -364,6 +355,7 @@ export default function ImportHistoryPage() {
     setSupplierFilter('_all_');
     setStatusFilter('_all_');
     setBranchFilter('_all_');
+    setProductPage(1);
   };
 
   const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_';
@@ -596,7 +588,7 @@ export default function ImportHistoryPage() {
                 <SearchInput
                   placeholder="Tìm theo tên sản phẩm, IMEI, mã phiếu..."
                   value={searchTerm}
-                  onChange={setSearchTerm}
+                  onChange={(v) => { setSearchTerm(v); setProductPage(1); }}
                   containerClassName="flex-1"
                 />
                 <Button
