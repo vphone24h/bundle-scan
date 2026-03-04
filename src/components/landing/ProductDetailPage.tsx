@@ -246,7 +246,7 @@ export function ProductDetailPage({
           : '';
       const fullNote = [discountNote, note.trim()].filter(Boolean).join(' ');
 
-      await placeOrder.mutateAsync({
+      const result = await placeOrder.mutateAsync({
         tenant_id: tenantId,
         branch_id: selectedBranch,
         product_id: product.id,
@@ -257,10 +257,33 @@ export function ProductDetailPage({
         quantity,
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
+        customer_email: customerEmail.trim() || undefined,
         customer_address: customerAddress.trim() || undefined,
         note: fullNote || undefined,
       });
       setOrderSuccess(true);
+
+      // Fire-and-forget: send order confirmation email
+      if (customerEmail.trim()) {
+        import('@/integrations/supabase/client').then(({ supabase }) => {
+          supabase.functions.invoke('send-order-email', {
+            body: {
+              tenant_id: tenantId,
+              order_id: (result as any)?.id || 'unknown',
+              customer_name: customerName.trim(),
+              customer_email: customerEmail.trim(),
+              customer_phone: customerPhone.trim(),
+              product_name: product.name,
+              product_price: displayPrice,
+              order_code: (result as any)?.order_code || '',
+              variant: getVariantLabel(),
+              quantity,
+              branch_id: selectedBranch,
+              email_type: 'order_confirmation',
+            },
+          }).catch(err => console.warn('Order email failed:', err));
+        });
+      }
     } catch (err) {
       toast.error('Đặt hàng thất bại, vui lòng thử lại');
     }
