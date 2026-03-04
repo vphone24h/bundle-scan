@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -49,9 +50,21 @@ export function TransferStockDialog({
   const [toBranchId, setToBranchId] = useState('');
   const [note, setNote] = useState('');
 
+  // Track transfer quantities for non-IMEI products
+  const [transferQuantities, setTransferQuantities] = useState<Record<string, number>>({});
+
   const isSuperAdmin = permissions?.role === 'super_admin';
 
-  // Filter out the source branch
+  // Initialize quantities when products change
+  const getTransferQty = (product: Product) => {
+    if (product.imei) return 1; // IMEI products always transfer 1
+    return transferQuantities[product.id] ?? product.quantity;
+  };
+
+  const setTransferQty = (productId: string, qty: number) => {
+    setTransferQuantities(prev => ({ ...prev, [productId]: qty }));
+  };
+
   const availableBranches = useMemo(() => {
     return (branches || []).filter((b: Branch) => b.id !== fromBranchId);
   }, [branches, fromBranchId]);
@@ -61,8 +74,20 @@ export function TransferStockDialog({
   }, [availableBranches, toBranchId]);
 
   const totalValue = useMemo(() => {
-    return selectedProducts.reduce((sum, p) => sum + Number(p.import_price) * p.quantity, 0);
-  }, [selectedProducts]);
+    return selectedProducts.reduce((sum, p) => {
+      const qty = getTransferQty(p);
+      return sum + Number(p.import_price) * qty;
+    }, 0);
+  }, [selectedProducts, transferQuantities]);
+
+  // Validate quantities
+  const hasInvalidQty = useMemo(() => {
+    return selectedProducts.some(p => {
+      if (p.imei) return false;
+      const qty = getTransferQty(p);
+      return qty < 1 || qty > p.quantity;
+    });
+  }, [selectedProducts, transferQuantities]);
 
   const handleTransfer = () => {
     if (!toBranchId) {
@@ -74,6 +99,23 @@ export function TransferStockDialog({
       return;
     }
 
+    if (hasInvalidQty) {
+      toast({
+        title: 'Số lượng không hợp lệ',
+        description: 'Vui lòng kiểm tra lại số lượng chuyển',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Build quantities map for non-IMEI products
+    const quantitiesMap: Record<string, number> = {};
+    selectedProducts.forEach(p => {
+      if (!p.imei) {
+        quantitiesMap[p.id] = getTransferQty(p);
+      }
+    });
+
     createTransfer.mutate(
       {
         productIds: selectedProducts.map((p) => p.id),
@@ -83,6 +125,7 @@ export function TransferStockDialog({
         toBranchName,
         note: note.trim() || undefined,
         isAutoApprove: isSuperAdmin,
+        transferQuantities: quantitiesMap,
       },
       {
         onSuccess: (data) => {
@@ -92,6 +135,7 @@ export function TransferStockDialog({
           toast({ title: data.status === 'approved' ? 'Chuyển hàng thành công' : 'Tạo phiếu thành công', description: msg });
           setToBranchId('');
           setNote('');
+          setTransferQuantities({});
           onOpenChange(false);
           onSuccess();
         },
@@ -167,28 +211,60 @@ export function TransferStockDialog({
               Sản phẩm chuyển ({selectedProducts.length})
             </Label>
             <div className="border rounded-lg divide-y max-h-[40vh] overflow-y-auto">
-              {selectedProducts.map((product, idx) => (
-                <div key={product.id} className="p-2.5 flex items-center justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded flex-shrink-0">
-                        {idx + 1}
-                      </span>
-                      <span className="font-medium text-sm truncate">{product.name}</span>
+              {selectedProducts.map((product, idx) => {
+                const isIMEI = !!product.imei;
+                const transferQty = getTransferQty(product);
+                const isPartial = !isIMEI && transferQty < product.quantity;
+
+                return (
+                  <div key={product.id} className="p-2.5 space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded flex-shrink-0">
+                            {idx + 1}
+                          </span>
+                          <span className="font-medium text-sm truncate">{product.name}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5 pl-7">
+                          {isIMEI ? (
+                            <span className="font-mono">IMEI: {product.imei}</span>
+                          ) : (
+                            <span>SKU: {product.sku} · Tồn kho: {product.quantity}</span>
+                          )}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-xs flex-shrink-0">
+                        {formatCurrency(Number(product.import_price) * transferQty)}
+                      </Badge>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-0.5 pl-7">
-                      {product.imei ? (
-                        <span className="font-mono">IMEI: {product.imei}</span>
-                      ) : (
-                        <span>SKU: {product.sku} · SL: {product.quantity}</span>
-                      )}
-                    </div>
+
+                    {/* Quantity input for non-IMEI products */}
+                    {!isIMEI && (
+                      <div className="flex items-center gap-2 pl-7">
+                        <Label className="text-xs text-muted-foreground whitespace-nowrap">SL chuyển:</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={product.quantity}
+                          value={transferQty}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            setTransferQty(product.id, Math.min(Math.max(val, 0), product.quantity));
+                          }}
+                          className="h-7 w-20 text-xs text-center"
+                        />
+                        <span className="text-xs text-muted-foreground">/ {product.quantity}</span>
+                        {isPartial && (
+                          <Badge variant="secondary" className="text-[10px] h-5">
+                            Chuyển 1 phần
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <Badge variant="outline" className="text-xs flex-shrink-0">
-                    {formatCurrency(Number(product.import_price) * product.quantity)}
-                  </Badge>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -205,7 +281,7 @@ export function TransferStockDialog({
           </Button>
           <Button
             onClick={handleTransfer}
-            disabled={!toBranchId || createTransfer.isPending}
+            disabled={!toBranchId || createTransfer.isPending || hasInvalidQty}
           >
             {createTransfer.isPending ? (
               <>
