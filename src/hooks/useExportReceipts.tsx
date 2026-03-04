@@ -202,7 +202,7 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   const page = filters?.page ?? 1;
-  const pageSize = filters?.pageSize ?? 200;
+  const pageSize = filters?.pageSize ?? 15;
 
   const result = useQuery({
     queryKey: ['export-receipt-items', tenant?.id, branchId, isDataHidden, filters],
@@ -211,34 +211,30 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
 
       const effectiveBranchId = filters?.branchId && filters.branchId !== '_all_' ? filters.branchId : (shouldFilter && branchId ? branchId : null);
 
-      // Use !inner join for branch filtering to avoid .in() with many IDs
+      // Use !inner join for branch filtering
       const selectStr = effectiveBranchId
         ? `
           *,
           categories(name),
-          products(import_price),
           export_receipts!inner(
             code, export_date, branch_id, customer_id, created_by, status, sales_staff_id,
             customers(name, phone),
-            branches(name),
-            export_receipt_payments(payment_type, amount)
+            branches(name)
           )
         `
         : `
           *,
           categories(name),
-          products(import_price),
           export_receipts(
             code, export_date, branch_id, customer_id, created_by, status, sales_staff_id,
             customers(name, phone),
-            branches(name),
-            export_receipt_payments(payment_type, amount)
+            branches(name)
           )
         `;
 
       let query = supabase
         .from('export_receipt_items')
-        .select(selectStr, { count: 'exact' })
+        .select(selectStr, { count: 'estimated' })
         .order('created_at', { ascending: false });
 
       if (effectiveBranchId) {
@@ -260,7 +256,10 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
       query = query.range(from, to);
 
       const { data, error, count } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error('Export receipt items query error:', error);
+        throw error;
+      }
       return { items: (data || []) as ExportReceiptItemDetail[], totalCount: count || 0 };
     },
     enabled: enabled && !isTenantLoading && !branchLoading,
