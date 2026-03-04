@@ -923,6 +923,29 @@ export default function UniversalStoreTemplate({
                         </div>
                       );
                     }
+                    // Handle layout sections from SYSTEM_PAGES
+                    if (section.id.startsWith('layout_')) {
+                      const pageId = section.id.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
+                      const page = SYSTEM_PAGES.find(p => p.id === pageId);
+                      if (!page) return null;
+                      const sysProps = { accentColor, storeName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
+                      return (
+                        <div key={section.id} className="mb-8">
+                          {pageId === 'pricelist' && <PriceListPage {...sysProps} />}
+                          {pageId === 'booking' && <BookingPage {...sysProps} />}
+                          {pageId === 'branches' && <BranchesPage {...sysProps} />}
+                          {pageId === 'contact' && <ContactPage {...sysProps} />}
+                          {pageId === 'repair' && <RepairPage {...sysProps} />}
+                          {pageId === 'tradein' && <TradeInPage {...sysProps} />}
+                          {pageId === 'installment' && <InstallmentPage {...sysProps} />}
+                          {pageId === 'accessories' && <AccessoriesPage {...sysProps} />}
+                          {pageId === 'compare' && <ComparePage {...sysProps} />}
+                          {!['pricelist','booking','branches','contact','repair','tradein','installment','accessories','compare'].includes(pageId) && (
+                            <GenericSystemPage pageId={pageId} pageLabel={page.label} {...sysProps} />
+                          )}
+                        </div>
+                      );
+                    }
                     return null;
                   }
                 }
