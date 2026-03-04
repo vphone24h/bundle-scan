@@ -1606,7 +1606,7 @@ export default function CashBookPage() {
                         )}>
                           {formatCurrency(runningBalanceMap.get(entry.id) ?? 0)}
                         </TableCell>
-                        <TableCell>{paymentSourceLabels[entry.payment_source] || entry.payment_source}</TableCell>
+                        <TableCell>{paymentSourceLabels[normalizePaymentSource(entry.payment_source)] || entry.payment_source}</TableCell>
                         <TableCell className="text-sm">{entry.created_by_name || '-'}</TableCell>
                         <TableCell className="text-sm">
                           {entry.recipient_name ? (
