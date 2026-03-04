@@ -89,6 +89,14 @@ import { useProfile } from '@/hooks/useProfile';
 import { useCustomPaymentSources, useAddCustomPaymentSource, useDeleteCustomPaymentSource, useUpdateCustomPaymentSource } from '@/hooks/useCustomPaymentSources';
 import { useTranslation } from 'react-i18next';
 
+// Normalize legacy payment_source values (old data stored i18n keys)
+const LEGACY_SOURCE_MAP: Record<string, string> = {
+  'cashBook.cash': 'cash',
+  'cashBook.bankCard': 'bank_card',
+  'cashBook.eWallet': 'e_wallet',
+};
+export const normalizePaymentSource = (source: string): string => LEGACY_SOURCE_MAP[source] || source;
+
 const useCashBookConstants = () => {
   const { t } = useTranslation();
   return {
@@ -228,9 +236,13 @@ export default function CashBookPage() {
     return [...builtInPaymentSources, ...customPaymentSources.map(s => ({ ...s, icon: 'wallet', color: 'gray' }))];
   }, [customPaymentSources]);
   
-  // Payment source labels
+  // Payment source labels (includes legacy i18n-key fallbacks for old data)
   const paymentSourceLabels = useMemo(() => {
     const labels: Record<string, string> = { ...defaultPaymentSourceLabels };
+    // Legacy fallback: old data may have stored i18n keys as payment_source values
+    labels['cashBook.cash'] = defaultPaymentSourceLabels['cash'];
+    labels['cashBook.bankCard'] = defaultPaymentSourceLabels['bank_card'];
+    labels['cashBook.eWallet'] = defaultPaymentSourceLabels['e_wallet'];
     customPaymentSources.forEach(s => {
       labels[s.id] = s.name;
     });
@@ -354,7 +366,7 @@ export default function CashBookPage() {
       }
       
       // Payment source filter
-      const matchesPaymentSource = paymentSourceFilter === '_all_' || entry.payment_source === paymentSourceFilter;
+      const matchesPaymentSource = paymentSourceFilter === '_all_' || normalizePaymentSource(entry.payment_source) === paymentSourceFilter;
       
       // Accounting filter
       const matchesAccounting = accountingFilter === '_all_' || 
@@ -419,7 +431,7 @@ export default function CashBookPage() {
       sourceBalances[src.id] = openingBalance ? Number(openingBalance.amount) : 0;
     });
     chronological.forEach(entry => {
-      const source = entry.payment_source;
+      const source = normalizePaymentSource(entry.payment_source);
       if (sourceBalances[source] === undefined) {
         const openingBalance = latestOpeningBalances?.[source];
         sourceBalances[source] = openingBalance ? Number(openingBalance.amount) : 0;
@@ -444,7 +456,7 @@ export default function CashBookPage() {
     });
     
     allEntries.forEach((entry) => {
-      const source = entry.payment_source;
+      const source = normalizePaymentSource(entry.payment_source);
       const amount = Number(entry.amount);
       if (result[source] === undefined) {
         const openingBalance = latestOpeningBalances?.[source];
@@ -621,7 +633,7 @@ export default function CashBookPage() {
     // Khi xem theo chi nhánh, opening balance không chia theo branch nên chỉ tính giao dịch
     let balance = 0;
     allEntries.forEach(entry => {
-      if (entry.payment_source === source && entry.branch_id === branchId) {
+      if (normalizePaymentSource(entry.payment_source) === source && entry.branch_id === branchId) {
         balance += entry.type === 'income' ? Number(entry.amount) : -Number(entry.amount);
       }
     });
@@ -877,7 +889,7 @@ export default function CashBookPage() {
         { header: 'Danh mục', key: 'category', width: 20 },
         { header: 'Mô tả', key: 'description', width: 35 },
         { header: 'Số tiền', key: 'signed_amount', width: 15, isNumeric: true },
-        { header: 'Nguồn tiền', key: 'payment_source', width: 15, format: (v) => paymentSourceLabels[v] || v },
+        { header: 'Nguồn tiền', key: 'payment_source', width: 15, format: (v) => paymentSourceLabels[normalizePaymentSource(v)] || v },
         { header: 'Nhân viên', key: 'created_by_name', width: 20 },
         { header: 'Người nhận', key: 'recipient_name', width: 20 },
         { header: 'SĐT người nhận', key: 'recipient_phone', width: 15 },
@@ -1460,7 +1472,7 @@ export default function CashBookPage() {
                             ) : null;
                           })()}
                           <span className="text-xs text-muted-foreground">
-                            {entry.category} • {paymentSourceLabels[entry.payment_source] || entry.payment_source}
+                            {entry.category} • {paymentSourceLabels[normalizePaymentSource(entry.payment_source)] || entry.payment_source}
                             {entry.branches?.name && ` • ${entry.branches.name}`}
                             {entry.created_by_name && ` • NV: ${entry.created_by_name}`}
                             {entry.recipient_name && ` • NN: ${entry.recipient_name}`}
@@ -1594,7 +1606,7 @@ export default function CashBookPage() {
                         )}>
                           {formatCurrency(runningBalanceMap.get(entry.id) ?? 0)}
                         </TableCell>
-                        <TableCell>{paymentSourceLabels[entry.payment_source] || entry.payment_source}</TableCell>
+                        <TableCell>{paymentSourceLabels[normalizePaymentSource(entry.payment_source)] || entry.payment_source}</TableCell>
                         <TableCell className="text-sm">{entry.created_by_name || '-'}</TableCell>
                         <TableCell className="text-sm">
                           {entry.recipient_name ? (
