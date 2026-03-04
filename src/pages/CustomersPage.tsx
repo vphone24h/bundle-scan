@@ -31,18 +31,11 @@ export default function CustomersPage() {
   const isSuperAdmin = permissions?.canViewAllBranches === true;
   
   const { data: selectedCustomer } = useCustomerDetail(selectedCustomerId);
-  const { data: customersAll } = useCustomersWithPoints();
   const { data: customerStats } = useCustomerStats(branchFilter);
 
   useEffect(() => {
     if (!isSuperAdmin && permissions?.branchId) { setBranchFilter(permissions.branchId); }
   }, [isSuperAdmin, permissions?.branchId]);
-
-  const customers = useMemo(() => {
-    if (!customersAll) return [];
-    if (branchFilter === '_all_') return customersAll;
-    return customersAll.filter(c => c.preferred_branch_id === branchFilter);
-  }, [customersAll, branchFilter]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);

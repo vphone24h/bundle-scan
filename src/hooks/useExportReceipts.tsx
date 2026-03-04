@@ -178,44 +178,47 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   const page = filters?.page ?? 1;
-  const pageSize = filters?.pageSize ?? 50;
+  const pageSize = filters?.pageSize ?? 200;
 
   const result = useQuery({
     queryKey: ['export-receipt-items', tenant?.id, branchId, isDataHidden, filters],
     queryFn: async () => {
       if (isDataHidden) return { items: [] as ExportReceiptItemDetail[], totalCount: 0 };
 
-      let query = supabase
-        .from('export_receipt_items')
-        .select(`
+      const effectiveBranchId = filters?.branchId && filters.branchId !== '_all_' ? filters.branchId : (shouldFilter && branchId ? branchId : null);
+
+      // Use !inner join for branch filtering to avoid .in() with many IDs
+      const selectStr = effectiveBranchId
+        ? `
           *,
           categories(name),
           products(import_price),
-          export_receipts(
-            code,
-            export_date,
-            branch_id,
-            customer_id,
-            created_by,
-            status,
+          export_receipts!inner(
+            code, export_date, branch_id, customer_id, created_by, status, sales_staff_id,
             customers(name, phone),
             branches(name),
             export_receipt_payments(payment_type, amount)
           )
-        `, { count: 'exact' })
+        `
+        : `
+          *,
+          categories(name),
+          products(import_price),
+          export_receipts(
+            code, export_date, branch_id, customer_id, created_by, status, sales_staff_id,
+            customers(name, phone),
+            branches(name),
+            export_receipt_payments(payment_type, amount)
+          )
+        `;
+
+      let query = supabase
+        .from('export_receipt_items')
+        .select(selectStr, { count: 'exact' })
         .order('created_at', { ascending: false });
 
-      if (shouldFilter && branchId) {
-        // Filter by branch via receipt
-        const { data: branchReceipts } = await supabase
-          .from('export_receipts')
-          .select('id')
-          .eq('branch_id', branchId)
-          .order('export_date', { ascending: false })
-          .limit(500);
-        const receiptIds = branchReceipts?.map(r => r.id) || [];
-        if (receiptIds.length === 0) return { items: [] as ExportReceiptItemDetail[], totalCount: 0 };
-        query = query.in('receipt_id', receiptIds);
+      if (effectiveBranchId) {
+        query = query.eq('export_receipts.branch_id', effectiveBranchId);
       }
 
       if (filters?.search) {
@@ -237,7 +240,7 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
       return { items: (data || []) as ExportReceiptItemDetail[], totalCount: count || 0 };
     },
     enabled: enabled && !isTenantLoading && !branchLoading,
-    staleTime: 2 * 60 * 1000, // 2 min cache
+    staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
     placeholderData: (previous) => previous,
   });
