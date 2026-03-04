@@ -476,7 +476,7 @@ export default function AppleStyleLandingTemplate({
           warrantyHotline={warrantyHotline}
           onShare={() => copyShareLink('product', selectedProduct.id)}
           onInstallment={() => setShowInstallmentCalc(true)}
-          showInstallmentButton={(settings as any)?.show_installment_button !== false}
+          showInstallmentButton={true}
           detailSections={(settings as any)?.custom_product_detail_sections || null}
           relatedProducts={(productsData?.products || []).filter(p => p.category_id === selectedProduct.category_id && p.id !== selectedProduct.id).slice(0, 10)}
           onProductClick={(p) => { setSelectedProduct(p); window.scrollTo(0, 0); }}

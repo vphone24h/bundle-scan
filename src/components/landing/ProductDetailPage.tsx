@@ -33,7 +33,7 @@ interface ProductDetailPageProps {
   warrantyHotline?: string | null;
   onShare?: () => void;
   onInstallment?: () => void;
-  showInstallmentButton?: boolean;
+  showInstallmentButton?: boolean; // deprecated, use detailSections
   detailSections?: ProductDetailSectionConfig[] | null;
   relatedProducts?: LandingProduct[];
   recentlyViewedProducts?: LandingProduct[];
@@ -417,6 +417,9 @@ export function ProductDetailPage({
           {/* ===== DYNAMIC SECTIONS ===== */}
           {(() => {
             const defaultSections = [
+              { id: 'installment', enabled: true },
+              { id: 'compare', enabled: false },
+              { id: 'tradeIn', enabled: false },
               { id: 'promotion', enabled: true },
               { id: 'warranty', enabled: true },
               { id: 'description', enabled: true },
@@ -694,12 +697,17 @@ export function ProductDetailPage({
               <ShoppingCart className="h-5 w-5" />
               Đặt mua
             </Button>
-            {showInstallmentButton && onInstallment && (
-              <Button variant="outline" className="flex-1 gap-2 h-11 text-base" onClick={onInstallment}>
-                <CreditCard className="h-5 w-5" />
-                Trả góp
-              </Button>
-            )}
+            {(() => {
+              const secs = detailSections || [{ id: 'installment', enabled: true }];
+              const installmentEnabled = secs.find(s => s.id === 'installment')?.enabled !== false;
+              if (!installmentEnabled || !onInstallment) return null;
+              return (
+                <Button variant="outline" className="flex-1 gap-2 h-11 text-base" onClick={onInstallment}>
+                  <CreditCard className="h-5 w-5" />
+                  Trả góp
+                </Button>
+              );
+            })()}
             {warrantyHotline && (
               <Button variant="outline" className="h-11 px-4" asChild>
                 <a href={`tel:${warrantyHotline}`} className="gap-2">
