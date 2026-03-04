@@ -932,11 +932,20 @@ export default function ExportHistoryPage() {
 
               {/* Items - Mobile Card View */}
               <div>
-                <div className="font-medium mb-2 text-sm">Sản phẩm ({detailItems?.length || selectedReceipt.export_receipt_items?.length || 0})</div>
+                <div className="font-medium mb-2 text-sm">Sản phẩm ({detailItems?.length || 0})</div>
                 
+                {detailItemsLoading && !detailItems ? (
+                  <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
+                    <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                    Đang tải chi tiết...
+                  </div>
+                ) : !detailItems?.length ? (
+                  <div className="text-center py-4 text-muted-foreground text-sm">Không có sản phẩm</div>
+                ) : (
+                <>
                 {/* Mobile Card View */}
                 <div className="sm:hidden space-y-2">
-                  {(detailItems || selectedReceipt.export_receipt_items)?.map((item, index) => {
+                  {detailItems.map((item, index) => {
                     const quantity = (item as any).quantity || 1;
                     const totalPrice = item.sale_price * quantity;
                     return (
