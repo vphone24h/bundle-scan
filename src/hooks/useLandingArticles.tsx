@@ -5,9 +5,13 @@ export interface LandingArticleCategory {
   id: string;
   tenant_id: string;
   name: string;
+  image_url: string | null;
+  parent_id: string | null;
+  is_visible: boolean;
   display_order: number;
   created_at: string;
   updated_at: string;
+  children?: LandingArticleCategory[];
 }
 
 export interface LandingArticle {
@@ -21,6 +25,7 @@ export interface LandingArticle {
   thumbnail_url: string | null;
   is_published: boolean;
   is_featured: boolean;
+  is_featured_home: boolean;
   display_order: number;
   created_at: string;
   updated_at: string;
@@ -48,7 +53,7 @@ export function useLandingArticleCategories() {
 export function useCreateLandingArticleCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (cat: { name: string }) => {
+    mutationFn: async (cat: { name: string; parent_id?: string | null; image_url?: string | null }) => {
       const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
       if (!tenantId) throw new Error('Không tìm thấy tenant');
       const { data, error } = await supabase
@@ -63,12 +68,42 @@ export function useCreateLandingArticleCategory() {
   });
 }
 
+export function useUpdateLandingArticleCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; image_url?: string | null; parent_id?: string | null; is_visible?: boolean; display_order?: number }) => {
+      const { error } = await supabase
+        .from('landing_article_categories' as any)
+        .update(updates)
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['landing-article-categories'] }),
+  });
+}
+
 export function useDeleteLandingArticleCategory() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('landing_article_categories' as any).delete().eq('id', id);
       if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['landing-article-categories'] }),
+  });
+}
+
+export function useBatchUpdateCategoryOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (items: { id: string; display_order: number; parent_id: string | null }[]) => {
+      for (const item of items) {
+        const { error } = await supabase
+          .from('landing_article_categories' as any)
+          .update({ display_order: item.display_order, parent_id: item.parent_id })
+          .eq('id', item.id);
+        if (error) throw error;
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['landing-article-categories'] }),
   });
@@ -145,7 +180,7 @@ export function usePublicLandingArticles(tenantId: string | null) {
     queryFn: async () => {
       if (!tenantId) return { categories: [], articles: [] };
       const [catRes, artRes] = await Promise.all([
-        supabase.from('landing_article_categories' as any).select('*').eq('tenant_id', tenantId).order('display_order'),
+        supabase.from('landing_article_categories' as any).select('*').eq('tenant_id', tenantId).eq('is_visible', true).order('display_order'),
         supabase.from('landing_articles' as any).select('*').eq('tenant_id', tenantId).eq('is_published', true).order('display_order'),
       ]);
       return {
@@ -166,4 +201,20 @@ export async function uploadLandingArticleImage(file: File, tenantId: string): P
   if (error) throw error;
   const { data: publicUrl } = supabase.storage.from('landing-assets').getPublicUrl(data.path);
   return publicUrl.publicUrl;
+}
+
+// Build tree from flat list
+export function buildArticleCategoryTree(categories: LandingArticleCategory[]): LandingArticleCategory[] {
+  const map = new Map<string, LandingArticleCategory>();
+  const roots: LandingArticleCategory[] = [];
+  categories.forEach(c => map.set(c.id, { ...c, children: [] }));
+  categories.forEach(c => {
+    const node = map.get(c.id)!;
+    if (c.parent_id && map.has(c.parent_id)) {
+      map.get(c.parent_id)!.children!.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+  return roots;
 }
