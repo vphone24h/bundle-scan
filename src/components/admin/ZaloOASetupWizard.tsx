@@ -46,7 +46,7 @@ export function ZaloOASetupWizard({ formData, handleChange, tenantId, onSave }: 
         const { data, error } = await supabase.functions.invoke('zalo-oauth-callback', {
           body: {
             action: 'exchange_code',
-            tenant_id: tenantId,
+            tenant_id: tenantId || event.data.state,
             code: event.data.code,
             app_id: formData.zalo_app_id,
             app_secret: formData.zalo_app_secret,
@@ -57,8 +57,9 @@ export function ZaloOASetupWizard({ formData, handleChange, tenantId, onSave }: 
         if (data?.error) throw new Error(data.details || data.error);
 
         // Update local form state
-        if (data?.oa_id) handleChange('zalo_oa_id', data.oa_id);
+        if (data?.oa_id) handleChange('zalo_oa_id', String(data.oa_id));
         handleChange('zalo_enabled', true);
+        handleChange('zalo_access_token', 'connected');
         setOaName(data?.oa_name || '');
         
         toast.success('🎉 Kết nối Zalo OA thành công!');
