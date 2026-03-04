@@ -575,34 +575,22 @@ export const POINT_TRANSACTION_TYPE_NAMES: Record<string, string> = {
   expire: 'Hết hạn',
 };
 
-// Hook: Server-side COUNT stats for customer summary cards
+// Hook: Server-side COUNT stats for customer summary cards (single RPC)
 export function useCustomerStats(branchFilter?: string) {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['customer-stats', user?.id, branchFilter],
     queryFn: async () => {
-      const applyBranch = (q: any) => {
-        if (branchFilter && branchFilter !== '_all_') {
-          return q.eq('preferred_branch_id', branchFilter);
-        }
-        return q;
-      };
-
-      // Use select('id') with count:'exact' and limit(0) for lightweight counting
-      const [totalRes, withPointsRes, vipRes, withPurchaseRes] = await Promise.all([
-        applyBranch(supabase.from('customers').select('id', { count: 'exact' }).limit(0)),
-        applyBranch(supabase.from('customers').select('id', { count: 'exact' }).gt('current_points', 0).limit(0)),
-        applyBranch(supabase.from('customers').select('id', { count: 'exact' }).eq('membership_tier', 'vip').limit(0)),
-        applyBranch(supabase.from('customers').select('id', { count: 'exact' }).gt('total_spent', 0).limit(0)),
-      ]);
-
-      if (totalRes.error) console.error('[useCustomerStats] totalRes error:', totalRes.error);
-
-      return {
-        totalCustomers: totalRes.count ?? 0,
-        customersWithPoints: withPointsRes.count ?? 0,
-        vipCustomers: vipRes.count ?? 0,
-        customersWithPurchase: withPurchaseRes.count ?? 0,
+      const branchId = branchFilter && branchFilter !== '_all_' ? branchFilter : null;
+      const { data, error } = await supabase.rpc('get_customer_stats', {
+        _branch_id: branchId,
+      });
+      if (error) throw error;
+      return data as {
+        totalCustomers: number;
+        customersWithPoints: number;
+        vipCustomers: number;
+        customersWithPurchase: number;
       };
     },
     enabled: !!user?.id,
