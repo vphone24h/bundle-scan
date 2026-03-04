@@ -7,7 +7,7 @@ import { ProductDetailSectionItem } from '@/components/admin/ProductDetailSectio
 import { NewsPageSectionItem } from '@/components/admin/NewsPageSectionManager';
 import { Pencil, Home, ShoppingBag, FileText, ArrowLeft, Newspaper } from 'lucide-react';
 
-type PreviewPage = 'home' | 'products' | 'product-detail';
+type PreviewPage = 'home' | 'products' | 'product-detail' | 'news';
 
 interface EditorPreviewTabProps {
   formData: Partial<TenantLandingSettings>;
