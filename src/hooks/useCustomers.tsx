@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
