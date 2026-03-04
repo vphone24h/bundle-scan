@@ -74,6 +74,12 @@ export default function WebsiteEditorPage() {
         custom_product_detail_sections: (settings as any).custom_product_detail_sections || null,
         custom_news_page_sections: (settings as any).custom_news_page_sections || null,
         custom_news_page_tabs: (settings as any).custom_news_page_tabs || [],
+        order_email_enabled: (settings as any).order_email_enabled ?? false,
+        order_email_sender: (settings as any).order_email_sender || '',
+        order_email_app_password: (settings as any).order_email_app_password || '',
+        order_email_on_confirmed: (settings as any).order_email_on_confirmed ?? false,
+        order_email_on_shipping: (settings as any).order_email_on_shipping ?? false,
+        order_email_on_warranty: (settings as any).order_email_on_warranty ?? false,
       });
     } else if (tenant) {
       setFormData(prev => ({ ...prev, store_name: tenant.name || '' }));
