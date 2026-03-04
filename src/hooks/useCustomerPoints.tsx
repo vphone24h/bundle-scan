@@ -269,7 +269,7 @@ export function useUpdateMembershipTier() {
   });
 }
 
-// Hook: Lấy danh sách khách hàng với thông tin điểm
+// Hook: Lấy danh sách khách hàng với thông tin điểm (server-side pagination)
 export function useCustomersWithPoints(filters?: {
   search?: string;
   branchId?: string;
@@ -279,52 +279,64 @@ export function useCustomersWithPoints(filters?: {
   status?: string;
   crmStatus?: string;
   staffId?: string;
+  page?: number;
+  pageSize?: number;
 }) {
   const { user } = useAuth();
-  return useQuery({
-    // Keyed by user to prevent cross-tenant cache leakage
+  const page = filters?.page ?? 1;
+  const pageSize = filters?.pageSize ?? 100;
+
+  const result = useQuery({
     queryKey: ['customers-with-points', user?.id, filters],
     queryFn: async () => {
-      const buildQuery = () => {
-        let query = supabase
-          .from('customers')
-          .select('id, name, phone, email, address, note, source, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at, crm_status, assigned_staff_id, last_care_date')
-          .order('created_at', { ascending: false });
+      let query = supabase
+        .from('customers')
+        .select('id, name, phone, email, address, note, source, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at, crm_status, assigned_staff_id, last_care_date', { count: 'exact' })
+        .order('created_at', { ascending: false });
 
-        if (filters?.search) {
-          query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
-        }
-        if (filters?.branchId && filters.branchId !== '_all_') {
-          query = query.eq('preferred_branch_id', filters.branchId);
-        }
-        if (filters?.tier && filters.tier !== '_all_') {
-          query = query.eq('membership_tier', filters.tier as 'regular' | 'silver' | 'gold' | 'vip');
-        }
-        if (filters?.hasPoints === true) {
-          query = query.gt('current_points', 0);
-        }
-        if (filters?.status && filters.status !== '_all_') {
-          query = query.eq('status', filters.status as 'active' | 'inactive');
-        }
-        if (filters?.crmStatus && filters.crmStatus !== '_all_') {
-          query = query.eq('crm_status', filters.crmStatus);
-        }
-        if (filters?.staffId && filters.staffId !== '_all_') {
-          query = query.eq('assigned_staff_id', filters.staffId);
-        }
-        return query;
-      };
+      if (filters?.search) {
+        query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
+      }
+      if (filters?.branchId && filters.branchId !== '_all_') {
+        query = query.eq('preferred_branch_id', filters.branchId);
+      }
+      if (filters?.tier && filters.tier !== '_all_') {
+        query = query.eq('membership_tier', filters.tier as 'regular' | 'silver' | 'gold' | 'vip');
+      }
+      if (filters?.hasPoints === true) {
+        query = query.gt('current_points', 0);
+      }
+      if (filters?.status && filters.status !== '_all_') {
+        query = query.eq('status', filters.status as 'active' | 'inactive');
+      }
+      if (filters?.crmStatus && filters.crmStatus !== '_all_') {
+        query = query.eq('crm_status', filters.crmStatus);
+      }
+      if (filters?.staffId && filters.staffId !== '_all_') {
+        query = query.eq('assigned_staff_id', filters.staffId);
+      }
 
-      const { data, error } = await buildQuery().limit(5000);
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
       if (error) throw error;
-      return (data || []) as CustomerWithPointsCRM[];
+      return { items: (data || []) as CustomerWithPointsCRM[], totalCount: count || 0 };
     },
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 2, // 2 phút
+    staleTime: 1000 * 60 * 2,
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    placeholderData: (previous) => previous,
   });
+
+  return {
+    ...result,
+    data: result.data?.items || [],
+    totalCount: result.data?.totalCount || 0,
+  };
 }
 
 // Hook: Lấy chi tiết khách hàng
