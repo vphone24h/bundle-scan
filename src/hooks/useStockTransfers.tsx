@@ -332,11 +332,9 @@ export function useCreateStockTransfer() {
                   total_import_cost: transferCost,
                   supplier_id: p.supplier_id,
                   category_id: p.category_id,
-                  barcode: p.barcode,
-                  warranty: p.warranty,
-                  image_url: p.image_url,
+                  sale_price: p.sale_price ? Number(p.sale_price) : null,
                   note: p.note,
-                  status: 'in_stock',
+                  status: 'in_stock' as const,
                 });
             }
           } else {
