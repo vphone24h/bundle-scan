@@ -535,6 +535,7 @@ export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: str
             export_receipt_items(id, product_name, sku, imei, sale_price, note, status)
           `)
           .eq('customer_id', entityId)
+          .eq('status', 'completed')
           .gte('debt_amount', 0)
           .order('export_date', { ascending: false });
         if (error) throw error;
@@ -547,6 +548,7 @@ export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: str
             products(id, name, sku, imei, import_price, note, status)
           `)
           .in('supplier_id', entityIds)
+          .eq('status', 'completed')
           .gte('debt_amount', 0)
           .order('import_date', { ascending: false });
         if (error) throw error;
