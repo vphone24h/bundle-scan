@@ -79,32 +79,15 @@ export function useSocialProfile(userId?: string) {
     queryFn: async () => {
       if (!targetId) return null;
 
-      const [{ data: sp }, { data: profile }, { data: pu }] = await Promise.all([
+      const [{ data: sp }, { data: profile }, { data: verifiedIds }] = await Promise.all([
         supabase.from('social_profiles').select('*').eq('user_id', targetId).maybeSingle(),
         supabase.from('profiles').select('display_name, avatar_url, phone').eq('user_id', targetId).maybeSingle(),
-        supabase.from('platform_users').select('tenant_id').eq('user_id', targetId).maybeSingle(),
+        supabase.rpc('get_verified_user_ids', { p_user_ids: [targetId] }),
       ]);
 
       if (!sp && !profile) return null;
 
-      // Check if user's tenant has active subscription → auto verified
-      let hasSubscription = false;
-      if (pu?.tenant_id) {
-        const { data: tenant } = await supabase
-          .from('tenants')
-          .select('subscription_plan, subscription_end_date')
-          .eq('id', pu.tenant_id)
-          .maybeSingle();
-        if (tenant?.subscription_plan) {
-          if (tenant.subscription_plan === 'lifetime') {
-            hasSubscription = true;
-          } else if (tenant.subscription_end_date) {
-            hasSubscription = new Date(tenant.subscription_end_date) > new Date();
-          }
-        }
-      }
-
-      const isVerified = sp?.is_verified || hasSubscription;
+      const isVerified = (verifiedIds || []).includes(targetId);
 
       return {
         user_id: targetId,
@@ -194,7 +177,7 @@ export function useSocialFeed(filterUserId?: string) {
       const userIds = [...new Set(posts.map(p => p.user_id))];
 
       // Fetch profiles + social profiles + tenant subscription status
-      const [{ data: profiles }, { data: socialProfiles }, { data: myLikes }, { data: myFollows }, { data: platformUsers }] = await Promise.all([
+      const [{ data: profiles }, { data: socialProfiles }, { data: myLikes }, { data: myFollows }, { data: verifiedIds }] = await Promise.all([
         supabase.from('profiles').select('user_id, display_name, avatar_url').in('user_id', userIds),
         supabase.from('social_profiles').select('user_id, is_verified, show_zalo_button, show_facebook_button, zalo_number, facebook_url').in('user_id', userIds),
         user?.id
@@ -203,26 +186,10 @@ export function useSocialFeed(filterUserId?: string) {
         user?.id
           ? supabase.from('social_follows').select('following_id').eq('follower_id', user.id).in('following_id', userIds)
           : { data: [] },
-        supabase.from('platform_users').select('user_id, tenant_id').in('user_id', userIds),
+        supabase.rpc('get_verified_user_ids', { p_user_ids: userIds }),
       ]);
 
-      // Check tenant subscriptions for verified badge
-      const tenantIds = [...new Set((platformUsers || []).map(pu => pu.tenant_id).filter(Boolean))];
-      let subscribedTenants = new Set<string>();
-      if (tenantIds.length > 0) {
-        const { data: tenants } = await supabase
-          .from('tenants')
-          .select('id, subscription_plan, subscription_end_date')
-          .in('id', tenantIds);
-        (tenants || []).forEach(t => {
-          if (t.subscription_plan === 'lifetime') {
-            subscribedTenants.add(t.id);
-          } else if (t.subscription_plan && t.subscription_end_date && new Date(t.subscription_end_date) > new Date()) {
-            subscribedTenants.add(t.id);
-          }
-        });
-      }
-      const userTenantMap = new Map((platformUsers || []).map(pu => [pu.user_id, pu.tenant_id]));
+      const verifiedSet = new Set<string>(verifiedIds || []);
 
       const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
       const spMap = new Map((socialProfiles || []).map(sp => [sp.user_id, sp]));
@@ -232,14 +199,12 @@ export function useSocialFeed(filterUserId?: string) {
       const enriched: SocialPost[] = posts.map(post => {
         const prof = profileMap.get(post.user_id);
         const sp = spMap.get(post.user_id);
-        const tenantId = userTenantMap.get(post.user_id);
-        const hasSubscription = tenantId ? subscribedTenants.has(tenantId) : false;
         return {
           ...post,
           image_urls: post.image_urls || [],
           display_name: prof?.display_name || 'Người dùng',
           avatar_url: prof?.avatar_url,
-          is_verified: sp?.is_verified || hasSubscription,
+          is_verified: verifiedSet.has(post.user_id),
           is_liked: likedSet.has(post.id),
           is_following: followSet.has(post.user_id),
           show_zalo_button: sp?.show_zalo_button ?? true,
@@ -353,17 +318,17 @@ export function usePostLikers(postId: string | null) {
         .order('created_at', { ascending: false });
       if (!likes?.length) return [];
       const userIds = likes.map(l => l.user_id);
-      const [{ data: profiles }, { data: socialProfiles }] = await Promise.all([
+      const [{ data: profiles }, { data: verifiedIds }] = await Promise.all([
         supabase.from('profiles').select('user_id, display_name, avatar_url').in('user_id', userIds),
-        supabase.from('social_profiles').select('user_id, is_verified').in('user_id', userIds),
+        supabase.rpc('get_verified_user_ids', { p_user_ids: userIds }),
       ]);
       const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
-      const spMap = new Map((socialProfiles || []).map(p => [p.user_id, p]));
+      const verifiedSet = new Set<string>(verifiedIds || []);
       return likes.map(l => ({
         user_id: l.user_id,
         display_name: profileMap.get(l.user_id)?.display_name || 'Người dùng',
         avatar_url: profileMap.get(l.user_id)?.avatar_url,
-        is_verified: spMap.get(l.user_id)?.is_verified || false,
+        is_verified: verifiedSet.has(l.user_id),
       }));
     },
     enabled: !!postId,
@@ -384,19 +349,19 @@ export function usePostComments(postId: string | null) {
       if (error) throw error;
 
       const userIds = [...new Set((comments || []).map(c => c.user_id))];
-      const [{ data: profiles }, { data: socialProfiles }] = await Promise.all([
+      const [{ data: profiles }, { data: verifiedIds }] = await Promise.all([
         supabase.from('profiles').select('user_id, display_name, avatar_url').in('user_id', userIds),
-        supabase.from('social_profiles').select('user_id, is_verified').in('user_id', userIds),
+        supabase.rpc('get_verified_user_ids', { p_user_ids: userIds }),
       ]);
 
       const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
-      const spMap = new Map((socialProfiles || []).map(sp => [sp.user_id, sp]));
+      const verifiedSet = new Set<string>(verifiedIds || []);
 
       return (comments || []).map(c => ({
         ...c,
         display_name: profileMap.get(c.user_id)?.display_name || 'Người dùng',
         avatar_url: profileMap.get(c.user_id)?.avatar_url,
-        is_verified: spMap.get(c.user_id)?.is_verified || false,
+        is_verified: verifiedSet.has(c.user_id),
       })) as SocialComment[];
     },
     enabled: !!postId,
