@@ -89,6 +89,14 @@ import { useProfile } from '@/hooks/useProfile';
 import { useCustomPaymentSources, useAddCustomPaymentSource, useDeleteCustomPaymentSource, useUpdateCustomPaymentSource } from '@/hooks/useCustomPaymentSources';
 import { useTranslation } from 'react-i18next';
 
+// Normalize legacy payment_source values (old data stored i18n keys)
+const LEGACY_SOURCE_MAP: Record<string, string> = {
+  'cashBook.cash': 'cash',
+  'cashBook.bankCard': 'bank_card',
+  'cashBook.eWallet': 'e_wallet',
+};
+export const normalizePaymentSource = (source: string): string => LEGACY_SOURCE_MAP[source] || source;
+
 const useCashBookConstants = () => {
   const { t } = useTranslation();
   return {
