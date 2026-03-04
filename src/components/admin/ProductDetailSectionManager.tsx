@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { ChevronUp, ChevronDown, RotateCcw, Plus, X } from 'lucide-react';
+import { ChevronUp, ChevronDown, RotateCcw } from 'lucide-react';
 
 export interface ProductDetailSectionItem {
   id: string;
@@ -9,6 +9,9 @@ export interface ProductDetailSectionItem {
 }
 
 const ALL_DETAIL_SECTIONS: { id: string; label: string; icon: string; description: string }[] = [
+  { id: 'installment', label: 'Nút trả góp', icon: '💳', description: 'Hiển thị nút tính trả góp' },
+  { id: 'compare', label: 'So sánh sản phẩm', icon: '⚖️', description: 'So sánh với sản phẩm khác' },
+  { id: 'tradeIn', label: 'Thu cũ đổi mới', icon: '🔄', description: 'Chương trình thu cũ đổi mới' },
   { id: 'promotion', label: 'Khung khuyến mãi', icon: '🎁', description: 'Ưu đãi, quà tặng kèm' },
   { id: 'warranty', label: 'Khung bảo hành', icon: '🛡️', description: 'Chính sách bảo hành' },
   { id: 'description', label: 'Mô tả sản phẩm', icon: '📝', description: 'Nội dung chi tiết sản phẩm' },
@@ -20,6 +23,9 @@ const ALL_DETAIL_SECTIONS: { id: string; label: string; icon: string; descriptio
 
 function getDefaultSections(): ProductDetailSectionItem[] {
   return [
+    { id: 'installment', enabled: true },
+    { id: 'compare', enabled: false },
+    { id: 'tradeIn', enabled: false },
     { id: 'promotion', enabled: true },
     { id: 'warranty', enabled: true },
     { id: 'description', enabled: true },
@@ -30,13 +36,30 @@ function getDefaultSections(): ProductDetailSectionItem[] {
   ];
 }
 
+// Migrate old sections that don't have new items
+export function migrateSections(sections: ProductDetailSectionItem[]): ProductDetailSectionItem[] {
+  const ids = sections.map(s => s.id);
+  const newItems: ProductDetailSectionItem[] = [];
+  
+  // Add missing new feature items at the beginning
+  if (!ids.includes('installment')) newItems.push({ id: 'installment', enabled: true });
+  if (!ids.includes('compare')) newItems.push({ id: 'compare', enabled: false });
+  if (!ids.includes('tradeIn')) newItems.push({ id: 'tradeIn', enabled: false });
+  
+  if (newItems.length > 0) {
+    return [...newItems, ...sections];
+  }
+  return sections;
+}
+
 interface ProductDetailSectionManagerProps {
   customSections: ProductDetailSectionItem[] | null;
   onChange: (sections: ProductDetailSectionItem[] | null) => void;
 }
 
 export function ProductDetailSectionManager({ customSections, onChange }: ProductDetailSectionManagerProps) {
-  const currentItems = customSections || getDefaultSections();
+  const rawItems = customSections || getDefaultSections();
+  const currentItems = migrateSections(rawItems);
 
   const handleToggle = (index: number) => {
     const updated = [...currentItems];
