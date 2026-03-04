@@ -456,7 +456,7 @@ export default function CashBookPage() {
     });
     
     allEntries.forEach((entry) => {
-      const source = entry.payment_source;
+      const source = normalizePaymentSource(entry.payment_source);
       const amount = Number(entry.amount);
       if (result[source] === undefined) {
         const openingBalance = latestOpeningBalances?.[source];
