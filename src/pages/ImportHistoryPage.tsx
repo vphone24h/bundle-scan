@@ -123,8 +123,8 @@ export default function ImportHistoryPage() {
   const [activeTour, setActiveTour] = useState<'receipt-tab' | 'product-tab' | null>(null);
   const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
-  const { data: receipts, isLoading: receiptsLoading } = useImportReceipts();
-  const { data: products, isLoading: productsLoading } = useAllProducts();
+  const { data: receipts, isLoading: receiptsLoading } = useImportReceipts({ pageSize: 500 });
+  const { data: products, isLoading: productsLoading } = useAllProducts({ pageSize: 2000 });
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
   const { data: branches } = useBranches();
