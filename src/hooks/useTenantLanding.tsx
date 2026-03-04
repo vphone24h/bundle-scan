@@ -64,6 +64,7 @@ export interface TenantLandingSettings {
   order_email_on_confirmed: boolean;
   order_email_on_shipping: boolean;
   order_email_on_warranty: boolean;
+  order_email_on_export: boolean;
   created_at: string;
   updated_at: string;
 }
