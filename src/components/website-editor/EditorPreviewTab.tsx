@@ -4,9 +4,10 @@ import { getIndustryConfig, getFullNavItems, LayoutStyle, HomeSection } from '@/
 import { HomeSectionItem, CustomProductTab } from '@/components/admin/HomeSectionManager';
 import { ProductsPageSectionItem } from '@/components/admin/ProductsPageSectionManager';
 import { ProductDetailSectionItem } from '@/components/admin/ProductDetailSectionManager';
-import { Pencil, Home, ShoppingBag, FileText, ArrowLeft } from 'lucide-react';
+import { NewsPageSectionItem } from '@/components/admin/NewsPageSectionManager';
+import { Pencil, Home, ShoppingBag, FileText, ArrowLeft, Newspaper } from 'lucide-react';
 
-type PreviewPage = 'home' | 'products' | 'product-detail';
+type PreviewPage = 'home' | 'products' | 'product-detail' | 'news';
 
 interface EditorPreviewTabProps {
   formData: Partial<TenantLandingSettings>;
@@ -120,6 +121,18 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
 
   // Build nav items
   const navItems = (formData as any)?.custom_nav_items || getFullNavItems(templateId);
+
+  // News page sections
+  const npSections = (formData as any)?.custom_news_page_sections as NewsPageSectionItem[] | null;
+  const enabledNPSections = useMemo(() => {
+    const sections = npSections || [
+      { id: 'search', enabled: true },
+      { id: 'categoryFilter', enabled: true },
+      { id: 'featuredArticles', enabled: true },
+      { id: 'allArticles', enabled: true },
+    ];
+    return sections.filter(s => s.enabled);
+  }, [npSections]);
 
   // Products page sections
   const ppSections = (formData as any)?.custom_products_page_sections as ProductsPageSectionItem[] | null;
@@ -550,6 +563,164 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
     </>
   );
 
+  // Get news page label from nav items
+  const newsNavLabel = useMemo(() => {
+    const items = (formData as any)?.custom_nav_items || getFullNavItems(templateId);
+    const newsItem = items.find((item: any) => {
+      const label = (item.label || item || '').toLowerCase();
+      return label.includes('tin') || label.includes('bài viết') || label.includes('blog') || label.includes('news') || label.includes('thông tin');
+    });
+    return newsItem?.label || newsItem || 'Tin tức';
+  }, [formData, templateId]);
+
+  // News Page Preview
+  const renderNewsPagePreview = () => (
+    <>
+      {renderHeader()}
+      <div className="px-4 py-3 border-b border-black/5 bg-white">
+        <h1 className="text-sm font-bold">{newsNavLabel}</h1>
+      </div>
+
+      {enabledNPSections.map(section => {
+        switch (section.id) {
+          case 'search':
+            return (
+              <SectionOverlay key="search" sectionId="news-layout" label="Tìm kiếm" onEdit={onEditSection}>
+                <div className="px-4 py-3 bg-white">
+                  <div className="h-9 rounded-lg border border-black/10 bg-[#f5f5f7] px-3 flex items-center">
+                    <span className="text-xs text-[#86868b]">🔍 Tìm kiếm bài viết...</span>
+                  </div>
+                </div>
+              </SectionOverlay>
+            );
+          case 'categoryFilter':
+            return (
+              <SectionOverlay key="categoryFilter" sectionId="news-layout" label="Danh mục" onEdit={onEditSection}>
+                <div className="px-4 py-2 bg-white border-b border-black/5">
+                  <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                    {['Tất cả', 'Tin Apple', 'Đánh giá', 'Mẹo hay'].map((cat, i) => (
+                      <span key={i} className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-medium whitespace-nowrap ${i === 0 ? 'text-white' : 'bg-muted/60 text-foreground/70'}`}
+                        style={i === 0 ? { backgroundColor: accentColor } : {}}>
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </SectionOverlay>
+            );
+          case 'featuredArticles':
+            return (
+              <SectionOverlay key="featuredArticles" sectionId="news-layout" label="Nổi bật" onEdit={onEditSection}>
+                <section className="py-4 px-4 bg-white">
+                  <h2 className="text-sm font-bold tracking-tight mb-3">⭐ Bài viết nổi bật</h2>
+                  <div className="rounded-xl border border-black/5 overflow-hidden">
+                    <div className="aspect-video bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                      <span className="text-3xl opacity-20">📰</span>
+                    </div>
+                    <div className="p-3">
+                      <p className="text-xs font-semibold leading-tight">Bài viết nổi bật mẫu</p>
+                      <p className="text-[10px] text-[#86868b] mt-1">Mô tả ngắn bài viết nổi bật...</p>
+                    </div>
+                  </div>
+                </section>
+              </SectionOverlay>
+            );
+          case 'allArticles':
+            return (
+              <SectionOverlay key="allArticles" sectionId="news-layout" label="Tất cả" onEdit={onEditSection}>
+                <section className="py-4 px-4 bg-white">
+                  <h2 className="text-sm font-bold tracking-tight mb-3">📰 Tất cả bài viết</h2>
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="flex gap-3 rounded-xl border border-black/5 p-2.5">
+                        <div className="h-16 w-20 rounded-lg bg-gradient-to-br from-muted to-muted/50 shrink-0 flex items-center justify-center">
+                          <span className="text-lg opacity-20">📝</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-medium leading-tight line-clamp-2">Bài viết mẫu {i}</p>
+                          <p className="text-[9px] text-[#86868b] mt-1">2 ngày trước</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </SectionOverlay>
+            );
+          case 'latestArticles':
+            return (
+              <SectionOverlay key="latestArticles" sectionId="news-layout" label="Mới nhất" onEdit={onEditSection}>
+                <section className="py-4 px-4 bg-white">
+                  <h2 className="text-sm font-bold tracking-tight mb-3">🆕 Bài viết mới nhất</h2>
+                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="min-w-[160px] rounded-xl border border-black/5 overflow-hidden shrink-0">
+                        <div className="aspect-video bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                          <span className="text-xl opacity-20">🆕</span>
+                        </div>
+                        <div className="p-2.5">
+                          <p className="text-[11px] font-medium leading-tight">Bài mới {i}</p>
+                          <p className="text-[9px] text-[#86868b] mt-1">Hôm nay</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </SectionOverlay>
+            );
+          case 'popularArticles':
+            return (
+              <SectionOverlay key="popularArticles" sectionId="news-layout" label="Phổ biến" onEdit={onEditSection}>
+                <section className="py-4 px-4 bg-white">
+                  <h2 className="text-sm font-bold tracking-tight mb-3">🔥 Bài viết phổ biến</h2>
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="flex gap-3 rounded-xl border border-black/5 p-2.5">
+                        <div className="h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0" style={{ backgroundColor: accentColor, color: 'white' }}>
+                          {i}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-medium leading-tight">Bài viết phổ biến {i}</p>
+                          <p className="text-[9px] text-[#86868b] mt-1">👁 {1000 - i * 200} lượt xem</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </SectionOverlay>
+            );
+          default:
+            // Custom news tabs (newsTab_*)
+            if (section.id.startsWith('newsTab_')) {
+              return (
+                <SectionOverlay key={section.id} sectionId="news-layout" label="Mục tùy chỉnh" onEdit={onEditSection}>
+                  <section className="py-4 px-4 bg-white">
+                    <h2 className="text-sm font-bold tracking-tight mb-3">📝 Danh mục tùy chỉnh</h2>
+                    <div className="space-y-3">
+                      {[1, 2].map(i => (
+                        <div key={i} className="flex gap-3 rounded-xl border border-black/5 p-2.5">
+                          <div className="h-16 w-20 rounded-lg bg-gradient-to-br from-muted to-muted/50 shrink-0 flex items-center justify-center">
+                            <span className="text-lg opacity-20">📝</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-medium leading-tight">Bài viết {i}</p>
+                            <p className="text-[9px] text-[#86868b] mt-1">3 ngày trước</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </SectionOverlay>
+              );
+            }
+            return null;
+        }
+      })}
+
+      {renderFooter()}
+      {renderStickyBar()}
+    </>
+  );
+
   return (
     <div className="min-h-full bg-muted/30 flex flex-col" onClick={() => {}}>
       {/* Page switcher tabs */}
@@ -558,6 +729,7 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
           { id: 'home' as PreviewPage, icon: <Home className="h-3.5 w-3.5" />, label: 'Trang chủ' },
           { id: 'products' as PreviewPage, icon: <ShoppingBag className="h-3.5 w-3.5" />, label: 'Sản phẩm' },
           { id: 'product-detail' as PreviewPage, icon: <FileText className="h-3.5 w-3.5" />, label: 'Chi tiết SP' },
+          { id: 'news' as PreviewPage, icon: <Newspaper className="h-3.5 w-3.5" />, label: newsNavLabel as string },
         ]).map(tab => (
           <button
             key={tab.id}
@@ -582,6 +754,7 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
           <div className="text-[#1d1d1f]" style={{ fontFamily: config.fontFamily }}>
             {previewPage === 'products' && renderProductsPagePreview()}
             {previewPage === 'product-detail' && renderProductDetailPreview()}
+            {previewPage === 'news' && renderNewsPagePreview()}
             {previewPage === 'home' && (
               <>
                 {/* HEADER */}
