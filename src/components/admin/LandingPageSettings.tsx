@@ -1846,7 +1846,8 @@ export function LandingPageSettings() {
           )}
         </CardContent>
       </Card>
-}
+
+
 
       {/* Tuỳ chỉnh màu sắc & Trust Badges */}
       <Card data-tour="landing-color-card">
