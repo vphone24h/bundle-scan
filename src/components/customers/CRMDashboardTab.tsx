@@ -92,7 +92,7 @@ export function CRMDashboardTab() {
     const { start, end } = getDateRange(period);
     const { data: staffWithKPIAll = [], isLoading: staffLoading } = useStaffWithKPI(start, end);
     const { data: schedulesAll = [] } = useCareSchedules({ status: 'pending' });
-    const { data: customersAll = [] } = useCustomersWithPoints();
+    const { data: customersAll = [] } = useCustomersWithPoints({ pageSize: 50 });
 
     // Branch filtering for non-Super Admin
     const staffWithKPI = useMemo(() => {

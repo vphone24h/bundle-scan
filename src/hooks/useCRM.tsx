@@ -353,11 +353,14 @@
          query = query.lte('scheduled_date', filters.toDate);
        }
  
-       const { data, error } = await query;
+       const { data, error } = await query.limit(500);
        if (error) throw error;
        return data as CareSchedule[];
      },
      enabled: !!user?.id,
+     staleTime: 1000 * 60 * 2,
+     gcTime: 1000 * 60 * 10,
+     refetchOnWindowFocus: false,
    });
  }
  
