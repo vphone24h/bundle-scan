@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
 import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, PageItemConfig, InstallmentRateConfig, DEFAULT_INSTALLMENT_RATES, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems, SYSTEM_PAGES, SYSTEM_PAGE_IDS, getSystemPageById, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
 import { HomeSectionManager, HomeSectionItem } from './HomeSectionManager';
+import { ZaloOASetupWizard } from './ZaloOASetupWizard';
 
 import {
   Dialog,
