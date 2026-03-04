@@ -84,7 +84,9 @@ const SocialPage = () => {
     setSearchQuery('');
   };
 
-  const handleGoToPost = (postId: string) => {
+  const handleGoToPost = (postId: string, commentId?: string) => {
+    setFocusPostId(postId);
+    setFocusCommentId(commentId || null);
     setActiveTab('feed');
   };
 
