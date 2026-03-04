@@ -100,7 +100,7 @@ export function useExportReceipts(filters?: {
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   const page = filters?.page ?? 1;
-  const pageSize = filters?.pageSize ?? 15;
+  const pageSize = filters?.pageSize ?? 50;
 
   const selectFields = `
     *,
@@ -113,11 +113,14 @@ export function useExportReceipts(filters?: {
   const result = useQuery({
     queryKey: ['export-receipts', tenant?.id, branchId, isDataHidden, filters],
     queryFn: async () => {
-      if (isDataHidden) return { items: [] as ExportReceipt[], totalCount: 0 };
+      if (isDataHidden) return { items: [] as ExportReceipt[], hasMore: false };
+
+      // Fetch pageSize+1 to detect hasMore without count
+      const fetchSize = pageSize + 1;
 
       let query = supabase
         .from('export_receipts')
-        .select(selectFields, { count: 'exact' })
+        .select(selectFields)
         .order('export_date', { ascending: false });
 
       // Branch filter
@@ -158,15 +161,20 @@ export function useExportReceipts(filters?: {
       }
 
       const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
+      const to = from + fetchSize - 1;
       query = query.range(from, to);
 
-      const { data, error, count } = await query;
+      const { data, error } = await query;
       if (error) {
         console.error('Export receipts query error:', error);
         throw error;
       }
-      return { items: (data || []) as unknown as ExportReceipt[], totalCount: count || 0 };
+      const items = (data || []) as unknown as ExportReceipt[];
+      const hasMore = items.length > pageSize;
+      return {
+        items: hasMore ? items.slice(0, pageSize) : items,
+        hasMore,
+      };
     },
     enabled: !isTenantLoading && !branchLoading,
     staleTime: 2 * 60 * 1000,
@@ -177,7 +185,7 @@ export function useExportReceipts(filters?: {
   return {
     ...result,
     data: result.data?.items || [],
-    totalCount: result.data?.totalCount || 0,
+    hasMore: result.data?.hasMore || false,
   };
 }
 
