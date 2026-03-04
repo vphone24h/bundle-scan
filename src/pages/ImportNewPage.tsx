@@ -1243,6 +1243,42 @@ export default function ImportNewPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Print QR Prompt after payment */}
+      <Dialog open={printQRPromptOpen} onOpenChange={(open) => { if (!open) handleSkipPrintQR(); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-primary" />
+              In tem QR / mã vạch?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Nhập hàng thành công! Bạn có muốn in tem QR cho {printQRProducts.length} sản phẩm vừa nhập không?
+          </p>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={handleSkipPrintQR}>
+              <X className="h-4 w-4 mr-2" />
+              Đóng
+            </Button>
+            <Button onClick={handlePrintQR}>
+              <QrCode className="h-4 w-4 mr-2" />
+              In QR
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Barcode/QR Print Dialog */}
+      <BarcodeDialog
+        open={barcodeDialogOpen}
+        onClose={() => {
+          setBarcodeDialogOpen(false);
+          setPrintQRProducts([]);
+          navigate('/import/history');
+        }}
+        products={printQRProducts}
+      />
       <OnboardingTourOverlay
         steps={IMPORT_NEW_TOUR_STEPS}
         isActive={manualTourActive || (!tourCompleted && !tourDismissed)}
