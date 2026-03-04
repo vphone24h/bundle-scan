@@ -1176,15 +1176,15 @@ export function LandingPageSettings() {
 
           <Separator className="my-3" />
 
-          {/* Zalo OA gửi tin nhắn tự động */}
-          <ZaloOASetupWizard formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
+          {/* Zalo OA gửi tin nhắn tự động - TẠM TẮT */}
+          {/* <ZaloOASetupWizard formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
             if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
             updateSettings.mutateAsync(formData).then(() => {
               setHasChanges(false);
             }).catch(() => {
               toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
             });
-          }} />
+          }} /> */}
         </CardContent>
       </Card>
 
