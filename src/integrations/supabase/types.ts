@@ -5918,6 +5918,47 @@ export type Database = {
           },
         ]
       }
+      zalo_oa_followers: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          phone: string | null
+          tenant_id: string
+          updated_at: string | null
+          zalo_user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          phone?: string | null
+          tenant_id: string
+          updated_at?: string | null
+          zalo_user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          phone?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+          zalo_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zalo_oa_followers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       advertisements_public: {
