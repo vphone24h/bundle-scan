@@ -1,6 +1,5 @@
- import { useState, useEffect } from 'react';
+ import { useState, useEffect, useCallback } from 'react';
  import { Card, CardContent } from '@/components/ui/card';
- import { usePagination } from '@/hooks/usePagination';
  import { TablePagination } from '@/components/ui/table-pagination';
  import { Input } from '@/components/ui/input';
  import { SearchInput } from '@/components/ui/search-input';
@@ -60,6 +59,8 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
     const [sourceFilter, setSourceFilter] = useState('_all_');
     const [crmStatusFilter, setCrmStatusFilter] = useState('_all_');
     const [staffFilter, setStaffFilter] = useState('_all_');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(100);
 
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
     const [editingCustomer, setEditingCustomer] = useState<any>(null);
@@ -89,26 +90,41 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
       return permissions?.branchId === customerBranchId;
     };
 
-    const { data: customers, isLoading } = useCustomersWithPoints({
+    const { data: customers, isLoading, totalCount } = useCustomersWithPoints({
       search: search || undefined,
       branchId: branchFilter !== '_all_' ? branchFilter : undefined,
       tier: tierFilter !== '_all_' ? tierFilter : undefined,
       status: statusFilter !== '_all_' ? statusFilter : undefined,
       crmStatus: crmStatusFilter !== '_all_' ? crmStatusFilter : undefined,
       staffId: staffFilter !== '_all_' ? staffFilter : undefined,
+      page: currentPage,
+      pageSize,
     });
  
-   const { data: branches } = useBranches();
-   const { data: customerSources } = useCustomerSources();
-   const { data: staffList } = useStaffList();
-   
-   const filteredCustomers = customers?.filter(c => {
-     if (sourceFilter === '_all_') return true;
-     if (sourceFilter === '_none_') return !c.source;
-     return c.source === sourceFilter;
-   });
- 
-   const pagination = usePagination(filteredCustomers || [], { storageKey: 'customers' });
+    const { data: branches } = useBranches();
+    const { data: customerSources } = useCustomerSources();
+    const { data: staffList } = useStaffList();
+    
+    const filteredCustomers = customers?.filter(c => {
+      if (sourceFilter === '_all_') return true;
+      if (sourceFilter === '_none_') return !c.source;
+      return c.source === sourceFilter;
+    });
+
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, totalCount);
+
+    // Reset page when filters change
+    const handleSearchChange = useCallback((val: string) => {
+      setSearch(val);
+      setCurrentPage(1);
+    }, []);
+
+    const handlePageSizeChange = useCallback((val: number) => {
+      setPageSize(val);
+      setCurrentPage(1);
+    }, []);
  
    const handleViewDetail = (customerId: string) => {
      setSelectedCustomerId(customerId);
@@ -146,7 +162,7 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
               <SearchInput
                 placeholder="Tìm theo tên, SĐT..."
                 value={search}
-                onChange={setSearch}
+                onChange={handleSearchChange}
                 containerClassName="flex-1"
                 className="h-9 text-sm"
               />
@@ -226,7 +242,7 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
             ) : filteredCustomers?.length === 0 ? (
               <p className="text-center py-8 text-sm text-muted-foreground">Chưa có khách hàng</p>
             ) : (
-              pagination.paginatedData.map((customer) => (
+               (filteredCustomers || []).map((customer) => (
                 <div
                   key={customer.id}
                   className="p-3 active:bg-muted/50"
@@ -277,7 +293,7 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
                      </TableCell>
                    </TableRow>
                  ) : (
-                   pagination.paginatedData.map((customer) => (
+                   (filteredCustomers || []).map((customer) => (
                      <TableRow 
                        key={customer.id} 
                        className="cursor-pointer hover:bg-muted/50" 
@@ -356,18 +372,18 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
              </Table>
            </div>
            
-           {(filteredCustomers?.length || 0) > 0 && (
-             <TablePagination
-               currentPage={pagination.currentPage}
-               totalPages={pagination.totalPages}
-               pageSize={pagination.pageSize}
-               totalItems={pagination.totalItems}
-               startIndex={pagination.startIndex}
-               endIndex={pagination.endIndex}
-               onPageChange={pagination.setPage}
-               onPageSizeChange={pagination.setPageSize}
-             />
-           )}
+            {totalCount > 0 && (
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalCount}
+                startIndex={startIndex + 1}
+                endIndex={endIndex}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            )}
          </CardContent>
        </Card>
  
