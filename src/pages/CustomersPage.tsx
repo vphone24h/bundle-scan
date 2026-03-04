@@ -33,6 +33,7 @@ export default function CustomersPage() {
   
   const { data: selectedCustomer } = useCustomerDetail(selectedCustomerId);
   const { data: customersAll } = useCustomersWithPoints();
+  const { data: customerStats } = useCustomerStats(branchFilter);
 
   useEffect(() => {
     if (!isSuperAdmin && permissions?.branchId) { setBranchFilter(permissions.branchId); }
