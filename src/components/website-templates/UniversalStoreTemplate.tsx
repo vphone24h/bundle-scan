@@ -463,7 +463,7 @@ export default function UniversalStoreTemplate({
                               <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{config.productSectionTitle}</h2>
                               {featuredProducts.length > 0 && <p className="text-xs text-[#86868b] mt-0.5">{config.productSectionSubtitle}</p>}
                             </div>
-                            <button onClick={() => navigateTo('products')} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
+                            <button onClick={() => navigateTo('products', { filterTag: 'featured' })} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
                               Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
                             </button>
                           </div>
