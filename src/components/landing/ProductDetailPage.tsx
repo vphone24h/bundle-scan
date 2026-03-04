@@ -541,6 +541,7 @@ export function ProductDetailPage({
                     </div>
                   );
                 default:
+                  // Layout sections handled at page level
                   return null;
               }
             });
