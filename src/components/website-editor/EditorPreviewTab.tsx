@@ -122,6 +122,18 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
   // Build nav items
   const navItems = (formData as any)?.custom_nav_items || getFullNavItems(templateId);
 
+  // News page sections
+  const npSections = (formData as any)?.custom_news_page_sections as NewsPageSectionItem[] | null;
+  const enabledNPSections = useMemo(() => {
+    const sections = npSections || [
+      { id: 'search', enabled: true },
+      { id: 'categoryFilter', enabled: true },
+      { id: 'featuredArticles', enabled: true },
+      { id: 'allArticles', enabled: true },
+    ];
+    return sections.filter(s => s.enabled);
+  }, [npSections]);
+
   // Products page sections
   const ppSections = (formData as any)?.custom_products_page_sections as ProductsPageSectionItem[] | null;
   const ppTabs: CustomProductTab[] = (formData as any)?.custom_products_page_tabs || [];
