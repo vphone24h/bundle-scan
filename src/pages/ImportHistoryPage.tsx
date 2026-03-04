@@ -128,21 +128,6 @@ export default function ImportHistoryPage() {
   // Server-side pagination state for products tab
   const [productPage, setProductPage] = useState(1);
   const [productPageSize, setProductPageSize] = useState(100);
-
-  // Pass all filters to useAllProducts for server-side search
-  const productServerFilters = useMemo(() => ({
-    search: activeTab === 'products' ? searchTerm : undefined,
-    categoryId: activeTab === 'products' ? categoryFilter : undefined,
-    supplierId: activeTab === 'products' ? supplierFilter : undefined,
-    branchId: activeTab === 'products' ? branchFilter : undefined,
-    status: activeTab === 'products' ? statusFilter : undefined,
-    dateFrom: activeTab === 'products' ? dateFrom : undefined,
-    dateTo: activeTab === 'products' ? dateTo : undefined,
-    page: productPage,
-    pageSize: productPageSize,
-  }), [activeTab, searchTerm, categoryFilter, supplierFilter, branchFilter, statusFilter, dateFrom, dateTo, productPage, productPageSize]);
-
-  const { data: products, isLoading: productsLoading, totalCount: productsTotalCount } = useAllProducts(productServerFilters);
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
   const { data: branches } = useBranches();
