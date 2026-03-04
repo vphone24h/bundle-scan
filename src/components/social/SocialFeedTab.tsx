@@ -61,6 +61,21 @@ export const SocialFeedTab = memo(function SocialFeedTab({ onViewProfile, focusP
 
   const posts = feedData?.pages?.flatMap(p => p.posts) || [];
 
+  // Scroll to focused post after render
+  useEffect(() => {
+    if (focusPostId && posts.length > 0) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`social-post-${focusPostId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-2', 'ring-primary');
+          setTimeout(() => el.classList.remove('ring-2', 'ring-primary'), 3000);
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [focusPostId, posts.length]);
+
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       {/* Create post */}
