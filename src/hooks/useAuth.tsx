@@ -63,9 +63,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(currentSession);
           setUser(currentSession.user);
         } else {
-          setSession(null);
-          setUser(null);
-          queryClient.clear();
+          // Session not found - try refreshing before giving up
+          // This prevents logout during temporary token refresh gaps
+          supabase.auth.refreshSession().then(({ data: { session: refreshed } }) => {
+            if (refreshed) {
+              setSession(refreshed);
+              setUser(refreshed.user);
+            }
+            // If refresh also fails, don't force logout here -
+            // let onAuthStateChange handle SIGNED_OUT naturally
+          });
         }
       });
     };
