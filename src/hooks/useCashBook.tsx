@@ -4,6 +4,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { sendActivityAlert } from '@/lib/activityAlert';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 type CashBookType = Database['public']['Enums']['cash_book_type'];
 
@@ -61,36 +62,35 @@ export function useCashBook(filters?: {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as CashBookEntry[];
 
-      let query = supabase
-        .from('cash_book')
-        .select('*, branches(name)')
-        .order('transaction_date', { ascending: false });
+      const buildQuery = () => {
+        let q = supabase
+          .from('cash_book')
+          .select('*, branches(name)')
+          .order('transaction_date', { ascending: false });
 
-      if (filters?.startDate) {
-        query = query.gte('transaction_date', filters.startDate);
-      }
-      if (filters?.endDate) {
-        query = query.lte('transaction_date', filters.endDate + 'T23:59:59');
-      }
-      if (filters?.type) {
-        query = query.eq('type', filters.type);
-      }
-
-      // Priority: UI filter > user's assigned branch filter
-      if (filters?.branchId) {
-        // If user is trying to filter a branch they don't have access to, return empty
-        if (shouldFilter && userBranchId && filters.branchId !== userBranchId) {
-          return [] as CashBookEntry[];
+        if (filters?.startDate) {
+          q = q.gte('transaction_date', filters.startDate);
         }
-        query = query.eq('branch_id', filters.branchId);
-      } else if (shouldFilter && userBranchId) {
-        // Apply user's branch filter
-        query = query.eq('branch_id', userBranchId);
-      }
+        if (filters?.endDate) {
+          q = q.lte('transaction_date', filters.endDate + 'T23:59:59');
+        }
+        if (filters?.type) {
+          q = q.eq('type', filters.type);
+        }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as CashBookEntry[];
+        if (filters?.branchId) {
+          if (shouldFilter && userBranchId && filters.branchId !== userBranchId) {
+            return q.eq('branch_id', 'impossible_id'); // return empty
+          }
+          q = q.eq('branch_id', filters.branchId);
+        } else if (shouldFilter && userBranchId) {
+          q = q.eq('branch_id', userBranchId);
+        }
+        return q;
+      };
+
+      const data = await fetchAllRows<CashBookEntry>(buildQuery);
+      return data;
     },
     enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
     refetchOnWindowFocus: false,

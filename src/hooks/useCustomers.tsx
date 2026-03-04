@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
@@ -27,13 +28,13 @@ export function useCustomers() {
     // Keyed by user to prevent cross-tenant cache leakage
     queryKey: ['customers', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('id, name, phone, address, email, note, source, tenant_id, created_at, updated_at')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as Customer[];
+      const data = await fetchAllRows<Customer>(() =>
+        supabase
+          .from('customers')
+          .select('id, name, phone, address, email, note, source, tenant_id, created_at, updated_at')
+          .order('created_at', { ascending: false })
+      );
+      return data;
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 2, // 2 phút

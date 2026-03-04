@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
 import { useBranchFilter } from './useBranchFilter';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 type ProductStatus = Database['public']['Enums']['product_status'];
 
@@ -45,26 +46,26 @@ export function useProducts() {
     // Keyed by user AND branch to prevent cross-tenant/branch cache leakage
     queryKey: ['products', user?.id, branchId],
     queryFn: async () => {
-      let query = supabase
-        .from('products')
-        .select(`
-          *,
-          categories(name),
-          suppliers(name),
-          branches(name)
-        `)
-        .in('status', ['in_stock', 'sold', 'returned'])
-        .order('import_date', { ascending: false });
+      const buildQuery = () => {
+        let q = supabase
+          .from('products')
+          .select(`
+            *,
+            categories(name),
+            suppliers(name),
+            branches(name)
+          `)
+          .in('status', ['in_stock', 'sold', 'returned'])
+          .order('import_date', { ascending: false });
 
-      // Apply branch filter for non-Super Admin users
-      if (shouldFilter && branchId) {
-        query = query.eq('branch_id', branchId);
-      }
+        if (shouldFilter && branchId) {
+          q = q.eq('branch_id', branchId);
+        }
+        return q;
+      };
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as Product[];
+      const data = await fetchAllRows<Product>(buildQuery);
+      return data;
     },
     enabled: !!user?.id && !branchLoading,
   });

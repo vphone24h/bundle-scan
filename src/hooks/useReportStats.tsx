@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 import type { SaleDetailItem, ReturnDetailItem, CashBookDetailItem } from '@/components/reports/ReportStatDetailDialog';
 
@@ -94,40 +95,40 @@ export function useReportStats(filters?: {
       const startISO = startDateTime.toISOString();
       const endISO = endDateTime.toISOString();
 
-      // 1. Lấy dữ liệu phiếu xuất và sản phẩm đã bán (CHỈ status = 'sold')
-      let exportQuery = supabase
-        .from('export_receipts')
-        .select(`
-          id,
-          total_amount,
-          status,
-          export_date,
-          branch_id,
-          export_receipt_items(
+      const buildExportQuery = () => {
+        let q = supabase
+          .from('export_receipts')
+          .select(`
             id,
-            product_name,
-            sku,
-            sale_price,
+            total_amount,
             status,
-            product_id,
-            category_id,
-            categories(name)
-          ),
-          export_receipt_payments(
-            payment_type,
-            amount
-          )
-        `)
-        .gte('export_date', startISO)
-        .lte('export_date', endISO);
+            export_date,
+            branch_id,
+            export_receipt_items(
+              id,
+              product_name,
+              sku,
+              sale_price,
+              status,
+              product_id,
+              category_id,
+              categories(name)
+            ),
+            export_receipt_payments(
+              payment_type,
+              amount
+            )
+          `)
+          .gte('export_date', startISO)
+          .lte('export_date', endISO);
 
-      // Apply branch filter (priority: UI filter > user's assigned branch)
-      if (effectiveBranchId) {
-        exportQuery = exportQuery.eq('branch_id', effectiveBranchId);
-      }
+        if (effectiveBranchId) {
+          q = q.eq('branch_id', effectiveBranchId);
+        }
+        return q;
+      };
 
-      const { data: exportReceipts, error: exportError } = await exportQuery;
-      if (exportError) throw exportError;
+      const exportReceipts = await fetchAllRows<any>(buildExportQuery);
 
       // 2. Lấy dữ liệu trả hàng KHÔNG CÓ PHÍ để tính lợi nhuận âm
       let returnQuery = supabase

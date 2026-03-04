@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export interface ProductReportItem {
   productName: string;
@@ -55,25 +56,26 @@ export function useProductReport(filters?: {
       const monthStartISO = new Date(monthStart).toISOString();
       const monthEndISO = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
 
-      // Get sold items
-      let soldQuery = supabase
-        .from('export_receipt_items')
-        .select(`
-          product_name, sku, sale_price, status, product_id, category_id,
-          categories(name),
-          export_receipts!inner(export_date, branch_id, status, branches(name))
-        `)
-        .eq('status', 'sold')
-        .neq('export_receipts.status', 'cancelled')
-        .gte('export_receipts.export_date', startISO)
-        .lte('export_receipts.export_date', endISO);
+      const buildSoldQuery = () => {
+        let q = supabase
+          .from('export_receipt_items')
+          .select(`
+            product_name, sku, sale_price, status, product_id, category_id,
+            categories(name),
+            export_receipts!inner(export_date, branch_id, status, branches(name))
+          `)
+          .eq('status', 'sold')
+          .neq('export_receipts.status', 'cancelled')
+          .gte('export_receipts.export_date', startISO)
+          .lte('export_receipts.export_date', endISO);
 
-      if (effectiveBranchId) {
-        soldQuery = soldQuery.eq('export_receipts.branch_id', effectiveBranchId);
-      }
+        if (effectiveBranchId) {
+          q = q.eq('export_receipts.branch_id', effectiveBranchId);
+        }
+        return q;
+      };
 
-      const { data: soldItems, error: soldError } = await soldQuery;
-      if (soldError) throw soldError;
+      const soldItems = await fetchAllRows<any>(buildSoldQuery);
 
       // Get product import prices
       const productIds = Array.from(new Set(soldItems?.map(i => i.product_id).filter(Boolean) || []));

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export interface DashboardStats {
   totalProducts: number;
@@ -40,19 +41,17 @@ export function useDashboardStats() {
         } as DashboardStats;
       }
 
-      // Get products stats - lấy thêm total_import_cost, name, sku, branch_id để tính đúng như Tồn kho
-      let productsQuery = supabase
-        .from('products')
-        .select('id, status, import_price, quantity, imei, total_import_cost, name, sku, branch_id');
+      const buildProductsQuery = () => {
+        let q = supabase
+          .from('products')
+          .select('id, status, import_price, quantity, imei, total_import_cost, name, sku, branch_id');
+        if (shouldFilter && branchId) {
+          q = q.eq('branch_id', branchId);
+        }
+        return q;
+      };
 
-      // Apply branch filter for non-Super Admin users
-      if (shouldFilter && branchId) {
-        productsQuery = productsQuery.eq('branch_id', branchId);
-      }
-
-      const { data: products, error: productsError } = await productsQuery;
-
-      if (productsError) throw productsError;
+      const products = await fetchAllRows<any>(buildProductsQuery);
 
       // Get today's date range
       const todayStart = new Date();
