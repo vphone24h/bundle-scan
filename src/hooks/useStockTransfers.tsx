@@ -180,7 +180,7 @@ export function useCreateStockTransfer() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ productIds, fromBranchId, toBranchId, fromBranchName, toBranchName, note, isAutoApprove }: CreateTransferParams) => {
+    mutationFn: async ({ productIds, fromBranchId, toBranchId, fromBranchName, toBranchName, note, isAutoApprove, transferQuantities = {} }: CreateTransferParams) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Chưa đăng nhập');
 
@@ -190,7 +190,7 @@ export function useCreateStockTransfer() {
       // Fetch products with supplier info
       const { data: products, error: fetchError } = await supabase
         .from('products')
-        .select('id, name, sku, imei, branch_id, status, quantity, import_price, supplier_id, note')
+        .select('id, name, sku, imei, branch_id, status, quantity, import_price, supplier_id, note, category_id, barcode, warranty, image_url, total_import_cost')
         .in('id', productIds)
         .eq('tenant_id', tenantId);
 
@@ -208,6 +208,16 @@ export function useCreateStockTransfer() {
       const wrongBranch = products.filter(p => p.branch_id !== fromBranchId);
       if (wrongBranch.length > 0) {
         throw new Error(`Sản phẩm "${wrongBranch[0].name}" không thuộc chi nhánh nguồn`);
+      }
+
+      // Validate transfer quantities for non-IMEI
+      for (const p of products) {
+        if (!p.imei && transferQuantities[p.id] !== undefined) {
+          const tQty = transferQuantities[p.id];
+          if (tQty < 1 || tQty > p.quantity) {
+            throw new Error(`Số lượng chuyển "${p.name}" không hợp lệ (1-${p.quantity})`);
+          }
+        }
       }
 
       const status = isAutoApprove ? 'approved' : 'pending';
@@ -241,19 +251,22 @@ export function useCreateStockTransfer() {
         (suppliers || []).forEach((s: any) => { supplierMap[s.id] = s.name; });
       }
 
-      // Insert items with supplier & note info
-      const items = products.map(p => ({
-        transfer_request_id: request.id,
-        product_id: p.id,
-        product_name: p.name,
-        sku: p.sku,
-        imei: p.imei || null,
-        quantity: p.quantity,
-        import_price: Number(p.import_price),
-        supplier_id: p.supplier_id || null,
-        supplier_name: p.supplier_id ? (supplierMap[p.supplier_id] || null) : null,
-        note: p.note || null,
-      }));
+      // Insert items with actual transfer quantities
+      const items = products.map(p => {
+        const transferQty = p.imei ? 1 : (transferQuantities[p.id] ?? p.quantity);
+        return {
+          transfer_request_id: request.id,
+          product_id: p.id,
+          product_name: p.name,
+          sku: p.sku,
+          imei: p.imei || null,
+          quantity: transferQty,
+          import_price: Number(p.import_price),
+          supplier_id: p.supplier_id || null,
+          supplier_name: p.supplier_id ? (supplierMap[p.supplier_id] || null) : null,
+          note: p.note || null,
+        };
+      });
 
       const { error: itemsError } = await supabase
         .from('stock_transfer_items')
@@ -263,23 +276,88 @@ export function useCreateStockTransfer() {
 
       // If auto-approve (super_admin), move products immediately
       if (isAutoApprove) {
-        const { error: updateError } = await supabase
-          .from('products')
-          .update({ branch_id: toBranchId })
-          .in('id', productIds)
-          .eq('tenant_id', tenantId);
+        for (const p of products) {
+          const transferQty = p.imei ? 1 : (transferQuantities[p.id] ?? p.quantity);
+          const isPartial = !p.imei && transferQty < p.quantity;
 
-        if (updateError) throw updateError;
+          if (isPartial) {
+            // Partial transfer for non-IMEI: reduce source quantity, create/update at destination
+            const remainQty = p.quantity - transferQty;
+            const unitCost = p.total_import_cost ? Number(p.total_import_cost) / p.quantity : Number(p.import_price);
+            const transferCost = unitCost * transferQty;
+            const remainCost = p.total_import_cost ? Number(p.total_import_cost) - transferCost : unitCost * remainQty;
+
+            // Update source product: reduce quantity
+            await supabase
+              .from('products')
+              .update({
+                quantity: remainQty,
+                total_import_cost: remainCost,
+              })
+              .eq('id', p.id)
+              .eq('tenant_id', tenantId);
+
+            // Check if same product exists at destination branch (by SKU)
+            const { data: existingProduct } = await supabase
+              .from('products')
+              .select('id, quantity, total_import_cost')
+              .eq('tenant_id', tenantId)
+              .eq('branch_id', toBranchId)
+              .eq('sku', p.sku)
+              .is('imei', null)
+              .eq('status', 'in_stock')
+              .maybeSingle();
+
+            if (existingProduct) {
+              // Add quantity to existing product
+              await supabase
+                .from('products')
+                .update({
+                  quantity: existingProduct.quantity + transferQty,
+                  total_import_cost: (Number(existingProduct.total_import_cost) || 0) + transferCost,
+                })
+                .eq('id', existingProduct.id);
+            } else {
+              // Create new product at destination branch
+              await supabase
+                .from('products')
+                .insert({
+                  tenant_id: tenantId,
+                  branch_id: toBranchId,
+                  name: p.name,
+                  sku: p.sku,
+                  imei: null,
+                  quantity: transferQty,
+                  import_price: Number(p.import_price),
+                  total_import_cost: transferCost,
+                  supplier_id: p.supplier_id,
+                  category_id: p.category_id,
+                  barcode: p.barcode,
+                  warranty: p.warranty,
+                  image_url: p.image_url,
+                  note: p.note,
+                  status: 'in_stock',
+                });
+            }
+          } else {
+            // Full transfer (IMEI or full quantity non-IMEI): just move branch
+            await supabase
+              .from('products')
+              .update({ branch_id: toBranchId })
+              .eq('id', p.id)
+              .eq('tenant_id', tenantId);
+          }
+        }
       }
 
-      // Audit logs - create separate entries for sender and receiver branches
-      const productSummary = products.map(p =>
-        p.imei ? `${p.name} (IMEI: ${p.imei})` : `${p.name} x${p.quantity}`
-      ).join(', ');
+      // Audit logs
+      const productSummary = products.map(p => {
+        const tQty = p.imei ? 1 : (transferQuantities[p.id] ?? p.quantity);
+        return p.imei ? `${p.name} (IMEI: ${p.imei})` : `${p.name} x${tQty}`;
+      }).join(', ');
 
       const auditLogs: any[] = [];
 
-      // Log for sender branch (Chi nhánh A): "Chuyển hàng"
       auditLogs.push({
         user_id: user.id,
         action_type: 'TRANSFER_STOCK',
@@ -297,7 +375,6 @@ export function useCreateStockTransfer() {
         tenant_id: tenantId,
       });
 
-      // If auto-approved (super admin), also create receiver log immediately
       if (isAutoApprove) {
         auditLogs.push({
           user_id: user.id,
