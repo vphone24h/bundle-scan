@@ -306,11 +306,11 @@ export function useSupplierDebts(showSettled: boolean = false) {
       if (paymentsError) throw paymentsError;
 
       const paymentSupplierIds = [...new Set(payments?.map(p => p.entity_id) || [])];
-      let suppliersFromPayments: { id: string; name: string; phone: string | null }[] = [];
+      let suppliersFromPayments: { id: string; name: string; phone: string | null; address: string | null }[] = [];
       if (paymentSupplierIds.length > 0) {
         const { data: supplierData } = await supabase
           .from('suppliers')
-          .select('id, name, phone')
+          .select('id, name, phone, address')
           .in('id', paymentSupplierIds);
         suppliersFromPayments = supplierData || [];
       }
