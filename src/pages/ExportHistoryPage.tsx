@@ -847,16 +847,16 @@ export default function ExportHistoryPage() {
                 </Table>
                 </ScrollableTableWrapper>
               )}
-              {groupedItems.length > 0 && (
+              {itemsTotalCount > 0 && (
                 <TablePagination
-                  currentPage={itemsPagination.currentPage}
-                  totalPages={itemsPagination.totalPages}
-                  pageSize={itemsPagination.pageSize}
-                  totalItems={itemsPagination.totalItems}
-                  startIndex={itemsPagination.startIndex}
-                  endIndex={itemsPagination.endIndex}
-                  onPageChange={itemsPagination.setPage}
-                  onPageSizeChange={itemsPagination.setPageSize}
+                  currentPage={itemPage}
+                  totalPages={itemTotalPages}
+                  pageSize={itemPageSize}
+                  totalItems={itemsTotalCount}
+                  startIndex={(itemPage - 1) * itemPageSize + 1}
+                  endIndex={Math.min(itemPage * itemPageSize, itemsTotalCount)}
+                  onPageChange={setItemPage}
+                  onPageSizeChange={(size) => { setItemPageSize(size); setItemPage(1); }}
                 />
               )}
             </CardContent>
