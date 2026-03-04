@@ -355,6 +355,7 @@ export default function ImportHistoryPage() {
     setSupplierFilter('_all_');
     setStatusFilter('_all_');
     setBranchFilter('_all_');
+    setProductPage(1);
   };
 
   const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_';
