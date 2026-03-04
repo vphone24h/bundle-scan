@@ -37,6 +37,7 @@ import {
   Calculator,
   PlayCircle,
   Mail,
+  MessageCircle,
 } from 'lucide-react';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { useCheckProductForSale, useSearchProductsByName, useCreateExportReceipt, type ExportReceiptItem, type ExportPayment } from '@/hooks/useExportReceipts';
