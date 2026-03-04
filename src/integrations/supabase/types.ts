@@ -5457,6 +5457,7 @@ export type Database = {
           zalo_on_export: boolean | null
           zalo_refresh_token: string | null
           zalo_url: string | null
+          zalo_zns_template_id: string | null
         }
         Insert: {
           additional_addresses?: string[] | null
@@ -5525,6 +5526,7 @@ export type Database = {
           zalo_on_export?: boolean | null
           zalo_refresh_token?: string | null
           zalo_url?: string | null
+          zalo_zns_template_id?: string | null
         }
         Update: {
           additional_addresses?: string[] | null
@@ -5593,6 +5595,7 @@ export type Database = {
           zalo_on_export?: boolean | null
           zalo_refresh_token?: string | null
           zalo_url?: string | null
+          zalo_zns_template_id?: string | null
         }
         Relationships: [
           {

@@ -62,6 +62,24 @@ function buildMessageText(params: {
   return "";
 }
 
+// Normalize phone to 84xxx format for ZNS
+function normalizePhoneTo84(phone: string): string {
+  let p = (phone || "").replace(/\s/g, "").replace(/[^0-9]/g, "");
+  if (p.startsWith("0")) {
+    p = "84" + p.substring(1);
+  }
+  return p;
+}
+
+// Normalize phone to 0xxx format for follower lookup
+function normalizePhoneTo0(phone: string): string {
+  let p = (phone || "").replace(/\s/g, "").replace(/[^0-9]/g, "");
+  if (p.startsWith("84")) {
+    p = "0" + p.substring(2);
+  }
+  return p;
+}
+
 // Get the first follower from OA's follower list (for test mode)
 async function getFirstFollower(accessToken: string): Promise<string | null> {
   try {
@@ -74,7 +92,6 @@ async function getFirstFollower(accessToken: string): Promise<string | null> {
     if (data.error === 0 && data.data?.users?.length > 0) {
       return data.data.users[0].user_id;
     }
-    // Also try v2 format
     if (data.data?.total > 0 && data.data?.followers?.length > 0) {
       return data.data.followers[0].user_id;
     }
@@ -83,6 +100,29 @@ async function getFirstFollower(accessToken: string): Promise<string | null> {
     console.error("Error getting followers:", e);
     return null;
   }
+}
+
+// Send ZNS message to phone number (for non-followers)
+async function sendZNS(accessToken: string, phone: string, templateId: string, templateData: Record<string, string>): Promise<any> {
+  const phone84 = normalizePhoneTo84(phone);
+  console.log("Sending ZNS to:", phone84, "template:", templateId);
+  
+  const res = await fetch("https://business.openapi.zalo.me/message/template", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      access_token: accessToken,
+    },
+    body: JSON.stringify({
+      phone: phone84,
+      template_id: templateId,
+      template_data: templateData,
+    }),
+  });
+  
+  const data = await res.json();
+  console.log("ZNS response:", JSON.stringify(data));
+  return data;
 }
 
 Deno.serve(async (req) => {
@@ -103,7 +143,7 @@ Deno.serve(async (req) => {
       items,
       receipt_code,
       branch_id,
-      zalo_user_id, // Optional: direct Zalo user_id if known
+      zalo_user_id,
     } = await req.json();
 
     if (!tenant_id) {
@@ -121,7 +161,7 @@ Deno.serve(async (req) => {
     // Get tenant landing settings for Zalo config
     const { data: settings, error: settingsError } = await supabaseAdmin
       .from("tenant_landing_settings")
-      .select("zalo_oa_id, zalo_access_token, zalo_enabled, store_name, store_phone")
+      .select("zalo_oa_id, zalo_access_token, zalo_enabled, store_name, store_phone, zalo_zns_template_id")
       .eq("tenant_id", tenant_id)
       .maybeSingle();
 
@@ -146,7 +186,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get branch hotline if available
+    // Get branch hotline
     let hotline = settings.store_phone || "";
     if (branch_id) {
       const { data: branch } = await supabaseAdmin
@@ -159,7 +199,7 @@ Deno.serve(async (req) => {
 
     const storeName = settings.store_name || "Cửa hàng";
 
-    // Build message content
+    // Build message content (for CS messages)
     const messageText = buildMessageText({
       message_type,
       customer_name,
@@ -180,11 +220,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Determine recipient Zalo user_id
+    // Determine recipient Zalo user_id for CS message
     let recipientUserId = zalo_user_id || null;
 
     if (message_type === "test") {
-      // For test mode: get the first follower of the OA
       if (!recipientUserId) {
         recipientUserId = await getFirstFollower(settings.zalo_access_token);
       }
@@ -192,7 +231,7 @@ Deno.serve(async (req) => {
         return new Response(
           JSON.stringify({
             error: "Không tìm thấy người theo dõi OA",
-            details: "Để test, bạn cần quan tâm (follow) OA trên Zalo trước, sau đó nhắn 1 tin nhắn cho OA. Zalo OA chỉ gửi được tin cho người đã theo dõi và tương tác với OA.",
+            details: "Để test, bạn cần quan tâm (follow) OA trên Zalo trước, sau đó nhắn 1 tin nhắn cho OA.",
           }),
           { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -200,11 +239,7 @@ Deno.serve(async (req) => {
     } else {
       // For production messages: try to find user by phone in zalo_followers table
       if (!recipientUserId && customer_phone) {
-        // Normalize phone
-        let normalizedPhone = (customer_phone || "").replace(/\s/g, "");
-        if (normalizedPhone.startsWith("84")) {
-          normalizedPhone = "0" + normalizedPhone.substring(2);
-        }
+        const normalizedPhone = normalizePhoneTo0(customer_phone);
         
         const { data: follower } = await supabaseAdmin
           .from("zalo_oa_followers")
@@ -217,30 +252,9 @@ Deno.serve(async (req) => {
           recipientUserId = follower.zalo_user_id;
         }
       }
-      
-      if (!recipientUserId) {
-        // Log and skip silently - customer hasn't followed OA
-        const logData = {
-          tenant_id,
-          customer_name: customer_name || null,
-          customer_phone: customer_phone || "",
-          message_type: message_type || "order_confirmation",
-          message_content: messageText,
-          status: "skipped",
-          error_message: "Khách hàng chưa theo dõi OA trên Zalo",
-          reference_id: order_code || receipt_code || null,
-          reference_type: message_type === "export_confirmation" ? "export" : "order",
-        };
-        await supabaseAdmin.from("zalo_message_logs").insert([logData]);
-
-        return new Response(
-          JSON.stringify({ success: true, message: "Customer not an OA follower, skipped" }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
     }
 
-    // Log the message attempt
+    // Log entry
     const logData = {
       tenant_id,
       customer_name: customer_name || null,
@@ -260,71 +274,167 @@ Deno.serve(async (req) => {
 
     const logId = logEntry?.id;
 
-    // Send message via Zalo OA API v3 - CS message (consultation)
-    const zaloResponse = await fetch(
-      "https://openapi.zalo.me/v3.0/oa/message/cs",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          access_token: settings.zalo_access_token,
-        },
-        body: JSON.stringify({
-          recipient: { user_id: recipientUserId },
-          message: { text: messageText },
-        }),
-      }
-    );
+    // Strategy: Try CS message first if follower found, otherwise try ZNS
+    if (recipientUserId) {
+      // Send CS message
+      const zaloResponse = await fetch(
+        "https://openapi.zalo.me/v3.0/oa/message/cs",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            access_token: settings.zalo_access_token,
+          },
+          body: JSON.stringify({
+            recipient: { user_id: recipientUserId },
+            message: { text: messageText },
+          }),
+        }
+      );
 
-    const zaloResult = await zaloResponse.json();
-    console.log("Zalo CS result:", JSON.stringify(zaloResult));
+      const zaloResult = await zaloResponse.json();
+      console.log("Zalo CS result:", JSON.stringify(zaloResult));
 
-    if (zaloResult.error && zaloResult.error !== 0) {
-      // Update log with error
-      if (logId) {
-        await supabaseAdmin
-          .from("zalo_message_logs")
-          .update({
+      if (zaloResult.error && zaloResult.error !== 0) {
+        // CS failed, try ZNS if available
+        if (settings.zalo_zns_template_id && customer_phone && message_type !== "test") {
+          console.log("CS failed, trying ZNS fallback...");
+          const znsResult = await sendZNS(
+            settings.zalo_access_token,
+            customer_phone,
+            settings.zalo_zns_template_id,
+            {
+              customer_name: customer_name || "Quý khách",
+              order_code: order_code || receipt_code || "",
+              store_name: storeName,
+              hotline: hotline,
+              amount: total_amount ? new Intl.NumberFormat("vi-VN").format(total_amount) + "đ" : "",
+            }
+          );
+
+          if (znsResult.error && znsResult.error !== 0) {
+            if (logId) {
+              await supabaseAdmin.from("zalo_message_logs").update({
+                status: "failed",
+                error_message: `CS: ${zaloResult.message}; ZNS: ${znsResult.message}`,
+                error_code: String(znsResult.error),
+              }).eq("id", logId);
+            }
+            return new Response(
+              JSON.stringify({ error: "Gửi thất bại", details: znsResult.message || zaloResult.message }),
+              { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+
+          // ZNS success
+          if (logId) {
+            await supabaseAdmin.from("zalo_message_logs").update({
+              status: "sent",
+              sent_at: new Date().toISOString(),
+              message_content: messageText + " [via ZNS]",
+            }).eq("id", logId);
+          }
+          return new Response(
+            JSON.stringify({ success: true, message: "Sent via ZNS" }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // No ZNS fallback
+        if (logId) {
+          await supabaseAdmin.from("zalo_message_logs").update({
             status: "failed",
             error_message: zaloResult.message || "Unknown error",
             error_code: String(zaloResult.error),
-          })
-          .eq("id", logId);
+          }).eq("id", logId);
+        }
+
+        let friendlyError = zaloResult.message || "Lỗi không xác định";
+        if (zaloResult.error === -124 || zaloResult.error === -216) {
+          friendlyError = "Access Token không hợp lệ hoặc đã hết hạn.";
+        } else if (zaloResult.error === -201 || zaloResult.error === -213) {
+          friendlyError = "Người nhận chưa tương tác với OA trong 7 ngày qua.";
+        }
+
+        return new Response(
+          JSON.stringify({ error: "Zalo send failed", details: friendlyError, zalo_error_code: zaloResult.error }),
+          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
-      // Provide helpful error messages
-      let friendlyError = zaloResult.message || "Lỗi không xác định";
-      if (zaloResult.error === -124) {
-        friendlyError = "Access Token không hợp lệ hoặc đã hết hạn. Vui lòng lấy lại token mới từ developers.zalo.me → Công cụ → Lấy Access Token.";
-      } else if (zaloResult.error === -201 || zaloResult.error === -213) {
-        friendlyError = "Người nhận chưa tương tác với OA trong 7 ngày qua. Zalo OA chỉ gửi được tin tư vấn cho người đã nhắn tin cho OA trong vòng 7 ngày.";
-      } else if (zaloResult.error === -216) {
-        friendlyError = "OA chưa được cấp quyền gửi tin nhắn. Vui lòng kiểm tra quyền 'Gửi tin nhắn tư vấn' trong cài đặt ứng dụng Zalo.";
+      // CS success
+      if (logId) {
+        await supabaseAdmin.from("zalo_message_logs").update({
+          status: "sent",
+          sent_at: new Date().toISOString(),
+        }).eq("id", logId);
       }
 
       return new Response(
-        JSON.stringify({
-          error: "Zalo send failed",
-          details: friendlyError,
-          zalo_error_code: zaloResult.error,
-        }),
-        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: true, message: "Zalo CS message sent" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Update log as success
-    if (logId) {
-      await supabaseAdmin
-        .from("zalo_message_logs")
-        .update({
+    // No follower found — try ZNS directly
+    if (settings.zalo_zns_template_id && customer_phone && message_type !== "test") {
+      const znsResult = await sendZNS(
+        settings.zalo_access_token,
+        customer_phone,
+        settings.zalo_zns_template_id,
+        {
+          customer_name: customer_name || "Quý khách",
+          order_code: order_code || receipt_code || "",
+          store_name: storeName,
+          hotline: hotline,
+          amount: total_amount ? new Intl.NumberFormat("vi-VN").format(total_amount) + "đ" : "",
+        }
+      );
+
+      if (znsResult.error && znsResult.error !== 0) {
+        if (logId) {
+          await supabaseAdmin.from("zalo_message_logs").update({
+            status: "failed",
+            error_message: znsResult.message || "ZNS error",
+            error_code: String(znsResult.error),
+          }).eq("id", logId);
+        }
+
+        let friendlyError = znsResult.message || "Lỗi ZNS";
+        if (znsResult.error === -124) {
+          friendlyError = "Access Token hết hạn. Vui lòng lấy token mới.";
+        }
+
+        return new Response(
+          JSON.stringify({ error: "ZNS send failed", details: friendlyError }),
+          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (logId) {
+        await supabaseAdmin.from("zalo_message_logs").update({
           status: "sent",
           sent_at: new Date().toISOString(),
-        })
-        .eq("id", logId);
+          message_content: messageText + " [via ZNS]",
+        }).eq("id", logId);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Sent via ZNS" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // No follower and no ZNS — skip
+    if (logId) {
+      await supabaseAdmin.from("zalo_message_logs").update({
+        status: "skipped",
+        error_message: "Khách chưa follow OA và chưa cấu hình ZNS Template",
+      }).eq("id", logId);
     }
 
     return new Response(
-      JSON.stringify({ success: true, message: "Zalo message sent" }),
+      JSON.stringify({ success: true, message: "Customer not follower, no ZNS configured, skipped" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
