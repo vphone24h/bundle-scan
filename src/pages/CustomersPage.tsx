@@ -70,10 +70,10 @@ export default function CustomersPage() {
     setSearchParams(newParams);
   };
 
-  const totalCustomers = customers?.length || 0;
-  const customersWithPoints = customers?.filter(c => c.current_points > 0).length || 0;
-  const vipCustomers = customers?.filter(c => c.membership_tier === 'vip').length || 0;
-  const customersWithPurchase = customers?.filter(c => c.total_spent > 0).length || 0;
+  const totalCustomers = customerStats?.totalCustomers || 0;
+  const customersWithPoints = customerStats?.customersWithPoints || 0;
+  const vipCustomers = customerStats?.vipCustomers || 0;
+  const customersWithPurchase = customerStats?.customersWithPurchase || 0;
 
   return (
     <MainLayout>
