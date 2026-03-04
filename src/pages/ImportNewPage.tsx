@@ -117,6 +117,9 @@ export default function ImportNewPage() {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [printQRPromptOpen, setPrintQRPromptOpen] = useState(false);
+  const [printQRProducts, setPrintQRProducts] = useState<{ id: string; name: string; sku: string; imei?: string; importPrice: number; salePrice?: number }[]>([]);
+  const [barcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   // 'search' = only product name visible, 'form' = full fields visible
   const [productFormMode, setProductFormMode] = useState<'search' | 'form'>('search');
