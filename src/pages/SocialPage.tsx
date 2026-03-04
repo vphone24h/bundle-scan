@@ -204,7 +204,7 @@ const SocialPage = () => {
             </TabsContent>
             <TabsContent value="feed" forceMount={activeTab === 'feed' ? undefined : true} className={activeTab !== 'feed' ? 'hidden' : ''}>
               <Suspense fallback={<TabFallback />}>
-                <SocialFeedTab onViewProfile={handleViewProfile} />
+                <SocialFeedTab onViewProfile={handleViewProfile} focusPostId={focusPostId} focusCommentId={focusCommentId} onFocusHandled={() => { setFocusPostId(null); setFocusCommentId(null); }} />
               </Suspense>
             </TabsContent>
             <TabsContent value="notifications" forceMount={activeTab === 'notifications' ? undefined : true} className={activeTab !== 'notifications' ? 'hidden' : ''}>
