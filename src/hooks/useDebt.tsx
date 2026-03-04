@@ -20,6 +20,7 @@ export interface DebtSummary {
   remaining_amount: number; // Còn nợ
   first_debt_date: string | null; // Ngày phát sinh đầu tiên
   days_overdue: number;
+  merged_entity_ids?: string[]; // For merged supplier debts
 }
 
 export interface DebtPayment {
