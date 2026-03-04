@@ -111,7 +111,7 @@ export function useProductImportExportReport(filters?: {
         `${name}||${sku}||${branchId || ''}`;
 
       // Process imports
-      importRes.data?.forEach(item => {
+      importData.forEach(item => {
         const receipt = item.import_receipts as any;
         const product = item.products as any;
         const key = getKey(product?.name || '', product?.sku || '', receipt?.branch_id);
