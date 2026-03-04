@@ -6243,6 +6243,16 @@ export type Database = {
       generate_domain_verification_token: { Args: never; Returns: string }
       generate_voucher_code: { Args: never; Returns: string }
       get_current_tenant: { Args: never; Returns: string }
+      get_customer_debt_summary: {
+        Args: { _tenant_id: string }
+        Returns: {
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          total_receipts: number
+          total_remaining_debt: number
+        }[]
+      }
       get_public_reviews:
         | {
             Args: { _limit?: number }
@@ -6264,6 +6274,20 @@ export type Database = {
               rating: number
             }[]
           }
+      get_revenue_daily: {
+        Args: {
+          _branch_id?: string
+          _end_date: string
+          _start_date: string
+          _tenant_id: string
+        }
+        Returns: {
+          completed_revenue: number
+          stat_date: string
+          total_orders: number
+          total_revenue: number
+        }[]
+      }
       get_staff_kpi_stats: {
         Args: {
           p_end_date: string
@@ -6295,6 +6319,15 @@ export type Database = {
           has_usage: boolean
           landing_domain: string
           tenant_id: string
+        }[]
+      }
+      get_top_products: {
+        Args: { _limit?: number; _tenant_id: string }
+        Returns: {
+          product_name: string
+          sku: string
+          total_revenue: number
+          total_sold: number
         }[]
       }
       get_user_accessible_branch_ids: {
