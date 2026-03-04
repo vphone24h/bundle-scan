@@ -634,7 +634,7 @@ export default function UniversalStoreTemplate({
                         <ScrollReveal animation="fade-up">
                           <div className="flex items-end justify-between mb-6">
                             <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">🎁 Combo ưu đãi</h2>
-                            <button onClick={() => navigateTo('products')} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
+                            <button onClick={() => navigateTo('products', { filterTag: 'combo' })} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
                               Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
                             </button>
                           </div>
