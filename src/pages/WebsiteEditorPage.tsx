@@ -72,6 +72,8 @@ export default function WebsiteEditorPage() {
         custom_products_page_sections: (settings as any).custom_products_page_sections || null,
         custom_products_page_tabs: (settings as any).custom_products_page_tabs || [],
         custom_product_detail_sections: (settings as any).custom_product_detail_sections || null,
+        custom_news_page_sections: (settings as any).custom_news_page_sections || null,
+        custom_news_page_tabs: (settings as any).custom_news_page_tabs || [],
       });
     } else if (tenant) {
       setFormData(prev => ({ ...prev, store_name: tenant.name || '' }));
