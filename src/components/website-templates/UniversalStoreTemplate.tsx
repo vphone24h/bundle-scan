@@ -117,6 +117,7 @@ export default function UniversalStoreTemplate({
   const [selectedProduct, setSelectedProduct] = useState<LandingProduct | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [productFilterTag, setProductFilterTag] = useState<string | null>(null);
   const [showInstallmentCalc, setShowInstallmentCalc] = useState(false);
   // Load Google Font if needed
   useEffect(() => {
@@ -205,12 +206,20 @@ export default function UniversalStoreTemplate({
   const allProducts = productsData?.products || [];
   const filteredProducts = useMemo(() => {
     let products = selectedCategoryId ? allProducts.filter(p => p.category_id === selectedCategoryId) : allProducts;
+    // Filter by product tag (flash sale, featured, combo, custom tab)
+    if (productFilterTag === 'featured') {
+      products = products.filter(p => p.is_featured);
+    } else if (productFilterTag === 'flashSale' || productFilterTag === 'combo') {
+      products = products.filter(p => (p as any).home_tab_ids?.includes(productFilterTag));
+    } else if (productFilterTag && productFilterTag.startsWith('productTab_')) {
+      products = products.filter(p => (p as any).home_tab_ids?.includes(productFilterTag));
+    }
     if (productSearchQuery.trim()) {
       const q = productSearchQuery.toLowerCase().trim();
       products = products.filter(p => p.name.toLowerCase().includes(q));
     }
     return products;
-  }, [allProducts, selectedCategoryId, productSearchQuery]);
+  }, [allProducts, selectedCategoryId, productSearchQuery, productFilterTag]);
   const featuredArticles = articlesData?.articles?.filter(a => a.is_featured) || [];
 
   const handlePointsAwarded = useCallback(() => { queryClient.invalidateQueries({ queryKey: ['customer-points-public'] }); }, [queryClient]);
@@ -218,9 +227,10 @@ export default function UniversalStoreTemplate({
   const handleSearch = () => { if (searchValue.trim()) { setSubmittedValue(searchValue.trim()); if (pageView === 'home') setPageView('warranty'); } };
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
-  const navigateTo = (view: PageView, keepCategory?: boolean) => {
+  const navigateTo = (view: PageView, opts?: { keepCategory?: boolean; filterTag?: string | null }) => {
     setPageView(view); setSelectedArticle(null);
-    if (!keepCategory) setSelectedCategoryId(null);
+    if (!opts?.keepCategory) setSelectedCategoryId(null);
+    setProductFilterTag(opts?.filterTag ?? null);
     const newParams = new URLSearchParams(searchParams);
     newParams.delete('product'); newParams.delete('article');
     setSearchParams(newParams, { replace: true });
@@ -388,7 +398,7 @@ export default function UniversalStoreTemplate({
                           {productsData.categories.map((cat, idx) => (
                             <ScrollReveal key={cat.id} animation="fade-up" delay={idx * 80}>
                               <button
-                                onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products', true); }}
+                                onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products', { keepCategory: true }); }}
                                 className={`group w-full overflow-hidden relative text-left ${cat.image_url ? 'min-h-[65vh] sm:min-h-[70vh]' : 'min-h-[120px]'}`}
                               >
                                 {cat.image_url ? (
@@ -424,7 +434,7 @@ export default function UniversalStoreTemplate({
                         <div className="max-w-[1200px] mx-auto px-4">
                           <div className="flex items-center overflow-x-auto gap-4 py-2 scrollbar-hide">
                             {productsData.categories.map(cat => (
-                              <button key={cat.id} onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products', true); }} className="flex flex-col items-center gap-2 min-w-[90px] group">
+                              <button key={cat.id} onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products', { keepCategory: true }); }} className="flex flex-col items-center gap-2 min-w-[90px] group">
                                 {cat.image_url ? (
                                   <img src={cat.image_url} alt={cat.name} className="h-16 w-16 rounded-2xl object-cover border border-black/5 group-hover:scale-105 transition-transform" />
                                 ) : (
@@ -453,7 +463,7 @@ export default function UniversalStoreTemplate({
                               <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{config.productSectionTitle}</h2>
                               {featuredProducts.length > 0 && <p className="text-xs text-[#86868b] mt-0.5">{config.productSectionSubtitle}</p>}
                             </div>
-                            <button onClick={() => navigateTo('products')} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
+                            <button onClick={() => navigateTo('products', { filterTag: 'featured' })} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
                               Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
                             </button>
                           </div>
@@ -597,7 +607,7 @@ export default function UniversalStoreTemplate({
                         <ScrollReveal animation="fade-up">
                           <div className="flex items-end justify-between mb-6">
                             <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">⚡ Flash Sale</h2>
-                            <button onClick={() => navigateTo('products')} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
+                            <button onClick={() => navigateTo('products', { filterTag: 'flashSale' })} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
                               Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
                             </button>
                           </div>
@@ -624,7 +634,7 @@ export default function UniversalStoreTemplate({
                         <ScrollReveal animation="fade-up">
                           <div className="flex items-end justify-between mb-6">
                             <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">🎁 Combo ưu đãi</h2>
-                            <button onClick={() => navigateTo('products')} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
+                            <button onClick={() => navigateTo('products', { filterTag: 'combo' })} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
                               Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
                             </button>
                           </div>
@@ -654,7 +664,7 @@ export default function UniversalStoreTemplate({
                           <ScrollReveal animation="fade-up">
                             <div className="flex items-end justify-between mb-6">
                               <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{tab.name}</h2>
-                              <button onClick={() => navigateTo('products')} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
+                              <button onClick={() => navigateTo('products', { filterTag: sectionId as string })} className="text-xs font-medium shrink-0 flex items-center gap-1" style={{ color: accentColor }}>
                                 Xem tất cả <ChevronDown className="h-3 w-3 -rotate-90" />
                               </button>
                             </div>
@@ -708,8 +718,23 @@ export default function UniversalStoreTemplate({
                 <button onClick={() => navigateTo('home')} className="h-8 w-8 rounded-full bg-[#f5f5f7] flex items-center justify-center hover:bg-black/10 transition-colors">
                   <ArrowLeft className="h-4 w-4" />
                 </button>
-                <h2 className="text-2xl font-bold tracking-tight flex-1">{config.navLabels.products}</h2>
+                <h2 className="text-2xl font-bold tracking-tight flex-1">
+                  {productFilterTag === 'featured' ? config.productSectionTitle
+                    : productFilterTag === 'flashSale' ? '⚡ Flash Sale'
+                    : productFilterTag === 'combo' ? '🎁 Combo ưu đãi'
+                    : productFilterTag?.startsWith('productTab_')
+                      ? ((settings as any)?.custom_product_tabs as { id: string; name: string }[] || []).find(t => t.id === productFilterTag)?.name || config.navLabels.products
+                    : config.navLabels.products}
+                </h2>
               </div>
+              {productFilterTag && (
+                <button
+                  onClick={() => setProductFilterTag(null)}
+                  className="mb-4 px-3 py-1.5 rounded-full text-xs font-medium bg-[#f5f5f7] hover:bg-black/10 transition-colors flex items-center gap-1.5"
+                >
+                  <X className="h-3 w-3" /> Xem tất cả sản phẩm
+                </button>
+              )}
 
               {activeSections.map(section => {
                 switch (section.id) {
