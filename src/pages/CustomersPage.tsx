@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, Calendar, History, BarChart3, FileText, ShoppingCart, Wallet, Ticket } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CustomerListTab } from '@/components/customers/CustomerListTab';
 import { CareScheduleTab } from '@/components/customers/CareScheduleTab';
 import { CareTimelineTab } from '@/components/customers/CareTimelineTab';
