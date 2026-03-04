@@ -282,9 +282,7 @@ export default function ExportHistoryPage() {
     return Array.from(grouped.values());
   }, [items]);
 
-  // Server pagination helpers
-  const receiptTotalPages = Math.max(1, Math.ceil(receiptsTotalCount / receiptPageSize));
-  const itemTotalPages = Math.max(1, Math.ceil(itemsTotalCount / itemPageSize));
+  // No totalCount — use hasMore for next/prev navigation
 
   // Handle view detail
   const handleViewDetail = (receipt: ExportReceipt) => {
