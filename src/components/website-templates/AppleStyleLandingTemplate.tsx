@@ -713,7 +713,7 @@ export default function AppleStyleLandingTemplate({
 
             {/* Articles */}
             {(() => {
-              const arts = featuredArticles.length > 0 ? featuredArticles : (articlesData?.articles || []);
+              const arts = homeArticles.length > 0 ? homeArticles : (featuredArticles.length > 0 ? featuredArticles : (articlesData?.articles || []));
               if (arts.length === 0) return null;
               return (
                 <FadeSection>

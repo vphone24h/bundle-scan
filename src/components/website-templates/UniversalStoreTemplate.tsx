@@ -481,8 +481,7 @@ export default function UniversalStoreTemplate({
                   );
                 }
                 case 'articles': {
-                  const allArticles = articlesData?.articles || [];
-                  const displayArticles = featuredArticles.length > 0 ? featuredArticles : allArticles;
+                  const displayArticles = homeArticles.length > 0 ? homeArticles : (featuredArticles.length > 0 ? featuredArticles : (articlesData?.articles || []));
                   if (!config.features.articles || displayArticles.length === 0) return null;
                   return (
                     <section key="articles" className="py-12 bg-[#f5f5f7]">
