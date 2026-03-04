@@ -64,43 +64,45 @@ export function useCustomerDebts(showSettled: boolean = false) {
   return useQuery({
     queryKey: ['customer-debts', user?.id, showSettled, permissions?.branchId, permissions?.role],
     queryFn: async () => {
-      // Get ALL export receipts for customers (not just debt > 0)
-      // We need original_debt_amount to calculate total original debt
-      let query = supabase
-        .from('export_receipts')
-        .select(`
-          id,
-          customer_id,
-          total_amount,
-          paid_amount,
-          debt_amount,
-          original_debt_amount,
-          export_date,
-          branch_id,
-          customers(id, name, phone),
-          branches(name)
-        `)
-        .eq('status', 'completed');
+      const buildReceiptsQuery = () => {
+        let q = supabase
+          .from('export_receipts')
+          .select(`
+            id,
+            customer_id,
+            total_amount,
+            paid_amount,
+            debt_amount,
+            original_debt_amount,
+            export_date,
+            branch_id,
+            customers(id, name, phone),
+            branches(name)
+          `)
+          .eq('status', 'completed');
 
-      if (permissions?.role !== 'super_admin' && permissions?.branchId) {
-        query = query.eq('branch_id', permissions.branchId);
-      }
+        if (permissions?.role !== 'super_admin' && permissions?.branchId) {
+          q = q.eq('branch_id', permissions.branchId);
+        }
+        return q;
+      };
 
-      const { data: receipts, error: receiptsError } = await query;
-      if (receiptsError) throw receiptsError;
+      const receipts = await fetchAllRows<any>(buildReceiptsQuery);
 
       // Get debt payments for customers
-      let paymentsQuery = supabase
-        .from('debt_payments')
-        .select('*')
-        .eq('entity_type', 'customer');
+      const buildPaymentsQuery = () => {
+        let q = supabase
+          .from('debt_payments')
+          .select('*')
+          .eq('entity_type', 'customer');
 
-      if (permissions?.role !== 'super_admin' && permissions?.branchId) {
-        paymentsQuery = paymentsQuery.eq('branch_id', permissions.branchId);
-      }
+        if (permissions?.role !== 'super_admin' && permissions?.branchId) {
+          q = q.eq('branch_id', permissions.branchId);
+        }
+        return q;
+      };
 
-      const { data: payments, error: paymentsError } = await paymentsQuery;
-      if (paymentsError) throw paymentsError;
+      const payments = await fetchAllRows<any>(buildPaymentsQuery);
 
       // Get unique customer IDs from payments
       const paymentCustomerIds = [...new Set(payments?.map(p => p.entity_id) || [])];
