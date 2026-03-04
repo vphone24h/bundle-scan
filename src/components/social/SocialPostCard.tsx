@@ -89,7 +89,7 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
       <CardContent className="pt-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-3">
-          <button onClick={() => onViewProfile(post.user_id)}>
+          <button onClick={() => setAvatarPreview({ url: post.avatar_url, name: post.display_name })}>
             <Avatar className="h-10 w-10 cursor-pointer hover:ring-2 ring-primary transition-all">
               <AvatarImage src={post.avatar_url || undefined} />
               <AvatarFallback>{(post.display_name || 'U')[0]}</AvatarFallback>
