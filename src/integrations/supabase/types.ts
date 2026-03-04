@@ -6292,6 +6292,10 @@ export type Database = {
           warranty: string
         }[]
       }
+      get_import_summary_stats: {
+        Args: { _branch_id?: string; _tenant_id: string }
+        Returns: Json
+      }
       get_public_reviews:
         | {
             Args: { _limit?: number }
