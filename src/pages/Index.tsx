@@ -141,7 +141,7 @@ const Index = () => {
   const { isCompleted: dashTourDone, isLoading: dashTourLoading, completeTour: completeDashTour } = useOnboardingTour('dashboard_overview');
   const { mutate: resetAllTours } = useResetAllTours();
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
-  const { data: permissions } = usePermissions();
+  const isFirstLoad = statsLoading && !stats;
   const { data: platformUser } = usePlatformUser();
   const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
