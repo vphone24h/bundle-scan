@@ -143,7 +143,7 @@ export default function ExportNewPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Auto email toggle
-  const [autoEmailEnabled, setAutoEmailEnabled] = useState(false);
+  const [autoEmailEnabled, setAutoEmailEnabled] = useState(true);
 
   // Hooks
   const { user } = useAuth();
