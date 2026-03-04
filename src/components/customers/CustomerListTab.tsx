@@ -59,6 +59,8 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
     const [sourceFilter, setSourceFilter] = useState('_all_');
     const [crmStatusFilter, setCrmStatusFilter] = useState('_all_');
     const [staffFilter, setStaffFilter] = useState('_all_');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(100);
 
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
     const [editingCustomer, setEditingCustomer] = useState<any>(null);
