@@ -30,6 +30,7 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
   const [showLikers, setShowLikers] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<{ url?: string | null; name?: string } | null>(null);
 
   const toggleLike = useToggleLike();
   const { data: comments } = usePostComments(showComments ? post.id : null);
