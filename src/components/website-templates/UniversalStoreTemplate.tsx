@@ -20,6 +20,7 @@ import {
   BookingPage, BranchesPage, ContactPage, AccessoriesPage,
   ComparePage, GenericSystemPage,
 } from './SystemPageTemplates';
+import LayoutBannerCollapsible from './LayoutBannerCollapsible';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -699,20 +700,22 @@ export default function UniversalStoreTemplate({
                     if (!page) return null;
                     const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
                     return (
-                      <section key={sectionId}>
+                      <section key={sectionId} className="max-w-[1200px] mx-auto px-4">
                         <ScrollReveal animation="fade-up">
-                          {pageId === 'pricelist' && <PriceListPage {...sysProps} />}
-                          {pageId === 'booking' && <BookingPage {...sysProps} />}
-                          {pageId === 'branches' && <BranchesPage {...sysProps} />}
-                          {pageId === 'contact' && <ContactPage {...sysProps} />}
-                          {pageId === 'repair' && <RepairPage {...sysProps} />}
-                          {pageId === 'tradein' && <TradeInPage {...sysProps} />}
-                          {pageId === 'installment' && <InstallmentPage {...sysProps} />}
-                          {pageId === 'accessories' && <AccessoriesPage {...sysProps} />}
-                          {pageId === 'compare' && <ComparePage {...sysProps} />}
-                          {!['pricelist','booking','branches','contact','repair','tradein','installment','accessories','compare'].includes(pageId) && (
-                            <GenericSystemPage pageId={pageId} pageLabel={page.label} {...sysProps} />
-                          )}
+                          <LayoutBannerCollapsible pageId={pageId} accentColor={accentColor}>
+                            {pageId === 'pricelist' && <PriceListPage {...sysProps} />}
+                            {pageId === 'booking' && <BookingPage {...sysProps} />}
+                            {pageId === 'branches' && <BranchesPage {...sysProps} />}
+                            {pageId === 'contact' && <ContactPage {...sysProps} />}
+                            {pageId === 'repair' && <RepairPage {...sysProps} />}
+                            {pageId === 'tradein' && <TradeInPage {...sysProps} />}
+                            {pageId === 'installment' && <InstallmentPage {...sysProps} />}
+                            {pageId === 'accessories' && <AccessoriesPage {...sysProps} />}
+                            {pageId === 'compare' && <ComparePage {...sysProps} />}
+                            {!['pricelist','booking','branches','contact','repair','tradein','installment','accessories','compare'].includes(pageId) && (
+                              <GenericSystemPage pageId={pageId} pageLabel={page.label} {...sysProps} />
+                            )}
+                          </LayoutBannerCollapsible>
                         </ScrollReveal>
                       </section>
                     );
@@ -930,19 +933,21 @@ export default function UniversalStoreTemplate({
                       if (!page) return null;
                       const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
                       return (
-                        <div key={section.id} className="mb-8">
-                          {pageId === 'pricelist' && <PriceListPage {...sysProps} />}
-                          {pageId === 'booking' && <BookingPage {...sysProps} />}
-                          {pageId === 'branches' && <BranchesPage {...sysProps} />}
-                          {pageId === 'contact' && <ContactPage {...sysProps} />}
-                          {pageId === 'repair' && <RepairPage {...sysProps} />}
-                          {pageId === 'tradein' && <TradeInPage {...sysProps} />}
-                          {pageId === 'installment' && <InstallmentPage {...sysProps} />}
-                          {pageId === 'accessories' && <AccessoriesPage {...sysProps} />}
-                          {pageId === 'compare' && <ComparePage {...sysProps} />}
-                          {!['pricelist','booking','branches','contact','repair','tradein','installment','accessories','compare'].includes(pageId) && (
-                            <GenericSystemPage pageId={pageId} pageLabel={page.label} {...sysProps} />
-                          )}
+                        <div key={section.id} className="mb-4">
+                          <LayoutBannerCollapsible pageId={pageId} accentColor={accentColor}>
+                            {pageId === 'pricelist' && <PriceListPage {...sysProps} />}
+                            {pageId === 'booking' && <BookingPage {...sysProps} />}
+                            {pageId === 'branches' && <BranchesPage {...sysProps} />}
+                            {pageId === 'contact' && <ContactPage {...sysProps} />}
+                            {pageId === 'repair' && <RepairPage {...sysProps} />}
+                            {pageId === 'tradein' && <TradeInPage {...sysProps} />}
+                            {pageId === 'installment' && <InstallmentPage {...sysProps} />}
+                            {pageId === 'accessories' && <AccessoriesPage {...sysProps} />}
+                            {pageId === 'compare' && <ComparePage {...sysProps} />}
+                            {!['pricelist','booking','branches','contact','repair','tradein','installment','accessories','compare'].includes(pageId) && (
+                              <GenericSystemPage pageId={pageId} pageLabel={page.label} {...sysProps} />
+                            )}
+                          </LayoutBannerCollapsible>
                         </div>
                       );
                     }
@@ -1110,19 +1115,21 @@ export default function UniversalStoreTemplate({
                           if (!page) return null;
                           const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
                           return (
-                            <div key={section.id} className="mb-8">
-                              {pageId === 'pricelist' && <PriceListPage {...sysProps} />}
-                              {pageId === 'booking' && <BookingPage {...sysProps} />}
-                              {pageId === 'branches' && <BranchesPage {...sysProps} />}
-                              {pageId === 'contact' && <ContactPage {...sysProps} />}
-                              {pageId === 'repair' && <RepairPage {...sysProps} />}
-                              {pageId === 'tradein' && <TradeInPage {...sysProps} />}
-                              {pageId === 'installment' && <InstallmentPage {...sysProps} />}
-                              {pageId === 'accessories' && <AccessoriesPage {...sysProps} />}
-                              {pageId === 'compare' && <ComparePage {...sysProps} />}
-                              {!['pricelist','booking','branches','contact','repair','tradein','installment','accessories','compare'].includes(pageId) && (
-                                <GenericSystemPage pageId={pageId} pageLabel={page.label} {...sysProps} />
-                              )}
+                            <div key={section.id} className="mb-4">
+                              <LayoutBannerCollapsible pageId={pageId} accentColor={accentColor}>
+                                {pageId === 'pricelist' && <PriceListPage {...sysProps} />}
+                                {pageId === 'booking' && <BookingPage {...sysProps} />}
+                                {pageId === 'branches' && <BranchesPage {...sysProps} />}
+                                {pageId === 'contact' && <ContactPage {...sysProps} />}
+                                {pageId === 'repair' && <RepairPage {...sysProps} />}
+                                {pageId === 'tradein' && <TradeInPage {...sysProps} />}
+                                {pageId === 'installment' && <InstallmentPage {...sysProps} />}
+                                {pageId === 'accessories' && <AccessoriesPage {...sysProps} />}
+                                {pageId === 'compare' && <ComparePage {...sysProps} />}
+                                {!['pricelist','booking','branches','contact','repair','tradein','installment','accessories','compare'].includes(pageId) && (
+                                  <GenericSystemPage pageId={pageId} pageLabel={page.label} {...sysProps} />
+                                )}
+                              </LayoutBannerCollapsible>
                             </div>
                           );
                         }
