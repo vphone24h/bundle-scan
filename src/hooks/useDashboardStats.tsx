@@ -48,16 +48,17 @@ export function useDashboardStats() {
       const { data: dailyStats } = await dailyStatsQuery.maybeSingle();
 
       // 2. Single server-side RPC: counts + sums in one DB call
-      const { data: agg } = await supabase.rpc('get_dashboard_aggregates', {
+      const { data: aggRaw } = await supabase.rpc('get_dashboard_aggregates', {
         p_tenant_id: tenant!.id,
         p_branch_id: shouldFilter && branchId ? branchId : null,
       });
 
-      const inStockCount = agg?.in_stock || 0;
-      const totalProducts = agg?.total || 0;
-      const soldProducts = agg?.sold || 0;
-      const totalImportValue = Number(agg?.total_import_value || 0);
-      const pendingDebt = Number(agg?.pending_debt || 0);
+      const agg = (aggRaw || {}) as Record<string, number>;
+      const inStockCount = agg.in_stock || 0;
+      const totalProducts = agg.total || 0;
+      const soldProducts = agg.sold || 0;
+      const totalImportValue = Number(agg.total_import_value || 0);
+      const pendingDebt = Number(agg.pending_debt || 0);
 
       // 5. Use daily_stats for today metrics, or fallback to quick queries
       let todayRevenue = 0, todayProfit = 0, todaySold = 0, todayImports = 0;
