@@ -124,26 +124,25 @@ export function useExportReceipts() {
     refetchOnWindowFocus: false,
   });
 
-  // Background load all remaining receipts – deferred with longer staleTime
+  // Background load more receipts (up to 500) – deferred with longer staleTime
   useQuery({
     queryKey: ['export-receipts-all', tenant?.id, branchId, isDataHidden],
     queryFn: async () => {
       if (isDataHidden) return [] as ExportReceipt[];
 
-      const buildQuery = () => {
-        let query = supabase
-          .from('export_receipts')
-          .select(selectFields)
-          .order('export_date', { ascending: false });
+      let query = supabase
+        .from('export_receipts')
+        .select(selectFields)
+        .order('export_date', { ascending: false })
+        .limit(500);
 
-        if (shouldFilter && branchId) {
-          query = query.eq('branch_id', branchId);
-        }
-        return query;
-      };
+      if (shouldFilter && branchId) {
+        query = query.eq('branch_id', branchId);
+      }
 
-      const allData = await fetchAllRows<ExportReceipt>(buildQuery);
-      // Replace the initial 15 with the full dataset
+      const { data, error } = await query;
+      if (error) throw error;
+      const allData = (data || []) as unknown as ExportReceipt[];
       queryClient.setQueryData(['export-receipts', tenant?.id, branchId, isDataHidden], allData);
       return allData;
     },
