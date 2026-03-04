@@ -87,50 +87,56 @@ export default function CustomersPage() {
       <PageHeader title={t('pages.customers.title')} helpText={t('pages.customers.helpText')} />
 
       <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-4 sm:mb-6">
-        <Card>
-          <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
-            <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3">
-              <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg"><Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" /></div>
-              <div className="text-center sm:text-left">
-                <p className="text-lg sm:text-2xl font-bold">{totalCustomers}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{t('pages.customers.totalCustomers')}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
-            <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3">
-              <div className="p-1.5 sm:p-2 bg-amber-500/10 rounded-lg"><Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" /></div>
-              <div className="text-center sm:text-left">
-                <p className="text-lg sm:text-2xl font-bold">{customersWithPoints}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{t('pages.customers.hasPoints')}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
-            <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3">
-              <div className="p-1.5 sm:p-2 bg-purple-500/10 rounded-lg"><Users className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" /></div>
-              <div className="text-center sm:text-left">
-                <p className="text-lg sm:text-2xl font-bold">{vipCustomers}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{t('pages.customers.vip')}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
-            <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3">
-              <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-lg"><ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" /></div>
-              <div className="text-center sm:text-left">
-                <p className="text-lg sm:text-2xl font-bold">{customersWithPurchase}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{t('pages.customers.purchased')}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {isFirstLoad ? (
+          <>{Array.from({ length: 4 }).map((_, i) => <StatSkeleton key={i} />)}</>
+        ) : (
+          <>
+            <Card>
+              <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
+                <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3">
+                  <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg"><Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" /></div>
+                  <div className="text-center sm:text-left">
+                    <p className="text-lg sm:text-2xl font-bold">{totalCustomers}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">{t('pages.customers.totalCustomers')}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
+                <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3">
+                  <div className="p-1.5 sm:p-2 bg-amber-500/10 rounded-lg"><Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" /></div>
+                  <div className="text-center sm:text-left">
+                    <p className="text-lg sm:text-2xl font-bold">{customersWithPoints}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">{t('pages.customers.hasPoints')}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
+                <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3">
+                  <div className="p-1.5 sm:p-2 bg-purple-500/10 rounded-lg"><Users className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" /></div>
+                  <div className="text-center sm:text-left">
+                    <p className="text-lg sm:text-2xl font-bold">{vipCustomers}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">{t('pages.customers.vip')}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
+                <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3">
+                  <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-lg"><ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" /></div>
+                  <div className="text-center sm:text-left">
+                    <p className="text-lg sm:text-2xl font-bold">{customersWithPurchase}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">{t('pages.customers.purchased')}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-3 sm:space-y-4">
