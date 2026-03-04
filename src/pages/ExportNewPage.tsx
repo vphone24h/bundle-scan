@@ -141,6 +141,9 @@ export default function ExportNewPage() {
   const [createdReceipt, setCreatedReceipt] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Auto email toggle
+  const [autoEmailEnabled, setAutoEmailEnabled] = useState(false);
+
   // Hooks
   const { user } = useAuth();
   const checkProduct = useCheckProductForSale();
@@ -152,7 +155,15 @@ export default function ExportNewPage() {
   const { data: branches } = useBranches();
   const { data: permissions } = usePermissions();
   const { data: staffList } = useStaffList();
+  const { data: landingSettings } = useTenantLandingSettings();
   const isSuperAdmin = permissions?.role === 'super_admin';
+
+  // Sync auto email toggle with landing settings
+  useEffect(() => {
+    if (landingSettings?.order_email_on_export) {
+      setAutoEmailEnabled(true);
+    }
+  }, [landingSettings?.order_email_on_export]);
   
   // Get branch_id from first cart item for invoice template
   const cartBranchId = cart.find(item => item.branch_id)?.branch_id || null;
