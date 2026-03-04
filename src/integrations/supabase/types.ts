@@ -5862,6 +5862,62 @@ export type Database = {
         }
         Relationships: []
       }
+      zalo_message_logs: {
+        Row: {
+          created_at: string
+          customer_name: string | null
+          customer_phone: string
+          error_code: string | null
+          error_message: string | null
+          id: string
+          message_content: string | null
+          message_type: string
+          reference_id: string | null
+          reference_type: string | null
+          sent_at: string | null
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name?: string | null
+          customer_phone: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          message_content?: string | null
+          message_type?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          sent_at?: string | null
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          message_content?: string | null
+          message_type?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          sent_at?: string | null
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zalo_message_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       advertisements_public: {
