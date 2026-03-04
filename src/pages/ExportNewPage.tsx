@@ -821,6 +821,32 @@ export default function ExportNewPage() {
         }
       }
 
+      // Send auto email if enabled
+      if (autoEmailEnabled && savedCustomerEmail) {
+        supabase.functions.invoke('send-export-email', {
+          body: {
+            tenant_id: landingSettings?.tenant_id,
+            customer_name: savedCustomerName,
+            customer_email: savedCustomerEmail,
+            customer_phone: savedCustomerPhone,
+            items: savedCart.map(item => ({
+              product_name: item.product_name,
+              imei: item.imei,
+              sale_price: item.sale_price,
+              quantity: item.quantity,
+              warranty: item.warranty,
+            })),
+            total_amount: totalAmount,
+            receipt_code: receipt.code,
+            branch_id: branchId,
+            export_date: new Date().toISOString(),
+          },
+        }).then(({ error }) => {
+          if (error) console.warn('Export email failed:', error.message);
+        }).catch(() => {});
+        successMessage += '. Email đã được gửi cho khách hàng';
+      }
+
       toast({
         title: t('pages.exportNew.exportSuccess'),
         description: successMessage,
