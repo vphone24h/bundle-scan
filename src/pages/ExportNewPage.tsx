@@ -46,6 +46,8 @@ import { usePointSettings } from '@/hooks/useCustomerPoints';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useStaffList } from '@/hooks/useCRM';
 import { useAuth } from '@/hooks/useAuth';
+import { useTenantLandingSettings } from '@/hooks/useTenantLanding';
+import { supabase } from '@/integrations/supabase/client';
 import { ExportPaymentDialog } from '@/components/export/ExportPaymentDialog';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { BarcodeScannerInput } from '@/components/export/BarcodeScannerInput';
