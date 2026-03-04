@@ -79,32 +79,15 @@ export function useSocialProfile(userId?: string) {
     queryFn: async () => {
       if (!targetId) return null;
 
-      const [{ data: sp }, { data: profile }, { data: pu }] = await Promise.all([
+      const [{ data: sp }, { data: profile }, { data: verifiedIds }] = await Promise.all([
         supabase.from('social_profiles').select('*').eq('user_id', targetId).maybeSingle(),
         supabase.from('profiles').select('display_name, avatar_url, phone').eq('user_id', targetId).maybeSingle(),
-        supabase.from('platform_users').select('tenant_id').eq('user_id', targetId).maybeSingle(),
+        supabase.rpc('get_verified_user_ids', { p_user_ids: [targetId] }),
       ]);
 
       if (!sp && !profile) return null;
 
-      // Check if user's tenant has active subscription → auto verified
-      let hasSubscription = false;
-      if (pu?.tenant_id) {
-        const { data: tenant } = await supabase
-          .from('tenants')
-          .select('subscription_plan, subscription_end_date')
-          .eq('id', pu.tenant_id)
-          .maybeSingle();
-        if (tenant?.subscription_plan) {
-          if (tenant.subscription_plan === 'lifetime') {
-            hasSubscription = true;
-          } else if (tenant.subscription_end_date) {
-            hasSubscription = new Date(tenant.subscription_end_date) > new Date();
-          }
-        }
-      }
-
-      const isVerified = sp?.is_verified || hasSubscription;
+      const isVerified = (verifiedIds || []).includes(targetId);
 
       return {
         user_id: targetId,
