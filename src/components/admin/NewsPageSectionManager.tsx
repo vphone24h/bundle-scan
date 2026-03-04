@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { ChevronUp, ChevronDown, RotateCcw, Plus, Pencil, Trash2, X } from 'lucide-react';
+import { SYSTEM_PAGES } from '@/lib/industryConfig';
 
 export interface NewsPageSectionItem {
   id: string;
@@ -27,6 +28,10 @@ interface CustomNewsTab {
   icon?: string;
 }
 
+const EXTRA_LAYOUT_PRESETS = SYSTEM_PAGES
+  .filter(p => !['home', 'products', 'news', 'warranty'].includes(p.id))
+  .filter(p => !NEWS_PAGE_SECTIONS.some(s => s.id === p.id));
+
 function getDefaultSections(): NewsPageSectionItem[] {
   return [
     { id: 'search', enabled: true },
@@ -40,6 +45,11 @@ function getSectionMeta(id: string, customTabs: CustomNewsTab[]) {
   const customTab = customTabs.find(t => t.id === id);
   if (customTab) {
     return { label: customTab.name, icon: customTab.icon || '📝', description: 'Danh mục bài viết tùy chỉnh' };
+  }
+  if (id.startsWith('layout_')) {
+    const pageId = id.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
+    const page = SYSTEM_PAGES.find(p => p.id === pageId);
+    if (page) return { label: page.label, icon: page.icon, description: page.description };
   }
   const section = NEWS_PAGE_SECTIONS.find(s => s.id === id);
   return section || { label: id, icon: '📝', description: '' };
@@ -66,6 +76,7 @@ export function NewsPageSectionManager({
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [newTabName, setNewTabName] = useState('');
   const [showCustomCreate, setShowCustomCreate] = useState(false);
+  const [addMenuTab, setAddMenuTab] = useState<'news' | 'layout'>('news');
 
   const buildDefault = (): NewsPageSectionItem[] => {
     const items = getDefaultSections();
@@ -103,6 +114,7 @@ export function NewsPageSectionManager({
   const handleReset = () => onChange(null);
 
   const isCustomTab = (id: string) => id.startsWith(CUSTOM_PREFIX);
+  const isLayoutSection = (id: string) => id.startsWith('layout_');
 
   const addNewsTab = (name: string, icon?: string) => {
     const tabId = `${CUSTOM_PREFIX}${Date.now()}`;
@@ -114,9 +126,19 @@ export function NewsPageSectionManager({
     setNewTabName('');
   };
 
+  const addLayoutSection = (pageId: string) => {
+    const sectionId = `layout_${Date.now()}_${pageId}`;
+    onChange([...currentItems, { id: sectionId, enabled: true }]);
+    setShowAddMenu(false);
+  };
+
   const removeNewsTab = (tabId: string) => {
     onTabsChange?.(customNewsTabs.filter(t => t.id !== tabId));
     onChange(currentItems.filter(s => s.id !== tabId));
+  };
+
+  const removeLayoutSection = (sectionId: string) => {
+    onChange(currentItems.filter(s => s.id !== sectionId));
   };
 
   const updateTabName = (tabId: string, name: string) => {
@@ -138,6 +160,7 @@ export function NewsPageSectionManager({
         {currentItems.map((item, i) => {
           const meta = getSectionMeta(item.id, customNewsTabs);
           const isCustom = isCustomTab(item.id);
+          const isLayout = isLayoutSection(item.id);
           const isEditing = editingTabId === item.id;
 
           return (
@@ -194,6 +217,13 @@ export function NewsPageSectionManager({
                 </div>
               )}
 
+              {isLayout && (
+                <button type="button" onClick={() => removeLayoutSection(item.id)}
+                  className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive shrink-0">
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              )}
+
               <Switch checked={item.enabled} onCheckedChange={() => handleToggle(i)} className="shrink-0" />
             </div>
           );
@@ -213,43 +243,79 @@ export function NewsPageSectionManager({
         <div className="border rounded-lg p-3 space-y-2 bg-muted/20">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium">Chọn loại bố cục</p>
-            <button type="button" onClick={() => { setShowAddMenu(false); setShowCustomCreate(false); }}
+            <button type="button" onClick={() => { setShowAddMenu(false); setShowCustomCreate(false); setAddMenuTab('news'); }}
               className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted">
               <X className="h-3 w-3" />
             </button>
           </div>
-          <div className="space-y-1">
-            {PRESET_NEWS_TABS.map(preset => {
-              const alreadyAdded = customNewsTabs.some(t => t.name === preset.name);
-              return (
-                <button
-                  key={preset.name} type="button" disabled={alreadyAdded}
-                  onClick={() => addNewsTab(preset.name, preset.icon)}
-                  className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-muted transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <span>{preset.icon}</span>
-                  <span>{preset.name}</span>
-                  {alreadyAdded && <span className="text-muted-foreground ml-auto">Đã thêm</span>}
-                </button>
-              );
-            })}
-          </div>
-          {!showCustomCreate ? (
-            <button type="button" onClick={() => setShowCustomCreate(true)}
-              className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-muted transition-colors flex items-center gap-2 text-primary font-medium">
-              <Plus className="h-3 w-3" />
-              Tự tạo bố cục mới
+
+          <div className="flex gap-1">
+            <button type="button" onClick={() => setAddMenuTab('news')}
+              className={`flex-1 text-xs py-1.5 rounded-lg font-medium transition-colors ${addMenuTab === 'news' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}>
+              📰 Tab tin tức
             </button>
+            <button type="button" onClick={() => setAddMenuTab('layout')}
+              className={`flex-1 text-xs py-1.5 rounded-lg font-medium transition-colors ${addMenuTab === 'layout' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}>
+              📄 Trang chức năng
+            </button>
+          </div>
+
+          {addMenuTab === 'news' ? (
+            <>
+              <div className="space-y-1">
+                {PRESET_NEWS_TABS.map(preset => {
+                  const alreadyAdded = customNewsTabs.some(t => t.name === preset.name);
+                  return (
+                    <button
+                      key={preset.name} type="button" disabled={alreadyAdded}
+                      onClick={() => addNewsTab(preset.name, preset.icon)}
+                      className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-muted transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <span>{preset.icon}</span>
+                      <span>{preset.name}</span>
+                      {alreadyAdded && <span className="text-muted-foreground ml-auto">Đã thêm</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              {!showCustomCreate ? (
+                <button type="button" onClick={() => setShowCustomCreate(true)}
+                  className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-muted transition-colors flex items-center gap-2 text-primary font-medium">
+                  <Plus className="h-3 w-3" />
+                  Tự tạo bố cục mới
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Input value={newTabName} onChange={e => setNewTabName(e.target.value)}
+                    placeholder="Tên mục (VD: Tin Apple)" className="h-8 text-xs flex-1" autoFocus
+                    onKeyDown={e => { if (e.key === 'Enter' && newTabName.trim()) addNewsTab(newTabName.trim()); }}
+                  />
+                  <Button type="button" size="sm" className="h-8 text-xs" disabled={!newTabName.trim()}
+                    onClick={() => addNewsTab(newTabName.trim())}>
+                    Thêm
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
-            <div className="flex items-center gap-2">
-              <Input value={newTabName} onChange={e => setNewTabName(e.target.value)}
-                placeholder="Tên mục (VD: Tin Apple)" className="h-8 text-xs flex-1" autoFocus
-                onKeyDown={e => { if (e.key === 'Enter' && newTabName.trim()) addNewsTab(newTabName.trim()); }}
-              />
-              <Button type="button" size="sm" className="h-8 text-xs" disabled={!newTabName.trim()}
-                onClick={() => addNewsTab(newTabName.trim())}>
-                Thêm
-              </Button>
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {EXTRA_LAYOUT_PRESETS.map(page => {
+                const alreadyAdded = currentItems.some(it => it.id.includes(`_${page.id}`));
+                return (
+                  <button
+                    key={page.id} type="button" disabled={alreadyAdded}
+                    onClick={() => addLayoutSection(page.id)}
+                    className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-muted transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <span>{page.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium">{page.label}</span>
+                      <span className="text-[10px] text-muted-foreground ml-2">{page.description}</span>
+                    </div>
+                    {alreadyAdded && <span className="text-muted-foreground text-[10px]">Đã thêm</span>}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
