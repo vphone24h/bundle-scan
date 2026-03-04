@@ -4,7 +4,8 @@ import { getIndustryConfig, getFullNavItems, LayoutStyle, HomeSection } from '@/
 import { HomeSectionItem, CustomProductTab } from '@/components/admin/HomeSectionManager';
 import { ProductsPageSectionItem } from '@/components/admin/ProductsPageSectionManager';
 import { ProductDetailSectionItem } from '@/components/admin/ProductDetailSectionManager';
-import { Pencil, Home, ShoppingBag, FileText, ArrowLeft } from 'lucide-react';
+import { NewsPageSectionItem } from '@/components/admin/NewsPageSectionManager';
+import { Pencil, Home, ShoppingBag, FileText, ArrowLeft, Newspaper } from 'lucide-react';
 
 type PreviewPage = 'home' | 'products' | 'product-detail';
 
