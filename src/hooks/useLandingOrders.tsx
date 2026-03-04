@@ -45,11 +45,13 @@ export function usePlaceLandingOrder() {
       customer_address?: string;
       note?: string;
     }) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('landing_orders' as any)
-        .insert([order]);
+        .insert([order])
+        .select()
+        .single();
       if (error) throw error;
-      return order;
+      return data as unknown as LandingOrder;
     },
   });
 }
