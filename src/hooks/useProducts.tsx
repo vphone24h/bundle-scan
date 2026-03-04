@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
 import { useBranchFilter } from './useBranchFilter';
+import { useState, useCallback } from 'react';
 
 type ProductStatus = Database['public']['Enums']['product_status'];
 
@@ -50,21 +51,22 @@ export interface ProductFilters {
   pageSize?: number;
 }
 
-export interface PaginatedResult<T> {
-  data: T[];
-  totalCount: number;
-}
-
+/**
+ * Server-side paginated products hook.
+ * Returns { data: Product[], totalCount, isLoading, ... }
+ * `data` is always an array for backward compatibility.
+ */
 export function useProducts(filters?: ProductFilters) {
   const { user } = useAuth();
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   const page = filters?.page ?? 1;
   const pageSize = filters?.pageSize ?? 50;
+  const hasServerFilters = !!filters;
 
-  return useQuery({
+  const result = useQuery({
     queryKey: ['products', user?.id, branchId, filters],
-    queryFn: async (): Promise<PaginatedResult<Product>> => {
+    queryFn: async () => {
       let query = supabase
         .from('products')
         .select(`
@@ -76,7 +78,6 @@ export function useProducts(filters?: ProductFilters) {
         .in('status', ['in_stock', 'sold', 'returned'])
         .order('import_date', { ascending: false });
 
-      // Apply server-side filters
       if (shouldFilter && branchId) {
         query = query.eq('branch_id', branchId);
       }
@@ -87,7 +88,6 @@ export function useProducts(filters?: ProductFilters) {
           query = query.or(`name.ilike.%${s}%,sku.ilike.%${s}%,imei.ilike.%${s}%`);
         }
       }
-
       if (filters?.categoryId && filters.categoryId !== '_all_') {
         query = query.eq('category_id', filters.categoryId);
       }
@@ -113,22 +113,33 @@ export function useProducts(filters?: ProductFilters) {
       }
 
       // Server-side pagination
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-      query = query.range(from, to);
+      if (hasServerFilters) {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        query = query.range(from, to);
+      } else {
+        // Default: limit to 500 for backward compat (non-paginated consumers)
+        query = query.limit(500);
+      }
 
       const { data, error, count } = await query;
       if (error) throw error;
-      return {
-        data: (data || []) as Product[],
-        totalCount: count || 0,
-      };
+      // Return array with totalCount attached
+      const items = (data || []) as Product[];
+      return { items, totalCount: count || 0 };
     },
     enabled: !!user?.id && !branchLoading,
     staleTime: 30 * 1000,
     refetchOnWindowFocus: false,
     placeholderData: (previous) => previous,
   });
+
+  return {
+    ...result,
+    // Backward compatible: `data` is array of Product[]
+    data: result.data?.items || [],
+    totalCount: result.data?.totalCount || 0,
+  };
 }
 
 // Hook to get ALL products including deleted (for Import History page)
@@ -160,6 +171,36 @@ export function useAllProducts() {
     },
     enabled: !!user?.id && !branchLoading,
   });
+}
+
+/**
+ * Helper hook for server-side pagination state management.
+ * Use this in list pages instead of usePagination.
+ */
+export function useServerPagination(defaultPageSize = 50) {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSizeState] = useState(defaultPageSize);
+
+  const setPageSize = useCallback((size: number) => {
+    setPageSizeState(size);
+    setPage(1);
+  }, []);
+
+  const goToFirstPage = useCallback(() => setPage(1), []);
+  const goToLastPage = useCallback((totalPages: number) => setPage(totalPages), []);
+  const goToNextPage = useCallback(() => setPage(p => p + 1), []);
+  const goToPreviousPage = useCallback(() => setPage(p => Math.max(1, p - 1)), []);
+
+  return {
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    goToFirstPage,
+    goToLastPage,
+    goToNextPage,
+    goToPreviousPage,
+  };
 }
 
 export function useCreateProduct() {

@@ -27,19 +27,19 @@ export interface CustomerFilters {
   pageSize?: number;
 }
 
-export interface PaginatedResult<T> {
-  data: T[];
-  totalCount: number;
-}
-
+/**
+ * Server-side paginated customers hook.
+ * `data` is always Customer[] for backward compatibility.
+ */
 export function useCustomers(filters?: CustomerFilters) {
   const { user } = useAuth();
   const page = filters?.page ?? 1;
   const pageSize = filters?.pageSize ?? 50;
+  const hasServerFilters = !!filters;
 
-  return useQuery({
+  const result = useQuery({
     queryKey: ['customers', user?.id, filters],
-    queryFn: async (): Promise<PaginatedResult<Customer>> => {
+    queryFn: async () => {
       let query = supabase
         .from('customers')
         .select('id, name, phone, address, email, note, source, tenant_id, created_at, updated_at', { count: 'exact' })
@@ -52,16 +52,17 @@ export function useCustomers(filters?: CustomerFilters) {
         }
       }
 
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-      query = query.range(from, to);
+      if (hasServerFilters) {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        query = query.range(from, to);
+      } else {
+        query = query.limit(500);
+      }
 
       const { data, error, count } = await query;
       if (error) throw error;
-      return {
-        data: (data || []) as Customer[],
-        totalCount: count || 0,
-      };
+      return { items: (data || []) as Customer[], totalCount: count || 0 };
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 2,
@@ -70,6 +71,12 @@ export function useCustomers(filters?: CustomerFilters) {
     refetchOnMount: false,
     placeholderData: (previous) => previous,
   });
+
+  return {
+    ...result,
+    data: result.data?.items || [],
+    totalCount: result.data?.totalCount || 0,
+  };
 }
 
 export function useSearchCustomerByPhone() {
