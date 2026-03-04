@@ -1173,7 +1173,7 @@ export function LandingPageSettings() {
           <Separator className="my-3" />
 
           {/* Zalo OA gửi tin nhắn tự động */}
-          <ZaloOAConfigSection formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
+          <ZaloOASetupWizard formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
             if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
             updateSettings.mutateAsync(formData).then(() => {
               setHasChanges(false);
