@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, useCallback, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -22,72 +22,115 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
 
+  // Debounce guard: prevent multiple simultaneous refresh calls across tabs
+  const refreshingRef = useRef(false);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  /**
+   * Safely refresh session with debounce to prevent refresh-token rotation conflicts
+   * when multiple tabs try to refresh simultaneously.
+   */
+  const debouncedSessionCheck = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(async () => {
+      if (refreshingRef.current) return;
+      refreshingRef.current = true;
+
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+        } else {
+          // No session in memory — try refresh once before giving up
+          const { data: { session: refreshed } } = await supabase.auth.refreshSession();
+          if (refreshed) {
+            setSession(refreshed);
+            setUser(refreshed.user);
+          }
+          // If refresh also fails, DON'T force logout —
+          // let onAuthStateChange handle SIGNED_OUT naturally.
+          // This prevents logout during temporary token gaps.
+        }
+      } catch {
+        // Network error etc — don't force logout
+      } finally {
+        refreshingRef.current = false;
+      }
+    }, 300); // 300ms debounce — prevents storm of refresh calls
+  }, []);
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event, newSession) => {
         // Clear cache when user signs out or signs in (to prevent tenant data leakage)
         if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
           queryClient.clear();
         }
-        setSession(session);
-        setUser(session?.user ?? null);
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
         setLoading(false);
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      setSession(existingSession);
+      setUser(existingSession?.user ?? null);
       setLoading(false);
     });
 
-    // Auto-refresh session when app comes back to foreground (prevents expired token logout)
+    // Auto-refresh session when app comes back to foreground
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-          if (currentSession) {
-            // Session still valid, update state
-            setSession(currentSession);
-            setUser(currentSession.user);
-          }
-        });
+        debouncedSessionCheck();
       }
     };
 
     // Also refresh on window focus (helps with PWA on iOS)
     const handleFocus = () => {
-      supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-        if (currentSession) {
-          setSession(currentSession);
-          setUser(currentSession.user);
-        } else {
-          // Session not found - try refreshing before giving up
-          // This prevents logout during temporary token refresh gaps
-          supabase.auth.refreshSession().then(({ data: { session: refreshed } }) => {
-            if (refreshed) {
-              setSession(refreshed);
-              setUser(refreshed.user);
-            }
-            // If refresh also fails, don't force logout here -
-            // let onAuthStateChange handle SIGNED_OUT naturally
-          });
-        }
-      });
+      debouncedSessionCheck();
     };
 
-    // Cross-tab sync: detect logout from another tab via localStorage change
+    /**
+     * Cross-tab sync via localStorage 'storage' event.
+     * The 'storage' event ONLY fires in OTHER tabs (not the one that wrote).
+     *
+     * Cases:
+     * 1. Tab A logs in → localStorage gets auth token → Tab B detects & picks up session (auto-login)
+     * 2. Tab A logs out → localStorage auth token removed → Tab B detects & clears session (auto-logout)
+     */
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key && e.key.includes('auth-token')) {
-        supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-          if (!currentSession) {
-            setSession(null);
-            setUser(null);
-            queryClient.clear();
-          } else {
-            setSession(currentSession);
-            setUser(currentSession.user);
+      // Supabase stores session under key: sb-<ref>-auth-token
+      if (!e.key || !e.key.includes('auth-token')) return;
+
+      if (e.newValue === null || e.newValue === '') {
+        // Token was REMOVED → another tab logged out
+        setSession(null);
+        setUser(null);
+        queryClient.clear();
+      } else if (e.oldValue === null && e.newValue) {
+        // Token was ADDED → another tab logged in
+        // Small delay to let Supabase SDK settle
+        setTimeout(() => {
+          supabase.auth.getSession().then(({ data: { session: s } }) => {
+            if (s) {
+              setSession(s);
+              setUser(s.user);
+              queryClient.clear(); // clear stale data from previous tenant
+            }
+          });
+        }, 200);
+      } else if (e.oldValue && e.newValue && e.oldValue !== e.newValue) {
+        // Token was UPDATED → token refresh happened in another tab, sync it
+        supabase.auth.getSession().then(({ data: { session: s } }) => {
+          if (s) {
+            setSession(s);
+            setUser(s.user);
           }
         });
       }
@@ -102,11 +145,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('storage', handleStorageChange);
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
-  }, []);
+  }, [debouncedSessionCheck, queryClient]);
 
   const signIn = async (email: string, password: string) => {
-    // Session always persists - only sign out when user explicitly clicks sign out
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };
@@ -117,16 +160,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: {
         emailRedirectTo: window.location.origin,
-        data: {
-          display_name: displayName,
-        },
+        data: { display_name: displayName },
       },
     });
     return { error };
   };
 
   const signOut = async () => {
-    // Clear all React Query cache to prevent data leakage between tenants
     queryClient.clear();
     localStorage.removeItem(CURRENT_STORE_ID_KEY);
     await supabase.auth.signOut();
