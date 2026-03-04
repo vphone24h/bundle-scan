@@ -1,10 +1,9 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -158,6 +157,25 @@ export default function ExportHistoryPage() {
   const [paymentSourceFilter, setPaymentSourceFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('_all_');
+
+  // Debounced search for server queries
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Server pagination state
+  const [receiptPage, setReceiptPage] = useState(1);
+  const [receiptPageSize, setReceiptPageSize] = useState(15);
+  const [itemPage, setItemPage] = useState(1);
+  const [itemPageSize, setItemPageSize] = useState(15);
+
+  // Reset pages on filter change
+  useEffect(() => {
+    setReceiptPage(1);
+    setItemPage(1);
+  }, [debouncedSearch, statusFilter, dateFromFilter, dateToFilter, branchFilter, paymentSourceFilter, categoryFilter]);
   
   // Detail dialog
   const [selectedReceipt, setSelectedReceipt] = useState<ExportReceipt | null>(null);
@@ -175,8 +193,21 @@ export default function ExportHistoryPage() {
   const [returnReceipt, setReturnReceipt] = useState<ExportReceipt | null>(null);
 
   // Hooks
-  const { data: receipts, isLoading: receiptsLoading } = useExportReceipts();
-  const { data: items, isLoading: itemsLoading } = useExportReceiptItems(activeTab === 'items');
+  const { data: receipts, isLoading: receiptsLoading, totalCount: receiptsTotalCount } = useExportReceipts({
+    search: debouncedSearch || undefined,
+    status: statusFilter !== '_all_' ? statusFilter : undefined,
+    dateFrom: dateFromFilter || undefined,
+    dateTo: dateToFilter || undefined,
+    branchId: branchFilter !== '_all_' ? branchFilter : undefined,
+    page: receiptPage,
+    pageSize: receiptPageSize,
+  });
+  const { data: items, isLoading: itemsLoading, totalCount: itemsTotalCount } = useExportReceiptItems(activeTab === 'items', {
+    search: debouncedSearch || undefined,
+    categoryId: categoryFilter !== '_all_' ? categoryFilter : undefined,
+    page: itemPage,
+    pageSize: itemPageSize,
+  });
   // On-demand detail items for selected receipt (detail/print)
   const detailReceiptId = selectedReceipt?.id || printReceipt?.receiptId || null;
   const { data: detailItems, isLoading: detailItemsLoading } = useExportReceiptDetail(detailReceiptId);
@@ -211,27 +242,10 @@ export default function ExportHistoryPage() {
       });
   }, [items, receipts]);
 
-  // Filter receipts
-  const filteredReceipts = receipts?.filter((receipt) => {
-    const matchesSearch =
-      receipt.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      receipt.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      receipt.customers?.phone?.includes(searchTerm);
-    
-    const matchesStatus = statusFilter === '_all_' || receipt.status === statusFilter;
-    
-    const exportDateStr = format(new Date(receipt.export_date), 'yyyy-MM-dd');
-    const matchesDate = !dateFilter || exportDateStr === dateFilter;
-    const matchesDateFrom = !dateFromFilter || exportDateStr >= dateFromFilter;
-    const matchesDateTo = !dateToFilter || exportDateStr <= dateToFilter;
-    
-    const matchesBranch = branchFilter === '_all_' || receipt.branch_id === branchFilter;
-
-    const matchesPaymentSource = paymentSourceFilter === '_all_' || 
-      receipt.export_receipt_payments?.some(p => p.payment_type === paymentSourceFilter);
-
-    return matchesSearch && matchesStatus && matchesDate && matchesDateFrom && matchesDateTo && matchesBranch && matchesPaymentSource;
-  });
+  // Server-side filters handle search, status, date, branch. Only payment source is client-side.
+  const filteredReceipts = paymentSourceFilter === '_all_'
+    ? receipts
+    : receipts?.filter(r => r.export_receipt_payments?.some(p => p.payment_type === paymentSourceFilter));
 
   const hasActiveFilters = dateFilter || dateFromFilter || dateToFilter || statusFilter !== '_all_' || branchFilter !== '_all_' || categoryFilter !== '_all_' || paymentSourceFilter !== '_all_';
 
@@ -245,38 +259,11 @@ export default function ExportHistoryPage() {
     setPaymentSourceFilter('_all_');
   };
 
-  // Filter items
-  const filteredItemsRaw = items?.filter((item) => {
-    const matchesSearch =
-      item.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.imei?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.export_receipts?.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.export_receipts?.customers?.phone?.includes(searchTerm);
-
-    const matchesCategory = categoryFilter === '_all_' || item.category_id === categoryFilter;
-
-    const matchesStatus = statusFilter === '_all_' || item.export_receipts?.status === statusFilter;
-
-    const exportDateStr = item.export_receipts?.export_date ? format(new Date(item.export_receipts.export_date), 'yyyy-MM-dd') : '';
-    const matchesDate = !dateFilter || exportDateStr === dateFilter;
-    const matchesDateFrom = !dateFromFilter || exportDateStr >= dateFromFilter;
-    const matchesDateTo = !dateToFilter || exportDateStr <= dateToFilter;
-
-    const matchesBranch = branchFilter === '_all_' || item.export_receipts?.branch_id === branchFilter;
-
-    const matchesPaymentSource = paymentSourceFilter === '_all_' || 
-      item.export_receipts?.export_receipt_payments?.some(p => p.payment_type === paymentSourceFilter);
-
-    return matchesSearch && matchesCategory && matchesStatus && matchesDate && matchesDateFrom && matchesDateTo && matchesBranch && matchesPaymentSource;
-  }) || [];
-
-  // Group non-IMEI items by: product_name + branch + receipt_id + sale_price
+  // Group non-IMEI items (items are already server-filtered)
   const groupedItems = useMemo(() => {
     const grouped: Map<string, ExportReceiptItemDetail & { quantity: number; groupedIds: string[] }> = new Map();
     
-    filteredItemsRaw.forEach((item) => {
-      // Only group items without IMEI
+    (items || []).forEach((item) => {
       if (!item.imei) {
         const groupKey = `${item.product_name}|${item.export_receipts?.branch_id || ''}|${item.receipt_id}|${item.sale_price}`;
         
@@ -285,34 +272,19 @@ export default function ExportHistoryPage() {
           existing.quantity += 1;
           existing.groupedIds.push(item.id);
         } else {
-          grouped.set(groupKey, {
-            ...item,
-            quantity: 1,
-            groupedIds: [item.id],
-          });
+          grouped.set(groupKey, { ...item, quantity: 1, groupedIds: [item.id] });
         }
       } else {
-        // IMEI products are not grouped, keep as individual rows
-        grouped.set(item.id, {
-          ...item,
-          quantity: 1,
-          groupedIds: [item.id],
-        });
+        grouped.set(item.id, { ...item, quantity: 1, groupedIds: [item.id] });
       }
     });
     
     return Array.from(grouped.values());
-  }, [filteredItemsRaw]);
+  }, [items]);
 
-  // Pagination for receipts tab
-  const receiptsPagination = usePagination(filteredReceipts || [], { 
-    storageKey: 'export-receipts'
-  });
-
-  // Pagination for items tab - use grouped items
-  const itemsPagination = usePagination(groupedItems, { 
-    storageKey: 'export-items'
-  });
+  // Server pagination helpers
+  const receiptTotalPages = Math.max(1, Math.ceil(receiptsTotalCount / receiptPageSize));
+  const itemTotalPages = Math.max(1, Math.ceil(itemsTotalCount / itemPageSize));
 
   // Handle view detail
   const handleViewDetail = (receipt: ExportReceipt) => {

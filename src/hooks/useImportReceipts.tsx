@@ -46,16 +46,26 @@ export interface ReceiptPayment {
   created_at: string;
 }
 
-export function useImportReceipts() {
+export function useImportReceipts(filters?: {
+  search?: string;
+  supplierId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  branchId?: string;
+  page?: number;
+  pageSize?: number;
+}) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
-  return useQuery({
-    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
-    queryKey: ['import-receipts', tenant?.id, branchId, isDataHidden],
+  const page = filters?.page ?? 1;
+  const pageSize = filters?.pageSize ?? 100;
+
+  const result = useQuery({
+    queryKey: ['import-receipts', tenant?.id, branchId, isDataHidden, filters],
     queryFn: async () => {
-      if (isDataHidden) return [] as ImportReceipt[];
+      if (isDataHidden) return { items: [] as ImportReceipt[], totalCount: 0 };
 
       let query = supabase
         .from('import_receipts')
@@ -63,22 +73,64 @@ export function useImportReceipts() {
           *,
           suppliers(name),
           branches(name)
-        `)
-        .order('import_date', { ascending: false })
-        .limit(500);
+        `, { count: 'exact' })
+        .order('import_date', { ascending: false });
 
-      if (shouldFilter && branchId) {
-        query = query.eq('branch_id', branchId);
+      const effectiveBranchId = filters?.branchId && filters.branchId !== '_all_'
+        ? filters.branchId
+        : (shouldFilter && branchId ? branchId : null);
+
+      if (effectiveBranchId) {
+        query = query.eq('branch_id', effectiveBranchId);
       }
 
-      const { data, error } = await query;
+      if (filters?.search) {
+        const s = filters.search.trim();
+        if (s) {
+          // Search by code or supplier name
+          const { data: matchingSuppliers } = await supabase
+            .from('suppliers')
+            .select('id')
+            .ilike('name', `%${s}%`)
+            .limit(50);
+          const supplierIds = matchingSuppliers?.map(c => c.id) || [];
+          if (supplierIds.length > 0) {
+            query = query.or(`code.ilike.%${s}%,supplier_id.in.(${supplierIds.join(',')})`);
+          } else {
+            query = query.ilike('code', `%${s}%`);
+          }
+        }
+      }
+
+      if (filters?.supplierId && filters.supplierId !== '_all_') {
+        query = query.eq('supplier_id', filters.supplierId);
+      }
+      if (filters?.dateFrom) {
+        query = query.gte('import_date', filters.dateFrom);
+      }
+      if (filters?.dateTo) {
+        query = query.lte('import_date', filters.dateTo + 'T23:59:59');
+      }
+
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
       if (error) throw error;
-      return (data || []) as unknown as ImportReceipt[];
+      return { items: (data || []) as unknown as ImportReceipt[], totalCount: count || 0 };
     },
     enabled: !isTenantLoading && !branchLoading,
+    staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
-    staleTime: 2 * 60 * 1000, // 2 min cache
+    placeholderData: (previous) => previous,
   });
+
+  return {
+    ...result,
+    data: result.data?.items || [],
+    totalCount: result.data?.totalCount || 0,
+  };
 }
 
 export function useImportReceiptDetails(receiptId: string | null) {

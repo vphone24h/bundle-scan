@@ -86,11 +86,21 @@ export interface ExportReceiptItemDetail {
   } | null;
 }
 
-export function useExportReceipts() {
+export function useExportReceipts(filters?: {
+  search?: string;
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  branchId?: string;
+  page?: number;
+  pageSize?: number;
+}) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
-  const queryClient = useQueryClient();
+
+  const page = filters?.page ?? 1;
+  const pageSize = filters?.pageSize ?? 100;
 
   const selectFields = `
     *,
@@ -100,58 +110,72 @@ export function useExportReceipts() {
     export_receipt_items(id)
   `;
 
-  // Initial fast query: only 15 most recent – minimal joins
   const result = useQuery({
-    queryKey: ['export-receipts', tenant?.id, branchId, isDataHidden],
+    queryKey: ['export-receipts', tenant?.id, branchId, isDataHidden, filters],
     queryFn: async () => {
-      if (isDataHidden) return [] as ExportReceipt[];
+      if (isDataHidden) return { items: [] as ExportReceipt[], totalCount: 0 };
 
       let query = supabase
         .from('export_receipts')
-        .select(selectFields)
-        .order('export_date', { ascending: false })
-        .limit(15);
+        .select(selectFields, { count: 'exact' })
+        .order('export_date', { ascending: false });
 
-      if (shouldFilter && branchId) {
-        query = query.eq('branch_id', branchId);
+      // Branch filter
+      const effectiveBranchId = filters?.branchId && filters.branchId !== '_all_'
+        ? filters.branchId
+        : (shouldFilter && branchId ? branchId : null);
+
+      if (effectiveBranchId) {
+        query = query.eq('branch_id', effectiveBranchId);
       }
 
-      const { data, error } = await query;
+      // Server-side search: receipt code + customer name/phone
+      if (filters?.search) {
+        const s = filters.search.trim();
+        if (s) {
+          const { data: matchingCustomers } = await supabase
+            .from('customers')
+            .select('id')
+            .or(`name.ilike.%${s}%,phone.ilike.%${s}%`)
+            .limit(50);
+          const customerIds = matchingCustomers?.map(c => c.id) || [];
+          if (customerIds.length > 0) {
+            query = query.or(`code.ilike.%${s}%,customer_id.in.(${customerIds.join(',')})`);
+          } else {
+            query = query.ilike('code', `%${s}%`);
+          }
+        }
+      }
+
+      if (filters?.status && filters.status !== '_all_') {
+        query = query.eq('status', filters.status);
+      }
+      if (filters?.dateFrom) {
+        query = query.gte('export_date', filters.dateFrom);
+      }
+      if (filters?.dateTo) {
+        query = query.lte('export_date', filters.dateTo + 'T23:59:59');
+      }
+
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
       if (error) throw error;
-      return (data || []) as unknown as ExportReceipt[];
+      return { items: (data || []) as unknown as ExportReceipt[], totalCount: count || 0 };
     },
     enabled: !isTenantLoading && !branchLoading,
+    staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
+    placeholderData: (previous) => previous,
   });
 
-  // Background load more receipts (up to 500) – deferred with longer staleTime
-  useQuery({
-    queryKey: ['export-receipts-all', tenant?.id, branchId, isDataHidden],
-    queryFn: async () => {
-      if (isDataHidden) return [] as ExportReceipt[];
-
-      let query = supabase
-        .from('export_receipts')
-        .select(selectFields)
-        .order('export_date', { ascending: false })
-        .limit(500);
-
-      if (shouldFilter && branchId) {
-        query = query.eq('branch_id', branchId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      const allData = (data || []) as unknown as ExportReceipt[];
-      queryClient.setQueryData(['export-receipts', tenant?.id, branchId, isDataHidden], allData);
-      return allData;
-    },
-    enabled: !isTenantLoading && !branchLoading && !!result.data && result.data.length > 0,
-    refetchOnWindowFocus: false,
-    staleTime: 1000 * 60 * 10,
-  });
-
-  return result;
+  return {
+    ...result,
+    data: result.data?.items || [],
+    totalCount: result.data?.totalCount || 0,
+  };
 }
 
 // Fetch full items for a single receipt on-demand (detail/print views)
