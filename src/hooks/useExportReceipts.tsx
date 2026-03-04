@@ -117,7 +117,7 @@ export function useExportReceipts(filters?: {
 
       let query = supabase
         .from('export_receipts')
-        .select(selectFields, { count: 'exact' })
+        .select(selectFields, { count: 'estimated' })
         .order('export_date', { ascending: false });
 
       // Branch filter
