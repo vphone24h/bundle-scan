@@ -928,7 +928,7 @@ export default function UniversalStoreTemplate({
                       const pageId = section.id.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
                       const page = SYSTEM_PAGES.find(p => p.id === pageId);
                       if (!page) return null;
-                      const sysProps = { accentColor, storeName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
+                      const sysProps = { accentColor, storeName: displayStoreName, storePhone: settings?.store_phone, zaloUrl: settings?.zalo_url, branches, onNavigateProducts: () => navigateTo('products') };
                       return (
                         <div key={section.id} className="mb-8">
                           {pageId === 'pricelist' && <PriceListPage {...sysProps} />}
