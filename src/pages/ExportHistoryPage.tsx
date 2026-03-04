@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { TablePagination } from '@/components/ui/table-pagination';
 import {
   Table,
   TableBody,
@@ -193,7 +194,7 @@ export default function ExportHistoryPage() {
   const [returnReceipt, setReturnReceipt] = useState<ExportReceipt | null>(null);
 
   // Hooks
-  const { data: receipts, isLoading: receiptsLoading, hasMore: receiptsHasMore } = useExportReceipts({
+  const { data: receipts, isLoading: receiptsLoading, totalCount: receiptsTotalCount } = useExportReceipts({
     search: debouncedSearch || undefined,
     status: statusFilter !== '_all_' ? statusFilter : undefined,
     dateFrom: dateFromFilter || undefined,
@@ -202,7 +203,7 @@ export default function ExportHistoryPage() {
     page: receiptPage,
     pageSize: receiptPageSize,
   });
-  const { data: items, isLoading: itemsLoading, hasMore: itemsHasMore } = useExportReceiptItems(activeTab === 'items', {
+  const { data: items, isLoading: itemsLoading, totalCount: itemsTotalCount } = useExportReceiptItems(activeTab === 'items', {
     search: debouncedSearch || undefined,
     categoryId: categoryFilter !== '_all_' ? categoryFilter : undefined,
     page: itemPage,
@@ -699,19 +700,16 @@ export default function ExportHistoryPage() {
                 </ScrollableTableWrapper>
               )}
               {(receipts?.length || 0) > 0 && (
-                <div className="flex items-center justify-between py-4">
-                  <span className="text-sm text-muted-foreground">
-                    Trang {receiptPage} · {receipts?.length || 0} kết quả
-                  </span>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setReceiptPage(p => Math.max(1, p - 1))} disabled={receiptPage <= 1}>
-                      ← Trước
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setReceiptPage(p => p + 1)} disabled={!receiptsHasMore}>
-                      Sau →
-                    </Button>
-                  </div>
-                </div>
+                <TablePagination
+                  currentPage={receiptPage}
+                  totalPages={Math.max(1, Math.ceil(receiptsTotalCount / receiptPageSize))}
+                  pageSize={receiptPageSize}
+                  totalItems={receiptsTotalCount}
+                  startIndex={(receiptPage - 1) * receiptPageSize + 1}
+                  endIndex={Math.min(receiptPage * receiptPageSize, receiptsTotalCount)}
+                  onPageChange={setReceiptPage}
+                  onPageSizeChange={(size) => { setReceiptPageSize(size); setReceiptPage(1); }}
+                />
               )}
             </CardContent>
           </Card>
@@ -849,19 +847,16 @@ export default function ExportHistoryPage() {
                 </ScrollableTableWrapper>
               )}
               {groupedItems.length > 0 && (
-                <div className="flex items-center justify-between py-4">
-                  <span className="text-sm text-muted-foreground">
-                    Trang {itemPage} · {groupedItems.length} kết quả
-                  </span>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setItemPage(p => Math.max(1, p - 1))} disabled={itemPage <= 1}>
-                      ← Trước
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setItemPage(p => p + 1)} disabled={!itemsHasMore}>
-                      Sau →
-                    </Button>
-                  </div>
-                </div>
+                <TablePagination
+                  currentPage={itemPage}
+                  totalPages={Math.max(1, Math.ceil(itemsTotalCount / itemPageSize))}
+                  pageSize={itemPageSize}
+                  totalItems={itemsTotalCount}
+                  startIndex={(itemPage - 1) * itemPageSize + 1}
+                  endIndex={Math.min(itemPage * itemPageSize, itemsTotalCount)}
+                  onPageChange={setItemPage}
+                  onPageSizeChange={(size) => { setItemPageSize(size); setItemPage(1); }}
+                />
               )}
             </CardContent>
           </Card>
