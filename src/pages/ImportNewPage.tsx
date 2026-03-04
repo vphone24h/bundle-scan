@@ -33,7 +33,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen, PlayCircle, Search, Package, ArrowLeft } from 'lucide-react';
+import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen, PlayCircle, Search, Package, ArrowLeft, QrCode, X } from 'lucide-react';
+import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { ImportQRScanner, parseVKHOQR, type VKHOQRData } from '@/components/import/ImportQRScanner';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
