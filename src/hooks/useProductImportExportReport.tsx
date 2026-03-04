@@ -46,64 +46,63 @@ export function useProductImportExportReport(filters?: {
       const startISO = new Date(startDate + 'T00:00:00').toISOString();
       const endISO = new Date(endDate + 'T23:59:59.999').toISOString();
 
-      // 1. Get imported items in period via product_imports -> products for name/sku
-      let importQuery = supabase
-        .from('product_imports')
-        .select(`
-          import_price, quantity, product_id,
-          products!inner(name, sku, category_id, categories(name)),
-          import_receipts!inner(import_date, branch_id, status, branches(name))
-        `)
-        .neq('import_receipts.status', 'cancelled')
-        .gte('import_receipts.import_date', startISO)
-        .lte('import_receipts.import_date', endISO);
+      const buildImportQuery = () => {
+        let q = supabase
+          .from('product_imports')
+          .select(`
+            import_price, quantity, product_id,
+            products!inner(name, sku, category_id, categories(name)),
+            import_receipts!inner(import_date, branch_id, status, branches(name))
+          `)
+          .neq('import_receipts.status', 'cancelled')
+          .gte('import_receipts.import_date', startISO)
+          .lte('import_receipts.import_date', endISO);
+        if (effectiveBranchId) {
+          q = q.eq('import_receipts.branch_id', effectiveBranchId);
+        }
+        return q;
+      };
 
-      if (effectiveBranchId) {
-        importQuery = importQuery.eq('import_receipts.branch_id', effectiveBranchId);
-      }
+      const buildExportQuery = () => {
+        let q = supabase
+          .from('export_receipt_items')
+          .select(`
+            product_name, sku, sale_price, status, category_id,
+            categories(name),
+            export_receipts!inner(export_date, branch_id, status, branches(name))
+          `)
+          .eq('status', 'sold')
+          .neq('export_receipts.status', 'cancelled')
+          .gte('export_receipts.export_date', startISO)
+          .lte('export_receipts.export_date', endISO);
+        if (effectiveBranchId) {
+          q = q.eq('export_receipts.branch_id', effectiveBranchId);
+        }
+        return q;
+      };
 
-      // 2. Get exported (sold) items in period
-      let exportQuery = supabase
-        .from('export_receipt_items')
-        .select(`
-          product_name, sku, sale_price, status, category_id,
-          categories(name),
-          export_receipts!inner(export_date, branch_id, status, branches(name))
-        `)
-        .eq('status', 'sold')
-        .neq('export_receipts.status', 'cancelled')
-        .gte('export_receipts.export_date', startISO)
-        .lte('export_receipts.export_date', endISO);
+      const buildReturnQuery = () => {
+        let q = supabase
+          .from('export_receipt_items')
+          .select(`
+            product_name, sku, sale_price, status, category_id,
+            categories(name),
+            export_receipts!inner(export_date, branch_id, branches(name))
+          `)
+          .eq('status', 'returned')
+          .gte('export_receipts.export_date', startISO)
+          .lte('export_receipts.export_date', endISO);
+        if (effectiveBranchId) {
+          q = q.eq('export_receipts.branch_id', effectiveBranchId);
+        }
+        return q;
+      };
 
-      if (effectiveBranchId) {
-        exportQuery = exportQuery.eq('export_receipts.branch_id', effectiveBranchId);
-      }
-
-      // 3. Get returned items in period
-      let returnQuery = supabase
-        .from('export_receipt_items')
-        .select(`
-          product_name, sku, sale_price, status, category_id,
-          categories(name),
-          export_receipts!inner(export_date, branch_id, branches(name))
-        `)
-        .eq('status', 'returned')
-        .gte('export_receipts.export_date', startISO)
-        .lte('export_receipts.export_date', endISO);
-
-      if (effectiveBranchId) {
-        returnQuery = returnQuery.eq('export_receipts.branch_id', effectiveBranchId);
-      }
-
-      const [importRes, exportRes, returnRes] = await Promise.all([
-        importQuery,
-        exportQuery,
-        returnQuery,
+      const [importData, exportData, returnData] = await Promise.all([
+        fetchAllRows<any>(buildImportQuery),
+        fetchAllRows<any>(buildExportQuery),
+        fetchAllRows<any>(buildReturnQuery),
       ]);
-
-      if (importRes.error) throw importRes.error;
-      if (exportRes.error) throw exportRes.error;
-      if (returnRes.error) throw returnRes.error;
 
       // Aggregate by product name + sku + branch
       const productMap: Record<string, ProductImportExportItem> = {};

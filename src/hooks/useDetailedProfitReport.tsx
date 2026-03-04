@@ -57,49 +57,48 @@ export function useDetailedProfitReport(filters?: {
       const startISO = startDateTime.toISOString();
       const endISO = endDateTime.toISOString();
 
-      // 1. Lấy dữ liệu bán hàng từ export_receipt_items
-      let soldQuery = supabase
-        .from('export_receipt_items')
-        .select(`
-          id,
-          product_name,
-          sku,
-          imei,
-          sale_price,
-          status,
-          product_id,
-          category_id,
-          receipt_id,
-          export_receipts!inner(
+      const buildSoldQuery = () => {
+        let q = supabase
+          .from('export_receipt_items')
+          .select(`
             id,
-            code,
-            export_date,
-            branch_id,
-            customer_id,
+            product_name,
+            sku,
+            imei,
+            sale_price,
             status,
-            branches(name),
-            customers(name)
-          )
-        `)
-        .in('status', ['sold', 'returned'])
-        .neq('export_receipts.status', 'cancelled')
-        .gte('export_receipts.export_date', startISO)
-        .lte('export_receipts.export_date', endISO);
+            product_id,
+            category_id,
+            receipt_id,
+            export_receipts!inner(
+              id,
+              code,
+              export_date,
+              branch_id,
+              customer_id,
+              status,
+              branches(name),
+              customers(name)
+            )
+          `)
+          .in('status', ['sold', 'returned'])
+          .neq('export_receipts.status', 'cancelled')
+          .gte('export_receipts.export_date', startISO)
+          .lte('export_receipts.export_date', endISO);
 
-      if (filters?.branchId) {
-        soldQuery = soldQuery.eq('export_receipts.branch_id', filters.branchId);
-      }
+        if (filters?.branchId) {
+          q = q.eq('export_receipts.branch_id', filters.branchId);
+        }
+        if (filters?.categoryId) {
+          q = q.eq('category_id', filters.categoryId);
+        }
+        if (filters?.search) {
+          q = q.or(`product_name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,imei.ilike.%${filters.search}%`);
+        }
+        return q;
+      };
 
-      if (filters?.categoryId) {
-        soldQuery = soldQuery.eq('category_id', filters.categoryId);
-      }
-
-      if (filters?.search) {
-        soldQuery = soldQuery.or(`product_name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,imei.ilike.%${filters.search}%`);
-      }
-
-      const { data: soldItems, error: soldError } = await soldQuery;
-      if (soldError) throw soldError;
+      const soldItems = await fetchAllRows<any>(buildSoldQuery);
 
       // 2. Lấy dữ liệu trả hàng từ export_returns
       let returnQuery = supabase
