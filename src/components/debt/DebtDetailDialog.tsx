@@ -79,29 +79,27 @@ export function DebtDetailDialog({
     return allReceipts;
   }, [allReceipts]);
 
-  // Simple formula:
-  // total_from_orders = sum of original_debt_amount from receipts
-  // total_from_additions = sum of addition amounts
-  // total_debt = total_from_orders + total_from_additions
-  // total_paid = sum of payment amounts
-  // remaining = total_debt - total_paid
+  // Reliable formula (same as list view):
+  // remaining = sum(receipt.debt_amount) + sum(addition remaining)
+  // total_paid = sum(payments)
+  // total_debt = remaining + total_paid
   const liveTotals = useMemo(() => {
-    const totalFromOrders = (allReceipts || []).reduce((sum: number, r: any) => {
-      const originalDebt = Number(r.original_debt_amount) || 
-        Math.max((Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0), 0);
-      return sum + originalDebt;
+    const currentDebtFromReceipts = (allReceipts || []).reduce((sum: number, r: any) => {
+      return sum + (Number(r.debt_amount) || 0);
     }, 0);
 
-    const totalFromAdditions = (paymentHistory || [])
-      .filter((p: any) => p.payment_type === 'addition')
-      .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+    const additionsData = (paymentHistory || []).filter((p: any) => p.payment_type === 'addition');
+    const additionsRemaining = additionsData.reduce((sum: number, p: any) => 
+      sum + (Number(p.amount) - (Number(p.allocated_amount) || 0)), 0);
+    const totalFromAdditions = additionsData.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
     
     const totalPaid = (paymentHistory || [])
       .filter((p: any) => p.payment_type === 'payment')
       .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
 
-    const totalDebt = totalFromOrders + totalFromAdditions;
-    const remaining = totalDebt - totalPaid;
+    const remaining = currentDebtFromReceipts + additionsRemaining;
+    const totalDebt = remaining + totalPaid;
+    const totalFromOrders = totalDebt - totalFromAdditions;
     return { totalAmount: totalDebt, paidAmount: totalPaid, remainingAmount: remaining, totalFromOrders, totalFromAdditions };
   }, [allReceipts, paymentHistory]);
 
