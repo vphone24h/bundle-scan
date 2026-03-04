@@ -905,6 +905,7 @@ export default function ExportNewPage() {
                           <div className="text-muted-foreground text-xs">
                             SKU: {product.sku} | {product.categories?.name || t('pages.exportNew.notCategorized')}
                             {product.imei && <span className="ml-1 text-foreground/70">| IMEI: {product.imei}</span>}
+                            {product.branches?.name && <span className="ml-1 text-primary/80">| CN: {product.branches.name}</span>}
                           </div>
                         </button>
                       ))}
