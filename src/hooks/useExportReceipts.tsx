@@ -113,14 +113,11 @@ export function useExportReceipts(filters?: {
   const result = useQuery({
     queryKey: ['export-receipts', tenant?.id, branchId, isDataHidden, filters],
     queryFn: async () => {
-      if (isDataHidden) return { items: [] as ExportReceipt[], hasMore: false };
-
-      // Fetch pageSize+1 to detect hasMore without count
-      const fetchSize = pageSize + 1;
+      if (isDataHidden) return { items: [] as ExportReceipt[], totalCount: 0 };
 
       let query = supabase
         .from('export_receipts')
-        .select(selectFields)
+        .select(selectFields, { count: 'exact' })
         .order('export_date', { ascending: false });
 
       // Branch filter
@@ -161,19 +158,18 @@ export function useExportReceipts(filters?: {
       }
 
       const from = (page - 1) * pageSize;
-      const to = from + fetchSize - 1;
+      const to = from + pageSize - 1;
       query = query.range(from, to);
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       if (error) {
         console.error('Export receipts query error:', error);
         throw error;
       }
       const items = (data || []) as unknown as ExportReceipt[];
-      const hasMore = items.length > pageSize;
       return {
-        items: hasMore ? items.slice(0, pageSize) : items,
-        hasMore,
+        items,
+        totalCount: count || 0,
       };
     },
     enabled: !isTenantLoading && !branchLoading,
@@ -185,7 +181,9 @@ export function useExportReceipts(filters?: {
   return {
     ...result,
     data: result.data?.items || [],
-    hasMore: result.data?.hasMore || false,
+    totalCount: result.data?.totalCount || 0,
+    // Keep hasMore for backward compat
+    hasMore: (result.data?.totalCount || 0) > page * pageSize,
   };
 }
 
