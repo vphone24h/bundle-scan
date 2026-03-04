@@ -318,17 +318,17 @@ export function usePostLikers(postId: string | null) {
         .order('created_at', { ascending: false });
       if (!likes?.length) return [];
       const userIds = likes.map(l => l.user_id);
-      const [{ data: profiles }, { data: socialProfiles }] = await Promise.all([
+      const [{ data: profiles }, { data: verifiedIds }] = await Promise.all([
         supabase.from('profiles').select('user_id, display_name, avatar_url').in('user_id', userIds),
-        supabase.from('social_profiles').select('user_id, is_verified').in('user_id', userIds),
+        supabase.rpc('get_verified_user_ids', { p_user_ids: userIds }),
       ]);
       const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
-      const spMap = new Map((socialProfiles || []).map(p => [p.user_id, p]));
+      const verifiedSet = new Set<string>(verifiedIds || []);
       return likes.map(l => ({
         user_id: l.user_id,
         display_name: profileMap.get(l.user_id)?.display_name || 'Người dùng',
         avatar_url: profileMap.get(l.user_id)?.avatar_url,
-        is_verified: spMap.get(l.user_id)?.is_verified || false,
+        is_verified: verifiedSet.has(l.user_id),
       }));
     },
     enabled: !!postId,
