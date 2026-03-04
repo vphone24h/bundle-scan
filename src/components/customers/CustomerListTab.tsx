@@ -90,26 +90,41 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
       return permissions?.branchId === customerBranchId;
     };
 
-    const { data: customers, isLoading } = useCustomersWithPoints({
+    const { data: customers, isLoading, totalCount } = useCustomersWithPoints({
       search: search || undefined,
       branchId: branchFilter !== '_all_' ? branchFilter : undefined,
       tier: tierFilter !== '_all_' ? tierFilter : undefined,
       status: statusFilter !== '_all_' ? statusFilter : undefined,
       crmStatus: crmStatusFilter !== '_all_' ? crmStatusFilter : undefined,
       staffId: staffFilter !== '_all_' ? staffFilter : undefined,
+      page: currentPage,
+      pageSize,
     });
  
-   const { data: branches } = useBranches();
-   const { data: customerSources } = useCustomerSources();
-   const { data: staffList } = useStaffList();
-   
-   const filteredCustomers = customers?.filter(c => {
-     if (sourceFilter === '_all_') return true;
-     if (sourceFilter === '_none_') return !c.source;
-     return c.source === sourceFilter;
-   });
- 
-   const pagination = usePagination(filteredCustomers || [], { storageKey: 'customers' });
+    const { data: branches } = useBranches();
+    const { data: customerSources } = useCustomerSources();
+    const { data: staffList } = useStaffList();
+    
+    const filteredCustomers = customers?.filter(c => {
+      if (sourceFilter === '_all_') return true;
+      if (sourceFilter === '_none_') return !c.source;
+      return c.source === sourceFilter;
+    });
+
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, totalCount);
+
+    // Reset page when filters change
+    const handleSearchChange = useCallback((val: string) => {
+      setSearch(val);
+      setCurrentPage(1);
+    }, []);
+
+    const handlePageSizeChange = useCallback((val: number) => {
+      setPageSize(val);
+      setCurrentPage(1);
+    }, []);
  
    const handleViewDetail = (customerId: string) => {
      setSelectedCustomerId(customerId);
