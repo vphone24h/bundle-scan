@@ -23,6 +23,7 @@ export interface LandingOrder {
   approved_by: string | null;
   approved_at: string | null;
   cancelled_reason: string | null;
+  order_code: string | null;
   created_at: string;
   updated_at: string;
 }
