@@ -60,6 +60,17 @@ function AppPasswordHelpDialog({ open, onOpenChange }: { open: boolean; onOpenCh
             <p className="text-muted-foreground text-xs">Đặt tên app (VD: "VKho Email") → Nhấn <span className="font-medium">Create</span></p>
             <p className="text-muted-foreground text-xs">Copy mật khẩu 16 ký tự được tạo ra và dán vào ô <span className="font-medium">Mail App Password</span> ở trên.</p>
           </div>
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
+            <p className="font-medium text-xs flex items-center gap-1">🎬 Video hướng dẫn:</p>
+            <a
+              href="https://youtube.com/shorts/Qy-ekAcoO4g?si=CSc2-nOheNlGBfGd"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary underline break-all"
+            >
+              Xem video hướng dẫn trên YouTube
+            </a>
+          </div>
           <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
             <p className="text-xs text-amber-800 dark:text-amber-200">⚠️ <span className="font-medium">Lưu ý:</span> Không dùng mật khẩu Gmail thường. Phải tạo App Password riêng mới gửi được email tự động.</p>
           </div>
