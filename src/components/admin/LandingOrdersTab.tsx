@@ -93,6 +93,25 @@ export function LandingOrdersTab() {
     try {
       await updateOrder.mutateAsync({ id: order.id, status: 'approved', approved_at: new Date().toISOString() });
       toast.success('Đã duyệt đơn hàng');
+      // Fire-and-forget: send confirmation email
+      if (order.customer_email) {
+        supabase.functions.invoke('send-order-email', {
+          body: {
+            tenant_id: order.tenant_id,
+            order_id: order.id,
+            customer_name: order.customer_name,
+            customer_email: order.customer_email,
+            customer_phone: order.customer_phone,
+            product_name: order.product_name,
+            product_price: order.product_price,
+            order_code: (order as any).order_code || '',
+            variant: order.variant,
+            quantity: order.quantity,
+            branch_id: order.branch_id,
+            email_type: 'order_confirmed',
+          },
+        }).catch(err => console.warn('Order confirmed email failed:', err));
+      }
     } catch { toast.error('Lỗi khi duyệt đơn'); }
   };
 
