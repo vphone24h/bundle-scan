@@ -1268,7 +1268,10 @@ export default function ImportNewPage() {
           <p className="text-sm text-muted-foreground">
             Nhập hàng thành công! Bạn có muốn in tem QR cho {printQRProducts.length} sản phẩm vừa nhập không?
           </p>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button variant="ghost" size="sm" onClick={handleNeverShowQR} className="text-muted-foreground text-xs sm:mr-auto">
+              Không hiện nữa
+            </Button>
             <Button variant="outline" onClick={handleSkipPrintQR}>
               <X className="h-4 w-4 mr-2" />
               Đóng

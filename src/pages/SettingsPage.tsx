@@ -110,6 +110,34 @@ function BusinessModeSection({ tenantId, currentMode }: { tenantId: string; curr
   );
 }
 
+function QRPrintPromptToggle() {
+  const [showPrompt, setShowPrompt] = useState(() => localStorage.getItem('hide_qr_print_prompt') !== 'true');
+
+  const handleToggle = (checked: boolean) => {
+    setShowPrompt(checked);
+    if (checked) {
+      localStorage.removeItem('hide_qr_print_prompt');
+    } else {
+      localStorage.setItem('hide_qr_print_prompt', 'true');
+    }
+  };
+
+  return (
+    <Card>
+      <CardContent className="flex items-center justify-between py-4 px-4 sm:px-6">
+        <div className="flex items-center gap-3">
+          <QrCode className="h-5 w-5 text-primary" />
+          <div>
+            <p className="text-sm font-medium">Hiện mẫu in QR sau nhập hàng</p>
+            <p className="text-xs text-muted-foreground">Hiện hộp thoại hỏi in tem QR sau khi thanh toán nhập hàng</p>
+          </div>
+        </div>
+        <Switch checked={showPrompt} onCheckedChange={handleToggle} />
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
   const { data: tenant } = useCurrentTenant();
