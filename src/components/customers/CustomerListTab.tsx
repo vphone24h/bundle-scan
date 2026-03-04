@@ -90,7 +90,7 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
       return permissions?.branchId === customerBranchId;
     };
 
-    const { data: customers, isLoading, totalCount } = useCustomersWithPoints({
+    const { data: customers, isLoading, hasMore } = useCustomersWithPoints({
       search: search || undefined,
       branchId: branchFilter !== '_all_' ? branchFilter : undefined,
       tier: tierFilter !== '_all_' ? tierFilter : undefined,
@@ -110,10 +110,6 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
       if (sourceFilter === '_none_') return !c.source;
       return c.source === sourceFilter;
     });
-
-    const totalPages = Math.ceil(totalCount / pageSize);
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = Math.min(startIndex + pageSize, totalCount);
 
     // Reset page when filters change
     const handleSearchChange = useCallback((val: string) => {
