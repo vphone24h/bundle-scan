@@ -293,7 +293,7 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
                      </TableCell>
                    </TableRow>
                  ) : (
-                   pagination.paginatedData.map((customer) => (
+                   (filteredCustomers || []).map((customer) => (
                      <TableRow 
                        key={customer.id} 
                        className="cursor-pointer hover:bg-muted/50" 
