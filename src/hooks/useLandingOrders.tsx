@@ -23,6 +23,7 @@ export interface LandingOrder {
   approved_by: string | null;
   approved_at: string | null;
   cancelled_reason: string | null;
+  order_code: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,11 +46,13 @@ export function usePlaceLandingOrder() {
       customer_address?: string;
       note?: string;
     }) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('landing_orders' as any)
-        .insert([order]);
+        .insert([order])
+        .select()
+        .single();
       if (error) throw error;
-      return order;
+      return data as unknown as LandingOrder;
     },
   });
 }

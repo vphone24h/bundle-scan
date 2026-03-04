@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Gift, Star, Ticket, Link2, CreditCard, Shield, ArrowLeft } from 'lucide-react';
+import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Gift, Star, Ticket, Link2, CreditCard, Shield, ArrowLeft, Mail } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
 import { LandingProduct, LandingProductVariant, VariantPriceEntry } from '@/hooks/useLandingProducts';
@@ -55,6 +55,7 @@ export function ProductDetailPage({
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [note, setNote] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('');
@@ -240,7 +241,7 @@ export function ProductDetailPage({
           : '';
       const fullNote = [discountNote, note.trim()].filter(Boolean).join(' ');
 
-      await placeOrder.mutateAsync({
+      const result = await placeOrder.mutateAsync({
         tenant_id: tenantId,
         branch_id: selectedBranch,
         product_id: product.id,
@@ -251,10 +252,33 @@ export function ProductDetailPage({
         quantity,
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
+        customer_email: customerEmail.trim() || undefined,
         customer_address: customerAddress.trim() || undefined,
         note: fullNote || undefined,
       });
       setOrderSuccess(true);
+
+      // Fire-and-forget: send order confirmation email
+      if (customerEmail.trim()) {
+        import('@/integrations/supabase/client').then(({ supabase }) => {
+          supabase.functions.invoke('send-order-email', {
+            body: {
+              tenant_id: tenantId,
+              order_id: (result as any)?.id || 'unknown',
+              customer_name: customerName.trim(),
+              customer_email: customerEmail.trim(),
+              customer_phone: customerPhone.trim(),
+              product_name: product.name,
+              product_price: displayPrice,
+              order_code: (result as any)?.order_code || '',
+              variant: getVariantLabel(),
+              quantity,
+              branch_id: selectedBranch,
+              email_type: 'order_confirmation',
+            },
+          }).catch(err => console.warn('Order email failed:', err));
+        });
+      }
     } catch (err) {
       toast.error('Đặt hàng thất bại, vui lòng thử lại');
     }
@@ -560,6 +584,11 @@ export function ProductDetailPage({
               <div>
                 <Label className="text-sm">Số điện thoại <span className="text-red-500">*</span></Label>
                 <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Nhập SĐT" inputMode="tel" className={`h-11 text-base ${attempted && !customerPhone.trim() ? 'border-red-400 ring-red-400' : ''}`} />
+              </div>
+
+              <div>
+                <Label className="text-sm flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> Email <span className="text-muted-foreground text-xs">(nhận thông tin đơn hàng)</span></Label>
+                <Input value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder="Nhập email (không bắt buộc)" inputMode="email" type="email" className="h-11 text-base" />
               </div>
 
               <div>

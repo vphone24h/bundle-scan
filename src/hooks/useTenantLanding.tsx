@@ -58,6 +58,12 @@ export interface TenantLandingSettings {
   show_installment_button: boolean | null;
   show_compare_products: boolean | null;
   show_trade_in: boolean | null;
+  order_email_enabled: boolean;
+  order_email_sender: string | null;
+  order_email_app_password: string | null;
+  order_email_on_confirmed: boolean;
+  order_email_on_shipping: boolean;
+  order_email_on_warranty: boolean;
   created_at: string;
   updated_at: string;
 }
