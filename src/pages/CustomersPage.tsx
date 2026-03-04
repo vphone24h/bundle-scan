@@ -31,7 +31,7 @@ export default function CustomersPage() {
   const isSuperAdmin = permissions?.canViewAllBranches === true;
   
   const { data: selectedCustomer } = useCustomerDetail(selectedCustomerId);
-  const { data: customerStats } = useCustomerStats(branchFilter);
+  const { data: customerStats, isLoading: statsLoading } = useCustomerStats(branchFilter);
 
   useEffect(() => {
     if (!isSuperAdmin && permissions?.branchId) { setBranchFilter(permissions.branchId); }
