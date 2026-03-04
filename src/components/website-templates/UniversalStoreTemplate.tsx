@@ -390,7 +390,7 @@ export default function UniversalStoreTemplate({
                           {productsData.categories.map((cat, idx) => (
                             <ScrollReveal key={cat.id} animation="fade-up" delay={idx * 80}>
                               <button
-                                onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products', true); }}
+                                onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products', { keepCategory: true }); }}
                                 className={`group w-full overflow-hidden relative text-left ${cat.image_url ? 'min-h-[65vh] sm:min-h-[70vh]' : 'min-h-[120px]'}`}
                               >
                                 {cat.image_url ? (
