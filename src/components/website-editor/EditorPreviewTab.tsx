@@ -753,6 +753,7 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
           <div className="text-[#1d1d1f]" style={{ fontFamily: config.fontFamily }}>
             {previewPage === 'products' && renderProductsPagePreview()}
             {previewPage === 'product-detail' && renderProductDetailPreview()}
+            {previewPage === 'news' && renderNewsPagePreview()}
             {previewPage === 'home' && (
               <>
                 {/* HEADER */}
