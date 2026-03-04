@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { TenantLandingSettings } from '@/hooks/useTenantLanding';
-import { getIndustryConfig, getFullNavItems, LayoutStyle, HomeSection } from '@/lib/industryConfig';
+import { getIndustryConfig, getFullNavItems, LayoutStyle, HomeSection, SYSTEM_PAGES } from '@/lib/industryConfig';
 import { HomeSectionItem, CustomProductTab } from '@/components/admin/HomeSectionManager';
 import { ProductsPageSectionItem } from '@/components/admin/ProductsPageSectionManager';
 import { ProductDetailSectionItem } from '@/components/admin/ProductDetailSectionManager';
