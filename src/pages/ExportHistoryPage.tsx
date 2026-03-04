@@ -748,7 +748,7 @@ export default function ExportHistoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {itemsPagination.paginatedData.map((item) => {
+                    {groupedItems.map((item) => {
                       const groupedItem = item as ExportReceiptItemDetail & { quantity: number; groupedIds: string[] };
                       const quantity = groupedItem.quantity || 1;
                       const totalPrice = item.sale_price * quantity;
