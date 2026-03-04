@@ -304,6 +304,7 @@ function ZaloOAConfigSection({ formData, handleChange, tenantId, onSave }: { for
       )}
     </div>
   );
+}
 
 function CustomDomainCTA() {
   const [open, setOpen] = useState(false);
