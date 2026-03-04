@@ -47,54 +47,26 @@ export function useDashboardStats() {
 
       const { data: dailyStats } = await dailyStatsQuery.maybeSingle();
 
-      // 2. Get inventory summary using COUNT aggregation (not fetchAllRows)
-      let productCountQuery = supabase
-        .from('products')
-        .select('status', { count: 'exact', head: true })
-        .eq('status', 'in_stock');
-
-      if (shouldFilter && branchId) {
-        productCountQuery = productCountQuery.eq('branch_id', branchId);
-      }
-
-      const { count: inStockCount } = await productCountQuery;
-
-      let totalProductsQuery = supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true });
-
-      if (shouldFilter && branchId) {
-        totalProductsQuery = totalProductsQuery.eq('branch_id', branchId);
-      }
-
-      const { count: totalProducts } = await totalProductsQuery;
-
-      let soldProductsQuery = supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'sold');
-
-      if (shouldFilter && branchId) {
-        soldProductsQuery = soldProductsQuery.eq('branch_id', branchId);
-      }
-
-      const { count: soldProducts } = await soldProductsQuery;
-
-      // 3. Get inventory value using database SUM (server-side aggregation via RPC)
-      // Fallback: use a simpler query with limit for estimation
-      let importValueQuery = supabase
-        .from('products')
-        .select('import_price, quantity, imei, total_import_cost')
-        .eq('status', 'in_stock');
-
-      if (shouldFilter && branchId) {
-        importValueQuery = importValueQuery.eq('branch_id', branchId);
-      }
-
-      const { data: inStockProducts } = await importValueQuery.limit(1000);
+      // 2. Get inventory counts + value in parallel (3 COUNT queries batched)
+      const countFilters = shouldFilter && branchId ? { branch_id: branchId } : {};
       
+      const [inStockRes, totalRes, soldRes, importValueRes] = await Promise.all([
+        supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'in_stock').match(countFilters),
+        supabase.from('products').select('*', { count: 'exact', head: true }).match(countFilters),
+        supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'sold').match(countFilters),
+        (() => {
+          let q = supabase.from('products').select('import_price, quantity, imei, total_import_cost').eq('status', 'in_stock');
+          if (shouldFilter && branchId) q = q.eq('branch_id', branchId);
+          return q.limit(1000);
+        })(),
+      ]);
+
+      const inStockCount = inStockRes.count || 0;
+      const totalProducts = totalRes.count || 0;
+      const soldProducts = soldRes.count || 0;
+
       let totalImportValue = 0;
-      (inStockProducts || []).forEach(p => {
+      (importValueRes.data || []).forEach(p => {
         if (p.imei) {
           totalImportValue += Number(p.import_price || 0);
         } else {
