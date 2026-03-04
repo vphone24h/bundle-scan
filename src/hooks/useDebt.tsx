@@ -94,7 +94,7 @@ export function useCustomerDebts(showSettled: boolean = false) {
         return q;
       };
 
-      const payments = await fetchAllRows<any>(buildPaymentsQuery);
+      const payments = await fetchLimited<any>(buildPaymentsQuery);
 
       // Get unique customer IDs from payments
       const paymentCustomerIds = [...new Set(payments?.map(p => p.entity_id) || [])];
