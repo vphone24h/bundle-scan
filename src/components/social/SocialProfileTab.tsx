@@ -37,6 +37,7 @@ export const SocialProfileTab = memo(function SocialProfileTab({ userId, onViewP
   const toggleFollow = useToggleFollow();
   const [editing, setEditing] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showAvatarPreview, setShowAvatarPreview] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     display_name: '',
