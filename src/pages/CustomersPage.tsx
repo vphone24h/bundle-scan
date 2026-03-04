@@ -13,7 +13,6 @@ import { CRMReportsTab } from '@/components/customers/CRMReportsTab';
 import { VoucherHistoryTab } from '@/components/voucher/VoucherHistoryTab';
 import { useCustomerDetail, useCustomerStats } from '@/hooks/useCustomerPoints';
 import { formatNumber } from '@/lib/formatNumber';
-import { Badge } from '@/components/ui/badge';
 import { useSearchParams } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
 
