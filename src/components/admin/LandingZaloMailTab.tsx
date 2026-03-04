@@ -151,7 +151,7 @@ function ZaloLogsTable() {
       <div className="flex items-center gap-2">
         <SearchInput
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={setSearch}
           placeholder="Tìm theo SĐT, tên khách..."
           className="flex-1"
         />
