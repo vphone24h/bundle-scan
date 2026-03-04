@@ -218,8 +218,9 @@ export default function UniversalStoreTemplate({
   const handleSearch = () => { if (searchValue.trim()) { setSubmittedValue(searchValue.trim()); if (pageView === 'home') setPageView('warranty'); } };
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
-  const navigateTo = (view: PageView) => {
-    setPageView(view); setSelectedArticle(null); setSelectedCategoryId(null);
+  const navigateTo = (view: PageView, keepCategory?: boolean) => {
+    setPageView(view); setSelectedArticle(null);
+    if (!keepCategory) setSelectedCategoryId(null);
     const newParams = new URLSearchParams(searchParams);
     newParams.delete('product'); newParams.delete('article');
     setSearchParams(newParams, { replace: true });
@@ -387,7 +388,7 @@ export default function UniversalStoreTemplate({
                           {productsData.categories.map((cat, idx) => (
                             <ScrollReveal key={cat.id} animation="fade-up" delay={idx * 80}>
                               <button
-                                onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products'); }}
+                                onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products', true); }}
                                 className={`group w-full overflow-hidden relative text-left ${cat.image_url ? 'min-h-[65vh] sm:min-h-[70vh]' : 'min-h-[120px]'}`}
                               >
                                 {cat.image_url ? (
@@ -423,7 +424,7 @@ export default function UniversalStoreTemplate({
                         <div className="max-w-[1200px] mx-auto px-4">
                           <div className="flex items-center overflow-x-auto gap-4 py-2 scrollbar-hide">
                             {productsData.categories.map(cat => (
-                              <button key={cat.id} onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products'); }} className="flex flex-col items-center gap-2 min-w-[90px] group">
+                              <button key={cat.id} onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products', true); }} className="flex flex-col items-center gap-2 min-w-[90px] group">
                                 {cat.image_url ? (
                                   <img src={cat.image_url} alt={cat.name} className="h-16 w-16 rounded-2xl object-cover border border-black/5 group-hover:scale-105 transition-transform" />
                                 ) : (
