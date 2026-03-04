@@ -79,26 +79,30 @@ export function DebtDetailDialog({
     return allReceipts;
   }, [allReceipts]);
 
-  // Compute live totals using current debt_amount (already updated by FIFO)
-  // remaining = sum(receipt.debt_amount) + sum(addition.amount - addition.allocated_amount)
-  // total_paid = sum(payments)
-  // total_debt = remaining + total_paid
+  // Simple formula:
+  // total_from_orders = sum of original_debt_amount from receipts
+  // total_from_additions = sum of addition amounts
+  // total_debt = total_from_orders + total_from_additions
+  // total_paid = sum of payment amounts
+  // remaining = total_debt - total_paid
   const liveTotals = useMemo(() => {
-    const currentDebtFromReceipts = (allReceipts || []).reduce((sum: number, r: any) => {
-      return sum + (Number(r.debt_amount) || 0);
+    const totalFromOrders = (allReceipts || []).reduce((sum: number, r: any) => {
+      const originalDebt = Number(r.original_debt_amount) || 
+        Math.max((Number(r.total_amount) || 0) - (Number(r.paid_amount) || 0), 0);
+      return sum + originalDebt;
     }, 0);
 
-    const additionsRemaining = (paymentHistory || [])
+    const totalFromAdditions = (paymentHistory || [])
       .filter((p: any) => p.payment_type === 'addition')
-      .reduce((sum: number, p: any) => sum + (Number(p.amount) - (Number(p.allocated_amount) || 0)), 0);
+      .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
     
-    const payments = (paymentHistory || [])
+    const totalPaid = (paymentHistory || [])
       .filter((p: any) => p.payment_type === 'payment')
       .reduce((sum: number, p: any) => sum + Number(p.amount), 0);
 
-    const remaining = currentDebtFromReceipts + additionsRemaining;
-    const total = remaining + payments;
-    return { totalAmount: total, paidAmount: payments, remainingAmount: remaining };
+    const totalDebt = totalFromOrders + totalFromAdditions;
+    const remaining = totalDebt - totalPaid;
+    return { totalAmount: totalDebt, paidAmount: totalPaid, remainingAmount: remaining, totalFromOrders, totalFromAdditions };
   }, [allReceipts, paymentHistory]);
 
   const liveTotal = liveTotals.totalAmount;
@@ -272,41 +276,20 @@ export function DebtDetailDialog({
           {/* Orders Tab */}
           <TabsContent value="orders" className="flex-1 mt-4 min-h-0">
             {/* Summary breakdown */}
-            {(() => {
-              const totalFromOrders = allReceipts?.reduce((sum: number, r: any) => {
-                const debtOnReceipt = Number(r.debt_amount) || 0;
-                // Original debt = current debt_amount + what was already paid via FIFO
-                // We use total_amount - paid_amount approach or just debt_amount
-                return sum + debtOnReceipt;
-              }, 0) || 0;
-
-              // Also need to account for original debt from receipts that have been fully paid
-              // Use the receipt's original debt: total_amount - (total_amount - debt_amount at creation)
-              // Since debt_amount gets reduced by FIFO, we need original value
-              // For now: total debt from orders = totalAmount - totalFromAdditions
-              const totalFromAdditions = paymentHistory
-                ?.filter(p => p.payment_type === 'addition')
-                .reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-
-              const totalFromOrdersCalc = liveTotal - totalFromAdditions;
-
-              return (
-                <div className="grid grid-cols-3 gap-2 mb-3 p-3 rounded-lg bg-muted/50 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Nợ từ đơn hàng</p>
-                    <p className="font-semibold">{formatNumber(totalFromOrdersCalc)}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Nợ từ phiếu thêm</p>
-                    <p className="font-semibold">{formatNumber(totalFromAdditions)}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Tổng nợ</p>
-                    <p className="font-bold">{formatNumber(liveTotal)}</p>
-                  </div>
-                </div>
-              );
-            })()}
+            <div className="grid grid-cols-3 gap-2 mb-3 p-3 rounded-lg bg-muted/50 text-sm">
+              <div>
+                <p className="text-muted-foreground">Nợ từ đơn hàng</p>
+                <p className="font-semibold">{formatNumber(liveTotals.totalFromOrders)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Nợ từ phiếu thêm</p>
+                <p className="font-semibold">{formatNumber(liveTotals.totalFromAdditions)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Tổng nợ</p>
+                <p className="font-bold">{formatNumber(liveTotal)}</p>
+              </div>
+            </div>
 
             <div className="flex items-center gap-2 mb-3">
               <Checkbox
