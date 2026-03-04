@@ -21,11 +21,13 @@ import { useToggleFollow, useIsFollowing } from '@/hooks/useSocial';
 interface Props {
   post: SocialPost;
   onViewProfile: (userId: string) => void;
+  autoOpenComments?: boolean;
+  onFocusHandled?: () => void;
 }
 
-export function SocialPostCard({ post, onViewProfile }: Props) {
+export function SocialPostCard({ post, onViewProfile, autoOpenComments, onFocusHandled }: Props) {
   const { user } = useAuth();
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(autoOpenComments || false);
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
   const [showLikers, setShowLikers] = useState(false);
