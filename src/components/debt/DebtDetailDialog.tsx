@@ -276,41 +276,20 @@ export function DebtDetailDialog({
           {/* Orders Tab */}
           <TabsContent value="orders" className="flex-1 mt-4 min-h-0">
             {/* Summary breakdown */}
-            {(() => {
-              const totalFromOrders = allReceipts?.reduce((sum: number, r: any) => {
-                const debtOnReceipt = Number(r.debt_amount) || 0;
-                // Original debt = current debt_amount + what was already paid via FIFO
-                // We use total_amount - paid_amount approach or just debt_amount
-                return sum + debtOnReceipt;
-              }, 0) || 0;
-
-              // Also need to account for original debt from receipts that have been fully paid
-              // Use the receipt's original debt: total_amount - (total_amount - debt_amount at creation)
-              // Since debt_amount gets reduced by FIFO, we need original value
-              // For now: total debt from orders = totalAmount - totalFromAdditions
-              const totalFromAdditions = paymentHistory
-                ?.filter(p => p.payment_type === 'addition')
-                .reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-
-              const totalFromOrdersCalc = liveTotal - totalFromAdditions;
-
-              return (
-                <div className="grid grid-cols-3 gap-2 mb-3 p-3 rounded-lg bg-muted/50 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Nợ từ đơn hàng</p>
-                    <p className="font-semibold">{formatNumber(totalFromOrdersCalc)}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Nợ từ phiếu thêm</p>
-                    <p className="font-semibold">{formatNumber(totalFromAdditions)}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Tổng nợ</p>
-                    <p className="font-bold">{formatNumber(liveTotal)}</p>
-                  </div>
-                </div>
-              );
-            })()}
+            <div className="grid grid-cols-3 gap-2 mb-3 p-3 rounded-lg bg-muted/50 text-sm">
+              <div>
+                <p className="text-muted-foreground">Nợ từ đơn hàng</p>
+                <p className="font-semibold">{formatNumber(liveTotals.totalFromOrders)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Nợ từ phiếu thêm</p>
+                <p className="font-semibold">{formatNumber(liveTotals.totalFromAdditions)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Tổng nợ</p>
+                <p className="font-bold">{formatNumber(liveTotal)}</p>
+              </div>
+            </div>
 
             <div className="flex items-center gap-2 mb-3">
               <Checkbox
