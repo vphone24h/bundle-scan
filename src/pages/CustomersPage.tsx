@@ -62,10 +62,25 @@ export default function CustomersPage() {
     setSearchParams(newParams);
   };
 
+  const isFirstLoad = statsLoading && !customerStats;
   const totalCustomers = customerStats?.totalCustomers || 0;
   const customersWithPoints = customerStats?.customersWithPoints || 0;
   const vipCustomers = customerStats?.vipCustomers || 0;
   const customersWithPurchase = customerStats?.customersWithPurchase || 0;
+
+  const StatSkeleton = () => (
+    <Card>
+      <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
+        <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3">
+          <Skeleton className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg" />
+          <div className="text-center sm:text-left space-y-1">
+            <Skeleton className="h-6 w-12 mx-auto sm:mx-0" />
+            <Skeleton className="h-3 w-16 mx-auto sm:mx-0" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <MainLayout>
