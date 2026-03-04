@@ -18,7 +18,7 @@ interface Props {
   onFocusHandled?: () => void;
 }
 
-export const SocialFeedTab = memo(function SocialFeedTab({ onViewProfile }: Props) {
+export const SocialFeedTab = memo(function SocialFeedTab({ onViewProfile, focusPostId, focusCommentId, onFocusHandled }: Props) {
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const { data: feedData, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useSocialFeed();
