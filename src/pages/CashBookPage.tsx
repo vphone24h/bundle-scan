@@ -431,7 +431,7 @@ export default function CashBookPage() {
       sourceBalances[src.id] = openingBalance ? Number(openingBalance.amount) : 0;
     });
     chronological.forEach(entry => {
-      const source = entry.payment_source;
+      const source = normalizePaymentSource(entry.payment_source);
       if (sourceBalances[source] === undefined) {
         const openingBalance = latestOpeningBalances?.[source];
         sourceBalances[source] = openingBalance ? Number(openingBalance.amount) : 0;
