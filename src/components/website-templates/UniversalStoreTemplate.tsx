@@ -915,8 +915,32 @@ export default function UniversalStoreTemplate({
               </button>
               <h2 className="text-2xl font-bold tracking-tight">{config.navLabels.news}</h2>
             </div>
+            {/* Featured articles at top */}
+            {featuredArticles.length > 0 && (
+              <div className="mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {featuredArticles.map((a, i) => (
+                    <ScrollReveal key={a.id} animation="fade-up" delay={i * 80}>
+                      <button onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden border border-black/5 hover:shadow-lg transition-all text-left group w-full">
+                        {a.thumbnail_url ? (
+                          <img src={a.thumbnail_url} alt={a.title} className="w-full h-56 object-cover group-hover:scale-[1.02] transition-transform" />
+                        ) : (
+                          <div className="w-full h-56 bg-[#f5f5f7] flex items-center justify-center"><Newspaper className="h-12 w-12 text-[#86868b]" /></div>
+                        )}
+                        <div className="p-5">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary mb-2 inline-block">Nổi bật</span>
+                          <p className="font-bold text-base line-clamp-2 mb-2">{a.title}</p>
+                          {a.summary && <p className="text-sm text-[#86868b] line-clamp-2">{a.summary}</p>}
+                          <p className="text-[10px] text-[#86868b] mt-2">{format(new Date(a.created_at), 'dd/MM/yyyy', { locale: vi })}</p>
+                        </div>
+                      </button>
+                    </ScrollReveal>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {articlesData?.articles?.map((a, i) => (
+              {(articlesData?.articles || []).filter(a => !a.is_featured).map((a, i) => (
                 <ScrollReveal key={a.id} animation="fade-up" delay={i * 80}>
                   <button onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden border border-black/5 hover:shadow-lg transition-all text-left group w-full">
                     {a.thumbnail_url ? (
@@ -931,7 +955,7 @@ export default function UniversalStoreTemplate({
                     </div>
                   </button>
                 </ScrollReveal>
-              )) || null}
+              ))}
               {(!articlesData?.articles || articlesData.articles.length === 0) && (
                 <div className="col-span-full text-center py-16">
                   <Newspaper className="h-12 w-12 mx-auto text-[#86868b] mb-3" />
