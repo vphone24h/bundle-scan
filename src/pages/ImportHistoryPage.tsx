@@ -124,7 +124,7 @@ export default function ImportHistoryPage() {
   const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
   const { data: receipts, isLoading: receiptsLoading } = useImportReceipts({ pageSize: 500 });
-  const { data: products, isLoading: productsLoading } = useAllProducts({ pageSize: 2000 });
+  const { data: products, isLoading: productsLoading } = useAllProducts({ pageSize: 100 });
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
   const { data: branches } = useBranches();
@@ -855,8 +855,8 @@ export default function ImportHistoryPage() {
           <TabsContent value="products">
             {/* Tổng hợp giá trị kho hàng nhập */}
             <ImportInventorySummary 
-              products={filteredProducts} 
               isFiltered={Boolean(hasActiveFilters) || searchTerm.length > 0}
+              filteredProducts={Boolean(hasActiveFilters) || searchTerm.length > 0 ? filteredProducts : undefined}
             />
 
             {/* Transfer bar + Export */}

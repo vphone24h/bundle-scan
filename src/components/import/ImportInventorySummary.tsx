@@ -1,34 +1,88 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/mockData';
 import { Package, DollarSign, Archive, ShoppingCart } from 'lucide-react';
-import type { Product } from '@/hooks/useProducts';
+import { supabase } from '@/integrations/supabase/client';
+import { useBranchFilter } from '@/hooks/useBranchFilter';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ImportInventorySummaryProps {
-  products: Product[];
   isFiltered?: boolean;
+  /** When filtered, pass products to calculate from client-side */
+  filteredProducts?: Array<{
+    status: string;
+    total_import_cost: number;
+    import_price: number;
+    quantity: number;
+  }>;
 }
 
-export function ImportInventorySummary({ products, isFiltered = false }: ImportInventorySummaryProps) {
+function useImportSummaryStats() {
+  const { user } = useAuth();
+  const { branchId, shouldFilter } = useBranchFilter();
+
+  return useQuery({
+    queryKey: ['import-summary-stats', user?.id, branchId],
+    queryFn: async () => {
+      const tenantId = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId.data) throw new Error('No tenant');
+
+      const { data, error } = await supabase.rpc('get_import_summary_stats', {
+        _tenant_id: tenantId.data,
+        _branch_id: shouldFilter && branchId ? branchId : null,
+      });
+      if (error) throw error;
+      return data as Record<string, number>;
+    },
+    enabled: !!user?.id,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function ImportInventorySummary({ isFiltered = false, filteredProducts }: ImportInventorySummaryProps) {
   const { t } = useTranslation();
+  const { data: serverStats, isLoading } = useImportSummaryStats();
 
   const stats = useMemo(() => {
-    const allProducts = products || [];
-    const getProductValue = (p: Product) => Number(p.total_import_cost || (Number(p.import_price) * (p.quantity || 1)));
-    const totalImportValue = allProducts.reduce((sum, p) => sum + getProductValue(p), 0);
-    const totalQuantity = allProducts.reduce((sum, p) => sum + (p.quantity || 1), 0);
-    const inStockProducts = allProducts.filter(p => p.status === 'in_stock');
-    const inStockValue = inStockProducts.reduce((sum, p) => sum + getProductValue(p), 0);
-    const inStockQuantity = inStockProducts.reduce((sum, p) => sum + (p.quantity || 1), 0);
-    const soldProducts = allProducts.filter(p => p.status === 'sold');
-    const soldValue = soldProducts.reduce((sum, p) => sum + getProductValue(p), 0);
-    const soldQuantity = soldProducts.reduce((sum, p) => sum + (p.quantity || 1), 0);
-    const returnedProducts = allProducts.filter(p => p.status === 'returned');
-    const returnedValue = returnedProducts.reduce((sum, p) => sum + getProductValue(p), 0);
-    const returnedQuantity = returnedProducts.reduce((sum, p) => sum + (p.quantity || 1), 0);
-    return { totalImportValue, totalQuantity, inStockValue, inStockQuantity, soldValue, soldQuantity, returnedValue, returnedQuantity };
-  }, [products]);
+    // If filtered, calculate from filtered products
+    if (isFiltered && filteredProducts) {
+      const getVal = (p: any) => Number(p.total_import_cost || (Number(p.import_price) * (p.quantity || 1)));
+      const totalImportValue = filteredProducts.reduce((sum, p) => sum + getVal(p), 0);
+      const totalQuantity = filteredProducts.reduce((sum, p) => sum + (p.quantity || 1), 0);
+      const inStock = filteredProducts.filter(p => p.status === 'in_stock');
+      const sold = filteredProducts.filter(p => p.status === 'sold');
+      const returned = filteredProducts.filter(p => p.status === 'returned');
+      return {
+        totalImportValue,
+        totalQuantity,
+        inStockValue: inStock.reduce((sum, p) => sum + getVal(p), 0),
+        inStockQuantity: inStock.reduce((sum, p) => sum + (p.quantity || 1), 0),
+        soldValue: sold.reduce((sum, p) => sum + getVal(p), 0),
+        soldQuantity: sold.reduce((sum, p) => sum + (p.quantity || 1), 0),
+        returnedValue: returned.reduce((sum, p) => sum + getVal(p), 0),
+        returnedQuantity: returned.reduce((sum, p) => sum + (p.quantity || 1), 0),
+      };
+    }
+
+    // Use server-side stats
+    if (!serverStats) return null;
+    return {
+      totalImportValue: Number(serverStats.totalImportValue || 0),
+      totalQuantity: Number(serverStats.totalQuantity || 0),
+      inStockValue: Number(serverStats.inStockValue || 0),
+      inStockQuantity: Number(serverStats.inStockQuantity || 0),
+      soldValue: Number(serverStats.soldValue || 0),
+      soldQuantity: Number(serverStats.soldQuantity || 0),
+      returnedValue: Number(serverStats.returnedValue || 0),
+      returnedQuantity: Number(serverStats.returnedQuantity || 0),
+    };
+  }, [isFiltered, filteredProducts, serverStats]);
+
+  if (!stats && isLoading) return null;
+  if (!stats) return null;
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
