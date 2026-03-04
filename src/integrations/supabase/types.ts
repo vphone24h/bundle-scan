@@ -6253,6 +6253,10 @@ export type Database = {
           total_remaining_debt: number
         }[]
       }
+      get_dashboard_aggregates: {
+        Args: { p_branch_id?: string; p_tenant_id: string }
+        Returns: Json
+      }
       get_public_reviews:
         | {
             Args: { _limit?: number }

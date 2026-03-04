@@ -47,46 +47,18 @@ export function useDashboardStats() {
 
       const { data: dailyStats } = await dailyStatsQuery.maybeSingle();
 
-      // 2. Get inventory counts + value in parallel (3 COUNT queries batched)
-      const countFilters = shouldFilter && branchId ? { branch_id: branchId } : {};
-      
-      const [inStockRes, totalRes, soldRes, importValueRes] = await Promise.all([
-        supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'in_stock').match(countFilters),
-        supabase.from('products').select('*', { count: 'exact', head: true }).match(countFilters),
-        supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'sold').match(countFilters),
-        (() => {
-          let q = supabase.from('products').select('import_price, quantity, imei, total_import_cost').eq('status', 'in_stock');
-          if (shouldFilter && branchId) q = q.eq('branch_id', branchId);
-          return q.limit(1000);
-        })(),
-      ]);
-
-      const inStockCount = inStockRes.count || 0;
-      const totalProducts = totalRes.count || 0;
-      const soldProducts = soldRes.count || 0;
-
-      let totalImportValue = 0;
-      (importValueRes.data || []).forEach(p => {
-        if (p.imei) {
-          totalImportValue += Number(p.import_price || 0);
-        } else {
-          totalImportValue += Number(p.total_import_cost || (Number(p.import_price || 0) * (p.quantity || 1)));
-        }
+      // 2. Single server-side RPC: counts + sums in one DB call
+      const { data: aggRaw } = await supabase.rpc('get_dashboard_aggregates', {
+        p_tenant_id: tenant!.id,
+        p_branch_id: shouldFilter && branchId ? branchId : null,
       });
 
-      // 4. Pending debt (server-side SUM)
-      let receiptsQuery = supabase
-        .from('import_receipts')
-        .select('debt_amount')
-        .eq('status', 'completed')
-        .gt('debt_amount', 0);
-
-      if (shouldFilter && branchId) {
-        receiptsQuery = receiptsQuery.eq('branch_id', branchId);
-      }
-
-      const { data: receipts } = await receiptsQuery.limit(1000);
-      const pendingDebt = receipts?.reduce((sum, r) => sum + Number(r.debt_amount), 0) || 0;
+      const agg = (aggRaw || {}) as Record<string, number>;
+      const inStockCount = agg.in_stock || 0;
+      const totalProducts = agg.total || 0;
+      const soldProducts = agg.sold || 0;
+      const totalImportValue = Number(agg.total_import_value || 0);
+      const pendingDebt = Number(agg.pending_debt || 0);
 
       // 5. Use daily_stats for today metrics, or fallback to quick queries
       let todayRevenue = 0, todayProfit = 0, todaySold = 0, todayImports = 0;
