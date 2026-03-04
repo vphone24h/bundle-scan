@@ -179,7 +179,7 @@ export default function ExportHistoryPage() {
   const { data: items, isLoading: itemsLoading } = useExportReceiptItems(activeTab === 'items');
   // On-demand detail items for selected receipt (detail/print)
   const detailReceiptId = selectedReceipt?.id || printReceipt?.receiptId || null;
-  const { data: detailItems } = useExportReceiptDetail(detailReceiptId);
+  const { data: detailItems, isLoading: detailItemsLoading } = useExportReceiptDetail(detailReceiptId);
   const { data: branches } = useBranches();
   const { data: categories } = useCategories();
   const returnProduct = useReturnProduct();
