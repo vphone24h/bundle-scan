@@ -276,7 +276,8 @@ export function ProductDetailDialog({
         note: fullNote || undefined,
       });
       setOrderSuccess(true);
-    } catch (err) {
+    } catch (err: any) {
+      console.error('Order placement failed:', err?.message || err, JSON.stringify(err));
       toast.error('Đặt hàng thất bại, vui lòng thử lại');
     }
   };
