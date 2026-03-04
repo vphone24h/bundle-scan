@@ -165,7 +165,7 @@ export function useProductImportExportReport(filters?: {
       });
 
       // Process returns
-      returnRes.data?.forEach(item => {
+      returnData.forEach(item => {
         const receipt = item.export_receipts as any;
         const key = getKey(item.product_name, item.sku, receipt?.branch_id);
         const price = Number(item.sale_price) || 0;
