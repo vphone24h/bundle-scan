@@ -368,17 +368,40 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
              </Table>
            </div>
            
-            {totalCount > 0 && (
-              <TablePagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                pageSize={pageSize}
-                totalItems={totalCount}
-                startIndex={startIndex + 1}
-                endIndex={endIndex}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={handlePageSizeChange}
-              />
+            {(filteredCustomers?.length || 0) > 0 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t">
+                <div className="text-sm text-muted-foreground">
+                  Trang {currentPage} · {filteredCustomers?.length || 0} kết quả
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select value={String(pageSize)} onValueChange={(v) => handlePageSizeChange(Number(v))}>
+                    <SelectTrigger className="w-[80px] h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="15">15</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                  >
+                    Trước
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    disabled={!hasMore}
+                  >
+                    Sau
+                  </Button>
+                </div>
+              </div>
             )}
          </CardContent>
        </Card>
