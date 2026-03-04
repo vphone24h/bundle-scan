@@ -100,7 +100,7 @@ export function useExportReceipts(filters?: {
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   const page = filters?.page ?? 1;
-  const pageSize = filters?.pageSize ?? 100;
+  const pageSize = filters?.pageSize ?? 15;
 
   const selectFields = `
     *,
