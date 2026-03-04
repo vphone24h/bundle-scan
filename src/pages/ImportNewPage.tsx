@@ -33,7 +33,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen, PlayCircle, Search, Package, ArrowLeft } from 'lucide-react';
+import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen, PlayCircle, Search, Package, ArrowLeft, QrCode, X } from 'lucide-react';
+import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { ImportQRScanner, parseVKHOQR, type VKHOQRData } from '@/components/import/ImportQRScanner';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -116,6 +117,9 @@ export default function ImportNewPage() {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [printQRPromptOpen, setPrintQRPromptOpen] = useState(false);
+  const [printQRProducts, setPrintQRProducts] = useState<{ id: string; name: string; sku: string; imei?: string; importPrice: number; salePrice?: number }[]>([]);
+  const [barcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   // 'search' = only product name visible, 'form' = full fields visible
   const [productFormMode, setProductFormMode] = useState<'search' | 'form'>('search');
@@ -338,10 +342,22 @@ export default function ImportNewPage() {
     const cartSnapshot = [...cart];
     const totalSnapshot = totalAmount;
 
-    // Immediately close dialog, clear cart, and navigate (optimistic UI)
+    // Close payment dialog & clear cart
     setPaymentOpen(false);
     setCart([]);
-    navigate('/import/history');
+
+    // Save cart items for QR print prompt
+    const qrProducts = cartSnapshot.map((item, idx) => ({
+      id: item.id || String(Date.now() + idx),
+      name: item.productName,
+      sku: item.sku,
+      imei: item.imei || undefined,
+      importPrice: item.importPrice,
+      salePrice: item.salePrice,
+    }));
+    setPrintQRProducts(qrProducts);
+    setPrintQRPromptOpen(true);
+
     toast({
       title: t('tours.importNew.processingImport'),
       description: t('tours.importNew.processingImportDesc', { count: cartSnapshot.length }),
@@ -379,6 +395,17 @@ export default function ImportNewPage() {
         variant: 'destructive',
       });
     });
+  };
+
+  const handlePrintQR = () => {
+    setPrintQRPromptOpen(false);
+    setBarcodeDialogOpen(true);
+  };
+
+  const handleSkipPrintQR = () => {
+    setPrintQRPromptOpen(false);
+    setPrintQRProducts([]);
+    navigate('/import/history');
   };
 
   const handleExportTemplate = () => {
@@ -1216,6 +1243,42 @@ export default function ImportNewPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Print QR Prompt after payment */}
+      <Dialog open={printQRPromptOpen} onOpenChange={(open) => { if (!open) handleSkipPrintQR(); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-primary" />
+              In tem QR / mã vạch?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Nhập hàng thành công! Bạn có muốn in tem QR cho {printQRProducts.length} sản phẩm vừa nhập không?
+          </p>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={handleSkipPrintQR}>
+              <X className="h-4 w-4 mr-2" />
+              Đóng
+            </Button>
+            <Button onClick={handlePrintQR}>
+              <QrCode className="h-4 w-4 mr-2" />
+              In QR
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Barcode/QR Print Dialog */}
+      <BarcodeDialog
+        open={barcodeDialogOpen}
+        onClose={() => {
+          setBarcodeDialogOpen(false);
+          setPrintQRProducts([]);
+          navigate('/import/history');
+        }}
+        products={printQRProducts}
+      />
       <OnboardingTourOverlay
         steps={IMPORT_NEW_TOUR_STEPS}
         isActive={manualTourActive || (!tourCompleted && !tourDismissed)}
