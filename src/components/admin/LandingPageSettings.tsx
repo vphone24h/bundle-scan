@@ -68,8 +68,9 @@ function AppPasswordHelpDialog({ open, onOpenChange }: { open: boolean; onOpenCh
   );
 }
 
-function OrderEmailConfigSection({ formData, handleChange, tenantId }: { formData: any; handleChange: (field: string, value: any) => void; tenantId: string | null }) {
+function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave }: { formData: any; handleChange: (field: string, value: any) => void; tenantId: string | null; onSave?: () => void }) {
   const [showHelp, setShowHelp] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   return (
     <div className="space-y-3">
@@ -136,39 +137,59 @@ function OrderEmailConfigSection({ formData, handleChange, tenantId }: { formDat
               onCheckedChange={checked => handleChange('order_email_on_warranty', checked)}
             />
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            disabled={!formData.order_email_sender || !formData.order_email_app_password}
-            onClick={async () => {
-              try {
-                const { supabase } = await import('@/integrations/supabase/client');
-                const { error } = await supabase.functions.invoke('send-order-email', {
-                  body: {
-                    tenant_id: tenantId,
-                    order_id: 'test-' + Date.now(),
-                    customer_name: 'Khách test',
-                    customer_email: formData.order_email_sender,
-                    customer_phone: '0123456789',
-                    product_name: 'Sản phẩm test',
-                    product_price: 10000000,
-                    order_code: '#TEST01',
-                    variant: 'Đen',
-                    quantity: 1,
-                    branch_id: null,
-                    email_type: 'order_confirmation',
-                  },
-                });
-                if (error) throw error;
-                toast({ title: '✅ Đã gửi email test thành công!' });
-              } catch (err: any) {
-                toast({ title: 'Lỗi gửi email', description: err.message, variant: 'destructive' });
-              }
-            }}
-          >
-            📨 Test gửi mail
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              className="flex-1 gap-1.5"
+              disabled={!formData.order_email_sender || !formData.order_email_app_password || saving}
+              onClick={async () => {
+                setSaving(true);
+                try {
+                  if (onSave) onSave();
+                  toast({ title: '✅ Đã lưu cài đặt email!' });
+                } finally {
+                  setSaving(false);
+                }
+              }}
+            >
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              Lưu cài đặt mail
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              disabled={!formData.order_email_sender || !formData.order_email_app_password}
+              onClick={async () => {
+                try {
+                  const { supabase } = await import('@/integrations/supabase/client');
+                  const { error } = await supabase.functions.invoke('send-order-email', {
+                    body: {
+                      tenant_id: tenantId,
+                      order_id: 'test-' + Date.now(),
+                      customer_name: 'Khách test',
+                      customer_email: formData.order_email_sender,
+                      customer_phone: '0123456789',
+                      product_name: 'Sản phẩm test',
+                      product_price: 10000000,
+                      order_code: '#TEST01',
+                      variant: 'Đen',
+                      quantity: 1,
+                      branch_id: null,
+                      email_type: 'order_confirmation',
+                    },
+                  });
+                  if (error) throw error;
+                  toast({ title: '✅ Đã gửi email test thành công!' });
+                } catch (err: any) {
+                  toast({ title: 'Lỗi gửi email', description: err.message, variant: 'destructive' });
+                }
+              }}
+            >
+              📨 Test gửi mail
+            </Button>
+          </div>
         </div>
       )}
       <AppPasswordHelpDialog open={showHelp} onOpenChange={setShowHelp} />
@@ -1133,7 +1154,14 @@ export function LandingPageSettings() {
           <Separator className="my-3" />
 
           {/* Email tự động đơn hàng */}
-          <OrderEmailConfigSection formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} />
+          <OrderEmailConfigSection formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
+            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+            updateSettings.mutateAsync(formData).then(() => {
+              setHasChanges(false);
+            }).catch(() => {
+              toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
+            });
+          }} />
         </CardContent>
       </Card>
 
