@@ -1154,7 +1154,14 @@ export function LandingPageSettings() {
           <Separator className="my-3" />
 
           {/* Email tự động đơn hàng */}
-          <OrderEmailConfigSection formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} />
+          <OrderEmailConfigSection formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
+            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+            updateSettings.mutateAsync(formData).then(() => {
+              setHasChanges(false);
+            }).catch(() => {
+              toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
+            });
+          }} />
         </CardContent>
       </Card>
 
