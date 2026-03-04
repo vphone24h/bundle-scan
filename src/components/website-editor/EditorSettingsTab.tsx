@@ -88,6 +88,7 @@ const SECTION_TO_BLOCK: Record<string, string> = {
   'sticky-bar': 'social',
   'menu': 'menu',
   'products-layout': 'products-layout',
+  'news-layout': 'news-layout',
   'product-detail-layout': 'product-detail-layout',
 };
 
