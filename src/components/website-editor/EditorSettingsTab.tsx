@@ -514,7 +514,30 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
         />
       </SettingsBlock>
 
-      {/* Liên hệ & Mạng xã hội */}
+      {/* Layout trang tin tức */}
+      {(() => {
+        const navItems = (formData as any)?.custom_nav_items as NavItemConfig[] | null;
+        const newsNav = navItems?.find((n: NavItemConfig) => n.pageView === 'news');
+        const newsLabel = newsNav?.label || config.navLabels.news || 'Tin tức';
+        return (
+          <SettingsBlock
+            id="news-layout"
+            icon="📰"
+            title={`Bố cục trang ${newsLabel}`}
+            description="Bật/tắt, sắp xếp các phần trên trang tin tức"
+            isExpanded={expandedBlocks.has('news-layout')}
+            onToggle={() => toggleBlock('news-layout')}
+          >
+            <NewsPageSectionManager
+              customSections={(formData as any).custom_news_page_sections || null}
+              onChange={sections => onChange('custom_news_page_sections', sections)}
+              customNewsTabs={(formData as any).custom_news_page_tabs || []}
+              onTabsChange={tabs => onChange('custom_news_page_tabs', tabs)}
+            />
+          </SettingsBlock>
+        );
+      })()}
+
       <SettingsBlock
         id="social"
         icon="💬"
