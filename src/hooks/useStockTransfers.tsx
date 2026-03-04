@@ -171,7 +171,8 @@ interface CreateTransferParams {
   fromBranchName: string;
   toBranchName: string;
   note?: string;
-  isAutoApprove: boolean; // super_admin auto-approves
+  isAutoApprove: boolean;
+  transferQuantities?: Record<string, number>; // productId -> qty for non-IMEI partial transfers
 }
 
 // Create a stock transfer request
