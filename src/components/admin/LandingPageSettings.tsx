@@ -136,10 +136,28 @@ function OrderEmailConfigSection({ formData, handleChange, tenantId }: { formDat
               onCheckedChange={checked => handleChange('order_email_on_warranty', checked)}
             />
           </div>
+          <div className="flex gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            className="flex-1 gap-1.5"
+            disabled={!formData.order_email_sender || !formData.order_email_app_password}
+            onClick={async () => {
+              try {
+                const { useUpdateTenantLandingSettings } = await import('@/hooks/useTenantLanding');
+                // Trigger immediate save via parent's auto-save
+                // We call handleChange to mark dirty then wait
+                handleChange('order_email_sender', formData.order_email_sender);
+              } catch {}
+            }}
+          >
+            <Save className="h-3.5 w-3.5" />
+            Lưu cài đặt mail
+          </Button>
           <Button
             variant="outline"
             size="sm"
-            className="w-full"
+            className="flex-1"
             disabled={!formData.order_email_sender || !formData.order_email_app_password}
             onClick={async () => {
               try {
