@@ -1127,6 +1127,23 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
                       );
 
                     default:
+                      // Layout sections from SYSTEM_PAGES
+                      if (sectionId.startsWith('layout_')) {
+                        const pageId = sectionId.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
+                        const page = SYSTEM_PAGES.find(p => p.id === pageId);
+                        if (!page) return null;
+                        return (
+                          <SectionOverlay key={sectionId} sectionId="layout" label={page.label} onEdit={onEditSection}>
+                            <section className="py-6 px-4 bg-white">
+                              <div className="rounded-xl border border-black/5 p-5 text-center space-y-2">
+                                <span className="text-3xl">{page.icon}</span>
+                                <h3 className="text-sm font-bold">{page.label}</h3>
+                                <p className="text-[10px] text-[#86868b]">{page.description}</p>
+                              </div>
+                            </section>
+                          </SectionOverlay>
+                        );
+                      }
                       return null;
                   }
                 })}
