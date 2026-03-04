@@ -11,6 +11,39 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const url = new URL(req.url);
+
+  // Handle GET redirect from Zalo OAuth
+  if (req.method === "GET") {
+    const code = url.searchParams.get("code");
+    const oaId = url.searchParams.get("oa_id");
+    const state = url.searchParams.get("state"); // tenant_id
+
+    // Return HTML that sends message to opener and closes
+    const html = `<!DOCTYPE html>
+<html><head><title>Zalo OAuth</title></head>
+<body>
+<p style="font-family:sans-serif;text-align:center;margin-top:40px;">Đang kết nối Zalo OA...</p>
+<script>
+  if (window.opener) {
+    window.opener.postMessage({
+      type: 'zalo-oauth-callback',
+      code: ${JSON.stringify(code || "")},
+      oa_id: ${JSON.stringify(oaId || "")},
+      state: ${JSON.stringify(state || "")}
+    }, '*');
+    setTimeout(() => window.close(), 1500);
+  } else {
+    document.body.innerHTML = '<p style="font-family:sans-serif;text-align:center;margin-top:40px;">Kết nối thành công! Bạn có thể đóng tab này.</p>';
+  }
+</script>
+</body></html>`;
+
+    return new Response(html, {
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }
+
   try {
     const { action, tenant_id, code, app_id, app_secret } = await req.json();
 
@@ -19,7 +52,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Action: get_oauth_url — return the Zalo OAuth authorization URL
+    // Action: get_oauth_url
     if (action === "get_oauth_url") {
       if (!app_id || !tenant_id) {
         return new Response(
@@ -28,9 +61,8 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Build redirect URI pointing to our edge function
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const redirectUri = `${supabaseUrl}/functions/v1/zalo-oauth-callback?mode=redirect`;
+      const redirectUri = `${supabaseUrl}/functions/v1/zalo-oauth-callback`;
 
       const oauthUrl =
         `https://oauth.zaloapp.com/v4/oa/permission` +
@@ -44,7 +76,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Action: exchange_code — exchange authorization code for access token
+    // Action: exchange_code
     if (action === "exchange_code") {
       if (!code || !tenant_id) {
         return new Response(
@@ -53,7 +85,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Get app credentials from tenant settings
       let finalAppId = app_id;
       let finalAppSecret = app_secret;
 
@@ -76,9 +107,8 @@ Deno.serve(async (req) => {
       }
 
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const redirectUri = `${supabaseUrl}/functions/v1/zalo-oauth-callback?mode=redirect`;
+      const redirectUri = `${supabaseUrl}/functions/v1/zalo-oauth-callback`;
 
-      // Exchange code for token
       const tokenRes = await fetch("https://oauth.zaloapp.com/v4/oa/access_token", {
         method: "POST",
         headers: {
@@ -116,7 +146,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Get OA info to verify connection
       const oaInfoRes = await fetch("https://openapi.zalo.me/v2.0/oa/getoa", {
         headers: { access_token: accessToken },
       });
@@ -126,7 +155,6 @@ Deno.serve(async (req) => {
       const oaId = oaInfo.data?.oa_id || "";
       const oaName = oaInfo.data?.name || "";
 
-      // Save tokens to tenant settings
       const { error: updateError } = await supabaseAdmin
         .from("tenant_landing_settings")
         .update({
@@ -158,7 +186,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Action: refresh_token — refresh an expired access token
+    // Action: refresh_token
     if (action === "refresh_token") {
       if (!tenant_id) {
         return new Response(
@@ -220,7 +248,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Action: disconnect — clear Zalo config
+    // Action: disconnect
     if (action === "disconnect") {
       await supabaseAdmin
         .from("tenant_landing_settings")
