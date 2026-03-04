@@ -288,6 +288,13 @@ export function SocialPostCard({ post, onViewProfile }: Props) {
       {showEditDialog && (
         <EditPostDialog post={post} open={showEditDialog} onOpenChange={setShowEditDialog} />
       )}
+
+      <AvatarPreviewDialog
+        open={!!avatarPreview}
+        onOpenChange={(open) => !open && setAvatarPreview(null)}
+        imageUrl={avatarPreview?.url}
+        name={avatarPreview?.name}
+      />
     </Card>
   );
 }
