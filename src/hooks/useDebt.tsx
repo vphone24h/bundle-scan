@@ -79,7 +79,7 @@ export function useCustomerDebts(showSettled: boolean = false) {
         return q;
       };
 
-      const receipts = await fetchAllRows<any>(buildReceiptsQuery);
+      const receipts = await fetchLimited<any>(buildReceiptsQuery);
 
       // Get debt payments for customers
       const buildPaymentsQuery = () => {
