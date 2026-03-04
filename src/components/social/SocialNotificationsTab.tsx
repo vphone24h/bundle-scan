@@ -55,7 +55,7 @@ export const SocialNotificationsTab = memo(function SocialNotificationsTab({ onV
           key={notif.id}
           className={cn('cursor-pointer hover:bg-accent/50 transition-colors', !notif.is_read && 'bg-primary/5 border-primary/20')}
           onClick={() => {
-            if (notif.post_id) onGoToPost(notif.post_id);
+            if (notif.post_id) onGoToPost(notif.post_id, notif.comment_id || undefined);
             else onViewProfile(notif.actor_id);
           }}
         >
