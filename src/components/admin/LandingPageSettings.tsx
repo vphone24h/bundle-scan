@@ -234,9 +234,13 @@ function ZaloOAConfigSection({ formData, handleChange, tenantId, onSave }: { for
           </div>
           <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
             <p className="font-medium">📌 Hướng dẫn lấy Access Token:</p>
-            <p>1. Vào <a href="https://oa.zalo.me" target="_blank" rel="noopener noreferrer" className="text-primary underline">oa.zalo.me</a> → Đăng nhập</p>
-            <p>2. Vào <a href="https://developers.zalo.me" target="_blank" rel="noopener noreferrer" className="text-primary underline">developers.zalo.me</a> → Tạo ứng dụng</p>
-            <p>3. Cấu hình Webhook & lấy Access Token</p>
+            <p>1. Vào <a href="https://developers.zalo.me" target="_blank" rel="noopener noreferrer" className="text-primary underline">developers.zalo.me</a> → Đăng nhập</p>
+            <p>2. Chọn menu <strong>Công cụ</strong> → <a href="https://developers.zalo.me/tools/explorer/token" target="_blank" rel="noopener noreferrer" className="text-primary underline">Lấy Access Token</a></p>
+            <p>3. Chọn loại: <strong>OA Access Token</strong> → Chọn ứng dụng & OA → Copy Access Token</p>
+            <p className="text-amber-600 font-medium mt-1">⚠️ Lưu ý quan trọng:</p>
+            <p>• Token có hạn <strong>90 ngày</strong>, cần gia hạn định kỳ</p>
+            <p>• Zalo OA chỉ gửi được tin cho <strong>người đã theo dõi (quan tâm) OA</strong></p>
+            <p>• Để test: Bạn cần <strong>follow OA</strong> bằng Zalo cá nhân trước</p>
           </div>
           <Separator />
           <p className="text-xs font-medium text-muted-foreground">Gửi tin nhắn khi:</p>
