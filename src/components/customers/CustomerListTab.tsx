@@ -242,7 +242,7 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
             ) : filteredCustomers?.length === 0 ? (
               <p className="text-center py-8 text-sm text-muted-foreground">Chưa có khách hàng</p>
             ) : (
-              pagination.paginatedData.map((customer) => (
+               (filteredCustomers || []).map((customer) => (
                 <div
                   key={customer.id}
                   className="p-3 active:bg-muted/50"
