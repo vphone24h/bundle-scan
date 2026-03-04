@@ -142,6 +142,7 @@ const Index = () => {
   const { mutate: resetAllTours } = useResetAllTours();
   const { data: stats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
   const isFirstLoad = statsLoading && !stats;
+  const { data: permissions } = usePermissions();
   const { data: platformUser } = usePlatformUser();
   const isPlatformAdmin = platformUser?.platform_role === 'platform_admin';
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
