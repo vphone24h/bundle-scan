@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
-import { fetchAllRows } from '@/lib/fetchAllRows';
+// fetchAllRows removed - using server-side limited queries
 
 import type { SaleDetailItem, ReturnDetailItem, CashBookDetailItem } from '@/components/reports/ReportStatDetailDialog';
 
@@ -128,7 +128,8 @@ export function useReportStats(filters?: {
         return q;
       };
 
-      const exportReceipts = await fetchAllRows<any>(buildExportQuery);
+      const { data: exportReceipts, error: exportError } = await buildExportQuery().limit(5000);
+      if (exportError) throw exportError;
 
       // 2. Lấy dữ liệu trả hàng KHÔNG CÓ PHÍ để tính lợi nhuận âm
       let returnQuery = supabase

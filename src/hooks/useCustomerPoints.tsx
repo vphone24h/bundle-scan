@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { fetchAllRows } from '@/lib/fetchAllRows';
+// fetchAllRows removed - using server-side limited queries
 
 // Types
 export interface PointSettings {
@@ -315,8 +315,9 @@ export function useCustomersWithPoints(filters?: {
         return query;
       };
 
-      const data = await fetchAllRows<CustomerWithPointsCRM>(buildQuery);
-      return data;
+      const { data, error } = await buildQuery().limit(5000);
+      if (error) throw error;
+      return (data || []) as CustomerWithPointsCRM[];
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 2, // 2 phút

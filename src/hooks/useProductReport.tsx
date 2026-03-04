@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
-import { fetchAllRows } from '@/lib/fetchAllRows';
+// fetchAllRows removed - using server-side limited queries
 
 export interface ProductReportItem {
   productName: string;
@@ -75,7 +75,8 @@ export function useProductReport(filters?: {
         return q;
       };
 
-      const soldItems = await fetchAllRows<any>(buildSoldQuery);
+      const { data: soldItems, error: soldError } = await buildSoldQuery().limit(5000);
+      if (soldError) throw soldError;
 
       // Get product import prices
       const productIds = Array.from(new Set(soldItems?.map(i => i.product_id).filter(Boolean) || []));

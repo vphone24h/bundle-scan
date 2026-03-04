@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useMemo } from 'react';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
-import { fetchAllRows } from '@/lib/fetchAllRows';
+// fetchAllRows removed - using server-side limited queries
 
 export interface InventoryItem {
   productId: string;
@@ -219,7 +219,8 @@ export function useInventory() {
         return q;
       };
 
-      const products = await fetchAllRows<any>(buildQuery);
+      const { data: products, error } = await buildQuery().limit(5000);
+      if (error) throw error;
 
       // Lấy chi phí thực từ product_imports cho non-IMEI products (fix lỗi products.total_import_cost không cập nhật)
       const nonImeiProductIds = (products || [])

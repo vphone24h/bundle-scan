@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
-import { fetchAllRows } from '@/lib/fetchAllRows';
+// fetchAllRows removed - using server-side limited queries
 
 export interface SupplierReportItem {
   supplierId: string;
@@ -55,9 +55,11 @@ export function useSupplierReport(filters?: {
       if (error) throw error;
 
       // Get product counts per supplier
-      const productCounts = await fetchAllRows<any>(() =>
-        supabase.from('products').select('supplier_id, id').not('supplier_id', 'is', null)
-      );
+      const { data: productCounts } = await supabase
+        .from('products')
+        .select('supplier_id, id')
+        .not('supplier_id', 'is', null)
+        .limit(5000);
 
       const productCountMap: Record<string, number> = {};
       productCounts?.forEach(p => {

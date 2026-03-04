@@ -3,20 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from './usePermissions';
 import { useAuth } from './useAuth';
 
-// Fetch all rows bypassing Supabase 1000-row default limit via pagination
+// Server-side limited query helper for bounded datasets
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchAllRows<T>(queryBuilder: () => any, pageSize = 1000): Promise<T[]> {
-  const allData: T[] = [];
-  let from = 0;
-  while (true) {
-    const { data, error } = await queryBuilder().range(from, from + pageSize - 1);
-    if (error) throw error;
-    if (!data || data.length === 0) break;
-    allData.push(...(data as T[]));
-    if (data.length < pageSize) break;
-    from += pageSize;
-  }
-  return allData;
+async function fetchLimited<T>(queryBuilder: () => any, limit = 5000): Promise<T[]> {
+  const { data, error } = await queryBuilder().limit(limit);
+  if (error) throw error;
+  return (data || []) as T[];
 }
 
 // Helper to get current user's tenant_id
@@ -87,7 +79,7 @@ export function useCustomerDebts(showSettled: boolean = false) {
         return q;
       };
 
-      const receipts = await fetchAllRows<any>(buildReceiptsQuery);
+      const receipts = await fetchLimited<any>(buildReceiptsQuery);
 
       // Get debt payments for customers
       const buildPaymentsQuery = () => {
@@ -102,7 +94,7 @@ export function useCustomerDebts(showSettled: boolean = false) {
         return q;
       };
 
-      const payments = await fetchAllRows<any>(buildPaymentsQuery);
+      const payments = await fetchLimited<any>(buildPaymentsQuery);
 
       // Get unique customer IDs from payments
       const paymentCustomerIds = [...new Set(payments?.map(p => p.entity_id) || [])];
@@ -311,7 +303,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
         return q;
       };
 
-      const receipts = await fetchAllRows<any>(buildReceiptsQuery);
+      const receipts = await fetchLimited<any>(buildReceiptsQuery);
 
       const buildPaymentsQuery = () => {
         let q = supabase
@@ -325,7 +317,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
         return q;
       };
 
-      const payments = await fetchAllRows<any>(buildPaymentsQuery);
+      const payments = await fetchLimited<any>(buildPaymentsQuery);
 
       const paymentSupplierIds = [...new Set(payments?.map(p => p.entity_id) || [])];
       let suppliersFromPayments: { id: string; name: string; phone: string | null; address: string | null }[] = [];
