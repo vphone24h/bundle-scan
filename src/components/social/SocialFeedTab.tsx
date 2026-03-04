@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, memo } from 'react';
+import { useState, useRef, useCallback, memo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocialFeed, useCreatePost } from '@/hooks/useSocial';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,9 +13,12 @@ import { toast } from 'sonner';
 
 interface Props {
   onViewProfile: (userId: string) => void;
+  focusPostId?: string | null;
+  focusCommentId?: string | null;
+  onFocusHandled?: () => void;
 }
 
-export const SocialFeedTab = memo(function SocialFeedTab({ onViewProfile }: Props) {
+export const SocialFeedTab = memo(function SocialFeedTab({ onViewProfile, focusPostId, focusCommentId, onFocusHandled }: Props) {
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const { data: feedData, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useSocialFeed();
@@ -57,6 +60,21 @@ export const SocialFeedTab = memo(function SocialFeedTab({ onViewProfile }: Prop
   }, [newContent, imageUrls, createPost]);
 
   const posts = feedData?.pages?.flatMap(p => p.posts) || [];
+
+  // Scroll to focused post after render
+  useEffect(() => {
+    if (focusPostId && posts.length > 0) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`social-post-${focusPostId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-2', 'ring-primary');
+          setTimeout(() => el.classList.remove('ring-2', 'ring-primary'), 3000);
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [focusPostId, posts.length]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
@@ -117,7 +135,13 @@ export const SocialFeedTab = memo(function SocialFeedTab({ onViewProfile }: Prop
       ) : (
         <>
           {posts.map(post => (
-            <SocialPostCard key={post.id} post={post} onViewProfile={onViewProfile} />
+            <SocialPostCard 
+              key={post.id} 
+              post={post} 
+              onViewProfile={onViewProfile}
+              autoOpenComments={post.id === focusPostId && (focusCommentId != null || false)}
+              onFocusHandled={post.id === focusPostId ? onFocusHandled : undefined}
+            />
           ))}
           {hasNextPage && (
             <div className="text-center">

@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   onViewProfile: (userId: string) => void;
-  onGoToPost: (postId: string) => void;
+  onGoToPost: (postId: string, commentId?: string) => void;
 }
 
 const getNotifIcon = (type: string) => {
@@ -55,7 +55,7 @@ export const SocialNotificationsTab = memo(function SocialNotificationsTab({ onV
           key={notif.id}
           className={cn('cursor-pointer hover:bg-accent/50 transition-colors', !notif.is_read && 'bg-primary/5 border-primary/20')}
           onClick={() => {
-            if (notif.post_id) onGoToPost(notif.post_id);
+            if (notif.post_id) onGoToPost(notif.post_id, notif.comment_id || undefined);
             else onViewProfile(notif.actor_id);
           }}
         >

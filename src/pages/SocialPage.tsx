@@ -23,6 +23,8 @@ const SocialPage = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('feed');
   const [viewUserId, setViewUserId] = useState<string | undefined>();
+  const [focusPostId, setFocusPostId] = useState<string | null>(null);
+  const [focusCommentId, setFocusCommentId] = useState<string | null>(null);
   const { data: unreadCount } = useUnreadSocialNotifCount();
   const queryClient = useQueryClient();
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
@@ -82,7 +84,9 @@ const SocialPage = () => {
     setSearchQuery('');
   };
 
-  const handleGoToPost = (postId: string) => {
+  const handleGoToPost = (postId: string, commentId?: string) => {
+    setFocusPostId(postId);
+    setFocusCommentId(commentId || null);
     setActiveTab('feed');
   };
 
@@ -200,7 +204,7 @@ const SocialPage = () => {
             </TabsContent>
             <TabsContent value="feed" forceMount={activeTab === 'feed' ? undefined : true} className={activeTab !== 'feed' ? 'hidden' : ''}>
               <Suspense fallback={<TabFallback />}>
-                <SocialFeedTab onViewProfile={handleViewProfile} />
+                <SocialFeedTab onViewProfile={handleViewProfile} focusPostId={focusPostId} focusCommentId={focusCommentId} onFocusHandled={() => { setFocusPostId(null); setFocusCommentId(null); }} />
               </Suspense>
             </TabsContent>
             <TabsContent value="notifications" forceMount={activeTab === 'notifications' ? undefined : true} className={activeTab !== 'notifications' ? 'hidden' : ''}>
