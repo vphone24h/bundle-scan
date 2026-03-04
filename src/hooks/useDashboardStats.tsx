@@ -145,7 +145,7 @@ export function useDashboardStats() {
       } as DashboardStats;
     },
     enabled: !isTenantLoading && !branchLoading,
-    staleTime: 60 * 1000, // Cache 60s
+    staleTime: 2 * 60 * 1000, // 2 min - reads from pre-computed daily_stats
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchOnMount: false,
