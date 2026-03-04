@@ -279,7 +279,7 @@ function ZaloOAConfigSection({ formData, handleChange, tenantId, onSave }: { for
                 setTesting(true);
                 try {
                   const { supabase } = await import('@/integrations/supabase/client');
-                  const { error } = await supabase.functions.invoke('send-zalo-message', {
+                  const { data, error } = await supabase.functions.invoke('send-zalo-message', {
                     body: {
                       tenant_id: tenantId,
                       customer_name: 'Test',
@@ -287,7 +287,14 @@ function ZaloOAConfigSection({ formData, handleChange, tenantId, onSave }: { for
                       message_type: 'test',
                     },
                   });
-                  if (error) throw error;
+                  if (error) {
+                    // Try to parse error details from response
+                    const errMsg = data?.details || data?.error || error.message;
+                    throw new Error(errMsg);
+                  }
+                  if (data?.error) {
+                    throw new Error(data.details || data.error);
+                  }
                   toast({ title: '✅ Đã gửi tin nhắn Zalo test!' });
                 } catch (err: any) {
                   toast({ title: 'Lỗi gửi Zalo', description: err.message, variant: 'destructive' });
