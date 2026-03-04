@@ -905,6 +905,7 @@ export default function ExportNewPage() {
                           <div className="text-muted-foreground text-xs">
                             SKU: {product.sku} | {product.categories?.name || t('pages.exportNew.notCategorized')}
                             {product.imei && <span className="ml-1 text-foreground/70">| IMEI: {product.imei}</span>}
+                            {product.branches?.name && <span className="ml-1 text-primary/80">| CN: {product.branches.name}</span>}
                           </div>
                         </button>
                       ))}
@@ -988,10 +989,31 @@ export default function ExportNewPage() {
                       <p className="text-sm text-muted-foreground">
                         {t('pages.exportNew.categoryLabel')}: {selectedProduct.categories?.name || t('pages.exportNew.notCategorized')}
                       </p>
+                      {selectedProduct.branches?.name && (
+                        <p className="text-sm text-primary">
+                          Chi nhánh: {selectedProduct.branches.name}
+                        </p>
+                      )}
                     </div>
-                    <Badge variant="secondary">
-                      {selectedProduct.status === 'in_stock' ? t('pages.exportNew.inStockBadge') : selectedProduct.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">
+                        {selectedProduct.status === 'in_stock' ? t('pages.exportNew.inStockBadge') : selectedProduct.status}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          setSelectedProduct(null);
+                          setSalePrice('');
+                          setItemNote('');
+                          setItemQuantity(1);
+                        }}
+                        title="Xóa sản phẩm đã chọn"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
