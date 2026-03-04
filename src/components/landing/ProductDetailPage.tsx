@@ -33,7 +33,7 @@ interface ProductDetailPageProps {
   warrantyHotline?: string | null;
   onShare?: () => void;
   onInstallment?: () => void;
-  showInstallmentButton?: boolean;
+  showInstallmentButton?: boolean; // deprecated, use detailSections
   detailSections?: ProductDetailSectionConfig[] | null;
   relatedProducts?: LandingProduct[];
   recentlyViewedProducts?: LandingProduct[];
