@@ -84,8 +84,7 @@ export function ZaloOASetupWizard({ formData, handleChange, tenantId, onSave }: 
     }
 
     // Save app credentials first
-    handleChange('zalo_app_id', formData.zalo_app_id?.trim());
-    handleChange('zalo_app_secret', formData.zalo_app_secret?.trim());
+    if (onSave) onSave();
 
     setConnecting(true);
     try {
@@ -120,56 +119,19 @@ export function ZaloOASetupWizard({ formData, handleChange, tenantId, onSave }: 
         return;
       }
 
-      // Poll for popup close or redirect
-      const pollTimer = setInterval(async () => {
-        try {
-          if (popup.closed) {
-            clearInterval(pollTimer);
-            setConnecting(false);
-          }
-          // Try to read URL (will throw if cross-origin)
-          const popupUrl = popup.location?.href;
-          if (popupUrl && popupUrl.includes('code=')) {
-            const url = new URL(popupUrl);
-            const code = url.searchParams.get('code');
-            const oaId = url.searchParams.get('oa_id');
-            popup.close();
-            clearInterval(pollTimer);
-
-            if (code) {
-              // Exchange code for token
-              const { data: tokenData, error: tokenError } = await supabase.functions.invoke('zalo-oauth-callback', {
-                body: {
-                  action: 'exchange_code',
-                  tenant_id: tenantId,
-                  code,
-                  app_id: formData.zalo_app_id?.trim(),
-                  app_secret: formData.zalo_app_secret?.trim(),
-                },
-              });
-
-              if (tokenError) throw new Error(tokenData?.details || tokenError.message);
-              if (tokenData?.error) throw new Error(tokenData.details || tokenData.error);
-
-              if (tokenData?.oa_id) handleChange('zalo_oa_id', String(tokenData.oa_id));
-              handleChange('zalo_enabled', true);
-              handleChange('zalo_access_token', 'connected'); // Just mark as connected
-              setOaName(tokenData?.oa_name || '');
-              
-              toast.success('🎉 Kết nối Zalo OA thành công!');
-              if (onSave) onSave();
-            }
-            setConnecting(false);
-          }
-        } catch {
-          // Cross-origin, keep polling
+      // Poll for popup close to reset connecting state
+      const pollTimer = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(pollTimer);
+          // Give a moment for postMessage to process
+          setTimeout(() => setConnecting(false), 2000);
         }
       }, 500);
 
       // Safety timeout
       setTimeout(() => {
         clearInterval(pollTimer);
-        if (connecting) setConnecting(false);
+        setConnecting(false);
       }, 120000);
 
     } catch (err: any) {
