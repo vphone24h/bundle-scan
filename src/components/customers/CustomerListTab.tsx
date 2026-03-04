@@ -162,7 +162,7 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
               <SearchInput
                 placeholder="Tìm theo tên, SĐT..."
                 value={search}
-                onChange={setSearch}
+                onChange={handleSearchChange}
                 containerClassName="flex-1"
                 className="h-9 text-sm"
               />
