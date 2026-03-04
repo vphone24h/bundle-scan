@@ -617,7 +617,7 @@ export default function ExportHistoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {receiptsPagination.paginatedData.map((receipt) => (
+                    {(filteredReceipts || []).map((receipt) => (
                       <TableRow key={receipt.id}>
                         <TableCell 
                           className="font-medium text-primary cursor-pointer hover:underline"
