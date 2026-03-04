@@ -186,6 +186,21 @@ export default function ImportHistoryPage() {
   const [statusFilter, setStatusFilter] = useState('_all_');
   const [branchFilter, setBranchFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Server-side filtered products query
+  const productServerFilters = useMemo(() => ({
+    search: searchTerm || undefined,
+    categoryId: categoryFilter,
+    supplierId: supplierFilter,
+    branchId: branchFilter,
+    status: statusFilter,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    page: productPage,
+    pageSize: productPageSize,
+  }), [searchTerm, categoryFilter, supplierFilter, branchFilter, statusFilter, dateFrom, dateTo, productPage, productPageSize]);
+
+  const { data: products, isLoading: productsLoading, totalCount: productsTotalCount } = useAllProducts(productServerFilters);
   
   const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
   const { data: receiptDetails, isLoading: detailsLoading } = useImportReceiptDetails(selectedReceiptId);
