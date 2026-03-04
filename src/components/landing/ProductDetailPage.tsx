@@ -55,6 +55,7 @@ export function ProductDetailPage({
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [note, setNote] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('');
