@@ -206,12 +206,20 @@ export default function UniversalStoreTemplate({
   const allProducts = productsData?.products || [];
   const filteredProducts = useMemo(() => {
     let products = selectedCategoryId ? allProducts.filter(p => p.category_id === selectedCategoryId) : allProducts;
+    // Filter by product tag (flash sale, featured, combo, custom tab)
+    if (productFilterTag === 'featured') {
+      products = products.filter(p => p.is_featured);
+    } else if (productFilterTag === 'flashSale' || productFilterTag === 'combo') {
+      products = products.filter(p => (p as any).home_tab_ids?.includes(productFilterTag));
+    } else if (productFilterTag && productFilterTag.startsWith('productTab_')) {
+      products = products.filter(p => (p as any).home_tab_ids?.includes(productFilterTag));
+    }
     if (productSearchQuery.trim()) {
       const q = productSearchQuery.toLowerCase().trim();
       products = products.filter(p => p.name.toLowerCase().includes(q));
     }
     return products;
-  }, [allProducts, selectedCategoryId, productSearchQuery]);
+  }, [allProducts, selectedCategoryId, productSearchQuery, productFilterTag]);
   const featuredArticles = articlesData?.articles?.filter(a => a.is_featured) || [];
 
   const handlePointsAwarded = useCallback(() => { queryClient.invalidateQueries({ queryKey: ['customer-points-public'] }); }, [queryClient]);
