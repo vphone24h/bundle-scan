@@ -60,7 +60,7 @@ export function useImportReceipts(filters?: {
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   const page = filters?.page ?? 1;
-  const pageSize = filters?.pageSize ?? 100;
+  const pageSize = filters?.pageSize ?? 500;
 
   const result = useQuery({
     queryKey: ['import-receipts', tenant?.id, branchId, isDataHidden, filters],
