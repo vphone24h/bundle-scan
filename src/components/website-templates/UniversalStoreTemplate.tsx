@@ -909,60 +909,158 @@ export default function UniversalStoreTemplate({
         {/* === NEWS PAGE === */}
         {pageView === 'news' && (
           <div className="max-w-[1200px] mx-auto px-4 py-8">
-            <div className="flex items-center gap-3 mb-6">
-              <button onClick={() => navigateTo('home')} className="h-8 w-8 rounded-full bg-[#f5f5f7] flex items-center justify-center hover:bg-black/10 transition-colors">
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-              <h2 className="text-2xl font-bold tracking-tight">{config.navLabels.news}</h2>
-            </div>
-            {/* Featured articles at top */}
-            {featuredArticles.length > 0 && (
-              <div className="mb-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {featuredArticles.map((a, i) => (
-                    <ScrollReveal key={a.id} animation="fade-up" delay={i * 80}>
-                      <button onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden border border-black/5 hover:shadow-lg transition-all text-left group w-full">
-                        {a.thumbnail_url ? (
-                          <img src={a.thumbnail_url} alt={a.title} className="w-full h-56 object-cover group-hover:scale-[1.02] transition-transform" />
-                        ) : (
-                          <div className="w-full h-56 bg-[#f5f5f7] flex items-center justify-center"><Newspaper className="h-12 w-12 text-[#86868b]" /></div>
-                        )}
-                        <div className="p-5">
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary mb-2 inline-block">Nổi bật</span>
-                          <p className="font-bold text-base line-clamp-2 mb-2">{a.title}</p>
-                          {a.summary && <p className="text-sm text-[#86868b] line-clamp-2">{a.summary}</p>}
-                          <p className="text-[10px] text-[#86868b] mt-2">{format(new Date(a.created_at), 'dd/MM/yyyy', { locale: vi })}</p>
-                        </div>
-                      </button>
-                    </ScrollReveal>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(articlesData?.articles || []).filter(a => !a.is_featured).map((a, i) => (
-                <ScrollReveal key={a.id} animation="fade-up" delay={i * 80}>
-                  <button onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden border border-black/5 hover:shadow-lg transition-all text-left group w-full">
-                    {a.thumbnail_url ? (
-                      <img src={a.thumbnail_url} alt={a.title} className="w-full h-48 object-cover group-hover:scale-[1.02] transition-transform" />
-                    ) : (
-                      <div className="w-full h-48 bg-[#f5f5f7] flex items-center justify-center"><Newspaper className="h-10 w-10 text-[#86868b]" /></div>
-                    )}
-                    <div className="p-5">
-                      <p className="font-semibold text-sm line-clamp-2 mb-2">{a.title}</p>
-                      {a.summary && <p className="text-xs text-[#86868b] line-clamp-2">{a.summary}</p>}
-                      <p className="text-[10px] text-[#86868b] mt-2">{format(new Date(a.created_at), 'dd/MM/yyyy', { locale: vi })}</p>
-                    </div>
-                  </button>
-                </ScrollReveal>
-              ))}
-              {(!articlesData?.articles || articlesData.articles.length === 0) && (
-                <div className="col-span-full text-center py-16">
-                  <Newspaper className="h-12 w-12 mx-auto text-[#86868b] mb-3" />
-                  <p className="text-sm text-[#86868b]">Chưa có bài viết nào</p>
-                </div>
-              )}
-            </div>
+            {(() => {
+              const defaultNewsSections = [
+                { id: 'search', enabled: true },
+                { id: 'categoryFilter', enabled: true },
+                { id: 'featuredArticles', enabled: true },
+                { id: 'allArticles', enabled: true },
+              ];
+              const newsSections = ((settings as any)?.custom_news_page_sections || defaultNewsSections).filter((s: any) => s.enabled);
+              const allArticles = articlesData?.articles || [];
+              const featuredOnes = allArticles.filter(a => a.is_featured);
+              const regularOnes = allArticles.filter(a => !a.is_featured);
+
+              return (
+                <>
+                  <div className="flex items-center gap-3 mb-6">
+                    <button onClick={() => navigateTo('home')} className="h-8 w-8 rounded-full bg-[#f5f5f7] flex items-center justify-center hover:bg-black/10 transition-colors">
+                      <ArrowLeft className="h-4 w-4" />
+                    </button>
+                    <h2 className="text-2xl font-bold tracking-tight">{config.navLabels.news}</h2>
+                  </div>
+
+                  {newsSections.map((section: any) => {
+                    switch (section.id) {
+                      case 'search':
+                        return (
+                          <div key="search" className="mb-6">
+                            <Input
+                              placeholder={`Tìm kiếm bài viết...`}
+                              className="h-11 rounded-xl border-black/10 bg-[#f5f5f7]"
+                            />
+                          </div>
+                        );
+                      case 'categoryFilter':
+                        return (
+                          <div key="categoryFilter" className="mb-6 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                            <button className="px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" style={{ backgroundColor: accentColor, color: 'white' }}>
+                              Tất cả
+                            </button>
+                            {(articlesData?.categories || []).filter((c: any) => c.is_visible !== false).map((cat: any) => (
+                              <button key={cat.id} className="px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-[#f5f5f7] hover:bg-black/10 transition-colors">
+                                {cat.name}
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      case 'featuredArticles':
+                        if (featuredOnes.length === 0) return null;
+                        return (
+                          <div key="featuredArticles" className="mb-8">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                              {featuredOnes.map((a, i) => (
+                                <ScrollReveal key={a.id} animation="fade-up" delay={i * 80}>
+                                  <button onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden border border-black/5 hover:shadow-lg transition-all text-left group w-full">
+                                    {a.thumbnail_url ? (
+                                      <img src={a.thumbnail_url} alt={a.title} className="w-full h-56 object-cover group-hover:scale-[1.02] transition-transform" />
+                                    ) : (
+                                      <div className="w-full h-56 bg-[#f5f5f7] flex items-center justify-center"><Newspaper className="h-12 w-12 text-[#86868b]" /></div>
+                                    )}
+                                    <div className="p-5">
+                                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary mb-2 inline-block">Nổi bật</span>
+                                      <p className="font-bold text-base line-clamp-2 mb-2">{a.title}</p>
+                                      {a.summary && <p className="text-sm text-[#86868b] line-clamp-2">{a.summary}</p>}
+                                      <p className="text-[10px] text-[#86868b] mt-2">{format(new Date(a.created_at), 'dd/MM/yyyy', { locale: vi })}</p>
+                                    </div>
+                                  </button>
+                                </ScrollReveal>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      case 'allArticles':
+                        return (
+                          <div key="allArticles">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {regularOnes.map((a, i) => (
+                                <ScrollReveal key={a.id} animation="fade-up" delay={i * 80}>
+                                  <button onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden border border-black/5 hover:shadow-lg transition-all text-left group w-full">
+                                    {a.thumbnail_url ? (
+                                      <img src={a.thumbnail_url} alt={a.title} className="w-full h-48 object-cover group-hover:scale-[1.02] transition-transform" />
+                                    ) : (
+                                      <div className="w-full h-48 bg-[#f5f5f7] flex items-center justify-center"><Newspaper className="h-10 w-10 text-[#86868b]" /></div>
+                                    )}
+                                    <div className="p-5">
+                                      <p className="font-semibold text-sm line-clamp-2 mb-2">{a.title}</p>
+                                      {a.summary && <p className="text-xs text-[#86868b] line-clamp-2">{a.summary}</p>}
+                                      <p className="text-[10px] text-[#86868b] mt-2">{format(new Date(a.created_at), 'dd/MM/yyyy', { locale: vi })}</p>
+                                    </div>
+                                  </button>
+                                </ScrollReveal>
+                              ))}
+                              {allArticles.length === 0 && (
+                                <div className="col-span-full text-center py-16">
+                                  <Newspaper className="h-12 w-12 mx-auto text-[#86868b] mb-3" />
+                                  <p className="text-sm text-[#86868b]">Chưa có bài viết nào</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      case 'latestArticles':
+                        return (
+                          <div key="latestArticles" className="mb-8">
+                            <h3 className="text-lg font-bold mb-4">🆕 Mới nhất</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {[...allArticles].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6).map((a, i) => (
+                                <ScrollReveal key={a.id} animation="fade-up" delay={i * 80}>
+                                  <button onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden border border-black/5 hover:shadow-lg transition-all text-left group w-full">
+                                    {a.thumbnail_url ? (
+                                      <img src={a.thumbnail_url} alt={a.title} className="w-full h-48 object-cover group-hover:scale-[1.02] transition-transform" />
+                                    ) : (
+                                      <div className="w-full h-48 bg-[#f5f5f7] flex items-center justify-center"><Newspaper className="h-10 w-10 text-[#86868b]" /></div>
+                                    )}
+                                    <div className="p-5">
+                                      <p className="font-semibold text-sm line-clamp-2 mb-2">{a.title}</p>
+                                      <p className="text-[10px] text-[#86868b] mt-2">{format(new Date(a.created_at), 'dd/MM/yyyy', { locale: vi })}</p>
+                                    </div>
+                                  </button>
+                                </ScrollReveal>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      case 'popularArticles':
+                        return (
+                          <div key="popularArticles" className="mb-8">
+                            <h3 className="text-lg font-bold mb-4">🔥 Phổ biến</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {allArticles.slice(0, 6).map((a, i) => (
+                                <ScrollReveal key={a.id} animation="fade-up" delay={i * 80}>
+                                  <button onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden border border-black/5 hover:shadow-lg transition-all text-left group w-full">
+                                    {a.thumbnail_url ? (
+                                      <img src={a.thumbnail_url} alt={a.title} className="w-full h-48 object-cover group-hover:scale-[1.02] transition-transform" />
+                                    ) : (
+                                      <div className="w-full h-48 bg-[#f5f5f7] flex items-center justify-center"><Newspaper className="h-10 w-10 text-[#86868b]" /></div>
+                                    )}
+                                    <div className="p-5">
+                                      <p className="font-semibold text-sm line-clamp-2 mb-2">{a.title}</p>
+                                      <p className="text-[10px] text-[#86868b] mt-2">{format(new Date(a.created_at), 'dd/MM/yyyy', { locale: vi })}</p>
+                                    </div>
+                                  </button>
+                                </ScrollReveal>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      default:
+                        return null;
+                    }
+                  })}
+                </>
+              );
+            })()}
           </div>
         )}
 
