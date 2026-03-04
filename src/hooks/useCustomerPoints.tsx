@@ -562,3 +562,37 @@ export const POINT_TRANSACTION_TYPE_NAMES: Record<string, string> = {
   adjust: 'Điều chỉnh',
   expire: 'Hết hạn',
 };
+
+// Hook: Server-side COUNT stats for customer summary cards
+export function useCustomerStats(branchFilter?: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['customer-stats', user?.id, branchFilter],
+    queryFn: async () => {
+      const applyBranch = (q: any) => {
+        if (branchFilter && branchFilter !== '_all_') {
+          return q.eq('preferred_branch_id', branchFilter);
+        }
+        return q;
+      };
+
+      const [totalRes, withPointsRes, vipRes, withPurchaseRes] = await Promise.all([
+        applyBranch(supabase.from('customers').select('*', { count: 'exact', head: true })),
+        applyBranch(supabase.from('customers').select('*', { count: 'exact', head: true }).gt('current_points', 0)),
+        applyBranch(supabase.from('customers').select('*', { count: 'exact', head: true }).eq('membership_tier', 'vip')),
+        applyBranch(supabase.from('customers').select('*', { count: 'exact', head: true }).gt('total_spent', 0)),
+      ]);
+
+      return {
+        totalCustomers: totalRes.count || 0,
+        customersWithPoints: withPointsRes.count || 0,
+        vipCustomers: vipRes.count || 0,
+        customersWithPurchase: withPurchaseRes.count || 0,
+      };
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+  });
+}

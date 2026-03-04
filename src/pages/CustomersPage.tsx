@@ -11,7 +11,7 @@ import { CareTimelineTab } from '@/components/customers/CareTimelineTab';
 import { CRMDashboardTab } from '@/components/customers/CRMDashboardTab';
 import { CRMReportsTab } from '@/components/customers/CRMReportsTab';
 import { VoucherHistoryTab } from '@/components/voucher/VoucherHistoryTab';
-import { useCustomerDetail } from '@/hooks/useCustomerPoints';
+import { useCustomerDetail, useCustomerStats } from '@/hooks/useCustomerPoints';
 import { useCustomersWithPoints, MEMBERSHIP_TIER_NAMES, MEMBERSHIP_TIER_COLORS } from '@/hooks/useCustomerPoints';
 import { formatNumber } from '@/lib/formatNumber';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,7 @@ export default function CustomersPage() {
   
   const { data: selectedCustomer } = useCustomerDetail(selectedCustomerId);
   const { data: customersAll } = useCustomersWithPoints();
+  const { data: customerStats } = useCustomerStats(branchFilter);
 
   useEffect(() => {
     if (!isSuperAdmin && permissions?.branchId) { setBranchFilter(permissions.branchId); }
@@ -69,10 +70,10 @@ export default function CustomersPage() {
     setSearchParams(newParams);
   };
 
-  const totalCustomers = customers?.length || 0;
-  const customersWithPoints = customers?.filter(c => c.current_points > 0).length || 0;
-  const vipCustomers = customers?.filter(c => c.membership_tier === 'vip').length || 0;
-  const customersWithPurchase = customers?.filter(c => c.total_spent > 0).length || 0;
+  const totalCustomers = customerStats?.totalCustomers || 0;
+  const customersWithPoints = customerStats?.customersWithPoints || 0;
+  const vipCustomers = customerStats?.vipCustomers || 0;
+  const customersWithPurchase = customerStats?.customersWithPurchase || 0;
 
   return (
     <MainLayout>
