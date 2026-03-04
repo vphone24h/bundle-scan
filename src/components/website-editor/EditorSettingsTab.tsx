@@ -4,6 +4,7 @@ import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, getFullNavItems, 
 import { HomeSectionManager, HomeSectionItem } from '@/components/admin/HomeSectionManager';
 import { ProductsPageSectionManager } from '@/components/admin/ProductsPageSectionManager';
 import { ProductDetailSectionManager } from '@/components/admin/ProductDetailSectionManager';
+import { NewsPageSectionManager } from '@/components/admin/NewsPageSectionManager';
 import { NavMenuEditor } from '@/components/website-editor/NavMenuEditor';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
 import { Input } from '@/components/ui/input';
