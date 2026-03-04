@@ -698,17 +698,20 @@ export default function ExportHistoryPage() {
                 </Table>
                 </ScrollableTableWrapper>
               )}
-              {receiptsTotalCount > 0 && (
-                <TablePagination
-                  currentPage={receiptPage}
-                  totalPages={receiptTotalPages}
-                  pageSize={receiptPageSize}
-                  totalItems={receiptsTotalCount}
-                  startIndex={(receiptPage - 1) * receiptPageSize + 1}
-                  endIndex={Math.min(receiptPage * receiptPageSize, receiptsTotalCount)}
-                  onPageChange={setReceiptPage}
-                  onPageSizeChange={(size) => { setReceiptPageSize(size); setReceiptPage(1); }}
-                />
+              {(receipts?.length || 0) > 0 && (
+                <div className="flex items-center justify-between py-4">
+                  <span className="text-sm text-muted-foreground">
+                    Trang {receiptPage} · {receipts?.length || 0} kết quả
+                  </span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setReceiptPage(p => Math.max(1, p - 1))} disabled={receiptPage <= 1}>
+                      ← Trước
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setReceiptPage(p => p + 1)} disabled={!receiptsHasMore}>
+                      Sau →
+                    </Button>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
