@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   onViewProfile: (userId: string) => void;
-  onGoToPost: (postId: string) => void;
+  onGoToPost: (postId: string, commentId?: string) => void;
 }
 
 const getNotifIcon = (type: string) => {
