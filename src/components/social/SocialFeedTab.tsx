@@ -135,7 +135,13 @@ export const SocialFeedTab = memo(function SocialFeedTab({ onViewProfile, focusP
       ) : (
         <>
           {posts.map(post => (
-            <SocialPostCard key={post.id} post={post} onViewProfile={onViewProfile} />
+            <SocialPostCard 
+              key={post.id} 
+              post={post} 
+              onViewProfile={onViewProfile}
+              autoOpenComments={post.id === focusPostId && (focusCommentId != null || false)}
+              onFocusHandled={post.id === focusPostId ? onFocusHandled : undefined}
+            />
           ))}
           {hasNextPage && (
             <div className="text-center">
