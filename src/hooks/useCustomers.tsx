@@ -28,13 +28,13 @@ export function useCustomers() {
     // Keyed by user to prevent cross-tenant cache leakage
     queryKey: ['customers', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('id, name, phone, address, email, note, source, tenant_id, created_at, updated_at')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as Customer[];
+      const data = await fetchAllRows<Customer>(() =>
+        supabase
+          .from('customers')
+          .select('id, name, phone, address, email, note, source, tenant_id, created_at, updated_at')
+          .order('created_at', { ascending: false })
+      );
+      return data;
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 2, // 2 phút

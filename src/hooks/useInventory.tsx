@@ -197,30 +197,29 @@ export function useInventory() {
         return [] as InventoryItem[];
       }
 
-      let query = supabase
-        .from('products')
-        .select(`
-          id, name, sku, imei, import_price, import_date, 
-          supplier_id, branch_id, category_id, status, 
-          quantity, total_import_cost, note,
-          categories(name),
-          suppliers(name),
-          branches(name)
-        `)
-        // Chỉ lấy sản phẩm chưa bị xóa
-        .in('status', ['in_stock', 'sold', 'returned'])
-        .order('name', { ascending: true });
+      const buildQuery = () => {
+        let q = supabase
+          .from('products')
+          .select(`
+            id, name, sku, imei, import_price, import_date, 
+            supplier_id, branch_id, category_id, status, 
+            quantity, total_import_cost, note,
+            categories(name),
+            suppliers(name),
+            branches(name)
+          `)
+          .in('status', ['in_stock', 'sold', 'returned'])
+          .order('name', { ascending: true });
 
-      // Apply branch filter for non-Super Admin users
-      if (shouldFilter && branchIds && branchIds.length > 0) {
-        query = query.in('branch_id', branchIds);
-      } else if (shouldFilter && branchId) {
-        query = query.eq('branch_id', branchId);
-      }
+        if (shouldFilter && branchIds && branchIds.length > 0) {
+          q = q.in('branch_id', branchIds);
+        } else if (shouldFilter && branchId) {
+          q = q.eq('branch_id', branchId);
+        }
+        return q;
+      };
 
-      const { data: products, error } = await query;
-
-      if (error) throw error;
+      const products = await fetchAllRows<any>(buildQuery);
 
       // Lấy chi phí thực từ product_imports cho non-IMEI products (fix lỗi products.total_import_cost không cập nhật)
       const nonImeiProductIds = (products || [])
