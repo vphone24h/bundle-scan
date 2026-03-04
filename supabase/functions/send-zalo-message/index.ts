@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
       tenant_id,
       customer_name,
       customer_phone,
-      message_type, // 'order_confirmation' | 'export_confirmation' | 'test'
+      message_type,
       order_code,
       product_name,
       product_price,
@@ -33,12 +33,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get tenant landing settings for Zalo config
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Get tenant landing settings for Zalo config
     const { data: settings, error: settingsError } = await supabaseAdmin
       .from("tenant_landing_settings")
       .select("zalo_oa_id, zalo_access_token, zalo_enabled, store_name, store_phone")
@@ -49,6 +49,14 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Tenant settings not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // If Zalo is not enabled, skip silently
+    if (!settings.zalo_enabled) {
+      return new Response(
+        JSON.stringify({ success: true, message: "Zalo disabled, skipped" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -126,6 +134,26 @@ Deno.serve(async (req) => {
       zaloPhone = "84" + zaloPhone.substring(1);
     }
 
+    // Log the message attempt
+    const logData = {
+      tenant_id,
+      customer_name: customer_name || null,
+      customer_phone: customer_phone || "",
+      message_type: message_type || "order_confirmation",
+      message_content: messageText,
+      status: "pending",
+      reference_id: order_code || receipt_code || null,
+      reference_type: message_type === "export_confirmation" ? "export" : "order",
+    };
+
+    const { data: logEntry } = await supabaseAdmin
+      .from("zalo_message_logs")
+      .insert([logData])
+      .select("id")
+      .single();
+
+    const logId = logEntry?.id;
+
     // Send message via Zalo OA API
     const zaloResponse = await fetch(
       "https://openapi.zalo.me/v3.0/oa/message/cs",
@@ -136,21 +164,16 @@ Deno.serve(async (req) => {
           access_token: settings.zalo_access_token,
         },
         body: JSON.stringify({
-          recipient: {
-            user_id: zaloPhone,
-          },
-          message: {
-            text: messageText,
-          },
+          recipient: { user_id: zaloPhone },
+          message: { text: messageText },
         }),
       }
     );
 
     const zaloResult = await zaloResponse.json();
 
-    // If Zalo returns error with user_id approach, try phone-based approach
+    // If Zalo returns error with user_id approach, try phone-based ZNS
     if (zaloResult.error && zaloResult.error !== 0) {
-      // Try sending via phone number using ZNS (Zalo Notification Service)
       const znsResponse = await fetch(
         "https://business.openapi.zalo.me/message/template",
         {
@@ -161,20 +184,28 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             phone: zaloPhone,
-            template_id: "0", // Default template
-            template_data: {
-              content: messageText,
-            },
+            template_id: "0",
+            template_data: { content: messageText },
           }),
         }
       );
 
       const znsResult = await znsResponse.json();
-
-      // Log result
       console.log("Zalo ZNS result:", JSON.stringify(znsResult));
 
       if (znsResult.error && znsResult.error !== 0) {
+        // Update log with error
+        if (logId) {
+          await supabaseAdmin
+            .from("zalo_message_logs")
+            .update({
+              status: "failed",
+              error_message: znsResult.message || zaloResult.message || "Unknown error",
+              error_code: String(znsResult.error || zaloResult.error),
+            })
+            .eq("id", logId);
+        }
+
         return new Response(
           JSON.stringify({
             error: "Zalo send failed",
@@ -184,6 +215,17 @@ Deno.serve(async (req) => {
           { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+    }
+
+    // Update log as success
+    if (logId) {
+      await supabaseAdmin
+        .from("zalo_message_logs")
+        .update({
+          status: "sent",
+          sent_at: new Date().toISOString(),
+        })
+        .eq("id", logId);
     }
 
     return new Response(
