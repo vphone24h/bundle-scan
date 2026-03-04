@@ -228,9 +228,13 @@ export default function CashBookPage() {
     return [...builtInPaymentSources, ...customPaymentSources.map(s => ({ ...s, icon: 'wallet', color: 'gray' }))];
   }, [customPaymentSources]);
   
-  // Payment source labels
+  // Payment source labels (includes legacy i18n-key fallbacks for old data)
   const paymentSourceLabels = useMemo(() => {
     const labels: Record<string, string> = { ...defaultPaymentSourceLabels };
+    // Legacy fallback: old data may have stored i18n keys as payment_source values
+    labels['cashBook.cash'] = defaultPaymentSourceLabels['cash'];
+    labels['cashBook.bankCard'] = defaultPaymentSourceLabels['bank_card'];
+    labels['cashBook.eWallet'] = defaultPaymentSourceLabels['e_wallet'];
     customPaymentSources.forEach(s => {
       labels[s.id] = s.name;
     });
