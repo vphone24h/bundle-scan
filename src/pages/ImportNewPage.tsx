@@ -342,10 +342,22 @@ export default function ImportNewPage() {
     const cartSnapshot = [...cart];
     const totalSnapshot = totalAmount;
 
-    // Immediately close dialog, clear cart, and navigate (optimistic UI)
+    // Close payment dialog & clear cart
     setPaymentOpen(false);
     setCart([]);
-    navigate('/import/history');
+
+    // Save cart items for QR print prompt
+    const qrProducts = cartSnapshot.map((item, idx) => ({
+      id: item.id || String(Date.now() + idx),
+      name: item.productName,
+      sku: item.sku,
+      imei: item.imei || undefined,
+      importPrice: item.importPrice,
+      salePrice: item.salePrice,
+    }));
+    setPrintQRProducts(qrProducts);
+    setPrintQRPromptOpen(true);
+
     toast({
       title: t('tours.importNew.processingImport'),
       description: t('tours.importNew.processingImportDesc', { count: cartSnapshot.length }),
@@ -383,6 +395,17 @@ export default function ImportNewPage() {
         variant: 'destructive',
       });
     });
+  };
+
+  const handlePrintQR = () => {
+    setPrintQRPromptOpen(false);
+    setBarcodeDialogOpen(true);
+  };
+
+  const handleSkipPrintQR = () => {
+    setPrintQRPromptOpen(false);
+    setPrintQRProducts([]);
+    navigate('/import/history');
   };
 
   const handleExportTemplate = () => {
