@@ -372,18 +372,18 @@ export function CustomerListTab({ onViewCare, onViewTimeline, branchFilter, onBr
              </Table>
            </div>
            
-           {(filteredCustomers?.length || 0) > 0 && (
-             <TablePagination
-               currentPage={pagination.currentPage}
-               totalPages={pagination.totalPages}
-               pageSize={pagination.pageSize}
-               totalItems={pagination.totalItems}
-               startIndex={pagination.startIndex}
-               endIndex={pagination.endIndex}
-               onPageChange={pagination.setPage}
-               onPageSizeChange={pagination.setPageSize}
-             />
-           )}
+            {totalCount > 0 && (
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalCount}
+                startIndex={startIndex + 1}
+                endIndex={endIndex}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            )}
          </CardContent>
        </Card>
  
