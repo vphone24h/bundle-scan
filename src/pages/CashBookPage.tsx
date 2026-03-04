@@ -633,7 +633,7 @@ export default function CashBookPage() {
     // Khi xem theo chi nhánh, opening balance không chia theo branch nên chỉ tính giao dịch
     let balance = 0;
     allEntries.forEach(entry => {
-      if (entry.payment_source === source && entry.branch_id === branchId) {
+      if (normalizePaymentSource(entry.payment_source) === source && entry.branch_id === branchId) {
         balance += entry.type === 'income' ? Number(entry.amount) : -Number(entry.amount);
       }
     });
