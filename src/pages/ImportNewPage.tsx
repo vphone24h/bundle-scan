@@ -356,7 +356,12 @@ export default function ImportNewPage() {
       salePrice: item.salePrice,
     }));
     setPrintQRProducts(qrProducts);
-    setPrintQRPromptOpen(true);
+    const hidePrompt = localStorage.getItem('hide_qr_print_prompt') === 'true';
+    if (hidePrompt) {
+      // Don't show prompt, go directly to history
+    } else {
+      setPrintQRPromptOpen(true);
+    }
 
     toast({
       title: t('tours.importNew.processingImport'),
@@ -403,6 +408,13 @@ export default function ImportNewPage() {
   };
 
   const handleSkipPrintQR = () => {
+    setPrintQRPromptOpen(false);
+    setPrintQRProducts([]);
+    navigate('/import/history');
+  };
+
+  const handleNeverShowQR = () => {
+    localStorage.setItem('hide_qr_print_prompt', 'true');
     setPrintQRPromptOpen(false);
     setPrintQRProducts([]);
     navigate('/import/history');
@@ -1256,7 +1268,10 @@ export default function ImportNewPage() {
           <p className="text-sm text-muted-foreground">
             Nhập hàng thành công! Bạn có muốn in tem QR cho {printQRProducts.length} sản phẩm vừa nhập không?
           </p>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button variant="ghost" size="sm" onClick={handleNeverShowQR} className="text-muted-foreground text-xs sm:mr-auto">
+              Không hiện nữa
+            </Button>
             <Button variant="outline" onClick={handleSkipPrintQR}>
               <X className="h-4 w-4 mr-2" />
               Đóng

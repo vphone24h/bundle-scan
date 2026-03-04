@@ -14,7 +14,8 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { toast as sonnerToast } from 'sonner';
-import { Globe, Store, Save, Eye, EyeOff } from 'lucide-react';
+import { Globe, Store, Save, Eye, EyeOff, QrCode } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { ImportHistoricalOrdersSection } from '@/components/admin/ImportHistoricalOrdersSection';
 import { DataManagementSection } from '@/components/admin/DataManagementSection';
 import { cn } from '@/lib/utils';
@@ -104,6 +105,34 @@ function BusinessModeSection({ tenantId, currentMode }: { tenantId: string; curr
         <p className="text-xs text-muted-foreground mt-3">
           Khi chọn "Bí mật", tất cả tài khoản trong cửa hàng sẽ không thấy các chức năng liên quan đến thuế và hoá đơn điện tử.
         </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function QRPrintPromptToggle() {
+  const [showPrompt, setShowPrompt] = useState(() => localStorage.getItem('hide_qr_print_prompt') !== 'true');
+
+  const handleToggle = (checked: boolean) => {
+    setShowPrompt(checked);
+    if (checked) {
+      localStorage.removeItem('hide_qr_print_prompt');
+    } else {
+      localStorage.setItem('hide_qr_print_prompt', 'true');
+    }
+  };
+
+  return (
+    <Card>
+      <CardContent className="flex items-center justify-between py-4 px-4 sm:px-6">
+        <div className="flex items-center gap-3">
+          <QrCode className="h-5 w-5 text-primary" />
+          <div>
+            <p className="text-sm font-medium">Hiện mẫu in QR sau nhập hàng</p>
+            <p className="text-xs text-muted-foreground">Hiện hộp thoại hỏi in tem QR sau khi thanh toán nhập hàng</p>
+          </div>
+        </div>
+        <Switch checked={showPrompt} onCheckedChange={handleToggle} />
       </CardContent>
     </Card>
   );
@@ -205,6 +234,9 @@ export default function SettingsPage() {
           <Save className="h-4 w-4 mr-2" />
           {t('settings.save')}
         </Button>
+
+        {/* QR Print Prompt Toggle */}
+        <QRPrintPromptToggle />
 
         {/* Business Mode - Super Admin only */}
         {isSuperAdmin && tenant && (
