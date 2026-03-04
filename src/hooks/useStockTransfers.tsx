@@ -190,7 +190,7 @@ export function useCreateStockTransfer() {
       // Fetch products with supplier info
       const { data: products, error: fetchError } = await supabase
         .from('products')
-        .select('id, name, sku, imei, branch_id, status, quantity, import_price, supplier_id, note, category_id, barcode, warranty, image_url, total_import_cost')
+        .select('id, name, sku, imei, branch_id, status, quantity, import_price, supplier_id, note, category_id, warranty, image_url, total_import_cost')
         .in('id', productIds)
         .eq('tenant_id', tenantId);
 
