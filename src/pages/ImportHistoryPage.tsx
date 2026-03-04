@@ -588,7 +588,7 @@ export default function ImportHistoryPage() {
                 <SearchInput
                   placeholder="Tìm theo tên sản phẩm, IMEI, mã phiếu..."
                   value={searchTerm}
-                  onChange={setSearchTerm}
+                  onChange={(v) => { setSearchTerm(v); setProductPage(1); }}
                   containerClassName="flex-1"
                 />
                 <Button
