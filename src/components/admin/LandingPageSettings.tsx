@@ -973,7 +973,11 @@ export function LandingPageSettings() {
         order_email_on_confirmed: (settings as any).order_email_on_confirmed ?? false,
         order_email_on_shipping: (settings as any).order_email_on_shipping ?? false,
         order_email_on_warranty: (settings as any).order_email_on_warranty ?? false,
-      });
+        zalo_enabled: (settings as any).zalo_enabled ?? false,
+        zalo_oa_id: (settings as any).zalo_oa_id || '',
+        zalo_access_token: (settings as any).zalo_access_token || '',
+        zalo_on_export: (settings as any).zalo_on_export ?? false,
+      } as any);
     } else if (tenant) {
       setFormData(prev => ({
         ...prev,
