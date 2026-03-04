@@ -87,7 +87,7 @@ export function SocialPostCard({ post, onViewProfile, autoOpenComments, onFocusH
   });
 
   return (
-    <Card className="overflow-hidden">
+    <Card id={`social-post-${post.id}`} className="overflow-hidden transition-all">
       <CardContent className="pt-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-3">
