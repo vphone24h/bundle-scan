@@ -617,7 +617,7 @@ export default function ExportHistoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {receiptsPagination.paginatedData.map((receipt) => (
+                    {(filteredReceipts || []).map((receipt) => (
                       <TableRow key={receipt.id}>
                         <TableCell 
                           className="font-medium text-primary cursor-pointer hover:underline"
@@ -700,16 +700,16 @@ export default function ExportHistoryPage() {
                 </Table>
                 </ScrollableTableWrapper>
               )}
-              {(filteredReceipts?.length || 0) > 0 && (
+              {receiptsTotalCount > 0 && (
                 <TablePagination
-                  currentPage={receiptsPagination.currentPage}
-                  totalPages={receiptsPagination.totalPages}
-                  pageSize={receiptsPagination.pageSize}
-                  totalItems={receiptsPagination.totalItems}
-                  startIndex={receiptsPagination.startIndex}
-                  endIndex={receiptsPagination.endIndex}
-                  onPageChange={receiptsPagination.setPage}
-                  onPageSizeChange={receiptsPagination.setPageSize}
+                  currentPage={receiptPage}
+                  totalPages={receiptTotalPages}
+                  pageSize={receiptPageSize}
+                  totalItems={receiptsTotalCount}
+                  startIndex={(receiptPage - 1) * receiptPageSize + 1}
+                  endIndex={Math.min(receiptPage * receiptPageSize, receiptsTotalCount)}
+                  onPageChange={setReceiptPage}
+                  onPageSizeChange={(size) => { setReceiptPageSize(size); setReceiptPage(1); }}
                 />
               )}
             </CardContent>
@@ -748,7 +748,7 @@ export default function ExportHistoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {itemsPagination.paginatedData.map((item) => {
+                    {groupedItems.map((item) => {
                       const groupedItem = item as ExportReceiptItemDetail & { quantity: number; groupedIds: string[] };
                       const quantity = groupedItem.quantity || 1;
                       const totalPrice = item.sale_price * quantity;
@@ -847,16 +847,16 @@ export default function ExportHistoryPage() {
                 </Table>
                 </ScrollableTableWrapper>
               )}
-              {groupedItems.length > 0 && (
+              {itemsTotalCount > 0 && (
                 <TablePagination
-                  currentPage={itemsPagination.currentPage}
-                  totalPages={itemsPagination.totalPages}
-                  pageSize={itemsPagination.pageSize}
-                  totalItems={itemsPagination.totalItems}
-                  startIndex={itemsPagination.startIndex}
-                  endIndex={itemsPagination.endIndex}
-                  onPageChange={itemsPagination.setPage}
-                  onPageSizeChange={itemsPagination.setPageSize}
+                  currentPage={itemPage}
+                  totalPages={itemTotalPages}
+                  pageSize={itemPageSize}
+                  totalItems={itemsTotalCount}
+                  startIndex={(itemPage - 1) * itemPageSize + 1}
+                  endIndex={Math.min(itemPage * itemPageSize, itemsTotalCount)}
+                  onPageChange={setItemPage}
+                  onPageSizeChange={(size) => { setItemPageSize(size); setItemPage(1); }}
                 />
               )}
             </CardContent>
