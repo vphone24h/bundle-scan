@@ -38,20 +38,21 @@ export function useCustomerReport(filters?: {
       const startISO = new Date(startDate + 'T00:00:00').toISOString();
       const endISO = new Date(endDate + 'T23:59:59.999').toISOString();
 
-      // Get export receipts with customer info in date range
-      let query = supabase
-        .from('export_receipts')
-        .select('id, customer_id, total_amount, debt_amount, export_date, branch_id, status, customers(id, name, phone, total_spent, membership_tier, current_points, last_purchase_date, created_at)')
-        .neq('status', 'cancelled')
-        .gte('export_date', startISO)
-        .lte('export_date', endISO);
+      const buildQuery = () => {
+        let q = supabase
+          .from('export_receipts')
+          .select('id, customer_id, total_amount, debt_amount, export_date, branch_id, status, customers(id, name, phone, total_spent, membership_tier, current_points, last_purchase_date, created_at)')
+          .neq('status', 'cancelled')
+          .gte('export_date', startISO)
+          .lte('export_date', endISO);
 
-      if (effectiveBranchId) {
-        query = query.eq('branch_id', effectiveBranchId);
-      }
+        if (effectiveBranchId) {
+          q = q.eq('branch_id', effectiveBranchId);
+        }
+        return q;
+      };
 
-      const { data: receipts, error } = await query;
-      if (error) throw error;
+      const receipts = await fetchAllRows<any>(buildQuery);
 
       // Aggregate by customer
       const customerMap: Record<string, CustomerReportItem> = {};
