@@ -14,7 +14,7 @@ import { StaffRatingForm } from '@/components/landing/StaffRatingForm';
 import { VoucherClaimForm } from '@/components/landing/VoucherClaimForm';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
 import { ScrollReveal, useParallax } from '@/hooks/useScrollReveal';
-import { ResolvedIndustryConfig, getIndustryConfig, GOOGLE_FONTS, NavItemConfig, getDefaultNavItems, getSystemPageById, HomeSection, LayoutStyle } from '@/lib/industryConfig';
+import { ResolvedIndustryConfig, getIndustryConfig, GOOGLE_FONTS, NavItemConfig, getDefaultNavItems, getSystemPageById, SYSTEM_PAGES, HomeSection, LayoutStyle } from '@/lib/industryConfig';
 import {
   RepairPage, TradeInPage, InstallmentPage, PriceListPage,
   BookingPage, BranchesPage, ContactPage, AccessoriesPage,
