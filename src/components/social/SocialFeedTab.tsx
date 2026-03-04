@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, memo } from 'react';
+import { useState, useRef, useCallback, memo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocialFeed, useCreatePost } from '@/hooks/useSocial';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,6 +13,9 @@ import { toast } from 'sonner';
 
 interface Props {
   onViewProfile: (userId: string) => void;
+  focusPostId?: string | null;
+  focusCommentId?: string | null;
+  onFocusHandled?: () => void;
 }
 
 export const SocialFeedTab = memo(function SocialFeedTab({ onViewProfile }: Props) {
