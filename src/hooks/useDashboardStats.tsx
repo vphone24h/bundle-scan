@@ -193,7 +193,7 @@ export function useTodaySoldProducts() {
       return soldItems || [];
     },
     enabled: !isTenantLoading && !branchLoading,
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 min cache
     refetchOnWindowFocus: false,
     placeholderData: (previous) => previous,
   });

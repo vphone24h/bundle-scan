@@ -237,7 +237,7 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
       return { items: (data || []) as ExportReceiptItemDetail[], totalCount: count || 0 };
     },
     enabled: enabled && !isTenantLoading && !branchLoading,
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 min cache
     refetchOnWindowFocus: false,
     placeholderData: (previous) => previous,
   });

@@ -129,7 +129,7 @@ export function useProducts(filters?: ProductFilters) {
       return { items, totalCount: count || 0 };
     },
     enabled: !!user?.id && !branchLoading,
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000, // 2 min cache
     refetchOnWindowFocus: false,
     placeholderData: (previous) => previous,
   });
