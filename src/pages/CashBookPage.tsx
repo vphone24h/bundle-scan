@@ -101,37 +101,37 @@ const useCashBookConstants = () => {
   const { t } = useTranslation();
   return {
     defaultPaymentSourceLabels: {
-      cash: t('cashBook.cash'),
-      bank_card: t('cashBook.bankCard'),
-      e_wallet: t('cashBook.eWallet'),
+      cash: t('pages.cashBook.cash'),
+      bank_card: t('pages.cashBook.bankCard'),
+      e_wallet: t('pages.cashBook.eWallet'),
     },
     builtInPaymentSources: [
-      { id: 'cash', name: t('cashBook.cash'), icon: 'banknote', color: 'green' },
-      { id: 'bank_card', name: t('cashBook.bankCard'), icon: 'credit-card', color: 'blue' },
-      { id: 'e_wallet', name: t('cashBook.eWallet'), icon: 'wallet', color: 'purple' },
+      { id: 'cash', name: t('pages.cashBook.cash'), icon: 'banknote', color: 'green' },
+      { id: 'bank_card', name: t('pages.cashBook.bankCard'), icon: 'credit-card', color: 'blue' },
+      { id: 'e_wallet', name: t('pages.cashBook.eWallet'), icon: 'wallet', color: 'purple' },
     ],
     getSourceOrigin: (entry: CashBookEntry): { label: string; className: string } | null => {
       const cat = entry.category;
       if (cat === 'Chuyển tiền nội bộ' || cat === 'Chuyển tiền liên chi nhánh') {
-        return { label: `🔄 ${t('cashBook.moneyTransfer')}`, className: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300' };
+        return { label: `🔄 ${t('pages.cashBook.moneyTransfer')}`, className: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300' };
       }
       switch (entry.reference_type) {
         case 'export_receipt':
-          return { label: `🛒 ${t('cashBook.sales')}`, className: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300' };
+          return { label: `🛒 ${t('pages.cashBook.sales')}`, className: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300' };
         case 'import_receipt':
-          return { label: `📦 ${t('cashBook.importGoods')}`, className: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300' };
+          return { label: `📦 ${t('pages.cashBook.importGoods')}`, className: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300' };
         case 'import_return':
-          return { label: `↩️ ${t('cashBook.importReturn')}`, className: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300' };
+          return { label: `↩️ ${t('pages.cashBook.importReturn')}`, className: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300' };
         case 'export_return':
-          return { label: `↩️ ${t('cashBook.exportReturn')}`, className: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300' };
+          return { label: `↩️ ${t('pages.cashBook.exportReturn')}`, className: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300' };
         case 'export_return_fee':
-          return { label: `💰 ${t('cashBook.returnFee')}`, className: 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300' };
+          return { label: `💰 ${t('pages.cashBook.returnFee')}`, className: 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-300' };
         case 'debt_payment':
-          return { label: `💳 ${t('cashBook.debtCollection')}`, className: 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300' };
+          return { label: `💳 ${t('pages.cashBook.debtCollection')}`, className: 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300' };
         case 'defective_return':
-          return { label: `⚠️ ${t('cashBook.defectiveReturn')}`, className: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300' };
+          return { label: `⚠️ ${t('pages.cashBook.defectiveReturn')}`, className: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300' };
         default:
-          return { label: `✏️ ${t('cashBook.manual')}`, className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300' };
+          return { label: `✏️ ${t('pages.cashBook.manual')}`, className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300' };
       }
     },
     cashBookTourSteps: [
