@@ -721,6 +721,7 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
     </>
   );
 
+  return (
     <div className="min-h-full bg-muted/30 flex flex-col" onClick={() => {}}>
       {/* Page switcher tabs */}
       <div className="sticky top-0 z-30 bg-background border-b px-2 py-1.5 flex items-center gap-1">
