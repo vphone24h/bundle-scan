@@ -205,12 +205,12 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   const page = filters?.page ?? 1;
-  const pageSize = filters?.pageSize ?? 15;
+  const pageSize = filters?.pageSize ?? 50;
 
   const result = useQuery({
     queryKey: ['export-receipt-items', tenant?.id, branchId, isDataHidden, filters],
     queryFn: async () => {
-      if (isDataHidden) return { items: [] as ExportReceiptItemDetail[], totalCount: 0 };
+      if (isDataHidden) return { items: [] as ExportReceiptItemDetail[], hasMore: false };
 
       const effectiveBranchId = filters?.branchId && filters.branchId !== '_all_' ? filters.branchId : (shouldFilter && branchId ? branchId : null);
 
@@ -225,11 +225,13 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
           .limit(1000);
         receiptIdFilter = receiptIds?.map(r => r.id) || [];
         if (receiptIdFilter.length === 0) {
-          return { items: [] as ExportReceiptItemDetail[], totalCount: 0 };
+          return { items: [] as ExportReceiptItemDetail[], hasMore: false };
         }
       }
 
-      // Step 2: Query items with simple select (no nested joins that conflict with RLS)
+      // Step 2: Query items WITHOUT count to avoid RLS timeout on 16K+ rows
+      // Fetch pageSize+1 to detect if there are more pages
+      const fetchSize = pageSize + 1;
       let query = supabase
         .from('export_receipt_items')
         .select(`
@@ -240,11 +242,10 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
             customers(name, phone),
             branches(name)
           )
-        `, { count: 'exact' })
+        `)
         .order('created_at', { ascending: false });
 
       if (receiptIdFilter) {
-        // Apply branch filter via receipt IDs in batches
         query = query.in('receipt_id', receiptIdFilter);
       }
 
@@ -259,15 +260,20 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
       }
 
       const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
+      const to = from + fetchSize - 1;
       query = query.range(from, to);
 
-      const { data, error, count } = await query;
+      const { data, error } = await query;
       if (error) {
         console.error('Export receipt items query error:', error);
         throw error;
       }
-      return { items: (data || []) as ExportReceiptItemDetail[], totalCount: count || 0 };
+      const items = (data || []) as ExportReceiptItemDetail[];
+      const hasMore = items.length > pageSize;
+      return {
+        items: hasMore ? items.slice(0, pageSize) : items,
+        hasMore,
+      };
     },
     enabled: enabled && !isTenantLoading && !branchLoading,
     staleTime: 2 * 60 * 1000,
@@ -278,7 +284,7 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
   return {
     ...result,
     data: result.data?.items || [],
-    totalCount: result.data?.totalCount || 0,
+    hasMore: result.data?.hasMore || false,
   };
 }
 
