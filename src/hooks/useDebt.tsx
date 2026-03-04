@@ -20,6 +20,7 @@ export interface DebtSummary {
   remaining_amount: number; // Còn nợ
   first_debt_date: string | null; // Ngày phát sinh đầu tiên
   days_overdue: number;
+  merged_entity_ids?: string[]; // For merged supplier debts
 }
 
 export interface DebtPayment {
@@ -280,7 +281,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
           original_debt_amount,
           import_date,
           branch_id,
-          suppliers(id, name, phone),
+          suppliers(id, name, phone, address),
           branches(name)
         `)
         .eq('status', 'completed');
@@ -305,11 +306,11 @@ export function useSupplierDebts(showSettled: boolean = false) {
       if (paymentsError) throw paymentsError;
 
       const paymentSupplierIds = [...new Set(payments?.map(p => p.entity_id) || [])];
-      let suppliersFromPayments: { id: string; name: string; phone: string | null }[] = [];
+      let suppliersFromPayments: { id: string; name: string; phone: string | null; address: string | null }[] = [];
       if (paymentSupplierIds.length > 0) {
         const { data: supplierData } = await supabase
           .from('suppliers')
-          .select('id, name, phone')
+          .select('id, name, phone, address')
           .in('id', paymentSupplierIds);
         suppliersFromPayments = supplierData || [];
       }
@@ -324,9 +325,23 @@ export function useSupplierDebts(showSettled: boolean = false) {
         branchData?.forEach(b => branchNameMap.set(b.id, b.name));
       }
 
-      // Same reliable formula as customer
+      // Group suppliers by (name, branch) to auto-merge duplicates
+      // Rule: same name + (same branch OR either null) + (same phone OR either null) + (same address OR either null)
+      // Use composite key: normalized_name|branch_id
+      const getSupplierGroupKey = (name: string, branchId: string | null, phone: string | null, address: string | null) => {
+        const normName = (name || '').trim().toLowerCase();
+        const normBranch = branchId || '_any_';
+        return `${normName}|${normBranch}`;
+      };
+
+      // Map supplier_id -> group key
+      const supplierIdToGroup = new Map<string, string>();
+      // Map group key -> all supplier_ids in this group
+      const groupToSupplierIds = new Map<string, string[]>();
+
       const supplierMap = new Map<string, {
-        entity_id: string;
+        entity_id: string; // primary supplier id
+        all_entity_ids: string[];
         entity_name: string;
         entity_phone: string | null;
         branch_id: string | null;
@@ -341,7 +356,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
 
       receipts?.forEach(receipt => {
         if (!receipt.supplier_id || !receipt.suppliers) return;
-        const supplier = receipt.suppliers as { id: string; name: string; phone: string | null };
+        const supplier = receipt.suppliers as { id: string; name: string; phone: string | null; address: string | null };
         
         const currentDebt = Number(receipt.debt_amount) || 0;
         const originalDebt = Number(receipt.original_debt_amount) || 0;
@@ -350,16 +365,35 @@ export function useSupplierDebts(showSettled: boolean = false) {
         
         if (currentDebt <= 0 && !hadDebt) return;
 
-        const existing = supplierMap.get(supplier.id);
+        const groupKey = getSupplierGroupKey(supplier.name, receipt.branch_id, supplier.phone, supplier.address);
+        supplierIdToGroup.set(supplier.id, groupKey);
+        
+        if (!groupToSupplierIds.has(groupKey)) {
+          groupToSupplierIds.set(groupKey, []);
+        }
+        const groupIds = groupToSupplierIds.get(groupKey)!;
+        if (!groupIds.includes(supplier.id)) {
+          groupIds.push(supplier.id);
+        }
+
+        const existing = supplierMap.get(groupKey);
         if (existing) {
           existing.current_debt_from_receipts += currentDebt;
           existing.has_any_debt_history = true;
+          if (!existing.all_entity_ids.includes(supplier.id)) {
+            existing.all_entity_ids.push(supplier.id);
+          }
           if (!existing.first_debt_date || receipt.import_date < existing.first_debt_date) {
             existing.first_debt_date = receipt.import_date;
           }
+          // Use phone if available
+          if (!existing.entity_phone && supplier.phone) {
+            existing.entity_phone = supplier.phone;
+          }
         } else {
-          supplierMap.set(supplier.id, {
+          supplierMap.set(groupKey, {
             entity_id: supplier.id,
+            all_entity_ids: [supplier.id],
             entity_name: supplier.name,
             entity_phone: supplier.phone,
             branch_id: receipt.branch_id,
@@ -377,7 +411,19 @@ export function useSupplierDebts(showSettled: boolean = false) {
       payments?.forEach(payment => {
         const amount = Number(payment.amount);
         const allocated = Number(payment.allocated_amount) || 0;
-        const existing = supplierMap.get(payment.entity_id);
+        
+        // Find group key for this supplier
+        let groupKey = supplierIdToGroup.get(payment.entity_id);
+        if (!groupKey) {
+          const supplier = suppliersFromPayments.find(s => s.id === payment.entity_id);
+          if (supplier) {
+            groupKey = getSupplierGroupKey(supplier.name, payment.branch_id, supplier.phone, supplier.address);
+            supplierIdToGroup.set(payment.entity_id, groupKey);
+          }
+        }
+        if (!groupKey) return;
+
+        const existing = supplierMap.get(groupKey);
         
         if (payment.payment_type === 'addition') {
           const additionRemaining = amount - allocated;
@@ -385,11 +431,15 @@ export function useSupplierDebts(showSettled: boolean = false) {
             existing.additions_remaining += additionRemaining;
             existing.total_from_additions += amount;
             existing.has_any_debt_history = true;
+            if (!existing.all_entity_ids.includes(payment.entity_id)) {
+              existing.all_entity_ids.push(payment.entity_id);
+            }
           } else {
             const supplier = suppliersFromPayments.find(s => s.id === payment.entity_id);
             if (supplier) {
-              supplierMap.set(payment.entity_id, {
+              supplierMap.set(groupKey, {
                 entity_id: payment.entity_id,
+                all_entity_ids: [payment.entity_id],
                 entity_name: supplier.name,
                 entity_phone: supplier.phone,
                 branch_id: payment.branch_id,
@@ -407,11 +457,15 @@ export function useSupplierDebts(showSettled: boolean = false) {
           if (existing) {
             existing.total_paid += amount;
             existing.has_any_debt_history = true;
+            if (!existing.all_entity_ids.includes(payment.entity_id)) {
+              existing.all_entity_ids.push(payment.entity_id);
+            }
           } else {
             const supplier = suppliersFromPayments.find(s => s.id === payment.entity_id);
             if (supplier) {
-              supplierMap.set(payment.entity_id, {
+              supplierMap.set(groupKey, {
                 entity_id: payment.entity_id,
+                all_entity_ids: [payment.entity_id],
                 entity_name: supplier.name,
                 entity_phone: supplier.phone,
                 branch_id: payment.branch_id,
@@ -455,6 +509,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
             remaining_amount: remainingAmount,
             first_debt_date: summary.first_debt_date,
             days_overdue: daysOverdue,
+            merged_entity_ids: summary.all_entity_ids.length > 1 ? summary.all_entity_ids : undefined,
           });
         }
       });
@@ -465,67 +520,35 @@ export function useSupplierDebts(showSettled: boolean = false) {
   });
 }
 
-// Hook to get debt detail for an entity
-export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: string) {
+// Hook to get debt detail for an entity (supports merged supplier IDs)
+export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: string, mergedEntityIds?: string[]) {
+  const entityIds = mergedEntityIds && mergedEntityIds.length > 0 ? mergedEntityIds : [entityId];
+  
   return useQuery({
-    queryKey: ['debt-detail', entityType, entityId],
+    queryKey: ['debt-detail', entityType, entityId, mergedEntityIds],
     queryFn: async () => {
       if (entityType === 'customer') {
-        // Get export receipts with debt
         const { data: receipts, error } = await supabase
           .from('export_receipts')
           .select(`
-            id,
-            code,
-            export_date,
-            total_amount,
-            paid_amount,
-            debt_amount,
-            original_debt_amount,
-            note,
-            export_receipt_items(
-              id,
-              product_name,
-              sku,
-              imei,
-              sale_price,
-              note,
-              status
-            )
+            id, code, export_date, total_amount, paid_amount, debt_amount, original_debt_amount, note,
+            export_receipt_items(id, product_name, sku, imei, sale_price, note, status)
           `)
           .eq('customer_id', entityId)
           .gte('debt_amount', 0)
           .order('export_date', { ascending: false });
-
         if (error) throw error;
         return receipts;
       } else {
-        // Get import receipts with debt
         const { data: receipts, error } = await supabase
           .from('import_receipts')
           .select(`
-            id,
-            code,
-            import_date,
-            total_amount,
-            paid_amount,
-            debt_amount,
-            original_debt_amount,
-            note,
-            products(
-              id,
-              name,
-              sku,
-              imei,
-              import_price,
-              note,
-              status
-            )
+            id, code, import_date, total_amount, paid_amount, debt_amount, original_debt_amount, note,
+            products(id, name, sku, imei, import_price, note, status)
           `)
-          .eq('supplier_id', entityId)
+          .in('supplier_id', entityIds)
           .gte('debt_amount', 0)
           .order('import_date', { ascending: false });
-
         if (error) throw error;
         return receipts;
       }
@@ -534,27 +557,23 @@ export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: str
   });
 }
 
-// Hook to get payment history for an entity
-export function useDebtPaymentHistory(entityType: 'customer' | 'supplier', entityId: string) {
+// Hook to get payment history for an entity (supports merged supplier IDs)
+export function useDebtPaymentHistory(entityType: 'customer' | 'supplier', entityId: string, mergedEntityIds?: string[]) {
+  const entityIds = mergedEntityIds && mergedEntityIds.length > 0 ? mergedEntityIds : [entityId];
+  
   return useQuery({
-    queryKey: ['debt-payment-history', entityType, entityId],
+    queryKey: ['debt-payment-history', entityType, entityId, mergedEntityIds],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('debt_payments')
-        .select(`
-          *,
-          branches(name)
-        `)
+        .select(`*, branches(name)`)
         .eq('entity_type', entityType)
-        .eq('entity_id', entityId)
+        .in('entity_id', entityIds)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
 
-      // Get profile names for created_by
       const userIds = [...new Set(data?.map(p => p.created_by).filter(Boolean))];
       let profiles: { user_id: string; display_name: string }[] = [];
-      
       if (userIds.length > 0) {
         const { data: profileData } = await supabase
           .from('profiles')
