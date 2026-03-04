@@ -11,7 +11,7 @@ import { CareTimelineTab } from '@/components/customers/CareTimelineTab';
 import { CRMDashboardTab } from '@/components/customers/CRMDashboardTab';
 import { CRMReportsTab } from '@/components/customers/CRMReportsTab';
 import { VoucherHistoryTab } from '@/components/voucher/VoucherHistoryTab';
-import { useCustomerDetail } from '@/hooks/useCustomerPoints';
+import { useCustomerDetail, useCustomerStats } from '@/hooks/useCustomerPoints';
 import { useCustomersWithPoints, MEMBERSHIP_TIER_NAMES, MEMBERSHIP_TIER_COLORS } from '@/hooks/useCustomerPoints';
 import { formatNumber } from '@/lib/formatNumber';
 import { Badge } from '@/components/ui/badge';
