@@ -317,10 +317,8 @@ export function useCustomersWithPoints(filters?: {
         query = query.eq('assigned_staff_id', filters.staffId);
       }
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as CustomerWithPointsCRM[];
+      const data = await fetchAllRows<CustomerWithPointsCRM>(() => query);
+      return data;
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 2, // 2 phút
