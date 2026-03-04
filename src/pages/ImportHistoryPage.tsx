@@ -855,8 +855,8 @@ export default function ImportHistoryPage() {
           <TabsContent value="products">
             {/* Tổng hợp giá trị kho hàng nhập */}
             <ImportInventorySummary 
-              products={filteredProducts} 
               isFiltered={Boolean(hasActiveFilters) || searchTerm.length > 0}
+              filteredProducts={Boolean(hasActiveFilters) || searchTerm.length > 0 ? filteredProducts : undefined}
             />
 
             {/* Transfer bar + Export */}
