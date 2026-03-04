@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -12,9 +12,7 @@ import { CRMDashboardTab } from '@/components/customers/CRMDashboardTab';
 import { CRMReportsTab } from '@/components/customers/CRMReportsTab';
 import { VoucherHistoryTab } from '@/components/voucher/VoucherHistoryTab';
 import { useCustomerDetail, useCustomerStats } from '@/hooks/useCustomerPoints';
-import { useCustomersWithPoints, MEMBERSHIP_TIER_NAMES, MEMBERSHIP_TIER_COLORS } from '@/hooks/useCustomerPoints';
 import { formatNumber } from '@/lib/formatNumber';
-import { Badge } from '@/components/ui/badge';
 import { useSearchParams } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
 
@@ -32,18 +30,11 @@ export default function CustomersPage() {
   const isSuperAdmin = permissions?.canViewAllBranches === true;
   
   const { data: selectedCustomer } = useCustomerDetail(selectedCustomerId);
-  const { data: customersAll } = useCustomersWithPoints();
   const { data: customerStats } = useCustomerStats(branchFilter);
 
   useEffect(() => {
     if (!isSuperAdmin && permissions?.branchId) { setBranchFilter(permissions.branchId); }
   }, [isSuperAdmin, permissions?.branchId]);
-
-  const customers = useMemo(() => {
-    if (!customersAll) return [];
-    if (branchFilter === '_all_') return customersAll;
-    return customersAll.filter(c => c.preferred_branch_id === branchFilter);
-  }, [customersAll, branchFilter]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
