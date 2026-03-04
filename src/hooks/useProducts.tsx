@@ -4,7 +4,6 @@ import { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
 import { useBranchFilter } from './useBranchFilter';
 import { fetchAllRows } from '@/lib/fetchAllRows';
-import { useBranchFilter } from './useBranchFilter';
 
 type ProductStatus = Database['public']['Enums']['product_status'];
 
