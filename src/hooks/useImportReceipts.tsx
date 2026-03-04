@@ -6,21 +6,7 @@ import { useBranchFilter } from './useBranchFilter';
 import { sendBusinessPush, formatVND } from '@/lib/pushNotify';
 import { sendActivityAlert } from '@/lib/activityAlert';
 
-// Fetch all rows bypassing Supabase 1000-row default limit via pagination
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchAllRows<T>(queryBuilder: () => any, pageSize = 1000): Promise<T[]> {
-  const allData: T[] = [];
-  let from = 0;
-  while (true) {
-    const { data, error } = await queryBuilder().range(from, from + pageSize - 1);
-    if (error) throw error;
-    if (!data || data.length === 0) break;
-    allData.push(...(data as T[]));
-    if (data.length < pageSize) break;
-    from += pageSize;
-  }
-  return allData;
-}
+// fetchAllRows removed - using server-side pagination
 
 type ReceiptStatus = Database['public']['Enums']['receipt_status'];
 type PaymentType = Database['public']['Enums']['payment_type'];

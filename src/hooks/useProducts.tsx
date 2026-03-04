@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
 import { useBranchFilter } from './useBranchFilter';
-import { fetchAllRows } from '@/lib/fetchAllRows';
+import { useState, useCallback } from 'react';
 
 type ProductStatus = Database['public']['Enums']['product_status'];
 
@@ -38,37 +38,108 @@ export interface Product {
   branches?: { name: string } | null;
 }
 
-export function useProducts() {
+export interface ProductFilters {
+  search?: string;
+  categoryId?: string;
+  supplierId?: string;
+  status?: string;
+  branchId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  printedFilter?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+/**
+ * Server-side paginated products hook.
+ * Returns { data: Product[], totalCount, isLoading, ... }
+ * `data` is always an array for backward compatibility.
+ */
+export function useProducts(filters?: ProductFilters) {
   const { user } = useAuth();
   const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
-  return useQuery({
-    // Keyed by user AND branch to prevent cross-tenant/branch cache leakage
-    queryKey: ['products', user?.id, branchId],
+  const page = filters?.page ?? 1;
+  const pageSize = filters?.pageSize ?? 50;
+  const hasServerFilters = !!filters;
+
+  const result = useQuery({
+    queryKey: ['products', user?.id, branchId, filters],
     queryFn: async () => {
-      const buildQuery = () => {
-        let q = supabase
-          .from('products')
-          .select(`
-            *,
-            categories(name),
-            suppliers(name),
-            branches(name)
-          `)
-          .in('status', ['in_stock', 'sold', 'returned'])
-          .order('import_date', { ascending: false });
+      let query = supabase
+        .from('products')
+        .select(`
+          *,
+          categories(name),
+          suppliers(name),
+          branches(name)
+        `, { count: 'exact' })
+        .in('status', ['in_stock', 'sold', 'returned'])
+        .order('import_date', { ascending: false });
 
-        if (shouldFilter && branchId) {
-          q = q.eq('branch_id', branchId);
+      if (shouldFilter && branchId) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      if (filters?.search) {
+        const s = filters.search.trim();
+        if (s) {
+          query = query.or(`name.ilike.%${s}%,sku.ilike.%${s}%,imei.ilike.%${s}%`);
         }
-        return q;
-      };
+      }
+      if (filters?.categoryId && filters.categoryId !== '_all_') {
+        query = query.eq('category_id', filters.categoryId);
+      }
+      if (filters?.supplierId && filters.supplierId !== '_all_') {
+        query = query.eq('supplier_id', filters.supplierId);
+      }
+      if (filters?.status && filters.status !== '_all_') {
+        query = query.eq('status', filters.status as ProductStatus);
+      }
+      if (filters?.branchId && filters.branchId !== '_all_') {
+        query = query.eq('branch_id', filters.branchId);
+      }
+      if (filters?.dateFrom) {
+        query = query.gte('import_date', filters.dateFrom);
+      }
+      if (filters?.dateTo) {
+        query = query.lte('import_date', filters.dateTo + 'T23:59:59');
+      }
+      if (filters?.printedFilter === 'printed') {
+        query = query.eq('is_printed', true);
+      } else if (filters?.printedFilter === 'not_printed') {
+        query = query.eq('is_printed', false);
+      }
 
-      const data = await fetchAllRows<Product>(buildQuery);
-      return data;
+      // Server-side pagination
+      if (hasServerFilters) {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        query = query.range(from, to);
+      } else {
+        // Default: limit to 500 for backward compat (non-paginated consumers)
+        query = query.limit(500);
+      }
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+      // Return array with totalCount attached
+      const items = (data || []) as Product[];
+      return { items, totalCount: count || 0 };
     },
     enabled: !!user?.id && !branchLoading,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+    placeholderData: (previous) => previous,
   });
+
+  return {
+    ...result,
+    // Backward compatible: `data` is array of Product[]
+    data: result.data?.items || [],
+    totalCount: result.data?.totalCount || 0,
+  };
 }
 
 // Hook to get ALL products including deleted (for Import History page)
@@ -82,40 +153,54 @@ export function useAllProducts() {
       let query = supabase
         .from('products')
         .select(`
-          id,
-          name,
-          sku,
-          imei,
-          category_id,
-          import_price,
-          import_date,
-          supplier_id,
-          branch_id,
-          import_receipt_id,
-          status,
-          note,
-          quantity,
-          total_import_cost,
-          created_at,
-          updated_at,
-          categories(name),
-          suppliers(name),
-          branches(name)
+          id, name, sku, imei, category_id, import_price, import_date,
+          supplier_id, branch_id, import_receipt_id, status, note,
+          quantity, total_import_cost, created_at, updated_at,
+          categories(name), suppliers(name), branches(name)
         `)
-        .order('import_date', { ascending: false });
+        .order('import_date', { ascending: false })
+        .limit(500);
 
-      // Apply branch filter for non-Super Admin users
       if (shouldFilter && branchId) {
         query = query.eq('branch_id', branchId);
       }
 
       const { data, error } = await query;
-
       if (error) throw error;
       return data as Product[];
     },
     enabled: !!user?.id && !branchLoading,
   });
+}
+
+/**
+ * Helper hook for server-side pagination state management.
+ * Use this in list pages instead of usePagination.
+ */
+export function useServerPagination(defaultPageSize = 50) {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSizeState] = useState(defaultPageSize);
+
+  const setPageSize = useCallback((size: number) => {
+    setPageSizeState(size);
+    setPage(1);
+  }, []);
+
+  const goToFirstPage = useCallback(() => setPage(1), []);
+  const goToLastPage = useCallback((totalPages: number) => setPage(totalPages), []);
+  const goToNextPage = useCallback(() => setPage(p => p + 1), []);
+  const goToPreviousPage = useCallback(() => setPage(p => Math.max(1, p - 1)), []);
+
+  return {
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    goToFirstPage,
+    goToLastPage,
+    goToNextPage,
+    goToPreviousPage,
+  };
 }
 
 export function useCreateProduct() {
@@ -174,12 +259,9 @@ export function useUpdateProduct() {
 export function useCheckIMEI() {
   return useMutation({
     mutationFn: async (imei: string) => {
-      // Lấy tenant_id hiện tại để kiểm tra trong phạm vi cửa hàng
       const tenantId = await getCurrentTenantId();
       if (!tenantId) throw new Error('Không tìm thấy tenant');
 
-      // Chỉ chặn IMEI đang tồn kho hoặc đang bảo hành
-      // Cho phép nhập lại IMEI đã bán (sold) hoặc đã trả NCC (returned)
       const { data, error } = await supabase
         .from('products')
         .select('id, name, sku, status')
@@ -189,14 +271,11 @@ export function useCheckIMEI() {
         .limit(1);
 
       if (error) throw error;
-      
-      // Trả về bản ghi đầu tiên nếu có
       return data && data.length > 0 ? data[0] : null;
     },
   });
 }
 
-// Hook để kiểm tra nhiều IMEI cùng lúc (batch check) - tối ưu cho nhập Excel
 export function useBatchCheckIMEI() {
   return useMutation({
     mutationFn: async (imeis: string[]): Promise<Set<string>> => {
@@ -205,7 +284,6 @@ export function useBatchCheckIMEI() {
       const tenantId = await getCurrentTenantId();
       if (!tenantId) throw new Error('Không tìm thấy tenant');
 
-      // Chia thành các batch nhỏ để tránh query quá lớn (Supabase giới hạn)
       const BATCH_SIZE = 100;
       const existingIMEIs = new Set<string>();
       
