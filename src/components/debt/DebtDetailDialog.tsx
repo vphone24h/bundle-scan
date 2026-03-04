@@ -49,6 +49,7 @@ interface DebtDetailDialogProps {
   paidAmount: number;
   remainingAmount: number;
   branchId?: string | null;
+  mergedEntityIds?: string[];
 }
 
 export function DebtDetailDialog({
@@ -63,6 +64,7 @@ export function DebtDetailDialog({
   paidAmount,
   remainingAmount,
   branchId,
+  mergedEntityIds,
 }: DebtDetailDialogProps) {
   const [historyFilter, setHistoryFilter] = useState<'all' | 'addition' | 'payment'>('all');
   const [showEditCustomer, setShowEditCustomer] = useState(false);
@@ -70,8 +72,8 @@ export function DebtDetailDialog({
   const [showAddition, setShowAddition] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const [onlyShowDebt, setOnlyShowDebt] = useState(true);
-  const { data: allReceipts, isLoading: receiptsLoading } = useDebtDetail(entityType, entityId);
-  const { data: paymentHistory, isLoading: historyLoading } = useDebtPaymentHistory(entityType, entityId);
+  const { data: allReceipts, isLoading: receiptsLoading } = useDebtDetail(entityType, entityId, mergedEntityIds);
+  const { data: paymentHistory, isLoading: historyLoading } = useDebtPaymentHistory(entityType, entityId, mergedEntityIds);
 
   // Use all receipts - filtering is done in the UI based on checkbox
   const receipts = useMemo(() => {
