@@ -700,16 +700,16 @@ export default function ExportHistoryPage() {
                 </Table>
                 </ScrollableTableWrapper>
               )}
-              {(filteredReceipts?.length || 0) > 0 && (
+              {receiptsTotalCount > 0 && (
                 <TablePagination
-                  currentPage={receiptsPagination.currentPage}
-                  totalPages={receiptsPagination.totalPages}
-                  pageSize={receiptsPagination.pageSize}
-                  totalItems={receiptsPagination.totalItems}
-                  startIndex={receiptsPagination.startIndex}
-                  endIndex={receiptsPagination.endIndex}
-                  onPageChange={receiptsPagination.setPage}
-                  onPageSizeChange={receiptsPagination.setPageSize}
+                  currentPage={receiptPage}
+                  totalPages={receiptTotalPages}
+                  pageSize={receiptPageSize}
+                  totalItems={receiptsTotalCount}
+                  startIndex={(receiptPage - 1) * receiptPageSize + 1}
+                  endIndex={Math.min(receiptPage * receiptPageSize, receiptsTotalCount)}
+                  onPageChange={setReceiptPage}
+                  onPageSizeChange={(size) => { setReceiptPageSize(size); setReceiptPage(1); }}
                 />
               )}
             </CardContent>
