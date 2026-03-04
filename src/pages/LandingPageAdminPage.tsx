@@ -141,6 +141,11 @@ export default function LandingPageAdminPage() {
                   <PendingBadge />
                 </TabsTrigger>
               )}
+              {showSettings && (
+                <TabsTrigger value="zalo-mail">
+                  <span className="flex items-center gap-1">Quản lý Zalo/Mail</span>
+                </TabsTrigger>
+              )}
             </TabsList>
             {showSettings && (
               <TabsContent value="settings">
