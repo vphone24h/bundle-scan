@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronUp, ChevronDown, RotateCcw, Plus, Pencil, Trash2, X, Package } from 'lucide-react';
 import { CustomProductTab } from '@/components/admin/HomeSectionManager';
+import { SYSTEM_PAGES } from '@/lib/industryConfig';
 
 export interface ProductsPageSectionItem {
   id: string;
@@ -29,10 +30,19 @@ const PRESET_TABS: { name: string; icon: string }[] = [
   { name: 'Hàng trưng bày', icon: '🏬' },
 ];
 
+const EXTRA_LAYOUT_PRESETS = SYSTEM_PAGES
+  .filter(p => !['home', 'products', 'news', 'warranty'].includes(p.id))
+  .filter(p => !PRODUCTS_PAGE_SECTIONS.some(s => s.id === p.id));
+
 function getSectionMeta(id: string, customTabs: CustomProductTab[]) {
   const customTab = customTabs.find(t => t.id === id);
   if (customTab) {
     return { label: customTab.name, icon: customTab.icon || '📦', description: `Tab sản phẩm • ${customTab.displayStyle === 'grid' ? 'Lưới' : customTab.displayStyle === 'slide' ? 'Trượt' : 'Danh sách'}` };
+  }
+  if (id.startsWith('layout_')) {
+    const pageId = id.replace(/^layout_\d+_/, '').replace(/^layout_/, '');
+    const page = SYSTEM_PAGES.find(p => p.id === pageId);
+    if (page) return { label: page.label, icon: page.icon, description: page.description };
   }
   const section = PRODUCTS_PAGE_SECTIONS.find(s => s.id === id);
   return section || { label: id, icon: '📦', description: '' };
@@ -59,6 +69,7 @@ export function ProductsPageSectionManager({ customSections, onChange, customPro
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [newTabName, setNewTabName] = useState('');
   const [showCustomCreate, setShowCustomCreate] = useState(false);
+  const [addMenuTab, setAddMenuTab] = useState<'product' | 'layout'>('product');
 
   const buildDefault = (): ProductsPageSectionItem[] => {
     const items = getDefaultSections();
@@ -96,6 +107,7 @@ export function ProductsPageSectionManager({ customSections, onChange, customPro
   const handleReset = () => onChange(null);
 
   const isCustomTab = (id: string) => id.startsWith('ppTab_');
+  const isLayoutSection = (id: string) => id.startsWith('layout_');
 
   const addProductTab = (name: string, icon?: string) => {
     const tabId = `ppTab_${Date.now()}`;
@@ -109,9 +121,19 @@ export function ProductsPageSectionManager({ customSections, onChange, customPro
     setNewTabName('');
   };
 
+  const addLayoutSection = (pageId: string) => {
+    const sectionId = `layout_${Date.now()}_${pageId}`;
+    onChange([...currentItems, { id: sectionId, enabled: true }]);
+    setShowAddMenu(false);
+  };
+
   const removeProductTab = (tabId: string) => {
     onTabsChange?.(customProductTabs.filter(t => t.id !== tabId));
     onChange(currentItems.filter(s => s.id !== tabId));
+  };
+
+  const removeLayoutSection = (sectionId: string) => {
+    onChange(currentItems.filter(s => s.id !== sectionId));
   };
 
   const updateTabName = (tabId: string, name: string) => {
@@ -137,6 +159,7 @@ export function ProductsPageSectionManager({ customSections, onChange, customPro
         {currentItems.map((item, i) => {
           const meta = getSectionMeta(item.id, customProductTabs);
           const isCustom = isCustomTab(item.id);
+          const isLayout = isLayoutSection(item.id);
           const isEditing = editingTabId === item.id;
 
           return (
@@ -211,6 +234,13 @@ export function ProductsPageSectionManager({ customSections, onChange, customPro
                 </div>
               )}
 
+              {isLayout && (
+                <button type="button" onClick={() => removeLayoutSection(item.id)}
+                  className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive shrink-0">
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              )}
+
               <Switch checked={item.enabled} onCheckedChange={() => handleToggle(i)} className="shrink-0" />
             </div>
           );
@@ -230,50 +260,86 @@ export function ProductsPageSectionManager({ customSections, onChange, customPro
         <div className="border rounded-lg p-3 space-y-2 bg-muted/20">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium">Chọn loại bố cục</p>
-            <button type="button" onClick={() => { setShowAddMenu(false); setShowCustomCreate(false); }}
+            <button type="button" onClick={() => { setShowAddMenu(false); setShowCustomCreate(false); setAddMenuTab('product'); }}
               className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted">
               <X className="h-3 w-3" />
             </button>
           </div>
-          <div className="space-y-1">
-            {PRESET_TABS.map(preset => {
-              const alreadyAdded = customProductTabs.some(t => t.name === preset.name);
-              return (
-                <button
-                  key={preset.name} type="button" disabled={alreadyAdded}
-                  onClick={() => addProductTab(preset.name, preset.icon)}
-                  className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-muted transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <span>{preset.icon}</span>
-                  <span>{preset.name}</span>
-                  {alreadyAdded && <span className="text-muted-foreground ml-auto">Đã thêm</span>}
-                </button>
-              );
-            })}
-          </div>
-          {!showCustomCreate ? (
-            <button type="button" onClick={() => setShowCustomCreate(true)}
-              className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-muted transition-colors flex items-center gap-2 text-primary font-medium">
-              <Plus className="h-3 w-3" />
-              Tự tạo bố cục mới
+
+          <div className="flex gap-1">
+            <button type="button" onClick={() => setAddMenuTab('product')}
+              className={`flex-1 text-xs py-1.5 rounded-lg font-medium transition-colors ${addMenuTab === 'product' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}>
+              📦 Tab sản phẩm
             </button>
+            <button type="button" onClick={() => setAddMenuTab('layout')}
+              className={`flex-1 text-xs py-1.5 rounded-lg font-medium transition-colors ${addMenuTab === 'layout' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}>
+              📄 Trang chức năng
+            </button>
+          </div>
+
+          {addMenuTab === 'product' ? (
+            <>
+              <div className="space-y-1">
+                {PRESET_TABS.map(preset => {
+                  const alreadyAdded = customProductTabs.some(t => t.name === preset.name);
+                  return (
+                    <button
+                      key={preset.name} type="button" disabled={alreadyAdded}
+                      onClick={() => addProductTab(preset.name, preset.icon)}
+                      className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-muted transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <span>{preset.icon}</span>
+                      <span>{preset.name}</span>
+                      {alreadyAdded && <span className="text-muted-foreground ml-auto">Đã thêm</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              {!showCustomCreate ? (
+                <button type="button" onClick={() => setShowCustomCreate(true)}
+                  className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-muted transition-colors flex items-center gap-2 text-primary font-medium">
+                  <Plus className="h-3 w-3" />
+                  Tự tạo bố cục mới
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Input value={newTabName} onChange={e => setNewTabName(e.target.value)}
+                    placeholder="Tên tab (VD: Phụ kiện hot)" className="h-8 text-xs flex-1" autoFocus
+                    onKeyDown={e => { if (e.key === 'Enter' && newTabName.trim()) addProductTab(newTabName.trim()); }}
+                  />
+                  <Button type="button" size="sm" className="h-8 text-xs" disabled={!newTabName.trim()}
+                    onClick={() => addProductTab(newTabName.trim())}>
+                    Thêm
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
-            <div className="flex items-center gap-2">
-              <Input value={newTabName} onChange={e => setNewTabName(e.target.value)}
-                placeholder="Tên tab (VD: Phụ kiện hot)" className="h-8 text-xs flex-1" autoFocus
-                onKeyDown={e => { if (e.key === 'Enter' && newTabName.trim()) addProductTab(newTabName.trim()); }}
-              />
-              <Button type="button" size="sm" className="h-8 text-xs" disabled={!newTabName.trim()}
-                onClick={() => addProductTab(newTabName.trim())}>
-                Thêm
-              </Button>
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {EXTRA_LAYOUT_PRESETS.map(page => {
+                const alreadyAdded = currentItems.some(it => it.id.includes(`_${page.id}`));
+                return (
+                  <button
+                    key={page.id} type="button" disabled={alreadyAdded}
+                    onClick={() => addLayoutSection(page.id)}
+                    className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-muted transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <span>{page.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium">{page.label}</span>
+                      <span className="text-[10px] text-muted-foreground ml-2">{page.description}</span>
+                    </div>
+                    {alreadyAdded && <span className="text-muted-foreground text-[10px]">Đã thêm</span>}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
       )}
 
       <p className="text-[10px] text-muted-foreground">
-        💡 Kéo lên/xuống để thay đổi thứ tự. Bấm "Thêm bố cục" để tạo tab sản phẩm riêng cho trang sản phẩm.
+        💡 Kéo lên/xuống để thay đổi thứ tự. Bấm "Thêm bố cục" để tạo tab sản phẩm hoặc trang chức năng.
       </p>
     </div>
   );
