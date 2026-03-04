@@ -520,67 +520,35 @@ export function useSupplierDebts(showSettled: boolean = false) {
   });
 }
 
-// Hook to get debt detail for an entity
-export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: string) {
+// Hook to get debt detail for an entity (supports merged supplier IDs)
+export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: string, mergedEntityIds?: string[]) {
+  const entityIds = mergedEntityIds && mergedEntityIds.length > 0 ? mergedEntityIds : [entityId];
+  
   return useQuery({
-    queryKey: ['debt-detail', entityType, entityId],
+    queryKey: ['debt-detail', entityType, entityId, mergedEntityIds],
     queryFn: async () => {
       if (entityType === 'customer') {
-        // Get export receipts with debt
         const { data: receipts, error } = await supabase
           .from('export_receipts')
           .select(`
-            id,
-            code,
-            export_date,
-            total_amount,
-            paid_amount,
-            debt_amount,
-            original_debt_amount,
-            note,
-            export_receipt_items(
-              id,
-              product_name,
-              sku,
-              imei,
-              sale_price,
-              note,
-              status
-            )
+            id, code, export_date, total_amount, paid_amount, debt_amount, original_debt_amount, note,
+            export_receipt_items(id, product_name, sku, imei, sale_price, note, status)
           `)
           .eq('customer_id', entityId)
           .gte('debt_amount', 0)
           .order('export_date', { ascending: false });
-
         if (error) throw error;
         return receipts;
       } else {
-        // Get import receipts with debt
         const { data: receipts, error } = await supabase
           .from('import_receipts')
           .select(`
-            id,
-            code,
-            import_date,
-            total_amount,
-            paid_amount,
-            debt_amount,
-            original_debt_amount,
-            note,
-            products(
-              id,
-              name,
-              sku,
-              imei,
-              import_price,
-              note,
-              status
-            )
+            id, code, import_date, total_amount, paid_amount, debt_amount, original_debt_amount, note,
+            products(id, name, sku, imei, import_price, note, status)
           `)
-          .eq('supplier_id', entityId)
+          .in('supplier_id', entityIds)
           .gte('debt_amount', 0)
           .order('import_date', { ascending: false });
-
         if (error) throw error;
         return receipts;
       }
@@ -589,27 +557,23 @@ export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: str
   });
 }
 
-// Hook to get payment history for an entity
-export function useDebtPaymentHistory(entityType: 'customer' | 'supplier', entityId: string) {
+// Hook to get payment history for an entity (supports merged supplier IDs)
+export function useDebtPaymentHistory(entityType: 'customer' | 'supplier', entityId: string, mergedEntityIds?: string[]) {
+  const entityIds = mergedEntityIds && mergedEntityIds.length > 0 ? mergedEntityIds : [entityId];
+  
   return useQuery({
-    queryKey: ['debt-payment-history', entityType, entityId],
+    queryKey: ['debt-payment-history', entityType, entityId, mergedEntityIds],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('debt_payments')
-        .select(`
-          *,
-          branches(name)
-        `)
+        .select(`*, branches(name)`)
         .eq('entity_type', entityType)
-        .eq('entity_id', entityId)
+        .in('entity_id', entityIds)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
 
-      // Get profile names for created_by
       const userIds = [...new Set(data?.map(p => p.created_by).filter(Boolean))];
       let profiles: { user_id: string; display_name: string }[] = [];
-      
       if (userIds.length > 0) {
         const { data: profileData } = await supabase
           .from('profiles')
