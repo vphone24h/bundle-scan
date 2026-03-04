@@ -1472,7 +1472,7 @@ export default function CashBookPage() {
                             ) : null;
                           })()}
                           <span className="text-xs text-muted-foreground">
-                            {entry.category} • {paymentSourceLabels[entry.payment_source] || entry.payment_source}
+                            {entry.category} • {paymentSourceLabels[normalizePaymentSource(entry.payment_source)] || entry.payment_source}
                             {entry.branches?.name && ` • ${entry.branches.name}`}
                             {entry.created_by_name && ` • NV: ${entry.created_by_name}`}
                             {entry.recipient_name && ` • NN: ${entry.recipient_name}`}
