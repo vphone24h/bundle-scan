@@ -837,6 +837,12 @@ export function LandingPageSettings() {
         custom_home_sections: (settings as any).custom_home_sections || null,
         custom_font_family: (settings as any).custom_font_family || null,
         custom_layout_style: (settings as any).custom_layout_style || null,
+        order_email_enabled: (settings as any).order_email_enabled ?? false,
+        order_email_sender: (settings as any).order_email_sender || '',
+        order_email_app_password: (settings as any).order_email_app_password || '',
+        order_email_on_confirmed: (settings as any).order_email_on_confirmed ?? false,
+        order_email_on_shipping: (settings as any).order_email_on_shipping ?? false,
+        order_email_on_warranty: (settings as any).order_email_on_warranty ?? false,
       });
     } else if (tenant) {
       setFormData(prev => ({
