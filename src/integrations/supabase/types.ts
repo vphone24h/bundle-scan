@@ -5633,6 +5633,7 @@ export type Database = {
           hero_title: string | null
           id: string
           is_enabled: boolean | null
+          menu_position: string | null
           meta_description: string | null
           meta_title: string | null
           order_email_app_password: string | null
@@ -5702,6 +5703,7 @@ export type Database = {
           hero_title?: string | null
           id?: string
           is_enabled?: boolean | null
+          menu_position?: string | null
           meta_description?: string | null
           meta_title?: string | null
           order_email_app_password?: string | null
@@ -5771,6 +5773,7 @@ export type Database = {
           hero_title?: string | null
           id?: string
           is_enabled?: boolean | null
+          menu_position?: string | null
           meta_description?: string | null
           meta_title?: string | null
           order_email_app_password?: string | null
