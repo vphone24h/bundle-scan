@@ -137,6 +137,7 @@ Deno.serve(async (req) => {
     const failedEmails: string[] = []
 
     for (const customer of customersWithEmail) {
+      let personalSubject = ''
       try {
         // Replace customer variables
         let personalHtml = htmlContent
@@ -144,7 +145,7 @@ Deno.serve(async (req) => {
           .replace(/\{\{phone\}\}/g, customer.phone || '')
           .replace(/\{\{store_name\}\}/g, storeName)
 
-        let personalSubject = subject
+        personalSubject = subject
           .replace(/\{\{customer_name\}\}/g, customer.name || 'Quý khách')
           .replace(/\{\{store_name\}\}/g, storeName)
 
@@ -157,10 +158,37 @@ Deno.serve(async (req) => {
           html: emailBody,
         })
         sent++
+
+        // Log to email_automation_logs
+        await supabaseAdmin.from('email_automation_logs').insert({
+          tenant_id: tenantId,
+          automation_id: null,
+          customer_email: customer.email,
+          customer_name: customer.name || null,
+          customer_id: customer.id,
+          subject: personalSubject,
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+          source: 'care_bulk',
+          body_html: emailBody,
+        })
       } catch (e) {
         console.error(`Failed to send to ${customer.email}:`, e)
         failed++
         failedEmails.push(customer.email!)
+
+        // Log failure
+        await supabaseAdmin.from('email_automation_logs').insert({
+          tenant_id: tenantId,
+          automation_id: null,
+          customer_email: customer.email,
+          customer_name: customer.name || null,
+          customer_id: customer.id,
+          subject: personalSubject || subject,
+          status: 'failed',
+          source: 'care_bulk',
+          error_message: (e as Error).message || 'Unknown error',
+        })
       }
 
       // Small delay to avoid rate limiting
