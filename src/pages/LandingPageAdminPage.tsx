@@ -144,7 +144,7 @@ export default function LandingPageAdminPage() {
               )}
               {showSettings && (
                 <TabsTrigger value="zalo-mail">
-                  <span className="flex items-center gap-1">Quản lý Zalo/Mail</span>
+                  <span className="flex items-center gap-1">Quản lý Zalo</span>
                 </TabsTrigger>
               )}
               {showSettings && (

@@ -2,13 +2,11 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { SearchInput } from '@/components/ui/search-input';
-import { Mail, MessageCircle, RefreshCw, Loader2, CheckCircle, XCircle, Clock, Send } from 'lucide-react';
+import { MessageCircle, RefreshCw, Loader2, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -20,21 +18,6 @@ const STATUS_BADGE: Record<string, { label: string; variant: 'default' | 'destru
   error: { label: 'Lỗi', variant: 'destructive' },
   pending: { label: 'Đang gửi', variant: 'secondary' },
 };
-
-function useEmailLogs() {
-  return useQuery({
-    queryKey: ['landing-email-logs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('landing_order_email_logs' as any)
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data as any[];
-    },
-  });
-}
 
 function useZaloLogs() {
   return useQuery({
@@ -49,68 +32,6 @@ function useZaloLogs() {
       return data as any[];
     },
   });
-}
-
-function EmailLogsTable() {
-  const { data: logs, isLoading, refetch } = useEmailLogs();
-  const [search, setSearch] = useState('');
-
-  const filtered = (logs || []).filter(log =>
-    !search || 
-    log.recipient_email?.toLowerCase().includes(search.toLowerCase()) ||
-    log.email_type?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Tìm theo email, loại..."
-          className="flex-1"
-        />
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-      {isLoading ? (
-        <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-      ) : filtered.length === 0 ? (
-        <p className="text-center text-sm text-muted-foreground py-8">Chưa có lịch sử gửi email</p>
-      ) : (
-        <div className="border rounded-lg overflow-auto max-h-[500px]">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-xs">Thời gian</TableHead>
-                <TableHead className="text-xs">Email</TableHead>
-                <TableHead className="text-xs">Loại</TableHead>
-                <TableHead className="text-xs">Trạng thái</TableHead>
-                <TableHead className="text-xs">Lỗi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map(log => {
-                const st = STATUS_BADGE[log.status] || STATUS_BADGE.pending;
-                return (
-                  <TableRow key={log.id}>
-                    <TableCell className="text-xs whitespace-nowrap">
-                      {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
-                    </TableCell>
-                    <TableCell className="text-xs max-w-[180px] truncate">{log.recipient_email}</TableCell>
-                    <TableCell className="text-xs">{log.email_type}</TableCell>
-                    <TableCell><Badge variant={st.variant} className="text-[10px]">{st.label}</Badge></TableCell>
-                    <TableCell className="text-xs text-destructive max-w-[200px] truncate">{log.error_message || '-'}</TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-    </div>
-  );
 }
 
 function ZaloLogsTable() {
@@ -225,28 +146,11 @@ export function LandingZaloMailTab() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <MessageCircle className="h-4 w-4" />
-          Quản lý Zalo / Mail
+          Quản lý Zalo
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="zalo">
-          <TabsList className="mb-4">
-            <TabsTrigger value="zalo" className="gap-1.5">
-              <MessageCircle className="h-3.5 w-3.5" />
-              Lịch sử Zalo
-            </TabsTrigger>
-            <TabsTrigger value="mail" className="gap-1.5">
-              <Mail className="h-3.5 w-3.5" />
-              Lịch sử Mail
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="zalo">
-            <ZaloLogsTable />
-          </TabsContent>
-          <TabsContent value="mail">
-            <EmailLogsTable />
-          </TabsContent>
-        </Tabs>
+        <ZaloLogsTable />
       </CardContent>
     </Card>
   );
