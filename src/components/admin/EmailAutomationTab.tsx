@@ -382,14 +382,28 @@ export function EmailAutomationTab() {
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<EmailAutomation | null>(null);
   const [tab, setTab] = useState('scenarios');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [prefilledTemplate, setPrefilledTemplate] = useState<EmailTemplatePreset | null>(null);
 
   const handleEdit = (item: EmailAutomation) => {
     setEditItem(item);
+    setPrefilledTemplate(null);
     setFormOpen(true);
   };
 
   const handleCreate = () => {
+    setPickerOpen(true);
+  };
+
+  const handleSelectTemplate = (tpl: EmailTemplatePreset) => {
     setEditItem(null);
+    setPrefilledTemplate(tpl);
+    setFormOpen(true);
+  };
+
+  const handleCreateManual = () => {
+    setEditItem(null);
+    setPrefilledTemplate(null);
     setFormOpen(true);
   };
 
