@@ -26,6 +26,7 @@ import {
   EmailAutomation,
   EmailAutomationBlock,
 } from '@/hooks/useEmailAutomations';
+import { EmailTemplatePickerDialog, EmailTemplatePreset } from './EmailTemplatePickerDialog';
 
 const TRIGGER_TYPES = [
   { value: 'days_after_purchase', label: 'Sau khi mua hàng (ngày)' },
