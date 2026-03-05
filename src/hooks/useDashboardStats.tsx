@@ -137,10 +137,10 @@ export function useTodaySoldProducts() {
   return useQuery({
     queryKey: ['today-sold-products', tenant?.id, branchId],
     queryFn: async () => {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      const todayEnd = new Date();
-      todayEnd.setHours(23, 59, 59, 999);
+      const vnNow = toVietnamDate(new Date());
+      const todayStr = `${vnNow.getFullYear()}-${String(vnNow.getMonth() + 1).padStart(2, '0')}-${String(vnNow.getDate()).padStart(2, '0')}`;
+      const todayStartUTC = new Date(`${todayStr}T00:00:00+07:00`).toISOString();
+      const todayEndUTC = new Date(`${todayStr}T23:59:59.999+07:00`).toISOString();
 
       let exportReceiptsQuery = supabase
         .from('export_receipts')
