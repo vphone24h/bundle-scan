@@ -439,6 +439,7 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
                       {existing.is_active ? 'Đang bật' : 'Tắt'}
                     </Badge>
                   </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">📌 {ot.condition}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Subject: {existing.subject}</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
