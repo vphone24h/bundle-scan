@@ -73,11 +73,11 @@ export function useDashboardStats() {
         todaySold = Number(dailyStats.total_sold_items) || 0;
         todayImports = Number(dailyStats.total_imports) || 0;
       } else {
-        // Fallback: quick server-side queries for today
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-        const todayEnd = new Date();
-        todayEnd.setHours(23, 59, 59, 999);
+        // Fallback: use Vietnam timezone boundaries for today
+        const todayStartISO = `${todayStr}T00:00:00+07:00`;
+        const todayEndISO = `${todayStr}T23:59:59.999+07:00`;
+        const todayStartUTC = new Date(todayStartISO).toISOString();
+        const todayEndUTC = new Date(todayEndISO).toISOString();
 
         let exportQuery = supabase
           .from('export_receipts')
