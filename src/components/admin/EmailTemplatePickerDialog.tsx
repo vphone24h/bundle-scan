@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, PenLine, Clock, ShieldCheck, Package, Star } from 'lucide-react';
+import { FileText, PenLine, Clock, ShieldCheck, Package, Star, ShoppingCart, CheckCircle2, Truck, Shield } from 'lucide-react';
 
 export interface EmailTemplatePreset {
   id: string;
@@ -14,6 +14,86 @@ export interface EmailTemplatePreset {
   description: string;
   blocks: Array<{ block_type: string; content: any }>;
 }
+
+// === 4 Order Email Presets ===
+export const ORDER_EMAIL_PRESETS: EmailTemplatePreset[] = [
+  {
+    id: 'order_confirmation',
+    name: 'Email xác nhận đơn hàng',
+    triggerType: 'on_order_confirmation',
+    triggerDays: 0,
+    subject: 'Xác nhận đơn hàng tại {{store_name}}',
+    icon: ShoppingCart,
+    description: 'Gửi ngay khi khách đặt hàng',
+    blocks: [
+      { block_type: 'heading', content: { text: '✅ Xác nhận đơn hàng', level: 'h1' } },
+      { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\nCảm ơn bạn đã đặt hàng tại {{store_name}}.' } },
+      { block_type: 'text', content: { text: '📦 Sản phẩm: {{product_name}}\n💰 Giá: {{product_price}}\n🔖 Mã đơn: {{order_code}}' } },
+      { block_type: 'divider', content: {} },
+      { block_type: 'text', content: { text: 'Cửa hàng sẽ liên hệ với bạn sớm nhất.' } },
+      { block_type: 'button', content: { text: '📞 Gọi điện', url: 'tel:{{phone}}', color: '#1a56db' } },
+      { block_type: 'spacer', content: { height: 12 } },
+      { block_type: 'text', content: { text: 'Trân trọng,\n{{store_name}}' } },
+    ],
+  },
+  {
+    id: 'order_confirmed',
+    name: 'Email khi đơn đã xác nhận',
+    triggerType: 'on_order_confirmed',
+    triggerDays: 0,
+    subject: 'Đơn hàng đã được xác nhận - {{store_name}}',
+    icon: CheckCircle2,
+    description: 'Gửi khi cửa hàng xác nhận đơn',
+    blocks: [
+      { block_type: 'heading', content: { text: '✅ Đơn hàng đã xác nhận', level: 'h1' } },
+      { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\nĐơn hàng {{order_code}} của bạn đã được xác nhận.' } },
+      { block_type: 'text', content: { text: '📦 Sản phẩm: {{product_name}}\n💰 Giá: {{product_price}}' } },
+      { block_type: 'divider', content: {} },
+      { block_type: 'text', content: { text: 'Chúng tôi sẽ chuẩn bị hàng cho bạn.' } },
+      { block_type: 'spacer', content: { height: 12 } },
+      { block_type: 'text', content: { text: 'Trân trọng,\n{{store_name}}' } },
+    ],
+  },
+  {
+    id: 'order_shipping',
+    name: 'Email khi giao hàng',
+    triggerType: 'on_order_shipping',
+    triggerDays: 0,
+    subject: 'Đơn hàng đang được giao - {{store_name}}',
+    icon: Truck,
+    description: 'Gửi khi đơn hàng bắt đầu giao',
+    blocks: [
+      { block_type: 'heading', content: { text: '🚚 Đang giao hàng', level: 'h1' } },
+      { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\nĐơn hàng {{order_code}} đang được giao đến bạn.' } },
+      { block_type: 'text', content: { text: '📦 Sản phẩm: {{product_name}}' } },
+      { block_type: 'divider', content: {} },
+      { block_type: 'text', content: { text: 'Vui lòng chuẩn bị nhận hàng. Nếu cần hỗ trợ, hãy liên hệ:' } },
+      { block_type: 'button', content: { text: '📞 Gọi Hotline', url: 'tel:{{phone}}', color: '#3182ce' } },
+      { block_type: 'spacer', content: { height: 12 } },
+      { block_type: 'text', content: { text: 'Trân trọng,\n{{store_name}}' } },
+    ],
+  },
+  {
+    id: 'order_warranty',
+    name: 'Email bảo hành',
+    triggerType: 'on_order_warranty',
+    triggerDays: 0,
+    subject: 'Thông tin bảo hành sản phẩm - {{store_name}}',
+    icon: Shield,
+    description: 'Gửi thông tin bảo hành sau khi mua',
+    blocks: [
+      { block_type: 'heading', content: { text: '🛡️ Thông tin bảo hành', level: 'h1' } },
+      { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\nDưới đây là thông tin bảo hành sản phẩm bạn vừa mua tại {{store_name}}.' } },
+      { block_type: 'text', content: { text: '📦 Sản phẩm: {{product_name}}\n📅 Ngày mua: {{purchase_date}}\n🔖 Mã đơn: {{order_code}}' } },
+      { block_type: 'divider', content: {} },
+      { block_type: 'text', content: { text: 'Nếu gặp vấn đề trong quá trình sử dụng, vui lòng mang sản phẩm đến cửa hàng để được hỗ trợ.' } },
+      { block_type: 'button', content: { text: '📍 Xem địa chỉ', url: 'https://maps.google.com/', color: '#16a34a' } },
+      { block_type: 'button', content: { text: '📞 Hotline', url: 'tel:{{phone}}', color: '#1a56db' } },
+      { block_type: 'spacer', content: { height: 12 } },
+      { block_type: 'text', content: { text: 'Trân trọng,\n{{store_name}}' } },
+    ],
+  },
+];
 
 export const EMAIL_TEMPLATE_PRESETS: EmailTemplatePreset[] = [
   {

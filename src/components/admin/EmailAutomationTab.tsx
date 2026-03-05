@@ -28,12 +28,16 @@ import {
   EmailAutomation,
   EmailAutomationBlock,
 } from '@/hooks/useEmailAutomations';
-import { EmailTemplatePickerDialog, EmailTemplatePreset } from './EmailTemplatePickerDialog';
+import { EmailTemplatePickerDialog, EmailTemplatePreset, ORDER_EMAIL_PRESETS } from './EmailTemplatePickerDialog';
 
 const TRIGGER_TYPES = [
   { value: 'days_after_purchase', label: 'Sau khi mua hàng (ngày)' },
   { value: 'days_before_warranty_expires', label: 'Trước khi hết bảo hành (ngày)' },
   { value: 'days_inactive', label: 'Không mua hàng trong (ngày)' },
+  { value: 'on_order_confirmation', label: 'Khi đặt hàng' },
+  { value: 'on_order_confirmed', label: 'Khi đơn đã xác nhận' },
+  { value: 'on_order_shipping', label: 'Khi giao hàng' },
+  { value: 'on_order_warranty', label: 'Khi gửi bảo hành' },
 ];
 
 const BLOCK_TYPES = [
@@ -56,9 +60,13 @@ const BUTTON_PRESETS = [
 const VARIABLES = [
   { key: '{{customer_name}}', label: 'Tên khách hàng' },
   { key: '{{product_name}}', label: 'Tên sản phẩm' },
+  { key: '{{product_price}}', label: 'Giá sản phẩm' },
+  { key: '{{order_code}}', label: 'Mã đơn hàng' },
   { key: '{{purchase_date}}', label: 'Ngày mua hàng' },
   { key: '{{warranty_end}}', label: 'Hạn bảo hành' },
   { key: '{{store_name}}', label: 'Tên cửa hàng' },
+  { key: '{{phone}}', label: 'SĐT cửa hàng' },
+  { key: '{{address}}', label: 'Địa chỉ cửa hàng' },
 ];
 
 interface BlockItem {
@@ -293,21 +301,29 @@ function AutomationFormDialog({
               <Label>Tên kịch bản</Label>
               <Input value={name} onChange={e => setName(e.target.value)} placeholder="VD: Chăm sóc sau mua 7 ngày" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Điều kiện gửi</Label>
-                <Select value={triggerType} onValueChange={setTriggerType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {TRIGGER_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+            {triggerType.startsWith('on_order_') ? (
+              <div className="rounded-lg bg-muted/50 p-3">
+                <p className="text-xs text-muted-foreground">
+                  📧 Loại: <strong>{TRIGGER_TYPES.find(t => t.value === triggerType)?.label}</strong> — Email sẽ tự động gửi khi có sự kiện tương ứng.
+                </p>
               </div>
-              <div>
-                <Label>Số ngày</Label>
-                <Input type="number" min={1} value={triggerDays} onChange={e => setTriggerDays(Number(e.target.value))} />
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Điều kiện gửi</Label>
+                  <Select value={triggerType} onValueChange={setTriggerType}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {TRIGGER_TYPES.filter(t => !t.value.startsWith('on_order_')).map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Số ngày</Label>
+                  <Input type="number" min={1} value={triggerDays} onChange={e => setTriggerDays(Number(e.target.value))} />
+                </div>
               </div>
-            </div>
+            )}
             <div>
               <Label>Tiêu đề email (Subject)</Label>
               <Input value={subject} onChange={e => setSubject(e.target.value)} placeholder="VD: Cảm ơn bạn đã mua hàng tại {{store_name}}" />
@@ -385,6 +401,74 @@ function AutomationFormDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// === Order Email Section ===
+const ORDER_TRIGGER_TYPES = [
+  { value: 'on_order_confirmation', label: 'Email xác nhận đơn hàng', presetId: 'order_confirmation' },
+  { value: 'on_order_confirmed', label: 'Email khi đơn đã xác nhận', presetId: 'order_confirmed' },
+  { value: 'on_order_shipping', label: 'Email khi giao hàng', presetId: 'order_shipping' },
+  { value: 'on_order_warranty', label: 'Email bảo hành', presetId: 'order_warranty' },
+];
+
+function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest, onDelete, onCreateFromPreset }: {
+  automations: EmailAutomation[];
+  tenantId: string;
+  onEdit: (a: EmailAutomation) => void;
+  onToggle: (a: EmailAutomation) => void;
+  onSendTest: (a: EmailAutomation) => void;
+  onDelete: (a: EmailAutomation) => void;
+  onCreateFromPreset: (preset: EmailTemplatePreset) => void;
+}) {
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-muted-foreground mb-3">📧 Email đơn hàng</h3>
+      <div className="space-y-2">
+        {ORDER_TRIGGER_TYPES.map(ot => {
+          const existing = automations.find(a => a.trigger_type === ot.value);
+          const preset = ORDER_EMAIL_PRESETS.find(p => p.id === ot.presetId);
+
+          if (existing) {
+            return (
+              <div key={ot.value} className="border rounded-lg p-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-medium text-sm">{ot.label}</h4>
+                    <Badge variant={existing.is_active ? 'default' : 'secondary'} className="text-[10px]">
+                      {existing.is_active ? 'Đang bật' : 'Tắt'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">Subject: {existing.subject}</p>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Switch checked={existing.is_active} onCheckedChange={() => onToggle(existing)} />
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSendTest(existing)} title="Gửi thử">
+                    <Send className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(existing)} title="Chỉnh sửa">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div key={ot.value} className="border border-dashed rounded-lg p-3 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-sm text-muted-foreground">{ot.label}</h4>
+                <p className="text-xs text-muted-foreground/70">Chưa thiết lập</p>
+              </div>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => preset && onCreateFromPreset(preset)}>
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Tạo mẫu
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -491,48 +575,57 @@ export function EmailAutomationTab() {
             <TabsTrigger value="logs">Lịch sử gửi ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="scenarios" className="mt-4">
-            {isLoading ? (
-              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-            ) : !automations?.length ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Mail className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                <p className="font-medium">Chưa có kịch bản nào</p>
-                <p className="text-sm mt-1">Tạo kịch bản để tự động gửi email chăm sóc khách hàng</p>
-                <Button className="mt-4" onClick={handleCreate}><Plus className="h-4 w-4 mr-1" />Tạo kịch bản đầu tiên</Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {automations.map(a => (
-                  <div key={a.id} className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="font-medium truncate">{a.name}</h4>
-                        <Badge variant={a.is_active ? 'default' : 'secondary'}>
-                          {a.is_active ? 'Đang bật' : 'Tắt'}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        {TRIGGER_TYPES.find(t => t.value === a.trigger_type)?.label || a.trigger_type}: <strong>{a.trigger_days} ngày</strong>
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Subject: {a.subject}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <Switch checked={a.is_active} onCheckedChange={() => handleToggle(a)} />
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSendTest(a)} title="Gửi thử">
-                        <Send className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(a)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(a)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
+          <TabsContent value="scenarios" className="mt-4 space-y-6">
+            {/* === Email đơn hàng mặc định === */}
+            <OrderEmailSection automations={automations || []} tenantId={tenant.id} onEdit={handleEdit} onToggle={handleToggle} onSendTest={handleSendTest} onDelete={handleDelete} onCreateFromPreset={(preset) => { setEditItem(null); setPrefilledTemplate(preset); setFormOpen(true); }} />
+
+            {/* === Kịch bản tự động === */}
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3">⏱️ Kịch bản chăm sóc tự động</h3>
+              {isLoading ? (
+                <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+              ) : (() => {
+                const automationScenarios = (automations || []).filter(a => !a.trigger_type.startsWith('on_order_'));
+                return !automationScenarios.length ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Mail className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">Chưa có kịch bản chăm sóc nào</p>
+                    <Button className="mt-3" size="sm" onClick={handleCreate}><Plus className="h-4 w-4 mr-1" />Tạo kịch bản</Button>
                   </div>
-                ))}
-              </div>
-            )}
+                ) : (
+                  <div className="space-y-3">
+                    {automationScenarios.map(a => (
+                      <div key={a.id} className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-medium truncate">{a.name}</h4>
+                            <Badge variant={a.is_active ? 'default' : 'secondary'}>
+                              {a.is_active ? 'Đang bật' : 'Tắt'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-0.5">
+                            {TRIGGER_TYPES.find(t => t.value === a.trigger_type)?.label || a.trigger_type}: <strong>{a.trigger_days} ngày</strong>
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">Subject: {a.subject}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <Switch checked={a.is_active} onCheckedChange={() => handleToggle(a)} />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSendTest(a)} title="Gửi thử">
+                            <Send className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(a)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(a)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
           </TabsContent>
 
           <TabsContent value="logs" className="mt-4">
