@@ -146,8 +146,8 @@ export function useTodaySoldProducts() {
         .from('export_receipts')
         .select('id')
         .eq('status', 'completed')
-        .gte('export_date', todayStart.toISOString())
-        .lte('export_date', todayEnd.toISOString());
+        .gte('export_date', todayStartUTC)
+        .lte('export_date', todayEndUTC);
 
       if (shouldFilter && branchId) {
         exportReceiptsQuery = exportReceiptsQuery.eq('branch_id', branchId);
