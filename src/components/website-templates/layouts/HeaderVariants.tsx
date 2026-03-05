@@ -2,6 +2,8 @@ import { LayoutStyle } from '@/lib/industryConfig';
 import { Menu, X, Search, ShoppingBag } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
+export type MenuPosition = 'left' | 'right' | 'top';
+
 interface HeaderProps {
   storeName: string;
   logoUrl?: string | null;
@@ -14,6 +16,7 @@ interface HeaderProps {
   onNavClick: (item: any) => void;
   isNavActive: (item: any) => boolean;
   onCloseMenu: () => void;
+  menuPosition?: MenuPosition;
 }
 
 function LogoBlock({ logoUrl, storeName, onClick }: { logoUrl?: string | null; storeName: string; onClick: () => void }) {
