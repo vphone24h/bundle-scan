@@ -146,26 +146,33 @@ function HasakiHeader(props: HeaderProps) {
 
 // === NIKE / CANIFA ===
 function NikeHeader(props: HeaderProps) {
+  const isTop = props.menuPosition === 'top';
   return (
     <header className="sticky top-0 z-50 bg-black border-b border-white/10">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-12">
           <div className="flex items-center gap-3">
-            <button onClick={props.onToggleMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors sm:hidden text-white">
-              {props.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+            {!isTop && (
+              <button onClick={props.onToggleMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors sm:hidden text-white">
+                {props.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+            )}
             <button onClick={props.onNavigateHome} className="flex items-center gap-2.5 text-white">
               {props.logoUrl && <img src={props.logoUrl} alt={props.storeName} className="h-7 w-7 rounded-lg object-cover" />}
               <span className="font-bold text-sm tracking-tight uppercase">{props.storeName}</span>
             </button>
           </div>
-          <DesktopNav {...props} activeClass="bg-white text-black" inactiveClass="text-white/70 hover:text-white" />
+          {!isTop && <DesktopNav {...props} activeClass="bg-white text-black" inactiveClass="text-white/70 hover:text-white" />}
           <button onClick={props.onOpenSearch} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors text-white">
             <Search className="h-5 w-5" />
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-white text-black" menuBg="bg-black" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
+      {isTop ? (
+        <TopNavBar navItems={props.navItems} onNavClick={props.onNavClick} isNavActive={props.isNavActive} activeClass="bg-white text-black" inactiveClass="text-white/70 hover:text-white hover:bg-white/10" />
+      ) : (
+        <MobileMenu {...props} activeClass="bg-white text-black" menuBg="bg-black" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
+      )}
     </header>
   );
 }
