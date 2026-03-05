@@ -180,9 +180,8 @@ export function useExportReceipts(filters?: {
   return {
     ...result,
     data: result.data?.items || [],
-    totalCount: result.data?.totalCount || 0,
+    hasMore: result.data?.hasMore || false,
     isFetching: result.isFetching,
-    hasMore: (result.data?.totalCount || 0) > page * pageSize,
   };
 }
 
