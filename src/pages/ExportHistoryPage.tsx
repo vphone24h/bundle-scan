@@ -149,6 +149,7 @@ export default function ExportHistoryPage() {
   const [itemTabTourSeen, setItemTabTourSeen] = useState(false);
   const [activeTour, setActiveTour] = useState<'receipt-tab' | 'item-tab' | null>(null);
   const [manualTourActive, setManualTourActive] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
