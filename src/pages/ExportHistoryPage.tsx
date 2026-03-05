@@ -256,9 +256,10 @@ export default function ExportHistoryPage() {
   }, [staffUserIds]);
 
   // Server-side filters handle search, status, date, branch. Only payment source is client-side.
-  const filteredReceipts = paymentSourceFilter === '_all_'
-    ? receipts
-    : receipts?.filter(r => r.export_receipt_payments?.some(p => p.payment_type === paymentSourceFilter));
+  const filteredReceipts = useMemo(() => {
+    if (paymentSourceFilter === '_all_') return receipts;
+    return receipts?.filter(r => r.export_receipt_payments?.some(p => p.payment_type === paymentSourceFilter));
+  }, [receipts, paymentSourceFilter]);
 
   const hasActiveFilters = dateFilter || dateFromFilter || dateToFilter || statusFilter !== '_all_' || branchFilter !== '_all_' || categoryFilter !== '_all_' || paymentSourceFilter !== '_all_';
 
