@@ -2228,7 +2228,7 @@ export type Database = {
       }
       email_automation_logs: {
         Row: {
-          automation_id: string
+          automation_id: string | null
           body_html: string | null
           created_at: string
           customer_email: string
@@ -2238,12 +2238,13 @@ export type Database = {
           export_receipt_id: string | null
           id: string
           sent_at: string | null
+          source: string
           status: string
           subject: string
           tenant_id: string
         }
         Insert: {
-          automation_id: string
+          automation_id?: string | null
           body_html?: string | null
           created_at?: string
           customer_email: string
@@ -2253,12 +2254,13 @@ export type Database = {
           export_receipt_id?: string | null
           id?: string
           sent_at?: string | null
+          source?: string
           status?: string
           subject: string
           tenant_id: string
         }
         Update: {
-          automation_id?: string
+          automation_id?: string | null
           body_html?: string | null
           created_at?: string
           customer_email?: string
@@ -2268,6 +2270,7 @@ export type Database = {
           export_receipt_id?: string | null
           id?: string
           sent_at?: string | null
+          source?: string
           status?: string
           subject?: string
           tenant_id?: string
