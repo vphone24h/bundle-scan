@@ -360,9 +360,9 @@ export default function ExportHistoryPage() {
           .select(`*, categories(name), products(import_price), export_receipts!inner(code, export_date, branch_id, customer_id, created_by, sales_staff_id, status, customers(name, phone), branches(name))`)
           .order('created_at', { ascending: false });
         if (statusFilter !== '_all_') q = q.eq('export_receipts.status', statusFilter);
+        if (branchFilter !== '_all_') q = q.eq('export_receipts.branch_id', branchFilter);
         if (dateFromFilter) q = q.gte('export_receipts.export_date', dateFromFilter);
         if (dateToFilter) q = q.lte('export_receipts.export_date', dateToFilter + 'T23:59:59');
-        if (branchFilter !== '_all_') q = q.eq('export_receipts.branch_id', branchFilter);
         return q;
       });
 
