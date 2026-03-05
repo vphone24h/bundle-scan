@@ -26,6 +26,7 @@ import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog';
 import { PointSettingsDialog } from '@/components/customers/PointSettingsDialog';
 import { CustomerMergeDialog } from '@/components/customers/CustomerMergeDialog';
 import { CustomerBulkActions } from '@/components/customers/CustomerBulkActions';
+import { TagManagementDialog } from '@/components/customers/TagManagementDialog';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
 
@@ -71,6 +72,7 @@ export function CustomerListTab({
 
     // Multi-select
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [showTagManagement, setShowTagManagement] = useState(false);
 
     // Auto-open settings dialog from URL param
     useEffect(() => {
@@ -251,6 +253,9 @@ export function CustomerListTab({
                 </Select>
                 {permissions?.role === 'super_admin' && (
                   <>
+                   <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setShowTagManagement(true)} title="Quản lý Tag">
+                      <Tag className="h-4 w-4" />
+                    </Button>
                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setShowMergeDialog(true)}>
                       <Merge className="h-4 w-4" />
                     </Button>
@@ -488,6 +493,11 @@ export function CustomerListTab({
         <CustomerMergeDialog
           open={showMergeDialog}
           onOpenChange={setShowMergeDialog}
+        />
+
+        <TagManagementDialog
+          open={showTagManagement}
+          onOpenChange={setShowTagManagement}
         />
       </div>
     );
