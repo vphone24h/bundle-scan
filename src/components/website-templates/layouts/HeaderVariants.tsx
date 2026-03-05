@@ -28,25 +28,55 @@ function LogoBlock({ logoUrl, storeName, onClick }: { logoUrl?: string | null; s
   );
 }
 
+// === Sticky Top Nav Bar (always visible, horizontal scroll) ===
+function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass, inactiveClass }: { navItems: HeaderProps['navItems']; onNavClick: HeaderProps['onNavClick']; isNavActive: HeaderProps['isNavActive']; accentColor?: string; activeClass?: string; inactiveClass?: string }) {
+  return (
+    <div className="overflow-x-auto scrollbar-hide border-t border-black/5">
+      <div className="flex items-center gap-1 px-3 py-1.5 min-w-max">
+        {navItems.map(item => (
+          <button
+            key={item.id}
+            onClick={() => onNavClick(item)}
+            className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1 ${
+              isNavActive(item) ? (activeClass || 'text-white') : (inactiveClass || 'hover:bg-black/5 text-foreground/70')
+            }`}
+            style={isNavActive(item) && accentColor ? { backgroundColor: accentColor } : {}}
+          >
+            {item.icon && <span className="text-sm">{item.icon}</span>}
+            {item.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // === APPLE / DEFAULT ===
 function AppleHeader(props: HeaderProps) {
+  const isTop = props.menuPosition === 'top';
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/5">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-12">
           <div className="flex items-center gap-3">
-            <button onClick={props.onToggleMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-black/5 transition-colors sm:hidden">
-              {props.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+            {!isTop && (
+              <button onClick={props.onToggleMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-black/5 transition-colors sm:hidden">
+                {props.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+            )}
             <LogoBlock logoUrl={props.logoUrl} storeName={props.storeName} onClick={props.onNavigateHome} />
           </div>
-          <DesktopNav {...props} activeClass="bg-[#1d1d1f] text-white" />
+          {!isTop && <DesktopNav {...props} activeClass="bg-[#1d1d1f] text-white" />}
           <button onClick={props.onOpenSearch} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-black/5 transition-colors">
             <Search className="h-5 w-5" />
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-[#1d1d1f] text-white" menuBg="bg-[#1d1d1f]" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
+      {isTop ? (
+        <TopNavBar navItems={props.navItems} onNavClick={props.onNavClick} isNavActive={props.isNavActive} accentColor={props.accentColor} />
+      ) : (
+        <MobileMenu {...props} activeClass="bg-[#1d1d1f] text-white" menuBg="bg-[#1d1d1f]" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
+      )}
     </header>
   );
 }
