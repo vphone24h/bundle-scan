@@ -598,38 +598,82 @@
    });
  }
  
- export function useAssignStaffToCustomer() {
-   const queryClient = useQueryClient();
- 
-   return useMutation({
-     mutationFn: async ({ customerId, staffId }: { customerId: string; staffId: string | null }) => {
-       const { error } = await supabase
-         .from('customers')
-         .update({ assigned_staff_id: staffId })
-         .eq('id', customerId);
-       if (error) throw error;
-     },
-     onSuccess: () => {
-       queryClient.invalidateQueries({ queryKey: ['customers-with-points'] });
-       queryClient.invalidateQueries({ queryKey: ['customer-detail'] });
-     },
-   });
- }
- 
- export function useUpdateCustomerCRMStatus() {
-   const queryClient = useQueryClient();
- 
-   return useMutation({
-     mutationFn: async ({ customerId, status }: { customerId: string; status: CRMStatus }) => {
-       const { error } = await supabase
-         .from('customers')
-         .update({ crm_status: status })
-         .eq('id', customerId);
-       if (error) throw error;
-     },
-     onSuccess: () => {
-       queryClient.invalidateQueries({ queryKey: ['customers-with-points'] });
-       queryClient.invalidateQueries({ queryKey: ['customer-detail'] });
-     },
-   });
- }
+export function useAssignStaffToCustomer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ customerId, staffId }: { customerId: string; staffId: string | null }) => {
+      const { error } = await supabase
+        .from('customers')
+        .update({ assigned_staff_id: staffId })
+        .eq('id', customerId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers-with-points'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-detail'] });
+    },
+  });
+}
+
+// Bulk assign staff to multiple customers
+export function useBulkAssignStaff() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ customerIds, staffId }: { customerIds: string[]; staffId: string | null }) => {
+      const { error } = await supabase
+        .from('customers')
+        .update({ assigned_staff_id: staffId })
+        .in('id', customerIds);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers-with-points'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-detail'] });
+    },
+  });
+}
+
+// Bulk assign tag to multiple customers
+export function useBulkAssignTag() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ customerIds, tagId }: { customerIds: string[]; tagId: string }) => {
+      const rows = customerIds.map(cid => ({
+        customer_id: cid,
+        tag_id: tagId,
+        assigned_by: user?.id,
+      }));
+      // Use upsert to avoid duplicate errors
+      const { error } = await supabase
+        .from('customer_tag_assignments')
+        .upsert(rows, { onConflict: 'customer_id,tag_id', ignoreDuplicates: true });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers-with-points'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-tag-assignments'] });
+    },
+  });
+}
+
+export function useUpdateCustomerCRMStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ customerId, status }: { customerId: string; status: CRMStatus }) => {
+      const { error } = await supabase
+        .from('customers')
+        .update({ crm_status: status })
+        .eq('id', customerId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers-with-points'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-detail'] });
+    },
+  });
+}

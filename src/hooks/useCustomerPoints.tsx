@@ -279,6 +279,7 @@ export function useCustomersWithPoints(filters?: {
   status?: string;
   crmStatus?: string;
   staffId?: string;
+  tagId?: string;
   page?: number;
   pageSize?: number;
 }) {
@@ -289,10 +290,21 @@ export function useCustomersWithPoints(filters?: {
   const result = useQuery({
     queryKey: ['customers-with-points', user?.id, filters],
     queryFn: async () => {
-      let query = supabase
-        .from('customers')
-        .select('id, name, phone, email, address, note, source, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at, crm_status, assigned_staff_id, last_care_date')
-        .order('created_at', { ascending: false });
+      const hasTagFilter = filters?.tagId && filters.tagId !== '_all_';
+
+      // When filtering by tag, use inner join with customer_tag_assignments
+      const selectFields = 'id, name, phone, email, address, note, source, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at, crm_status, assigned_staff_id, last_care_date';
+      
+      let query = hasTagFilter
+        ? supabase
+            .from('customers')
+            .select(`${selectFields}, customer_tag_assignments!inner(tag_id)`)
+            .eq('customer_tag_assignments.tag_id', filters!.tagId!)
+            .order('created_at', { ascending: false })
+        : supabase
+            .from('customers')
+            .select(selectFields)
+            .order('created_at', { ascending: false });
 
       if (filters?.search) {
         query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
@@ -324,7 +336,11 @@ export function useCustomersWithPoints(filters?: {
       const { data, error } = await query;
       if (error) throw error;
       
-      const items = (data || []) as CustomerWithPointsCRM[];
+      const items = (data || []).map((d: any) => {
+        // Strip out the join data if present
+        const { customer_tag_assignments, ...rest } = d;
+        return rest;
+      }) as CustomerWithPointsCRM[];
       const hasMore = items.length > pageSize;
       const pageItems = hasMore ? items.slice(0, pageSize) : items;
       
@@ -582,14 +598,28 @@ export const POINT_TRANSACTION_TYPE_NAMES: Record<string, string> = {
 };
 
 // Hook: Server-side COUNT stats for customer summary cards (single RPC)
-export function useCustomerStats(branchFilter?: string) {
+export function useCustomerStats(filters?: {
+  branchId?: string;
+  tier?: string;
+  crmStatus?: string;
+  staffId?: string;
+  tagId?: string;
+}) {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ['customer-stats', user?.id, branchFilter],
+    queryKey: ['customer-stats', user?.id, filters],
     queryFn: async () => {
-      const branchId = branchFilter && branchFilter !== '_all_' ? branchFilter : null;
+      const branchId = filters?.branchId && filters.branchId !== '_all_' ? filters.branchId : null;
+      const tier = filters?.tier && filters.tier !== '_all_' ? filters.tier : null;
+      const crmStatus = filters?.crmStatus && filters.crmStatus !== '_all_' ? filters.crmStatus : null;
+      const staffId = filters?.staffId && filters.staffId !== '_all_' ? filters.staffId : null;
+      const tagId = filters?.tagId && filters.tagId !== '_all_' ? filters.tagId : null;
       const { data, error } = await supabase.rpc('get_customer_stats', {
         _branch_id: branchId,
+        _tier: tier,
+        _crm_status: crmStatus,
+        _staff_id: staffId,
+        _tag_id: tagId,
       });
       if (error) throw error;
       return data as {

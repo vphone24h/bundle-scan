@@ -6408,7 +6408,18 @@ export type Database = {
           total_remaining_debt: number
         }[]
       }
-      get_customer_stats: { Args: { _branch_id?: string }; Returns: Json }
+      get_customer_stats:
+        | { Args: { _branch_id?: string }; Returns: Json }
+        | {
+            Args: {
+              _branch_id?: string
+              _crm_status?: string
+              _staff_id?: string
+              _tag_id?: string
+              _tier?: string
+            }
+            Returns: Json
+          }
       get_dashboard_aggregates: {
         Args: { p_branch_id?: string; p_tenant_id: string }
         Returns: Json

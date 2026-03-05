@@ -27,11 +27,23 @@ export default function CustomersPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(customerIdFromUrl);
   const [branchFilter, setBranchFilter] = useState('_all_');
   
+  // Filter state lifted from CustomerListTab for stats sync
+  const [tierFilter, setTierFilter] = useState('_all_');
+  const [crmStatusFilter, setCrmStatusFilter] = useState('_all_');
+  const [staffFilter, setStaffFilter] = useState('_all_');
+  const [tagFilter, setTagFilter] = useState('_all_');
+
   const { data: permissions } = usePermissions();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
   
   const { data: selectedCustomer } = useCustomerDetail(selectedCustomerId);
-  const { data: customerStats, isLoading: statsLoading } = useCustomerStats(branchFilter);
+  const { data: customerStats, isLoading: statsLoading } = useCustomerStats({
+    branchId: branchFilter,
+    tier: tierFilter,
+    crmStatus: crmStatusFilter,
+    staffId: staffFilter,
+    tagId: tagFilter,
+  });
 
   useEffect(() => {
     if (!isSuperAdmin && permissions?.branchId) { setBranchFilter(permissions.branchId); }
@@ -161,7 +173,22 @@ export default function CustomersPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list"><CustomerListTab onViewCare={handleViewCare} onViewTimeline={handleViewTimeline} branchFilter={branchFilter} onBranchFilterChange={setBranchFilter} /></TabsContent>
+        <TabsContent value="list">
+          <CustomerListTab
+            onViewCare={handleViewCare}
+            onViewTimeline={handleViewTimeline}
+            branchFilter={branchFilter}
+            onBranchFilterChange={setBranchFilter}
+            tierFilter={tierFilter}
+            onTierFilterChange={setTierFilter}
+            crmStatusFilter={crmStatusFilter}
+            onCrmStatusFilterChange={setCrmStatusFilter}
+            staffFilter={staffFilter}
+            onStaffFilterChange={setStaffFilter}
+            tagFilter={tagFilter}
+            onTagFilterChange={setTagFilter}
+          />
+        </TabsContent>
         <TabsContent value="care"><CareScheduleTab customerId={selectedCustomerId} customerName={selectedCustomer?.name} /></TabsContent>
         <TabsContent value="timeline"><CareTimelineTab customerId={selectedCustomerId} customerName={selectedCustomer?.name} customerPhone={selectedCustomer?.phone} customerEmail={selectedCustomer?.email} /></TabsContent>
         <TabsContent value="vouchers"><VoucherHistoryTab /></TabsContent>
