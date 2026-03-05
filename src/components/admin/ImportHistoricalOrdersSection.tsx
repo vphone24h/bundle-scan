@@ -115,6 +115,7 @@ function parseVPhoneRow(row: any[]): ParsedOrder | null {
     }
 
     // Try columns E(4), D(3), F(5), C(2) for price - some exports shift columns
+    // IMPORTANT: Column F often contains "19,990,000₫\n+10 điểm" - must extract only the price part
     let salePrice = 0;
     for (const colIdx of [4, 3, 5, 2]) {
       const val = row[colIdx];
@@ -122,7 +123,11 @@ function parseVPhoneRow(row: any[]): ParsedOrder | null {
         salePrice = val;
         break;
       } else if (val) {
-        const parsed = parseInt(String(val).replace(/[^\d]/g, ''));
+        // Take only the first line (before \n) to avoid "+10 điểm" contamination
+        const firstLine = String(val).split('\n')[0].split('điểm')[0];
+        // Remove currency symbols and non-digit chars, then parse
+        const cleaned = firstLine.replace(/[₫đ]/g, '').trim();
+        const parsed = parseInt(cleaned.replace(/[^\d]/g, ''));
         if (parsed > 1000) { salePrice = parsed; break; }
       }
     }
