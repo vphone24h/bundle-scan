@@ -223,28 +223,11 @@ export function LandingZaloMailTab() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <MessageCircle className="h-4 w-4" />
-          Quản lý Zalo / Mail
+          Quản lý Zalo
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="zalo">
-          <TabsList className="mb-4">
-            <TabsTrigger value="zalo" className="gap-1.5">
-              <MessageCircle className="h-3.5 w-3.5" />
-              Lịch sử Zalo
-            </TabsTrigger>
-            <TabsTrigger value="mail" className="gap-1.5">
-              <Mail className="h-3.5 w-3.5" />
-              Lịch sử Mail
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="zalo">
-            <ZaloLogsTable />
-          </TabsContent>
-          <TabsContent value="mail">
-            <EmailLogsTable />
-          </TabsContent>
-        </Tabs>
+        <ZaloLogsTable />
       </CardContent>
     </Card>
   );
