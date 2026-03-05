@@ -39,6 +39,7 @@ const BLOCK_TYPES = [
   { value: 'text', label: 'Đoạn văn', icon: AlignLeft },
   { value: 'image', label: 'Hình ảnh', icon: Image },
   { value: 'button', label: 'Nút bấm', icon: MousePointer },
+  { value: 'link', label: 'Chèn link', icon: ExternalLink },
   { value: 'divider', label: 'Đường kẻ', icon: Minus },
   { value: 'spacer', label: 'Khoảng cách', icon: MoveVertical },
 ];
@@ -71,6 +72,7 @@ function newBlock(type: string): BlockItem {
     case 'text': return { ...base, content: { text: 'Xin chào {{customer_name}}, cảm ơn bạn đã mua hàng tại cửa hàng chúng tôi.' } };
     case 'image': return { ...base, content: { url: '', alt: 'Hình ảnh' } };
     case 'button': return { ...base, content: { text: 'Liên hệ ngay', url: '#', color: '#1a56db' } };
+    case 'link': return { ...base, content: { text: 'Nhấn vào đây để xem', url: 'https://', linkText: '' } };
     case 'divider': return { ...base, content: {} };
     case 'spacer': return { ...base, content: { height: 20 } };
     default: return base;
@@ -88,6 +90,8 @@ function renderBlockPreview(block: BlockItem) {
       return content.url ? <img src={content.url} alt={content.alt} style={{ maxWidth: '100%', borderRadius: 8 }} /> : <div className="h-24 bg-muted rounded flex items-center justify-center text-muted-foreground text-sm">Chưa có ảnh</div>;
     case 'button':
       return <div style={{ textAlign: 'center', margin: '12px 0' }}><span style={{ display: 'inline-block', padding: '10px 24px', background: content.color || '#1a56db', color: '#fff', borderRadius: 8, fontSize: 14, fontWeight: 600 }}>{content.text || 'Nút bấm'}</span></div>;
+    case 'link':
+      return <p style={{ fontSize: 14, lineHeight: 1.6, margin: '4px 0', color: '#374151' }}>{content.text || ''} <a href={content.url || '#'} style={{ color: '#1a56db', textDecoration: 'underline' }}>{content.linkText || content.url || 'Link'}</a></p>;
     case 'divider':
       return <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '12px 0' }} />;
     case 'spacer':
@@ -162,6 +166,14 @@ function BlockEditor({ block, onChange, onRemove }: { block: BlockItem; onChange
               </Button>
             ))}
           </div>
+        </div>
+      )}
+
+      {block_type === 'link' && (
+        <div className="space-y-2">
+          <Input value={content.text || ''} onChange={e => update({ text: e.target.value })} placeholder="Nội dung trước link. VD: Bạn có thể check bảo hành tại" />
+          <Input value={content.url || ''} onChange={e => update({ url: e.target.value })} placeholder="URL đường dẫn. VD: https://cuahang.com/bao-hanh" />
+          <Input value={content.linkText || ''} onChange={e => update({ linkText: e.target.value })} placeholder="Chữ hiển thị cho link. VD: trang bảo hành" />
         </div>
       )}
 
