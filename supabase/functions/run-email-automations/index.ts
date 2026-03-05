@@ -161,6 +161,13 @@ Deno.serve(async (req) => {
 
     for (const automation of automations) {
       try {
+        // Get per-tenant SMTP credentials
+        const smtp = await getTenantSmtp(automation.tenant_id)
+        if (!smtp) {
+          console.log(`Tenant ${automation.tenant_id} has no SMTP configured, skipping`)
+          continue
+        }
+
         const { data: blocks } = await supabase
           .from('email_automation_blocks')
           .select('*')
@@ -175,7 +182,12 @@ Deno.serve(async (req) => {
           .eq('id', automation.tenant_id)
           .single()
 
-        const storeName = tenant?.store_name || tenant?.business_name || 'Cửa hàng'
+        const storeName = tenant?.store_name || tenant?.business_name || smtp.storeName
+
+        const transporter = nodemailer.createTransport({
+          host: 'smtp.gmail.com', port: 465, secure: true,
+          auth: { user: smtp.user, pass: smtp.pass },
+        })
 
         // Find eligible customers based on trigger type
         let eligibleReceipts: any[] = []
@@ -197,11 +209,8 @@ Deno.serve(async (req) => {
 
           eligibleReceipts = data || []
         } else if (automation.trigger_type === 'days_before_warranty_expires') {
-          // Find items whose warranty expires in trigger_days
           const targetDate = new Date(today.getTime() + automation.trigger_days * 86400000)
-          const dayStr = targetDate.toISOString().split('T')[0]
 
-          // We check export_receipt_items with warranty field
           const { data } = await supabase
             .from('export_receipts')
             .select('id, customer_id, export_date, customers(id, name, phone, email)')
@@ -209,10 +218,8 @@ Deno.serve(async (req) => {
             .eq('status', 'completed')
             .limit(500)
 
-          // Filter by warranty expiry - simplified approach
           eligibleReceipts = data || []
         } else if (automation.trigger_type === 'days_inactive') {
-          // Find customers who haven't purchased in trigger_days
           const cutoffDate = new Date(today.getTime() - automation.trigger_days * 86400000).toISOString()
 
           const { data: customers } = await supabase
@@ -234,7 +241,6 @@ Deno.serve(async (req) => {
           const customer = Array.isArray(receipt.customers) ? receipt.customers[0] : receipt.customers
           if (!customer?.email) continue
 
-          // Check if already sent
           const { count } = await supabase
             .from('email_automation_logs')
             .select('id', { count: 'exact', head: true })
@@ -262,7 +268,7 @@ Deno.serve(async (req) => {
 
           try {
             await transporter.sendMail({
-              from: `"${storeName}" <${smtpUser}>`,
+              from: `"${storeName}" <${smtp.user}>`,
               to: customer.email,
               subject,
               html,
