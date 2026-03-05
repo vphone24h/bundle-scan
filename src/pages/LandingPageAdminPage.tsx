@@ -131,7 +131,7 @@ export default function LandingPageAdminPage() {
         )}
         <div className="mt-4">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className="mb-4">
+            <TabsList className="mb-4 w-full overflow-x-auto justify-start">
               {showSettings && <TabsTrigger value="settings" data-tour="landing-tab-settings">Cấu hình</TabsTrigger>}
               {showProducts && <TabsTrigger value="products" data-tour="landing-tab-products">Sản phẩm</TabsTrigger>}
               {showArticles && <TabsTrigger value="articles" data-tour="landing-tab-articles">Tin tức</TabsTrigger>}
