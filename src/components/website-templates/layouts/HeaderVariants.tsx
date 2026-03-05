@@ -83,23 +83,30 @@ function AppleHeader(props: HeaderProps) {
 
 // === TGDD ===
 function TGDDHeader(props: HeaderProps) {
+  const isTop = props.menuPosition === 'top';
   return (
     <header className="sticky top-0 z-50 bg-yellow-400 border-b border-yellow-500/30 shadow-sm">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-12">
           <div className="flex items-center gap-3">
-            <button onClick={props.onToggleMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-yellow-500/30 transition-colors sm:hidden">
-              {props.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+            {!isTop && (
+              <button onClick={props.onToggleMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-yellow-500/30 transition-colors sm:hidden">
+                {props.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+            )}
             <LogoBlock logoUrl={props.logoUrl} storeName={props.storeName} onClick={props.onNavigateHome} />
           </div>
-          <DesktopNav {...props} activeClass="bg-red-600 text-white" inactiveClass="text-black hover:bg-yellow-500/40" />
+          {!isTop && <DesktopNav {...props} activeClass="bg-red-600 text-white" inactiveClass="text-black hover:bg-yellow-500/40" />}
           <button onClick={props.onOpenSearch} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-yellow-500/30 transition-colors">
             <Search className="h-5 w-5" />
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-red-600 text-white" menuBg="bg-yellow-500" menuTextClass="text-black" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
+      {isTop ? (
+        <TopNavBar navItems={props.navItems} onNavClick={props.onNavClick} isNavActive={props.isNavActive} activeClass="bg-red-600 text-white" inactiveClass="text-black hover:bg-yellow-500/40" />
+      ) : (
+        <MobileMenu {...props} activeClass="bg-red-600 text-white" menuBg="bg-yellow-500" menuTextClass="text-black" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
+      )}
     </header>
   );
 }
