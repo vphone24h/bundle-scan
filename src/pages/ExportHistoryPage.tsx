@@ -172,7 +172,7 @@ export default function ExportHistoryPage() {
 
   // Server pagination state
   const [receiptPage, setReceiptPage] = useState(1);
-  const [receiptPageSize, setReceiptPageSize] = useState(15);
+  const [receiptPageSize, setReceiptPageSize] = useState(50);
   const [itemPage, setItemPage] = useState(1);
   const [itemPageSize, setItemPageSize] = useState(15);
 
