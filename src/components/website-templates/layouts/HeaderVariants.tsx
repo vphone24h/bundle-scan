@@ -46,7 +46,7 @@ function AppleHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-[#1d1d1f] text-white" menuBg="bg-[#1d1d1f]" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} />
+      <MobileMenu {...props} activeClass="bg-[#1d1d1f] text-white" menuBg="bg-[#1d1d1f]" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
     </header>
   );
 }
