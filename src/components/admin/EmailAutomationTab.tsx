@@ -630,9 +630,12 @@ export function EmailAutomationTab() {
           </TabsContent>
 
           <TabsContent value="logs" className="mt-4">
-            <div className="flex gap-2 mb-3">
+            <div className="flex gap-2 mb-3 flex-wrap">
               <Button variant={logSubTab === 'automation' ? 'default' : 'outline'} size="sm" onClick={() => setLogSubTab('automation')}>
-                Automation ({logs?.length || 0})
+                Automation ({(logs || []).filter(l => l.source === 'automation').length})
+              </Button>
+              <Button variant={logSubTab === 'care' ? 'default' : 'outline'} size="sm" onClick={() => setLogSubTab('care')}>
+                Chăm sóc ({(logs || []).filter(l => l.source === 'care_bulk').length})
               </Button>
               <Button variant={logSubTab === 'order' ? 'default' : 'outline'} size="sm" onClick={() => setLogSubTab('order')}>
                 Đơn hàng ({orderEmailLogs?.length || 0})
