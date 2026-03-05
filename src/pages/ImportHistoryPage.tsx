@@ -123,6 +123,7 @@ export default function ImportHistoryPage() {
   const [productTabTourSeen, setProductTabTourSeen] = useState(false);
   const [activeTour, setActiveTour] = useState<'receipt-tab' | 'product-tab' | null>(null);
   const [manualTourActive, setManualTourActive] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const navigate = useNavigate();
   const { data: receipts, isLoading: receiptsLoading } = useImportReceipts({ pageSize: 500 });
 
