@@ -442,89 +442,136 @@ export default function ImportHistoryPage() {
     setShowTransferDialog(true);
   };
 
-  // Export to Excel - Receipts
-  const handleExportReceipts = () => {
-    if (filteredReceipts.length === 0) {
-      toast({ title: 'Không có dữ liệu', description: 'Không có phiếu nhập nào để xuất', variant: 'destructive' });
-      return;
+  // Export to Excel - Both sheets (Receipts + Products) fetching ALL data from DB
+  const handleExportAll = async () => {
+    setIsExporting(true);
+    try {
+      // 1. Fetch ALL import receipts from DB
+      const allReceipts = await fetchAllRows<any>(() => {
+        let q = supabase
+          .from('import_receipts')
+          .select(`*, suppliers(name), branches(name)`)
+          .order('import_date', { ascending: false });
+        if (supplierFilter !== '_all_') q = q.eq('supplier_id', supplierFilter);
+        if (branchFilter !== '_all_') q = q.eq('branch_id', branchFilter);
+        if (dateFrom) q = q.gte('import_date', dateFrom);
+        if (dateTo) q = q.lte('import_date', dateTo + 'T23:59:59');
+        return q;
+      });
+
+      // 2. Fetch ALL products from DB
+      const allProducts = await fetchAllRows<any>(() => {
+        let q = supabase
+          .from('products')
+          .select(`*, categories(name), suppliers(name), branches(name)`)
+          .order('import_date', { ascending: false });
+        if (categoryFilter !== '_all_') q = q.eq('category_id', categoryFilter);
+        if (supplierFilter !== '_all_') q = q.eq('supplier_id', supplierFilter);
+        if (branchFilter !== '_all_') q = q.eq('branch_id', branchFilter);
+        if (statusFilter !== '_all_') q = q.eq('status', statusFilter);
+        if (dateFrom) q = q.gte('import_date', dateFrom);
+        if (dateTo) q = q.lte('import_date', dateTo + 'T23:59:59');
+        return q;
+      });
+
+      // 3. Fetch staff names
+      const userIds = [...new Set(allReceipts.map((r: any) => r.created_by).filter(Boolean))];
+      let allStaffMap = new Map<string, string>();
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, display_name')
+          .in('user_id', userIds);
+        if (profiles) profiles.forEach(p => allStaffMap.set(p.user_id, p.display_name || 'Nhân viên'));
+      }
+
+      // Build receipt creator map for products
+      const receiptCreatorMapAll = new Map<string, string>();
+      allReceipts.forEach((r: any) => { if (r.created_by) receiptCreatorMapAll.set(r.id, r.created_by); });
+
+      if (allReceipts.length === 0 && allProducts.length === 0) {
+        toast({ title: 'Không có dữ liệu', description: 'Không có dữ liệu nào để xuất', variant: 'destructive' });
+        return;
+      }
+
+      exportToExcelMultiSheet({
+        filename: `Lich_su_nhap_hang_${format(new Date(), 'ddMMyyyy')}`,
+        sheets: [
+          {
+            sheetName: 'Theo phiếu nhập',
+            columns: [
+              { header: 'STT', key: 'stt', width: 6, isNumeric: true },
+              { header: 'Mã phiếu', key: 'code', width: 18 },
+              { header: 'Ngày nhập', key: 'import_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
+              { header: 'Tổng tiền', key: 'total_amount', width: 15, isNumeric: true },
+              { header: 'Đã thanh toán', key: 'paid_amount', width: 15, isNumeric: true },
+              { header: 'Còn nợ', key: 'debt_amount', width: 15, isNumeric: true },
+              { header: 'Nhà cung cấp', key: 'supplier_name', width: 25 },
+              { header: 'Chi nhánh', key: 'branch_name', width: 20 },
+              { header: 'Nhân viên', key: 'staff_name', width: 18 },
+              { header: 'Ghi chú', key: 'note', width: 30 },
+              { header: 'Trạng thái', key: 'status', width: 12, format: (v) => v === 'completed' ? 'Hoàn tất' : 'Đã huỷ' },
+            ],
+            data: allReceipts.map((r: any, index: number) => ({
+              stt: index + 1,
+              code: r.code,
+              import_date: r.import_date,
+              total_amount: r.total_amount,
+              paid_amount: r.paid_amount,
+              debt_amount: r.debt_amount,
+              supplier_name: r.suppliers?.name || '',
+              branch_name: r.branches?.name || '',
+              staff_name: r.created_by ? (allStaffMap.get(r.created_by) || '') : '',
+              note: r.note || '',
+              status: r.status,
+            })),
+          },
+          {
+            sheetName: 'Theo chi tiết SP',
+            columns: [
+              { header: 'IMEI', key: 'imei', width: 18 },
+              { header: 'Tên sản phẩm', key: 'name', width: 35 },
+              { header: 'SKU', key: 'sku', width: 35 },
+              { header: 'Giá nhập', key: 'import_price', width: 15, isNumeric: true },
+              { header: 'Ngày nhập', key: 'import_date', width: 12, format: (v) => formatDateForExcel(v) },
+              { header: 'Nhà cung cấp', key: 'supplier_name', width: 18 },
+              { header: 'Chi nhánh', key: 'branch_name', width: 15 },
+              { header: 'Thư mục', key: 'category_name', width: 15 },
+              { header: 'Số lượng', key: 'quantity', width: 10, isNumeric: true },
+              { header: 'Nhân viên nhập', key: 'staff_name', width: 18 },
+              { header: 'Ghi chú', key: 'note', width: 30 },
+              { header: 'Trạng thái', key: 'status', width: 12, format: (v: string) => v === 'in_stock' ? 'Tồn kho' : v === 'sold' ? 'Đã bán' : v === 'returned' ? 'Đã trả NCC' : v === 'deleted' ? 'Đã xóa' : v },
+            ],
+            data: allProducts.map((p: any) => ({
+              imei: p.imei || '',
+              name: p.name,
+              sku: p.sku,
+              import_price: p.import_price,
+              import_date: p.import_date,
+              supplier_name: p.suppliers?.name || '',
+              branch_name: p.branches?.name || '',
+              category_name: p.categories?.name || '',
+              quantity: p.quantity || 1,
+              staff_name: (() => {
+                if (!p.import_receipt_id) return '';
+                const createdBy = receiptCreatorMapAll.get(p.import_receipt_id);
+                if (!createdBy) return '';
+                return allStaffMap.get(createdBy) || '';
+              })(),
+              note: p.note || '',
+              status: p.status,
+            })),
+          },
+        ],
+      });
+
+      toast({ title: 'Xuất Excel thành công', description: `Đã xuất ${allReceipts.length} phiếu và ${allProducts.length} sản phẩm` });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({ title: 'Lỗi xuất Excel', description: 'Không thể tải dữ liệu. Vui lòng thử lại.', variant: 'destructive' });
+    } finally {
+      setIsExporting(false);
     }
-
-    exportToExcel({
-      filename: `Phieu_nhap_hang_${format(new Date(), 'ddMMyyyy')}`,
-      sheetName: 'Phiếu nhập hàng',
-      columns: [
-        { header: 'STT', key: 'stt', width: 6, isNumeric: true },
-        { header: 'Mã phiếu', key: 'code', width: 18 },
-        { header: 'Ngày nhập', key: 'import_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
-        { header: 'Tổng tiền', key: 'total_amount', width: 15, isNumeric: true },
-        { header: 'Đã thanh toán', key: 'paid_amount', width: 15, isNumeric: true },
-        { header: 'Còn nợ', key: 'debt_amount', width: 15, isNumeric: true },
-        { header: 'Nhà cung cấp', key: 'supplier_name', width: 25 },
-        { header: 'Chi nhánh', key: 'branch_name', width: 20 },
-        { header: 'Nhân viên', key: 'staff_name', width: 18 },
-        { header: 'Ghi chú', key: 'note', width: 30 },
-        { header: 'Trạng thái', key: 'status', width: 12, format: (v) => v === 'completed' ? 'Hoàn tất' : 'Đã huỷ' },
-      ],
-      data: filteredReceipts.map((r, index) => ({
-        stt: index + 1,
-        code: r.code,
-        import_date: r.import_date,
-        total_amount: r.total_amount,
-        paid_amount: r.paid_amount,
-        debt_amount: r.debt_amount,
-        supplier_name: r.suppliers?.name || '',
-        branch_name: r.branches?.name || '',
-        staff_name: r.created_by ? (staffNameMap.get(r.created_by) || '') : '',
-        note: r.note || '',
-        status: r.status,
-      })),
-    });
-
-    toast({ title: 'Xuất Excel thành công', description: `Đã xuất ${filteredReceipts.length} phiếu nhập` });
-  };
-
-  // Export to Excel - Products (matching import template format for consistency)
-  const handleExportProducts = () => {
-    if (filteredProducts.length === 0) {
-      toast({ title: 'Không có dữ liệu', description: 'Không có sản phẩm nào để xuất', variant: 'destructive' });
-      return;
-    }
-
-    // Column order matches import template: IMEI | Tên SP | SKU | Giá nhập | Ngày nhập | NCC | Chi nhánh | Thư mục | SL | Ghi chú | Trạng thái
-    exportToExcel({
-      filename: `San_pham_nhap_${format(new Date(), 'ddMMyyyy')}`,
-      sheetName: 'Nhập hàng',
-      columns: [
-        { header: 'IMEI', key: 'imei', width: 18 },
-        { header: 'Tên sản phẩm', key: 'name', width: 35 },
-        { header: 'SKU', key: 'sku', width: 35 },
-        { header: 'Giá nhập', key: 'import_price', width: 15, isNumeric: true },
-        { header: 'Ngày nhập', key: 'import_date', width: 12, format: (v) => formatDateForExcel(v) },
-        { header: 'Nhà cung cấp', key: 'supplier_name', width: 18 },
-        { header: 'Chi nhánh', key: 'branch_name', width: 15 },
-        { header: 'Thư mục', key: 'category_name', width: 15 },
-        { header: 'Số lượng', key: 'quantity', width: 10, isNumeric: true },
-        { header: 'Nhân viên nhập', key: 'staff_name', width: 18 },
-        { header: 'Ghi chú', key: 'note', width: 30 },
-        { header: 'Trạng thái', key: 'status', width: 12, format: (v) => v === 'in_stock' ? 'Tồn kho' : v === 'sold' ? 'Đã bán' : v === 'returned' ? 'Đã trả NCC' : v === 'deleted' ? 'Đã xóa' : v },
-      ],
-      data: filteredProducts.map((p) => ({
-        imei: p.imei || '',
-        name: p.name,
-        sku: p.sku,
-        import_price: p.import_price,
-        import_date: p.import_date,
-        supplier_name: p.suppliers?.name || '',
-        branch_name: p.branches?.name || '',
-        category_name: p.categories?.name || '',
-        quantity: p.quantity || 1,
-        staff_name: getStaffName(p),
-        note: p.note || '',
-        status: p.status,
-      })),
-    });
-
-    toast({ title: 'Xuất Excel thành công', description: `Đã xuất ${filteredProducts.length} sản phẩm` });
   };
 
   const isLoading = receiptsLoading || productsLoading;
