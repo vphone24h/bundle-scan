@@ -147,7 +147,7 @@ function LuxuryHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-amber-600 text-white" menuBg="bg-[#0f0f23]" menuTextClass="text-amber-100" storeName={props.storeName} logoUrl={props.logoUrl} />
+      <MobileMenu {...props} activeClass="bg-amber-600 text-white" menuBg="bg-[#0f0f23]" menuTextClass="text-amber-100" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
     </header>
   );
 }
