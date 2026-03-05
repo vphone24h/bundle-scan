@@ -392,6 +392,74 @@ function AutomationFormDialog({
   );
 }
 
+// === Order Email Section ===
+const ORDER_TRIGGER_TYPES = [
+  { value: 'on_order_confirmation', label: 'Email xác nhận đơn hàng', presetId: 'order_confirmation' },
+  { value: 'on_order_confirmed', label: 'Email khi đơn đã xác nhận', presetId: 'order_confirmed' },
+  { value: 'on_order_shipping', label: 'Email khi giao hàng', presetId: 'order_shipping' },
+  { value: 'on_order_warranty', label: 'Email bảo hành', presetId: 'order_warranty' },
+];
+
+function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest, onDelete, onCreateFromPreset }: {
+  automations: EmailAutomation[];
+  tenantId: string;
+  onEdit: (a: EmailAutomation) => void;
+  onToggle: (a: EmailAutomation) => void;
+  onSendTest: (a: EmailAutomation) => void;
+  onDelete: (a: EmailAutomation) => void;
+  onCreateFromPreset: (preset: EmailTemplatePreset) => void;
+}) {
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-muted-foreground mb-3">📧 Email đơn hàng</h3>
+      <div className="space-y-2">
+        {ORDER_TRIGGER_TYPES.map(ot => {
+          const existing = automations.find(a => a.trigger_type === ot.value);
+          const preset = ORDER_EMAIL_PRESETS.find(p => p.id === ot.presetId);
+
+          if (existing) {
+            return (
+              <div key={ot.value} className="border rounded-lg p-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-medium text-sm">{ot.label}</h4>
+                    <Badge variant={existing.is_active ? 'default' : 'secondary'} className="text-[10px]">
+                      {existing.is_active ? 'Đang bật' : 'Tắt'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">Subject: {existing.subject}</p>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Switch checked={existing.is_active} onCheckedChange={() => onToggle(existing)} />
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSendTest(existing)} title="Gửi thử">
+                    <Send className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(existing)} title="Chỉnh sửa">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div key={ot.value} className="border border-dashed rounded-lg p-3 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-sm text-muted-foreground">{ot.label}</h4>
+                <p className="text-xs text-muted-foreground/70">Chưa thiết lập</p>
+              </div>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => preset && onCreateFromPreset(preset)}>
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Tạo mẫu
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // === Main Tab ===
 export function EmailAutomationTab() {
   const { data: tenant } = useCurrentTenant();
