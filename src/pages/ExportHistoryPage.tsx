@@ -719,7 +719,7 @@ export default function ExportHistoryPage() {
                   Không có phiếu xuất nào
                 </div>
               ) : (
-                <div className={`transition-opacity duration-200 ${receiptsFetching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                <div className={receiptsFetching ? 'opacity-60' : ''}>
                 <ScrollableTableWrapper className="rounded-lg border bg-card">
                 <Table wrapperClassName="overflow-visible">
                   <TableHeader>
