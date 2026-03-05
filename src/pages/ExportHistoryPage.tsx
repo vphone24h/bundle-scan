@@ -630,7 +630,7 @@ export default function ExportHistoryPage() {
               </Button>
               <Button variant="outline" onClick={activeTab === 'receipts' ? handleExportReceiptsExcel : handleExportItemsExcel} disabled={isExporting}>
                 {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileDown className="h-4 w-4 mr-2" />}
-                {isExporting ? 'Đang tải...' : activeTab === 'receipts' ? 'Xuất phiếu Excel' : 'Xuất chi tiết Excel'}
+                {isExporting ? (exportProgress || 'Đang tải...') : activeTab === 'receipts' ? 'Xuất phiếu Excel' : 'Xuất chi tiết Excel'}
               </Button>
             </div>
 
