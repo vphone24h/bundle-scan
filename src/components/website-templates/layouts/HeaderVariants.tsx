@@ -31,18 +31,18 @@ function LogoBlock({ logoUrl, storeName, onClick }: { logoUrl?: string | null; s
 // === Sticky Top Nav Bar (always visible, horizontal scroll) ===
 function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass, inactiveClass }: { navItems: HeaderProps['navItems']; onNavClick: HeaderProps['onNavClick']; isNavActive: HeaderProps['isNavActive']; accentColor?: string; activeClass?: string; inactiveClass?: string }) {
   return (
-    <div className="overflow-x-auto scrollbar-hide border-t border-black/5">
-      <div className="flex items-center gap-1 px-3 py-1.5 min-w-max">
+    <div className="overflow-x-auto scrollbar-hide border-t border-black/5 scroll-smooth" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="flex items-center gap-1.5 px-3 py-2 min-w-max">
         {navItems.map(item => (
           <button
             key={item.id}
             onClick={() => onNavClick(item)}
-            className={`shrink-0 whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-1 ${
+            className={`shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full transition-all flex items-center gap-1.5 ${
               isNavActive(item) ? (activeClass || 'text-white') : (inactiveClass || 'hover:bg-black/5 text-foreground/70')
             }`}
             style={isNavActive(item) && accentColor ? { backgroundColor: accentColor } : {}}
           >
-            {item.icon && <span className="text-sm">{item.icon}</span>}
+            {item.icon && <span className="text-base">{item.icon}</span>}
             {item.label}
           </button>
         ))}
