@@ -412,6 +412,7 @@ export function EmailAutomationTab() {
   const [editItem, setEditItem] = useState<EmailAutomation | null>(null);
   const [tab, setTab] = useState('scenarios');
   const [logSubTab, setLogSubTab] = useState('automation');
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [prefilledTemplate, setPrefilledTemplate] = useState<EmailTemplatePreset | null>(null);
 
   const handleEdit = (item: EmailAutomation) => {
