@@ -12,11 +12,17 @@ export function ScrollableTableWrapper({ children, className }: ScrollableTableW
   const [canScrollLeft, setCanScrollLeft] = React.useState(false);
   const [canScrollRight, setCanScrollRight] = React.useState(false);
 
+  const rafRef = React.useRef<number>(0);
   const checkScroll = React.useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 10);
-    setCanScrollRight(el.scrollWidth - el.scrollLeft - el.clientWidth > 10);
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      const el = scrollRef.current;
+      if (el) {
+        setCanScrollLeft(el.scrollLeft > 10);
+        setCanScrollRight(el.scrollWidth - el.scrollLeft - el.clientWidth > 10);
+      }
+      rafRef.current = 0;
+    });
   }, []);
 
   React.useEffect(() => {

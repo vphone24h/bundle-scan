@@ -230,27 +230,36 @@ export default function ExportHistoryPage() {
 
   // Fetch staff names from profiles for both tabs (use sales_staff_id for NV bán)
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
-  useEffect(() => {
-    // Collect sales_staff_id (preferred) and created_by as fallback
+  const staffUserIds = useMemo(() => {
     const receiptUserIds = receipts?.map(r => (r as any).sales_staff_id || r.created_by).filter(Boolean) || [];
     const itemUserIds = items?.map(i => (i.export_receipts as any)?.sales_staff_id || i.export_receipts?.created_by).filter(Boolean) || [];
-    const userIds = [...new Set([...receiptUserIds, ...itemUserIds])] as string[];
-    if (userIds.length === 0) return;
+    return [...new Set([...receiptUserIds, ...itemUserIds])].sort().join(',');
+  }, [receipts, items]);
+
+  useEffect(() => {
+    if (!staffUserIds) return;
+    const ids = staffUserIds.split(',');
     supabase
       .from('profiles')
       .select('user_id, display_name')
-      .in('user_id', userIds)
+      .in('user_id', ids)
       .then(({ data }) => {
         if (data) {
-          setStaffNames(Object.fromEntries(data.map(p => [p.user_id, p.display_name])));
+          setStaffNames(prev => {
+            const next = Object.fromEntries(data.map(p => [p.user_id, p.display_name]));
+            // Only update if changed
+            if (JSON.stringify(prev) === JSON.stringify(next)) return prev;
+            return next;
+          });
         }
       });
-  }, [items, receipts]);
+  }, [staffUserIds]);
 
   // Server-side filters handle search, status, date, branch. Only payment source is client-side.
-  const filteredReceipts = paymentSourceFilter === '_all_'
-    ? receipts
-    : receipts?.filter(r => r.export_receipt_payments?.some(p => p.payment_type === paymentSourceFilter));
+  const filteredReceipts = useMemo(() => {
+    if (paymentSourceFilter === '_all_') return receipts;
+    return receipts?.filter(r => r.export_receipt_payments?.some(p => p.payment_type === paymentSourceFilter));
+  }, [receipts, paymentSourceFilter]);
 
   const hasActiveFilters = dateFilter || dateFromFilter || dateToFilter || statusFilter !== '_all_' || branchFilter !== '_all_' || categoryFilter !== '_all_' || paymentSourceFilter !== '_all_';
 
@@ -710,7 +719,7 @@ export default function ExportHistoryPage() {
                   Không có phiếu xuất nào
                 </div>
               ) : (
-                <div className={`transition-opacity duration-200 ${receiptsFetching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                <div className={receiptsFetching ? 'opacity-60' : ''}>
                 <ScrollableTableWrapper className="rounded-lg border bg-card">
                 <Table wrapperClassName="overflow-visible">
                   <TableHeader>
@@ -852,7 +861,7 @@ export default function ExportHistoryPage() {
                   Không có sản phẩm nào
                 </div>
               ) : (
-                <div className={`transition-opacity duration-200 ${itemsFetching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                <div className={itemsFetching ? 'opacity-60' : ''}>
                 <ScrollableTableWrapper className="rounded-lg border bg-card">
                 <Table wrapperClassName="overflow-visible">
                   <TableHeader>
