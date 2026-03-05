@@ -74,7 +74,7 @@ export function useEmailAutomationLogs() {
         .from('email_automation_logs' as any)
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(200);
+        .limit(500);
       if (error) throw error;
       return (data || []) as unknown as EmailAutomationLog[];
     },
