@@ -97,6 +97,7 @@ export function CustomerListTab({
       status: undefined,
       crmStatus: crmStatusFilter !== '_all_' ? crmStatusFilter : undefined,
       staffId: staffFilter !== '_all_' ? staffFilter : undefined,
+      tagId: tagFilter !== '_all_' ? tagFilter : undefined,
       page: currentPage,
       pageSize,
     });
