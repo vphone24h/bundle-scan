@@ -279,7 +279,8 @@ export function useExportReceiptItems(enabled = true, filters?: { page?: number;
     ...result,
     data: result.data?.items || [],
     totalCount: result.data?.totalCount || 0,
-    hasMore: false, // backward compat
+    isFetching: result.isFetching,
+    hasMore: false,
   };
 }
 
