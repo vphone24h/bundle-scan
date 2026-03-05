@@ -69,7 +69,6 @@ export default function WebsiteEditorPage() {
         custom_product_tabs: (settings as any).custom_product_tabs || [],
         custom_font_family: (settings as any).custom_font_family || null,
         custom_layout_style: (settings as any).custom_layout_style || null,
-        menu_position: (settings as any).menu_position || 'left',
         custom_products_page_sections: (settings as any).custom_products_page_sections || null,
         custom_products_page_tabs: (settings as any).custom_products_page_tabs || [],
         custom_product_detail_sections: (settings as any).custom_product_detail_sections || null,
