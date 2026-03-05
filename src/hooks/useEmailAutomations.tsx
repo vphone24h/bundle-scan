@@ -90,7 +90,7 @@ export function useCreateAutomation() {
         .select()
         .single();
       if (error) throw error;
-      return data as EmailAutomation;
+      return data as unknown as EmailAutomation;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['email-automations'] });

@@ -372,7 +372,7 @@ function AutomationFormDialog({
 
 // === Main Tab ===
 export function EmailAutomationTab() {
-  const { tenant } = useTenant();
+  const { data: tenant } = useCurrentTenant();
   const { data: automations, isLoading } = useEmailAutomations();
   const { data: logs } = useEmailAutomationLogs();
   const updateMut = useUpdateAutomation();
