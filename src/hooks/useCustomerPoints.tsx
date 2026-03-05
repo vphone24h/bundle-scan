@@ -279,6 +279,7 @@ export function useCustomersWithPoints(filters?: {
   status?: string;
   crmStatus?: string;
   staffId?: string;
+  tagId?: string;
   page?: number;
   pageSize?: number;
 }) {
@@ -289,10 +290,21 @@ export function useCustomersWithPoints(filters?: {
   const result = useQuery({
     queryKey: ['customers-with-points', user?.id, filters],
     queryFn: async () => {
-      let query = supabase
-        .from('customers')
-        .select('id, name, phone, email, address, note, source, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at, crm_status, assigned_staff_id, last_care_date')
-        .order('created_at', { ascending: false });
+      const hasTagFilter = filters?.tagId && filters.tagId !== '_all_';
+
+      // When filtering by tag, use inner join with customer_tag_assignments
+      const selectFields = 'id, name, phone, email, address, note, source, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at, crm_status, assigned_staff_id, last_care_date';
+      
+      let query = hasTagFilter
+        ? supabase
+            .from('customers')
+            .select(`${selectFields}, customer_tag_assignments!inner(tag_id)`)
+            .eq('customer_tag_assignments.tag_id', filters!.tagId!)
+            .order('created_at', { ascending: false })
+        : supabase
+            .from('customers')
+            .select(selectFields)
+            .order('created_at', { ascending: false });
 
       if (filters?.search) {
         query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
@@ -324,7 +336,11 @@ export function useCustomersWithPoints(filters?: {
       const { data, error } = await query;
       if (error) throw error;
       
-      const items = (data || []) as CustomerWithPointsCRM[];
+      const items = (data || []).map((d: any) => {
+        // Strip out the join data if present
+        const { customer_tag_assignments, ...rest } = d;
+        return rest;
+      }) as CustomerWithPointsCRM[];
       const hasMore = items.length > pageSize;
       const pageItems = hasMore ? items.slice(0, pageSize) : items;
       
