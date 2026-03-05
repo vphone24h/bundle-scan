@@ -393,13 +393,25 @@ export function EmailAutomationTab() {
   const { data: tenant } = useCurrentTenant();
   const { data: automations, isLoading } = useEmailAutomations();
   const { data: logs } = useEmailAutomationLogs();
+  const { data: orderEmailLogs } = useQuery({
+    queryKey: ['landing-email-logs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('landing_order_email_logs' as any)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data as any[];
+    },
+  });
   const updateMut = useUpdateAutomation();
   const deleteMut = useDeleteAutomation();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<EmailAutomation | null>(null);
   const [tab, setTab] = useState('scenarios');
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [logSubTab, setLogSubTab] = useState('automation');
   const [prefilledTemplate, setPrefilledTemplate] = useState<EmailTemplatePreset | null>(null);
 
   const handleEdit = (item: EmailAutomation) => {
