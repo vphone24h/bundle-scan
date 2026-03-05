@@ -174,11 +174,12 @@ export default function LandingPageAdminPage() {
                 <LandingOrdersTab />
               </TabsContent>
             )}
-            {showSettings && (
+            {/* Tạm ẩn Zalo OA */}
+            {/* {showSettings && (
               <TabsContent value="zalo-mail">
                 <LandingZaloMailTab />
               </TabsContent>
-            )}
+            )} */}
             {showSettings && (
               <TabsContent value="email-automation">
                 <EmailAutomationTab />
