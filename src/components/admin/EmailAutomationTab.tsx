@@ -39,6 +39,7 @@ const BLOCK_TYPES = [
   { value: 'text', label: 'Đoạn văn', icon: AlignLeft },
   { value: 'image', label: 'Hình ảnh', icon: Image },
   { value: 'button', label: 'Nút bấm', icon: MousePointer },
+  { value: 'link', label: 'Chèn link', icon: ExternalLink },
   { value: 'divider', label: 'Đường kẻ', icon: Minus },
   { value: 'spacer', label: 'Khoảng cách', icon: MoveVertical },
 ];
