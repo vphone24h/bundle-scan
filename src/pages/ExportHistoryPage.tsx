@@ -340,11 +340,11 @@ export default function ExportHistoryPage() {
   const handleExportExcel = async () => {
     setIsExporting(true);
     try {
-      // 1. Fetch ALL export receipts with items included
+      // 1. Fetch ALL export receipts (lightweight — no items join)
       const allReceipts = await fetchAllRows<any>(() => {
         let q = supabase
           .from('export_receipts')
-          .select(`*, customers(name, phone, address), branches(name), export_receipt_payments(*), export_receipt_items(id, product_name, sku, imei, sale_price, status, warranty, category_id, product_id, categories(name))`)
+          .select(`id, code, export_date, total_amount, paid_amount, debt_amount, vat_rate, vat_amount, status, branch_id, customer_id, sales_staff_id, created_by, customers(name, phone), branches(name), export_receipt_payments(payment_type, amount)`)
           .order('export_date', { ascending: false });
         if (statusFilter !== '_all_') q = q.eq('status', statusFilter);
         if (dateFromFilter) q = q.gte('export_date', dateFromFilter);
@@ -353,7 +353,27 @@ export default function ExportHistoryPage() {
         return q;
       });
 
-      // 2. Fetch staff names for all user IDs
+      // 2. Fetch ALL items separately using receipt IDs (simple join, no timeout)
+      const receiptIds = allReceipts.map((r: any) => r.id);
+      let allItemsRaw: any[] = [];
+      if (receiptIds.length > 0) {
+        // Batch in chunks of 500 to avoid URI-too-long
+        for (let i = 0; i < receiptIds.length; i += 500) {
+          const chunk = receiptIds.slice(i, i + 500);
+          const { data, error } = await supabase
+            .from('export_receipt_items')
+            .select('id, receipt_id, product_name, sku, imei, sale_price, status, warranty, category_id, categories(name)')
+            .in('receipt_id', chunk);
+          if (error) throw error;
+          if (data) allItemsRaw.push(...data);
+        }
+      }
+
+      // Build receipt lookup map
+      const receiptMap: Record<string, any> = {};
+      allReceipts.forEach((r: any) => { receiptMap[r.id] = r; });
+
+      // 3. Fetch staff names
       const userIds = [...new Set(
         allReceipts.map((r: any) => r.sales_staff_id || r.created_by).filter(Boolean)
       )];
@@ -384,20 +404,15 @@ export default function ExportHistoryPage() {
         paid_amount: r.paid_amount,
         debt_amount: r.debt_amount,
         status: r.status,
-        branch_name: branches?.find((b: any) => b.id === r.branch_id)?.name || '',
+        branch_name: r.branches?.name || '',
         staff_name: (() => { const sid = r.sales_staff_id || r.created_by; return sid ? (allStaffNames[sid] || '') : ''; })(),
       }));
 
-      // Build Sheet 2: Theo chi tiết SP — derived from receipts data (no extra query)
-      const allItems: any[] = [];
-      allReceipts.forEach((r: any) => {
-        (r.export_receipt_items || []).forEach((item: any) => {
-          allItems.push({
-            ...item,
-            _receipt: r,
-          });
-        });
-      });
+      // Build Sheet 2: Theo chi tiết SP
+      const allItems = allItemsRaw.map((item: any) => ({
+        ...item,
+        _receipt: receiptMap[item.receipt_id],
+      }));
 
       const itemSheetData = allItems.map((item: any, index: number) => ({
         stt: index + 1,
