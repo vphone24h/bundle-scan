@@ -1238,7 +1238,8 @@ export function LandingPageSettings() {
             });
           }} />
 
-          <Separator className="my-3" />
+          {/* Tạm ẩn Zalo OA - đang nghiên cứu thêm */}
+          {/* <Separator className="my-3" />
 
           <ZaloOASetupWizard formData={formData} handleChange={handleChange} tenantId={tenant?.id || null} onSave={() => {
             if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
@@ -1247,7 +1248,7 @@ export function LandingPageSettings() {
             }).catch(() => {
               toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
             });
-          }} />
+          }} /> */}
         </CardContent>
       </Card>
 
