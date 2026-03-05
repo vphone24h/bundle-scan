@@ -494,6 +494,11 @@ export function CustomerListTab({
           open={showMergeDialog}
           onOpenChange={setShowMergeDialog}
         />
+
+        <TagManagementDialog
+          open={showTagManagement}
+          onOpenChange={setShowTagManagement}
+        />
       </div>
     );
   }
