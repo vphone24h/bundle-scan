@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
-import { toVietnamDate } from '@/lib/vietnamTime';
+import { getLocalDateString, getLocalDateRangeISO } from '@/lib/vietnamTime';
 
 export interface DashboardStats {
   totalProducts: number;
@@ -33,11 +33,11 @@ export function useDashboardStats() {
         } as DashboardStats;
       }
 
-      // Use Vietnam timezone for today's date
-      const vnNow = toVietnamDate(new Date());
-      const todayStr = `${vnNow.getFullYear()}-${String(vnNow.getMonth() + 1).padStart(2, '0')}-${String(vnNow.getDate()).padStart(2, '0')}`;
+      // Use browser local timezone for today's date
+      const todayStr = getLocalDateString();
+      const { startISO: todayStartUTC, endISO: todayEndUTC } = getLocalDateRangeISO(todayStr, todayStr);
 
-      // 2. Single server-side RPC: counts + sums in one DB call
+      // Single server-side RPC: counts + sums in one DB call
       const { data: aggRaw } = await supabase.rpc('get_dashboard_aggregates', {
         p_tenant_id: tenant!.id,
         p_branch_id: shouldFilter && branchId ? branchId : null,
@@ -50,11 +50,8 @@ export function useDashboardStats() {
       const totalImportValue = Number(agg.total_import_value || 0);
       const pendingDebt = Number(agg.pending_debt || 0);
 
-      // Always use direct queries for today's stats (Vietnam TZ)
+      // Always use direct queries for today's stats (browser local TZ)
       // to stay in sync with Reports page — don't rely on daily_stats cache
-      const todayStartUTC = new Date(`${todayStr}T00:00:00+07:00`).toISOString();
-      const todayEndUTC = new Date(`${todayStr}T23:59:59.999+07:00`).toISOString();
-
       let exportQuery = supabase
         .from('export_receipts')
         .select(`
@@ -155,10 +152,8 @@ export function useTodaySoldProducts() {
   return useQuery({
     queryKey: ['today-sold-products', tenant?.id, branchId],
     queryFn: async () => {
-      const vnNow = toVietnamDate(new Date());
-      const todayStr = `${vnNow.getFullYear()}-${String(vnNow.getMonth() + 1).padStart(2, '0')}-${String(vnNow.getDate()).padStart(2, '0')}`;
-      const todayStartUTC = new Date(`${todayStr}T00:00:00+07:00`).toISOString();
-      const todayEndUTC = new Date(`${todayStr}T23:59:59.999+07:00`).toISOString();
+      const todayStr = getLocalDateString();
+      const { startISO: todayStartUTC, endISO: todayEndUTC } = getLocalDateRangeISO(todayStr, todayStr);
 
       let exportReceiptsQuery = supabase
         .from('export_receipts')
@@ -187,7 +182,7 @@ export function useTodaySoldProducts() {
       return soldItems || [];
     },
     enabled: !isTenantLoading && !branchLoading,
-    staleTime: 2 * 60 * 1000, // 2 min cache
+    staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
     placeholderData: (previous) => previous,
   });
