@@ -647,7 +647,7 @@ export default function ExportHistoryPage() {
                           {receipt.branches?.name || '-'}
                         </TableCell>
                         <TableCell className="text-center">
-                          {receipt.export_receipt_items?.length || 0}
+                          {(receipt as any).item_count || '-'}
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {receipt.total_amount.toLocaleString('vi-VN')}đ
