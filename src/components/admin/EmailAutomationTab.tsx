@@ -297,21 +297,29 @@ function AutomationFormDialog({
               <Label>Tên kịch bản</Label>
               <Input value={name} onChange={e => setName(e.target.value)} placeholder="VD: Chăm sóc sau mua 7 ngày" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Điều kiện gửi</Label>
-                <Select value={triggerType} onValueChange={setTriggerType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {TRIGGER_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+            {triggerType.startsWith('on_order_') ? (
+              <div className="rounded-lg bg-muted/50 p-3">
+                <p className="text-xs text-muted-foreground">
+                  📧 Loại: <strong>{TRIGGER_TYPES.find(t => t.value === triggerType)?.label}</strong> — Email sẽ tự động gửi khi có sự kiện tương ứng.
+                </p>
               </div>
-              <div>
-                <Label>Số ngày</Label>
-                <Input type="number" min={1} value={triggerDays} onChange={e => setTriggerDays(Number(e.target.value))} />
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Điều kiện gửi</Label>
+                  <Select value={triggerType} onValueChange={setTriggerType}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {TRIGGER_TYPES.filter(t => !t.value.startsWith('on_order_')).map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Số ngày</Label>
+                  <Input type="number" min={1} value={triggerDays} onChange={e => setTriggerDays(Number(e.target.value))} />
+                </div>
               </div>
-            </div>
+            )}
             <div>
               <Label>Tiêu đề email (Subject)</Label>
               <Input value={subject} onChange={e => setSubject(e.target.value)} placeholder="VD: Cảm ơn bạn đã mua hàng tại {{store_name}}" />
