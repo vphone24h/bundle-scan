@@ -861,7 +861,7 @@ export default function ExportHistoryPage() {
                   Không có sản phẩm nào
                 </div>
               ) : (
-                <div className={`transition-opacity duration-200 ${itemsFetching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+                <div className={itemsFetching ? 'opacity-60' : ''}>
                 <ScrollableTableWrapper className="rounded-lg border bg-card">
                 <Table wrapperClassName="overflow-visible">
                   <TableHeader>
