@@ -406,10 +406,10 @@ function AutomationFormDialog({
 
 // === Order Email Section ===
 const ORDER_TRIGGER_TYPES = [
-  { value: 'on_order_confirmation', label: 'Email xác nhận đơn hàng', presetId: 'order_confirmation' },
-  { value: 'on_order_confirmed', label: 'Email khi đơn đã xác nhận', presetId: 'order_confirmed' },
-  { value: 'on_order_shipping', label: 'Email khi giao hàng', presetId: 'order_shipping' },
-  { value: 'on_order_warranty', label: 'Email bảo hành', presetId: 'order_warranty' },
+  { value: 'on_order_confirmation', label: 'Email xác nhận đơn hàng', presetId: 'order_confirmation', condition: 'Tự động gửi khi khách đặt hàng trên website' },
+  { value: 'on_order_confirmed', label: 'Email khi đơn đã xác nhận', presetId: 'order_confirmed', condition: 'Tự động gửi khi Admin duyệt đơn hàng' },
+  { value: 'on_order_shipping', label: 'Email khi giao hàng', presetId: 'order_shipping', condition: 'Tự động gửi khi đơn chuyển sang trạng thái giao hàng' },
+  { value: 'on_order_warranty', label: 'Email bảo hành', presetId: 'order_warranty', condition: 'Tự động gửi khi tạo phiếu bảo hành cho khách' },
 ];
 
 function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest, onDelete, onCreateFromPreset }: {
@@ -439,6 +439,7 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
                       {existing.is_active ? 'Đang bật' : 'Tắt'}
                     </Badge>
                   </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">📌 {ot.condition}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Subject: {existing.subject}</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
@@ -458,7 +459,7 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
             <div key={ot.value} className="border border-dashed rounded-lg p-3 flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <h4 className="font-medium text-sm text-muted-foreground">{ot.label}</h4>
-                <p className="text-xs text-muted-foreground/70">Chưa thiết lập</p>
+                <p className="text-xs text-muted-foreground/70">📌 {ot.condition}</p>
               </div>
               <Button variant="outline" size="sm" className="text-xs" onClick={() => preset && onCreateFromPreset(preset)}>
                 <Plus className="h-3.5 w-3.5 mr-1" />
