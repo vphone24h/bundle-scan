@@ -198,7 +198,7 @@ export default function ExportHistoryPage() {
   const [returnReceipt, setReturnReceipt] = useState<ExportReceipt | null>(null);
 
   // Hooks
-  const { data: receipts, isLoading: receiptsLoading, isFetching: receiptsFetching, totalCount: receiptsTotalCount } = useExportReceipts({
+  const { data: receipts, isLoading: receiptsLoading, isFetching: receiptsFetching, hasMore: receiptsHasMore } = useExportReceipts({
     search: debouncedSearch || undefined,
     status: statusFilter !== '_all_' ? statusFilter : undefined,
     dateFrom: dateFromFilter || undefined,
