@@ -97,8 +97,8 @@ export function useDashboardStats() {
         let todayImportsQuery = supabase
           .from('import_receipts')
           .select('*', { count: 'exact', head: true })
-          .gte('import_date', todayStart.toISOString())
-          .lte('import_date', todayEnd.toISOString());
+          .gte('import_date', todayStartUTC)
+          .lte('import_date', todayEndUTC);
 
         if (shouldFilter && branchId) {
           todayImportsQuery = todayImportsQuery.eq('branch_id', branchId);
