@@ -582,14 +582,28 @@ export const POINT_TRANSACTION_TYPE_NAMES: Record<string, string> = {
 };
 
 // Hook: Server-side COUNT stats for customer summary cards (single RPC)
-export function useCustomerStats(branchFilter?: string) {
+export function useCustomerStats(filters?: {
+  branchId?: string;
+  tier?: string;
+  crmStatus?: string;
+  staffId?: string;
+  tagId?: string;
+}) {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ['customer-stats', user?.id, branchFilter],
+    queryKey: ['customer-stats', user?.id, filters],
     queryFn: async () => {
-      const branchId = branchFilter && branchFilter !== '_all_' ? branchFilter : null;
+      const branchId = filters?.branchId && filters.branchId !== '_all_' ? filters.branchId : null;
+      const tier = filters?.tier && filters.tier !== '_all_' ? filters.tier : null;
+      const crmStatus = filters?.crmStatus && filters.crmStatus !== '_all_' ? filters.crmStatus : null;
+      const staffId = filters?.staffId && filters.staffId !== '_all_' ? filters.staffId : null;
+      const tagId = filters?.tagId && filters.tagId !== '_all_' ? filters.tagId : null;
       const { data, error } = await supabase.rpc('get_customer_stats', {
         _branch_id: branchId,
+        _tier: tier,
+        _crm_status: crmStatus,
+        _staff_id: staffId,
+        _tag_id: tagId,
       });
       if (error) throw error;
       return data as {
