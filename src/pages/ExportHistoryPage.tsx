@@ -588,8 +588,8 @@ export default function ExportHistoryPage() {
         {/* Tab 1: By Receipt */}
         <TabsContent value="receipts">
           <Card>
-            <CardContent className="pt-6">
-              {receiptsLoading ? (
+             <CardContent className="pt-6">
+              {receiptsLoading && !receipts?.length ? (
                 <div className="space-y-3 py-4">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="flex gap-4 items-center">
@@ -603,11 +603,12 @@ export default function ExportHistoryPage() {
                     </div>
                   ))}
                 </div>
-              ) : filteredReceipts?.length === 0 ? (
+              ) : filteredReceipts?.length === 0 && !receiptsFetching ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Không có phiếu xuất nào
                 </div>
               ) : (
+                <div className={`transition-opacity duration-200 ${receiptsFetching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                 <ScrollableTableWrapper className="rounded-lg border bg-card">
                 <Table wrapperClassName="overflow-visible">
                   <TableHeader>
