@@ -355,6 +355,7 @@ export default function UniversalStoreTemplate({
         onNavClick={handleNavClick}
         isNavActive={isNavActive}
         onCloseMenu={() => setMobileMenuOpen(false)}
+        menuPosition={(settings as any)?.menu_position || 'left'}
       />
 
       <main>

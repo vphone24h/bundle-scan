@@ -346,6 +346,36 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
         isExpanded={expandedBlocks.has('menu')}
         onToggle={() => toggleBlock('menu')}
       >
+        {/* Menu position selector */}
+        <div className="space-y-1.5 mb-3">
+          <Label className="text-xs">Vị trí menu (mobile)</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              { value: 'left', label: 'Bên trái', icon: '◧', desc: 'Trượt từ trái' },
+              { value: 'right', label: 'Bên phải', icon: '◨', desc: 'Trượt từ phải' },
+              { value: 'top', label: 'Trên top', icon: '▤', desc: 'Cuộn ngang' },
+            ] as const).map(opt => {
+              const isSelected = ((formData as any)?.menu_position || 'left') === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onChange('menu_position', opt.value)}
+                  className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border-2 transition-all text-center ${
+                    isSelected
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-muted hover:border-muted-foreground/30'
+                  }`}
+                >
+                  <span className="text-xl">{opt.icon}</span>
+                  <span className="text-[11px] font-medium">{opt.label}</span>
+                  <span className="text-[9px] text-muted-foreground">{opt.desc}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <NavMenuEditor
           templateId={templateId}
           customNavItems={(formData as any)?.custom_nav_items || null}

@@ -80,7 +80,8 @@ export default function WebsiteEditorPage() {
         order_email_on_confirmed: (settings as any).order_email_on_confirmed ?? false,
         order_email_on_shipping: (settings as any).order_email_on_shipping ?? false,
         order_email_on_warranty: (settings as any).order_email_on_warranty ?? false,
-      });
+        menu_position: (settings as any).menu_position || 'left',
+      } as any);
     } else if (tenant) {
       setFormData(prev => ({ ...prev, store_name: tenant.name || '' }));
     }

@@ -2,6 +2,8 @@ import { LayoutStyle } from '@/lib/industryConfig';
 import { Menu, X, Search, ShoppingBag } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
+export type MenuPosition = 'left' | 'right' | 'top';
+
 interface HeaderProps {
   storeName: string;
   logoUrl?: string | null;
@@ -14,6 +16,7 @@ interface HeaderProps {
   onNavClick: (item: any) => void;
   isNavActive: (item: any) => boolean;
   onCloseMenu: () => void;
+  menuPosition?: MenuPosition;
 }
 
 function LogoBlock({ logoUrl, storeName, onClick }: { logoUrl?: string | null; storeName: string; onClick: () => void }) {
@@ -43,7 +46,7 @@ function AppleHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-[#1d1d1f] text-white" menuBg="bg-[#1d1d1f]" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} />
+      <MobileMenu {...props} activeClass="bg-[#1d1d1f] text-white" menuBg="bg-[#1d1d1f]" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
     </header>
   );
 }
@@ -66,7 +69,7 @@ function TGDDHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-red-600 text-white" menuBg="bg-yellow-500" menuTextClass="text-black" storeName={props.storeName} logoUrl={props.logoUrl} />
+      <MobileMenu {...props} activeClass="bg-red-600 text-white" menuBg="bg-yellow-500" menuTextClass="text-black" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
     </header>
   );
 }
@@ -92,7 +95,7 @@ function HasakiHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-white/20 text-white" menuBg="bg-gradient-to-b from-pink-600 to-red-600" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} />
+      <MobileMenu {...props} activeClass="bg-white/20 text-white" menuBg="bg-gradient-to-b from-pink-600 to-red-600" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
     </header>
   );
 }
@@ -118,7 +121,7 @@ function NikeHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-white text-black" menuBg="bg-black" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} />
+      <MobileMenu {...props} activeClass="bg-white text-black" menuBg="bg-black" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
     </header>
   );
 }
@@ -144,7 +147,7 @@ function LuxuryHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-amber-600 text-white" menuBg="bg-[#0f0f23]" menuTextClass="text-amber-100" storeName={props.storeName} logoUrl={props.logoUrl} />
+      <MobileMenu {...props} activeClass="bg-amber-600 text-white" menuBg="bg-[#0f0f23]" menuTextClass="text-amber-100" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
     </header>
   );
 }
@@ -170,7 +173,7 @@ function MinimalHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-stone-800 text-white" menuBg="bg-stone-800" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} />
+      <MobileMenu {...props} activeClass="bg-stone-800 text-white" menuBg="bg-stone-800" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
     </header>
   );
 }
@@ -198,7 +201,7 @@ function ShopeeHeader(props: HeaderProps) {
           </div>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-white/20 text-white" menuBg="bg-gradient-to-b from-orange-600 to-red-600" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} />
+      <MobileMenu {...props} activeClass="bg-white/20 text-white" menuBg="bg-gradient-to-b from-orange-600 to-red-600" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
     </header>
   );
 }
@@ -224,7 +227,7 @@ function OrganicHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-white/20 text-white" menuBg="bg-green-800" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} />
+      <MobileMenu {...props} activeClass="bg-white/20 text-white" menuBg="bg-green-800" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
     </header>
   );
 }
@@ -248,35 +251,93 @@ function DesktopNav({ navItems, onNavClick, isNavActive, activeClass, inactiveCl
   );
 }
 
-// === Shared Mobile Menu (Slide-in Drawer from Left) ===
-function MobileMenu({ mobileMenuOpen, navItems, onNavClick, isNavActive, onCloseMenu, activeClass, menuBg, menuTextClass, storeName, logoUrl }: HeaderProps & { activeClass: string; menuBg?: string; menuTextClass?: string }) {
+// === Shared Mobile Menu (Slide-in Drawer or Top Bar) ===
+function MobileMenu({ mobileMenuOpen, navItems, onNavClick, isNavActive, onCloseMenu, activeClass, menuBg, menuTextClass, storeName, logoUrl, menuPosition = 'left' }: HeaderProps & { activeClass: string; menuBg?: string; menuTextClass?: string }) {
   const textClass = menuTextClass || 'text-foreground';
   const hoverClass = menuTextClass ? 'hover:bg-white/10' : 'hover:bg-black/5';
   const borderClass = menuTextClass ? 'border-white/10' : 'border-black/10';
   const closeBtnHover = menuTextClass ? 'hover:bg-white/10' : 'hover:bg-black/5';
 
+  // Top horizontal menu
+  if (menuPosition === 'top') {
+    return createPortal(
+      <>
+        <div
+          className={`sm:hidden fixed inset-0 z-[9998] bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          onClick={onCloseMenu}
+        />
+        <div
+          className={`sm:hidden fixed top-0 left-0 right-0 z-[9999] shadow-2xl transition-transform duration-300 ease-out ${mobileMenuOpen ? 'translate-y-0' : '-translate-y-full'} ${menuBg || 'bg-white'}`}
+        >
+          <div className={`flex items-center justify-between px-4 py-3 border-b ${borderClass}`}>
+            <div className={`flex items-center gap-2.5 ${textClass}`}>
+              {logoUrl && <img src={logoUrl} alt={storeName} className="h-7 w-7 rounded-lg object-cover" />}
+              <span className="font-semibold text-sm">{storeName}</span>
+            </div>
+            <button onClick={onCloseMenu} className={`h-8 w-8 rounded-lg flex items-center justify-center ${closeBtnHover} transition-colors ${textClass}`}>
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="px-3 py-2 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-1.5 min-w-max pb-1">
+              {navItems.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => { onNavClick(item); onCloseMenu(); }}
+                  className={`whitespace-nowrap px-3 py-2.5 text-sm font-medium rounded-xl transition-all flex items-center gap-1.5 ${
+                    isNavActive(item) ? activeClass : `${textClass} ${hoverClass}`
+                  }`}
+                >
+                  {item.icon && <span className="text-base">{item.icon}</span>}
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </>,
+      document.body
+    );
+  }
+
+  // Left / Right drawer
+  const isRight = menuPosition === 'right';
+  const positionClass = isRight ? 'right-0' : 'left-0';
+  const openTransform = 'translate-x-0';
+  const closedTransform = isRight ? 'translate-x-full' : '-translate-x-full';
+
   return createPortal(
     <>
-      {/* Backdrop */}
       <div
         className={`sm:hidden fixed inset-0 z-[9998] bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onCloseMenu}
       />
-      {/* Drawer */}
       <div
-        className={`sm:hidden fixed top-0 left-0 z-[9999] h-full w-[280px] max-w-[80vw] shadow-2xl transition-transform duration-300 ease-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} ${menuBg || 'bg-white'}`}
+        className={`sm:hidden fixed top-0 ${positionClass} z-[9999] h-full w-[280px] max-w-[80vw] shadow-2xl transition-transform duration-300 ease-out ${mobileMenuOpen ? openTransform : closedTransform} ${menuBg || 'bg-white'}`}
       >
-        {/* Header */}
         <div className={`flex items-center justify-between px-4 py-4 border-b ${borderClass}`}>
-          <div className={`flex items-center gap-2.5 ${textClass}`}>
-            {logoUrl && <img src={logoUrl} alt={storeName} className="h-8 w-8 rounded-lg object-cover" />}
-            <span className="font-semibold text-sm">{storeName}</span>
-          </div>
-          <button onClick={onCloseMenu} className={`h-8 w-8 rounded-lg flex items-center justify-center ${closeBtnHover} transition-colors ${textClass}`}>
-            <X className="h-5 w-5" />
-          </button>
+          {isRight ? (
+            <>
+              <button onClick={onCloseMenu} className={`h-8 w-8 rounded-lg flex items-center justify-center ${closeBtnHover} transition-colors ${textClass}`}>
+                <X className="h-5 w-5" />
+              </button>
+              <div className={`flex items-center gap-2.5 ${textClass}`}>
+                <span className="font-semibold text-sm">{storeName}</span>
+                {logoUrl && <img src={logoUrl} alt={storeName} className="h-8 w-8 rounded-lg object-cover" />}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className={`flex items-center gap-2.5 ${textClass}`}>
+                {logoUrl && <img src={logoUrl} alt={storeName} className="h-8 w-8 rounded-lg object-cover" />}
+                <span className="font-semibold text-sm">{storeName}</span>
+              </div>
+              <button onClick={onCloseMenu} className={`h-8 w-8 rounded-lg flex items-center justify-center ${closeBtnHover} transition-colors ${textClass}`}>
+                <X className="h-5 w-5" />
+              </button>
+            </>
+          )}
         </div>
-        {/* Nav items */}
         <div className="px-3 py-3 space-y-0.5 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 65px)' }}>
           {navItems.map(item => (
             <button
