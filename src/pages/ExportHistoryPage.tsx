@@ -469,9 +469,10 @@ export default function ExportHistoryPage() {
         title: 'Xuất Excel thành công',
         description: `Đã xuất ${allReceipts.length} phiếu và ${allItems.length} sản phẩm`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Export error:', error);
-      toast({ title: 'Lỗi xuất Excel', description: 'Không thể tải dữ liệu. Vui lòng thử lại.', variant: 'destructive' });
+      const errMsg = error?.message || error?.details || JSON.stringify(error);
+      toast({ title: 'Lỗi xuất Excel', description: errMsg || 'Không thể tải dữ liệu. Vui lòng thử lại.', variant: 'destructive' });
     } finally {
       setIsExporting(false);
     }
