@@ -177,12 +177,13 @@ function BlockEditor({ block, onChange, onRemove }: { block: BlockItem; onChange
 
 // === Scenario Form Dialog ===
 function AutomationFormDialog({
-  open, onOpenChange, automation, tenantId,
+  open, onOpenChange, automation, tenantId, prefilledTemplate,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   automation: EmailAutomation | null;
   tenantId: string;
+  prefilledTemplate?: EmailTemplatePreset | null;
 }) {
   const isEdit = !!automation;
   const createMut = useCreateAutomation();
@@ -190,13 +191,15 @@ function AutomationFormDialog({
   const saveBlocksMut = useSaveBlocks();
   const { data: existingBlocks } = useEmailAutomationBlocks(automation?.id || null);
 
-  const [name, setName] = useState(automation?.name || '');
-  const [triggerType, setTriggerType] = useState(automation?.trigger_type || 'days_after_purchase');
-  const [triggerDays, setTriggerDays] = useState(automation?.trigger_days || 7);
-  const [subject, setSubject] = useState(automation?.subject || '');
+  const [name, setName] = useState(automation?.name || prefilledTemplate?.name || '');
+  const [triggerType, setTriggerType] = useState(automation?.trigger_type || prefilledTemplate?.triggerType || 'days_after_purchase');
+  const [triggerDays, setTriggerDays] = useState(automation?.trigger_days || prefilledTemplate?.triggerDays || 7);
+  const [subject, setSubject] = useState(automation?.subject || prefilledTemplate?.subject || '');
   const [isActive, setIsActive] = useState(automation?.is_active || false);
-  const [blocks, setBlocks] = useState<BlockItem[]>([]);
-  const [blocksLoaded, setBlocksLoaded] = useState(false);
+  const [blocks, setBlocks] = useState<BlockItem[]>(
+    prefilledTemplate?.blocks?.map(b => ({ tempId: crypto.randomUUID(), block_type: b.block_type, content: b.content })) || []
+  );
+  const [blocksLoaded, setBlocksLoaded] = useState(!!prefilledTemplate);
   const [showPreview, setShowPreview] = useState(false);
 
   // Load existing blocks when editing
