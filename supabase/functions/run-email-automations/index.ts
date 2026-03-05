@@ -76,12 +76,25 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const smtpUser = Deno.env.get('SMTP_USER')
-    const smtpPassword = Deno.env.get('SMTP_PASSWORD')
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
+
+    // Helper: get per-tenant SMTP credentials
+    async function getTenantSmtp(tenantId: string) {
+      const { data } = await supabase
+        .from('tenant_landing_settings')
+        .select('order_email_sender, order_email_app_password, store_name')
+        .eq('tenant_id', tenantId)
+        .single()
+      if (!data?.order_email_sender || !data?.order_email_app_password) return null
+      return {
+        user: data.order_email_sender,
+        pass: data.order_email_app_password,
+        storeName: data.store_name || 'Cửa hàng',
+      }
+    }
 
     const body = await req.json().catch(() => ({}))
     const { testMode, automationId, testEmail } = body
@@ -93,8 +106,11 @@ Deno.serve(async (req) => {
 
       const { data: blocks } = await supabase.from('email_automation_blocks').select('*').eq('automation_id', automationId).order('display_order')
 
+      const smtp = await getTenantSmtp(automation.tenant_id)
+      if (!smtp) throw new Error('SMTP chưa được cấu hình cho cửa hàng này. Vui lòng cài đặt Email gửi (Gmail) trong Website bán hàng.')
+
       const { data: tenant } = await supabase.from('tenants').select('store_name, business_name').eq('id', automation.tenant_id).single()
-      const storeName = tenant?.store_name || tenant?.business_name || 'Cửa hàng'
+      const storeName = tenant?.store_name || tenant?.business_name || smtp.storeName
 
       const vars: Record<string, string> = {
         '{{customer_name}}': 'Khách hàng test',
@@ -112,20 +128,16 @@ Deno.serve(async (req) => {
       const html = buildEmailHtml(processedBlocks, storeName)
       const subject = replaceVariables(automation.subject, vars)
 
-      if (smtpUser && smtpPassword) {
-        const transporter = nodemailer.createTransport({
-          host: 'smtp.gmail.com', port: 465, secure: true,
-          auth: { user: smtpUser, pass: smtpPassword },
-        })
-        await transporter.sendMail({
-          from: `"${storeName}" <${smtpUser}>`,
-          to: testEmail,
-          subject: `[TEST] ${subject}`,
-          html,
-        })
-      } else {
-        throw new Error('SMTP chưa được cấu hình')
-      }
+      const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com', port: 465, secure: true,
+        auth: { user: smtp.user, pass: smtp.pass },
+      })
+      await transporter.sendMail({
+        from: `"${storeName}" <${smtp.user}>`,
+        to: testEmail,
+        subject: `[TEST] ${subject}`,
+        html,
+      })
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -133,16 +145,6 @@ Deno.serve(async (req) => {
     }
 
     // === AUTO MODE - Process all active automations ===
-    if (!smtpUser || !smtpPassword) {
-      return new Response(JSON.stringify({ success: true, message: 'SMTP not configured' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com', port: 465, secure: true,
-      auth: { user: smtpUser, pass: smtpPassword },
-    })
 
     const { data: automations } = await supabase
       .from('email_automations')
