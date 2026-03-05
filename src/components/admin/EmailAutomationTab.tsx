@@ -28,12 +28,16 @@ import {
   EmailAutomation,
   EmailAutomationBlock,
 } from '@/hooks/useEmailAutomations';
-import { EmailTemplatePickerDialog, EmailTemplatePreset } from './EmailTemplatePickerDialog';
+import { EmailTemplatePickerDialog, EmailTemplatePreset, ORDER_EMAIL_PRESETS } from './EmailTemplatePickerDialog';
 
 const TRIGGER_TYPES = [
   { value: 'days_after_purchase', label: 'Sau khi mua hàng (ngày)' },
   { value: 'days_before_warranty_expires', label: 'Trước khi hết bảo hành (ngày)' },
   { value: 'days_inactive', label: 'Không mua hàng trong (ngày)' },
+  { value: 'on_order_confirmation', label: 'Khi đặt hàng' },
+  { value: 'on_order_confirmed', label: 'Khi đơn đã xác nhận' },
+  { value: 'on_order_shipping', label: 'Khi giao hàng' },
+  { value: 'on_order_warranty', label: 'Khi gửi bảo hành' },
 ];
 
 const BLOCK_TYPES = [
