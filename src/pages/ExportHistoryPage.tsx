@@ -230,22 +230,30 @@ export default function ExportHistoryPage() {
 
   // Fetch staff names from profiles for both tabs (use sales_staff_id for NV bán)
   const [staffNames, setStaffNames] = useState<Record<string, string>>({});
-  useEffect(() => {
-    // Collect sales_staff_id (preferred) and created_by as fallback
+  const staffUserIds = useMemo(() => {
     const receiptUserIds = receipts?.map(r => (r as any).sales_staff_id || r.created_by).filter(Boolean) || [];
     const itemUserIds = items?.map(i => (i.export_receipts as any)?.sales_staff_id || i.export_receipts?.created_by).filter(Boolean) || [];
-    const userIds = [...new Set([...receiptUserIds, ...itemUserIds])] as string[];
-    if (userIds.length === 0) return;
+    return [...new Set([...receiptUserIds, ...itemUserIds])].sort().join(',');
+  }, [receipts, items]);
+
+  useEffect(() => {
+    if (!staffUserIds) return;
+    const ids = staffUserIds.split(',');
     supabase
       .from('profiles')
       .select('user_id, display_name')
-      .in('user_id', userIds)
+      .in('user_id', ids)
       .then(({ data }) => {
         if (data) {
-          setStaffNames(Object.fromEntries(data.map(p => [p.user_id, p.display_name])));
+          setStaffNames(prev => {
+            const next = Object.fromEntries(data.map(p => [p.user_id, p.display_name]));
+            // Only update if changed
+            if (JSON.stringify(prev) === JSON.stringify(next)) return prev;
+            return next;
+          });
         }
       });
-  }, [items, receipts]);
+  }, [staffUserIds]);
 
   // Server-side filters handle search, status, date, branch. Only payment source is client-side.
   const filteredReceipts = paymentSourceFilter === '_all_'
