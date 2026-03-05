@@ -179,26 +179,33 @@ function NikeHeader(props: HeaderProps) {
 
 // === LUXURY ===
 function LuxuryHeader(props: HeaderProps) {
+  const isTop = props.menuPosition === 'top';
   return (
     <header className="sticky top-0 z-50 bg-[#0f0f23]/95 backdrop-blur-xl border-b border-amber-900/20">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-3">
-            <button onClick={props.onToggleMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-amber-900/20 transition-colors sm:hidden text-amber-200">
-              {props.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+            {!isTop && (
+              <button onClick={props.onToggleMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-amber-900/20 transition-colors sm:hidden text-amber-200">
+                {props.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+            )}
             <button onClick={props.onNavigateHome} className="flex items-center gap-2.5 text-amber-100">
               {props.logoUrl && <img src={props.logoUrl} alt={props.storeName} className="h-7 w-7 rounded-lg object-cover" />}
               <span className="font-light text-sm tracking-[0.15em] uppercase">{props.storeName}</span>
             </button>
           </div>
-          <DesktopNav {...props} activeClass="bg-amber-600 text-white" inactiveClass="text-amber-200/60 hover:text-amber-100" />
+          {!isTop && <DesktopNav {...props} activeClass="bg-amber-600 text-white" inactiveClass="text-amber-200/60 hover:text-amber-100" />}
           <button onClick={props.onOpenSearch} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-amber-900/20 transition-colors text-amber-200">
             <Search className="h-5 w-5" />
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-amber-600 text-white" menuBg="bg-[#0f0f23]" menuTextClass="text-amber-100" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
+      {isTop ? (
+        <TopNavBar navItems={props.navItems} onNavClick={props.onNavClick} isNavActive={props.isNavActive} activeClass="bg-amber-600 text-white" inactiveClass="text-amber-200/60 hover:text-amber-100 hover:bg-amber-900/20" />
+      ) : (
+        <MobileMenu {...props} activeClass="bg-amber-600 text-white" menuBg="bg-[#0f0f23]" menuTextClass="text-amber-100" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
+      )}
     </header>
   );
 }
