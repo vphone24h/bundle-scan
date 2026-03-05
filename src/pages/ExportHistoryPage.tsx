@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { useNavigate } from 'react-router-dom';
