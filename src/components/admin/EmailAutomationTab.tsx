@@ -730,8 +730,7 @@ export function EmailAutomationTab() {
                   </ScrollableTableWrapper>
                 );
               })()
-            )
-            )}
+            }
 
             {logSubTab === 'order' && (
               !orderEmailLogs?.length ? (
