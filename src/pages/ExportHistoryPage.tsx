@@ -340,11 +340,11 @@ export default function ExportHistoryPage() {
   const handleExportExcel = async () => {
     setIsExporting(true);
     try {
-      // 1. Fetch ALL export receipts from DB
+      // 1. Fetch ALL export receipts with items included
       const allReceipts = await fetchAllRows<any>(() => {
         let q = supabase
           .from('export_receipts')
-          .select(`*, customers(name, phone, address), branches(name), export_receipt_payments(*)`)
+          .select(`*, customers(name, phone, address), branches(name), export_receipt_payments(*), export_receipt_items(id, product_name, sku, imei, sale_price, status, warranty, category_id, product_id, categories(name))`)
           .order('export_date', { ascending: false });
         if (statusFilter !== '_all_') q = q.eq('status', statusFilter);
         if (dateFromFilter) q = q.gte('export_date', dateFromFilter);
@@ -353,24 +353,10 @@ export default function ExportHistoryPage() {
         return q;
       });
 
-      // 2. Fetch ALL export receipt items from DB
-      const allItems = await fetchAllRows<any>(() => {
-        let q = supabase
-          .from('export_receipt_items')
-          .select(`*, categories(name), products(import_price), export_receipts!inner(code, export_date, branch_id, customer_id, created_by, sales_staff_id, status, customers(name, phone), branches(name))`)
-          .order('created_at', { ascending: false });
-        if (statusFilter !== '_all_') q = q.eq('export_receipts.status', statusFilter);
-        if (branchFilter !== '_all_') q = q.eq('export_receipts.branch_id', branchFilter);
-        if (dateFromFilter) q = q.gte('export_receipts.export_date', dateFromFilter);
-        if (dateToFilter) q = q.lte('export_receipts.export_date', dateToFilter + 'T23:59:59');
-        return q;
-      });
-
-      // 3. Fetch staff names for all user IDs
-      const userIds = [...new Set([
-        ...allReceipts.map((r: any) => r.sales_staff_id || r.created_by).filter(Boolean),
-        ...allItems.map((i: any) => i.export_receipts?.sales_staff_id || i.export_receipts?.created_by).filter(Boolean),
-      ])];
+      // 2. Fetch staff names for all user IDs
+      const userIds = [...new Set(
+        allReceipts.map((r: any) => r.sales_staff_id || r.created_by).filter(Boolean)
+      )];
       let allStaffNames: Record<string, string> = {};
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
@@ -380,12 +366,12 @@ export default function ExportHistoryPage() {
         if (profiles) allStaffNames = Object.fromEntries(profiles.map(p => [p.user_id, p.display_name]));
       }
 
-      if (allReceipts.length === 0 && allItems.length === 0) {
+      if (allReceipts.length === 0) {
         toast({ title: 'Không có dữ liệu', description: 'Không có dữ liệu nào để xuất', variant: 'destructive' });
         return;
       }
 
-      // Sheet 1: Theo phiếu xuất
+      // Build Sheet 1: Theo phiếu xuất
       const receiptSheetData = allReceipts.map((r: any, index: number) => ({
         stt: index + 1,
         code: r.code,
@@ -402,20 +388,30 @@ export default function ExportHistoryPage() {
         staff_name: (() => { const sid = r.sales_staff_id || r.created_by; return sid ? (allStaffNames[sid] || '') : ''; })(),
       }));
 
-      // Sheet 2: Theo chi tiết SP
+      // Build Sheet 2: Theo chi tiết SP — derived from receipts data (no extra query)
+      const allItems: any[] = [];
+      allReceipts.forEach((r: any) => {
+        (r.export_receipt_items || []).forEach((item: any) => {
+          allItems.push({
+            ...item,
+            _receipt: r,
+          });
+        });
+      });
+
       const itemSheetData = allItems.map((item: any, index: number) => ({
         stt: index + 1,
-        receipt_code: item.export_receipts?.code || '',
-        export_date: item.export_receipts?.export_date || '',
+        receipt_code: item._receipt?.code || '',
+        export_date: item._receipt?.export_date || '',
         product_name: item.product_name,
         sku: item.sku,
         imei: item.imei || '',
         sale_price: item.sale_price,
         category_name: item.categories?.name || '',
-        customer_name: item.export_receipts?.customers?.name || 'Khách lẻ',
-        customer_phone: item.export_receipts?.customers?.phone || '',
-        branch_name: item.export_receipts?.branches?.name || '',
-        staff_name: (() => { const sid = item.export_receipts?.sales_staff_id || item.export_receipts?.created_by; return sid ? (allStaffNames[sid] || '') : ''; })(),
+        customer_name: item._receipt?.customers?.name || 'Khách lẻ',
+        customer_phone: item._receipt?.customers?.phone || '',
+        branch_name: item._receipt?.branches?.name || '',
+        staff_name: (() => { const sid = item._receipt?.sales_staff_id || item._receipt?.created_by; return sid ? (allStaffNames[sid] || '') : ''; })(),
         warranty: item.warranty || '',
         status: item.status === 'sold' ? 'Đã bán' : item.status === 'returned' ? 'Đã trả' : item.status,
       }));
