@@ -114,14 +114,17 @@ function parseVPhoneRow(row: any[]): ParsedOrder | null {
       if (warrantyMatch) warranty = warrantyMatch[1].trim();
     }
 
-    // Column 4: price (numeric)
+    // Try columns E(4), D(3), F(5), C(2) for price - some exports shift columns
     let salePrice = 0;
-    const col4 = row[4];
-    if (typeof col4 === 'number') {
-      salePrice = col4;
-    } else {
-      const priceStr = String(col4 || '').replace(/[^\d]/g, '');
-      salePrice = parseInt(priceStr) || 0;
+    for (const colIdx of [4, 3, 5, 2]) {
+      const val = row[colIdx];
+      if (typeof val === 'number' && val > 1000) {
+        salePrice = val;
+        break;
+      } else if (val) {
+        const parsed = parseInt(String(val).replace(/[^\d]/g, ''));
+        if (parsed > 1000) { salePrice = parsed; break; }
+      }
     }
 
     // Column 6: date + admin info
@@ -129,8 +132,7 @@ function parseVPhoneRow(row: any[]): ParsedOrder | null {
     const lines6 = col6.split('\n').map((l: string) => l.trim());
     let orderDate = '';
     for (const line of lines6) {
-      // Match dd/MM/yyyy pattern
-      const dateMatch = line.match(/^(\d{1,2}\/\d{1,2}\/\d{4})$/);
+      const dateMatch = line.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
       if (dateMatch) {
         orderDate = dateMatch[1];
         break;
