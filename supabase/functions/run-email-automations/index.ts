@@ -26,6 +26,8 @@ function renderBlockToHtml(block: AutomationBlock): string {
       return content.url ? `<div style="margin:12px 0;text-align:center"><img src="${content.url}" alt="${content.alt || ''}" style="max-width:100%;border-radius:8px" /></div>` : ''
     case 'button':
       return `<div style="text-align:center;margin:16px 0"><a href="${content.url || '#'}" style="display:inline-block;padding:12px 32px;background:${content.color || '#1a56db'};color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">${content.text || 'Nhấn vào đây'}</a></div>`
+    case 'link':
+      return `<p style="margin:8px 0;font-size:15px;line-height:1.7;color:#374151">${content.text || ''} <a href="${content.url || '#'}" style="color:#1a56db;text-decoration:underline;font-weight:500">${content.linkText || content.url || 'Link'}</a></p>`
     case 'divider':
       return `<hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0" />`
     case 'spacer':

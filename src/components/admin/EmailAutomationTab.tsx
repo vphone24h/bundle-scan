@@ -169,6 +169,14 @@ function BlockEditor({ block, onChange, onRemove }: { block: BlockItem; onChange
         </div>
       )}
 
+      {block_type === 'link' && (
+        <div className="space-y-2">
+          <Input value={content.text || ''} onChange={e => update({ text: e.target.value })} placeholder="Nội dung trước link. VD: Bạn có thể check bảo hành tại" />
+          <Input value={content.url || ''} onChange={e => update({ url: e.target.value })} placeholder="URL đường dẫn. VD: https://cuahang.com/bao-hanh" />
+          <Input value={content.linkText || ''} onChange={e => update({ linkText: e.target.value })} placeholder="Chữ hiển thị cho link. VD: trang bảo hành" />
+        </div>
+      )}
+
       {block_type === 'spacer' && (
         <div className="flex items-center gap-2">
           <Label className="text-xs">Chiều cao (px):</Label>
