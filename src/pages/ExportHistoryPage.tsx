@@ -345,11 +345,10 @@ export default function ExportHistoryPage() {
     setShowReturnDialog(true);
   };
 
-  // Export to Excel
-  const handleExportExcel = async () => {
+  // Export receipts to Excel (Sheet 1 only)
+  const handleExportReceiptsExcel = async () => {
     setIsExporting(true);
     try {
-      // 1. Fetch ALL export receipts (lightweight — no items join)
       const allReceipts = await fetchAllRows<any>(() => {
         let q = supabase
           .from('export_receipts')
@@ -362,45 +361,18 @@ export default function ExportHistoryPage() {
         return q;
       });
 
-      // 2. Fetch ALL items separately using receipt IDs (simple join, no timeout)
-      const receiptIds = allReceipts.map((r: any) => r.id);
-      let allItemsRaw: any[] = [];
-      if (receiptIds.length > 0) {
-        // Batch in chunks of 500 to avoid URI-too-long
-        for (let i = 0; i < receiptIds.length; i += 500) {
-          const chunk = receiptIds.slice(i, i + 500);
-          const { data, error } = await supabase
-            .from('export_receipt_items')
-            .select('id, receipt_id, product_name, sku, imei, sale_price, status, warranty, category_id, categories(name)')
-            .in('receipt_id', chunk);
-          if (error) throw error;
-          if (data) allItemsRaw.push(...data);
-        }
-      }
-
-      // Build receipt lookup map
-      const receiptMap: Record<string, any> = {};
-      allReceipts.forEach((r: any) => { receiptMap[r.id] = r; });
-
-      // 3. Fetch staff names
-      const userIds = [...new Set(
-        allReceipts.map((r: any) => r.sales_staff_id || r.created_by).filter(Boolean)
-      )];
-      let allStaffNames: Record<string, string> = {};
-      if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, display_name')
-          .in('user_id', userIds);
-        if (profiles) allStaffNames = Object.fromEntries(profiles.map(p => [p.user_id, p.display_name]));
-      }
-
       if (allReceipts.length === 0) {
-        toast({ title: 'Không có dữ liệu', description: 'Không có dữ liệu nào để xuất', variant: 'destructive' });
+        toast({ title: 'Không có dữ liệu', description: 'Không có phiếu xuất nào để xuất', variant: 'destructive' });
         return;
       }
 
-      // Build Sheet 1: Theo phiếu xuất
+      const userIds = [...new Set(allReceipts.map((r: any) => r.sales_staff_id || r.created_by).filter(Boolean))];
+      let allStaffNames: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase.from('profiles').select('user_id, display_name').in('user_id', userIds);
+        if (profiles) allStaffNames = Object.fromEntries(profiles.map(p => [p.user_id, p.display_name]));
+      }
+
       const receiptSheetData = allReceipts.map((r: any, index: number) => ({
         stt: index + 1,
         code: r.code,
@@ -417,82 +389,132 @@ export default function ExportHistoryPage() {
         staff_name: (() => { const sid = r.sales_staff_id || r.created_by; return sid ? (allStaffNames[sid] || '') : ''; })(),
       }));
 
-      // Build Sheet 2: Theo chi tiết SP
-      const allItems = allItemsRaw.map((item: any) => ({
-        ...item,
-        _receipt: receiptMap[item.receipt_id],
-      }));
+      exportToExcelMultiSheet({
+        filename: `Phieu_xuat_hang_${format(new Date(), 'ddMMyyyy')}`,
+        sheets: [{
+          sheetName: 'Theo phiếu xuất',
+          columns: [
+            { header: 'STT', key: 'stt', width: 6, isNumeric: true },
+            { header: 'Mã phiếu', key: 'code', width: 18 },
+            { header: 'Ngày xuất', key: 'export_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
+            { header: 'Khách hàng', key: 'customer_name', width: 25 },
+            { header: 'SĐT', key: 'customer_phone', width: 15 },
+            { header: 'Tổng tiền', key: 'total_amount', width: 15, isNumeric: true },
+            { header: 'Thuế (%)', key: 'vat_rate', width: 10, isNumeric: true },
+            { header: 'Tiền thuế', key: 'vat_amount', width: 15, isNumeric: true },
+            { header: 'Đã thanh toán', key: 'paid_amount', width: 15, isNumeric: true },
+            { header: 'Công nợ', key: 'debt_amount', width: 15, isNumeric: true },
+            { header: 'Trạng thái', key: 'status', width: 15, format: (v) => statusLabels[v]?.label || v },
+            { header: 'Chi nhánh', key: 'branch_name', width: 20 },
+            { header: 'Nhân viên', key: 'staff_name', width: 18 },
+          ],
+          data: receiptSheetData,
+        }],
+      });
 
-      const itemSheetData = allItems.map((item: any, index: number) => ({
-        stt: index + 1,
-        receipt_code: item._receipt?.code || '',
-        export_date: item._receipt?.export_date || '',
-        product_name: item.product_name,
-        sku: item.sku,
-        imei: item.imei || '',
-        sale_price: item.sale_price,
-        category_name: item.categories?.name || '',
-        customer_name: item._receipt?.customers?.name || 'Khách lẻ',
-        customer_phone: item._receipt?.customers?.phone || '',
-        branch_name: item._receipt?.branches?.name || '',
-        staff_name: (() => { const sid = item._receipt?.sales_staff_id || item._receipt?.created_by; return sid ? (allStaffNames[sid] || '') : ''; })(),
-        warranty: item.warranty || '',
-        status: item.status === 'sold' ? 'Đã bán' : item.status === 'returned' ? 'Đã trả' : item.status,
-      }));
+      toast({ title: 'Xuất Excel thành công', description: `Đã xuất ${allReceipts.length} phiếu` });
+    } catch (error: any) {
+      console.error('Export receipts error:', error);
+      const errMsg = error?.message || error?.details || JSON.stringify(error);
+      toast({ title: 'Lỗi xuất Excel', description: errMsg || 'Không thể tải dữ liệu.', variant: 'destructive' });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Export items to Excel (Sheet 2 only)
+  const handleExportItemsExcel = async () => {
+    setIsExporting(true);
+    try {
+      // Fetch receipts first for mapping
+      const allReceipts = await fetchAllRows<any>(() => {
+        let q = supabase
+          .from('export_receipts')
+          .select(`id, code, export_date, sales_staff_id, created_by, branch_id, customers(name, phone), branches(name)`)
+          .order('export_date', { ascending: false });
+        if (statusFilter !== '_all_') q = q.eq('status', statusFilter);
+        if (dateFromFilter) q = q.gte('export_date', dateFromFilter);
+        if (dateToFilter) q = q.lte('export_date', dateToFilter + 'T23:59:59');
+        if (branchFilter !== '_all_') q = q.eq('branch_id', branchFilter);
+        return q;
+      });
+
+      const receiptIds = allReceipts.map((r: any) => r.id);
+      if (receiptIds.length === 0) {
+        toast({ title: 'Không có dữ liệu', description: 'Không có sản phẩm nào để xuất', variant: 'destructive' });
+        return;
+      }
+
+      const receiptMap: Record<string, any> = {};
+      allReceipts.forEach((r: any) => { receiptMap[r.id] = r; });
+
+      let allItemsRaw: any[] = [];
+      for (let i = 0; i < receiptIds.length; i += 500) {
+        const chunk = receiptIds.slice(i, i + 500);
+        const { data, error } = await supabase
+          .from('export_receipt_items')
+          .select('id, receipt_id, product_name, sku, imei, sale_price, status, warranty, category_id, categories(name)')
+          .in('receipt_id', chunk);
+        if (error) throw error;
+        if (data) allItemsRaw.push(...data);
+      }
+
+      const userIds = [...new Set(allReceipts.map((r: any) => r.sales_staff_id || r.created_by).filter(Boolean))];
+      let allStaffNames: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase.from('profiles').select('user_id, display_name').in('user_id', userIds);
+        if (profiles) allStaffNames = Object.fromEntries(profiles.map(p => [p.user_id, p.display_name]));
+      }
+
+      const itemSheetData = allItemsRaw.map((item: any, index: number) => {
+        const r = receiptMap[item.receipt_id];
+        return {
+          stt: index + 1,
+          receipt_code: r?.code || '',
+          export_date: r?.export_date || '',
+          product_name: item.product_name,
+          sku: item.sku,
+          imei: item.imei || '',
+          sale_price: item.sale_price,
+          category_name: item.categories?.name || '',
+          customer_name: r?.customers?.name || 'Khách lẻ',
+          customer_phone: r?.customers?.phone || '',
+          branch_name: r?.branches?.name || '',
+          staff_name: (() => { const sid = r?.sales_staff_id || r?.created_by; return sid ? (allStaffNames[sid] || '') : ''; })(),
+          warranty: item.warranty || '',
+          status: item.status === 'sold' ? 'Đã bán' : item.status === 'returned' ? 'Đã trả' : item.status,
+        };
+      });
 
       exportToExcelMultiSheet({
-        filename: `Lich_su_xuat_hang_${format(new Date(), 'ddMMyyyy')}`,
-        sheets: [
-          {
-            sheetName: 'Theo phiếu xuất',
-            columns: [
-              { header: 'STT', key: 'stt', width: 6, isNumeric: true },
-              { header: 'Mã phiếu', key: 'code', width: 18 },
-              { header: 'Ngày xuất', key: 'export_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
-              { header: 'Khách hàng', key: 'customer_name', width: 25 },
-              { header: 'SĐT', key: 'customer_phone', width: 15 },
-              { header: 'Tổng tiền', key: 'total_amount', width: 15, isNumeric: true },
-              { header: 'Thuế (%)', key: 'vat_rate', width: 10, isNumeric: true },
-              { header: 'Tiền thuế', key: 'vat_amount', width: 15, isNumeric: true },
-              { header: 'Đã thanh toán', key: 'paid_amount', width: 15, isNumeric: true },
-              { header: 'Công nợ', key: 'debt_amount', width: 15, isNumeric: true },
-              { header: 'Trạng thái', key: 'status', width: 15, format: (v) => statusLabels[v]?.label || v },
-              { header: 'Chi nhánh', key: 'branch_name', width: 20 },
-              { header: 'Nhân viên', key: 'staff_name', width: 18 },
-            ],
-            data: receiptSheetData,
-          },
-          {
-            sheetName: 'Theo chi tiết SP',
-            columns: [
-              { header: 'STT', key: 'stt', width: 6, isNumeric: true },
-              { header: 'Mã phiếu', key: 'receipt_code', width: 18 },
-              { header: 'Ngày xuất', key: 'export_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
-              { header: 'Sản phẩm', key: 'product_name', width: 30 },
-              { header: 'SKU', key: 'sku', width: 25 },
-              { header: 'IMEI', key: 'imei', width: 18 },
-              { header: 'Đơn giá', key: 'sale_price', width: 15, isNumeric: true },
-              { header: 'Danh mục', key: 'category_name', width: 15 },
-              { header: 'Khách hàng', key: 'customer_name', width: 25 },
-              { header: 'SĐT', key: 'customer_phone', width: 15 },
-              { header: 'Chi nhánh', key: 'branch_name', width: 20 },
-              { header: 'Nhân viên', key: 'staff_name', width: 18 },
-              { header: 'Bảo hành', key: 'warranty', width: 15 },
-              { header: 'Trạng thái', key: 'status', width: 12 },
-            ],
-            data: itemSheetData,
-          },
-        ],
+        filename: `Chi_tiet_SP_xuat_${format(new Date(), 'ddMMyyyy')}`,
+        sheets: [{
+          sheetName: 'Theo chi tiết SP',
+          columns: [
+            { header: 'STT', key: 'stt', width: 6, isNumeric: true },
+            { header: 'Mã phiếu', key: 'receipt_code', width: 18 },
+            { header: 'Ngày xuất', key: 'export_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
+            { header: 'Sản phẩm', key: 'product_name', width: 30 },
+            { header: 'SKU', key: 'sku', width: 25 },
+            { header: 'IMEI', key: 'imei', width: 18 },
+            { header: 'Đơn giá', key: 'sale_price', width: 15, isNumeric: true },
+            { header: 'Danh mục', key: 'category_name', width: 15 },
+            { header: 'Khách hàng', key: 'customer_name', width: 25 },
+            { header: 'SĐT', key: 'customer_phone', width: 15 },
+            { header: 'Chi nhánh', key: 'branch_name', width: 20 },
+            { header: 'Nhân viên', key: 'staff_name', width: 18 },
+            { header: 'Bảo hành', key: 'warranty', width: 15 },
+            { header: 'Trạng thái', key: 'status', width: 12 },
+          ],
+          data: itemSheetData,
+        }],
       });
 
-      toast({
-        title: 'Xuất Excel thành công',
-        description: `Đã xuất ${allReceipts.length} phiếu và ${allItems.length} sản phẩm`,
-      });
+      toast({ title: 'Xuất Excel thành công', description: `Đã xuất ${allItemsRaw.length} sản phẩm` });
     } catch (error: any) {
-      console.error('Export error:', error);
+      console.error('Export items error:', error);
       const errMsg = error?.message || error?.details || JSON.stringify(error);
-      toast({ title: 'Lỗi xuất Excel', description: errMsg || 'Không thể tải dữ liệu. Vui lòng thử lại.', variant: 'destructive' });
+      toast({ title: 'Lỗi xuất Excel', description: errMsg || 'Không thể tải dữ liệu.', variant: 'destructive' });
     } finally {
       setIsExporting(false);
     }
@@ -560,9 +582,9 @@ export default function ExportHistoryPage() {
                   </Badge>
                 )}
               </Button>
-              <Button variant="outline" onClick={handleExportExcel} disabled={isExporting}>
+              <Button variant="outline" onClick={activeTab === 'receipts' ? handleExportReceiptsExcel : handleExportItemsExcel} disabled={isExporting}>
                 {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileDown className="h-4 w-4 mr-2" />}
-                {isExporting ? 'Đang tải dữ liệu...' : 'Xuất Excel'}
+                {isExporting ? 'Đang tải...' : activeTab === 'receipts' ? 'Xuất phiếu Excel' : 'Xuất chi tiết Excel'}
               </Button>
             </div>
 
