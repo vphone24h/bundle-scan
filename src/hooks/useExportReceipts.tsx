@@ -181,7 +181,7 @@ export function useExportReceipts(filters?: {
     ...result,
     data: result.data?.items || [],
     totalCount: result.data?.totalCount || 0,
-    // Keep hasMore for backward compat
+    isFetching: result.isFetching,
     hasMore: (result.data?.totalCount || 0) > page * pageSize,
   };
 }
