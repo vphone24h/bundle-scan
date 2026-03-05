@@ -60,7 +60,7 @@ export function useEmailAutomationBlocks(automationId: string | null) {
         .eq('automation_id', automationId!)
         .order('display_order', { ascending: true });
       if (error) throw error;
-      return (data || []) as EmailAutomationBlock[];
+      return (data || []) as unknown as EmailAutomationBlock[];
     },
   });
 }
