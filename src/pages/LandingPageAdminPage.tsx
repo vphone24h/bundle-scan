@@ -132,24 +132,24 @@ export default function LandingPageAdminPage() {
         )}
         <div className="mt-4">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className="mb-4 w-full overflow-x-auto justify-start scrollbar-hide">
-              {showSettings && <TabsTrigger value="settings" data-tour="landing-tab-settings">Cấu hình</TabsTrigger>}
-              {showProducts && <TabsTrigger value="products" data-tour="landing-tab-products">Sản phẩm</TabsTrigger>}
-              {showArticles && <TabsTrigger value="articles" data-tour="landing-tab-articles">Tin tức</TabsTrigger>}
+            <TabsList className="mb-4 h-auto p-1.5 w-full overflow-x-auto justify-start scrollbar-hide">
+              {showSettings && <TabsTrigger value="settings" className="py-2.5 px-4 text-sm" data-tour="landing-tab-settings">Cấu hình</TabsTrigger>}
+              {showProducts && <TabsTrigger value="products" className="py-2.5 px-4 text-sm" data-tour="landing-tab-products">Sản phẩm</TabsTrigger>}
+              {showArticles && <TabsTrigger value="articles" className="py-2.5 px-4 text-sm" data-tour="landing-tab-articles">Tin tức</TabsTrigger>}
               {showOrders && (
-                <TabsTrigger value="orders" className="relative" data-tour="landing-tab-orders">
+                <TabsTrigger value="orders" className="relative py-2.5 px-4 text-sm" data-tour="landing-tab-orders">
                   Đơn đặt hàng
                   <PendingBadge />
                 </TabsTrigger>
               )}
               {/* Tạm ẩn Zalo OA - đang nghiên cứu thêm */}
               {/* {showSettings && (
-                <TabsTrigger value="zalo-mail">
+                <TabsTrigger value="zalo-mail" className="py-2.5 px-4 text-sm">
                   <span className="flex items-center gap-1">Quản lý Zalo</span>
                 </TabsTrigger>
               )} */}
               {showSettings && (
-                <TabsTrigger value="email-automation">
+                <TabsTrigger value="email-automation" className="py-2.5 px-4 text-sm">
                   <span className="flex items-center gap-1">Email Automation</span>
                 </TabsTrigger>
               )}
