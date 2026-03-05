@@ -162,23 +162,78 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
   }, [pdSections]);
 
   // Shared header for preview
-  const renderHeader = () => (
-    <SectionOverlay sectionId="store-info" label="Header" onEdit={onEditSection}>
-      <header className="border-b border-black/5 bg-white">
-        <div className="px-4 flex items-center justify-between h-11">
-          <div className="flex items-center gap-2.5">
-            {formData.store_logo_url ? (
-              <img src={formData.store_logo_url} alt="Logo" className="h-7 w-7 rounded-lg object-cover" />
+  const menuPosition = (formData as any)?.menu_position || 'left';
+  
+  const renderHeader = () => {
+    // Top menu position: show horizontal nav below header
+    if (menuPosition === 'top') {
+      return (
+        <SectionOverlay sectionId="store-info" label="Header" onEdit={onEditSection}>
+          <header className="border-b border-black/5 bg-white">
+            <div className="px-4 flex items-center justify-between h-11">
+              <div className="flex items-center gap-2.5">
+                {formData.store_logo_url ? (
+                  <img src={formData.store_logo_url} alt="Logo" className="h-7 w-7 rounded-lg object-cover" />
+                ) : (
+                  <div className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center text-xs">☰</div>
+                )}
+                <span className="font-semibold text-xs tracking-tight">{storeName}</span>
+              </div>
+              <div className="h-4 w-4 text-[#86868b]">🔍</div>
+            </div>
+            {/* Top horizontal nav */}
+            <div className="px-3 py-1.5 overflow-x-auto scrollbar-hide border-t border-black/5">
+              <div className="flex items-center gap-1.5 min-w-max">
+                {(navItems as any[]).filter((n: any) => n.enabled !== false).slice(0, 6).map((item: any, i: number) => (
+                  <span key={item.id || i} className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap ${i === 0 ? 'text-white' : 'bg-muted/50'}`}
+                    style={i === 0 ? { backgroundColor: accentColor } : {}}>
+                    {item.icon && <span className="mr-0.5">{item.icon}</span>}
+                    {item.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </header>
+        </SectionOverlay>
+      );
+    }
+
+    // Left or Right menu position
+    const isRight = menuPosition === 'right';
+    return (
+      <SectionOverlay sectionId="store-info" label="Header" onEdit={onEditSection}>
+        <header className="border-b border-black/5 bg-white">
+          <div className="px-4 flex items-center justify-between h-11">
+            {isRight ? (
+              <>
+                <div className="flex items-center gap-2.5">
+                  {formData.store_logo_url ? (
+                    <img src={formData.store_logo_url} alt="Logo" className="h-7 w-7 rounded-lg object-cover" />
+                  ) : null}
+                  <span className="font-semibold text-xs tracking-tight">{storeName}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-[#86868b]">🔍</span>
+                  <div className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center text-xs">☰</div>
+                </div>
+              </>
             ) : (
-              <div className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center text-xs">☰</div>
+              <>
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center text-xs">☰</div>
+                  {formData.store_logo_url ? (
+                    <img src={formData.store_logo_url} alt="Logo" className="h-7 w-7 rounded-lg object-cover" />
+                  ) : null}
+                  <span className="font-semibold text-xs tracking-tight">{storeName}</span>
+                </div>
+                <div className="h-4 w-4 text-[#86868b]">🔍</div>
+              </>
             )}
-            <span className="font-semibold text-xs tracking-tight">{storeName}</span>
           </div>
-          <div className="h-4 w-4 text-[#86868b]">🔍</div>
-        </div>
-      </header>
-    </SectionOverlay>
-  );
+        </header>
+      </SectionOverlay>
+    );
+  };
 
   const renderFooter = () => (
     <SectionOverlay sectionId="footer" label="Footer" onEdit={onEditSection}>
