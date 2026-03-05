@@ -630,9 +630,12 @@ export function EmailAutomationTab() {
           </TabsContent>
 
           <TabsContent value="logs" className="mt-4">
-            <div className="flex gap-2 mb-3">
+            <div className="flex gap-2 mb-3 flex-wrap">
               <Button variant={logSubTab === 'automation' ? 'default' : 'outline'} size="sm" onClick={() => setLogSubTab('automation')}>
-                Automation ({logs?.length || 0})
+                Automation ({(logs || []).filter(l => l.source === 'automation').length})
+              </Button>
+              <Button variant={logSubTab === 'care' ? 'default' : 'outline'} size="sm" onClick={() => setLogSubTab('care')}>
+                Chăm sóc ({(logs || []).filter(l => l.source === 'care_bulk').length})
               </Button>
               <Button variant={logSubTab === 'order' ? 'default' : 'outline'} size="sm" onClick={() => setLogSubTab('order')}>
                 Đơn hàng ({orderEmailLogs?.length || 0})
@@ -640,44 +643,93 @@ export function EmailAutomationTab() {
             </div>
 
             {logSubTab === 'automation' && (
-              !logs?.length ? (
-                <p className="text-center py-8 text-muted-foreground text-sm">Chưa có email automation nào được gửi</p>
-              ) : (
-                <ScrollableTableWrapper>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Thời gian</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Khách hàng</TableHead>
-                        <TableHead>Tiêu đề</TableHead>
-                        <TableHead>Trạng thái</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {logs.map(log => (
-                        <TableRow key={log.id}>
-                          <TableCell className="whitespace-nowrap text-sm">
-                            {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
-                          </TableCell>
-                          <TableCell className="text-sm">{log.customer_email}</TableCell>
-                          <TableCell className="text-sm">{log.customer_name || '-'}</TableCell>
-                          <TableCell className="text-sm max-w-[200px] truncate">{log.subject}</TableCell>
-                          <TableCell>
-                            {log.status === 'sent' ? (
-                              <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
-                            ) : log.status === 'failed' ? (
-                              <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />Lỗi</Badge>
-                            ) : (
-                              <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Đang gửi</Badge>
-                            )}
-                          </TableCell>
+              (() => {
+                const filteredLogs = (logs || []).filter(l => l.source === 'automation');
+                return !filteredLogs.length ? (
+                  <p className="text-center py-8 text-muted-foreground text-sm">Chưa có email automation nào được gửi</p>
+                ) : (
+                  <ScrollableTableWrapper>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Thời gian</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Khách hàng</TableHead>
+                          <TableHead>Tiêu đề</TableHead>
+                          <TableHead>Trạng thái</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollableTableWrapper>
-              )
+                      </TableHeader>
+                      <TableBody>
+                        {filteredLogs.map(log => (
+                          <TableRow key={log.id}>
+                            <TableCell className="whitespace-nowrap text-sm">
+                              {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
+                            </TableCell>
+                            <TableCell className="text-sm">{log.customer_email}</TableCell>
+                            <TableCell className="text-sm">{log.customer_name || '-'}</TableCell>
+                            <TableCell className="text-sm max-w-[200px] truncate">{log.subject}</TableCell>
+                            <TableCell>
+                              {log.status === 'sent' ? (
+                                <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
+                              ) : log.status === 'failed' ? (
+                                <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />Lỗi</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Đang gửi</Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollableTableWrapper>
+                );
+              })()
+            )}
+
+            {logSubTab === 'care' && (
+              (() => {
+                const careLogs = (logs || []).filter(l => l.source === 'care_bulk');
+                return !careLogs.length ? (
+                  <p className="text-center py-8 text-muted-foreground text-sm">Chưa có email chăm sóc nào được gửi</p>
+                ) : (
+                  <ScrollableTableWrapper>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Thời gian</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Khách hàng</TableHead>
+                          <TableHead>Tiêu đề</TableHead>
+                          <TableHead>Trạng thái</TableHead>
+                          <TableHead>Lỗi</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {careLogs.map(log => (
+                          <TableRow key={log.id}>
+                            <TableCell className="whitespace-nowrap text-sm">
+                              {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
+                            </TableCell>
+                            <TableCell className="text-sm max-w-[180px] truncate">{log.customer_email}</TableCell>
+                            <TableCell className="text-sm">{log.customer_name || '-'}</TableCell>
+                            <TableCell className="text-sm max-w-[200px] truncate">{log.subject}</TableCell>
+                            <TableCell>
+                              {log.status === 'sent' ? (
+                                <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
+                              ) : log.status === 'failed' ? (
+                                <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />Lỗi</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Đang gửi</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-destructive max-w-[200px] truncate">{log.error_message || '-'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollableTableWrapper>
+                );
+              })()
             )}
 
             {logSubTab === 'order' && (

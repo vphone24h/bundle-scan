@@ -25,7 +25,7 @@ export interface EmailAutomationBlock {
 export interface EmailAutomationLog {
   id: string;
   tenant_id: string;
-  automation_id: string;
+  automation_id: string | null;
   customer_email: string;
   customer_name: string | null;
   subject: string;
@@ -33,6 +33,7 @@ export interface EmailAutomationLog {
   sent_at: string | null;
   created_at: string;
   error_message: string | null;
+  source: string;
 }
 
 export function useEmailAutomations() {
@@ -73,7 +74,7 @@ export function useEmailAutomationLogs() {
         .from('email_automation_logs' as any)
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(200);
+        .limit(500);
       if (error) throw error;
       return (data || []) as unknown as EmailAutomationLog[];
     },
