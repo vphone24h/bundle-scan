@@ -459,7 +459,7 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
             <div key={ot.value} className="border border-dashed rounded-lg p-3 flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <h4 className="font-medium text-sm text-muted-foreground">{ot.label}</h4>
-                <p className="text-xs text-muted-foreground/70">Chưa thiết lập</p>
+                <p className="text-xs text-muted-foreground/70">📌 {ot.condition}</p>
               </div>
               <Button variant="outline" size="sm" className="text-xs" onClick={() => preset && onCreateFromPreset(preset)}>
                 <Plus className="h-3.5 w-3.5 mr-1" />
