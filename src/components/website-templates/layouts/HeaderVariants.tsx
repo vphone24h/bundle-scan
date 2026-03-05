@@ -69,7 +69,7 @@ function TGDDHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-red-600 text-white" menuBg="bg-yellow-500" menuTextClass="text-black" storeName={props.storeName} logoUrl={props.logoUrl} />
+      <MobileMenu {...props} activeClass="bg-red-600 text-white" menuBg="bg-yellow-500" menuTextClass="text-black" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
     </header>
   );
 }
