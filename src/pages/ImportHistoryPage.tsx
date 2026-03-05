@@ -763,10 +763,10 @@ export default function ImportHistoryPage() {
         }} className="space-y-4">
           <div className="flex items-center justify-between">
             <TabsList>
-              <TabsTrigger value="receipts" data-tour="import-history-receipts-tab">
+              <TabsTrigger value="receipts" data-tour="import-history-receipts-tab" className={cn(searchTerm && activeTab !== 'receipts' && filteredReceipts.length > 0 && 'tab-flash-red')}>
                 Theo phiếu nhập
               </TabsTrigger>
-              <TabsTrigger value="products" data-tour="import-history-products-tab">
+              <TabsTrigger value="products" data-tour="import-history-products-tab" className={cn(searchTerm && activeTab !== 'products' && productsTotalCount > 0 && 'tab-flash-red')}>
                 Theo sản phẩm
               </TabsTrigger>
             </TabsList>

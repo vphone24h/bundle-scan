@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
 import { useNavigate } from 'react-router-dom';
@@ -774,11 +775,11 @@ export default function ExportHistoryPage() {
         }
       }} className="space-y-4">
         <TabsList>
-          <TabsTrigger data-tour="export-tab-receipts" value="receipts" className="gap-2">
+          <TabsTrigger data-tour="export-tab-receipts" value="receipts" className={cn("gap-2", debouncedSearch && activeTab !== 'receipts' && filteredReceipts && filteredReceipts.length > 0 && 'tab-flash-red')}>
             <FileText className="h-4 w-4" />
             Theo phiếu xuất
           </TabsTrigger>
-          <TabsTrigger data-tour="export-tab-items" value="items" className="gap-2">
+          <TabsTrigger data-tour="export-tab-items" value="items" className={cn("gap-2", debouncedSearch && activeTab !== 'items' && itemsTotalCount > 0 && 'tab-flash-red')}>
             <Package className="h-4 w-4" />
             Theo chi tiết SP
           </TabsTrigger>
