@@ -142,11 +142,12 @@ export default function LandingPageAdminPage() {
                   <PendingBadge />
                 </TabsTrigger>
               )}
-              {showSettings && (
+              {/* Tạm ẩn Zalo OA - đang nghiên cứu thêm */}
+              {/* {showSettings && (
                 <TabsTrigger value="zalo-mail">
                   <span className="flex items-center gap-1">Quản lý Zalo</span>
                 </TabsTrigger>
-              )}
+              )} */}
               {showSettings && (
                 <TabsTrigger value="email-automation">
                   <span className="flex items-center gap-1">Email Automation</span>
@@ -173,11 +174,12 @@ export default function LandingPageAdminPage() {
                 <LandingOrdersTab />
               </TabsContent>
             )}
-            {showSettings && (
+            {/* Tạm ẩn Zalo OA */}
+            {/* {showSettings && (
               <TabsContent value="zalo-mail">
                 <LandingZaloMailTab />
               </TabsContent>
-            )}
+            )} */}
             {showSettings && (
               <TabsContent value="email-automation">
                 <EmailAutomationTab />
