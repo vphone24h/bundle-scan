@@ -934,9 +934,9 @@ export default function ImportHistoryPage() {
                   </>
                 )}
               </div>
-              <Button variant="outline" onClick={handleExportProducts}>
-                <Download className="mr-2 h-4 w-4" />
-                Xuất Excel ({filteredProducts.length})
+              <Button variant="outline" onClick={handleExportAll} disabled={isExporting}>
+                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                {isExporting ? 'Đang tải dữ liệu...' : 'Xuất Excel'}
               </Button>
             </div>
             <ScrollableTableWrapper className="rounded-lg border bg-card">
