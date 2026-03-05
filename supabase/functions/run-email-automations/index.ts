@@ -24,8 +24,19 @@ function renderBlockToHtml(block: AutomationBlock): string {
       return `<p style="margin:8px 0;font-size:15px;line-height:1.7;color:#374151">${(content.text || '').replace(/\n/g, '<br>')}</p>`
     case 'image':
       return content.url ? `<div style="margin:12px 0;text-align:center"><img src="${content.url}" alt="${content.alt || ''}" style="max-width:100%;border-radius:8px" /></div>` : ''
-    case 'button':
-      return `<div style="text-align:center;margin:16px 0"><a href="${content.url || '#'}" style="display:inline-block;padding:12px 32px;background:${content.color || '#1a56db'};color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">${content.text || 'Nhấn vào đây'}</a></div>`
+    case 'button': {
+      const btnUrl = content.url || '#'
+      // tel: and mailto: links get blocked by Gmail's link proxy, so render them as styled text with the number/email visible
+      if (btnUrl.startsWith('tel:')) {
+        const phone = btnUrl.replace('tel:', '').trim()
+        return `<div style="text-align:center;margin:16px 0"><a href="${btnUrl}" style="display:inline-block;padding:12px 32px;background:${content.color || '#1a56db'};color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">${content.text || 'Nhấn vào đây'}</a><br/><a href="${btnUrl}" style="display:inline-block;margin-top:6px;font-size:16px;color:${content.color || '#1a56db'};font-weight:700;text-decoration:none;letter-spacing:0.5px">${phone}</a></div>`
+      }
+      if (btnUrl.startsWith('mailto:')) {
+        const email = btnUrl.replace('mailto:', '').trim()
+        return `<div style="text-align:center;margin:16px 0"><a href="${btnUrl}" style="display:inline-block;padding:12px 32px;background:${content.color || '#1a56db'};color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">${content.text || 'Nhấn vào đây'}</a><br/><a href="${btnUrl}" style="display:inline-block;margin-top:6px;font-size:15px;color:${content.color || '#1a56db'};font-weight:600;text-decoration:none">${email}</a></div>`
+      }
+      return `<div style="text-align:center;margin:16px 0"><a href="${btnUrl}" style="display:inline-block;padding:12px 32px;background:${content.color || '#1a56db'};color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">${content.text || 'Nhấn vào đây'}</a></div>`
+    }
     case 'link':
       return `<p style="margin:8px 0;font-size:15px;line-height:1.7;color:#374151">${content.text || ''} <a href="${content.url || '#'}" style="color:#1a56db;text-decoration:underline;font-weight:500">${content.linkText || content.url || 'Link'}</a></p>`
     case 'divider':
