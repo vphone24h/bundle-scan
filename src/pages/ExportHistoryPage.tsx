@@ -710,6 +710,7 @@ export default function ExportHistoryPage() {
                   </TableBody>
                 </Table>
                 </ScrollableTableWrapper>
+                </div>
               )}
               {(receipts?.length || 0) > 0 && (
                 <TablePagination
