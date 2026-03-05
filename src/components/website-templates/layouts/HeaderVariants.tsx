@@ -212,26 +212,33 @@ function LuxuryHeader(props: HeaderProps) {
 
 // === MINIMAL (cafe, services, etc.) ===
 function MinimalHeader(props: HeaderProps) {
+  const isTop = props.menuPosition === 'top';
   return (
     <header className="sticky top-0 z-50 bg-[#faf9f6]/90 backdrop-blur-xl border-b border-stone-200">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-12">
           <div className="flex items-center gap-3">
-            <button onClick={props.onToggleMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-stone-200 transition-colors sm:hidden text-stone-600">
-              {props.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+            {!isTop && (
+              <button onClick={props.onToggleMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-stone-200 transition-colors sm:hidden text-stone-600">
+                {props.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+            )}
             <button onClick={props.onNavigateHome} className="flex items-center gap-2.5 text-stone-800">
               {props.logoUrl && <img src={props.logoUrl} alt={props.storeName} className="h-7 w-7 rounded-lg object-cover" />}
               <span className="font-medium text-sm tracking-wide">{props.storeName}</span>
             </button>
           </div>
-          <DesktopNav {...props} activeClass="bg-stone-800 text-white" inactiveClass="text-stone-500 hover:text-stone-800" />
+          {!isTop && <DesktopNav {...props} activeClass="bg-stone-800 text-white" inactiveClass="text-stone-500 hover:text-stone-800" />}
           <button onClick={props.onOpenSearch} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-stone-200 transition-colors text-stone-500">
             <Search className="h-5 w-5" />
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-stone-800 text-white" menuBg="bg-stone-800" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
+      {isTop ? (
+        <TopNavBar navItems={props.navItems} onNavClick={props.onNavClick} isNavActive={props.isNavActive} activeClass="bg-stone-800 text-white" inactiveClass="text-stone-500 hover:text-stone-800 hover:bg-stone-100" />
+      ) : (
+        <MobileMenu {...props} activeClass="bg-stone-800 text-white" menuBg="bg-stone-800" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
+      )}
     </header>
   );
 }
