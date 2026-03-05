@@ -153,21 +153,38 @@
    });
  }
  
- export function useDeleteCustomerTag() {
-   const queryClient = useQueryClient();
- 
-   return useMutation({
-     mutationFn: async (tagId: string) => {
-       const { error } = await supabase
-         .from('customer_tags')
-         .delete()
-         .eq('id', tagId);
-       if (error) throw error;
-     },
-     onSuccess: () => {
-       queryClient.invalidateQueries({ queryKey: ['customer-tags'] });
-     },
-   });
+export function useUpdateCustomerTag() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, name, color }: { id: string; name: string; color: string }) => {
+      const { error } = await supabase
+        .from('customer_tags')
+        .update({ name, color, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer-tags'] });
+    },
+  });
+}
+
+export function useDeleteCustomerTag() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (tagId: string) => {
+      const { error } = await supabase
+        .from('customer_tags')
+        .delete()
+        .eq('id', tagId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer-tags'] });
+    },
+  });
  }
  
  // Customer Tag Assignments
