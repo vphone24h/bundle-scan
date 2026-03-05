@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
+import { toVietnamDate } from '@/lib/vietnamTime';
 // fetchAllRows removed - using server-side limited queries
 
 import type { SaleDetailItem, ReturnDetailItem, CashBookDetailItem } from '@/components/reports/ReportStatDetailDialog';
@@ -80,20 +81,19 @@ export function useReportStats(filters?: {
         } as ReportStats;
       }
 
-      // Use local timezone for date filtering (same as Dashboard)
-      const getLocalDateString = (date: Date) => {
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      // Use Vietnam timezone (GMT+7) for date filtering
+      const vnNow = toVietnamDate(new Date());
+      const getVnDateString = (d: Date) => {
+        const vn = toVietnamDate(d);
+        return `${vn.getFullYear()}-${String(vn.getMonth() + 1).padStart(2, '0')}-${String(vn.getDate()).padStart(2, '0')}`;
       };
       
-      const now = new Date();
-      const startDate = filters?.startDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-      const endDate = filters?.endDate || getLocalDateString(now);
+      const startDate = filters?.startDate || `${vnNow.getFullYear()}-${String(vnNow.getMonth() + 1).padStart(2, '0')}-01`;
+      const endDate = filters?.endDate || getVnDateString(vnNow);
       
-      // Create proper local timezone boundaries for queries
-      const startDateTime = new Date(startDate + 'T00:00:00');
-      const endDateTime = new Date(endDate + 'T23:59:59.999');
-      const startISO = startDateTime.toISOString();
-      const endISO = endDateTime.toISOString();
+      // Create Vietnam timezone boundaries then convert to ISO for queries
+      const startISO = new Date(`${startDate}T00:00:00+07:00`).toISOString();
+      const endISO = new Date(`${endDate}T23:59:59.999+07:00`).toISOString();
 
       const buildExportQuery = () => {
         let q = supabase
@@ -359,20 +359,19 @@ export function useReportChartData(filters?: {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as { date: string; revenue: number; profit: number; count: number }[];
 
-      // Use local timezone for date filtering (same as Dashboard)
-      const getLocalDateString = (date: Date) => {
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      // Use Vietnam timezone (GMT+7) for date filtering
+      const vnNow = toVietnamDate(new Date());
+      const getVnDateString = (d: Date) => {
+        const vn = toVietnamDate(d);
+        return `${vn.getFullYear()}-${String(vn.getMonth() + 1).padStart(2, '0')}-${String(vn.getDate()).padStart(2, '0')}`;
       };
       
-      const now = new Date();
-      const startDate = filters?.startDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-      const endDate = filters?.endDate || getLocalDateString(now);
+      const startDate = filters?.startDate || `${vnNow.getFullYear()}-${String(vnNow.getMonth() + 1).padStart(2, '0')}-01`;
+      const endDate = filters?.endDate || getVnDateString(vnNow);
       
-      // Create proper local timezone boundaries for queries
-      const startDateTime = new Date(startDate + 'T00:00:00');
-      const endDateTime = new Date(endDate + 'T23:59:59.999');
-      const startISO = startDateTime.toISOString();
-      const endISO = endDateTime.toISOString();
+      // Create Vietnam timezone boundaries then convert to ISO for queries
+      const startISO = new Date(`${startDate}T00:00:00+07:00`).toISOString();
+      const endISO = new Date(`${endDate}T23:59:59.999+07:00`).toISOString();
 
       let query = supabase
         .from('export_receipts')

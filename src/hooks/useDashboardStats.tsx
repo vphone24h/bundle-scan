@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
+import { toVietnamDate } from '@/lib/vietnamTime';
 
 export interface DashboardStats {
   totalProducts: number;
@@ -32,12 +33,15 @@ export function useDashboardStats() {
         } as DashboardStats;
       }
 
-      // 1. Try reading today's stats from daily_stats (pre-computed every 5 min)
+      // Use Vietnam timezone for today's date
+      const vnNow = toVietnamDate(new Date());
+      const todayStr = `${vnNow.getFullYear()}-${String(vnNow.getMonth() + 1).padStart(2, '0')}-${String(vnNow.getDate()).padStart(2, '0')}`;
+
       let dailyStatsQuery = supabase
         .from('daily_stats')
         .select('*')
         .eq('tenant_id', tenant!.id)
-        .eq('stat_date', new Date().toISOString().split('T')[0]);
+        .eq('stat_date', todayStr);
 
       if (shouldFilter && branchId) {
         dailyStatsQuery = dailyStatsQuery.eq('branch_id', branchId);
@@ -69,18 +73,18 @@ export function useDashboardStats() {
         todaySold = Number(dailyStats.total_sold_items) || 0;
         todayImports = Number(dailyStats.total_imports) || 0;
       } else {
-        // Fallback: quick server-side queries for today
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-        const todayEnd = new Date();
-        todayEnd.setHours(23, 59, 59, 999);
+        // Fallback: use Vietnam timezone boundaries for today
+        const todayStartISO = `${todayStr}T00:00:00+07:00`;
+        const todayEndISO = `${todayStr}T23:59:59.999+07:00`;
+        const todayStartUTC = new Date(todayStartISO).toISOString();
+        const todayEndUTC = new Date(todayEndISO).toISOString();
 
         let exportQuery = supabase
           .from('export_receipts')
           .select('total_amount, status')
           .neq('status', 'cancelled')
-          .gte('export_date', todayStart.toISOString())
-          .lte('export_date', todayEnd.toISOString());
+          .gte('export_date', todayStartUTC)
+          .lte('export_date', todayEndUTC);
 
         if (shouldFilter && branchId) {
           exportQuery = exportQuery.eq('branch_id', branchId);
@@ -93,8 +97,8 @@ export function useDashboardStats() {
         let todayImportsQuery = supabase
           .from('import_receipts')
           .select('*', { count: 'exact', head: true })
-          .gte('import_date', todayStart.toISOString())
-          .lte('import_date', todayEnd.toISOString());
+          .gte('import_date', todayStartUTC)
+          .lte('import_date', todayEndUTC);
 
         if (shouldFilter && branchId) {
           todayImportsQuery = todayImportsQuery.eq('branch_id', branchId);
@@ -133,17 +137,17 @@ export function useTodaySoldProducts() {
   return useQuery({
     queryKey: ['today-sold-products', tenant?.id, branchId],
     queryFn: async () => {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      const todayEnd = new Date();
-      todayEnd.setHours(23, 59, 59, 999);
+      const vnNow = toVietnamDate(new Date());
+      const todayStr = `${vnNow.getFullYear()}-${String(vnNow.getMonth() + 1).padStart(2, '0')}-${String(vnNow.getDate()).padStart(2, '0')}`;
+      const todayStartUTC = new Date(`${todayStr}T00:00:00+07:00`).toISOString();
+      const todayEndUTC = new Date(`${todayStr}T23:59:59.999+07:00`).toISOString();
 
       let exportReceiptsQuery = supabase
         .from('export_receipts')
         .select('id')
         .eq('status', 'completed')
-        .gte('export_date', todayStart.toISOString())
-        .lte('export_date', todayEnd.toISOString());
+        .gte('export_date', todayStartUTC)
+        .lte('export_date', todayEndUTC);
 
       if (shouldFilter && branchId) {
         exportReceiptsQuery = exportReceiptsQuery.eq('branch_id', branchId);
