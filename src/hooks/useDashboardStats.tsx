@@ -33,12 +33,15 @@ export function useDashboardStats() {
         } as DashboardStats;
       }
 
-      // 1. Try reading today's stats from daily_stats (pre-computed every 5 min)
+      // Use Vietnam timezone for today's date
+      const vnNow = toVietnamDate(new Date());
+      const todayStr = `${vnNow.getFullYear()}-${String(vnNow.getMonth() + 1).padStart(2, '0')}-${String(vnNow.getDate()).padStart(2, '0')}`;
+
       let dailyStatsQuery = supabase
         .from('daily_stats')
         .select('*')
         .eq('tenant_id', tenant!.id)
-        .eq('stat_date', new Date().toISOString().split('T')[0]);
+        .eq('stat_date', todayStr);
 
       if (shouldFilter && branchId) {
         dailyStatsQuery = dailyStatsQuery.eq('branch_id', branchId);
