@@ -495,48 +495,57 @@ export function EmailAutomationTab() {
             <TabsTrigger value="logs">Lịch sử gửi ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="scenarios" className="mt-4">
-            {isLoading ? (
-              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-            ) : !automations?.length ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Mail className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                <p className="font-medium">Chưa có kịch bản nào</p>
-                <p className="text-sm mt-1">Tạo kịch bản để tự động gửi email chăm sóc khách hàng</p>
-                <Button className="mt-4" onClick={handleCreate}><Plus className="h-4 w-4 mr-1" />Tạo kịch bản đầu tiên</Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {automations.map(a => (
-                  <div key={a.id} className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="font-medium truncate">{a.name}</h4>
-                        <Badge variant={a.is_active ? 'default' : 'secondary'}>
-                          {a.is_active ? 'Đang bật' : 'Tắt'}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        {TRIGGER_TYPES.find(t => t.value === a.trigger_type)?.label || a.trigger_type}: <strong>{a.trigger_days} ngày</strong>
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">Subject: {a.subject}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <Switch checked={a.is_active} onCheckedChange={() => handleToggle(a)} />
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSendTest(a)} title="Gửi thử">
-                        <Send className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(a)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(a)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
+          <TabsContent value="scenarios" className="mt-4 space-y-6">
+            {/* === Email đơn hàng mặc định === */}
+            <OrderEmailSection automations={automations || []} tenantId={tenant.id} onEdit={handleEdit} onToggle={handleToggle} onSendTest={handleSendTest} onDelete={handleDelete} onCreateFromPreset={(preset) => { setEditItem(null); setPrefilledTemplate(preset); setFormOpen(true); }} />
+
+            {/* === Kịch bản tự động === */}
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3">⏱️ Kịch bản chăm sóc tự động</h3>
+              {isLoading ? (
+                <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+              ) : (() => {
+                const automationScenarios = (automations || []).filter(a => !a.trigger_type.startsWith('on_order_'));
+                return !automationScenarios.length ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Mail className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">Chưa có kịch bản chăm sóc nào</p>
+                    <Button className="mt-3" size="sm" onClick={handleCreate}><Plus className="h-4 w-4 mr-1" />Tạo kịch bản</Button>
                   </div>
-                ))}
-              </div>
-            )}
+                ) : (
+                  <div className="space-y-3">
+                    {automationScenarios.map(a => (
+                      <div key={a.id} className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-medium truncate">{a.name}</h4>
+                            <Badge variant={a.is_active ? 'default' : 'secondary'}>
+                              {a.is_active ? 'Đang bật' : 'Tắt'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-0.5">
+                            {TRIGGER_TYPES.find(t => t.value === a.trigger_type)?.label || a.trigger_type}: <strong>{a.trigger_days} ngày</strong>
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">Subject: {a.subject}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <Switch checked={a.is_active} onCheckedChange={() => handleToggle(a)} />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSendTest(a)} title="Gửi thử">
+                            <Send className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(a)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(a)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
           </TabsContent>
 
           <TabsContent value="logs" className="mt-4">
