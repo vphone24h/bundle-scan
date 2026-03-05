@@ -175,31 +175,9 @@ function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave }: {
             </>
           )}
           <Separator />
-          <p className="text-xs font-medium text-muted-foreground">Loại email gửi:</p>
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Email xác nhận đơn hàng</Label>
-            <Switch checked={true} disabled />
-          </div>
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Email khi đơn đã xác nhận</Label>
-            <Switch
-              checked={formData.order_email_on_confirmed ?? false}
-              onCheckedChange={checked => handleChange('order_email_on_confirmed', checked)}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Email khi giao hàng</Label>
-            <Switch
-              checked={formData.order_email_on_shipping ?? false}
-              onCheckedChange={checked => handleChange('order_email_on_shipping', checked)}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Email bảo hành</Label>
-            <Switch
-              checked={formData.order_email_on_warranty ?? false}
-              onCheckedChange={checked => handleChange('order_email_on_warranty', checked)}
-            />
+          <div className="rounded-lg border bg-muted/30 p-3">
+            <p className="text-xs text-muted-foreground mb-1">📧 Loại email gửi:</p>
+            <p className="text-xs text-muted-foreground">Chỉnh sửa nội dung 4 mẫu email đơn hàng (xác nhận, đã xác nhận, giao hàng, bảo hành) tại tab <strong>Email Automation</strong>.</p>
           </div>
           <div className="flex gap-2">
             <Button
