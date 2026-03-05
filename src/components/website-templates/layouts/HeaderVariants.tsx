@@ -280,26 +280,33 @@ function ShopeeHeader(props: HeaderProps) {
 
 // === ORGANIC (farm, natural) ===
 function OrganicHeader(props: HeaderProps) {
+  const isTop = props.menuPosition === 'top';
   return (
     <header className="sticky top-0 z-50 bg-green-50/90 backdrop-blur-xl border-b border-green-200">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-12">
           <div className="flex items-center gap-3">
-            <button onClick={props.onToggleMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-green-200/50 transition-colors sm:hidden text-green-800">
-              {props.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+            {!isTop && (
+              <button onClick={props.onToggleMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-green-200/50 transition-colors sm:hidden text-green-800">
+                {props.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+            )}
             <button onClick={props.onNavigateHome} className="flex items-center gap-2.5 text-green-900">
               {props.logoUrl && <img src={props.logoUrl} alt={props.storeName} className="h-7 w-7 rounded-lg object-cover" />}
               <span className="font-medium text-sm">{props.storeName}</span>
             </button>
           </div>
-          <DesktopNav {...props} activeClass="bg-green-700 text-white" inactiveClass="text-green-700/70 hover:text-green-800" />
+          {!isTop && <DesktopNav {...props} activeClass="bg-green-700 text-white" inactiveClass="text-green-700/70 hover:text-green-800" />}
           <button onClick={props.onOpenSearch} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-green-200/50 transition-colors text-green-700">
             <Search className="h-5 w-5" />
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-white/20 text-white" menuBg="bg-green-800" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
+      {isTop ? (
+        <TopNavBar navItems={props.navItems} onNavClick={props.onNavClick} isNavActive={props.isNavActive} activeClass="bg-green-700 text-white" inactiveClass="text-green-700/70 hover:text-green-800 hover:bg-green-100" />
+      ) : (
+        <MobileMenu {...props} activeClass="bg-white/20 text-white" menuBg="bg-green-800" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
+      )}
     </header>
   );
 }
