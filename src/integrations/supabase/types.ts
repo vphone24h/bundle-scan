@@ -2191,6 +2191,158 @@ export type Database = {
           },
         ]
       }
+      email_automation_blocks: {
+        Row: {
+          automation_id: string
+          block_type: string
+          content: Json
+          created_at: string
+          display_order: number
+          id: string
+        }
+        Insert: {
+          automation_id: string
+          block_type?: string
+          content?: Json
+          created_at?: string
+          display_order?: number
+          id?: string
+        }
+        Update: {
+          automation_id?: string
+          block_type?: string
+          content?: Json
+          created_at?: string
+          display_order?: number
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_automation_blocks_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "email_automations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_automation_logs: {
+        Row: {
+          automation_id: string
+          body_html: string | null
+          created_at: string
+          customer_email: string
+          customer_id: string | null
+          customer_name: string | null
+          error_message: string | null
+          export_receipt_id: string | null
+          id: string
+          sent_at: string | null
+          status: string
+          subject: string
+          tenant_id: string
+        }
+        Insert: {
+          automation_id: string
+          body_html?: string | null
+          created_at?: string
+          customer_email: string
+          customer_id?: string | null
+          customer_name?: string | null
+          error_message?: string | null
+          export_receipt_id?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+          tenant_id: string
+        }
+        Update: {
+          automation_id?: string
+          body_html?: string | null
+          created_at?: string
+          customer_email?: string
+          customer_id?: string | null
+          customer_name?: string | null
+          error_message?: string | null
+          export_receipt_id?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_automation_logs_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "email_automations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_automation_logs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_automation_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_automations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          subject: string
+          tenant_id: string
+          trigger_days: number
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          subject?: string
+          tenant_id: string
+          trigger_days?: number
+          trigger_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          subject?: string
+          tenant_id?: string
+          trigger_days?: number
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_automations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_history: {
         Row: {
           created_at: string

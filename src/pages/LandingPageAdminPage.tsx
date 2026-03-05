@@ -7,6 +7,7 @@ import { LandingProductsTab } from '@/components/admin/LandingProductsTab';
 import { LandingArticlesTab } from '@/components/admin/LandingArticlesTab';
 import { LandingOrdersTab } from '@/components/admin/LandingOrdersTab';
 import { LandingZaloMailTab } from '@/components/admin/LandingZaloMailTab';
+import { EmailAutomationTab } from '@/components/admin/EmailAutomationTab';
 import { usePermissions } from '@/hooks/usePermissions';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useLandingGuideUrl } from '@/hooks/useAppConfig';
@@ -146,6 +147,11 @@ export default function LandingPageAdminPage() {
                   <span className="flex items-center gap-1">Quản lý Zalo/Mail</span>
                 </TabsTrigger>
               )}
+              {showSettings && (
+                <TabsTrigger value="email-automation">
+                  <span className="flex items-center gap-1">Email Automation</span>
+                </TabsTrigger>
+              )}
             </TabsList>
             {showSettings && (
               <TabsContent value="settings">
@@ -170,6 +176,11 @@ export default function LandingPageAdminPage() {
             {showSettings && (
               <TabsContent value="zalo-mail">
                 <LandingZaloMailTab />
+              </TabsContent>
+            )}
+            {showSettings && (
+              <TabsContent value="email-automation">
+                <EmailAutomationTab />
               </TabsContent>
             )}
           </Tabs>
