@@ -468,7 +468,7 @@ export default function ImportHistoryPage() {
         if (categoryFilter !== '_all_') q = q.eq('category_id', categoryFilter);
         if (supplierFilter !== '_all_') q = q.eq('supplier_id', supplierFilter);
         if (branchFilter !== '_all_') q = q.eq('branch_id', branchFilter);
-        if (statusFilter !== '_all_') q = q.eq('status', statusFilter);
+        if (statusFilter !== '_all_') q = q.eq('status', statusFilter as any);
         if (dateFrom) q = q.gte('import_date', dateFrom);
         if (dateTo) q = q.lte('import_date', dateTo + 'T23:59:59');
         return q;
