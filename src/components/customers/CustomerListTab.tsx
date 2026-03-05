@@ -26,6 +26,7 @@ import { CustomerFormDialog } from '@/components/customers/CustomerFormDialog';
 import { PointSettingsDialog } from '@/components/customers/PointSettingsDialog';
 import { CustomerMergeDialog } from '@/components/customers/CustomerMergeDialog';
 import { CustomerBulkActions } from '@/components/customers/CustomerBulkActions';
+import { TagManagementDialog } from '@/components/customers/TagManagementDialog';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
 
