@@ -72,6 +72,7 @@ export function CustomerListTab({
 
     // Multi-select
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [showTagManagement, setShowTagManagement] = useState(false);
 
     // Auto-open settings dialog from URL param
     useEffect(() => {
