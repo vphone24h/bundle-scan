@@ -50,6 +50,7 @@ import {
   X,
   Pencil,
   PlayCircle,
+  Loader2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -66,7 +67,8 @@ import { useInvoiceTemplateByBranch } from '@/hooks/useInvoiceTemplates';
 import { InvoicePrintDialog } from '@/components/export/InvoicePrintDialog';
 import { EditExportItemDialog } from '@/components/export/EditExportItemDialog';
 import { ReceiptReturnDialog } from '@/components/returns/ReceiptReturnDialog';
-import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
+import { exportToExcelMultiSheet, formatDateForExcel } from '@/lib/exportExcel';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCategories } from '@/hooks/useCategories';
@@ -148,6 +150,7 @@ export default function ExportHistoryPage() {
   const [itemTabTourSeen, setItemTabTourSeen] = useState(false);
   const [activeTour, setActiveTour] = useState<'receipt-tab' | 'item-tab' | null>(null);
   const [manualTourActive, setManualTourActive] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -334,57 +337,142 @@ export default function ExportHistoryPage() {
   };
 
   // Export to Excel
-  const handleExportExcel = () => {
-    if (!filteredReceipts?.length) {
-      toast({
-        title: 'Không có dữ liệu',
-        description: 'Không có phiếu xuất nào để xuất',
-        variant: 'destructive',
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      // 1. Fetch ALL export receipts from DB
+      const allReceipts = await fetchAllRows<any>(() => {
+        let q = supabase
+          .from('export_receipts')
+          .select(`*, customers(name, phone, address), branches(name), export_receipt_payments(*)`)
+          .order('export_date', { ascending: false });
+        if (statusFilter !== '_all_') q = q.eq('status', statusFilter);
+        if (dateFromFilter) q = q.gte('export_date', dateFromFilter);
+        if (dateToFilter) q = q.lte('export_date', dateToFilter + 'T23:59:59');
+        if (branchFilter !== '_all_') q = q.eq('branch_id', branchFilter);
+        return q;
       });
-      return;
-    }
 
-    exportToExcel({
-      filename: `Lich_su_xuat_hang_${format(new Date(), 'ddMMyyyy')}`,
-      sheetName: 'Lịch sử xuất hàng',
-      columns: [
-        { header: 'STT', key: 'stt', width: 6, isNumeric: true },
-        { header: 'Mã phiếu', key: 'code', width: 18 },
-        { header: 'Ngày xuất', key: 'export_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
-        { header: 'Khách hàng', key: 'customer_name', width: 25 },
-        { header: 'SĐT', key: 'customer_phone', width: 15 },
-        { header: 'Số SP', key: 'item_count', width: 8, isNumeric: true },
-        { header: 'Tổng tiền', key: 'total_amount', width: 15, isNumeric: true },
-        { header: 'Thuế (%)', key: 'vat_rate', width: 10, isNumeric: true },
-        { header: 'Tiền thuế', key: 'vat_amount', width: 15, isNumeric: true },
-        { header: 'Đã thanh toán', key: 'paid_amount', width: 15, isNumeric: true },
-        { header: 'Công nợ', key: 'debt_amount', width: 15, isNumeric: true },
-        { header: 'Trạng thái', key: 'status', width: 15, format: (v) => statusLabels[v]?.label || v },
-        { header: 'Chi nhánh', key: 'branch_name', width: 20 },
-        { header: 'Nhân viên', key: 'staff_name', width: 18 },
-      ],
-      data: filteredReceipts.map((r, index) => ({
+      // 2. Fetch ALL export receipt items from DB
+      const allItems = await fetchAllRows<any>(() => {
+        let q = supabase
+          .from('export_receipt_items')
+          .select(`*, categories(name), products(import_price), export_receipts!inner(code, export_date, branch_id, customer_id, created_by, sales_staff_id, status, customers(name, phone), branches(name))`)
+          .order('created_at', { ascending: false });
+        if (statusFilter !== '_all_') q = q.eq('export_receipts.status', statusFilter);
+        if (branchFilter !== '_all_') q = q.eq('export_receipts.branch_id', branchFilter);
+        return q;
+      });
+
+      // 3. Fetch staff names for all user IDs
+      const userIds = [...new Set([
+        ...allReceipts.map((r: any) => r.sales_staff_id || r.created_by).filter(Boolean),
+        ...allItems.map((i: any) => i.export_receipts?.sales_staff_id || i.export_receipts?.created_by).filter(Boolean),
+      ])];
+      let allStaffNames: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, display_name')
+          .in('user_id', userIds);
+        if (profiles) allStaffNames = Object.fromEntries(profiles.map(p => [p.user_id, p.display_name]));
+      }
+
+      if (allReceipts.length === 0 && allItems.length === 0) {
+        toast({ title: 'Không có dữ liệu', description: 'Không có dữ liệu nào để xuất', variant: 'destructive' });
+        return;
+      }
+
+      // Sheet 1: Theo phiếu xuất
+      const receiptSheetData = allReceipts.map((r: any, index: number) => ({
         stt: index + 1,
         code: r.code,
         export_date: r.export_date,
         customer_name: r.customers?.name || 'Khách lẻ',
         customer_phone: r.customers?.phone || '',
-        item_count: r.export_receipt_items?.length || 0,
         total_amount: r.total_amount,
         vat_rate: r.vat_rate || 0,
         vat_amount: r.vat_amount || 0,
         paid_amount: r.paid_amount,
         debt_amount: r.debt_amount,
         status: r.status,
-        branch_name: branches?.find(b => b.id === r.branch_id)?.name || '',
-        staff_name: (() => { const sid = (r as any).sales_staff_id || r.created_by; return sid ? (staffNames[sid] || '') : ''; })(),
-      })),
-    });
+        branch_name: branches?.find((b: any) => b.id === r.branch_id)?.name || '',
+        staff_name: (() => { const sid = r.sales_staff_id || r.created_by; return sid ? (allStaffNames[sid] || '') : ''; })(),
+      }));
 
-    toast({
-      title: 'Xuất Excel thành công',
-      description: `Đã xuất ${filteredReceipts.length} phiếu xuất hàng`,
-    });
+      // Sheet 2: Theo chi tiết SP
+      const itemSheetData = allItems.map((item: any, index: number) => ({
+        stt: index + 1,
+        receipt_code: item.export_receipts?.code || '',
+        export_date: item.export_receipts?.export_date || '',
+        product_name: item.product_name,
+        sku: item.sku,
+        imei: item.imei || '',
+        sale_price: item.sale_price,
+        category_name: item.categories?.name || '',
+        customer_name: item.export_receipts?.customers?.name || 'Khách lẻ',
+        customer_phone: item.export_receipts?.customers?.phone || '',
+        branch_name: item.export_receipts?.branches?.name || '',
+        staff_name: (() => { const sid = item.export_receipts?.sales_staff_id || item.export_receipts?.created_by; return sid ? (allStaffNames[sid] || '') : ''; })(),
+        warranty: item.warranty || '',
+        status: item.status === 'sold' ? 'Đã bán' : item.status === 'returned' ? 'Đã trả' : item.status,
+      }));
+
+      exportToExcelMultiSheet({
+        filename: `Lich_su_xuat_hang_${format(new Date(), 'ddMMyyyy')}`,
+        sheets: [
+          {
+            sheetName: 'Theo phiếu xuất',
+            columns: [
+              { header: 'STT', key: 'stt', width: 6, isNumeric: true },
+              { header: 'Mã phiếu', key: 'code', width: 18 },
+              { header: 'Ngày xuất', key: 'export_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
+              { header: 'Khách hàng', key: 'customer_name', width: 25 },
+              { header: 'SĐT', key: 'customer_phone', width: 15 },
+              { header: 'Tổng tiền', key: 'total_amount', width: 15, isNumeric: true },
+              { header: 'Thuế (%)', key: 'vat_rate', width: 10, isNumeric: true },
+              { header: 'Tiền thuế', key: 'vat_amount', width: 15, isNumeric: true },
+              { header: 'Đã thanh toán', key: 'paid_amount', width: 15, isNumeric: true },
+              { header: 'Công nợ', key: 'debt_amount', width: 15, isNumeric: true },
+              { header: 'Trạng thái', key: 'status', width: 15, format: (v) => statusLabels[v]?.label || v },
+              { header: 'Chi nhánh', key: 'branch_name', width: 20 },
+              { header: 'Nhân viên', key: 'staff_name', width: 18 },
+            ],
+            data: receiptSheetData,
+          },
+          {
+            sheetName: 'Theo chi tiết SP',
+            columns: [
+              { header: 'STT', key: 'stt', width: 6, isNumeric: true },
+              { header: 'Mã phiếu', key: 'receipt_code', width: 18 },
+              { header: 'Ngày xuất', key: 'export_date', width: 18, format: (v) => formatDateForExcel(v, 'dd/MM/yyyy HH:mm') },
+              { header: 'Sản phẩm', key: 'product_name', width: 30 },
+              { header: 'SKU', key: 'sku', width: 25 },
+              { header: 'IMEI', key: 'imei', width: 18 },
+              { header: 'Đơn giá', key: 'sale_price', width: 15, isNumeric: true },
+              { header: 'Danh mục', key: 'category_name', width: 15 },
+              { header: 'Khách hàng', key: 'customer_name', width: 25 },
+              { header: 'SĐT', key: 'customer_phone', width: 15 },
+              { header: 'Chi nhánh', key: 'branch_name', width: 20 },
+              { header: 'Nhân viên', key: 'staff_name', width: 18 },
+              { header: 'Bảo hành', key: 'warranty', width: 15 },
+              { header: 'Trạng thái', key: 'status', width: 12 },
+            ],
+            data: itemSheetData,
+          },
+        ],
+      });
+
+      toast({
+        title: 'Xuất Excel thành công',
+        description: `Đã xuất ${allReceipts.length} phiếu và ${allItems.length} sản phẩm`,
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({ title: 'Lỗi xuất Excel', description: 'Không thể tải dữ liệu. Vui lòng thử lại.', variant: 'destructive' });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -449,9 +537,9 @@ export default function ExportHistoryPage() {
                   </Badge>
                 )}
               </Button>
-              <Button variant="outline" onClick={handleExportExcel}>
-                <FileDown className="h-4 w-4 mr-2" />
-                Xuất Excel
+              <Button variant="outline" onClick={handleExportExcel} disabled={isExporting}>
+                {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileDown className="h-4 w-4 mr-2" />}
+                {isExporting ? 'Đang tải dữ liệu...' : 'Xuất Excel'}
               </Button>
             </div>
 
