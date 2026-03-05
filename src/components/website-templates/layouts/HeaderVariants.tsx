@@ -201,7 +201,7 @@ function ShopeeHeader(props: HeaderProps) {
           </div>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-white/20 text-white" menuBg="bg-gradient-to-b from-orange-600 to-red-600" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} />
+      <MobileMenu {...props} activeClass="bg-white/20 text-white" menuBg="bg-gradient-to-b from-orange-600 to-red-600" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
     </header>
   );
 }
