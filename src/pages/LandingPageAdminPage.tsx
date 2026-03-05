@@ -178,6 +178,11 @@ export default function LandingPageAdminPage() {
                 <LandingZaloMailTab />
               </TabsContent>
             )}
+            {showSettings && (
+              <TabsContent value="email-automation">
+                <EmailAutomationTab />
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </div>
