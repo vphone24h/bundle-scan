@@ -37,20 +37,6 @@ export function useDashboardStats() {
       const vnNow = toVietnamDate(new Date());
       const todayStr = `${vnNow.getFullYear()}-${String(vnNow.getMonth() + 1).padStart(2, '0')}-${String(vnNow.getDate()).padStart(2, '0')}`;
 
-      let dailyStatsQuery = supabase
-        .from('daily_stats')
-        .select('*')
-        .eq('tenant_id', tenant!.id)
-        .eq('stat_date', todayStr);
-
-      if (shouldFilter && branchId) {
-        dailyStatsQuery = dailyStatsQuery.eq('branch_id', branchId);
-      } else {
-        dailyStatsQuery = dailyStatsQuery.is('branch_id', null);
-      }
-
-      const { data: dailyStats } = await dailyStatsQuery.maybeSingle();
-
       // 2. Single server-side RPC: counts + sums in one DB call
       const { data: aggRaw } = await supabase.rpc('get_dashboard_aggregates', {
         p_tenant_id: tenant!.id,
@@ -64,49 +50,81 @@ export function useDashboardStats() {
       const totalImportValue = Number(agg.total_import_value || 0);
       const pendingDebt = Number(agg.pending_debt || 0);
 
-      // 5. Use daily_stats for today metrics, or fallback to quick queries
-      let todayRevenue = 0, todayProfit = 0, todaySold = 0, todayImports = 0;
+      // Always use direct queries for today's stats (Vietnam TZ)
+      // to stay in sync with Reports page — don't rely on daily_stats cache
+      const todayStartUTC = new Date(`${todayStr}T00:00:00+07:00`).toISOString();
+      const todayEndUTC = new Date(`${todayStr}T23:59:59.999+07:00`).toISOString();
 
-      if (dailyStats) {
-        todayRevenue = Number(dailyStats.total_revenue) || 0;
-        todayProfit = Number(dailyStats.total_profit) || 0;
-        todaySold = Number(dailyStats.total_sold_items) || 0;
-        todayImports = Number(dailyStats.total_imports) || 0;
-      } else {
-        // Fallback: use Vietnam timezone boundaries for today
-        const todayStartISO = `${todayStr}T00:00:00+07:00`;
-        const todayEndISO = `${todayStr}T23:59:59.999+07:00`;
-        const todayStartUTC = new Date(todayStartISO).toISOString();
-        const todayEndUTC = new Date(todayEndISO).toISOString();
+      let exportQuery = supabase
+        .from('export_receipts')
+        .select(`
+          id, total_amount, status,
+          export_receipt_items(sale_price, status, product_id)
+        `)
+        .neq('status', 'cancelled')
+        .gte('export_date', todayStartUTC)
+        .lte('export_date', todayEndUTC);
 
-        let exportQuery = supabase
-          .from('export_receipts')
-          .select('total_amount, status')
-          .neq('status', 'cancelled')
-          .gte('export_date', todayStartUTC)
-          .lte('export_date', todayEndUTC);
-
-        if (shouldFilter && branchId) {
-          exportQuery = exportQuery.eq('branch_id', branchId);
-        }
-
-        const { data: todayExports } = await exportQuery;
-        todayRevenue = todayExports?.reduce((sum, r) => sum + Number(r.total_amount), 0) || 0;
-        todaySold = todayExports?.length || 0;
-
-        let todayImportsQuery = supabase
-          .from('import_receipts')
-          .select('*', { count: 'exact', head: true })
-          .gte('import_date', todayStartUTC)
-          .lte('import_date', todayEndUTC);
-
-        if (shouldFilter && branchId) {
-          todayImportsQuery = todayImportsQuery.eq('branch_id', branchId);
-        }
-
-        const { count: todayImportsCount } = await todayImportsQuery;
-        todayImports = todayImportsCount || 0;
+      if (shouldFilter && branchId) {
+        exportQuery = exportQuery.eq('branch_id', branchId);
       }
+
+      let todayImportsQuery = supabase
+        .from('import_receipts')
+        .select('id', { count: 'exact' })
+        .gte('import_date', todayStartUTC)
+        .lte('import_date', todayEndUTC)
+        .limit(0);
+
+      if (shouldFilter && branchId) {
+        todayImportsQuery = todayImportsQuery.eq('branch_id', branchId);
+      }
+
+      const [{ data: todayExports }, { count: todayImportsCount }] = await Promise.all([
+        exportQuery,
+        todayImportsQuery,
+      ]);
+
+      // Calculate revenue, profit, sold count — same logic as useReportStats
+      let todayRevenue = 0;
+      let todayProfit = 0;
+      let todaySold = 0;
+
+      const productIdsSet = new Set<string>();
+      todayExports?.forEach(receipt => {
+        receipt.export_receipt_items?.forEach(item => {
+          if (item.status === 'sold' || item.status === 'returned') {
+            if (item.product_id) productIdsSet.add(item.product_id);
+          }
+        });
+      });
+
+      let productsMap: Record<string, number> = {};
+      const productIds = Array.from(productIdsSet);
+      if (productIds.length > 0) {
+        const { data: products } = await supabase
+          .from('products')
+          .select('id, import_price')
+          .in('id', productIds);
+        productsMap = (products || []).reduce((acc, p) => {
+          acc[p.id] = Number(p.import_price);
+          return acc;
+        }, {} as Record<string, number>);
+      }
+
+      todayExports?.forEach(receipt => {
+        receipt.export_receipt_items?.forEach(item => {
+          if (item.status === 'sold' || item.status === 'returned') {
+            const salePrice = Number(item.sale_price);
+            const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
+            todayRevenue += salePrice;
+            todayProfit += (salePrice - importPrice);
+            todaySold++;
+          }
+        });
+      });
+
+      const todayImports = todayImportsCount || 0;
 
       return {
         totalProducts: totalProducts || 0,
@@ -121,10 +139,10 @@ export function useDashboardStats() {
       } as DashboardStats;
     },
     enabled: !isTenantLoading && !branchLoading,
-    staleTime: 2 * 60 * 1000, // 2 min - reads from pre-computed daily_stats
-    refetchOnWindowFocus: false,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: true,
     refetchOnReconnect: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
     placeholderData: (previous) => previous,
   });
 }
