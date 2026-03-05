@@ -141,6 +141,7 @@ Deno.serve(async (req) => {
         }
 
         // Try ALL numeric columns to find the price
+        // IMPORTANT: Column F often contains "19,990,000₫\n+10 điểm" - extract only price part
         let salePrice = 0;
         // Try col4 (E) first, then col3 (D), then col5 (F)
         for (const colIdx of [4, 3, 5]) {
@@ -149,7 +150,10 @@ Deno.serve(async (req) => {
             salePrice = val;
             break;
           } else if (val) {
-            const parsed = parseInt(String(val).replace(/[^\d]/g, ""));
+            // Take only first line to avoid "+10 điểm" contamination
+            const firstLine = String(val).split("\n")[0].split("điểm")[0];
+            const cleaned = firstLine.replace(/[₫đ]/g, "").trim();
+            const parsed = parseInt(cleaned.replace(/[^\d]/g, ""));
             if (parsed > 0) { salePrice = parsed; break; }
           }
         }
