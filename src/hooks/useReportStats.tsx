@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
+import { toVietnamDate } from '@/lib/vietnamTime';
 // fetchAllRows removed - using server-side limited queries
 
 import type { SaleDetailItem, ReturnDetailItem, CashBookDetailItem } from '@/components/reports/ReportStatDetailDialog';
