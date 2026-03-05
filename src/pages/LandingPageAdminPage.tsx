@@ -147,6 +147,11 @@ export default function LandingPageAdminPage() {
                   <span className="flex items-center gap-1">Quản lý Zalo/Mail</span>
                 </TabsTrigger>
               )}
+              {showSettings && (
+                <TabsTrigger value="email-automation">
+                  <span className="flex items-center gap-1">Email Automation</span>
+                </TabsTrigger>
+              )}
             </TabsList>
             {showSettings && (
               <TabsContent value="settings">
