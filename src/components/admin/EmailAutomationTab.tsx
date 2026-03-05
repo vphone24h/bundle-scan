@@ -90,6 +90,8 @@ function renderBlockPreview(block: BlockItem) {
       return content.url ? <img src={content.url} alt={content.alt} style={{ maxWidth: '100%', borderRadius: 8 }} /> : <div className="h-24 bg-muted rounded flex items-center justify-center text-muted-foreground text-sm">Chưa có ảnh</div>;
     case 'button':
       return <div style={{ textAlign: 'center', margin: '12px 0' }}><span style={{ display: 'inline-block', padding: '10px 24px', background: content.color || '#1a56db', color: '#fff', borderRadius: 8, fontSize: 14, fontWeight: 600 }}>{content.text || 'Nút bấm'}</span></div>;
+    case 'link':
+      return <p style={{ fontSize: 14, lineHeight: 1.6, margin: '4px 0', color: '#374151' }}>{content.text || ''} <a href={content.url || '#'} style={{ color: '#1a56db', textDecoration: 'underline' }}>{content.linkText || content.url || 'Link'}</a></p>;
     case 'divider':
       return <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '12px 0' }} />;
     case 'spacer':
