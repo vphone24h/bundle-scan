@@ -31,8 +31,8 @@ function LogoBlock({ logoUrl, storeName, onClick }: { logoUrl?: string | null; s
 // === Sticky Top Nav Bar (always visible, horizontal scroll) ===
 function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass, inactiveClass }: { navItems: HeaderProps['navItems']; onNavClick: HeaderProps['onNavClick']; isNavActive: HeaderProps['isNavActive']; accentColor?: string; activeClass?: string; inactiveClass?: string }) {
   return (
-    <div className="overflow-x-auto scrollbar-hide border-t border-black/5 scroll-smooth" style={{ WebkitOverflowScrolling: 'touch' }}>
-      <div className="flex items-center gap-1.5 px-3 py-2 min-w-max">
+    <div className="overflow-x-auto scrollbar-hide border-t border-black/5" style={{ WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' }}>
+      <div className="flex items-center gap-1.5 px-3 py-2 min-w-max will-change-transform">
         {navItems.map(item => (
           <button
             key={item.id}
