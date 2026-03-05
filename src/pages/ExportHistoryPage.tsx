@@ -195,7 +195,7 @@ export default function ExportHistoryPage() {
   const [returnReceipt, setReturnReceipt] = useState<ExportReceipt | null>(null);
 
   // Hooks
-  const { data: receipts, isLoading: receiptsLoading, totalCount: receiptsTotalCount } = useExportReceipts({
+  const { data: receipts, isLoading: receiptsLoading, isFetching: receiptsFetching, totalCount: receiptsTotalCount } = useExportReceipts({
     search: debouncedSearch || undefined,
     status: statusFilter !== '_all_' ? statusFilter : undefined,
     dateFrom: dateFromFilter || undefined,
@@ -204,7 +204,7 @@ export default function ExportHistoryPage() {
     page: receiptPage,
     pageSize: receiptPageSize,
   });
-  const { data: items, isLoading: itemsLoading, totalCount: itemsTotalCount } = useExportReceiptItems(activeTab === 'items', {
+  const { data: items, isLoading: itemsLoading, isFetching: itemsFetching, totalCount: itemsTotalCount } = useExportReceiptItems(activeTab === 'items', {
     search: debouncedSearch || undefined,
     categoryId: categoryFilter !== '_all_' ? categoryFilter : undefined,
     page: itemPage,
@@ -588,8 +588,8 @@ export default function ExportHistoryPage() {
         {/* Tab 1: By Receipt */}
         <TabsContent value="receipts">
           <Card>
-            <CardContent className="pt-6">
-              {receiptsLoading ? (
+             <CardContent className="pt-6">
+              {receiptsLoading && !receipts?.length ? (
                 <div className="space-y-3 py-4">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="flex gap-4 items-center">
@@ -603,11 +603,12 @@ export default function ExportHistoryPage() {
                     </div>
                   ))}
                 </div>
-              ) : filteredReceipts?.length === 0 ? (
+              ) : filteredReceipts?.length === 0 && !receiptsFetching ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Không có phiếu xuất nào
                 </div>
               ) : (
+                <div className={`transition-opacity duration-200 ${receiptsFetching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                 <ScrollableTableWrapper className="rounded-lg border bg-card">
                 <Table wrapperClassName="overflow-visible">
                   <TableHeader>
@@ -709,6 +710,7 @@ export default function ExportHistoryPage() {
                   </TableBody>
                 </Table>
                 </ScrollableTableWrapper>
+                </div>
               )}
               {(receipts?.length || 0) > 0 && (
                 <TablePagination
@@ -730,7 +732,7 @@ export default function ExportHistoryPage() {
         <TabsContent value="items">
           <Card>
             <CardContent className="pt-6">
-              {itemsLoading ? (
+              {itemsLoading && !items?.length ? (
                 <div className="space-y-3 py-4">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="flex gap-4 items-center">
@@ -743,11 +745,12 @@ export default function ExportHistoryPage() {
                     </div>
                   ))}
                 </div>
-              ) : groupedItems?.length === 0 ? (
+              ) : groupedItems?.length === 0 && !itemsFetching ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Không có sản phẩm nào
                 </div>
               ) : (
+                <div className={`transition-opacity duration-200 ${itemsFetching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                 <ScrollableTableWrapper className="rounded-lg border bg-card">
                 <Table wrapperClassName="overflow-visible">
                   <TableHeader>
@@ -865,6 +868,7 @@ export default function ExportHistoryPage() {
                   </TableBody>
                 </Table>
                 </ScrollableTableWrapper>
+                </div>
               )}
               {groupedItems.length > 0 && (
                 <TablePagination
