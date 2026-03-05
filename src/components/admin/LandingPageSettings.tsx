@@ -267,6 +267,8 @@ function OrderEmailConfigSection({ formData, handleChange, tenantId, onSave }: {
 function CustomDomainCTA() {
   const [open, setOpen] = useState(false);
   const { data: article } = useCustomDomainArticlePublic();
+  const { data: tenant } = useCurrentTenant();
+  const storeUrl = tenant?.subdomain ? `https://${tenant.subdomain}.vkho.vn` : null;
 
   return (
     <>
