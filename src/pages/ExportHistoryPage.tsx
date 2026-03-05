@@ -732,7 +732,7 @@ export default function ExportHistoryPage() {
         <TabsContent value="items">
           <Card>
             <CardContent className="pt-6">
-              {itemsLoading ? (
+              {itemsLoading && !items?.length ? (
                 <div className="space-y-3 py-4">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="flex gap-4 items-center">
@@ -745,11 +745,12 @@ export default function ExportHistoryPage() {
                     </div>
                   ))}
                 </div>
-              ) : groupedItems?.length === 0 ? (
+              ) : groupedItems?.length === 0 && !itemsFetching ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Không có sản phẩm nào
                 </div>
               ) : (
+                <div className={`transition-opacity duration-200 ${itemsFetching ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                 <ScrollableTableWrapper className="rounded-lg border bg-card">
                 <Table wrapperClassName="overflow-visible">
                   <TableHeader>
