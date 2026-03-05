@@ -173,7 +173,7 @@ function MinimalHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-stone-800 text-white" menuBg="bg-stone-800" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} />
+      <MobileMenu {...props} activeClass="bg-stone-800 text-white" menuBg="bg-stone-800" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
     </header>
   );
 }
