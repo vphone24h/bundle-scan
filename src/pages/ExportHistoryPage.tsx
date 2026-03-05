@@ -731,8 +731,17 @@ export default function ExportHistoryPage() {
           <Card>
             <CardContent className="pt-6">
               {itemsLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Đang tải...
+                <div className="space-y-3 py-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex gap-4 items-center">
+                      <Skeleton className="h-5 w-40" />
+                      <Skeleton className="h-5 w-12" />
+                      <Skeleton className="h-5 w-24" />
+                      <Skeleton className="h-5 w-24" />
+                      <Skeleton className="h-5 w-20" />
+                      <Skeleton className="h-5 w-16" />
+                    </div>
+                  ))}
                 </div>
               ) : groupedItems?.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
