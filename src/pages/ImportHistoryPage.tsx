@@ -774,9 +774,9 @@ export default function ImportHistoryPage() {
 
           <TabsContent value="receipts">
             <div className="flex justify-end mb-4">
-              <Button variant="outline" onClick={handleExportReceipts}>
-                <Download className="mr-2 h-4 w-4" />
-                Xuất Excel ({filteredReceipts.length})
+              <Button variant="outline" onClick={handleExportAll} disabled={isExporting}>
+                {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                {isExporting ? 'Đang tải dữ liệu...' : 'Xuất Excel'}
               </Button>
             </div>
             <ScrollableTableWrapper className="rounded-lg border bg-card">
