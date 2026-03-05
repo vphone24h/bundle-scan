@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
-import { Plus, Pencil, Trash2, Mail, Eye, Send, Clock, CheckCircle, XCircle, Loader2, GripVertical, Type, AlignLeft, Image, MousePointer, Minus, MoveVertical, Phone, MessageCircle, MapPin, ExternalLink } from 'lucide-react';
+import { Plus, Pencil, Trash2, Mail, Eye, Send, Clock, CheckCircle, XCircle, Loader2, GripVertical, Type, AlignLeft, Image, MousePointer, Minus, MoveVertical, Phone, MessageCircle, MapPin, ExternalLink, BookOpen } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -467,14 +467,21 @@ export function EmailAutomationTab() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Mail className="h-5 w-5" />
             Email Automation
           </CardTitle>
-          <Button size="sm" onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-1" /> Tạo kịch bản
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={handleCreate}>
+              <Plus className="h-4 w-4 mr-1" /> Tạo kịch bản
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <a href="https://youtube.com/shorts/IrFEYNBVJd8?si=8gw4A_klwSlpFgkP" target="_blank" rel="noopener noreferrer">
+                <BookOpen className="h-4 w-4 mr-1" /> Hướng dẫn
+              </a>
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
