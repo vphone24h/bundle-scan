@@ -121,7 +121,7 @@ function NikeHeader(props: HeaderProps) {
           </button>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-white text-black" menuBg="bg-black" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} />
+      <MobileMenu {...props} activeClass="bg-white text-black" menuBg="bg-black" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
     </header>
   );
 }
