@@ -529,43 +529,95 @@ export function EmailAutomationTab() {
           </TabsContent>
 
           <TabsContent value="logs" className="mt-4">
-            {!logs?.length ? (
-              <p className="text-center py-8 text-muted-foreground text-sm">Chưa có email nào được gửi</p>
-            ) : (
-              <ScrollableTableWrapper>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Thời gian</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Khách hàng</TableHead>
-                      <TableHead>Tiêu đề</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {logs.map(log => (
-                      <TableRow key={log.id}>
-                        <TableCell className="whitespace-nowrap text-sm">
-                          {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
-                        </TableCell>
-                        <TableCell className="text-sm">{log.customer_email}</TableCell>
-                        <TableCell className="text-sm">{log.customer_name || '-'}</TableCell>
-                        <TableCell className="text-sm max-w-[200px] truncate">{log.subject}</TableCell>
-                        <TableCell>
-                          {log.status === 'sent' ? (
-                            <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
-                          ) : log.status === 'failed' ? (
-                            <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />Lỗi</Badge>
-                          ) : (
-                            <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Đang gửi</Badge>
-                          )}
-                        </TableCell>
+            <div className="flex gap-2 mb-3">
+              <Button variant={logSubTab === 'automation' ? 'default' : 'outline'} size="sm" onClick={() => setLogSubTab('automation')}>
+                Automation ({logs?.length || 0})
+              </Button>
+              <Button variant={logSubTab === 'order' ? 'default' : 'outline'} size="sm" onClick={() => setLogSubTab('order')}>
+                Đơn hàng ({orderEmailLogs?.length || 0})
+              </Button>
+            </div>
+
+            {logSubTab === 'automation' && (
+              !logs?.length ? (
+                <p className="text-center py-8 text-muted-foreground text-sm">Chưa có email automation nào được gửi</p>
+              ) : (
+                <ScrollableTableWrapper>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Thời gian</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Khách hàng</TableHead>
+                        <TableHead>Tiêu đề</TableHead>
+                        <TableHead>Trạng thái</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </ScrollableTableWrapper>
+                    </TableHeader>
+                    <TableBody>
+                      {logs.map(log => (
+                        <TableRow key={log.id}>
+                          <TableCell className="whitespace-nowrap text-sm">
+                            {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
+                          </TableCell>
+                          <TableCell className="text-sm">{log.customer_email}</TableCell>
+                          <TableCell className="text-sm">{log.customer_name || '-'}</TableCell>
+                          <TableCell className="text-sm max-w-[200px] truncate">{log.subject}</TableCell>
+                          <TableCell>
+                            {log.status === 'sent' ? (
+                              <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
+                            ) : log.status === 'failed' ? (
+                              <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />Lỗi</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Đang gửi</Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollableTableWrapper>
+              )
+            )}
+
+            {logSubTab === 'order' && (
+              !orderEmailLogs?.length ? (
+                <p className="text-center py-8 text-muted-foreground text-sm">Chưa có email đơn hàng nào được gửi</p>
+              ) : (
+                <ScrollableTableWrapper>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Thời gian</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Loại</TableHead>
+                        <TableHead>Trạng thái</TableHead>
+                        <TableHead>Lỗi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {orderEmailLogs.map((log: any) => (
+                        <TableRow key={log.id}>
+                          <TableCell className="whitespace-nowrap text-sm">
+                            {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
+                          </TableCell>
+                          <TableCell className="text-sm max-w-[180px] truncate">{log.recipient_email}</TableCell>
+                          <TableCell className="text-sm">{log.email_type}</TableCell>
+                          <TableCell>
+                            {(log.status === 'sent' || log.status === 'success') ? (
+                              <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
+                            ) : (log.status === 'failed' || log.status === 'error') ? (
+                              <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />Lỗi</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Đang gửi</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-destructive max-w-[200px] truncate">{log.error_message || '-'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollableTableWrapper>
+              )
             )}
           </TabsContent>
         </Tabs>
