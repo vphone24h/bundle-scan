@@ -353,19 +353,13 @@ export function useReportChartData(filters?: {
       // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as { date: string; revenue: number; profit: number; count: number }[];
 
-      // Use Vietnam timezone (GMT+7) for date filtering
-      const vnNow = toVietnamDate(new Date());
-      const getVnDateString = (d: Date) => {
-        const vn = toVietnamDate(d);
-        return `${vn.getFullYear()}-${String(vn.getMonth() + 1).padStart(2, '0')}-${String(vn.getDate()).padStart(2, '0')}`;
-      };
+      // Use browser local timezone for date filtering
+      const now = new Date();
+      const startDate = filters?.startDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const endDate = filters?.endDate || getLocalDateString(now);
       
-      const startDate = filters?.startDate || `${vnNow.getFullYear()}-${String(vnNow.getMonth() + 1).padStart(2, '0')}-01`;
-      const endDate = filters?.endDate || getVnDateString(vnNow);
-      
-      // Create Vietnam timezone boundaries then convert to ISO for queries
-      const startISO = new Date(`${startDate}T00:00:00+07:00`).toISOString();
-      const endISO = new Date(`${endDate}T23:59:59.999+07:00`).toISOString();
+      // Create proper local timezone boundaries for queries
+      const { startISO, endISO } = getLocalDateRangeISO(startDate, endDate);
 
       let query = supabase
         .from('export_receipts')
