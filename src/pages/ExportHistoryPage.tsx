@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TablePagination } from '@/components/ui/table-pagination';
 import {
   Table,
@@ -589,8 +590,18 @@ export default function ExportHistoryPage() {
           <Card>
             <CardContent className="pt-6">
               {receiptsLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Đang tải...
+                <div className="space-y-3 py-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex gap-4 items-center">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-5 w-28" />
+                      <Skeleton className="h-5 w-24" />
+                      <Skeleton className="h-5 w-20 hidden lg:block" />
+                      <Skeleton className="h-5 w-16" />
+                      <Skeleton className="h-5 w-24" />
+                      <Skeleton className="h-5 w-16" />
+                    </div>
+                  ))}
                 </div>
               ) : filteredReceipts?.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -637,7 +648,7 @@ export default function ExportHistoryPage() {
                           {receipt.branches?.name || '-'}
                         </TableCell>
                         <TableCell className="text-center">
-                          {receipt.export_receipt_items?.length || 0}
+                          {(receipt as any).item_count || '-'}
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {receipt.total_amount.toLocaleString('vi-VN')}đ
@@ -720,8 +731,17 @@ export default function ExportHistoryPage() {
           <Card>
             <CardContent className="pt-6">
               {itemsLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Đang tải...
+                <div className="space-y-3 py-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex gap-4 items-center">
+                      <Skeleton className="h-5 w-40" />
+                      <Skeleton className="h-5 w-12" />
+                      <Skeleton className="h-5 w-24" />
+                      <Skeleton className="h-5 w-24" />
+                      <Skeleton className="h-5 w-20" />
+                      <Skeleton className="h-5 w-16" />
+                    </div>
+                  ))}
                 </div>
               ) : groupedItems?.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">

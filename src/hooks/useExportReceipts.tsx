@@ -106,8 +106,7 @@ export function useExportReceipts(filters?: {
     *,
     customers(name, phone, address),
     branches(name),
-    export_receipt_payments(*),
-    export_receipt_items(id)
+    export_receipt_payments(*)
   `;
 
   const result = useQuery({
