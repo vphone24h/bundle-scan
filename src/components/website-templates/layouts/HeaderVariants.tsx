@@ -245,20 +245,23 @@ function MinimalHeader(props: HeaderProps) {
 
 // === SHOPEE (marketplace, playful) ===
 function ShopeeHeader(props: HeaderProps) {
+  const isTop = props.menuPosition === 'top';
   return (
     <header className="sticky top-0 z-50 bg-gradient-to-r from-orange-500 to-red-500 border-b border-orange-600/20 shadow-sm">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-12">
           <div className="flex items-center gap-3">
-            <button onClick={props.onToggleMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-white/20 transition-colors sm:hidden text-white">
-              {props.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+            {!isTop && (
+              <button onClick={props.onToggleMenu} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-white/20 transition-colors sm:hidden text-white">
+                {props.mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
+            )}
             <button onClick={props.onNavigateHome} className="flex items-center gap-2.5 text-white">
               {props.logoUrl && <img src={props.logoUrl} alt={props.storeName} className="h-7 w-7 rounded-lg object-cover" />}
               <span className="font-bold text-sm">{props.storeName}</span>
             </button>
           </div>
-          <DesktopNav {...props} activeClass="bg-white text-orange-600" inactiveClass="text-white/80 hover:bg-white/20" />
+          {!isTop && <DesktopNav {...props} activeClass="bg-white text-orange-600" inactiveClass="text-white/80 hover:bg-white/20" />}
           <div className="flex items-center gap-1">
             <button onClick={props.onOpenSearch} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-white/20 transition-colors text-white">
               <Search className="h-5 w-5" />
@@ -266,7 +269,11 @@ function ShopeeHeader(props: HeaderProps) {
           </div>
         </div>
       </div>
-      <MobileMenu {...props} activeClass="bg-white/20 text-white" menuBg="bg-gradient-to-b from-orange-600 to-red-600" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
+      {isTop ? (
+        <TopNavBar navItems={props.navItems} onNavClick={props.onNavClick} isNavActive={props.isNavActive} activeClass="bg-white/20 text-white" inactiveClass="text-white/80 hover:bg-white/10" />
+      ) : (
+        <MobileMenu {...props} activeClass="bg-white/20 text-white" menuBg="bg-gradient-to-b from-orange-600 to-red-600" menuTextClass="text-white" storeName={props.storeName} logoUrl={props.logoUrl} menuPosition={props.menuPosition} />
+      )}
     </header>
   );
 }
