@@ -132,8 +132,7 @@ function parseVPhoneRow(row: any[]): ParsedOrder | null {
     const lines6 = col6.split('\n').map((l: string) => l.trim());
     let orderDate = '';
     for (const line of lines6) {
-      // Match dd/MM/yyyy pattern
-      const dateMatch = line.match(/^(\d{1,2}\/\d{1,2}\/\d{4})$/);
+      const dateMatch = line.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
       if (dateMatch) {
         orderDate = dateMatch[1];
         break;
