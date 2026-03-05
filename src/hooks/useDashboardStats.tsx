@@ -139,10 +139,10 @@ export function useDashboardStats() {
       } as DashboardStats;
     },
     enabled: !isTenantLoading && !branchLoading,
-    staleTime: 2 * 60 * 1000, // 2 min - reads from pre-computed daily_stats
-    refetchOnWindowFocus: false,
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: true,
     refetchOnReconnect: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
     placeholderData: (previous) => previous,
   });
 }
