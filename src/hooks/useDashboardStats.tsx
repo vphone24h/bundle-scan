@@ -66,6 +66,18 @@ export function useDashboardStats() {
         exportQuery = exportQuery.eq('branch_id', branchId);
       }
 
+      // Query returns (fee_type=none) — same as Reports page
+      let returnQuery = supabase
+        .from('export_returns')
+        .select('id, sale_price, import_price, product_id, fee_type')
+        .eq('fee_type', 'none')
+        .gte('return_date', todayStartUTC)
+        .lte('return_date', todayEndUTC);
+
+      if (shouldFilter && branchId) {
+        returnQuery = returnQuery.eq('branch_id', branchId);
+      }
+
       let todayImportsQuery = supabase
         .from('import_receipts')
         .select('id', { count: 'exact' })
@@ -77,8 +89,9 @@ export function useDashboardStats() {
         todayImportsQuery = todayImportsQuery.eq('branch_id', branchId);
       }
 
-      const [{ data: todayExports }, { count: todayImportsCount }] = await Promise.all([
+      const [{ data: todayExports }, { data: todayReturns }, { count: todayImportsCount }] = await Promise.all([
         exportQuery,
+        returnQuery,
         todayImportsQuery,
       ]);
 
@@ -87,6 +100,7 @@ export function useDashboardStats() {
       let todayProfit = 0;
       let todaySold = 0;
 
+      // Collect all product IDs from sales + returns
       const productIdsSet = new Set<string>();
       todayExports?.forEach(receipt => {
         receipt.export_receipt_items?.forEach(item => {
@@ -94,6 +108,9 @@ export function useDashboardStats() {
             if (item.product_id) productIdsSet.add(item.product_id);
           }
         });
+      });
+      todayReturns?.forEach((ret: any) => {
+        if (ret.product_id) productIdsSet.add(ret.product_id);
       });
 
       let productsMap: Record<string, number> = {};
@@ -109,6 +126,7 @@ export function useDashboardStats() {
         }, {} as Record<string, number>);
       }
 
+      // Sales profit
       todayExports?.forEach(receipt => {
         receipt.export_receipt_items?.forEach(item => {
           if (item.status === 'sold' || item.status === 'returned') {
@@ -119,6 +137,13 @@ export function useDashboardStats() {
             todaySold++;
           }
         });
+      });
+
+      // Subtract returns (fee_type=none) — matching Reports logic exactly
+      todayReturns?.forEach((ret: any) => {
+        const salePrice = Number(ret.sale_price);
+        const importPrice = ret.product_id ? (productsMap[ret.product_id] || 0) : 0;
+        todayProfit -= (salePrice - importPrice);
       });
 
       const todayImports = todayImportsCount || 0;
