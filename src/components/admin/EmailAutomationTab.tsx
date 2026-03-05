@@ -60,9 +60,13 @@ const BUTTON_PRESETS = [
 const VARIABLES = [
   { key: '{{customer_name}}', label: 'Tên khách hàng' },
   { key: '{{product_name}}', label: 'Tên sản phẩm' },
+  { key: '{{product_price}}', label: 'Giá sản phẩm' },
+  { key: '{{order_code}}', label: 'Mã đơn hàng' },
   { key: '{{purchase_date}}', label: 'Ngày mua hàng' },
   { key: '{{warranty_end}}', label: 'Hạn bảo hành' },
   { key: '{{store_name}}', label: 'Tên cửa hàng' },
+  { key: '{{phone}}', label: 'SĐT cửa hàng' },
+  { key: '{{address}}', label: 'Địa chỉ cửa hàng' },
 ];
 
 interface BlockItem {
