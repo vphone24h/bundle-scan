@@ -19,21 +19,6 @@ const STATUS_BADGE: Record<string, { label: string; variant: 'default' | 'destru
   pending: { label: 'Đang gửi', variant: 'secondary' },
 };
 
-function useEmailLogs() {
-  return useQuery({
-    queryKey: ['landing-email-logs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('landing_order_email_logs' as any)
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data as any[];
-    },
-  });
-}
-
 function useZaloLogs() {
   return useQuery({
     queryKey: ['zalo-message-logs'],
