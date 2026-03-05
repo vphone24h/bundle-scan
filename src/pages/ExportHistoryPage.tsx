@@ -823,18 +823,21 @@ export default function ExportHistoryPage() {
                 </ScrollableTableWrapper>
                 </div>
               )}
-              {(receipts?.length || 0) > 0 && (
-                <TablePagination
-                  currentPage={receiptPage}
-                  totalPages={Math.max(1, Math.ceil(receiptsTotalCount / receiptPageSize))}
-                  pageSize={receiptPageSize}
-                  totalItems={receiptsTotalCount}
-                  startIndex={(receiptPage - 1) * receiptPageSize + 1}
-                  endIndex={Math.min(receiptPage * receiptPageSize, receiptsTotalCount)}
-                  onPageChange={setReceiptPage}
-                  onPageSizeChange={(size) => { setReceiptPageSize(size); setReceiptPage(1); }}
-                />
-              )}
+              {(receipts?.length || 0) > 0 && (() => {
+                const receiptsTotalEstimate = receiptsHasMore ? (receiptPage * receiptPageSize) + 1 : ((receiptPage - 1) * receiptPageSize) + (receipts?.length || 0);
+                return (
+                  <TablePagination
+                    currentPage={receiptPage}
+                    totalPages={Math.max(1, Math.ceil(receiptsTotalEstimate / receiptPageSize))}
+                    pageSize={receiptPageSize}
+                    totalItems={receiptsTotalEstimate}
+                    startIndex={(receiptPage - 1) * receiptPageSize + 1}
+                    endIndex={Math.min(receiptPage * receiptPageSize, receiptsTotalEstimate)}
+                    onPageChange={setReceiptPage}
+                    onPageSizeChange={(size) => { setReceiptPageSize(size); setReceiptPage(1); }}
+                  />
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>
