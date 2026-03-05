@@ -348,16 +348,16 @@ export default function ExportHistoryPage() {
 
   const CHUNK_SIZE = 5000;
 
-  // Helper: fetch receipts page by page (1000 per page) to avoid timeout
+  // Helper: fetch receipts page by page (500 per page, NO joins) to avoid timeout
   const fetchReceiptsStreaming = async () => {
     const allData: any[] = [];
     let from = 0;
-    const pageSize = 1000;
+    const pageSize = 500;
     while (true) {
       setExportProgress(`Đang tải phiếu ${from + 1}...`);
       let q = supabase
         .from('export_receipts')
-        .select(`id, code, export_date, total_amount, paid_amount, debt_amount, vat_rate, vat_amount, status, branch_id, customer_id, sales_staff_id, created_by, customers(name, phone), branches(name)`)
+        .select('id, code, export_date, total_amount, paid_amount, debt_amount, vat_rate, vat_amount, status, branch_id, customer_id, sales_staff_id, created_by')
         .order('export_date', { ascending: false });
       if (statusFilter !== '_all_') q = q.eq('status', statusFilter);
       if (dateFromFilter) q = q.gte('export_date', dateFromFilter);
@@ -371,6 +371,32 @@ export default function ExportHistoryPage() {
       if (data.length < pageSize) break;
       from += pageSize;
     }
+
+    // Fetch customer names separately (batch 500)
+    setExportProgress('Đang tải thông tin khách hàng...');
+    const customerIds = [...new Set(allData.map(r => r.customer_id).filter(Boolean))];
+    const customerMap: Record<string, { name: string; phone: string }> = {};
+    for (let i = 0; i < customerIds.length; i += 500) {
+      const chunk = customerIds.slice(i, i + 500);
+      const { data } = await supabase.from('customers').select('id, name, phone').in('id', chunk);
+      if (data) data.forEach(c => { customerMap[c.id] = { name: c.name, phone: c.phone || '' }; });
+    }
+
+    // Fetch branch names separately
+    setExportProgress('Đang tải thông tin chi nhánh...');
+    const branchIds = [...new Set(allData.map(r => r.branch_id).filter(Boolean))];
+    const branchMap: Record<string, string> = {};
+    if (branchIds.length > 0) {
+      const { data } = await supabase.from('branches').select('id, name').in('id', branchIds);
+      if (data) data.forEach(b => { branchMap[b.id] = b.name; });
+    }
+
+    // Attach customer/branch info
+    for (const r of allData) {
+      r.customers = customerMap[r.customer_id] || { name: 'Khách lẻ', phone: '' };
+      r.branches = { name: branchMap[r.branch_id] || '' };
+    }
+
     return allData;
   };
 
