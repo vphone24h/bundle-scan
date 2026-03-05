@@ -83,8 +83,8 @@ export function useDashboardStats() {
           .from('export_receipts')
           .select('total_amount, status')
           .neq('status', 'cancelled')
-          .gte('export_date', todayStart.toISOString())
-          .lte('export_date', todayEnd.toISOString());
+          .gte('export_date', todayStartUTC)
+          .lte('export_date', todayEndUTC);
 
         if (shouldFilter && branchId) {
           exportQuery = exportQuery.eq('branch_id', branchId);
