@@ -16,44 +16,49 @@ interface ExportOptions {
   data: any[];
 }
 
+interface ExportSheet {
+  sheetName: string;
+  columns: ExportColumn[];
+  data: any[];
+}
+
+interface ExportMultiSheetOptions {
+  filename: string;
+  sheets: ExportSheet[];
+}
+
 /**
  * Export data to Excel file with proper formatting
  */
 export function exportToExcel({ filename, sheetName = 'Data', columns, data }: ExportOptions) {
-  // Create headers
-  const headers = columns.map(col => col.header);
-  
-  // Create rows
-  const rows = data.map(row => 
-    columns.map(col => {
-      const value = row[col.key];
-      
-      // If column is marked as numeric, keep as number for Excel calculations
-      if (col.isNumeric && typeof value === 'number') {
-        return value;
-      }
-      
-      if (col.format) {
-        return col.format(value, row);
-      }
-      return value ?? '';
-    })
-  );
+  exportToExcelMultiSheet({
+    filename,
+    sheets: [{ sheetName, columns, data }],
+  });
+}
 
-  // Combine headers and rows
-  const wsData = [headers, ...rows];
-  
-  // Create worksheet
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-  
-  // Set column widths
-  ws['!cols'] = columns.map(col => ({ wch: col.width || 15 }));
-  
-  // Create workbook
+/**
+ * Export data to Excel file with multiple sheets
+ */
+export function exportToExcelMultiSheet({ filename, sheets }: ExportMultiSheetOptions) {
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  
-  // Download file
+
+  for (const sheet of sheets) {
+    const headers = sheet.columns.map(col => col.header);
+    const rows = sheet.data.map(row =>
+      sheet.columns.map(col => {
+        const value = row[col.key];
+        if (col.isNumeric && typeof value === 'number') return value;
+        if (col.format) return col.format(value, row);
+        return value ?? '';
+      })
+    );
+    const wsData = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = sheet.columns.map(col => ({ wch: col.width || 15 }));
+    XLSX.utils.book_append_sheet(wb, ws, sheet.sheetName);
+  }
+
   XLSX.writeFile(wb, `${filename}.xlsx`);
 }
 
