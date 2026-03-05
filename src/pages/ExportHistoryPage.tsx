@@ -536,9 +536,9 @@ export default function ExportHistoryPage() {
                   </Badge>
                 )}
               </Button>
-              <Button variant="outline" onClick={handleExportExcel}>
-                <FileDown className="h-4 w-4 mr-2" />
-                Xuất Excel
+              <Button variant="outline" onClick={handleExportExcel} disabled={isExporting}>
+                {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileDown className="h-4 w-4 mr-2" />}
+                {isExporting ? 'Đang tải dữ liệu...' : 'Xuất Excel'}
               </Button>
             </div>
 
