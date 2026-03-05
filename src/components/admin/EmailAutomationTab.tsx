@@ -72,6 +72,7 @@ function newBlock(type: string): BlockItem {
     case 'text': return { ...base, content: { text: 'Xin chào {{customer_name}}, cảm ơn bạn đã mua hàng tại cửa hàng chúng tôi.' } };
     case 'image': return { ...base, content: { url: '', alt: 'Hình ảnh' } };
     case 'button': return { ...base, content: { text: 'Liên hệ ngay', url: '#', color: '#1a56db' } };
+    case 'link': return { ...base, content: { text: 'Nhấn vào đây để xem', url: 'https://', linkText: '' } };
     case 'divider': return { ...base, content: {} };
     case 'spacer': return { ...base, content: { height: 20 } };
     default: return base;
