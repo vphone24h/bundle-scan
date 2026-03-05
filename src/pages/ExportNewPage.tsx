@@ -1418,8 +1418,8 @@ export default function ExportNewPage() {
                 </p>
               )}
 
-              {/* Auto Zalo toggle */}
-              {(landingSettings as any)?.zalo_enabled && (landingSettings as any)?.zalo_on_export && (
+              {/* Auto Zalo toggle - tạm ẩn đang nghiên cứu */}
+              {/* {(landingSettings as any)?.zalo_enabled && (landingSettings as any)?.zalo_on_export && (
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                   <Label htmlFor="auto-zalo-export" className="flex items-center gap-2 cursor-pointer text-sm">
                     <MessageCircle className="h-4 w-4 text-primary" />
@@ -1431,7 +1431,7 @@ export default function ExportNewPage() {
                     onCheckedChange={setAutoZaloEnabled}
                   />
                 </div>
-              )}
+              )} */}
 
               <Button 
                 className="w-full" 
