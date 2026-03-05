@@ -868,6 +868,7 @@ export default function ExportHistoryPage() {
                   </TableBody>
                 </Table>
                 </ScrollableTableWrapper>
+                </div>
               )}
               {groupedItems.length > 0 && (
                 <TablePagination
