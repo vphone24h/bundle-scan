@@ -540,12 +540,20 @@ export function EmailAutomationTab() {
           </TabsContent>
         </Tabs>
 
+        <EmailTemplatePickerDialog
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          onSelectTemplate={handleSelectTemplate}
+          onCreateManual={handleCreateManual}
+        />
+
         {formOpen && (
           <AutomationFormDialog
             open={formOpen}
             onOpenChange={setFormOpen}
             automation={editItem}
             tenantId={tenant.id}
+            prefilledTemplate={prefilledTemplate}
           />
         )}
       </CardContent>
