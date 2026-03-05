@@ -195,7 +195,7 @@ export default function ExportHistoryPage() {
   const [returnReceipt, setReturnReceipt] = useState<ExportReceipt | null>(null);
 
   // Hooks
-  const { data: receipts, isLoading: receiptsLoading, totalCount: receiptsTotalCount } = useExportReceipts({
+  const { data: receipts, isLoading: receiptsLoading, isFetching: receiptsFetching, totalCount: receiptsTotalCount } = useExportReceipts({
     search: debouncedSearch || undefined,
     status: statusFilter !== '_all_' ? statusFilter : undefined,
     dateFrom: dateFromFilter || undefined,
@@ -204,7 +204,7 @@ export default function ExportHistoryPage() {
     page: receiptPage,
     pageSize: receiptPageSize,
   });
-  const { data: items, isLoading: itemsLoading, totalCount: itemsTotalCount } = useExportReceiptItems(activeTab === 'items', {
+  const { data: items, isLoading: itemsLoading, isFetching: itemsFetching, totalCount: itemsTotalCount } = useExportReceiptItems(activeTab === 'items', {
     search: debouncedSearch || undefined,
     categoryId: categoryFilter !== '_all_' ? categoryFilter : undefined,
     page: itemPage,
