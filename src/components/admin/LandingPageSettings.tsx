@@ -314,6 +314,19 @@ function CustomDomainCTA() {
               Chưa có nội dung bài viết. Vui lòng liên hệ quản trị viên nền tảng.
             </p>
           )}
+          {storeUrl && (
+            <div className="rounded-lg border bg-muted/50 p-3 mt-2">
+              <p className="text-xs text-muted-foreground mb-1">🌐 Website hiện tại của bạn:</p>
+              <a
+                href={storeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-primary hover:underline break-all"
+              >
+                {storeUrl.replace('https://', '')}
+              </a>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>
