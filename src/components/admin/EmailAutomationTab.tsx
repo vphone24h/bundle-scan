@@ -14,7 +14,7 @@ import { Plus, Pencil, Trash2, Mail, Eye, Send, Clock, CheckCircle, XCircle, Loa
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { useTenant } from '@/hooks/useTenant';
+import { useCurrentTenant } from '@/hooks/useTenant';
 import {
   useEmailAutomations,
   useEmailAutomationBlocks,
