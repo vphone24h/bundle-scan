@@ -766,7 +766,7 @@ export function ProductDetailPage({
             case 'call':
               if (!warrantyHotline) return null;
               return (
-                <Button key={btn.id} variant="outline" className="h-11 px-4" asChild>
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
                   <a href={`tel:${warrantyHotline}`} className="gap-2">{btn.icon} {btn.label}</a>
                 </Button>
               );
