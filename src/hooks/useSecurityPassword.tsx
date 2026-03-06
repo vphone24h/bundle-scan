@@ -22,10 +22,10 @@ export function useSecurityPasswordStatus() {
 export function useSetSecurityPassword() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (password: string) => {
+    mutationFn: async ({ password, oldPassword }: { password: string; oldPassword?: string }) => {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await supabase.functions.invoke('security-password', {
-        body: { action: 'set_password', password },
+        body: { action: 'set_password', password, old_password: oldPassword },
       });
       if (res.error) throw new Error(res.error.message || 'Error');
       if (res.data?.error) throw new Error(res.data.error);
