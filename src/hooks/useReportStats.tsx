@@ -396,7 +396,7 @@ export function useReportChartData(filters?: {
           total_amount,
           export_date,
           status,
-          export_receipt_items(sale_price, status, product_id)
+          export_receipt_items(sale_price, status, product_id, imei)
         `)
         .gte('export_date', startISO)
         .lte('export_date', endISO)
