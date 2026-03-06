@@ -167,6 +167,7 @@ export function RevenueProfitReport() {
       default: return;
     }
 
+    setActivePreset(preset);
     setStartDate(format(start, 'yyyy-MM-dd'));
     setEndDate(format(end, 'yyyy-MM-dd'));
   };
