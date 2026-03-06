@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useVerifySecurityPassword, useRequestResetOTP, useVerifyResetOTP } from '@/hooks/useSecurityPassword';
 import { toast } from 'sonner';
 import { Lock, KeyRound, Loader2, Mail, Fingerprint } from 'lucide-react';
-import { isCredentialManagerSupported, getSecurityCredential, saveSecurityCredential } from '@/lib/credentialManager';
+import { isBiometricLikelySupported, saveSecurityPassword, getSavedSecurityPassword, hasSavedSecurityPassword } from '@/lib/biometricAuth';
 
 interface SecurityPasswordDialogProps {
   open: boolean;
@@ -22,25 +22,17 @@ export function SecurityPasswordDialog({ open, onOpenChange, onSuccess, title, d
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
 
   const verify = useVerifySecurityPassword();
   const requestOTP = useRequestResetOTP();
   const verifyOTP = useVerifyResetOTP();
 
-  // Check biometric availability when dialog opens
-  useEffect(() => {
-    if (open && mode === 'verify') {
-      setBiometricAvailable(isCredentialManagerSupported());
-    }
-  }, [open, mode]);
+  const canUseBiometric = isBiometricLikelySupported() && hasSavedSecurityPassword();
 
-  const handleVerifySuccess = async (pw: string) => {
-    // Offer to save credential for Face ID next time
-    if (isCredentialManagerSupported()) {
-      await saveSecurityCredential(pw);
-    }
+  const handleVerifySuccess = (pw: string) => {
+    // Save for Face ID next time
+    saveSecurityPassword(pw);
     onSuccess();
     onOpenChange(false);
     setPassword('');
@@ -51,7 +43,7 @@ export function SecurityPasswordDialog({ open, onOpenChange, onSuccess, title, d
     try {
       const result = await verify.mutateAsync(password);
       if (result.valid) {
-        await handleVerifySuccess(password);
+        handleVerifySuccess(password);
       } else {
         toast.error('Mật khẩu không đúng');
       }
@@ -63,7 +55,7 @@ export function SecurityPasswordDialog({ open, onOpenChange, onSuccess, title, d
   const handleBiometric = async () => {
     setBiometricLoading(true);
     try {
-      const savedPw = await getSecurityCredential();
+      const savedPw = getSavedSecurityPassword();
       if (!savedPw) {
         toast.info('Chưa có mật khẩu đã lưu. Vui lòng nhập thủ công lần đầu.');
         setBiometricLoading(false);
@@ -71,7 +63,7 @@ export function SecurityPasswordDialog({ open, onOpenChange, onSuccess, title, d
       }
       const result = await verify.mutateAsync(savedPw);
       if (result.valid) {
-        await handleVerifySuccess(savedPw);
+        handleVerifySuccess(savedPw);
       } else {
         toast.error('Mật khẩu đã lưu không còn đúng. Vui lòng nhập lại.');
       }
@@ -104,10 +96,7 @@ export function SecurityPasswordDialog({ open, onOpenChange, onSuccess, title, d
     try {
       await verifyOTP.mutateAsync({ otp, newPassword });
       toast.success('Đã đặt lại mật khẩu bảo mật');
-      // Save new password for biometric
-      if (isCredentialManagerSupported()) {
-        await saveSecurityCredential(newPassword);
-      }
+      saveSecurityPassword(newPassword);
       onSuccess();
       onOpenChange(false);
       setMode('verify');
@@ -132,32 +121,31 @@ export function SecurityPasswordDialog({ open, onOpenChange, onSuccess, title, d
 
         {mode === 'verify' && (
           <div className="space-y-4">
-            {/* Biometric / Face ID button */}
-            {biometricAvailable && (
-              <Button
-                onClick={handleBiometric}
-                disabled={biometricLoading || verify.isPending}
-                variant="outline"
-                className="w-full h-14 text-base gap-3 border-primary/30 hover:border-primary hover:bg-primary/5"
-              >
-                {biometricLoading ? (
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                ) : (
-                  <Fingerprint className="h-6 w-6 text-primary" />
-                )}
-                Mở khoá bằng Face ID
-              </Button>
-            )}
-
-            {biometricAvailable && (
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
+            {/* Face ID / Biometric button */}
+            {canUseBiometric && (
+              <>
+                <Button
+                  onClick={handleBiometric}
+                  disabled={biometricLoading || verify.isPending}
+                  variant="outline"
+                  className="w-full h-14 text-base gap-3 border-primary/30 hover:border-primary hover:bg-primary/5"
+                >
+                  {biometricLoading ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    <Fingerprint className="h-6 w-6 text-primary" />
+                  )}
+                  Mở khoá bằng Face ID
+                </Button>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">hoặc nhập mật khẩu</span>
+                  </div>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">hoặc nhập mật khẩu</span>
-                </div>
-              </div>
+              </>
             )}
 
             <div className="space-y-2">
@@ -168,7 +156,7 @@ export function SecurityPasswordDialog({ open, onOpenChange, onSuccess, title, d
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Nhập mật khẩu..."
                 onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
-                autoFocus={!biometricAvailable}
+                autoFocus={!canUseBiometric}
               />
             </div>
             <div className="flex gap-2">
@@ -178,6 +166,11 @@ export function SecurityPasswordDialog({ open, onOpenChange, onSuccess, title, d
                 Xác nhận
               </Button>
             </div>
+            {isBiometricLikelySupported() && !hasSavedSecurityPassword() && (
+              <p className="text-xs text-muted-foreground text-center">
+                💡 Nhập mật khẩu lần đầu, từ lần sau có thể dùng Face ID
+              </p>
+            )}
             <Button variant="link" size="sm" className="text-xs p-0 h-auto" onClick={() => setMode('reset_request')}>
               Quên mật khẩu?
             </Button>
