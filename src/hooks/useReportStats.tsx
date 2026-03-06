@@ -493,7 +493,9 @@ export function useReportChartData(filters?: {
         receipt.export_receipt_items?.forEach(item => {
           if (item.status === 'sold' || item.status === 'returned') {
             const salePrice = Number(item.sale_price);
-            const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
+            const importPrice = item.product_id
+              ? (productsMap[item.product_id] || 0)
+              : (item.imei ? (chartImeiPriceMap[item.imei] || 0) : 0);
             dataMap[key].revenue += salePrice;
             dataMap[key].profit += (salePrice - importPrice);
             dataMap[key].count++;
