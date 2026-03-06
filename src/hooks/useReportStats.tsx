@@ -210,7 +210,7 @@ export function useReportStats(filters?: {
         cashBookQuery = cashBookQuery.eq('branch_id', effectiveBranchId);
       }
 
-      const { data: cashBookEntries, error: cashBookError } = await cashBookQuery;
+      const { data: cashBookEntries, error: cashBookError } = await cashBookQuery.limit(5000);
       if (cashBookError) throw cashBookError;
 
       // Tính toán các chỉ số
