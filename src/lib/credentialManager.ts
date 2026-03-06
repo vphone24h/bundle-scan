@@ -14,7 +14,7 @@ const CREDENTIAL_ID = 'vkho-security-password';
 export function isCredentialManagerSupported(): boolean {
   return typeof window !== 'undefined' && 
     'credentials' in navigator && 
-    typeof PasswordCredential !== 'undefined';
+    typeof window.PasswordCredential !== 'undefined';
 }
 
 export async function saveSecurityCredential(password: string): Promise<boolean> {
