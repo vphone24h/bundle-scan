@@ -224,7 +224,19 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
                 <span className="font-medium">{receipt?.suppliers?.name || '-'}</span>
               </div>
               <div className="flex justify-between text-sm mt-2">
-                <span>Tổng tiền hoàn trả:</span>
+                <span>Tổng giá nhập:</span>
+                <span className="font-bold text-lg">
+                  {formatCurrencyWithSpaces(totalImportAmount)}
+                </span>
+              </div>
+              {feeType !== 'none' && (
+                <div className="flex justify-between text-sm mt-1 text-destructive">
+                  <span>Phí giữ lại:</span>
+                  <span className="font-medium">-{formatCurrencyWithSpaces(supplierKeepAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm mt-1">
+                <span>Hoàn trả NCC:</span>
                 <span className="font-bold text-lg text-primary">
                   {formatCurrencyWithSpaces(totalRefundAmount)}
                 </span>
