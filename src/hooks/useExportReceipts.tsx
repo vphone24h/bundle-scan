@@ -771,6 +771,9 @@ export function useReturnProduct() {
       queryClient.invalidateQueries({ queryKey: ['export-receipt-items'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
     },
   });
 }
