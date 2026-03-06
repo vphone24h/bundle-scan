@@ -330,6 +330,7 @@ export default function UniversalStoreTemplate({
           showInstallmentButton={true}
           detailSections={(settings as any)?.custom_product_detail_sections || null}
           ctaButtons={(settings as any)?.custom_cta_buttons || null}
+          websiteTemplate={settings?.website_template}
           relatedProducts={allProducts.filter(p => p.category_id === selectedProduct.category_id && p.id !== selectedProduct.id).slice(0, 10)}
           onProductClick={openProduct}
           storeInfo={{ name: displayStoreName, phone: settings?.store_phone || '', address: settings?.store_address || '', email: settings?.store_email || '' }}

@@ -37,6 +37,7 @@ interface ProductDetailPageProps {
   showInstallmentButton?: boolean; // deprecated, use detailSections
   detailSections?: ProductDetailSectionConfig[] | null;
   ctaButtons?: CTAButtonItem[] | null;
+  websiteTemplate?: string | null;
   relatedProducts?: LandingProduct[];
   recentlyViewedProducts?: LandingProduct[];
   onProductClick?: (p: LandingProduct) => void;
@@ -51,6 +52,7 @@ export function ProductDetailPage({
   showInstallmentButton = true,
   detailSections,
   ctaButtons,
+  websiteTemplate,
   relatedProducts = [],
   recentlyViewedProducts = [],
   onProductClick,
@@ -736,7 +738,7 @@ export function ProductDetailPage({
 
       {/* Sticky bottom action bar - only show when not in order form */}
       {!showOrderForm && !orderSuccess && (() => {
-        const buttons = (ctaButtons || getDefaultCTAButtons()).filter(b => b.enabled);
+        const buttons = (ctaButtons || getDefaultCTAButtons(websiteTemplate || undefined)).filter(b => b.enabled);
         if (buttons.length === 0) return null;
 
         const renderButton = (btn: CTAButtonItem) => {
