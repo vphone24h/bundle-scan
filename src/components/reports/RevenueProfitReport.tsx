@@ -108,6 +108,7 @@ export function RevenueProfitReport() {
   const [categoryId, setCategoryId] = useState('_all_');
   const [chartGroupBy, setChartGroupBy] = useState<'day' | 'week' | 'month'>('day');
   const [detailType, setDetailType] = useState<DetailType | null>(null);
+  const [activePreset, setActivePreset] = useState<string | null>('today');
 
   const timePresets = [
     { label: t('common.today'), value: 'today' },
@@ -166,6 +167,7 @@ export function RevenueProfitReport() {
       default: return;
     }
 
+    setActivePreset(preset);
     setStartDate(format(start, 'yyyy-MM-dd'));
     setEndDate(format(end, 'yyyy-MM-dd'));
   };
@@ -215,13 +217,7 @@ export function RevenueProfitReport() {
     value,
   })).sort((a, b) => b.value - a.value) : [];
 
-  if (statsLoading) {
-    return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const isInitialLoad = statsLoading && !stats;
 
   return (
     <div className="space-y-6">
@@ -230,16 +226,23 @@ export function RevenueProfitReport() {
         <CardContent className="pt-6">
           <div className="flex flex-wrap gap-4 items-end">
             <div className="flex flex-wrap gap-2" data-tour="report-time-presets">
-              {timePresets.map((preset) => (
-                <Button
-                  key={preset.value}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleTimePreset(preset.value)}
-                >
-                  {preset.label}
-                </Button>
-              ))}
+              {timePresets.map((preset) => {
+                const isActive = activePreset === preset.value;
+                const isLoadingThis = isActive && statsLoading;
+                return (
+                  <Button
+                    key={preset.value}
+                    variant={isActive ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleTimePreset(preset.value)}
+                    disabled={statsLoading}
+                    className="relative"
+                  >
+                    {isLoadingThis && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
+                    {preset.label}
+                  </Button>
+                );
+              })}
             </div>
             <div className="flex-1" />
             <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!stats}>
@@ -280,6 +283,12 @@ export function RevenueProfitReport() {
         </CardContent>
       </Card>
 
+      {isInitialLoad ? (
+        <div className="min-h-[400px] flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+      <div className={`space-y-6 transition-opacity duration-200 ${statsLoading ? 'opacity-50 pointer-events-none' : ''}`}>
       {/* Main Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard title={`1. ${t('common.salesRevenue')}`} value={formatCurrency(stats?.totalSalesRevenue || 0)} icon={<ShoppingCart className="h-5 w-5" />} description={`${stats?.productsSold || 0} ${t('common.productsSold')}`} onClick={() => setDetailType('sales')} />
@@ -462,6 +471,8 @@ export function RevenueProfitReport() {
         incomeDetails={stats?.incomeDetails || []}
         stats={stats || null}
       />
+      </div>
+      )}
     </div>
   );
 }
