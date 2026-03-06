@@ -93,23 +93,23 @@ export function DateRangeApplyFilter({
   }
 
   return (
-    <div className={`flex gap-2 items-end ${className}`}>
-      <div>
+    <div className={`grid grid-cols-[1fr_1fr_auto] sm:flex gap-2 items-end w-full sm:w-auto ${className}`}>
+      <div className="min-w-0">
         <Label className={labelClassName}>Từ ngày</Label>
         <Input
           type="date"
           value={draftStart}
           onChange={(e) => handleStartChange(e.target.value)}
-          className={inputClassName || 'w-40'}
+          className={inputClassName || 'sm:w-40 w-full'}
         />
       </div>
-      <div>
+      <div className="min-w-0">
         <Label className={labelClassName}>Đến ngày</Label>
         <Input
           type="date"
           value={draftEnd}
           onChange={(e) => handleEndChange(e.target.value)}
-          className={inputClassName || 'w-40'}
+          className={inputClassName || 'sm:w-40 w-full'}
         />
       </div>
       <Button
