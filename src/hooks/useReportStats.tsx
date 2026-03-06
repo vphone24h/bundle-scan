@@ -280,7 +280,9 @@ export function useReportStats(filters?: {
       // Tính lợi nhuận âm từ trả hàng
       returnItems?.forEach((item: any) => {
         const salePrice = Number(item.sale_price);
-        const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
+        const importPrice = item.product_id
+          ? (productsMap[item.product_id] || 0)
+          : (item.imei ? (imeiPriceMap[item.imei] || 0) : 0);
         const profit = salePrice - importPrice;
         
         totalReturnRevenue += salePrice;
