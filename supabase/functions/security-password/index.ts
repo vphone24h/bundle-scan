@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,8 +23,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log("security-password called");
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
+      console.log("No auth header");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -39,13 +41,27 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Try getClaims first, fall back to getUser
+    let userId: string;
+    const token = authHeader.replace("Bearer ", "");
+    try {
+      const { data: claimsData, error: claimsError } = await (supabaseUser.auth as any).getClaims(token);
+      if (claimsError || !claimsData?.claims) {
+        throw new Error("getClaims failed");
+      }
+      userId = claimsData.claims.sub;
+      console.log("Auth via getClaims, userId:", userId);
+    } catch {
+      const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+      if (userError || !user) {
+        console.log("Auth failed:", userError?.message);
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      userId = user.id;
+      console.log("Auth via getUser, userId:", userId);
     }
-    const userId = user.id;
 
     // Get tenant_id and role
     const { data: platformUser } = await supabaseAdmin
@@ -62,6 +78,7 @@ Deno.serve(async (req) => {
     const tenantId = platformUser.tenant_id;
     const body = await req.json();
     const { action } = body;
+    console.log("action:", action, "tenantId:", tenantId);
 
     if (action === "set_password") {
       // Only super_admin can set
@@ -255,6 +272,7 @@ Deno.serve(async (req) => {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("security-password error:", err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
