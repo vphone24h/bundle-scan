@@ -70,13 +70,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        // Clear cache when user signs out or signs in (to prevent tenant data leakage)
-        if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
-          queryClient.clear();
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          if (event === 'SIGNED_IN') queryClient.clear();
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+          setLoading(false);
+        } else if (event === 'SIGNED_OUT') {
+          // Only honour sign-out if user explicitly requested it.
+          // Supabase fires SIGNED_OUT on refresh-token failures too –
+          // we don't want those to log the user out.
+          if (userInitiatedSignOut) {
+            userInitiatedSignOut = false;
+            queryClient.clear();
+            setSession(null);
+            setUser(null);
+            setLoading(false);
+          } else {
+            // Token refresh failed – try to recover silently
+            console.warn('[Auth] SIGNED_OUT fired without user action – attempting recovery');
+            try {
+              const { data: { session: recovered } } = await supabase.auth.getSession();
+              if (recovered) {
+                setSession(recovered);
+                setUser(recovered.user);
+              } else {
+                // Truly no session left – accept logout
+                setSession(null);
+                setUser(null);
+                queryClient.clear();
+              }
+            } catch {
+              // Network error – keep current state, don't force logout
+            }
+            setLoading(false);
+          }
+        } else {
+          // INITIAL_SESSION, USER_UPDATED, etc.
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+          setLoading(false);
         }
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        setLoading(false);
       }
     );
 
