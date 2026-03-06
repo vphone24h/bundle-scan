@@ -639,7 +639,7 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
       {/* Bottom CTA bar */}
       <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t px-4 py-2.5">
         <div className="flex items-center gap-2">
-          {((formData as any)?.custom_cta_buttons as CTAButtonItem[] || getDefaultCTAButtons())
+          {((formData as any)?.custom_cta_buttons as CTAButtonItem[] || getDefaultCTAButtons(templateId))
             .filter(b => b.enabled)
             .map(btn => {
               const isPrimary = btn.action === 'order' || btn.action === 'booking';
