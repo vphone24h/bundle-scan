@@ -252,7 +252,7 @@ Deno.serve(async (req) => {
 
       if (!record || record.reset_otp !== otp) {
         return new Response(JSON.stringify({ error: "Mã OTP không đúng" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
