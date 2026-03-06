@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
 import { getLocalDateString, getLocalDateRangeISO } from '@/lib/vietnamTime';
-// fetchAllRows removed - using server-side limited queries
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 import type { SaleDetailItem, ReturnDetailItem, CashBookDetailItem } from '@/components/reports/ReportStatDetailDialog';
 
