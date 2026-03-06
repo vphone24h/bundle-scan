@@ -52,6 +52,7 @@ export function ProductDetailPage({
   showInstallmentButton = true,
   detailSections,
   ctaButtons,
+  websiteTemplate,
   relatedProducts = [],
   recentlyViewedProducts = [],
   onProductClick,
