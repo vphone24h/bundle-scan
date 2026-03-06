@@ -223,7 +223,9 @@ export function StaffReport() {
     });
   };
 
-  if (isLoading) {
+  const isInitialLoad = isLoading && !staffWithKPIAll.length;
+
+  if (isInitialLoad) {
     return <div className="min-h-[400px] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
