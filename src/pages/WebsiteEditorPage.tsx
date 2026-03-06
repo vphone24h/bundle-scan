@@ -72,6 +72,7 @@ export default function WebsiteEditorPage() {
         custom_products_page_sections: (settings as any).custom_products_page_sections || null,
         custom_products_page_tabs: (settings as any).custom_products_page_tabs || [],
         custom_product_detail_sections: (settings as any).custom_product_detail_sections || null,
+        custom_cta_buttons: (settings as any).custom_cta_buttons || null,
         custom_news_page_sections: (settings as any).custom_news_page_sections || null,
         custom_news_page_tabs: (settings as any).custom_news_page_tabs || [],
         order_email_enabled: (settings as any).order_email_enabled ?? false,
