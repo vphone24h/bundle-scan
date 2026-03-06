@@ -115,7 +115,8 @@ export function useProductReport(filters?: {
       let stockQuery = supabase
         .from('products')
         .select('name, sku, quantity, import_price, total_import_cost, branch_id, category_id, import_date, status, branches(name), categories(name)')
-        .in('status', ['in_stock', 'warranty']);
+        .in('status', ['in_stock', 'warranty'])
+        .limit(10000);
 
       if (effectiveBranchId) {
         stockQuery = stockQuery.eq('branch_id', effectiveBranchId);
