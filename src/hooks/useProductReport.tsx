@@ -82,8 +82,11 @@ export function useProductReport(filters?: {
       const productIds = Array.from(new Set(soldItems?.map(i => i.product_id).filter(Boolean) || []));
       let productsMap: Record<string, number> = {};
       if (productIds.length > 0) {
-        const { data: products } = await supabase.from('products').select('id, import_price').in('id', productIds);
-        productsMap = (products || []).reduce((acc, p) => { acc[p.id] = Number(p.import_price); return acc; }, {} as Record<string, number>);
+        for (let i = 0; i < productIds.length; i += 500) {
+          const chunk = productIds.slice(i, i + 500);
+          const { data: products } = await supabase.from('products').select('id, import_price').in('id', chunk);
+          (products || []).forEach(p => { productsMap[p.id] = Number(p.import_price); });
+        }
       }
 
       // For items without product_id, try to find import price by IMEI
@@ -112,7 +115,8 @@ export function useProductReport(filters?: {
       let stockQuery = supabase
         .from('products')
         .select('name, sku, quantity, import_price, total_import_cost, branch_id, category_id, import_date, status, branches(name), categories(name)')
-        .in('status', ['in_stock', 'warranty']);
+        .in('status', ['in_stock', 'warranty'])
+        .limit(10000);
 
       if (effectiveBranchId) {
         stockQuery = stockQuery.eq('branch_id', effectiveBranchId);
@@ -124,7 +128,8 @@ export function useProductReport(filters?: {
       let soldDeletedQuery = supabase
         .from('products')
         .select('name, sku, import_price, branch_id, category_id, import_date, status, branches(name), categories(name)')
-        .in('status', ['sold', 'deleted']);
+        .in('status', ['sold', 'deleted'])
+        .limit(10000);
 
       if (effectiveBranchId) {
         soldDeletedQuery = soldDeletedQuery.eq('branch_id', effectiveBranchId);
@@ -139,7 +144,8 @@ export function useProductReport(filters?: {
         .eq('status', 'sold')
         .neq('export_receipts.status', 'cancelled')
         .gte('export_receipts.export_date', monthStartISO)
-        .lte('export_receipts.export_date', monthEndISO);
+        .lte('export_receipts.export_date', monthEndISO)
+        .limit(10000);
 
       if (effectiveBranchId) {
         monthlySoldQuery = monthlySoldQuery.eq('export_receipts.branch_id', effectiveBranchId);

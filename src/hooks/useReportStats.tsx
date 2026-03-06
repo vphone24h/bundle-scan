@@ -148,7 +148,7 @@ export function useReportStats(filters?: {
         returnQuery = returnQuery.eq('branch_id', effectiveBranchId);
       }
 
-      const { data: returnItems, error: returnError } = await returnQuery;
+      const { data: returnItems, error: returnError } = await returnQuery.limit(5000);
       if (returnError) throw returnError;
 
       // 3. Lấy giá nhập của các sản phẩm đã bán / trả để tính lợi nhuận
@@ -210,7 +210,7 @@ export function useReportStats(filters?: {
         cashBookQuery = cashBookQuery.eq('branch_id', effectiveBranchId);
       }
 
-      const { data: cashBookEntries, error: cashBookError } = await cashBookQuery;
+      const { data: cashBookEntries, error: cashBookError } = await cashBookQuery.limit(5000);
       if (cashBookError) throw cashBookError;
 
       // Tính toán các chỉ số
@@ -409,7 +409,7 @@ export function useReportChartData(filters?: {
         query = query.eq('branch_id', effectiveBranchId);
       }
 
-      const { data: receipts, error } = await query;
+      const { data: receipts, error } = await query.limit(5000);
       if (error) throw error;
 
       // Lấy trả hàng KHÔNG CÓ PHÍ để trừ lợi nhuận
@@ -424,7 +424,7 @@ export function useReportChartData(filters?: {
         returnQuery = returnQuery.eq('branch_id', effectiveBranchId);
       }
 
-      const { data: returnItems, error: returnError } = await returnQuery;
+      const { data: returnItems, error: returnError } = await returnQuery.limit(5000);
       if (returnError) throw returnError;
 
       // Lấy giá nhập
