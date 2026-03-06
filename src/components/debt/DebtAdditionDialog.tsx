@@ -24,6 +24,7 @@ interface DebtAdditionDialogProps {
   entityName: string;
   remainingAmount: number;
   branchId: string | null;
+  mergedEntityIds?: string[];
 }
 
 export function DebtAdditionDialog({
