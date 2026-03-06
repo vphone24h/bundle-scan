@@ -438,7 +438,7 @@ export function ExportPaymentDialog({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={addToCashBook && (remaining > 0 || totalEntered === 0)}
+            disabled={addToCashBook && adjustedTotal > 0 && (remaining > 0 || totalEntered === 0)}
           >
             Hoàn tất xuất hàng
           </Button>
