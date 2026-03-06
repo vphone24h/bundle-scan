@@ -112,10 +112,10 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
   };
 
   const handleSubmit = async () => {
-    if (recordToCashBook && totalPayment !== product.import_price) {
+    if (recordToCashBook && totalPayment !== refundAmount) {
       toast({
         title: 'Số tiền không khớp',
-        description: `Tổng tiền hoàn trả phải bằng ${formatCurrencyWithSpaces(product.import_price)}`,
+        description: `Tổng tiền hoàn trả phải bằng ${formatCurrencyWithSpaces(refundAmount)}`,
         variant: 'destructive',
       });
       return;
@@ -134,6 +134,9 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
           branch_id: product.branch_id,
           import_date: product.import_date,
         },
+        feeType,
+        feePercentage,
+        feeAmount: feeType === 'fixed_amount' ? feeAmount : (feeType === 'percentage' ? supplierKeepAmount : 0),
         payments: recordToCashBook ? payments.filter(p => p.amount > 0).map(p => ({
           source: p.source,
           amount: p.amount,
