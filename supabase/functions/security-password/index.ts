@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 async function hashPassword(password: string): Promise<string> {
@@ -24,29 +24,35 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
-    const supabaseUser = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader || "" } },
-    });
-
-    // Get current user
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser(
-      authHeader?.replace("Bearer ", "") || ""
-    );
-    if (userError || !user) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+    const supabaseUser = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseUser.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = claimsData.claims.sub;
+
     // Get tenant_id and role
     const { data: platformUser } = await supabaseAdmin
       .from("platform_users")
       .select("tenant_id")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
     if (!platformUser) {
       return new Response(JSON.stringify({ error: "No tenant" }), {
@@ -63,7 +69,7 @@ Deno.serve(async (req) => {
       const { data: roleData } = await supabaseAdmin
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("tenant_id", tenantId)
         .single();
       if (roleData?.role !== "super_admin") {
@@ -116,7 +122,7 @@ Deno.serve(async (req) => {
       const { data: roleData } = await supabaseAdmin
         .from("user_roles")
         .select("role")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("tenant_id", tenantId)
         .single();
       if (roleData?.role !== "super_admin") {
