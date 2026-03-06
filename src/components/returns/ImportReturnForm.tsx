@@ -203,6 +203,86 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
         </CardContent>
       </Card>
 
+      {/* Fee Type Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Hình thức trả hàng</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup
+            value={feeType}
+            onValueChange={(v) => setFeeType(v as 'none' | 'percentage' | 'fixed_amount')}
+            className="space-y-3"
+          >
+            <div className="flex items-center space-x-3 p-3 rounded-lg border">
+              <RadioGroupItem value="none" id="fee_none_import" />
+              <Label htmlFor="fee_none_import" className="cursor-pointer flex-1">
+                Trả lại đúng số tiền đã nhập (100%)
+              </Label>
+            </div>
+            <div className="flex items-center space-x-3 p-3 rounded-lg border">
+              <RadioGroupItem value="percentage" id="fee_pct_import" />
+              <Label htmlFor="fee_pct_import" className="cursor-pointer flex-1">
+                Trả hàng mất phí theo %
+              </Label>
+            </div>
+            {feeType === 'percentage' && (
+              <div className="ml-8">
+                <Label className="text-xs text-muted-foreground">Phí (%)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={feePercentage || ''}
+                  onChange={(e) => setFeePercentage(Number(e.target.value))}
+                  placeholder="VD: 10"
+                  className="w-32"
+                />
+              </div>
+            )}
+            <div className="flex items-center space-x-3 p-3 rounded-lg border">
+              <RadioGroupItem value="fixed_amount" id="fee_fixed_import" />
+              <Label htmlFor="fee_fixed_import" className="cursor-pointer flex-1">
+                Trả hàng mất phí cố định
+              </Label>
+            </div>
+            {feeType === 'fixed_amount' && (
+              <div className="ml-8">
+                <Label className="text-xs text-muted-foreground">Phí cố định</Label>
+                <Input
+                  value={feeDisplayAmount}
+                  onChange={(e) => {
+                    const num = parseFormattedNumber(e.target.value);
+                    setFeeAmount(num);
+                    setFeeDisplayAmount(formatNumberWithSpaces(num));
+                  }}
+                  placeholder="0"
+                  className="w-48 text-right"
+                />
+              </div>
+            )}
+          </RadioGroup>
+
+          {/* Summary */}
+          <div className="mt-4 p-3 rounded-lg bg-muted/50 space-y-1">
+            <div className="flex justify-between text-sm">
+              <span>Tổng giá nhập:</span>
+              <span className="font-medium">{formatCurrencyWithSpaces(product.import_price)}</span>
+            </div>
+            {feeType !== 'none' && (
+              <div className="flex justify-between text-sm text-destructive">
+                <span>Phí giữ lại:</span>
+                <span className="font-medium">-{formatCurrencyWithSpaces(supplierKeepAmount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm text-primary font-bold">
+              <span>Hoàn trả NCC:</span>
+              <span>{formatCurrencyWithSpaces(refundAmount)}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Cash Book Toggle */}
       <Card>
         <CardContent className="pt-6 space-y-4">
