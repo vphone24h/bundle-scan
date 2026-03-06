@@ -97,6 +97,7 @@ function processProductsToWarrantyInventory(products: any[]): InventoryItem[] {
           avgImportPrice: Number(product.import_price),
           totalImportCost: totalCost,
           products: [productDetail],
+          oldestImportDate: product.import_date || null,
         });
       }
     }

@@ -175,7 +175,7 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
           avgImportPrice: isInStock ? Number(product.import_price) : 0,
           totalImportCost: isInStock ? totalCost : 0,
           products: isInStock ? [productDetail] : [],
-        });
+          oldestImportDate: isInStock ? product.import_date : null,
       }
     }
   }
