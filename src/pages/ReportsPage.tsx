@@ -24,6 +24,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { isCredentialManagerSupported, getSecurityCredential, saveSecurityCredential } from '@/lib/credentialManager';
+import { isBiometricLikelySupported, getSavedSecurityPassword, saveSecurityPassword, hasSavedSecurityPassword } from '@/lib/biometricAuth';
 import { useVerifySecurityPassword } from '@/hooks/useSecurityPassword';
 import { toast } from 'sonner';
 import { useReportsGuideUrl } from '@/hooks/useAppConfig';
@@ -220,7 +221,7 @@ export default function ReportsPage() {
   const [biometricLoading, setBiometricLoading] = useState(false);
   const verifyPassword = useVerifySecurityPassword();
   const reportsLocked = hasSecurityPassword && !reportsUnlocked;
-  const biometricSupported = isCredentialManagerSupported();
+  const biometricSupported = isBiometricLikelySupported() && hasSavedSecurityPassword();
 
   // Main onboarding tour (revenue tab)
   const { isCompleted: reportsTourDone, completeTour: completeReportsTour, isLoading: tourLoading } = useOnboardingTour('reports_overview');
@@ -399,7 +400,7 @@ export default function ReportsPage() {
                 onClick={async () => {
                   setBiometricLoading(true);
                   try {
-                    const savedPw = await getSecurityCredential();
+                    const savedPw = getSavedSecurityPassword();
                     if (!savedPw) {
                       toast.info('Chưa có mật khẩu đã lưu. Vui lòng nhập thủ công lần đầu.');
                       setShowPasswordDialog(true);
@@ -407,7 +408,7 @@ export default function ReportsPage() {
                     }
                     const result = await verifyPassword.mutateAsync(savedPw);
                     if (result.valid) {
-                      await saveSecurityCredential(savedPw);
+                      saveSecurityPassword(savedPw);
                       unlockReports();
                     } else {
                       toast.error('Mật khẩu đã lưu không còn đúng. Vui lòng nhập lại.');
@@ -436,6 +437,11 @@ export default function ReportsPage() {
               <Lock className="h-4 w-4 mr-2" />
               Nhập mật khẩu
             </Button>
+            {isBiometricLikelySupported() && !hasSavedSecurityPassword() && (
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                💡 Nhập mật khẩu lần đầu, từ lần sau có thể dùng Face ID
+              </p>
+            )}
           </div>
         </div>
       ) : (
