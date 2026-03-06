@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
-import { Plus, Pencil, Trash2, Mail, Eye, Send, Clock, CheckCircle, XCircle, Loader2, GripVertical, Type, AlignLeft, Image, MousePointer, Minus, MoveVertical, Phone, MessageCircle, MapPin, ExternalLink, BookOpen, Star, User } from 'lucide-react';
+import { Plus, Pencil, Trash2, Mail, Eye, Send, Clock, CheckCircle, XCircle, Loader2, GripVertical, Type, AlignLeft, Image, MousePointer, Minus, MoveVertical, Phone, MessageCircle, MapPin, ExternalLink, BookOpen, Star, User, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -136,6 +136,60 @@ function renderBlockPreview(block: BlockItem) {
   }
 }
 
+// === Image Block with Upload ===
+function ImageBlockEditor({ content, update }: { content: any; update: (c: any) => void }) {
+  const [uploading, setUploading] = useState(false);
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `editor/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from('tenant-assets').upload(path, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('tenant-assets').getPublicUrl(path);
+      update({ url: urlData.publicUrl });
+    } catch (err) {
+      toast.error('Tải ảnh thất bại');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      {content.url ? (
+        <div className="relative group">
+          <img src={content.url} alt={content.alt || ''} className="max-h-40 rounded border object-contain" />
+          <Button
+            size="sm"
+            variant="destructive"
+            className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={() => update({ url: '' })}
+          >
+            <XCircle className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ) : (
+        <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+          {uploading ? (
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          ) : (
+            <>
+              <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+              <span className="text-xs text-muted-foreground">Nhấn để tải ảnh lên</span>
+            </>
+          )}
+          <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
+        </label>
+      )}
+      <Input value={content.alt || ''} onChange={e => update({ alt: e.target.value })} placeholder="Mô tả ảnh (alt)..." />
+    </div>
+  );
+}
+
 // === Block Editor ===
 function BlockEditor({ block, onChange, onRemove }: { block: BlockItem; onChange: (b: BlockItem) => void; onRemove: () => void }) {
   const { block_type, content } = block;
@@ -180,10 +234,7 @@ function BlockEditor({ block, onChange, onRemove }: { block: BlockItem; onChange
       )}
 
       {block_type === 'image' && (
-        <div className="space-y-2">
-          <Input value={content.url || ''} onChange={e => update({ url: e.target.value })} placeholder="URL hình ảnh..." />
-          <Input value={content.alt || ''} onChange={e => update({ alt: e.target.value })} placeholder="Mô tả ảnh (alt)..." />
-        </div>
+        <ImageBlockEditor content={content} update={update} />
       )}
 
       {block_type === 'button' && (
