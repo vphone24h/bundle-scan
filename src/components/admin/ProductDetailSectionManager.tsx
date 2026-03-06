@@ -416,10 +416,11 @@ export function ProductDetailSectionManager({ customSections, onChange }: Produc
 interface CTAButtonsEditorProps {
   buttons: CTAButtonItem[] | null;
   onChange: (buttons: CTAButtonItem[] | null) => void;
+  templateId?: string;
 }
 
-export function CTAButtonsEditor({ buttons, onChange }: CTAButtonsEditorProps) {
-  const currentButtons = buttons || getDefaultCTAButtons();
+export function CTAButtonsEditor({ buttons, onChange, templateId }: CTAButtonsEditorProps) {
+  const currentButtons = buttons || getDefaultCTAButtons(templateId);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleToggle = (index: number) => {
