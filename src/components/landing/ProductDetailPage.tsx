@@ -771,11 +771,15 @@ export function ProductDetailPage({
                 </Button>
               );
             case 'zalo': {
-              const url = btn.customUrl || zaloUrl;
-              if (!url) return null;
+              const rawUrl = btn.customUrl || zaloUrl;
+              if (!rawUrl) return null;
+              // Convert zalo.me links to deep link format for mobile
+              const zaloDeepLink = rawUrl.match(/zalo\.me\/(\d+)/)
+                ? `https://zalo.me/${rawUrl.match(/zalo\.me\/(\d+)/)?.[1]}`
+                : rawUrl;
               return (
-                <Button key={btn.id} variant="outline" className="h-11 px-4" asChild>
-                  <a href={url} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
+                  <a href={zaloDeepLink} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
                 </Button>
               );
             }
