@@ -253,7 +253,7 @@ Deno.serve(async (req) => {
 
           const { data } = await supabase
             .from('export_receipts')
-            .select('id, customer_id, export_date, customers(id, name, phone, email)')
+            .select('id, customer_id, export_date, sales_staff_id, customers(id, name, phone, email)')
             .eq('tenant_id', automation.tenant_id)
             .eq('status', 'completed')
             .gte('export_date', dayStart)
@@ -266,7 +266,7 @@ Deno.serve(async (req) => {
 
           const { data } = await supabase
             .from('export_receipts')
-            .select('id, customer_id, export_date, customers(id, name, phone, email)')
+            .select('id, customer_id, export_date, sales_staff_id, customers(id, name, phone, email)')
             .eq('tenant_id', automation.tenant_id)
             .eq('status', 'completed')
             .limit(500)
