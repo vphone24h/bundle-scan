@@ -20,7 +20,7 @@ export function isCredentialManagerSupported(): boolean {
 export async function saveSecurityCredential(password: string): Promise<boolean> {
   if (!isCredentialManagerSupported()) return false;
   try {
-    const cred = new PasswordCredential({
+    const cred = new window.PasswordCredential({
       id: CREDENTIAL_ID,
       password,
       name: 'Mật khẩu bảo mật VKho',
