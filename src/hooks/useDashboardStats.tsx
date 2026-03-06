@@ -56,7 +56,7 @@ export function useDashboardStats() {
         .from('export_receipts')
         .select(`
           id, total_amount, status,
-          export_receipt_items(sale_price, status, product_id)
+          export_receipt_items(sale_price, status, product_id, imei)
         `)
         .neq('status', 'cancelled')
         .gte('export_date', todayStartUTC)
@@ -126,12 +126,34 @@ export function useDashboardStats() {
         }, {} as Record<string, number>);
       }
 
+      // IMEI fallback for items without product_id
+      const dashOrphanImeis = Array.from(new Set(
+        todayExports?.flatMap(r =>
+          r.export_receipt_items?.filter(i => !i.product_id && i.imei).map(i => i.imei as string) || []
+        ) || []
+      ));
+      let dashImeiPriceMap: Record<string, number> = {};
+      if (dashOrphanImeis.length > 0) {
+        const { data: imeiProducts } = await supabase
+          .from('products')
+          .select('imei, import_price')
+          .in('imei', dashOrphanImeis)
+          .gt('import_price', 0);
+        imeiProducts?.forEach(p => {
+          if (p.imei && p.import_price) {
+            dashImeiPriceMap[p.imei] = Number(p.import_price);
+          }
+        });
+      }
+
       // Sales profit
       todayExports?.forEach(receipt => {
         receipt.export_receipt_items?.forEach(item => {
           if (item.status === 'sold' || item.status === 'returned') {
             const salePrice = Number(item.sale_price);
-            const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
+            const importPrice = item.product_id
+              ? (productsMap[item.product_id] || 0)
+              : (item.imei ? (dashImeiPriceMap[item.imei] || 0) : 0);
             todayRevenue += salePrice;
             todayProfit += (salePrice - importPrice);
             todaySold++;
@@ -142,7 +164,9 @@ export function useDashboardStats() {
       // Subtract returns (fee_type=none) — matching Reports logic exactly
       todayReturns?.forEach((ret: any) => {
         const salePrice = Number(ret.sale_price);
-        const importPrice = ret.product_id ? (productsMap[ret.product_id] || 0) : 0;
+        const importPrice = ret.product_id
+          ? (productsMap[ret.product_id] || 0)
+          : (ret.imei ? (dashImeiPriceMap[ret.imei] || 0) : 0);
         todayProfit -= (salePrice - importPrice);
       });
 

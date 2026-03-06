@@ -172,6 +172,29 @@ export function useReportStats(filters?: {
         }, {} as Record<string, number>);
       }
 
+      // For items without product_id, try to find import price by IMEI
+      const orphanImeis = Array.from(new Set(
+        exportReceipts?.flatMap(r => 
+          r.export_receipt_items?.filter(i => !i.product_id && i.imei).map(i => i.imei as string) || []
+        ) || []
+      ));
+      let imeiPriceMap: Record<string, number> = {};
+      if (orphanImeis.length > 0) {
+        for (let i = 0; i < orphanImeis.length; i += 500) {
+          const chunk = orphanImeis.slice(i, i + 500);
+          const { data: imeiProducts } = await supabase
+            .from('products')
+            .select('imei, import_price')
+            .in('imei', chunk)
+            .gt('import_price', 0);
+          imeiProducts?.forEach(p => {
+            if (p.imei && p.import_price) {
+              imeiPriceMap[p.imei] = Number(p.import_price);
+            }
+          });
+        }
+      }
+
       // 4. Lấy dữ liệu sổ quỹ (chi phí và thu nhập khác)
       let cashBookQuery = supabase
         .from('cash_book')
@@ -209,7 +232,9 @@ export function useReportStats(filters?: {
           
           receipt.export_receipt_items?.forEach(item => {
             const salePrice = Number(item.sale_price);
-            const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
+            const importPrice = item.product_id
+              ? (productsMap[item.product_id] || 0)
+              : (item.imei ? (imeiPriceMap[item.imei] || 0) : 0);
             
             if (filters?.categoryId && item.category_id !== filters.categoryId) {
               return;
@@ -255,7 +280,9 @@ export function useReportStats(filters?: {
       // Tính lợi nhuận âm từ trả hàng
       returnItems?.forEach((item: any) => {
         const salePrice = Number(item.sale_price);
-        const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
+        const importPrice = item.product_id
+          ? (productsMap[item.product_id] || 0)
+          : (item.imei ? (imeiPriceMap[item.imei] || 0) : 0);
         const profit = salePrice - importPrice;
         
         totalReturnRevenue += salePrice;
@@ -369,7 +396,7 @@ export function useReportChartData(filters?: {
           total_amount,
           export_date,
           status,
-          export_receipt_items(sale_price, status, product_id)
+          export_receipt_items(sale_price, status, product_id, imei)
         `)
         .gte('export_date', startISO)
         .lte('export_date', endISO)
@@ -418,6 +445,29 @@ export function useReportChartData(filters?: {
         }, {} as Record<string, number>);
       }
 
+      // IMEI fallback for orphan items
+      const chartOrphanImeis = Array.from(new Set(
+        receipts?.flatMap(r =>
+          r.export_receipt_items?.filter(i => !i.product_id && i.imei).map(i => i.imei as string) || []
+        ) || []
+      ));
+      let chartImeiPriceMap: Record<string, number> = {};
+      if (chartOrphanImeis.length > 0) {
+        for (let i = 0; i < chartOrphanImeis.length; i += 500) {
+          const chunk = chartOrphanImeis.slice(i, i + 500);
+          const { data: imeiProducts } = await supabase
+            .from('products')
+            .select('imei, import_price')
+            .in('imei', chunk)
+            .gt('import_price', 0);
+          imeiProducts?.forEach(p => {
+            if (p.imei && p.import_price) {
+              chartImeiPriceMap[p.imei] = Number(p.import_price);
+            }
+          });
+        }
+      }
+
       // Nhóm dữ liệu theo ngày/tuần/tháng
       const groupBy = filters?.groupBy || 'day';
       const dataMap: Record<string, { date: string; revenue: number; profit: number; count: number }> = {};
@@ -443,7 +493,9 @@ export function useReportChartData(filters?: {
         receipt.export_receipt_items?.forEach(item => {
           if (item.status === 'sold' || item.status === 'returned') {
             const salePrice = Number(item.sale_price);
-            const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
+            const importPrice = item.product_id
+              ? (productsMap[item.product_id] || 0)
+              : (item.imei ? (chartImeiPriceMap[item.imei] || 0) : 0);
             dataMap[key].revenue += salePrice;
             dataMap[key].profit += (salePrice - importPrice);
             dataMap[key].count++;
@@ -460,7 +512,9 @@ export function useReportChartData(filters?: {
         }
 
         const salePrice = Number(ret.sale_price);
-        const importPrice = ret.product_id ? (productsMap[ret.product_id] || 0) : 0;
+        const importPrice = ret.product_id
+          ? (productsMap[ret.product_id] || 0)
+          : (ret.imei ? (chartImeiPriceMap[ret.imei] || 0) : 0);
         const originalProfit = salePrice - importPrice;
 
         dataMap[key].profit -= originalProfit;
