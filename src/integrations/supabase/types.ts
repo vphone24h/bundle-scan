@@ -6484,6 +6484,25 @@ export type Database = {
         Args: { _branch_id?: string; _tenant_id: string }
         Returns: Json
       }
+      get_inventory_summary: {
+        Args: { p_branch_ids?: string[]; p_tenant_id: string }
+        Returns: {
+          avg_import_price: number
+          branch_id: string
+          branch_name: string
+          category_id: string
+          category_name: string
+          has_imei: boolean
+          oldest_import_date: string
+          product_id: string
+          product_name: string
+          sku: string
+          stock: number
+          total_import_cost: number
+          total_imported: number
+          total_sold: number
+        }[]
+      }
       get_public_reviews:
         | {
             Args: { _limit?: number }
