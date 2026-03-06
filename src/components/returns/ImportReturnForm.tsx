@@ -53,6 +53,26 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
     return [...BUILT_IN_PAYMENT_SOURCES, ...custom];
   }, [customPaymentSources]);
 
+  // Calculate refund amount based on fee type
+  const calculateRefund = () => {
+    if (!product) return 0;
+    if (feeType === 'none') return product.import_price;
+    if (feeType === 'percentage') return product.import_price * (1 - feePercentage / 100);
+    return product.import_price - feeAmount;
+  };
+
+  const refundAmount = calculateRefund();
+  const supplierKeepAmount = (product?.import_price || 0) - refundAmount;
+
+  // Initialize payments when refund amount changes
+  useEffect(() => {
+    if (product) {
+      setPayments([
+        { id: '1', source: 'cash', amount: refundAmount, displayAmount: formatNumberWithSpaces(refundAmount) }
+      ]);
+    }
+  }, [refundAmount]);
+
   if (!product) {
     return (
       <Card>
@@ -64,7 +84,7 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
   }
 
   const totalPayment = payments.reduce((sum, p) => sum + p.amount, 0);
-  const remaining = product.import_price - totalPayment;
+  const remaining = refundAmount - totalPayment;
 
   const handleAddPayment = () => {
     setPayments([
