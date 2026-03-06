@@ -180,10 +180,7 @@ function BlockEditor({ block, onChange, onRemove }: { block: BlockItem; onChange
       )}
 
       {block_type === 'image' && (
-        <div className="space-y-2">
-          <Input value={content.url || ''} onChange={e => update({ url: e.target.value })} placeholder="URL hình ảnh..." />
-          <Input value={content.alt || ''} onChange={e => update({ alt: e.target.value })} placeholder="Mô tả ảnh (alt)..." />
-        </div>
+        <ImageBlockEditor content={content} update={update} />
       )}
 
       {block_type === 'button' && (
