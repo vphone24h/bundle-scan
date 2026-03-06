@@ -244,3 +244,166 @@ export function ProductDetailSectionManager({ customSections, onChange }: Produc
     </div>
   );
 }
+
+// ===== CTA Buttons Editor =====
+interface CTAButtonsEditorProps {
+  buttons: CTAButtonItem[] | null;
+  onChange: (buttons: CTAButtonItem[] | null) => void;
+}
+
+export function CTAButtonsEditor({ buttons, onChange }: CTAButtonsEditorProps) {
+  const currentButtons = buttons || getDefaultCTAButtons();
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleToggle = (index: number) => {
+    const updated = [...currentButtons];
+    updated[index] = { ...updated[index], enabled: !updated[index].enabled };
+    onChange(updated);
+  };
+
+  const handleMoveUp = (index: number) => {
+    if (index <= 0) return;
+    const updated = [...currentButtons];
+    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+    onChange(updated);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index >= currentButtons.length - 1) return;
+    const updated = [...currentButtons];
+    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+    onChange(updated);
+  };
+
+  const handleAdd = () => {
+    const newId = `cta_${Date.now()}`;
+    onChange([...currentButtons, {
+      id: newId,
+      label: 'Nút mới',
+      icon: '🔗',
+      action: 'custom_link',
+      enabled: true,
+      customUrl: '',
+    }]);
+    setEditingId(newId);
+  };
+
+  const handleRemove = (index: number) => {
+    const updated = currentButtons.filter((_, i) => i !== index);
+    onChange(updated.length > 0 ? updated : null);
+  };
+
+  const handleUpdate = (index: number, field: string, value: string) => {
+    const updated = [...currentButtons];
+    updated[index] = { ...updated[index], [field]: value };
+    // Auto-update icon & label when action changes
+    if (field === 'action') {
+      const opt = CTA_ACTION_OPTIONS.find(o => o.value === value);
+      if (opt) {
+        updated[index].icon = opt.defaultIcon;
+        updated[index].label = opt.defaultLabel;
+      }
+    }
+    onChange(updated);
+  };
+
+  const handleReset = () => onChange(null);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-muted-foreground">Thanh nút hành động (CTA)</p>
+        {buttons && (
+          <Button type="button" variant="ghost" size="sm" className="text-xs h-6" onClick={handleReset}>
+            <RotateCcw className="h-3 w-3 mr-1" /> Mặc định
+          </Button>
+        )}
+      </div>
+
+      <div className="space-y-1.5">
+        {currentButtons.map((btn, i) => (
+          <div key={btn.id}>
+            <div className={`flex items-center gap-2 rounded-lg border p-2 transition-all ${btn.enabled ? 'bg-background' : 'bg-muted/40 opacity-60'}`}>
+              <div className="flex flex-col gap-0.5 shrink-0">
+                <button type="button" onClick={() => handleMoveUp(i)} disabled={i === 0}
+                  className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
+                  <ChevronUp className="h-3 w-3" />
+                </button>
+                <button type="button" onClick={() => handleMoveDown(i)} disabled={i === currentButtons.length - 1}
+                  className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </div>
+
+              <span className="text-base shrink-0">{btn.icon}</span>
+              
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium leading-tight">{btn.label}</p>
+                <p className="text-[10px] text-muted-foreground leading-tight">
+                  {CTA_ACTION_OPTIONS.find(o => o.value === btn.action)?.label || btn.action}
+                </p>
+              </div>
+
+              <button type="button" onClick={() => setEditingId(editingId === btn.id ? null : btn.id)}
+                className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted text-muted-foreground shrink-0">
+                <GripVertical className="h-3.5 w-3.5" />
+              </button>
+
+              <button type="button" onClick={() => handleRemove(i)}
+                className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive shrink-0">
+                <Trash2 className="h-3 w-3" />
+              </button>
+
+              <Switch checked={btn.enabled} onCheckedChange={() => handleToggle(i)} className="shrink-0" />
+            </div>
+
+            {/* Inline edit panel */}
+            {editingId === btn.id && (
+              <div className="ml-7 mt-1 p-2.5 border rounded-lg bg-muted/20 space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[10px]">Tên nút</Label>
+                    <Input className="h-7 text-xs" value={btn.label} onChange={e => handleUpdate(i, 'label', e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px]">Icon</Label>
+                    <Input className="h-7 text-xs" value={btn.icon} onChange={e => handleUpdate(i, 'icon', e.target.value)} placeholder="🛒" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px]">Hành động</Label>
+                  <Select value={btn.action} onValueChange={v => handleUpdate(i, 'action', v)}>
+                    <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CTA_ACTION_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {(btn.action === 'custom_link' || btn.action === 'zalo' || btn.action === 'facebook') && (
+                  <div className="space-y-1">
+                    <Label className="text-[10px]">
+                      {btn.action === 'zalo' ? 'Link Zalo' : btn.action === 'facebook' ? 'Link Facebook' : 'URL tùy chỉnh'}
+                    </Label>
+                    <Input className="h-7 text-xs" value={btn.customUrl || ''} onChange={e => handleUpdate(i, 'customUrl', e.target.value)} placeholder="https://..." />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {currentButtons.length < 6 && (
+        <Button type="button" variant="outline" size="sm" className="w-full gap-1.5 text-xs border-dashed" onClick={handleAdd}>
+          <Plus className="h-3.5 w-3.5" /> Thêm nút
+        </Button>
+      )}
+
+      <p className="text-[10px] text-muted-foreground">
+        💡 Tùy chỉnh các nút hành động hiển thị ở cuối trang chi tiết sản phẩm. Tối đa 6 nút.
+      </p>
+    </div>
+  );
+}
