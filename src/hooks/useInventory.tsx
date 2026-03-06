@@ -188,88 +188,45 @@ export function useInventory() {
   const { branchId, branchIds, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
   return useQuery({
-    // Keyed by tenant AND branches to prevent cross-tenant/branch cache leakage
     queryKey: ['inventory', tenant?.id, branchIds, isDataHidden],
     queryFn: async () => {
-      // If data is hidden, return empty array
       if (isDataHidden) {
         return [] as InventoryItem[];
       }
 
-      const buildQuery = () => {
-        let q = supabase
-          .from('products')
-          .select(`
-            id, name, sku, imei, import_price, import_date, 
-            supplier_id, branch_id, category_id, status, 
-            quantity, total_import_cost, note,
-            categories(name),
-            suppliers(name),
-            branches(name)
-          `)
-          .in('status', ['in_stock', 'sold', 'returned'])
-          .order('name', { ascending: true });
+      // Use server-side RPC for fast inventory summary
+      const effectiveBranchIds = shouldFilter 
+        ? (branchIds && branchIds.length > 0 ? branchIds : (branchId ? [branchId] : null))
+        : null;
 
-        if (shouldFilter && branchIds && branchIds.length > 0) {
-          q = q.in('branch_id', branchIds);
-        } else if (shouldFilter && branchId) {
-          q = q.eq('branch_id', branchId);
-        }
-        return q;
-      };
-
-      const products = await fetchAllRows<any>(() => buildQuery());
-      // No separate error check needed - fetchAllRows throws on error
-
-      // Lấy chi phí thực từ product_imports cho non-IMEI products (fix lỗi products.total_import_cost không cập nhật)
-      const nonImeiProductIds = (products || [])
-        .filter(p => !p.imei && p.status === 'in_stock')
-        .map(p => p.id);
-
-      let piCostMap = new Map<string, { totalCost: number; totalQty: number }>();
-      if (nonImeiProductIds.length > 0) {
-        const { data: piData } = await supabase
-          .from('product_imports')
-          .select('product_id, import_price, quantity')
-          .in('product_id', nonImeiProductIds);
-
-        if (piData && piData.length > 0) {
-          for (const pi of piData) {
-            const existing = piCostMap.get(pi.product_id);
-            const cost = (pi.quantity || 1) * (pi.import_price || 0);
-            if (existing) {
-              existing.totalCost += cost;
-              existing.totalQty += (pi.quantity || 1);
-            } else {
-              piCostMap.set(pi.product_id, { totalCost: cost, totalQty: pi.quantity || 1 });
-            }
-          }
-        }
-      }
-
-      // Override total_import_cost cho products có dữ liệu trong product_imports
-      // Tính giá trị kho = số lượng hiện tại × giá nhập trung bình (từ product_imports)
-      const correctedProducts = (products || []).map(p => {
-        if (!p.imei && piCostMap.has(p.id)) {
-          const piCost = piCostMap.get(p.id)!;
-          const avgPrice = piCost.totalQty > 0 ? piCost.totalCost / piCost.totalQty : Number(p.import_price);
-          const currentQty = p.quantity || 0;
-          return {
-            ...p,
-            total_import_cost: currentQty * avgPrice,
-            import_price: avgPrice,
-          };
-        }
-        return p;
+      const { data, error } = await supabase.rpc('get_inventory_summary', {
+        p_tenant_id: tenant!.id,
+        p_branch_ids: effectiveBranchIds,
       });
 
-      return processProductsToInventory(correctedProducts);
+      if (error) throw error;
+
+      // Map RPC results to InventoryItem format (without products array - loaded on demand)
+      return (data || []).map((row: any) => ({
+        productId: row.product_id,
+        productName: row.product_name,
+        sku: row.sku,
+        branchId: row.branch_id,
+        branchName: row.branch_name,
+        categoryId: row.category_id,
+        categoryName: row.category_name,
+        hasImei: row.has_imei,
+        totalImported: Number(row.total_imported),
+        totalSold: Number(row.total_sold),
+        stock: Number(row.stock),
+        avgImportPrice: Number(row.avg_import_price),
+        totalImportCost: Number(row.total_import_cost),
+        products: [], // Products loaded on-demand via detail dialogs
+      })) as InventoryItem[];
     },
-    staleTime: 2 * 60 * 1000, // 2 min cache - inventory doesn't change frequently
+    staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    // Chờ tenant data và branch filter sẵn sàng trước khi fetch
-    enabled: !isTenantLoading && !branchLoading,
-    // Không refetch khi focus window để tránh reset trạng thái
+    enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
     refetchOnWindowFocus: false,
   });
 }
