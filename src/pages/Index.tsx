@@ -170,6 +170,13 @@ const Index = () => {
 
   return (
     <MainLayout>
+      <SecurityPasswordDialog
+        open={showPasswordDialog}
+        onOpenChange={setShowPasswordDialog}
+        onSuccess={unlockProfit}
+        title="Xem lợi nhuận"
+        description="Nhập mật khẩu bảo mật để xem lợi nhuận hôm nay"
+      />
       <PageHeader
         title={t('pages.dashboard.title')}
         description={t('pages.dashboard.description')}

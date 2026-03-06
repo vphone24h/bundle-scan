@@ -19,6 +19,7 @@ import {
   UserCheck,
   Receipt,
   PlayCircle,
+  Lock,
 } from 'lucide-react';
 import { useReportsGuideUrl } from '@/hooks/useAppConfig';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -34,6 +35,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { formatNumber } from '@/lib/formatNumber';
 import { format, subDays } from 'date-fns';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
 const baseReportTabs = [
   { id: 'revenue', labelKey: 'pages.reports.revenueProfit', descKey: 'pages.reports.revenueProfitDesc', icon: DollarSign },
