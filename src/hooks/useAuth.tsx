@@ -203,6 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    userInitiatedSignOut = true;
     queryClient.clear();
     localStorage.removeItem(CURRENT_STORE_ID_KEY);
     await supabase.auth.signOut();
