@@ -397,7 +397,7 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={createImportReturn.isPending || remaining !== 0}
+          disabled={createImportReturn.isPending || (recordToCashBook && remaining !== 0)}
         >
           {createImportReturn.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Xác nhận trả hàng
