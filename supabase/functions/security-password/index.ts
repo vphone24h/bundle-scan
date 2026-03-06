@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
         .from("user_roles")
         .select("user_id")
         .eq("tenant_id", tenantId)
-        .eq("role", "super_admin")
+        .eq("user_role", "super_admin")
         .single();
 
       if (ownerRole) {
