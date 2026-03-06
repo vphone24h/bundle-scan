@@ -46,6 +46,8 @@ const BLOCK_TYPES = [
   { value: 'image', label: 'Hình ảnh', icon: Image },
   { value: 'button', label: 'Nút bấm', icon: MousePointer },
   { value: 'link', label: 'Chèn link', icon: ExternalLink },
+  { value: 'staff_info', label: 'Nhân viên tư vấn', icon: User },
+  { value: 'rating_button', label: 'Nút đánh giá', icon: Star },
   { value: 'divider', label: 'Đường kẻ', icon: Minus },
   { value: 'spacer', label: 'Khoảng cách', icon: MoveVertical },
 ];
@@ -67,6 +69,7 @@ const VARIABLES = [
   { key: '{{store_name}}', label: 'Tên cửa hàng' },
   { key: '{{phone}}', label: 'SĐT cửa hàng' },
   { key: '{{address}}', label: 'Địa chỉ cửa hàng' },
+  { key: '{{staff_name}}', label: 'Tên nhân viên bán' },
 ];
 
 interface BlockItem {
@@ -83,6 +86,8 @@ function newBlock(type: string): BlockItem {
     case 'image': return { ...base, content: { url: '', alt: 'Hình ảnh' } };
     case 'button': return { ...base, content: { text: 'Liên hệ ngay', url: '#', color: '#1a56db' } };
     case 'link': return { ...base, content: { text: 'Nhấn vào đây để xem', url: 'https://', linkText: '' } };
+    case 'staff_info': return { ...base, content: { label: 'Nhân viên tư vấn' } };
+    case 'rating_button': return { ...base, content: { text: '⭐ Đánh giá nhân viên', description: 'Bạn hài lòng với dịch vụ? Hãy dành 30 giây đánh giá để giúp chúng tôi phục vụ bạn tốt hơn!', color: '#6366f1' } };
     case 'divider': return { ...base, content: {} };
     case 'spacer': return { ...base, content: { height: 20 } };
     default: return base;
@@ -102,6 +107,25 @@ function renderBlockPreview(block: BlockItem) {
       return <div style={{ textAlign: 'center', margin: '12px 0' }}><span style={{ display: 'inline-block', padding: '10px 24px', background: content.color || '#1a56db', color: '#fff', borderRadius: 8, fontSize: 14, fontWeight: 600 }}>{content.text || 'Nút bấm'}</span></div>;
     case 'link':
       return <p style={{ fontSize: 14, lineHeight: 1.6, margin: '4px 0', color: '#374151' }}>{content.text || ''} <a href={content.url || '#'} style={{ color: '#1a56db', textDecoration: 'underline' }}>{content.linkText || content.url || 'Link'}</a></p>;
+    case 'staff_info':
+      return (
+        <div style={{ background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 10, padding: 16, margin: '8px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#6366f1', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16, marginRight: 12 }}>N</div>
+            <div>
+              <p style={{ margin: 0, fontSize: 12, color: '#6366f1', fontWeight: 500 }}>{content.label || 'Nhân viên tư vấn'}</p>
+              <p style={{ margin: '2px 0 0', fontSize: 16, color: '#312e81', fontWeight: 700 }}>{'{{staff_name}}'}</p>
+            </div>
+          </div>
+        </div>
+      );
+    case 'rating_button':
+      return (
+        <div style={{ background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 10, padding: 16, margin: '8px 0', textAlign: 'center' }}>
+          <p style={{ margin: '0 0 8px', fontSize: 13, color: '#4338ca', lineHeight: 1.5 }}>{content.description || 'Hãy đánh giá dịch vụ!'}</p>
+          <span style={{ display: 'inline-block', padding: '10px 28px', background: content.color || '#6366f1', color: '#fff', borderRadius: 8, fontWeight: 600, fontSize: 14 }}>{content.text || '⭐ Đánh giá'}</span>
+        </div>
+      );
     case 'divider':
       return <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '12px 0' }} />;
     case 'spacer':
@@ -184,6 +208,30 @@ function BlockEditor({ block, onChange, onRemove }: { block: BlockItem; onChange
           <Input value={content.text || ''} onChange={e => update({ text: e.target.value })} placeholder="Nội dung trước link. VD: Bạn có thể check bảo hành tại" />
           <Input value={content.url || ''} onChange={e => update({ url: e.target.value })} placeholder="URL đường dẫn. VD: https://cuahang.com/bao-hanh" />
           <Input value={content.linkText || ''} onChange={e => update({ linkText: e.target.value })} placeholder="Chữ hiển thị cho link. VD: trang bảo hành" />
+        </div>
+      )}
+
+      {block_type === 'staff_info' && (
+        <div className="space-y-2">
+          <Input value={content.label || ''} onChange={e => update({ label: e.target.value })} placeholder="Nhãn hiển thị. VD: Nhân viên tư vấn" />
+          <p className="text-xs text-muted-foreground">Tự động hiển thị tên nhân viên bán hàng của đơn (biến <code>{'{{staff_name}}'}</code>)</p>
+        </div>
+      )}
+
+      {block_type === 'rating_button' && (
+        <div className="space-y-2">
+          <Input value={content.text || ''} onChange={e => update({ text: e.target.value })} placeholder="Nội dung nút. VD: ⭐ Đánh giá nhân viên" />
+          <textarea
+            className="w-full min-h-[60px] p-2 border rounded text-sm bg-background resize-y"
+            value={content.description || ''}
+            onChange={e => update({ description: e.target.value })}
+            placeholder="Mô tả trên nút..."
+          />
+          <div className="flex items-center gap-2">
+            <Label className="text-xs">Màu nút:</Label>
+            <input type="color" value={content.color || '#6366f1'} onChange={e => update({ color: e.target.value })} className="h-8 w-10 rounded border cursor-pointer" />
+          </div>
+          <p className="text-xs text-muted-foreground">Nút sẽ dẫn khách đến trang đánh giá nhân viên qua link bảo hành</p>
         </div>
       )}
 

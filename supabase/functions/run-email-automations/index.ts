@@ -39,6 +39,29 @@ function renderBlockToHtml(block: AutomationBlock): string {
     }
     case 'link':
       return `<p style="margin:8px 0;font-size:15px;line-height:1.7;color:#374151">${content.text || ''} <a href="${content.url || '#'}" style="color:#1a56db;text-decoration:underline;font-weight:500">${content.linkText || content.url || 'Link'}</a></p>`
+    case 'staff_info': {
+      const label = content.label || 'Nhân viên tư vấn'
+      const name = content._resolved_staff_name || '{{staff_name}}'
+      return `<div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:16px;margin:12px 0">
+        <div style="display:flex;align-items:center">
+          <div style="width:40px;height:40px;border-radius:50%;background:#6366f1;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;margin-right:12px;line-height:40px;text-align:center">${name.charAt(0).toUpperCase()}</div>
+          <div>
+            <p style="margin:0;font-size:12px;color:#6366f1;font-weight:500">${label}</p>
+            <p style="margin:2px 0 0;font-size:16px;color:#312e81;font-weight:700">${name}</p>
+          </div>
+        </div>
+      </div>`
+    }
+    case 'rating_button': {
+      const ratingUrl = content._resolved_rating_url || '#'
+      const desc = content.description || ''
+      const btnText = content.text || '⭐ Đánh giá'
+      const btnColor = content.color || '#6366f1'
+      return `<div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:16px;margin:12px 0;text-align:center">
+        ${desc ? `<p style="margin:0 0 8px;font-size:13px;color:#4338ca;line-height:1.5">${desc}</p>` : ''}
+        <a href="${ratingUrl}" style="display:inline-block;padding:10px 28px;background:${btnColor};color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">${btnText}</a>
+      </div>`
+    }
     case 'divider':
       return `<hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0" />`
     case 'spacer':
@@ -131,10 +154,19 @@ Deno.serve(async (req) => {
         '{{store_name}}': storeName,
       }
 
-      const processedBlocks = (blocks || []).map((b: any) => ({
-        ...b,
-        content: JSON.parse(replaceVariables(JSON.stringify(b.content), vars)),
-      }))
+      const processedBlocks = (blocks || []).map((b: any) => {
+        const processed = {
+          ...b,
+          content: JSON.parse(replaceVariables(JSON.stringify(b.content), vars)),
+        }
+        if (b.block_type === 'staff_info') {
+          processed.content._resolved_staff_name = 'Nguyễn Văn A'
+        }
+        if (b.block_type === 'rating_button') {
+          processed.content._resolved_rating_url = '#'
+        }
+        return processed
+      })
 
       const html = buildEmailHtml(processedBlocks, storeName)
       const subject = replaceVariables(automation.subject, vars)
@@ -189,11 +221,30 @@ Deno.serve(async (req) => {
 
         const { data: tenant } = await supabase
           .from('tenants')
-          .select('store_name, business_name')
+          .select('store_name, business_name, subdomain')
           .eq('id', automation.tenant_id)
           .single()
 
         const storeName = tenant?.store_name || tenant?.business_name || smtp.storeName
+
+        // Get custom domain for rating URL
+        const { data: customDomain } = await supabase
+          .from('custom_domains')
+          .select('domain')
+          .eq('tenant_id', automation.tenant_id)
+          .eq('is_verified', true)
+          .limit(1)
+          .maybeSingle()
+
+        const websiteUrl = customDomain?.domain
+          ? `https://${customDomain.domain}`
+          : tenant?.subdomain
+            ? `https://${tenant.subdomain}.vkho.vn`
+            : ''
+
+        // Check if blocks contain staff_info or rating_button
+        const hasStaffBlock = blocks.some((b: any) => b.block_type === 'staff_info')
+        const hasRatingBlock = blocks.some((b: any) => b.block_type === 'rating_button')
 
         const transporter = nodemailer.createTransport({
           host: 'smtp.gmail.com', port: 465, secure: true,
@@ -211,7 +262,7 @@ Deno.serve(async (req) => {
 
           const { data } = await supabase
             .from('export_receipts')
-            .select('id, customer_id, export_date, customers(id, name, phone, email)')
+            .select('id, customer_id, export_date, sales_staff_id, customers(id, name, phone, email)')
             .eq('tenant_id', automation.tenant_id)
             .eq('status', 'completed')
             .gte('export_date', dayStart)
@@ -224,7 +275,7 @@ Deno.serve(async (req) => {
 
           const { data } = await supabase
             .from('export_receipts')
-            .select('id, customer_id, export_date, customers(id, name, phone, email)')
+            .select('id, customer_id, export_date, sales_staff_id, customers(id, name, phone, email)')
             .eq('tenant_id', automation.tenant_id)
             .eq('status', 'completed')
             .limit(500)
@@ -269,10 +320,44 @@ Deno.serve(async (req) => {
             '{{store_name}}': storeName,
           }
 
-          const processedBlocks = blocks.map((b: any) => ({
-            ...b,
-            content: JSON.parse(replaceVariables(JSON.stringify(b.content), vars)),
-          }))
+          // Resolve staff name for staff_info/rating_button blocks
+          let staffName = ''
+          if ((hasStaffBlock || hasRatingBlock) && receipt.sales_staff_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('user_id', receipt.sales_staff_id)
+              .single()
+            if (profile?.display_name) staffName = profile.display_name
+          }
+
+          // Get first IMEI for rating URL
+          let ratingUrl = ''
+          if (hasRatingBlock && websiteUrl && receipt.id) {
+            const { data: items } = await supabase
+              .from('export_receipt_items')
+              .select('imei')
+              .eq('export_receipt_id', receipt.id)
+              .not('imei', 'is', null)
+              .limit(1)
+            const firstImei = items?.[0]?.imei
+            if (firstImei) ratingUrl = `${websiteUrl}/warranty-check?imei=${encodeURIComponent(firstImei)}`
+          }
+
+          const processedBlocks = blocks.map((b: any) => {
+            const processed = {
+              ...b,
+              content: JSON.parse(replaceVariables(JSON.stringify(b.content), vars)),
+            }
+            // Inject resolved data for special blocks
+            if (b.block_type === 'staff_info' && staffName) {
+              processed.content._resolved_staff_name = staffName
+            }
+            if (b.block_type === 'rating_button' && ratingUrl) {
+              processed.content._resolved_rating_url = ratingUrl
+            }
+            return processed
+          })
 
           const html = buildEmailHtml(processedBlocks, storeName)
           const subject = replaceVariables(automation.subject, vars)
