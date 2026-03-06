@@ -471,6 +471,8 @@ export function RevenueProfitReport() {
         incomeDetails={stats?.incomeDetails || []}
         stats={stats || null}
       />
+      </div>
+      )}
     </div>
   );
 }
