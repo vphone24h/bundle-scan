@@ -154,10 +154,19 @@ Deno.serve(async (req) => {
         '{{store_name}}': storeName,
       }
 
-      const processedBlocks = (blocks || []).map((b: any) => ({
-        ...b,
-        content: JSON.parse(replaceVariables(JSON.stringify(b.content), vars)),
-      }))
+      const processedBlocks = (blocks || []).map((b: any) => {
+        const processed = {
+          ...b,
+          content: JSON.parse(replaceVariables(JSON.stringify(b.content), vars)),
+        }
+        if (b.block_type === 'staff_info') {
+          processed.content._resolved_staff_name = 'Nguyễn Văn A'
+        }
+        if (b.block_type === 'rating_button') {
+          processed.content._resolved_rating_url = '#'
+        }
+        return processed
+      })
 
       const html = buildEmailHtml(processedBlocks, storeName)
       const subject = replaceVariables(automation.subject, vars)
