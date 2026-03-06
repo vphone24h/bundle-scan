@@ -26,7 +26,7 @@ import {
 import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle, AlertCircle } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useNavigate } from 'react-router-dom';
-import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
+import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/mockData';
 import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
