@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
-// fetchAllRows removed - using server-side limited queries
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export interface ProductImportExportItem {
   productName: string;
@@ -98,17 +98,11 @@ export function useProductImportExportReport(filters?: {
         return q;
       };
 
-      const [importRes, exportRes, returnRes] = await Promise.all([
-        buildImportQuery().limit(5000),
-        buildExportQuery().limit(5000),
-        buildReturnQuery().limit(5000),
+      const [importData, exportData, returnData] = await Promise.all([
+        fetchAllRows<any>(() => buildImportQuery()),
+        fetchAllRows<any>(() => buildExportQuery()),
+        fetchAllRows<any>(() => buildReturnQuery()),
       ]);
-      if (importRes.error) throw importRes.error;
-      if (exportRes.error) throw exportRes.error;
-      if (returnRes.error) throw returnRes.error;
-      const importData = importRes.data || [];
-      const exportData = exportRes.data || [];
-      const returnData = returnRes.data || [];
 
       // Aggregate by product name + sku + branch
       const productMap: Record<string, ProductImportExportItem> = {};

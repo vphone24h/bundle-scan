@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
-// fetchAllRows removed - using server-side limited queries
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export interface CustomerReportItem {
   customerId: string;
@@ -52,8 +52,7 @@ export function useCustomerReport(filters?: {
         return q;
       };
 
-      const { data: receipts, error } = await buildQuery().limit(5000);
-      if (error) throw error;
+      const receipts = await fetchAllRows<any>(() => buildQuery());
 
       // Aggregate by customer
       const customerMap: Record<string, CustomerReportItem> = {};

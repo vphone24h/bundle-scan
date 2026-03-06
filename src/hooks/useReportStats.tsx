@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
 import { getLocalDateString, getLocalDateRangeISO } from '@/lib/vietnamTime';
-// fetchAllRows removed - using server-side limited queries
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 import type { SaleDetailItem, ReturnDetailItem, CashBookDetailItem } from '@/components/reports/ReportStatDetailDialog';
 
@@ -123,8 +123,7 @@ export function useReportStats(filters?: {
         return q;
       };
 
-      const { data: exportReceipts, error: exportError } = await buildExportQuery().limit(5000);
-      if (exportError) throw exportError;
+      const exportReceipts = await fetchAllRows<any>(() => buildExportQuery());
 
       // 2. Lấy dữ liệu trả hàng KHÔNG CÓ PHÍ để tính lợi nhuận âm
       let returnQuery = supabase
@@ -148,8 +147,7 @@ export function useReportStats(filters?: {
         returnQuery = returnQuery.eq('branch_id', effectiveBranchId);
       }
 
-      const { data: returnItems, error: returnError } = await returnQuery.limit(5000);
-      if (returnError) throw returnError;
+      const returnItems = await fetchAllRows<any>(() => returnQuery);
 
       // 3. Lấy giá nhập của các sản phẩm đã bán / trả để tính lợi nhuận
       const productIds = Array.from(
@@ -210,8 +208,7 @@ export function useReportStats(filters?: {
         cashBookQuery = cashBookQuery.eq('branch_id', effectiveBranchId);
       }
 
-      const { data: cashBookEntries, error: cashBookError } = await cashBookQuery.limit(5000);
-      if (cashBookError) throw cashBookError;
+      const cashBookEntries = await fetchAllRows<any>(() => cashBookQuery);
 
       // Tính toán các chỉ số
       let totalSalesRevenue = 0;
@@ -409,8 +406,7 @@ export function useReportChartData(filters?: {
         query = query.eq('branch_id', effectiveBranchId);
       }
 
-      const { data: receipts, error } = await query.limit(5000);
-      if (error) throw error;
+      const receipts = await fetchAllRows<any>(() => query);
 
       // Lấy trả hàng KHÔNG CÓ PHÍ để trừ lợi nhuận
       let returnQuery = supabase
@@ -424,8 +420,7 @@ export function useReportChartData(filters?: {
         returnQuery = returnQuery.eq('branch_id', effectiveBranchId);
       }
 
-      const { data: returnItems, error: returnError } = await returnQuery.limit(5000);
-      if (returnError) throw returnError;
+      const returnItems = await fetchAllRows<any>(() => returnQuery);
 
       // Lấy giá nhập
       const productIds = Array.from(
