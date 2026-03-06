@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
         .single();
       if (roleData?.user_role !== "super_admin") {
         return new Response(JSON.stringify({ error: "Chỉ Admin Tổng mới được đặt mật khẩu bảo mật" }), {
-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
