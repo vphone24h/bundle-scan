@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
         .single();
       if (roleData?.user_role !== "super_admin") {
         return new Response(JSON.stringify({ error: "Không có quyền" }), {
-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
