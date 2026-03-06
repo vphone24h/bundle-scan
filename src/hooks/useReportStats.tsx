@@ -148,7 +148,7 @@ export function useReportStats(filters?: {
         returnQuery = returnQuery.eq('branch_id', effectiveBranchId);
       }
 
-      const { data: returnItems, error: returnError } = await returnQuery;
+      const { data: returnItems, error: returnError } = await returnQuery.limit(5000);
       if (returnError) throw returnError;
 
       // 3. Lấy giá nhập của các sản phẩm đã bán / trả để tính lợi nhuận
