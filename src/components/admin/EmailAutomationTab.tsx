@@ -10,7 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
 import { Plus, Pencil, Trash2, Mail, Eye, Send, Clock, CheckCircle, XCircle, Loader2, GripVertical, Type, AlignLeft, Image, MousePointer, Minus, MoveVertical, Phone, MessageCircle, MapPin, ExternalLink, BookOpen, Star, User } from 'lucide-react';
 import { format } from 'date-fns';
@@ -581,18 +582,30 @@ export function EmailAutomationTab() {
     }
   };
 
-  const handleSendTest = async (item: EmailAutomation) => {
-    try {
-      const { data: { user } } = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
-      if (!user?.email) { toast.error('Không tìm thấy email của bạn'); return; }
+  const [testConfirmItem, setTestConfirmItem] = useState<EmailAutomation | null>(null);
+  const [sendingTest, setSendingTest] = useState(false);
 
-      const { error } = await (await import('@/integrations/supabase/client')).supabase.functions.invoke('run-email-automations', {
-        body: { testMode: true, automationId: item.id, testEmail: user.email },
+  const handleSendTest = (item: EmailAutomation) => {
+    setTestConfirmItem(item);
+  };
+
+  const confirmSendTest = async () => {
+    if (!testConfirmItem) return;
+    setSendingTest(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) { toast.error('Không tìm thấy email của bạn'); setSendingTest(false); return; }
+
+      const { error } = await supabase.functions.invoke('run-email-automations', {
+        body: { testMode: true, automationId: testConfirmItem.id, testEmail: user.email },
       });
       if (error) throw error;
       toast.success(`Email thử đã gửi đến ${user.email}`);
     } catch (e: any) {
       toast.error('Lỗi gửi thử: ' + e.message);
+    } finally {
+      setSendingTest(false);
+      setTestConfirmItem(null);
     }
   };
 
@@ -841,6 +854,25 @@ export function EmailAutomationTab() {
             prefilledTemplate={prefilledTemplate}
           />
         )}
+
+        {/* Test email confirmation dialog */}
+        <AlertDialog open={!!testConfirmItem} onOpenChange={(open) => !open && setTestConfirmItem(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Gửi email thử</AlertDialogTitle>
+              <AlertDialogDescription>
+                Bạn muốn gửi email thử cho kịch bản "<strong>{testConfirmItem?.name}</strong>"? Email sẽ được gửi đến địa chỉ email đăng nhập của bạn.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={sendingTest}>Hủy</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmSendTest} disabled={sendingTest}>
+                {sendingTest ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+                Gửi thử
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
