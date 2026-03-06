@@ -3,7 +3,7 @@ import { TenantLandingSettings } from '@/hooks/useTenantLanding';
 import { getIndustryConfig, getFullNavItems, LayoutStyle, HomeSection, SYSTEM_PAGES } from '@/lib/industryConfig';
 import { HomeSectionItem, CustomProductTab } from '@/components/admin/HomeSectionManager';
 import { ProductsPageSectionItem } from '@/components/admin/ProductsPageSectionManager';
-import { ProductDetailSectionItem } from '@/components/admin/ProductDetailSectionManager';
+import { ProductDetailSectionItem, CTAButtonItem, getDefaultCTAButtons } from '@/components/admin/ProductDetailSectionManager';
 import { NewsPageSectionItem } from '@/components/admin/NewsPageSectionManager';
 import { Pencil, Home, ShoppingBag, FileText, ArrowLeft, Newspaper } from 'lucide-react';
 
