@@ -212,11 +212,30 @@ Deno.serve(async (req) => {
 
         const { data: tenant } = await supabase
           .from('tenants')
-          .select('store_name, business_name')
+          .select('store_name, business_name, subdomain')
           .eq('id', automation.tenant_id)
           .single()
 
         const storeName = tenant?.store_name || tenant?.business_name || smtp.storeName
+
+        // Get custom domain for rating URL
+        const { data: customDomain } = await supabase
+          .from('custom_domains')
+          .select('domain')
+          .eq('tenant_id', automation.tenant_id)
+          .eq('is_verified', true)
+          .limit(1)
+          .maybeSingle()
+
+        const websiteUrl = customDomain?.domain
+          ? `https://${customDomain.domain}`
+          : tenant?.subdomain
+            ? `https://${tenant.subdomain}.vkho.vn`
+            : ''
+
+        // Check if blocks contain staff_info or rating_button
+        const hasStaffBlock = blocks.some((b: any) => b.block_type === 'staff_info')
+        const hasRatingBlock = blocks.some((b: any) => b.block_type === 'rating_button')
 
         const transporter = nodemailer.createTransport({
           host: 'smtp.gmail.com', port: 465, secure: true,
