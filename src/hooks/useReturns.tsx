@@ -370,6 +370,9 @@ export function useCreateImportReturn() {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
     },
   });
 }
@@ -700,6 +703,9 @@ export function useCreateExportReturn() {
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
     },
   });
 }
@@ -770,6 +776,9 @@ export function useDeleteImportReturn() {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
     },
   });
 }
@@ -900,6 +909,9 @@ export function useDeleteExportReturn() {
       queryClient.invalidateQueries({ queryKey: ['cash-book'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['report-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['supplier-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['debt-detail'] });
     },
   });
 }
