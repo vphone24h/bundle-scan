@@ -4,8 +4,8 @@ import { ReportStatDetailDialog, type DetailType } from '@/components/reports/Re
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DateRangeApplyFilter } from '@/components/ui/date-range-apply-filter';
 import {
   Select,
   SelectContent,
