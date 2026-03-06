@@ -198,7 +198,7 @@ export default function ProductsPage() {
   };
 
   const handleExportProducts = () => {
-    if (filteredProducts.length === 0) {
+    if (mappedProducts.length === 0) {
       toast({ title: t('pages.products.noData'), description: t('pages.products.noProductsToExport'), variant: 'destructive' });
       return;
     }
@@ -219,7 +219,7 @@ export default function ProductsPage() {
         { header: t('pages.products.branch'), key: 'branchName', width: 18 },
         { header: t('pages.products.status'), key: 'status', width: 12, format: (v) => v === 'in_stock' ? t('pages.products.inStock') : v === 'sold' ? t('pages.products.sold') : t('pages.products.returned') },
       ],
-      data: filteredProducts.map((p, index) => ({
+      data: mappedProducts.map((p, index) => ({
         stt: index + 1,
         name: p.name,
         sku: p.sku,
@@ -234,7 +234,7 @@ export default function ProductsPage() {
       })),
     });
 
-    toast({ title: t('pages.products.exportSuccess'), description: t('pages.products.exportedProducts', { count: filteredProducts.length }) });
+    toast({ title: t('pages.products.exportSuccess'), description: t('pages.products.exportedProducts', { count: mappedProducts.length }) });
   };
 
   return (
