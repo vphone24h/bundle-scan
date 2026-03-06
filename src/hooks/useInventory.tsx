@@ -19,6 +19,7 @@ export interface InventoryItem {
   avgImportPrice: number;
   totalImportCost: number;
   products: ProductDetail[];
+  oldestImportDate: string | null;
 }
 
 export interface ProductDetail {
