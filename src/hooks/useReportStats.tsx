@@ -512,7 +512,9 @@ export function useReportChartData(filters?: {
         }
 
         const salePrice = Number(ret.sale_price);
-        const importPrice = ret.product_id ? (productsMap[ret.product_id] || 0) : 0;
+        const importPrice = ret.product_id
+          ? (productsMap[ret.product_id] || 0)
+          : (ret.imei ? (chartImeiPriceMap[ret.imei] || 0) : 0);
         const originalProfit = salePrice - importPrice;
 
         dataMap[key].profit -= originalProfit;
