@@ -400,7 +400,7 @@ export default function ProductsPage() {
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <p className="text-xs sm:text-sm text-muted-foreground">
-            {t('pages.products.showingProducts', { filtered: filteredProducts.length, total: mappedProducts.length })}
+            Hiển thị {mappedProducts.length} / {totalCount} sản phẩm
           </p>
           {selectedProducts.length > 0 && (
             <p className="text-xs sm:text-sm font-medium text-primary">
@@ -410,23 +410,23 @@ export default function ProductsPage() {
         </div>
 
         <ProductTable
-          products={pagination.paginatedData}
+          products={mappedProducts}
           selectedProducts={selectedProducts}
           onSelectionChange={setSelectedProducts}
           onEdit={handleEdit}
           onPrintBarcode={handlePrintBarcode}
         />
         
-        {filteredProducts.length > 0 && (
+        {totalCount > 0 && (
           <TablePagination
-            currentPage={pagination.currentPage}
-            totalPages={pagination.totalPages}
-            pageSize={pagination.pageSize}
-            totalItems={pagination.totalItems}
-            startIndex={pagination.startIndex}
-            endIndex={pagination.endIndex}
-            onPageChange={pagination.setPage}
-            onPageSizeChange={pagination.setPageSize}
+            currentPage={serverPagination.page}
+            totalPages={totalPages}
+            pageSize={serverPagination.pageSize}
+            totalItems={totalCount}
+            startIndex={(serverPagination.page - 1) * serverPagination.pageSize + 1}
+            endIndex={Math.min(serverPagination.page * serverPagination.pageSize, totalCount)}
+            onPageChange={serverPagination.setPage}
+            onPageSizeChange={serverPagination.setPageSize}
           />
         )}
       </div>
