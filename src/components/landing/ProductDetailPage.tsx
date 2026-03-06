@@ -794,7 +794,7 @@ export function ProductDetailPage({
             }
             case 'booking':
               return (
-                <Button key={btn.id} className="flex-1 gap-2 h-11 text-sm font-semibold" style={{ backgroundColor: primaryColor }}
+                <Button key={btn.id} className="shrink-0 min-w-[100px] gap-2 h-11 text-sm font-semibold" style={{ backgroundColor: primaryColor }}
                   onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
                   {btn.icon} {btn.label}
                 </Button>
