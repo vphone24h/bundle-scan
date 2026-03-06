@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     // Get tenant landing settings for email config & store info
     const { data: settings } = await supabaseAdmin
       .from('tenant_landing_settings')
-      .select('order_email_enabled, order_email_sender, order_email_app_password, store_name, store_phone, store_address, store_email, facebook_url, zalo_url')
+      .select('order_email_enabled, order_email_sender, order_email_app_password, store_name, store_phone, store_address, store_email, facebook_url, zalo_url, include_staff_in_email, include_rating_in_email')
       .eq('tenant_id', tenant_id)
       .single()
 
