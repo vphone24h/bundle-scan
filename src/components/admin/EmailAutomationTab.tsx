@@ -85,6 +85,8 @@ function newBlock(type: string): BlockItem {
     case 'image': return { ...base, content: { url: '', alt: 'Hình ảnh' } };
     case 'button': return { ...base, content: { text: 'Liên hệ ngay', url: '#', color: '#1a56db' } };
     case 'link': return { ...base, content: { text: 'Nhấn vào đây để xem', url: 'https://', linkText: '' } };
+    case 'staff_info': return { ...base, content: { label: 'Nhân viên tư vấn' } };
+    case 'rating_button': return { ...base, content: { text: '⭐ Đánh giá nhân viên', description: 'Bạn hài lòng với dịch vụ? Hãy dành 30 giây đánh giá để giúp chúng tôi phục vụ bạn tốt hơn!', color: '#6366f1' } };
     case 'divider': return { ...base, content: {} };
     case 'spacer': return { ...base, content: { height: 20 } };
     default: return base;
