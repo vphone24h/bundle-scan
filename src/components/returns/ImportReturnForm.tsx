@@ -363,7 +363,7 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Cần hoàn trả:</span>
-                  <span className="font-bold">{formatCurrencyWithSpaces(product.import_price)}</span>
+                  <span className="font-bold">{formatCurrencyWithSpaces(refundAmount)}</span>
                 </div>
                 {remaining !== 0 && (
                   <div className="flex justify-between text-sm text-destructive">
