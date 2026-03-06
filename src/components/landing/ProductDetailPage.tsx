@@ -37,6 +37,7 @@ interface ProductDetailPageProps {
   showInstallmentButton?: boolean; // deprecated, use detailSections
   detailSections?: ProductDetailSectionConfig[] | null;
   ctaButtons?: CTAButtonItem[] | null;
+  websiteTemplate?: string | null;
   relatedProducts?: LandingProduct[];
   recentlyViewedProducts?: LandingProduct[];
   onProductClick?: (p: LandingProduct) => void;
