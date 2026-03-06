@@ -145,12 +145,20 @@ export function useDetailedProfitReport(filters?: {
       let productsMap: Record<string, { import_price: number; quantity: number; category_id: string | null }> = {};
       
       if (productIds.length > 0) {
-        const { data: products } = await supabase
-          .from('products')
-          .select('id, import_price, quantity, imei, category_id')
-          .in('id', productIds);
+        // Batch fetch products in chunks of 500 to avoid Supabase default 1000 row limit
+        const BATCH_SIZE = 500;
+        const allProducts: any[] = [];
+        for (let i = 0; i < productIds.length; i += BATCH_SIZE) {
+          const batch = productIds.slice(i, i + BATCH_SIZE);
+          const { data: products } = await supabase
+            .from('products')
+            .select('id, import_price, quantity, imei, category_id')
+            .in('id', batch)
+            .limit(BATCH_SIZE);
+          if (products) allProducts.push(...products);
+        }
         
-        productsMap = (products || []).reduce((acc, p) => {
+        productsMap = allProducts.reduce((acc, p) => {
           acc[p.id] = { 
             import_price: Number(p.import_price),
             quantity: p.quantity || 1,
