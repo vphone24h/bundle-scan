@@ -39,6 +39,7 @@ interface DebtPaymentDialogProps {
   entityName: string;
   remainingAmount: number;
   branchId: string | null;
+  mergedEntityIds?: string[];
 }
 
 const BUILT_IN_PAYMENT_SOURCES = [
