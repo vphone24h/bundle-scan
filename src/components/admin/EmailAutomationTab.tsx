@@ -210,6 +210,30 @@ function BlockEditor({ block, onChange, onRemove }: { block: BlockItem; onChange
         </div>
       )}
 
+      {block_type === 'staff_info' && (
+        <div className="space-y-2">
+          <Input value={content.label || ''} onChange={e => update({ label: e.target.value })} placeholder="Nhãn hiển thị. VD: Nhân viên tư vấn" />
+          <p className="text-xs text-muted-foreground">Tự động hiển thị tên nhân viên bán hàng của đơn (biến <code>{'{{staff_name}}'}</code>)</p>
+        </div>
+      )}
+
+      {block_type === 'rating_button' && (
+        <div className="space-y-2">
+          <Input value={content.text || ''} onChange={e => update({ text: e.target.value })} placeholder="Nội dung nút. VD: ⭐ Đánh giá nhân viên" />
+          <textarea
+            className="w-full min-h-[60px] p-2 border rounded text-sm bg-background resize-y"
+            value={content.description || ''}
+            onChange={e => update({ description: e.target.value })}
+            placeholder="Mô tả trên nút..."
+          />
+          <div className="flex items-center gap-2">
+            <Label className="text-xs">Màu nút:</Label>
+            <input type="color" value={content.color || '#6366f1'} onChange={e => update({ color: e.target.value })} className="h-8 w-10 rounded border cursor-pointer" />
+          </div>
+          <p className="text-xs text-muted-foreground">Nút sẽ dẫn khách đến trang đánh giá nhân viên qua link bảo hành</p>
+        </div>
+      )}
+
       {block_type === 'spacer' && (
         <div className="flex items-center gap-2">
           <Label className="text-xs">Chiều cao (px):</Label>
