@@ -258,7 +258,7 @@ Deno.serve(async (req) => {
 
       if (new Date(record.reset_otp_expires_at) < new Date()) {
         return new Response(JSON.stringify({ error: "Mã OTP đã hết hạn" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
