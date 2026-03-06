@@ -1183,16 +1183,15 @@ export default function CashBookPage() {
           </div>
 
           {summaryTimePreset === 'custom' && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Từ ngày</Label>
-                <Input type="date" value={summaryCustomFrom} onChange={e => setSummaryCustomFrom(e.target.value)} className="h-8 text-sm" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Đến ngày</Label>
-                <Input type="date" value={summaryCustomTo} onChange={e => setSummaryCustomTo(e.target.value)} className="h-8 text-sm" />
-              </div>
-            </div>
+            <DateRangeApplyFilter
+              startDate={summaryCustomFrom}
+              endDate={summaryCustomTo}
+              onApply={(s, e) => { setSummaryCustomFrom(s); setSummaryCustomTo(e); }}
+              isLoading={false}
+              layout="stacked"
+              labelClassName="text-xs"
+              inputClassName="h-8 text-sm"
+            />
           )}
 
           {/* Income / Expense cards */}
