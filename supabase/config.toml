@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.zalo-oauth-callback]
 verify_jwt = false
+
+[functions.security-password]
+verify_jwt = false
