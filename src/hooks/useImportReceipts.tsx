@@ -749,11 +749,17 @@ export function useReturnImportReceipt() {
   return useMutation({
     mutationFn: async ({
       receiptId,
+      feeType = 'none',
+      feePercentage = 0,
+      feeAmount = 0,
       payments,
       recordToCashBook = true,
       note,
     }: {
       receiptId: string;
+      feeType?: 'none' | 'percentage' | 'fixed_amount';
+      feePercentage?: number;
+      feeAmount?: number;
       payments: { source: string; amount: number }[];
       recordToCashBook?: boolean;
       note?: string | null;
