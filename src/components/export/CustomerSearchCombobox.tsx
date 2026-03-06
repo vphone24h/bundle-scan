@@ -99,7 +99,8 @@ export function CustomerSearchCombobox({
         let query = supabase.from('customers').select('*');
         
         if (isPhoneSearch) {
-          query = query.ilike('phone', `%${searchQuery}%`);
+          // Use prefix match for phone (much faster with index)
+          query = query.ilike('phone', `${searchQuery}%`);
         } else {
           query = query.ilike('name', `%${searchQuery}%`);
         }
