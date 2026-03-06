@@ -243,6 +243,64 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
               </div>
             </div>
 
+            {/* Fee Type Selection */}
+            <div className="space-y-3">
+              <Label className="font-medium">Hình thức trả hàng</Label>
+              <RadioGroup
+                value={feeType}
+                onValueChange={(v) => setFeeType(v as 'none' | 'percentage' | 'fixed_amount')}
+                className="space-y-2"
+              >
+                <div className="flex items-center space-x-3 p-3 rounded-lg border">
+                  <RadioGroupItem value="none" id="fee_none_receipt" />
+                  <Label htmlFor="fee_none_receipt" className="cursor-pointer flex-1 text-sm">
+                    Trả lại đúng số tiền đã nhập (100%)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3 p-3 rounded-lg border">
+                  <RadioGroupItem value="percentage" id="fee_pct_receipt" />
+                  <Label htmlFor="fee_pct_receipt" className="cursor-pointer flex-1 text-sm">
+                    Trả hàng mất phí theo %
+                  </Label>
+                </div>
+                {feeType === 'percentage' && (
+                  <div className="ml-8">
+                    <Label className="text-xs text-muted-foreground">Phí (%)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={feePercentage || ''}
+                      onChange={(e) => setFeePercentage(Number(e.target.value))}
+                      placeholder="VD: 10"
+                      className="w-32"
+                    />
+                  </div>
+                )}
+                <div className="flex items-center space-x-3 p-3 rounded-lg border">
+                  <RadioGroupItem value="fixed_amount" id="fee_fixed_receipt" />
+                  <Label htmlFor="fee_fixed_receipt" className="cursor-pointer flex-1 text-sm">
+                    Trả hàng mất phí cố định
+                  </Label>
+                </div>
+                {feeType === 'fixed_amount' && (
+                  <div className="ml-8">
+                    <Label className="text-xs text-muted-foreground">Phí cố định</Label>
+                    <Input
+                      value={feeDisplayAmount}
+                      onChange={(e) => {
+                        const num = parseFormattedNumber(e.target.value);
+                        setFeeAmount(num);
+                        setFeeDisplayAmount(formatNumberWithSpaces(num));
+                      }}
+                      placeholder="0"
+                      className="w-48 text-right"
+                    />
+                  </div>
+                )}
+              </RadioGroup>
+            </div>
+
             {/* Cash Book Toggle */}
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
