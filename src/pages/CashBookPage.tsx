@@ -1323,20 +1323,14 @@ export default function CashBookPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs">Từ ngày</Label>
-                      <Input
-                        type="date"
-                        value={dateFrom}
-                        onChange={(e) => { setDateFrom(e.target.value); setTimePreset(''); }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Đến ngày</Label>
-                      <Input
-                        type="date"
-                        value={dateTo}
-                        onChange={(e) => { setDateTo(e.target.value); setTimePreset(''); }}
+                    <div className="sm:col-span-2 lg:col-span-3">
+                      <DateRangeApplyFilter
+                        startDate={dateFrom}
+                        endDate={dateTo}
+                        onApply={(s, e) => { setDateFrom(s); setDateTo(e); setTimePreset(''); }}
+                        isLoading={false}
+                        layout="stacked"
+                        labelClassName="text-xs"
                       />
                     </div>
                     <div className="space-y-2">
