@@ -106,6 +106,25 @@ function renderBlockPreview(block: BlockItem) {
       return <div style={{ textAlign: 'center', margin: '12px 0' }}><span style={{ display: 'inline-block', padding: '10px 24px', background: content.color || '#1a56db', color: '#fff', borderRadius: 8, fontSize: 14, fontWeight: 600 }}>{content.text || 'Nút bấm'}</span></div>;
     case 'link':
       return <p style={{ fontSize: 14, lineHeight: 1.6, margin: '4px 0', color: '#374151' }}>{content.text || ''} <a href={content.url || '#'} style={{ color: '#1a56db', textDecoration: 'underline' }}>{content.linkText || content.url || 'Link'}</a></p>;
+    case 'staff_info':
+      return (
+        <div style={{ background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 10, padding: 16, margin: '8px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#6366f1', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16, marginRight: 12 }}>N</div>
+            <div>
+              <p style={{ margin: 0, fontSize: 12, color: '#6366f1', fontWeight: 500 }}>{content.label || 'Nhân viên tư vấn'}</p>
+              <p style={{ margin: '2px 0 0', fontSize: 16, color: '#312e81', fontWeight: 700 }}>{'{{staff_name}}'}</p>
+            </div>
+          </div>
+        </div>
+      );
+    case 'rating_button':
+      return (
+        <div style={{ background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 10, padding: 16, margin: '8px 0', textAlign: 'center' }}>
+          <p style={{ margin: '0 0 8px', fontSize: 13, color: '#4338ca', lineHeight: 1.5 }}>{content.description || 'Hãy đánh giá dịch vụ!'}</p>
+          <span style={{ display: 'inline-block', padding: '10px 28px', background: content.color || '#6366f1', color: '#fff', borderRadius: 8, fontWeight: 600, fontSize: 14 }}>{content.text || '⭐ Đánh giá'}</span>
+        </div>
+      );
     case 'divider':
       return <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '12px 0' }} />;
     case 'spacer':
