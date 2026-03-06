@@ -50,10 +50,13 @@ export function ProductDetailPage({
   warrantyHotline, onShare, onInstallment,
   showInstallmentButton = true,
   detailSections,
+  ctaButtons,
   relatedProducts = [],
   recentlyViewedProducts = [],
   onProductClick,
   storeInfo,
+  zaloUrl,
+  facebookUrl,
 }: ProductDetailPageProps) {
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
