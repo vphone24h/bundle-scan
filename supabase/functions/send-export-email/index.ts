@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     // Get tenant landing settings for email config & store info
     const { data: settings } = await supabaseAdmin
       .from('tenant_landing_settings')
-      .select('order_email_enabled, order_email_sender, order_email_app_password, store_name, store_phone, store_address, store_email, facebook_url, zalo_url')
+      .select('order_email_enabled, order_email_sender, order_email_app_password, store_name, store_phone, store_address, store_email, facebook_url, zalo_url, include_staff_in_email, include_rating_in_email')
       .eq('tenant_id', tenant_id)
       .single()
 
@@ -86,9 +86,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get sales staff name
+    // Get sales staff name (only if settings enabled)
     let staffName = ''
-    if (sales_staff_id) {
+    const showStaff = settings.include_staff_in_email === true
+    const showRating = settings.include_rating_in_email === true
+    if (sales_staff_id && (showStaff || showRating)) {
       const { data: profile } = await supabaseAdmin
         .from('profiles')
         .select('display_name')
@@ -142,11 +144,13 @@ Deno.serve(async (req) => {
       </tr>
     `).join('')
 
-    // Build staff section HTML
-    const staffSectionHtml = staffName ? `
+    // Build staff section HTML (conditional on settings)
+    let staffSectionHtml = ''
+    if (staffName && showStaff) {
+      staffSectionHtml = `
       <!-- Sales Staff Info -->
       <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:16px;margin:0 0 24px">
-        <div style="display:flex;align-items:center;margin-bottom:8px">
+        <div style="display:flex;align-items:center;margin-bottom:${showRating && warrantyCheckUrl ? '8px' : '0'}">
           <div style="width:40px;height:40px;border-radius:50%;background:#6366f1;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;margin-right:12px;line-height:40px;text-align:center">
             ${staffName.charAt(0).toUpperCase()}
           </div>
@@ -155,7 +159,7 @@ Deno.serve(async (req) => {
             <p style="margin:2px 0 0;font-size:16px;color:#312e81;font-weight:700">${staffName}</p>
           </div>
         </div>
-        ${warrantyCheckUrl ? `
+        ${showRating && warrantyCheckUrl ? `
           <p style="margin:8px 0 0;font-size:13px;color:#4338ca;line-height:1.5">
             Bạn hài lòng với dịch vụ? Hãy dành 30 giây đánh giá nhân viên để giúp chúng tôi phục vụ bạn tốt hơn!
           </p>
@@ -163,8 +167,17 @@ Deno.serve(async (req) => {
             <a href="${warrantyCheckUrl}" style="display:inline-block;padding:10px 28px;background:#6366f1;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">⭐ Đánh giá nhân viên</a>
           </div>
         ` : ''}
-      </div>
-    ` : ''
+      </div>`
+    } else if (showRating && warrantyCheckUrl) {
+      // Rating only without staff info
+      staffSectionHtml = `
+      <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:16px;margin:0 0 24px;text-align:center">
+        <p style="margin:0 0 8px;font-size:14px;color:#4338ca;line-height:1.5">
+          Bạn hài lòng với dịch vụ? Hãy dành 30 giây đánh giá để giúp chúng tôi phục vụ bạn tốt hơn!
+        </p>
+        <a href="${warrantyCheckUrl}" style="display:inline-block;padding:10px 28px;background:#6366f1;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">⭐ Đánh giá dịch vụ</a>
+      </div>`
+    }
 
     const subject = `Cảm ơn bạn đã mua hàng tại ${storeName}!`
 
@@ -201,7 +214,7 @@ Deno.serve(async (req) => {
                 <td style="padding:4px 0;font-size:14px;color:#718096">Chi nhánh:</td>
                 <td style="padding:4px 0;font-size:14px;color:#2d3748;text-align:right">${branchName}</td>
               </tr>` : ''}
-              ${staffName ? `<tr>
+              ${staffName && showStaff ? `<tr>
                 <td style="padding:4px 0;font-size:14px;color:#718096">Nhân viên tư vấn:</td>
                 <td style="padding:4px 0;font-size:14px;color:#4338ca;font-weight:600;text-align:right">${staffName}</td>
               </tr>` : ''}
