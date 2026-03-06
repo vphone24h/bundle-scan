@@ -813,7 +813,7 @@ export function ProductDetailPage({
 
         return (
           <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t safe-area-bottom">
-            <div className="flex items-center gap-2 px-3 py-2.5">
+            <div className="flex items-center gap-2 px-3 py-2.5 overflow-x-auto scrollbar-hide">
               {buttons.map(renderButton)}
             </div>
           </div>
