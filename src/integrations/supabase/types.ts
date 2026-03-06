@@ -5635,6 +5635,8 @@ export type Database = {
           hero_subtitle: string | null
           hero_title: string | null
           id: string
+          include_rating_in_email: boolean
+          include_staff_in_email: boolean
           is_enabled: boolean | null
           menu_position: string | null
           meta_description: string | null
@@ -5705,6 +5707,8 @@ export type Database = {
           hero_subtitle?: string | null
           hero_title?: string | null
           id?: string
+          include_rating_in_email?: boolean
+          include_staff_in_email?: boolean
           is_enabled?: boolean | null
           menu_position?: string | null
           meta_description?: string | null
@@ -5775,6 +5779,8 @@ export type Database = {
           hero_subtitle?: string | null
           hero_title?: string | null
           id?: string
+          include_rating_in_email?: boolean
+          include_staff_in_email?: boolean
           is_enabled?: boolean | null
           menu_position?: string | null
           meta_description?: string | null
