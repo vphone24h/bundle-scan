@@ -6542,6 +6542,7 @@ export type Database = {
           entity_name: string
           entity_phone: string
           first_debt_date: string
+          merged_entity_ids: string[]
           paid_amount: number
           remaining_amount: number
           total_amount: number

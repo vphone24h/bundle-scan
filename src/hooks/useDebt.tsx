@@ -102,6 +102,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
         remaining_amount: Number(row.remaining_amount) || 0,
         first_debt_date: row.first_debt_date,
         days_overdue: row.days_overdue || 0,
+        merged_entity_ids: row.merged_entity_ids || undefined,
       })) as DebtSummary[];
     },
     enabled: !!permissions,
