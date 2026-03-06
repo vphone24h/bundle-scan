@@ -36,10 +36,13 @@ interface ProductDetailPageProps {
   onInstallment?: () => void;
   showInstallmentButton?: boolean; // deprecated, use detailSections
   detailSections?: ProductDetailSectionConfig[] | null;
+  ctaButtons?: CTAButtonItem[] | null;
   relatedProducts?: LandingProduct[];
   recentlyViewedProducts?: LandingProduct[];
   onProductClick?: (p: LandingProduct) => void;
   storeInfo?: { name?: string; phone?: string; address?: string; email?: string } | null;
+  zaloUrl?: string | null;
+  facebookUrl?: string | null;
 }
 
 export function ProductDetailPage({
