@@ -138,6 +138,7 @@ function StaffCard({ staff, rank, onClick }: { staff: StaffWithKPI; rank: number
 }
 
 export function StaffReport() {
+  const [activePreset, setActivePreset] = useState<string | null>('this_month');
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [sortMode, setSortMode] = useState<SortMode>('revenue');
