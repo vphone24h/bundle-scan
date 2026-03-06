@@ -127,7 +127,9 @@ export function ProductImportExportReport() {
     });
   };
 
-  if (isLoading) {
+  const isInitialLoad = isLoading && !data;
+
+  if (isInitialLoad) {
     return <div className="min-h-[400px] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
@@ -138,9 +140,16 @@ export function ProductImportExportReport() {
         <CardContent className="pt-6">
            <div className="flex flex-wrap gap-4 items-end">
             <div className="flex flex-wrap gap-2">
-              {timePresets.map((p) => (
-                <Button key={p.value} variant="outline" size="sm" onClick={() => handleTimePreset(p.value)}>{p.label}</Button>
-              ))}
+              {timePresets.map((p) => {
+                const isActive = activePreset === p.value;
+                const isLoadingThis = isActive && isLoading;
+                return (
+                  <Button key={p.value} variant={isActive ? 'default' : 'outline'} size="sm" onClick={() => handleTimePreset(p.value)} disabled={isLoading}>
+                    {isLoadingThis && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
+                    {p.label}
+                  </Button>
+                );
+              })}
             </div>
             <div className="flex-1" />
             <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!filteredItems.length}>
