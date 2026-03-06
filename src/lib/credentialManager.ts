@@ -3,6 +3,12 @@
  * Trên iPhone sẽ tự động sử dụng Face ID / Touch ID
  */
 
+declare global {
+  interface Window {
+    PasswordCredential: any;
+  }
+}
+
 const CREDENTIAL_ID = 'vkho-security-password';
 
 export function isCredentialManagerSupported(): boolean {
