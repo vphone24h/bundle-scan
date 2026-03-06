@@ -102,6 +102,7 @@ export function useReportStats(filters?: {
               id,
               product_name,
               sku,
+              imei,
               sale_price,
               status,
               product_id,

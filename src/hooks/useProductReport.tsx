@@ -60,7 +60,7 @@ export function useProductReport(filters?: {
         let q = supabase
           .from('export_receipt_items')
           .select(`
-            product_name, sku, sale_price, status, product_id, category_id,
+            product_name, sku, sale_price, status, product_id, category_id, imei,
             categories(name),
             export_receipts!inner(export_date, branch_id, status, branches(name))
           `)
@@ -78,12 +78,34 @@ export function useProductReport(filters?: {
       const { data: soldItems, error: soldError } = await buildSoldQuery().limit(5000);
       if (soldError) throw soldError;
 
-      // Get product import prices
+      // Get product import prices by product_id
       const productIds = Array.from(new Set(soldItems?.map(i => i.product_id).filter(Boolean) || []));
       let productsMap: Record<string, number> = {};
       if (productIds.length > 0) {
         const { data: products } = await supabase.from('products').select('id, import_price').in('id', productIds);
         productsMap = (products || []).reduce((acc, p) => { acc[p.id] = Number(p.import_price); return acc; }, {} as Record<string, number>);
+      }
+
+      // For items without product_id, try to find import price by IMEI
+      const orphanImeis = Array.from(new Set(
+        soldItems?.filter(i => !i.product_id && i.imei).map(i => i.imei as string) || []
+      ));
+      let imeiPriceMap: Record<string, number> = {};
+      if (orphanImeis.length > 0) {
+        // Batch lookup in chunks of 500
+        for (let i = 0; i < orphanImeis.length; i += 500) {
+          const chunk = orphanImeis.slice(i, i + 500);
+          const { data: imeiProducts } = await supabase
+            .from('products')
+            .select('imei, import_price')
+            .in('imei', chunk)
+            .gt('import_price', 0);
+          imeiProducts?.forEach(p => {
+            if (p.imei && p.import_price) {
+              imeiPriceMap[p.imei] = Number(p.import_price);
+            }
+          });
+        }
       }
 
       // Get current stock (in_stock + warranty)
@@ -139,7 +161,9 @@ export function useProductReport(filters?: {
       soldItems?.forEach(item => {
         const receipt = item.export_receipts as any;
         const key = `${item.product_name}||${item.sku}||${receipt?.branch_id || ''}`;
-        const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
+        const importPrice = item.product_id
+          ? (productsMap[item.product_id] || 0)
+          : (item.imei ? (imeiPriceMap[item.imei] || 0) : 0);
         const salePrice = Number(item.sale_price);
 
         if (!productMap[key]) {
