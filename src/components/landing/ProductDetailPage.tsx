@@ -758,7 +758,7 @@ export function ProductDetailPage({
               const installmentEnabled = secs.find(s => s.id === 'installment')?.enabled !== false;
               if (!installmentEnabled || !onInstallment) return null;
               return (
-                <Button key={btn.id} variant="outline" className="flex-1 gap-2 h-11 text-sm" onClick={onInstallment}>
+                <Button key={btn.id} variant="outline" className="shrink-0 gap-2 h-11 text-sm px-4" onClick={onInstallment}>
                   {btn.icon} {btn.label}
                 </Button>
               );
