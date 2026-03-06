@@ -274,13 +274,23 @@ const Index = () => {
                   onClick={() => navigate('/inventory')}
                   className="cursor-pointer hover:shadow-md transition-shadow"
                 />
-                <StatCard
-                  title={t('pages.dashboard.stockValue')}
-                  value={formatCurrency(stats?.totalImportValue || 0)}
-                  icon={<Wallet className="h-5 w-5 sm:h-6 sm:w-6" />}
-                  onClick={() => navigate('/inventory')}
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                />
+                {stockValueHidden ? (
+                  <StatCard
+                    title={t('pages.dashboard.stockValue')}
+                    value="••••••"
+                    icon={<EyeOff className="h-5 w-5 sm:h-6 sm:w-6" />}
+                    onClick={() => { setPasswordDialogContext('stockValue'); setShowPasswordDialog(true); }}
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                  />
+                ) : (
+                  <StatCard
+                    title={t('pages.dashboard.stockValue')}
+                    value={formatCurrency(stats?.totalImportValue || 0)}
+                    icon={<Wallet className="h-5 w-5 sm:h-6 sm:w-6" />}
+                    onClick={() => navigate('/inventory')}
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                  />
+                )}
                 <StatCard
                   title={t('pages.dashboard.orders')}
                   value={pendingOrderCount || 0}
