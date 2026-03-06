@@ -153,7 +153,11 @@ const Index = () => {
   const { data: todaySoldProducts, isLoading: soldLoading } = useTodaySoldProducts();
   const { data: pendingOrderCount } = usePendingOrderCount();
   const userGuideUrl = useUserGuideUrl();
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked: profitUnlocked, unlock: unlockProfit } = useSecurityUnlock('dashboard_profit');
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
 
+  const profitHidden = hasSecurityPassword && !profitUnlocked;
   const recentProducts = recentProductsData || [];
   const recentReceipts = recentReceiptsData || [];
 
