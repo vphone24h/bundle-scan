@@ -86,11 +86,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get sales staff name (only if settings enabled)
+    // Get sales staff name - always show if available
     let staffName = ''
-    const showStaff = settings.include_staff_in_email === true
-    const showRating = settings.include_rating_in_email === true
-    if (sales_staff_id && (showStaff || showRating)) {
+    const showStaff = true
+    const showRating = true
+    if (sales_staff_id) {
       const { data: profile } = await supabaseAdmin
         .from('profiles')
         .select('display_name')
