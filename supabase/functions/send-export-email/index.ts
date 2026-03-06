@@ -214,7 +214,7 @@ Deno.serve(async (req) => {
                 <td style="padding:4px 0;font-size:14px;color:#718096">Chi nhánh:</td>
                 <td style="padding:4px 0;font-size:14px;color:#2d3748;text-align:right">${branchName}</td>
               </tr>` : ''}
-              ${staffName ? `<tr>
+              ${staffName && showStaff ? `<tr>
                 <td style="padding:4px 0;font-size:14px;color:#718096">Nhân viên tư vấn:</td>
                 <td style="padding:4px 0;font-size:14px;color:#4338ca;font-weight:600;text-align:right">${staffName}</td>
               </tr>` : ''}
