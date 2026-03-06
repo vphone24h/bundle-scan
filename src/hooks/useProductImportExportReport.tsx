@@ -103,9 +103,6 @@ export function useProductImportExportReport(filters?: {
         fetchAllRows<any>(() => buildExportQuery()),
         fetchAllRows<any>(() => buildReturnQuery()),
       ]);
-      const importData = importRes.data || [];
-      const exportData = exportRes.data || [];
-      const returnData = returnRes.data || [];
 
       // Aggregate by product name + sku + branch
       const productMap: Record<string, ProductImportExportItem> = {};
