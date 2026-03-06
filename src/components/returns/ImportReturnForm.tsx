@@ -34,11 +34,13 @@ interface ImportReturnFormProps {
 }
 
 export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnFormProps) {
+  const [feeType, setFeeType] = useState<'none' | 'percentage' | 'fixed_amount'>('none');
+  const [feePercentage, setFeePercentage] = useState<number>(0);
+  const [feeAmount, setFeeAmount] = useState<number>(0);
+  const [feeDisplayAmount, setFeeDisplayAmount] = useState<string>('');
   const [note, setNote] = useState('');
   const [recordToCashBook, setRecordToCashBook] = useState(true);
-  const [payments, setPayments] = useState<PaymentLine[]>([
-    { id: '1', source: 'cash', amount: product?.import_price || 0, displayAmount: formatNumberWithSpaces(product?.import_price || 0) }
-  ]);
+  const [payments, setPayments] = useState<PaymentLine[]>([]);
 
   const createImportReturn = useCreateImportReturn();
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
