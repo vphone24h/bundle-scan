@@ -150,7 +150,7 @@ Deno.serve(async (req) => {
 
       if (!record) {
         return new Response(JSON.stringify({ error: "Chưa đặt mật khẩu bảo mật" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
