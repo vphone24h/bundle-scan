@@ -1,14 +1,13 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { SearchInput } from '@/components/ui/search-input';
 import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ProductTable } from '@/components/products/ProductTable';
-import { usePagination } from '@/hooks/usePagination';
+import { useProducts, useServerPagination, Product } from '@/hooks/useProducts';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { EditProductDialog } from '@/components/import/EditProductDialog';
-import { useProducts, Product } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useBranches } from '@/hooks/useBranches';
@@ -27,7 +26,7 @@ import {
 import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle, AlertCircle } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useNavigate } from 'react-router-dom';
-import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
+import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/mockData';
 import { exportToExcel, formatDateForExcel } from '@/lib/exportExcel';
@@ -91,13 +90,22 @@ function mapProductForTable(product: Product) {
   };
 }
 
+// Debounce hook for search
+function useDebouncedValue(value: string, delay = 400) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
 export default function ProductsPage() {
   const { t } = useTranslation();
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('products-page-v1');
   const [tourDismissed, setTourDismissed] = useState(false);
   const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
-  const { data: products, isLoading } = useProducts();
   const queryClient = useQueryClient();
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
@@ -108,6 +116,7 @@ export default function ProductsPage() {
   const [productsForBarcode, setProductsForBarcode] = useState<any[]>([]);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   
+  // Server-side filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -118,45 +127,39 @@ export default function ProductsPage() {
   const [printedFilter, setPrintedFilter] = useState('_all_');
   const [showFilters, setShowFilters] = useState(false);
 
+  // Debounce search to avoid hammering server
+  const debouncedSearch = useDebouncedValue(searchTerm);
+
+  // Server-side pagination
+  const serverPagination = useServerPagination(50);
+
+  // Reset to page 1 when filters change
+  const filterKey = `${debouncedSearch}|${dateFrom}|${dateTo}|${categoryFilter}|${supplierFilter}|${statusFilter}|${branchFilter}|${printedFilter}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    serverPagination.setPage(1);
+  }
+
+  // Build server-side filters
+  const serverFilters = useMemo(() => ({
+    search: debouncedSearch || undefined,
+    categoryId: categoryFilter !== '_all_' ? categoryFilter : undefined,
+    supplierId: supplierFilter !== '_all_' ? supplierFilter : undefined,
+    status: statusFilter !== '_all_' ? statusFilter : undefined,
+    branchId: branchFilter !== '_all_' ? branchFilter : undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    printedFilter: printedFilter !== '_all_' ? printedFilter : undefined,
+    page: serverPagination.page,
+    pageSize: serverPagination.pageSize,
+  }), [debouncedSearch, categoryFilter, supplierFilter, statusFilter, branchFilter, dateFrom, dateTo, printedFilter, serverPagination.page, serverPagination.pageSize]);
+
+  const { data: products, isLoading, totalCount } = useProducts(serverFilters);
+
   const mappedProducts = products?.map(mapProductForTable) || [];
 
-  const filteredProducts = useMemo(() => {
-    return mappedProducts.filter((p) => {
-      const matchesSearch =
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.imei && p.imei.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      let matchesDate = true;
-      if (dateFrom || dateTo) {
-        const productDate = startOfDay(p.importDate);
-        if (dateFrom && dateTo) {
-          matchesDate = isWithinInterval(productDate, {
-            start: startOfDay(parseISO(dateFrom)),
-            end: endOfDay(parseISO(dateTo))
-          });
-        } else if (dateFrom) {
-          matchesDate = productDate >= startOfDay(parseISO(dateFrom));
-        } else if (dateTo) {
-          matchesDate = productDate <= endOfDay(parseISO(dateTo));
-        }
-      }
-      
-      const matchesCategory = categoryFilter === '_all_' || p.categoryId === categoryFilter;
-      const matchesSupplier = supplierFilter === '_all_' || p.supplierId === supplierFilter;
-      const matchesStatus = statusFilter === '_all_' || p.status === statusFilter;
-      const matchesBranch = branchFilter === '_all_' || p.branchId === branchFilter;
-      const matchesPrinted = printedFilter === '_all_' || 
-        (printedFilter === 'printed' && p.isPrinted) || 
-        (printedFilter === 'not_printed' && !p.isPrinted);
-      
-      return matchesSearch && matchesDate && matchesCategory && matchesSupplier && matchesStatus && matchesBranch && matchesPrinted;
-    });
-  }, [mappedProducts, searchTerm, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter, printedFilter]);
-
-  const pagination = usePagination(filteredProducts, { 
-    storageKey: 'products-list'
-  });
+  const totalPages = Math.max(1, Math.ceil(totalCount / serverPagination.pageSize));
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -189,7 +192,7 @@ export default function ProductsPage() {
   };
 
   const handleExportProducts = () => {
-    if (filteredProducts.length === 0) {
+    if (mappedProducts.length === 0) {
       toast({ title: t('pages.products.noData'), description: t('pages.products.noProductsToExport'), variant: 'destructive' });
       return;
     }
@@ -210,7 +213,7 @@ export default function ProductsPage() {
         { header: t('pages.products.branch'), key: 'branchName', width: 18 },
         { header: t('pages.products.status'), key: 'status', width: 12, format: (v) => v === 'in_stock' ? t('pages.products.inStock') : v === 'sold' ? t('pages.products.sold') : t('pages.products.returned') },
       ],
-      data: filteredProducts.map((p, index) => ({
+      data: mappedProducts.map((p, index) => ({
         stt: index + 1,
         name: p.name,
         sku: p.sku,
@@ -225,7 +228,7 @@ export default function ProductsPage() {
       })),
     });
 
-    toast({ title: t('pages.products.exportSuccess'), description: t('pages.products.exportedProducts', { count: filteredProducts.length }) });
+    toast({ title: t('pages.products.exportSuccess'), description: t('pages.products.exportedProducts', { count: mappedProducts.length }) });
   };
 
   return (
@@ -391,7 +394,7 @@ export default function ProductsPage() {
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <p className="text-xs sm:text-sm text-muted-foreground">
-            {t('pages.products.showingProducts', { filtered: filteredProducts.length, total: mappedProducts.length })}
+            Hiển thị {mappedProducts.length} / {totalCount} sản phẩm
           </p>
           {selectedProducts.length > 0 && (
             <p className="text-xs sm:text-sm font-medium text-primary">
@@ -401,23 +404,23 @@ export default function ProductsPage() {
         </div>
 
         <ProductTable
-          products={pagination.paginatedData}
+          products={mappedProducts}
           selectedProducts={selectedProducts}
           onSelectionChange={setSelectedProducts}
           onEdit={handleEdit}
           onPrintBarcode={handlePrintBarcode}
         />
         
-        {filteredProducts.length > 0 && (
+        {totalCount > 0 && (
           <TablePagination
-            currentPage={pagination.currentPage}
-            totalPages={pagination.totalPages}
-            pageSize={pagination.pageSize}
-            totalItems={pagination.totalItems}
-            startIndex={pagination.startIndex}
-            endIndex={pagination.endIndex}
-            onPageChange={pagination.setPage}
-            onPageSizeChange={pagination.setPageSize}
+            currentPage={serverPagination.page}
+            totalPages={totalPages}
+            pageSize={serverPagination.pageSize}
+            totalItems={totalCount}
+            startIndex={(serverPagination.page - 1) * serverPagination.pageSize + 1}
+            endIndex={Math.min(serverPagination.page * serverPagination.pageSize, totalCount)}
+            onPageChange={serverPagination.setPage}
+            onPageSizeChange={serverPagination.setPageSize}
           />
         )}
       </div>
