@@ -224,7 +224,7 @@ export function useInventory() {
         totalImportCost: Number(row.total_import_cost),
         products: [], // Products loaded on-demand via detail dialogs
         oldestImportDate: row.oldest_import_date || null,
-    },
+      })) as InventoryItem[];
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
