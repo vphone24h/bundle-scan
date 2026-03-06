@@ -197,6 +197,7 @@ export function useCreateDebtPayment() {
       payment_source?: string;
       description: string;
       branch_id?: string | null;
+      merged_entity_ids?: string[]; // For merged supplier debts
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -234,6 +235,11 @@ export function useCreateDebtPayment() {
         let remainingPayment = payment.amount;
         
         // Step 1: Get unpaid receipts (orders)
+        // For merged suppliers, query all entity IDs
+        const entityIds = (payment.entity_type === 'supplier' && payment.merged_entity_ids && payment.merged_entity_ids.length > 0)
+          ? payment.merged_entity_ids
+          : [payment.entity_id];
+        
         let orderItems: { id: string; date: number; debt_amount: number; paid_amount: number }[] = [];
         
         if (payment.entity_type === 'customer') {
@@ -257,7 +263,7 @@ export function useCreateDebtPayment() {
           const { data: receipts } = await supabase
             .from('import_receipts')
             .select('id, import_date, debt_amount, paid_amount')
-            .eq('supplier_id', payment.entity_id)
+            .in('supplier_id', entityIds)
             .eq('status', 'completed')
             .gt('debt_amount', 0)
             .order('import_date', { ascending: true });
@@ -277,7 +283,7 @@ export function useCreateDebtPayment() {
           .from('debt_payments')
           .select('id, amount, allocated_amount, created_at')
           .eq('entity_type', payment.entity_type)
-          .eq('entity_id', payment.entity_id)
+          .in('entity_id', entityIds)
           .eq('payment_type', 'addition')
           .order('created_at', { ascending: true });
         

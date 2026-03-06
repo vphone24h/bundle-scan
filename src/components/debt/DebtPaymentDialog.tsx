@@ -39,6 +39,7 @@ interface DebtPaymentDialogProps {
   entityName: string;
   remainingAmount: number;
   branchId: string | null;
+  mergedEntityIds?: string[];
 }
 
 const BUILT_IN_PAYMENT_SOURCES = [
@@ -55,6 +56,7 @@ export function DebtPaymentDialog({
   entityName,
   remainingAmount,
   branchId,
+  mergedEntityIds,
 }: DebtPaymentDialogProps) {
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
 
@@ -137,6 +139,7 @@ export function DebtPaymentDialog({
             payment_source: ps.source,
             description: description || defaultDescription,
             branch_id: branchId,
+            merged_entity_ids: mergedEntityIds,
           });
           currentRemaining -= amount;
         }

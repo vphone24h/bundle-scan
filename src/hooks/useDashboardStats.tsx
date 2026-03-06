@@ -116,14 +116,16 @@ export function useDashboardStats() {
       let productsMap: Record<string, number> = {};
       const productIds = Array.from(productIdsSet);
       if (productIds.length > 0) {
-        const { data: products } = await supabase
-          .from('products')
-          .select('id, import_price')
-          .in('id', productIds);
-        productsMap = (products || []).reduce((acc, p) => {
-          acc[p.id] = Number(p.import_price);
-          return acc;
-        }, {} as Record<string, number>);
+        for (let i = 0; i < productIds.length; i += 500) {
+          const chunk = productIds.slice(i, i + 500);
+          const { data: products } = await supabase
+            .from('products')
+            .select('id, import_price')
+            .in('id', chunk);
+          (products || []).forEach(p => {
+            productsMap[p.id] = Number(p.import_price);
+          });
+        }
       }
 
       // IMEI fallback for items without product_id

@@ -92,7 +92,8 @@ export function useImportReturns(filters?: {
           branches(name),
           import_receipts(code)
         `)
-        .order('return_date', { ascending: false });
+        .order('return_date', { ascending: false })
+        .limit(5000);
 
       if (filters?.startDate) {
         query = query.gte('return_date', filters.startDate);
@@ -150,7 +151,8 @@ export function useExportReturns(filters?: {
           branches(name),
           export_receipts!export_returns_export_receipt_id_fkey(code)
         `)
-        .order('return_date', { ascending: false });
+        .order('return_date', { ascending: false })
+        .limit(5000);
 
       if (filters?.startDate) {
         query = query.gte('return_date', filters.startDate);

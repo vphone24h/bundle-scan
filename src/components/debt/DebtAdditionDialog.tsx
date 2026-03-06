@@ -24,6 +24,7 @@ interface DebtAdditionDialogProps {
   entityName: string;
   remainingAmount: number;
   branchId: string | null;
+  mergedEntityIds?: string[];
 }
 
 export function DebtAdditionDialog({
@@ -34,6 +35,7 @@ export function DebtAdditionDialog({
   entityName,
   remainingAmount,
   branchId,
+  mergedEntityIds,
 }: DebtAdditionDialogProps) {
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
