@@ -742,9 +742,7 @@ export function ProductDetailPage({
         if (buttons.length === 0) return null;
 
         const renderButton = (btn: CTAButtonItem) => {
-          const isOrder = btn.action === 'order';
-          const commonClass = `gap-2 h-11 text-sm font-semibold ${isOrder ? 'flex-1' : ''}`;
-          
+
           switch (btn.action) {
             case 'order':
               return (
