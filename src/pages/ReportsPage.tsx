@@ -221,7 +221,7 @@ export default function ReportsPage() {
   const [biometricLoading, setBiometricLoading] = useState(false);
   const verifyPassword = useVerifySecurityPassword();
   const reportsLocked = hasSecurityPassword && !reportsUnlocked;
-  const biometricSupported = isCredentialManagerSupported();
+  const biometricSupported = isBiometricLikelySupported() && hasSavedSecurityPassword();
 
   // Main onboarding tour (revenue tab)
   const { isCompleted: reportsTourDone, completeTour: completeReportsTour, isLoading: tourLoading } = useOnboardingTour('reports_overview');
