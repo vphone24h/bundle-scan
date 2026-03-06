@@ -6419,16 +6419,32 @@ export type Database = {
       generate_domain_verification_token: { Args: never; Returns: string }
       generate_voucher_code: { Args: never; Returns: string }
       get_current_tenant: { Args: never; Returns: string }
-      get_customer_debt_summary: {
-        Args: { _tenant_id: string }
-        Returns: {
-          customer_id: string
-          customer_name: string
-          customer_phone: string
-          total_receipts: number
-          total_remaining_debt: number
-        }[]
-      }
+      get_customer_debt_summary:
+        | {
+            Args: { _branch_id?: string; _show_settled?: boolean }
+            Returns: {
+              branch_id: string
+              branch_name: string
+              days_overdue: number
+              entity_id: string
+              entity_name: string
+              entity_phone: string
+              first_debt_date: string
+              paid_amount: number
+              remaining_amount: number
+              total_amount: number
+            }[]
+          }
+        | {
+            Args: { _tenant_id: string }
+            Returns: {
+              customer_id: string
+              customer_name: string
+              customer_phone: string
+              total_receipts: number
+              total_remaining_debt: number
+            }[]
+          }
       get_customer_stats:
         | { Args: { _branch_id?: string }; Returns: Json }
         | {
@@ -6551,6 +6567,21 @@ export type Database = {
           total_customers: number
           total_orders: number
           total_revenue: number
+        }[]
+      }
+      get_supplier_debt_summary: {
+        Args: { _branch_id?: string; _show_settled?: boolean }
+        Returns: {
+          branch_id: string
+          branch_name: string
+          days_overdue: number
+          entity_id: string
+          entity_name: string
+          entity_phone: string
+          first_debt_date: string
+          paid_amount: number
+          remaining_amount: number
+          total_amount: number
         }[]
       }
       get_tenant_branches: {

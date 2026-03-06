@@ -3,14 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from './usePermissions';
 import { useAuth } from './useAuth';
 
-// Server-side limited query helper for bounded datasets
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchLimited<T>(queryBuilder: () => any, limit = 5000): Promise<T[]> {
-  const { data, error } = await queryBuilder().limit(limit);
-  if (error) throw error;
-  return (data || []) as T[];
-}
-
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
   const { data } = await supabase.rpc('get_user_tenant_id_secure');
@@ -56,217 +48,27 @@ export function useCustomerDebts(showSettled: boolean = false) {
   return useQuery({
     queryKey: ['customer-debts', user?.id, showSettled, permissions?.branchId, permissions?.role],
     queryFn: async () => {
-      const buildReceiptsQuery = () => {
-        let q = supabase
-          .from('export_receipts')
-          .select(`
-            id,
-            customer_id,
-            total_amount,
-            paid_amount,
-            debt_amount,
-            original_debt_amount,
-            export_date,
-            branch_id,
-            customers(id, name, phone),
-            branches(name)
-          `)
-          .eq('status', 'completed');
-
-        if (permissions?.role !== 'super_admin' && permissions?.branchId) {
-          q = q.eq('branch_id', permissions.branchId);
-        }
-        return q;
-      };
-
-      const receipts = await fetchLimited<any>(buildReceiptsQuery);
-
-      // Get debt payments for customers
-      const buildPaymentsQuery = () => {
-        let q = supabase
-          .from('debt_payments')
-          .select('*')
-          .eq('entity_type', 'customer');
-
-        if (permissions?.role !== 'super_admin' && permissions?.branchId) {
-          q = q.eq('branch_id', permissions.branchId);
-        }
-        return q;
-      };
-
-      const payments = await fetchLimited<any>(buildPaymentsQuery);
-
-      // Get unique customer IDs from payments
-      const paymentCustomerIds = [...new Set(payments?.map(p => p.entity_id) || [])];
-      let customersFromPayments: { id: string; name: string; phone: string }[] = [];
-      if (paymentCustomerIds.length > 0) {
-        const { data: customerData } = await supabase
-          .from('customers')
-          .select('id, name, phone')
-          .in('id', paymentCustomerIds);
-        customersFromPayments = customerData || [];
-      }
-
-      const paymentBranchIds = [...new Set(payments?.map(p => p.branch_id).filter(Boolean) || [])];
-      let branchNameMap = new Map<string, string>();
-      if (paymentBranchIds.length > 0) {
-        const { data: branchData } = await supabase
-          .from('branches')
-          .select('id, name')
-          .in('id', paymentBranchIds);
-        branchData?.forEach(b => branchNameMap.set(b.id, b.name));
-      }
-
-      // Reliable formula (since original_debt_amount is not always stored,
-      // and paid_amount gets updated by FIFO):
-      // remaining = sum(receipt.debt_amount) + sum(addition.amount - addition.allocated_amount)
-      // total_paid = sum(debt_payments where payment_type = 'payment')
-      // total_debt = remaining + total_paid (reconstruct original total)
-      // This ensures: Còn lại = Tổng nợ - Đã thu (always balanced)
-      const customerMap = new Map<string, {
-        entity_id: string;
-        entity_name: string;
-        entity_phone: string | null;
-        branch_id: string | null;
-        branch_name: string | null;
-        current_debt_from_receipts: number; // sum of current debt_amount on receipts
-        additions_remaining: number; // sum of (amount - allocated_amount) from additions
-        total_from_additions: number; // sum of ALL addition amounts (for breakdown display)
-        total_paid: number; // sum of payment amounts
-        has_any_debt_history: boolean;
-        first_debt_date: string | null;
-      }>();
-
-      // Sum CURRENT debt_amount from receipts per customer
-      receipts?.forEach(receipt => {
-        if (!receipt.customer_id || !receipt.customers) return;
-        const customer = receipt.customers as { id: string; name: string; phone: string | null };
-        
-        const currentDebt = Number(receipt.debt_amount) || 0;
-        // Check if this receipt ever had debt (current debt > 0, or original_debt_amount > 0, or paid via FIFO)
-        const originalDebt = Number(receipt.original_debt_amount) || 0;
-        const hadDebt = currentDebt > 0 || originalDebt > 0 || 
-          (Number(receipt.total_amount) || 0) > (Number(receipt.paid_amount) || 0);
-        
-        // Also include if debt_amount was ever > 0 (even if now 0 due to FIFO payment)
-        // We detect this by checking if there are payments for this customer
-        if (currentDebt <= 0 && !hadDebt) return;
-
-        const existing = customerMap.get(customer.id);
-        if (existing) {
-          existing.current_debt_from_receipts += currentDebt;
-          existing.has_any_debt_history = true;
-          if (!existing.first_debt_date || receipt.export_date < existing.first_debt_date) {
-            existing.first_debt_date = receipt.export_date;
-          }
-        } else {
-          customerMap.set(customer.id, {
-            entity_id: customer.id,
-            entity_name: customer.name,
-            entity_phone: customer.phone,
-            branch_id: receipt.branch_id,
-            branch_name: (receipt.branches as { name: string } | null)?.name || null,
-            current_debt_from_receipts: currentDebt,
-            additions_remaining: 0,
-            total_from_additions: 0,
-            total_paid: 0,
-            has_any_debt_history: true,
-            first_debt_date: receipt.export_date,
-          });
-        }
-      });
-
-      // Process additions and payments
-      payments?.forEach(payment => {
-        const amount = Number(payment.amount);
-        const allocated = Number(payment.allocated_amount) || 0;
-        const existing = customerMap.get(payment.entity_id);
-        
-        if (payment.payment_type === 'addition') {
-          const additionRemaining = amount - allocated;
-          if (existing) {
-            existing.additions_remaining += additionRemaining;
-            existing.total_from_additions += amount;
-            existing.has_any_debt_history = true;
-          } else {
-            const customer = customersFromPayments.find(c => c.id === payment.entity_id);
-            if (customer) {
-              customerMap.set(payment.entity_id, {
-                entity_id: payment.entity_id,
-                entity_name: customer.name,
-                entity_phone: customer.phone,
-                branch_id: payment.branch_id,
-                branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
-                current_debt_from_receipts: 0,
-                additions_remaining: additionRemaining,
-                total_from_additions: amount,
-                total_paid: 0,
-                has_any_debt_history: true,
-                first_debt_date: payment.created_at,
-              });
-            }
-          }
-        } else if (payment.payment_type === 'payment') {
-          if (existing) {
-            existing.total_paid += amount;
-            existing.has_any_debt_history = true;
-          } else {
-            const customer = customersFromPayments.find(c => c.id === payment.entity_id);
-            if (customer) {
-              customerMap.set(payment.entity_id, {
-                entity_id: payment.entity_id,
-                entity_name: customer.name,
-                entity_phone: customer.phone,
-                branch_id: payment.branch_id,
-                branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
-                current_debt_from_receipts: 0,
-                additions_remaining: 0,
-                total_from_additions: 0,
-                total_paid: amount,
-                has_any_debt_history: true,
-                first_debt_date: payment.created_at,
-              });
-            }
-          }
-        }
-      });
-
-      // Compute final values:
-      // remaining = current_debt_from_receipts + additions_remaining
-      // total = remaining + total_paid
-      const now = new Date();
-      const result: DebtSummary[] = [];
+      const branchId = (permissions?.role !== 'super_admin' && permissions?.branchId) ? permissions.branchId : null;
       
-      customerMap.forEach(summary => {
-        if (!summary.has_any_debt_history) return;
-        
-        const remainingAmount = summary.current_debt_from_receipts + summary.additions_remaining;
-        const totalAmount = remainingAmount + summary.total_paid;
-        
-        let daysOverdue = 0;
-        if (summary.first_debt_date) {
-          const firstDate = new Date(summary.first_debt_date);
-          daysOverdue = Math.floor((now.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
-        }
-        
-        // Only show if has remaining debt OR showSettled AND ever had debt
-        if (showSettled ? (totalAmount > 0 || summary.total_paid > 0) : remainingAmount > 0) {
-          result.push({
-            entity_id: summary.entity_id,
-            entity_name: summary.entity_name,
-            entity_phone: summary.entity_phone,
-            branch_id: summary.branch_id,
-            branch_name: summary.branch_name,
-            total_amount: totalAmount,
-            paid_amount: summary.total_paid,
-            remaining_amount: remainingAmount,
-            first_debt_date: summary.first_debt_date,
-            days_overdue: daysOverdue,
-          });
-        }
+      const { data, error } = await supabase.rpc('get_customer_debt_summary', {
+        _show_settled: showSettled,
+        _branch_id: branchId,
       });
 
-      return result.sort((a, b) => b.remaining_amount - a.remaining_amount);
+      if (error) throw error;
+
+      return ((data || []) as any[]).map((row: any) => ({
+        entity_id: row.entity_id,
+        entity_name: row.entity_name,
+        entity_phone: row.entity_phone,
+        branch_id: row.branch_id,
+        branch_name: row.branch_name,
+        total_amount: Number(row.total_amount) || 0,
+        paid_amount: Number(row.paid_amount) || 0,
+        remaining_amount: Number(row.remaining_amount) || 0,
+        first_debt_date: row.first_debt_date,
+        days_overdue: row.days_overdue || 0,
+      })) as DebtSummary[];
     },
     enabled: !!permissions,
   });
@@ -280,255 +82,27 @@ export function useSupplierDebts(showSettled: boolean = false) {
   return useQuery({
     queryKey: ['supplier-debts', user?.id, showSettled, permissions?.branchId, permissions?.role],
     queryFn: async () => {
-      const buildReceiptsQuery = () => {
-        let q = supabase
-          .from('import_receipts')
-          .select(`
-            id,
-            supplier_id,
-            total_amount,
-            paid_amount,
-            debt_amount,
-            original_debt_amount,
-            import_date,
-            branch_id,
-            suppliers(id, name, phone, address),
-            branches(name)
-          `)
-          .eq('status', 'completed');
-
-        if (permissions?.role !== 'super_admin' && permissions?.branchId) {
-          q = q.eq('branch_id', permissions.branchId);
-        }
-        return q;
-      };
-
-      const receipts = await fetchLimited<any>(buildReceiptsQuery);
-
-      const buildPaymentsQuery = () => {
-        let q = supabase
-          .from('debt_payments')
-          .select('*')
-          .eq('entity_type', 'supplier');
-
-        if (permissions?.role !== 'super_admin' && permissions?.branchId) {
-          q = q.eq('branch_id', permissions.branchId);
-        }
-        return q;
-      };
-
-      const payments = await fetchLimited<any>(buildPaymentsQuery);
-
-      const paymentSupplierIds = [...new Set(payments?.map(p => p.entity_id) || [])];
-      let suppliersFromPayments: { id: string; name: string; phone: string | null; address: string | null }[] = [];
-      if (paymentSupplierIds.length > 0) {
-        const { data: supplierData } = await supabase
-          .from('suppliers')
-          .select('id, name, phone, address')
-          .in('id', paymentSupplierIds);
-        suppliersFromPayments = supplierData || [];
-      }
-
-      const paymentBranchIds = [...new Set(payments?.map(p => p.branch_id).filter(Boolean) || [])];
-      let branchNameMap = new Map<string, string>();
-      if (paymentBranchIds.length > 0) {
-        const { data: branchData } = await supabase
-          .from('branches')
-          .select('id, name')
-          .in('id', paymentBranchIds);
-        branchData?.forEach(b => branchNameMap.set(b.id, b.name));
-      }
-
-      // Group suppliers by (name, branch) to auto-merge duplicates
-      // Rule: same name + (same branch OR either null) + (same phone OR either null) + (same address OR either null)
-      // Use composite key: normalized_name|branch_id
-      const getSupplierGroupKey = (name: string, branchId: string | null, phone: string | null, address: string | null) => {
-        const normName = (name || '').trim().toLowerCase();
-        const normBranch = branchId || '_any_';
-        return `${normName}|${normBranch}`;
-      };
-
-      // Map supplier_id -> group key
-      const supplierIdToGroup = new Map<string, string>();
-      // Map group key -> all supplier_ids in this group
-      const groupToSupplierIds = new Map<string, string[]>();
-
-      const supplierMap = new Map<string, {
-        entity_id: string; // primary supplier id
-        all_entity_ids: string[];
-        entity_name: string;
-        entity_phone: string | null;
-        branch_id: string | null;
-        branch_name: string | null;
-        current_debt_from_receipts: number;
-        additions_remaining: number;
-        total_from_additions: number;
-        total_paid: number;
-        has_any_debt_history: boolean;
-        first_debt_date: string | null;
-      }>();
-
-      receipts?.forEach(receipt => {
-        if (!receipt.supplier_id || !receipt.suppliers) return;
-        const supplier = receipt.suppliers as { id: string; name: string; phone: string | null; address: string | null };
-        
-        const currentDebt = Number(receipt.debt_amount) || 0;
-        const originalDebt = Number(receipt.original_debt_amount) || 0;
-        const hadDebt = currentDebt > 0 || originalDebt > 0 || 
-          (Number(receipt.total_amount) || 0) > (Number(receipt.paid_amount) || 0);
-        
-        if (currentDebt <= 0 && !hadDebt) return;
-
-        const groupKey = getSupplierGroupKey(supplier.name, receipt.branch_id, supplier.phone, supplier.address);
-        supplierIdToGroup.set(supplier.id, groupKey);
-        
-        if (!groupToSupplierIds.has(groupKey)) {
-          groupToSupplierIds.set(groupKey, []);
-        }
-        const groupIds = groupToSupplierIds.get(groupKey)!;
-        if (!groupIds.includes(supplier.id)) {
-          groupIds.push(supplier.id);
-        }
-
-        const existing = supplierMap.get(groupKey);
-        if (existing) {
-          existing.current_debt_from_receipts += currentDebt;
-          existing.has_any_debt_history = true;
-          if (!existing.all_entity_ids.includes(supplier.id)) {
-            existing.all_entity_ids.push(supplier.id);
-          }
-          if (!existing.first_debt_date || receipt.import_date < existing.first_debt_date) {
-            existing.first_debt_date = receipt.import_date;
-          }
-          // Use phone if available
-          if (!existing.entity_phone && supplier.phone) {
-            existing.entity_phone = supplier.phone;
-          }
-        } else {
-          supplierMap.set(groupKey, {
-            entity_id: supplier.id,
-            all_entity_ids: [supplier.id],
-            entity_name: supplier.name,
-            entity_phone: supplier.phone,
-            branch_id: receipt.branch_id,
-            branch_name: (receipt.branches as { name: string } | null)?.name || null,
-            current_debt_from_receipts: currentDebt,
-            additions_remaining: 0,
-            total_from_additions: 0,
-            total_paid: 0,
-            has_any_debt_history: true,
-            first_debt_date: receipt.import_date,
-          });
-        }
-      });
-
-      payments?.forEach(payment => {
-        const amount = Number(payment.amount);
-        const allocated = Number(payment.allocated_amount) || 0;
-        
-        // Find group key for this supplier
-        let groupKey = supplierIdToGroup.get(payment.entity_id);
-        if (!groupKey) {
-          const supplier = suppliersFromPayments.find(s => s.id === payment.entity_id);
-          if (supplier) {
-            groupKey = getSupplierGroupKey(supplier.name, payment.branch_id, supplier.phone, supplier.address);
-            supplierIdToGroup.set(payment.entity_id, groupKey);
-          }
-        }
-        if (!groupKey) return;
-
-        const existing = supplierMap.get(groupKey);
-        
-        if (payment.payment_type === 'addition') {
-          const additionRemaining = amount - allocated;
-          if (existing) {
-            existing.additions_remaining += additionRemaining;
-            existing.total_from_additions += amount;
-            existing.has_any_debt_history = true;
-            if (!existing.all_entity_ids.includes(payment.entity_id)) {
-              existing.all_entity_ids.push(payment.entity_id);
-            }
-          } else {
-            const supplier = suppliersFromPayments.find(s => s.id === payment.entity_id);
-            if (supplier) {
-              supplierMap.set(groupKey, {
-                entity_id: payment.entity_id,
-                all_entity_ids: [payment.entity_id],
-                entity_name: supplier.name,
-                entity_phone: supplier.phone,
-                branch_id: payment.branch_id,
-                branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
-                current_debt_from_receipts: 0,
-                additions_remaining: additionRemaining,
-                total_from_additions: amount,
-                total_paid: 0,
-                has_any_debt_history: true,
-                first_debt_date: payment.created_at,
-              });
-            }
-          }
-        } else if (payment.payment_type === 'payment') {
-          if (existing) {
-            existing.total_paid += amount;
-            existing.has_any_debt_history = true;
-            if (!existing.all_entity_ids.includes(payment.entity_id)) {
-              existing.all_entity_ids.push(payment.entity_id);
-            }
-          } else {
-            const supplier = suppliersFromPayments.find(s => s.id === payment.entity_id);
-            if (supplier) {
-              supplierMap.set(groupKey, {
-                entity_id: payment.entity_id,
-                all_entity_ids: [payment.entity_id],
-                entity_name: supplier.name,
-                entity_phone: supplier.phone,
-                branch_id: payment.branch_id,
-                branch_name: payment.branch_id ? branchNameMap.get(payment.branch_id) || null : null,
-                current_debt_from_receipts: 0,
-                additions_remaining: 0,
-                total_from_additions: 0,
-                total_paid: amount,
-                has_any_debt_history: true,
-                first_debt_date: payment.created_at,
-              });
-            }
-          }
-        }
-      });
-
-      const now = new Date();
-      const result: DebtSummary[] = [];
+      const branchId = (permissions?.role !== 'super_admin' && permissions?.branchId) ? permissions.branchId : null;
       
-      supplierMap.forEach(summary => {
-        if (!summary.has_any_debt_history) return;
-        
-        const remainingAmount = summary.current_debt_from_receipts + summary.additions_remaining;
-        const totalAmount = remainingAmount + summary.total_paid;
-        
-        let daysOverdue = 0;
-        if (summary.first_debt_date) {
-          const firstDate = new Date(summary.first_debt_date);
-          daysOverdue = Math.floor((now.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
-        }
-        
-        if (showSettled ? (totalAmount > 0 || summary.total_paid > 0) : remainingAmount > 0) {
-          result.push({
-            entity_id: summary.entity_id,
-            entity_name: summary.entity_name,
-            entity_phone: summary.entity_phone,
-            branch_id: summary.branch_id,
-            branch_name: summary.branch_name,
-            total_amount: totalAmount,
-            paid_amount: summary.total_paid,
-            remaining_amount: remainingAmount,
-            first_debt_date: summary.first_debt_date,
-            days_overdue: daysOverdue,
-            merged_entity_ids: summary.all_entity_ids.length > 1 ? summary.all_entity_ids : undefined,
-          });
-        }
+      const { data, error } = await supabase.rpc('get_supplier_debt_summary', {
+        _show_settled: showSettled,
+        _branch_id: branchId,
       });
 
-      return result.sort((a, b) => b.remaining_amount - a.remaining_amount);
+      if (error) throw error;
+
+      return ((data || []) as any[]).map((row: any) => ({
+        entity_id: row.entity_id,
+        entity_name: row.entity_name,
+        entity_phone: row.entity_phone,
+        branch_id: row.branch_id,
+        branch_name: row.branch_name,
+        total_amount: Number(row.total_amount) || 0,
+        paid_amount: Number(row.paid_amount) || 0,
+        remaining_amount: Number(row.remaining_amount) || 0,
+        first_debt_date: row.first_debt_date,
+        days_overdue: row.days_overdue || 0,
+      })) as DebtSummary[];
     },
     enabled: !!permissions,
   });
