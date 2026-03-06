@@ -478,9 +478,12 @@ export default function AppleStyleLandingTemplate({
           onInstallment={() => setShowInstallmentCalc(true)}
           showInstallmentButton={true}
           detailSections={(settings as any)?.custom_product_detail_sections || null}
+          ctaButtons={(settings as any)?.custom_cta_buttons || null}
           relatedProducts={(productsData?.products || []).filter(p => p.category_id === selectedProduct.category_id && p.id !== selectedProduct.id).slice(0, 10)}
           onProductClick={(p) => { setSelectedProduct(p); window.scrollTo(0, 0); }}
           storeInfo={{ name: settings?.store_name || tenant.name, phone: settings?.store_phone || '', address: settings?.store_address || '' }}
+          zaloUrl={settings?.zalo_url}
+          facebookUrl={settings?.facebook_url}
         />
         <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
       </>
