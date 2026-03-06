@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     const { data: platformUser } = await supabaseAdmin
       .from("platform_users")
       .select("tenant_id")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
     if (!platformUser) {
       return new Response(JSON.stringify({ error: "No tenant" }), {
