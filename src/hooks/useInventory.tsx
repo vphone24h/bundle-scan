@@ -223,7 +223,7 @@ export function useInventory() {
         avgImportPrice: Number(row.avg_import_price),
         totalImportCost: Number(row.total_import_cost),
         products: [], // Products loaded on-demand via detail dialogs
-      })) as InventoryItem[];
+        oldestImportDate: row.oldest_import_date || null,
     },
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
