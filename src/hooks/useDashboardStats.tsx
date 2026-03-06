@@ -56,7 +56,7 @@ export function useDashboardStats() {
         .from('export_receipts')
         .select(`
           id, total_amount, status,
-          export_receipt_items(sale_price, status, product_id)
+          export_receipt_items(sale_price, status, product_id, imei)
         `)
         .neq('status', 'cancelled')
         .gte('export_date', todayStartUTC)
