@@ -20,7 +20,12 @@ import {
   Receipt,
   PlayCircle,
   Lock,
+  Fingerprint,
+  Loader2,
 } from 'lucide-react';
+import { isCredentialManagerSupported, getSecurityCredential, saveSecurityCredential } from '@/lib/credentialManager';
+import { useVerifySecurityPassword } from '@/hooks/useSecurityPassword';
+import { toast } from 'sonner';
 import { useReportsGuideUrl } from '@/hooks/useAppConfig';
 import { usePermissions } from '@/hooks/usePermissions';
 import { RevenueProfitReport } from '@/components/reports/RevenueProfitReport';
@@ -212,7 +217,10 @@ export default function ReportsPage() {
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked: reportsUnlocked, unlock: unlockReports } = useSecurityUnlock('reports_page');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+  const verifyPassword = useVerifySecurityPassword();
   const reportsLocked = hasSecurityPassword && !reportsUnlocked;
+  const biometricSupported = isCredentialManagerSupported();
 
   // Main onboarding tour (revenue tab)
   const { isCompleted: reportsTourDone, completeTour: completeReportsTour, isLoading: tourLoading } = useOnboardingTour('reports_overview');
@@ -385,10 +393,50 @@ export default function ReportsPage() {
               Trang báo cáo đã được bảo vệ bằng mật khẩu bảo mật. Vui lòng nhập mật khẩu để truy cập.
             </p>
           </div>
-          <Button onClick={() => setShowPasswordDialog(true)} size="lg">
-            <Lock className="h-4 w-4 mr-2" />
-            Nhập mật khẩu
-          </Button>
+          <div className="flex flex-col items-center gap-3 w-full max-w-xs">
+            {biometricSupported && (
+              <Button
+                onClick={async () => {
+                  setBiometricLoading(true);
+                  try {
+                    const savedPw = await getSecurityCredential();
+                    if (!savedPw) {
+                      toast.info('Chưa có mật khẩu đã lưu. Vui lòng nhập thủ công lần đầu.');
+                      setShowPasswordDialog(true);
+                      return;
+                    }
+                    const result = await verifyPassword.mutateAsync(savedPw);
+                    if (result.valid) {
+                      await saveSecurityCredential(savedPw);
+                      unlockReports();
+                    } else {
+                      toast.error('Mật khẩu đã lưu không còn đúng. Vui lòng nhập lại.');
+                      setShowPasswordDialog(true);
+                    }
+                  } catch (e: any) {
+                    toast.error(e.message || 'Lỗi xác thực');
+                  } finally {
+                    setBiometricLoading(false);
+                  }
+                }}
+                size="lg"
+                variant="outline"
+                className="w-full h-14 text-base gap-3 border-primary/30 hover:border-primary hover:bg-primary/5"
+                disabled={biometricLoading}
+              >
+                {biometricLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <Fingerprint className="h-6 w-6 text-primary" />
+                )}
+                Mở khoá bằng Face ID
+              </Button>
+            )}
+            <Button onClick={() => setShowPasswordDialog(true)} size="lg" className="w-full">
+              <Lock className="h-4 w-4 mr-2" />
+              Nhập mật khẩu
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="p-6 space-y-6">
