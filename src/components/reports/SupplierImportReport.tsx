@@ -91,6 +91,7 @@ export function SupplierImportReport() {
       case 'all_time': start = new Date('2020-01-01'); break;
       default: return;
     }
+    setActivePreset(preset);
     setStartDate(format(start, 'yyyy-MM-dd'));
     setEndDate(format(end, 'yyyy-MM-dd'));
   };
