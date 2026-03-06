@@ -637,6 +637,7 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
           <CTAButtonsEditor
             buttons={(formData as any).custom_cta_buttons || null}
             onChange={buttons => onChange('custom_cta_buttons', buttons)}
+            templateId={templateId}
           />
         </div>
       </SettingsBlock>
