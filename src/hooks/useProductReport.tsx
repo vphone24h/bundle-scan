@@ -161,7 +161,9 @@ export function useProductReport(filters?: {
       soldItems?.forEach(item => {
         const receipt = item.export_receipts as any;
         const key = `${item.product_name}||${item.sku}||${receipt?.branch_id || ''}`;
-        const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
+        const importPrice = item.product_id
+          ? (productsMap[item.product_id] || 0)
+          : (item.imei ? (imeiPriceMap[item.imei] || 0) : 0);
         const salePrice = Number(item.sale_price);
 
         if (!productMap[key]) {
