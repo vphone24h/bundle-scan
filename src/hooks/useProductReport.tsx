@@ -128,7 +128,8 @@ export function useProductReport(filters?: {
       let soldDeletedQuery = supabase
         .from('products')
         .select('name, sku, import_price, branch_id, category_id, import_date, status, branches(name), categories(name)')
-        .in('status', ['sold', 'deleted']);
+        .in('status', ['sold', 'deleted'])
+        .limit(10000);
 
       if (effectiveBranchId) {
         soldDeletedQuery = soldDeletedQuery.eq('branch_id', effectiveBranchId);
