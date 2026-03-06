@@ -6265,32 +6265,6 @@ export type Database = {
           },
         ]
       }
-      mv_customer_debt: {
-        Row: {
-          customer_id: string | null
-          customer_name: string | null
-          customer_phone: string | null
-          tenant_id: string | null
-          total_receipts: number | null
-          total_remaining_debt: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "export_receipts_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "export_receipts_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       mv_revenue_daily: {
         Row: {
           branch_id: string | null
@@ -6419,32 +6393,21 @@ export type Database = {
       generate_domain_verification_token: { Args: never; Returns: string }
       generate_voucher_code: { Args: never; Returns: string }
       get_current_tenant: { Args: never; Returns: string }
-      get_customer_debt_summary:
-        | {
-            Args: { _branch_id?: string; _show_settled?: boolean }
-            Returns: {
-              branch_id: string
-              branch_name: string
-              days_overdue: number
-              entity_id: string
-              entity_name: string
-              entity_phone: string
-              first_debt_date: string
-              paid_amount: number
-              remaining_amount: number
-              total_amount: number
-            }[]
-          }
-        | {
-            Args: { _tenant_id: string }
-            Returns: {
-              customer_id: string
-              customer_name: string
-              customer_phone: string
-              total_receipts: number
-              total_remaining_debt: number
-            }[]
-          }
+      get_customer_debt_summary: {
+        Args: { _branch_id?: string; _show_settled?: boolean }
+        Returns: {
+          branch_id: string
+          branch_name: string
+          days_overdue: number
+          entity_id: string
+          entity_name: string
+          entity_phone: string
+          first_debt_date: string
+          paid_amount: number
+          remaining_amount: number
+          total_amount: number
+        }[]
+      }
       get_customer_stats:
         | { Args: { _branch_id?: string }; Returns: Json }
         | {
