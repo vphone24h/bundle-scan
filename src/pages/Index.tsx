@@ -296,9 +296,25 @@ const Index = () => {
           ) : (
             <>
               {canViewImportPrice && (
-                <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/reports')}>
-                  <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats?.todayProfit || 0)}</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayProfit')}</p>
+                <div className="bg-card border rounded-lg p-3 sm:p-4 text-center relative group">
+                  {profitHidden ? (
+                    <>
+                      <p className="text-2xl sm:text-3xl font-bold text-muted-foreground select-none">••••••</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayProfit')}</p>
+                      <button
+                        onClick={() => setShowPasswordDialog(true)}
+                        className="absolute top-2 right-2 p-1.5 rounded-md hover:bg-muted transition-colors"
+                        title="Nhấn để xem lợi nhuận"
+                      >
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="cursor-pointer" onClick={() => navigate('/reports')}>
+                      <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats?.todayProfit || 0)}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayProfit')}</p>
+                    </div>
+                  )}
                 </div>
               )}
               <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/reports')}>
