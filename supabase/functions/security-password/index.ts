@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
         .single();
       if (roleData?.user_role !== "super_admin") {
         return new Response(JSON.stringify({ error: "Chỉ Admin Tổng mới được đặt mật khẩu bảo mật" }), {
-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       console.log("set_password: has old_password:", !!old_password, "password length:", password?.length);
       if (!password || password.length < 4) {
         return new Response(JSON.stringify({ error: "Mật khẩu phải có ít nhất 4 ký tự" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
         // Changing password - must verify old password
         if (!old_password) {
           return new Response(JSON.stringify({ error: "Phải nhập mật khẩu cũ để đổi mật khẩu" }), {
-            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
         const oldHashed = await hashPassword(old_password);
@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
         console.log("old password match:", match);
         if (!match) {
           return new Response(JSON.stringify({ error: "Mật khẩu cũ không đúng" }), {
-            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
       }
@@ -150,7 +150,7 @@ Deno.serve(async (req) => {
 
       if (!record) {
         return new Response(JSON.stringify({ error: "Chưa đặt mật khẩu bảo mật" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
         .single();
       if (roleData?.user_role !== "super_admin") {
         return new Response(JSON.stringify({ error: "Không có quyền" }), {
-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
@@ -184,7 +184,7 @@ Deno.serve(async (req) => {
         .single();
       if (!record || record.password_hash !== hashed) {
         return new Response(JSON.stringify({ error: "Mật khẩu không đúng" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
@@ -252,13 +252,13 @@ Deno.serve(async (req) => {
 
       if (!record || record.reset_otp !== otp) {
         return new Response(JSON.stringify({ error: "Mã OTP không đúng" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       if (new Date(record.reset_otp_expires_at) < new Date()) {
         return new Response(JSON.stringify({ error: "Mã OTP đã hết hạn" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
