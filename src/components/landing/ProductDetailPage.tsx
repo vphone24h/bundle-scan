@@ -802,7 +802,7 @@ export function ProductDetailPage({
             case 'custom_link':
               if (!btn.customUrl) return null;
               return (
-                <Button key={btn.id} variant="outline" className="h-11 px-4" asChild>
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
                   <a href={btn.customUrl} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
                 </Button>
               );
