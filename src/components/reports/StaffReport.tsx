@@ -246,15 +246,16 @@ export function StaffReport() {
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
           {/* Date inputs */}
-          <div className="flex gap-2 mt-3">
-            <div className="flex-1">
-              <Label className="text-xs">Từ ngày</Label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="text-sm h-9" />
-            </div>
-            <div className="flex-1">
-              <Label className="text-xs">Đến ngày</Label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="text-sm h-9" />
-            </div>
+          <div className="mt-3">
+            <DateRangeApplyFilter
+              startDate={startDate}
+              endDate={endDate}
+              onApply={(s, e) => { setStartDate(s); setEndDate(e); }}
+              isLoading={isLoading}
+              layout="stacked"
+              labelClassName="text-xs"
+              inputClassName="text-sm h-9"
+            />
           </div>
         </CardContent>
       </Card>
