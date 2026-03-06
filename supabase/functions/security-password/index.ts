@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
         // Changing password - must verify old password
         if (!old_password) {
           return new Response(JSON.stringify({ error: "Phải nhập mật khẩu cũ để đổi mật khẩu" }), {
-            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
         const oldHashed = await hashPassword(old_password);
