@@ -321,7 +321,7 @@ const Index = () => {
                       <p className="text-2xl sm:text-3xl font-bold text-muted-foreground select-none">••••••</p>
                       <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayProfit')}</p>
                       <button
-                        onClick={() => setShowPasswordDialog(true)}
+                        onClick={() => { setPasswordDialogContext('profit'); setShowPasswordDialog(true); }}
                         className="absolute top-2 right-2 p-1.5 rounded-md hover:bg-muted transition-colors"
                         title="Nhấn để xem lợi nhuận"
                       >
