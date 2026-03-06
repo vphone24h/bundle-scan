@@ -311,10 +311,44 @@ Deno.serve(async (req) => {
             '{{store_name}}': storeName,
           }
 
-          const processedBlocks = blocks.map((b: any) => ({
-            ...b,
-            content: JSON.parse(replaceVariables(JSON.stringify(b.content), vars)),
-          }))
+          // Resolve staff name for staff_info/rating_button blocks
+          let staffName = ''
+          if ((hasStaffBlock || hasRatingBlock) && receipt.sales_staff_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('user_id', receipt.sales_staff_id)
+              .single()
+            if (profile?.display_name) staffName = profile.display_name
+          }
+
+          // Get first IMEI for rating URL
+          let ratingUrl = ''
+          if (hasRatingBlock && websiteUrl && receipt.id) {
+            const { data: items } = await supabase
+              .from('export_receipt_items')
+              .select('imei')
+              .eq('export_receipt_id', receipt.id)
+              .not('imei', 'is', null)
+              .limit(1)
+            const firstImei = items?.[0]?.imei
+            if (firstImei) ratingUrl = `${websiteUrl}/warranty-check?imei=${encodeURIComponent(firstImei)}`
+          }
+
+          const processedBlocks = blocks.map((b: any) => {
+            const processed = {
+              ...b,
+              content: JSON.parse(replaceVariables(JSON.stringify(b.content), vars)),
+            }
+            // Inject resolved data for special blocks
+            if (b.block_type === 'staff_info' && staffName) {
+              processed.content._resolved_staff_name = staffName
+            }
+            if (b.block_type === 'rating_button' && ratingUrl) {
+              processed.content._resolved_rating_url = ratingUrl
+            }
+            return processed
+          })
 
           const html = buildEmailHtml(processedBlocks, storeName)
           const subject = replaceVariables(automation.subject, vars)
