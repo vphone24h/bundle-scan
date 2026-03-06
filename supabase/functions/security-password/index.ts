@@ -184,7 +184,7 @@ Deno.serve(async (req) => {
         .single();
       if (!record || record.password_hash !== hashed) {
         return new Response(JSON.stringify({ error: "Mật khẩu không đúng" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
