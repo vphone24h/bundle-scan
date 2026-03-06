@@ -82,8 +82,11 @@ export function useProductReport(filters?: {
       const productIds = Array.from(new Set(soldItems?.map(i => i.product_id).filter(Boolean) || []));
       let productsMap: Record<string, number> = {};
       if (productIds.length > 0) {
-        const { data: products } = await supabase.from('products').select('id, import_price').in('id', productIds);
-        productsMap = (products || []).reduce((acc, p) => { acc[p.id] = Number(p.import_price); return acc; }, {} as Record<string, number>);
+        for (let i = 0; i < productIds.length; i += 500) {
+          const chunk = productIds.slice(i, i + 500);
+          const { data: products } = await supabase.from('products').select('id, import_price').in('id', chunk);
+          (products || []).forEach(p => { productsMap[p.id] = Number(p.import_price); });
+        }
       }
 
       // For items without product_id, try to find import price by IMEI
