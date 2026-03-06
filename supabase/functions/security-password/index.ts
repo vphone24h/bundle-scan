@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
         console.log("old password match:", match);
         if (!match) {
           return new Response(JSON.stringify({ error: "Mật khẩu cũ không đúng" }), {
-            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
       }
