@@ -39,7 +39,7 @@ export async function getSecurityCredential(): Promise<string | null> {
     const cred = await navigator.credentials.get({
       password: true,
       mediation: 'optional',
-    } as any) as PasswordCredential | null;
+    } as any) as any;
     if (cred && cred.id === CREDENTIAL_ID && cred.password) {
       return cred.password;
     }
