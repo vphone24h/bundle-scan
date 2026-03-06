@@ -678,9 +678,6 @@ export function EmailAutomationTab() {
             </div>
           </TabsContent>
 
-          <TabsContent value="settings" className="mt-4">
-            <ExportEmailSettingsSection tenantId={tenant.id} />
-          </TabsContent>
 
           <TabsContent value="logs" className="mt-4">
             <div className="flex gap-2 mb-3 flex-wrap">

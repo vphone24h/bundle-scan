@@ -146,12 +146,38 @@ Deno.serve(async (req) => {
       const { data: tenant } = await supabase.from('tenants').select('store_name, business_name').eq('id', automation.tenant_id).single()
       const storeName = tenant?.store_name || tenant?.business_name || smtp.storeName
 
+      // Get website URL for rating button in test mode
+      const { data: customDomain } = await supabase
+        .from('custom_domains')
+        .select('domain')
+        .eq('tenant_id', automation.tenant_id)
+        .eq('is_verified', true)
+        .limit(1)
+        .maybeSingle()
+
+      const { data: tenantInfo } = await supabase
+        .from('tenants')
+        .select('subdomain')
+        .eq('id', automation.tenant_id)
+        .single()
+
+      const testWebsiteUrl = customDomain?.domain
+        ? `https://${customDomain.domain}`
+        : tenantInfo?.subdomain
+          ? `https://${tenantInfo.subdomain}.vkho.vn`
+          : ''
+
+      const testRatingUrl = testWebsiteUrl
+        ? `${testWebsiteUrl}/warranty-check?imei=TEST_IMEI_123`
+        : ''
+
       const vars: Record<string, string> = {
         '{{customer_name}}': 'Khách hàng test',
         '{{product_name}}': 'Sản phẩm mẫu',
         '{{purchase_date}}': new Date().toLocaleDateString('vi-VN'),
         '{{warranty_end}}': new Date(Date.now() + 365 * 86400000).toLocaleDateString('vi-VN'),
         '{{store_name}}': storeName,
+        '{{staff_name}}': 'Nguyễn Văn A',
       }
 
       const processedBlocks = (blocks || []).map((b: any) => {
@@ -163,7 +189,7 @@ Deno.serve(async (req) => {
           processed.content._resolved_staff_name = 'Nguyễn Văn A'
         }
         if (b.block_type === 'rating_button') {
-          processed.content._resolved_rating_url = '#'
+          processed.content._resolved_rating_url = testRatingUrl || `${supabaseUrl.replace('/rest/v1','')}/warranty-check`
         }
         return processed
       })
