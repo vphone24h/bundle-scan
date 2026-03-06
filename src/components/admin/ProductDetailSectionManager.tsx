@@ -1,12 +1,42 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { ChevronUp, ChevronDown, RotateCcw, Plus, Trash2, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ChevronUp, ChevronDown, RotateCcw, Plus, Trash2, X, GripVertical } from 'lucide-react';
 import { SYSTEM_PAGES } from '@/lib/industryConfig';
 
 export interface ProductDetailSectionItem {
   id: string;
   enabled: boolean;
+}
+
+export interface CTAButtonItem {
+  id: string;
+  label: string;
+  icon: string;
+  action: 'order' | 'installment' | 'call' | 'zalo' | 'facebook' | 'booking' | 'custom_link';
+  enabled: boolean;
+  customUrl?: string;
+}
+
+const CTA_ACTION_OPTIONS: { value: CTAButtonItem['action']; label: string; defaultIcon: string; defaultLabel: string }[] = [
+  { value: 'order', label: 'Đặt mua / Mua ngay', defaultIcon: '🛒', defaultLabel: 'Đặt mua' },
+  { value: 'installment', label: 'Trả góp', defaultIcon: '💳', defaultLabel: 'Trả góp' },
+  { value: 'call', label: 'Gọi điện', defaultIcon: '📞', defaultLabel: 'Gọi' },
+  { value: 'zalo', label: 'Tư vấn qua Zalo', defaultIcon: '💬', defaultLabel: 'Zalo' },
+  { value: 'facebook', label: 'Tư vấn qua Facebook', defaultIcon: '💬', defaultLabel: 'Facebook' },
+  { value: 'booking', label: 'Đặt lịch', defaultIcon: '📅', defaultLabel: 'Đặt lịch' },
+  { value: 'custom_link', label: 'Link tùy chỉnh', defaultIcon: '🔗', defaultLabel: 'Liên hệ' },
+];
+
+export function getDefaultCTAButtons(): CTAButtonItem[] {
+  return [
+    { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
+    { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
+    { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+  ];
 }
 
 const ALL_DETAIL_SECTIONS: { id: string; label: string; icon: string; description: string }[] = [
