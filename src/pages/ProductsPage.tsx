@@ -94,12 +94,7 @@ function mapProductForTable(product: Product) {
 // Debounce hook for search
 function useDebouncedValue(value: string, delay = 400) {
   const [debounced, setDebounced] = useState(value);
-  useState(() => {
-    const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer);
-  });
-  // Use useEffect-like pattern
-  useMemo(() => {
+  useEffect(() => {
     const timer = setTimeout(() => setDebounced(value), delay);
     return () => clearTimeout(timer);
   }, [value, delay]);
