@@ -53,6 +53,7 @@ export interface TenantLandingSettings {
   custom_products_page_sections: HomeSectionItem[] | null;
   custom_products_page_tabs: { id: string; name: string; displayStyle: string; enabled: boolean; icon?: string }[] | null;
   custom_product_detail_sections: { id: string; enabled: boolean }[] | null;
+  custom_cta_buttons: { id: string; label: string; icon: string; action: string; enabled: boolean; customUrl?: string }[] | null;
   custom_news_page_sections: { id: string; enabled: boolean }[] | null;
   custom_news_page_tabs: { id: string; name: string; icon?: string }[] | null;
   show_installment_button: boolean | null;
