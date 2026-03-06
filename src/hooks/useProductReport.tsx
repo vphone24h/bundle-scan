@@ -144,7 +144,8 @@ export function useProductReport(filters?: {
         .eq('status', 'sold')
         .neq('export_receipts.status', 'cancelled')
         .gte('export_receipts.export_date', monthStartISO)
-        .lte('export_receipts.export_date', monthEndISO);
+        .lte('export_receipts.export_date', monthEndISO)
+        .limit(10000);
 
       if (effectiveBranchId) {
         monthlySoldQuery = monthlySoldQuery.eq('export_receipts.branch_id', effectiveBranchId);
