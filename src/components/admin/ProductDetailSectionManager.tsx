@@ -31,10 +31,177 @@ const CTA_ACTION_OPTIONS: { value: CTAButtonItem['action']; label: string; defau
   { value: 'custom_link', label: 'Link tùy chỉnh', defaultIcon: '🔗', defaultLabel: 'Liên hệ' },
 ];
 
-export function getDefaultCTAButtons(): CTAButtonItem[] {
+export function getDefaultCTAButtons(templateId?: string): CTAButtonItem[] {
+  // Default CTA buttons per industry template
+  const INDUSTRY_CTA: Record<string, CTAButtonItem[]> = {
+    // Technology - bán hàng trực tiếp + trả góp
+    phone_store: [
+      { id: 'cta_order', label: 'Mua ngay', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
+      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_fb', label: 'Facebook', icon: '💬', action: 'facebook', enabled: true },
+    ],
+    laptop_store: [
+      { id: 'cta_order', label: 'Mua ngay', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+    electronics_store: [
+      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+    accessories_store: [
+      { id: 'cta_order', label: 'Mua ngay', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+    apple_landing: [
+      { id: 'cta_order', label: 'Mua ngay', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
+      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_fb', label: 'Facebook', icon: '💬', action: 'facebook', enabled: true },
+    ],
+
+    // Fashion & Beauty - mua + tư vấn
+    fashion_store: [
+      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+    shoes_store: [
+      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn size', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+    cosmetics_store: [
+      { id: 'cta_order', label: 'Mua ngay', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn da', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_fb', label: 'Facebook', icon: '💬', action: 'facebook', enabled: true },
+    ],
+    watch_store: [
+      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
+    ],
+    jewelry_store: [
+      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+
+    // Spa, Salon - đặt lịch là chính
+    spa_store: [
+      { id: 'cta_booking', label: 'Đặt lịch', icon: '📅', action: 'booking', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+    salon_store: [
+      { id: 'cta_booking', label: 'Đặt lịch', icon: '📅', action: 'booking', enabled: true },
+      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+
+    // Food & Beverage - đặt hàng + gọi
+    restaurant_store: [
+      { id: 'cta_order', label: 'Đặt món', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_booking', label: 'Đặt bàn', icon: '📅', action: 'booking', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+    cafe_store: [
+      { id: 'cta_order', label: 'Đặt hàng', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+    boba_store: [
+      { id: 'cta_order', label: 'Đặt hàng', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+
+    // Real Estate & Automotive - tư vấn là chính, không mua trực tiếp
+    realestate_store: [
+      { id: 'cta_booking', label: 'Đặt lịch xem', icon: '📅', action: 'booking', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi ngay', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_fb', label: 'Facebook', icon: '💬', action: 'facebook', enabled: true },
+    ],
+    car_showroom: [
+      { id: 'cta_booking', label: 'Đặt lịch lái thử', icon: '📅', action: 'booking', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
+    ],
+    motorbike_showroom: [
+      { id: 'cta_order', label: 'Đặt xe', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+
+    // Home & Construction - báo giá, tư vấn
+    furniture_store: [
+      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+    construction_store: [
+      { id: 'cta_order', label: 'Báo giá', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+
+    // Hospitality - đặt phòng
+    hotel_store: [
+      { id: 'cta_booking', label: 'Đặt phòng', icon: '📅', action: 'booking', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+
+    // Services - đặt lịch, tư vấn
+    repair_service: [
+      { id: 'cta_booking', label: 'Đặt lịch sửa', icon: '📅', action: 'booking', enabled: true },
+      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+    training_center: [
+      { id: 'cta_booking', label: 'Đăng ký', icon: '📅', action: 'booking', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+    clinic_store: [
+      { id: 'cta_booking', label: 'Đặt lịch khám', icon: '📅', action: 'booking', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+    pharmacy_store: [
+      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+    company_site: [
+      { id: 'cta_booking', label: 'Liên hệ', icon: '📅', action: 'booking', enabled: true },
+      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+
+    // Specialty
+    pet_store: [
+      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+    ],
+  };
+
+  if (templateId && INDUSTRY_CTA[templateId]) {
+    return INDUSTRY_CTA[templateId];
+  }
+
+  // Fallback mặc định cho ngành bán lẻ chung
   return [
     { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
-    { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
+    { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
     { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
   ];
 }
@@ -249,10 +416,11 @@ export function ProductDetailSectionManager({ customSections, onChange }: Produc
 interface CTAButtonsEditorProps {
   buttons: CTAButtonItem[] | null;
   onChange: (buttons: CTAButtonItem[] | null) => void;
+  templateId?: string;
 }
 
-export function CTAButtonsEditor({ buttons, onChange }: CTAButtonsEditorProps) {
-  const currentButtons = buttons || getDefaultCTAButtons();
+export function CTAButtonsEditor({ buttons, onChange, templateId }: CTAButtonsEditorProps) {
+  const currentButtons = buttons || getDefaultCTAButtons(templateId);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleToggle = (index: number) => {
