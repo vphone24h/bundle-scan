@@ -28,6 +28,7 @@ Deno.serve(async (req) => {
       receipt_code,
       branch_id,
       export_date,
+      sales_staff_id,
     } = await req.json()
 
     if (!tenant_id || !customer_email) {
@@ -85,6 +86,19 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Get sales staff name
+    let staffName = ''
+    if (sales_staff_id) {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', sales_staff_id)
+        .single()
+      if (profile?.display_name) {
+        staffName = profile.display_name
+      }
+    }
+
     const storeName = settings.store_name || 'Cửa hàng'
     const storePhone = branchPhone || settings.store_phone || ''
     const storeAddress = branchAddress || settings.store_address || ''
@@ -108,6 +122,12 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Build warranty check URL for rating - use first IMEI if available
+    const firstImei = (items || []).find((item: any) => item.imei)?.imei || ''
+    const warrantyCheckUrl = websiteUrl && firstImei
+      ? `${websiteUrl}/warranty-check?imei=${encodeURIComponent(firstImei)}`
+      : ''
+
     // Build items table rows
     const itemRows = (items || []).map((item: any, idx: number) => `
       <tr style="border-bottom:1px solid #e2e8f0">
@@ -121,6 +141,30 @@ Deno.serve(async (req) => {
         <td style="padding:10px 8px;font-size:14px;color:#718096;text-align:center">${item.warranty || 'N/A'}</td>
       </tr>
     `).join('')
+
+    // Build staff section HTML
+    const staffSectionHtml = staffName ? `
+      <!-- Sales Staff Info -->
+      <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;padding:16px;margin:0 0 24px">
+        <div style="display:flex;align-items:center;margin-bottom:8px">
+          <div style="width:40px;height:40px;border-radius:50%;background:#6366f1;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;margin-right:12px;line-height:40px;text-align:center">
+            ${staffName.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p style="margin:0;font-size:12px;color:#6366f1;font-weight:500">Nhân viên tư vấn</p>
+            <p style="margin:2px 0 0;font-size:16px;color:#312e81;font-weight:700">${staffName}</p>
+          </div>
+        </div>
+        ${warrantyCheckUrl ? `
+          <p style="margin:8px 0 0;font-size:13px;color:#4338ca;line-height:1.5">
+            Bạn hài lòng với dịch vụ? Hãy dành 30 giây đánh giá nhân viên để giúp chúng tôi phục vụ bạn tốt hơn!
+          </p>
+          <div style="text-align:center;margin-top:12px">
+            <a href="${warrantyCheckUrl}" style="display:inline-block;padding:10px 28px;background:#6366f1;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">⭐ Đánh giá nhân viên</a>
+          </div>
+        ` : ''}
+      </div>
+    ` : ''
 
     const subject = `Cảm ơn bạn đã mua hàng tại ${storeName}!`
 
@@ -157,6 +201,10 @@ Deno.serve(async (req) => {
                 <td style="padding:4px 0;font-size:14px;color:#718096">Chi nhánh:</td>
                 <td style="padding:4px 0;font-size:14px;color:#2d3748;text-align:right">${branchName}</td>
               </tr>` : ''}
+              ${staffName ? `<tr>
+                <td style="padding:4px 0;font-size:14px;color:#718096">Nhân viên tư vấn:</td>
+                <td style="padding:4px 0;font-size:14px;color:#4338ca;font-weight:600;text-align:right">${staffName}</td>
+              </tr>` : ''}
             </table>
           </div>
 
@@ -181,6 +229,8 @@ Deno.serve(async (req) => {
               </tr>
             </tfoot>
           </table>
+
+          ${staffSectionHtml}
 
           <!-- Warranty notice -->
           <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:16px;margin:0 0 24px">

@@ -843,6 +843,7 @@ export default function ExportNewPage() {
             receipt_code: receipt.code,
             branch_id: branchId,
             export_date: new Date().toISOString(),
+            sales_staff_id: savedSalesStaffId,
           },
         }).then(({ error }) => {
           if (error) console.warn('Export email failed:', error.message);
