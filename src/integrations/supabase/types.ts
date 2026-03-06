@@ -6493,6 +6493,7 @@ export type Database = {
           category_id: string
           category_name: string
           has_imei: boolean
+          oldest_import_date: string
           product_id: string
           product_name: string
           sku: string
