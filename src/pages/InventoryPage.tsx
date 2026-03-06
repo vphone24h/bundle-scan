@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Download, Package, ClipboardList, FileUp, AlertTriangle, Wrench, ExternalLink, PlayCircle } from 'lucide-react';
 import { differenceInDays, format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
