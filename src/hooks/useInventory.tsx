@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useMemo } from 'react';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
-// fetchAllRows removed - using server-side limited queries
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export interface InventoryItem {
   productId: string;
