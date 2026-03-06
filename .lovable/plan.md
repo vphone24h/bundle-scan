@@ -1,21 +1,24 @@
 
 
-## Problem
+## Thêm nhiều nút cuộn dọc theo bảng
 
-The "Mua ngay" (order) button has `flex-1 min-w-0 shrink` which causes it to shrink to zero width, cutting off its text. The other buttons have `shrink-0` but the order button doesn't, so it collapses when space is tight.
+### Vấn đề
+Hiện tại chỉ có 1 nút cuộn nằm ở giữa bảng (top-1/2), khi bảng dài nhiều dòng thì nút bị "chìm" xuống sâu, khách hàng ở phần trên không nhìn thấy.
 
-## Fix
+### Giải pháp
+Thay vì 1 nút ở giữa, hiển thị **3 nút cuộn** phân bố đều theo chiều dọc bên phải (và bên trái khi cần cuộn ngược):
+- Nút 1: ở vị trí **trên** (khoảng 20% chiều cao)
+- Nút 2: ở vị trí **giữa** (50% chiều cao)  
+- Nút 3: ở vị trí **dưới** (khoảng 80% chiều cao)
 
-Change the order button from `flex-1 min-w-0 shrink` to `shrink-0` with a reasonable `min-w` and explicit `whitespace-nowrap`, matching the pattern of all other buttons. This ensures:
-1. No button text gets cut off
-2. When buttons overflow the container width, users can scroll horizontally (already working via `overflow-x-auto scrollbar-hide`)
+### Chi tiết kỹ thuật
 
-### Changes in `src/components/landing/ProductDetailPage.tsx`
+**File chỉnh sửa:** `src/components/ui/scrollable-table-wrapper.tsx`
 
-**Line 749**: Change the order button classes from `flex-1 min-w-0 shrink` to `shrink-0 whitespace-nowrap`:
-```tsx
-<Button key={btn.id} className="shrink-0 gap-2 h-11 text-sm font-semibold px-4 whitespace-nowrap" ...>
-```
+- Tạo mảng vị trí `['top-[20%]', 'top-1/2', 'top-[80%]']`
+- Dùng `.map()` để render 3 nút cho mỗi bên (trái/phải) thay vì 1 nút duy nhất
+- Giữ nguyên style nút tròn, màu primary, shadow, hiệu ứng hover/active
+- Tất cả các nút đều gọi cùng hàm `scroll()` để cuộn 300px
 
-All buttons will now be `shrink-0` so none collapse. The horizontal scroll container handles overflow.
+Không ảnh hưởng đến các trang khác đang dùng `ScrollableTableWrapper`.
 
