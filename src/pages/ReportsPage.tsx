@@ -209,6 +209,10 @@ export default function ReportsPage() {
   const { data: permissions } = usePermissions();
   const { data: tenant } = useCurrentTenant();
   const [manualTourActive, setManualTourActive] = useState(false);
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked: reportsUnlocked, unlock: unlockReports } = useSecurityUnlock('reports_page');
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const reportsLocked = hasSecurityPassword && !reportsUnlocked;
 
   // Main onboarding tour (revenue tab)
   const { isCompleted: reportsTourDone, completeTour: completeReportsTour, isLoading: tourLoading } = useOnboardingTour('reports_overview');
