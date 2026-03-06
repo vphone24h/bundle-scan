@@ -800,14 +800,16 @@ export function useReturnImportReceipt() {
         const code = products.length === 1 ? baseCode : `${baseCode}_${i + 1}`;
 
         // Calculate per-product refund based on fee
+        const totalImportAll = products.reduce((s: number, p: any) => s + Number(p.import_price), 0);
+        const productRatio = totalImportAll > 0 ? Number(product.import_price) / totalImportAll : 0;
         let productRefund = product.import_price;
+        let productFeeAmount = 0;
         if (feeType === 'percentage') {
-          productRefund = product.import_price * (1 - feePercentage / 100);
+          productFeeAmount = product.import_price * feePercentage / 100;
+          productRefund = product.import_price - productFeeAmount;
         } else if (feeType === 'fixed_amount') {
-          // Distribute fixed fee proportionally
-          const totalImport = products.reduce((s: number, p: any) => s + Number(p.import_price), 0);
-          const ratio = totalImport > 0 ? Number(product.import_price) / totalImport : 0;
-          productRefund = product.import_price - (feeAmount * ratio);
+          productFeeAmount = feeAmount * productRatio;
+          productRefund = product.import_price - productFeeAmount;
         }
 
         const { data: returnData, error: returnError } = await supabase
@@ -826,7 +828,7 @@ export function useReturnImportReceipt() {
             total_refund_amount: productRefund,
             fee_type: feeType,
             fee_percentage: feePercentage,
-            fee_amount: feeType === 'fixed_amount' ? feeAmount * ratio : (feeType === 'percentage' ? product.import_price - productRefund : 0),
+            fee_amount: productFeeAmount,
             note: note || `Trả toàn bộ phiếu ${receipt.code}`,
             created_by: user.id,
           }])
