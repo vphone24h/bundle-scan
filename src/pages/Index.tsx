@@ -156,8 +156,10 @@ const Index = () => {
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked: profitUnlocked, unlock: unlockProfit } = useSecurityUnlock('dashboard_profit');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordDialogContext, setPasswordDialogContext] = useState<'profit' | 'stockValue'>('profit');
 
   const profitHidden = hasSecurityPassword && !profitUnlocked;
+  const stockValueHidden = hasSecurityPassword && !profitUnlocked;
   const recentProducts = recentProductsData || [];
   const recentReceipts = recentReceiptsData || [];
 
