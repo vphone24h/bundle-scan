@@ -334,7 +334,7 @@ export function ImportHistoricalOrdersSection() {
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <FileSpreadsheet className="h-5 w-5" />
-          Nhập đơn hàng lịch sử (VPhone)
+          Backup dữ liệu bán hàng từ phần mềm cũ
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
