@@ -773,10 +773,16 @@ export function ProductDetailPage({
             case 'zalo': {
               const rawUrl = btn.customUrl || zaloUrl;
               if (!rawUrl) return null;
-              // Convert zalo.me links to deep link format for mobile
-              const zaloDeepLink = rawUrl.match(/zalo\.me\/(\d+)/)
-                ? `https://zalo.me/${rawUrl.match(/zalo\.me\/(\d+)/)?.[1]}`
-                : rawUrl;
+              // Convert to proper zalo.me link
+              let zaloDeepLink = rawUrl.trim();
+              if (zaloDeepLink.match(/zalo\.me\/(\d+)/)) {
+                zaloDeepLink = `https://zalo.me/${zaloDeepLink.match(/zalo\.me\/(\d+)/)?.[1]}`;
+              } else if (/^\d{8,15}$/.test(zaloDeepLink.replace(/\s/g, ''))) {
+                // Raw phone number → convert to zalo.me link
+                zaloDeepLink = `https://zalo.me/${zaloDeepLink.replace(/\s/g, '')}`;
+              } else if (!zaloDeepLink.startsWith('http')) {
+                zaloDeepLink = `https://${zaloDeepLink}`;
+              }
               return (
                 <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
                   <a href={zaloDeepLink} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
