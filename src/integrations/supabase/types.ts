@@ -4581,6 +4581,44 @@ export type Database = {
           },
         ]
       }
+      security_passwords: {
+        Row: {
+          created_at: string
+          id: string
+          password_hash: string
+          reset_otp: string | null
+          reset_otp_expires_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password_hash: string
+          reset_otp?: string | null
+          reset_otp_expires_at?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password_hash?: string
+          reset_otp?: string | null
+          reset_otp_expires_at?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_passwords_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_comments: {
         Row: {
           content: string

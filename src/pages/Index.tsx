@@ -7,7 +7,7 @@ import { useDashboardStats, useTodaySoldProducts, useRecentProducts, useRecentIm
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useUserGuideUrl } from '@/hooks/useAppConfig';
 import { formatCurrency, formatDate } from '@/lib/mockData';
-import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator, PlayCircle, Crown, MessageCircle } from 'lucide-react';
+import { Package, TrendingUp, Wallet, AlertCircle, FileDown, Loader2, BookOpen, FolderTree, Users, ShoppingCart, Calculator, PlayCircle, Crown, MessageCircle, Eye, EyeOff } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePlatformUser } from '@/hooks/useTenant';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -20,6 +20,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 import { useOnboardingTour, useResetAllTours } from '@/hooks/useOnboardingTour';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
 const dashboardTourSteps: TourStep[] = [
   {
@@ -151,7 +153,11 @@ const Index = () => {
   const { data: todaySoldProducts, isLoading: soldLoading } = useTodaySoldProducts();
   const { data: pendingOrderCount } = usePendingOrderCount();
   const userGuideUrl = useUserGuideUrl();
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked: profitUnlocked, unlock: unlockProfit } = useSecurityUnlock('dashboard_profit');
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
 
+  const profitHidden = hasSecurityPassword && !profitUnlocked;
   const recentProducts = recentProductsData || [];
   const recentReceipts = recentReceiptsData || [];
 
@@ -164,6 +170,13 @@ const Index = () => {
 
   return (
     <MainLayout>
+      <SecurityPasswordDialog
+        open={showPasswordDialog}
+        onOpenChange={setShowPasswordDialog}
+        onSuccess={unlockProfit}
+        title="Xem lợi nhuận"
+        description="Nhập mật khẩu bảo mật để xem lợi nhuận hôm nay"
+      />
       <PageHeader
         title={t('pages.dashboard.title')}
         description={t('pages.dashboard.description')}
@@ -290,9 +303,25 @@ const Index = () => {
           ) : (
             <>
               {canViewImportPrice && (
-                <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/reports')}>
-                  <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats?.todayProfit || 0)}</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayProfit')}</p>
+                <div className="bg-card border rounded-lg p-3 sm:p-4 text-center relative group">
+                  {profitHidden ? (
+                    <>
+                      <p className="text-2xl sm:text-3xl font-bold text-muted-foreground select-none">••••••</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayProfit')}</p>
+                      <button
+                        onClick={() => setShowPasswordDialog(true)}
+                        className="absolute top-2 right-2 p-1.5 rounded-md hover:bg-muted transition-colors"
+                        title="Nhấn để xem lợi nhuận"
+                      >
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="cursor-pointer" onClick={() => navigate('/reports')}>
+                      <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(stats?.todayProfit || 0)}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayProfit')}</p>
+                    </div>
+                  )}
                 </div>
               )}
               <div className="bg-card border rounded-lg p-3 sm:p-4 text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/reports')}>

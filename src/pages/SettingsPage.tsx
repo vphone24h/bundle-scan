@@ -17,6 +17,7 @@ import { toast as sonnerToast } from 'sonner';
 import { Globe, Store, Save, Eye, EyeOff, QrCode } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ImportHistoricalOrdersSection } from '@/components/admin/ImportHistoricalOrdersSection';
+import { SecurityPasswordSettings } from '@/components/security/SecurityPasswordSettings';
 import { DataManagementSection } from '@/components/admin/DataManagementSection';
 import { cn } from '@/lib/utils';
 
@@ -237,6 +238,9 @@ export default function SettingsPage() {
 
         {/* QR Print Prompt Toggle */}
         <QRPrintPromptToggle />
+
+        {/* Security Password - Super Admin only */}
+        {isSuperAdmin && <SecurityPasswordSettings />}
 
         {/* Business Mode - Super Admin only */}
         {isSuperAdmin && tenant && (
