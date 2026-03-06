@@ -1,0 +1,1 @@
+DELETE FROM security_passwords WHERE tenant_id = '66a834a2-6826-4cf6-8ce6-e5ceabce2780';
