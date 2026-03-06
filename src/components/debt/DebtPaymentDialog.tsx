@@ -56,6 +56,7 @@ export function DebtPaymentDialog({
   entityName,
   remainingAmount,
   branchId,
+  mergedEntityIds,
 }: DebtPaymentDialogProps) {
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
 
