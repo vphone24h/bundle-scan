@@ -156,8 +156,10 @@ const Index = () => {
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked: profitUnlocked, unlock: unlockProfit } = useSecurityUnlock('dashboard_profit');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordDialogContext, setPasswordDialogContext] = useState<'profit' | 'stockValue'>('profit');
 
   const profitHidden = hasSecurityPassword && !profitUnlocked;
+  const stockValueHidden = hasSecurityPassword && !profitUnlocked;
   const recentProducts = recentProductsData || [];
   const recentReceipts = recentReceiptsData || [];
 
@@ -174,8 +176,8 @@ const Index = () => {
         open={showPasswordDialog}
         onOpenChange={setShowPasswordDialog}
         onSuccess={unlockProfit}
-        title="Xem lợi nhuận"
-        description="Nhập mật khẩu bảo mật để xem lợi nhuận hôm nay"
+        title={passwordDialogContext === 'stockValue' ? 'Xem giá trị kho' : 'Xem lợi nhuận'}
+        description={passwordDialogContext === 'stockValue' ? 'Nhập mật khẩu bảo mật để xem giá trị kho' : 'Nhập mật khẩu bảo mật để xem lợi nhuận hôm nay'}
       />
       <PageHeader
         title={t('pages.dashboard.title')}
@@ -272,13 +274,23 @@ const Index = () => {
                   onClick={() => navigate('/inventory')}
                   className="cursor-pointer hover:shadow-md transition-shadow"
                 />
-                <StatCard
-                  title={t('pages.dashboard.stockValue')}
-                  value={formatCurrency(stats?.totalImportValue || 0)}
-                  icon={<Wallet className="h-5 w-5 sm:h-6 sm:w-6" />}
-                  onClick={() => navigate('/inventory')}
-                  className="cursor-pointer hover:shadow-md transition-shadow"
-                />
+                {stockValueHidden ? (
+                  <StatCard
+                    title={t('pages.dashboard.stockValue')}
+                    value="••••••"
+                    icon={<EyeOff className="h-5 w-5 sm:h-6 sm:w-6" />}
+                    onClick={() => { setPasswordDialogContext('stockValue'); setShowPasswordDialog(true); }}
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                  />
+                ) : (
+                  <StatCard
+                    title={t('pages.dashboard.stockValue')}
+                    value={formatCurrency(stats?.totalImportValue || 0)}
+                    icon={<Wallet className="h-5 w-5 sm:h-6 sm:w-6" />}
+                    onClick={() => navigate('/inventory')}
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                  />
+                )}
                 <StatCard
                   title={t('pages.dashboard.orders')}
                   value={pendingOrderCount || 0}
@@ -309,7 +321,7 @@ const Index = () => {
                       <p className="text-2xl sm:text-3xl font-bold text-muted-foreground select-none">••••••</p>
                       <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{t('pages.dashboard.todayProfit')}</p>
                       <button
-                        onClick={() => setShowPasswordDialog(true)}
+                        onClick={() => { setPasswordDialogContext('profit'); setShowPasswordDialog(true); }}
                         className="absolute top-2 right-2 p-1.5 rounded-md hover:bg-muted transition-colors"
                         title="Nhấn để xem lợi nhuận"
                       >
