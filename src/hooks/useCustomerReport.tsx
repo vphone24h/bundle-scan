@@ -52,8 +52,7 @@ export function useCustomerReport(filters?: {
         return q;
       };
 
-      const { data: receipts, error } = await buildQuery().limit(5000);
-      if (error) throw error;
+      const receipts = await fetchAllRows<any>(() => buildQuery());
 
       // Aggregate by customer
       const customerMap: Record<string, CustomerReportItem> = {};

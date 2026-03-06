@@ -420,8 +420,7 @@ export function useReportChartData(filters?: {
         returnQuery = returnQuery.eq('branch_id', effectiveBranchId);
       }
 
-      const { data: returnItems, error: returnError } = await returnQuery.limit(5000);
-      if (returnError) throw returnError;
+      const returnItems = await fetchAllRows<any>(() => returnQuery);
 
       // Lấy giá nhập
       const productIds = Array.from(
