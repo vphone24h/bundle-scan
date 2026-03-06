@@ -108,6 +108,7 @@ export function RevenueProfitReport() {
   const [categoryId, setCategoryId] = useState('_all_');
   const [chartGroupBy, setChartGroupBy] = useState<'day' | 'week' | 'month'>('day');
   const [detailType, setDetailType] = useState<DetailType | null>(null);
+  const [activePreset, setActivePreset] = useState<string | null>('today');
 
   const timePresets = [
     { label: t('common.today'), value: 'today' },
