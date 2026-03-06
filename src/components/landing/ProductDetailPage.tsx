@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Gift, Star, Ticket, Link2, CreditCard, Shield, ArrowLeft, Mail } from 'lucide-react';
+import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Gift, Star, Ticket, Link2, CreditCard, Shield, ArrowLeft, Mail, ExternalLink } from 'lucide-react';
+import { CTAButtonItem, getDefaultCTAButtons } from '@/components/admin/ProductDetailSectionManager';
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
 import { LandingProduct, LandingProductVariant, VariantPriceEntry } from '@/hooks/useLandingProducts';
@@ -35,10 +36,13 @@ interface ProductDetailPageProps {
   onInstallment?: () => void;
   showInstallmentButton?: boolean; // deprecated, use detailSections
   detailSections?: ProductDetailSectionConfig[] | null;
+  ctaButtons?: CTAButtonItem[] | null;
   relatedProducts?: LandingProduct[];
   recentlyViewedProducts?: LandingProduct[];
   onProductClick?: (p: LandingProduct) => void;
   storeInfo?: { name?: string; phone?: string; address?: string; email?: string } | null;
+  zaloUrl?: string | null;
+  facebookUrl?: string | null;
 }
 
 export function ProductDetailPage({
@@ -46,10 +50,13 @@ export function ProductDetailPage({
   warrantyHotline, onShare, onInstallment,
   showInstallmentButton = true,
   detailSections,
+  ctaButtons,
   relatedProducts = [],
   recentlyViewedProducts = [],
   onProductClick,
   storeInfo,
+  zaloUrl,
+  facebookUrl,
 }: ProductDetailPageProps) {
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
@@ -728,44 +735,84 @@ export function ProductDetailPage({
       </main>
 
       {/* Sticky bottom action bar - only show when not in order form */}
-      {!showOrderForm && !orderSuccess && (
-        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t safe-area-bottom">
-          <div className="flex items-center gap-2 px-3 py-2.5">
-            <Button
-              className="flex-1 gap-2 h-11 text-base font-semibold"
-              style={{ backgroundColor: primaryColor }}
-              onClick={() => {
-                setShowOrderForm(true);
-                setTimeout(() => {
-                  document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-              }}
-            >
-              <ShoppingCart className="h-5 w-5" />
-              Đặt mua
-            </Button>
-            {(() => {
+      {!showOrderForm && !orderSuccess && (() => {
+        const buttons = (ctaButtons || getDefaultCTAButtons()).filter(b => b.enabled);
+        if (buttons.length === 0) return null;
+
+        const renderButton = (btn: CTAButtonItem) => {
+          const isOrder = btn.action === 'order';
+          const commonClass = `gap-2 h-11 text-sm font-semibold ${isOrder ? 'flex-1' : ''}`;
+          
+          switch (btn.action) {
+            case 'order':
+              return (
+                <Button key={btn.id} className={`flex-1 gap-2 h-11 text-sm font-semibold`} style={{ backgroundColor: primaryColor }}
+                  onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+            case 'installment': {
               const secs = detailSections || [{ id: 'installment', enabled: true }];
               const installmentEnabled = secs.find(s => s.id === 'installment')?.enabled !== false;
               if (!installmentEnabled || !onInstallment) return null;
               return (
-                <Button variant="outline" className="flex-1 gap-2 h-11 text-base" onClick={onInstallment}>
-                  <CreditCard className="h-5 w-5" />
-                  Trả góp
+                <Button key={btn.id} variant="outline" className="flex-1 gap-2 h-11 text-sm" onClick={onInstallment}>
+                  {btn.icon} {btn.label}
                 </Button>
               );
-            })()}
-            {warrantyHotline && (
-              <Button variant="outline" className="h-11 px-4" asChild>
-                <a href={`tel:${warrantyHotline}`} className="gap-2">
-                  <Phone className="h-5 w-5" />
-                  Gọi
-                </a>
-              </Button>
-            )}
+            }
+            case 'call':
+              if (!warrantyHotline) return null;
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4" asChild>
+                  <a href={`tel:${warrantyHotline}`} className="gap-2">{btn.icon} {btn.label}</a>
+                </Button>
+              );
+            case 'zalo': {
+              const url = btn.customUrl || zaloUrl;
+              if (!url) return null;
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4" asChild>
+                  <a href={url} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
+                </Button>
+              );
+            }
+            case 'facebook': {
+              const url = btn.customUrl || facebookUrl;
+              if (!url) return null;
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4" asChild>
+                  <a href={url} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
+                </Button>
+              );
+            }
+            case 'booking':
+              return (
+                <Button key={btn.id} className="flex-1 gap-2 h-11 text-sm font-semibold" style={{ backgroundColor: primaryColor }}
+                  onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+            case 'custom_link':
+              if (!btn.customUrl) return null;
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4" asChild>
+                  <a href={btn.customUrl} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
+                </Button>
+              );
+            default:
+              return null;
+          }
+        };
+
+        return (
+          <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t safe-area-bottom">
+            <div className="flex items-center gap-2 px-3 py-2.5">
+              {buttons.map(renderButton)}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { TenantLandingSettings } from '@/hooks/useTenantLanding';
 import { getIndustryConfig, getFullNavItems, LayoutStyle, HomeSection, SYSTEM_PAGES } from '@/lib/industryConfig';
 import { HomeSectionItem, CustomProductTab } from '@/components/admin/HomeSectionManager';
 import { ProductsPageSectionItem } from '@/components/admin/ProductsPageSectionManager';
-import { ProductDetailSectionItem } from '@/components/admin/ProductDetailSectionManager';
+import { ProductDetailSectionItem, CTAButtonItem, getDefaultCTAButtons } from '@/components/admin/ProductDetailSectionManager';
 import { NewsPageSectionItem } from '@/components/admin/NewsPageSectionManager';
 import { Pencil, Home, ShoppingBag, FileText, ArrowLeft, Newspaper } from 'lucide-react';
 
@@ -639,12 +639,22 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
       {/* Bottom CTA bar */}
       <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t px-4 py-2.5">
         <div className="flex items-center gap-2">
-          <button className="flex-1 flex items-center justify-center gap-1.5 rounded-full py-2.5 text-white text-xs font-medium" style={{ backgroundColor: accentColor }}>
-            🛒 Đặt mua ngay
-          </button>
-          <button className="px-4 flex items-center justify-center gap-1.5 rounded-full py-2.5 text-xs font-medium border border-black/10">
-            💬 Hỏi
-          </button>
+          {((formData as any)?.custom_cta_buttons as CTAButtonItem[] || getDefaultCTAButtons())
+            .filter(b => b.enabled)
+            .map(btn => {
+              const isPrimary = btn.action === 'order' || btn.action === 'booking';
+              return (
+                <button
+                  key={btn.id}
+                  className={`flex items-center justify-center gap-1.5 rounded-full py-2.5 text-xs font-medium ${
+                    isPrimary ? 'flex-1 text-white' : 'px-3 border border-black/10'
+                  }`}
+                  style={isPrimary ? { backgroundColor: accentColor } : undefined}
+                >
+                  {btn.icon} {btn.label}
+                </button>
+              );
+            })}
         </div>
       </div>
     </>

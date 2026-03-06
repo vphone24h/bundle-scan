@@ -329,9 +329,12 @@ export default function UniversalStoreTemplate({
           onInstallment={() => setShowInstallmentCalc(true)}
           showInstallmentButton={true}
           detailSections={(settings as any)?.custom_product_detail_sections || null}
+          ctaButtons={(settings as any)?.custom_cta_buttons || null}
           relatedProducts={allProducts.filter(p => p.category_id === selectedProduct.category_id && p.id !== selectedProduct.id).slice(0, 10)}
           onProductClick={openProduct}
           storeInfo={{ name: displayStoreName, phone: settings?.store_phone || '', address: settings?.store_address || '', email: settings?.store_email || '' }}
+          zaloUrl={settings?.zalo_url}
+          facebookUrl={settings?.facebook_url}
         />
         <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
       </>

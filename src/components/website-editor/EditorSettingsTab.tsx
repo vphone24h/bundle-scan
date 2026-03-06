@@ -4,6 +4,7 @@ import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, getFullNavItems, 
 import { HomeSectionManager, HomeSectionItem } from '@/components/admin/HomeSectionManager';
 import { ProductsPageSectionManager } from '@/components/admin/ProductsPageSectionManager';
 import { ProductDetailSectionManager } from '@/components/admin/ProductDetailSectionManager';
+import { CTAButtonsEditor } from '@/components/admin/ProductDetailSectionManager';
 import { NewsPageSectionManager } from '@/components/admin/NewsPageSectionManager';
 import { NavMenuEditor } from '@/components/website-editor/NavMenuEditor';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
@@ -632,6 +633,12 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
           customSections={(formData as any).custom_product_detail_sections || null}
           onChange={sections => onChange('custom_product_detail_sections', sections)}
         />
+        <div className="border-t pt-3 mt-3">
+          <CTAButtonsEditor
+            buttons={(formData as any).custom_cta_buttons || null}
+            onChange={buttons => onChange('custom_cta_buttons', buttons)}
+          />
+        </div>
       </SettingsBlock>
 
       {/* Email tự động đơn hàng - đã chuyển ra LandingPageSettings */}
