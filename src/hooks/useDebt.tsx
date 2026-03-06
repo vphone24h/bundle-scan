@@ -3,14 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from './usePermissions';
 import { useAuth } from './useAuth';
 
-// Server-side limited query helper for bounded datasets
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchLimited<T>(queryBuilder: () => any, limit = 5000): Promise<T[]> {
-  const { data, error } = await queryBuilder().limit(limit);
-  if (error) throw error;
-  return (data || []) as T[];
-}
-
 // Helper to get current user's tenant_id
 async function getCurrentTenantId(): Promise<string | null> {
   const { data } = await supabase.rpc('get_user_tenant_id_secure');
