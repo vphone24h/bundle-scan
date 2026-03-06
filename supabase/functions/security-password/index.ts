@@ -120,11 +120,11 @@ Deno.serve(async (req) => {
       // Only super_admin
       const { data: roleData } = await supabaseAdmin
         .from("user_roles")
-        .select("role")
+        .select("user_role")
         .eq("user_id", userId)
         .eq("tenant_id", tenantId)
         .single();
-      if (roleData?.role !== "super_admin") {
+      if (roleData?.user_role !== "super_admin") {
         return new Response(JSON.stringify({ error: "Không có quyền" }), {
           status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
