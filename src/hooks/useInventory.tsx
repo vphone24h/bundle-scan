@@ -153,6 +153,7 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
           totalImportCost: isInStock ? Number(product.import_price) : 0,
           products: [productDetail],
           oldestImportDate: isInStock ? product.import_date : null,
+        });
       } else {
         const quantity = product.quantity || 1;
         const totalCost = Number(product.total_import_cost || product.import_price);
