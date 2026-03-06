@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DateRangeApplyFilter } from '@/components/ui/date-range-apply-filter';
 import { SearchInput } from '@/components/ui/search-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
