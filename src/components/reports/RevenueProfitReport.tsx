@@ -283,6 +283,12 @@ export function RevenueProfitReport() {
         </CardContent>
       </Card>
 
+      {isInitialLoad ? (
+        <div className="min-h-[400px] flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+      <div className={`transition-opacity duration-200 ${statsLoading ? 'opacity-50 pointer-events-none' : ''}`}>
       {/* Main Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard title={`1. ${t('common.salesRevenue')}`} value={formatCurrency(stats?.totalSalesRevenue || 0)} icon={<ShoppingCart className="h-5 w-5" />} description={`${stats?.productsSold || 0} ${t('common.productsSold')}`} onClick={() => setDetailType('sales')} />
