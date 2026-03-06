@@ -48,6 +48,7 @@ const timePresets = [
 ];
 
 export function SupplierImportReport() {
+  const [activePreset, setActivePreset] = useState<string | null>('this_month');
   const today = format(new Date(), 'yyyy-MM-dd');
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(today);
