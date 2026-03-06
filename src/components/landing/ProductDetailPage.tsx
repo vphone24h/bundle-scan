@@ -746,7 +746,7 @@ export function ProductDetailPage({
           switch (btn.action) {
             case 'order':
               return (
-                <Button key={btn.id} className={`shrink-0 min-w-[120px] gap-2 h-11 text-sm font-semibold`} style={{ backgroundColor: primaryColor }}
+                <Button key={btn.id} className="flex-1 min-w-0 shrink gap-2 h-11 text-sm font-semibold" style={{ backgroundColor: primaryColor }}
                   onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
                   {btn.icon} {btn.label}
                 </Button>
