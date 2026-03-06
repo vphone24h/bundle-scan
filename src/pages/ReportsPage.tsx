@@ -366,38 +366,64 @@ export default function ReportsPage() {
         }
       />
 
-      <div className="p-6 space-y-6">
-        {/* Report Selector Dropdown */}
-        <Select value={activeTab} onValueChange={(v) => setActiveTab(v)}>
-          <SelectTrigger className="w-full sm:w-72" data-tour="report-selector">
-            <div className="flex items-center gap-2">
-              <ActiveIcon className="h-4 w-4" />
-              <SelectValue />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="bg-popover">
-            {reportTabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <SelectItem key={tab.id} value={tab.id}>
-                  <div className="flex items-center gap-2">
-                    <Icon className="h-4 w-4" />
-                    <span>{t(tab.labelKey)}</span>
-                  </div>
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
+      <SecurityPasswordDialog
+        open={showPasswordDialog}
+        onOpenChange={setShowPasswordDialog}
+        onSuccess={unlockReports}
+        title="Truy cập Báo cáo"
+        description="Nhập mật khẩu bảo mật để xem báo cáo"
+      />
 
-        {/* Report Content */}
-        {activeTab === 'revenue' && <RevenueProfitReport />}
-        {activeTab === 'products' && <ProductReport />}
-        {activeTab === 'customers' && <CustomerReport />}
-        {activeTab === 'suppliers' && <SupplierReport />}
-        {activeTab === 'staff' && <StaffReport />}
-        {activeTab === 'tax' && canViewTaxReport && <TaxReport />}
-      </div>
+      {reportsLocked ? (
+        <div className="flex flex-col items-center justify-center py-24 px-6 text-center space-y-6">
+          <div className="rounded-full bg-muted p-6">
+            <Lock className="h-12 w-12 text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold">Báo cáo được bảo vệ</h2>
+            <p className="text-sm text-muted-foreground max-w-md">
+              Trang báo cáo đã được bảo vệ bằng mật khẩu bảo mật. Vui lòng nhập mật khẩu để truy cập.
+            </p>
+          </div>
+          <Button onClick={() => setShowPasswordDialog(true)} size="lg">
+            <Lock className="h-4 w-4 mr-2" />
+            Nhập mật khẩu
+          </Button>
+        </div>
+      ) : (
+        <div className="p-6 space-y-6">
+          {/* Report Selector Dropdown */}
+          <Select value={activeTab} onValueChange={(v) => setActiveTab(v)}>
+            <SelectTrigger className="w-full sm:w-72" data-tour="report-selector">
+              <div className="flex items-center gap-2">
+                <ActiveIcon className="h-4 w-4" />
+                <SelectValue />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="bg-popover">
+              {reportTabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <SelectItem key={tab.id} value={tab.id}>
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4" />
+                      <span>{t(tab.labelKey)}</span>
+                    </div>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+
+          {/* Report Content */}
+          {activeTab === 'revenue' && <RevenueProfitReport />}
+          {activeTab === 'products' && <ProductReport />}
+          {activeTab === 'customers' && <CustomerReport />}
+          {activeTab === 'suppliers' && <SupplierReport />}
+          {activeTab === 'staff' && <StaffReport />}
+          {activeTab === 'tax' && canViewTaxReport && <TaxReport />}
+        </div>
+      )}
     </MainLayout>
   );
 }
