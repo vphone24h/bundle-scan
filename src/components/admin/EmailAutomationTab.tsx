@@ -573,6 +573,7 @@ export function EmailAutomationTab() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="scenarios">Kịch bản ({automations?.length || 0})</TabsTrigger>
+            <TabsTrigger value="settings">Cấu hình</TabsTrigger>
             <TabsTrigger value="logs">Lịch sử gửi ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</TabsTrigger>
           </TabsList>
 
