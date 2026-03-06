@@ -177,6 +177,7 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
           totalImportCost: isInStock ? totalCost : 0,
           products: isInStock ? [productDetail] : [],
           oldestImportDate: isInStock ? product.import_date : null,
+        });
       }
     }
   }
