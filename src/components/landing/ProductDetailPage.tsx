@@ -738,7 +738,7 @@ export function ProductDetailPage({
 
       {/* Sticky bottom action bar - only show when not in order form */}
       {!showOrderForm && !orderSuccess && (() => {
-        const buttons = (ctaButtons || getDefaultCTAButtons()).filter(b => b.enabled);
+        const buttons = (ctaButtons || getDefaultCTAButtons(websiteTemplate || undefined)).filter(b => b.enabled);
         if (buttons.length === 0) return null;
 
         const renderButton = (btn: CTAButtonItem) => {
