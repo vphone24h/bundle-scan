@@ -217,13 +217,7 @@ export function RevenueProfitReport() {
     value,
   })).sort((a, b) => b.value - a.value) : [];
 
-  if (statsLoading) {
-    return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const isInitialLoad = statsLoading && !stats;
 
   return (
     <div className="space-y-6">
