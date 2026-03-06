@@ -400,7 +400,7 @@ export default function ReportsPage() {
                 onClick={async () => {
                   setBiometricLoading(true);
                   try {
-                    const savedPw = await getSecurityCredential();
+                    const savedPw = getSavedSecurityPassword();
                     if (!savedPw) {
                       toast.info('Chưa có mật khẩu đã lưu. Vui lòng nhập thủ công lần đầu.');
                       setShowPasswordDialog(true);
@@ -408,7 +408,7 @@ export default function ReportsPage() {
                     }
                     const result = await verifyPassword.mutateAsync(savedPw);
                     if (result.valid) {
-                      await saveSecurityCredential(savedPw);
+                      saveSecurityPassword(savedPw);
                       unlockReports();
                     } else {
                       toast.error('Mật khẩu đã lưu không còn đúng. Vui lòng nhập lại.');
