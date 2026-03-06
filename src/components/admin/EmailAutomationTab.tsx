@@ -581,18 +581,30 @@ export function EmailAutomationTab() {
     }
   };
 
-  const handleSendTest = async (item: EmailAutomation) => {
-    try {
-      const { data: { user } } = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
-      if (!user?.email) { toast.error('Không tìm thấy email của bạn'); return; }
+  const [testConfirmItem, setTestConfirmItem] = useState<EmailAutomation | null>(null);
+  const [sendingTest, setSendingTest] = useState(false);
 
-      const { error } = await (await import('@/integrations/supabase/client')).supabase.functions.invoke('run-email-automations', {
-        body: { testMode: true, automationId: item.id, testEmail: user.email },
+  const handleSendTest = (item: EmailAutomation) => {
+    setTestConfirmItem(item);
+  };
+
+  const confirmSendTest = async () => {
+    if (!testConfirmItem) return;
+    setSendingTest(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) { toast.error('Không tìm thấy email của bạn'); setSendingTest(false); return; }
+
+      const { error } = await supabase.functions.invoke('run-email-automations', {
+        body: { testMode: true, automationId: testConfirmItem.id, testEmail: user.email },
       });
       if (error) throw error;
       toast.success(`Email thử đã gửi đến ${user.email}`);
     } catch (e: any) {
       toast.error('Lỗi gửi thử: ' + e.message);
+    } finally {
+      setSendingTest(false);
+      setTestConfirmItem(null);
     }
   };
 
