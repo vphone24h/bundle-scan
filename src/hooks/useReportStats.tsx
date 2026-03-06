@@ -232,7 +232,9 @@ export function useReportStats(filters?: {
           
           receipt.export_receipt_items?.forEach(item => {
             const salePrice = Number(item.sale_price);
-            const importPrice = item.product_id ? (productsMap[item.product_id] || 0) : 0;
+            const importPrice = item.product_id
+              ? (productsMap[item.product_id] || 0)
+              : (item.imei ? (imeiPriceMap[item.imei] || 0) : 0);
             
             if (filters?.categoryId && item.category_id !== filters.categoryId) {
               return;
