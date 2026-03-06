@@ -277,7 +277,8 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickF
             mergedEntityIds={selectedDebt.merged_entity_ids} />
           <DebtPaymentDialog open={showPayment} onOpenChange={setShowPayment} entityType="supplier"
             entityId={selectedDebt.entity_id} entityName={selectedDebt.entity_name}
-            remainingAmount={selectedDebt.remaining_amount} branchId={selectedDebt.branch_id} />
+            remainingAmount={selectedDebt.remaining_amount} branchId={selectedDebt.branch_id}
+            mergedEntityIds={selectedDebt.merged_entity_ids} />
           <DebtAdditionDialog open={showAddition} onOpenChange={setShowAddition} entityType="supplier"
             entityId={selectedDebt.entity_id} entityName={selectedDebt.entity_name}
             remainingAmount={selectedDebt.remaining_amount} branchId={selectedDebt.branch_id} />
