@@ -208,8 +208,7 @@ export function useReportStats(filters?: {
         cashBookQuery = cashBookQuery.eq('branch_id', effectiveBranchId);
       }
 
-      const { data: cashBookEntries, error: cashBookError } = await cashBookQuery.limit(5000);
-      if (cashBookError) throw cashBookError;
+      const cashBookEntries = await fetchAllRows<any>(() => cashBookQuery);
 
       // Tính toán các chỉ số
       let totalSalesRevenue = 0;
