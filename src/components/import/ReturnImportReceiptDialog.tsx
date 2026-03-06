@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Plus, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from '@/hooks/use-toast';
 import { useImportReceiptDetails, useReturnImportReceipt, ImportReceipt } from '@/hooks/useImportReceipts';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
