@@ -118,25 +118,37 @@ export default function InventoryPage() {
     toast({ title: t('pages.inventory.exportSuccess'), description: t('pages.inventory.exportedRows', { count: filteredInventory.length }) });
   };
 
-  const handleExportForReimport = () => {
+  const handleExportForReimport = async () => {
     if (filteredInventory.length === 0) {
       toast({ title: t('pages.inventory.noDataExport'), description: t('pages.inventory.noDataExportDesc'), variant: 'destructive' });
       return;
     }
-    const allProducts: any[] = [];
-    filteredInventory.forEach(item => {
-      item.products.forEach(product => {
-        if (product.status === 'in_stock') {
-          allProducts.push({
-            imei: product.imei || '', productName: product.name, sku: product.sku,
-            importPrice: product.importPrice, importDate: product.importDate ? format(new Date(product.importDate), 'dd/MM/yyyy') : '',
-            supplierName: product.supplierName || '', branchName: product.branchName || '',
-            categoryName: item.categoryName || '', quantity: product.imei ? 1 : product.quantity,
-            note: product.note || '', status: t('pages.products.inStock'),
-          });
-        }
-      });
-    });
+    toast({ title: 'Đang tải dữ liệu...', description: 'Vui lòng đợi trong giây lát' });
+    
+    // Fetch all in_stock products for reimport export
+    const { data: products, error } = await supabase
+      .from('products')
+      .select('id, name, sku, imei, import_price, import_date, quantity, note, supplier_id, branch_id, suppliers(name), branches(name)')
+      .eq('status', 'in_stock' as any)
+      .order('name');
+
+    if (error || !products || products.length === 0) {
+      toast({ title: t('pages.inventory.noDataExport'), description: t('pages.inventory.noProductsExport'), variant: 'destructive' });
+      return;
+    }
+
+    // Filter by current inventory filter (name+sku match)
+    const inventoryKeys = new Set(filteredInventory.map(i => `${i.productName}|${i.sku}`));
+    const allProducts = products
+      .filter((p: any) => inventoryKeys.has(`${p.name}|${p.sku}`))
+      .map((p: any) => ({
+        imei: p.imei || '', productName: p.name, sku: p.sku,
+        importPrice: p.import_price, importDate: p.import_date ? format(new Date(p.import_date), 'dd/MM/yyyy') : '',
+        supplierName: p.suppliers?.name || '', branchName: p.branches?.name || '',
+        categoryName: '', quantity: p.imei ? 1 : (p.quantity || 1),
+        note: p.note || '', status: t('pages.products.inStock'),
+      }));
+
     if (allProducts.length === 0) {
       toast({ title: t('pages.inventory.noDataExport'), description: t('pages.inventory.noProductsExport'), variant: 'destructive' });
       return;
