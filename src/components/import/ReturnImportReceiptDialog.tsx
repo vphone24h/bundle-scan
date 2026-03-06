@@ -140,6 +140,9 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
     try {
       const result = await returnReceipt.mutateAsync({
         receiptId: receipt.id,
+        feeType,
+        feePercentage,
+        feeAmount: feeType === 'fixed_amount' ? feeAmount : (feeType === 'percentage' ? supplierKeepAmount : 0),
         payments: recordToCashBook ? payments.filter(p => p.amount > 0).map(p => ({
           source: p.source,
           amount: p.amount,
