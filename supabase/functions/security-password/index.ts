@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       console.log("set_password: has old_password:", !!old_password, "password length:", password?.length);
       if (!password || password.length < 4) {
         return new Response(JSON.stringify({ error: "Mật khẩu phải có ít nhất 4 ký tự" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
