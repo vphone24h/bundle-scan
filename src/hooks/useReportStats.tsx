@@ -445,6 +445,29 @@ export function useReportChartData(filters?: {
         }, {} as Record<string, number>);
       }
 
+      // IMEI fallback for orphan items
+      const chartOrphanImeis = Array.from(new Set(
+        receipts?.flatMap(r =>
+          r.export_receipt_items?.filter(i => !i.product_id && i.imei).map(i => i.imei as string) || []
+        ) || []
+      ));
+      let chartImeiPriceMap: Record<string, number> = {};
+      if (chartOrphanImeis.length > 0) {
+        for (let i = 0; i < chartOrphanImeis.length; i += 500) {
+          const chunk = chartOrphanImeis.slice(i, i + 500);
+          const { data: imeiProducts } = await supabase
+            .from('products')
+            .select('imei, import_price')
+            .in('imei', chunk)
+            .gt('import_price', 0);
+          imeiProducts?.forEach(p => {
+            if (p.imei && p.import_price) {
+              chartImeiPriceMap[p.imei] = Number(p.import_price);
+            }
+          });
+        }
+      }
+
       // Nhóm dữ liệu theo ngày/tuần/tháng
       const groupBy = filters?.groupBy || 'day';
       const dataMap: Record<string, { date: string; revenue: number; profit: number; count: number }> = {};
