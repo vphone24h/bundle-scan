@@ -53,8 +53,7 @@ export default function InventoryPage() {
         const searchLower = filters.search.toLowerCase();
         const matchesName = item.productName.toLowerCase().includes(searchLower);
         const matchesSku = item.sku.toLowerCase().includes(searchLower);
-        const matchesImei = item.products.some((p) => p.imei?.toLowerCase().includes(searchLower));
-        if (!matchesName && !matchesSku && !matchesImei) return false;
+        if (!matchesName && !matchesSku) return false;
       }
       if (filters.categoryId && item.categoryId !== filters.categoryId) return false;
       if (filters.branchId && item.branchId !== filters.branchId) return false;
@@ -64,9 +63,8 @@ export default function InventoryPage() {
       if (filters.stockStatus === 'low_stock' && (item.stock === 0 || item.stock > 2)) return false;
       if (filters.stockStatus === 'out_of_stock' && item.stock !== 0) return false;
       if (filters.oldStockDays !== null) {
-        const oldestInStockProduct = item.products.filter((p) => p.status === 'in_stock').sort((a, b) => new Date(a.importDate).getTime() - new Date(b.importDate).getTime())[0];
-        if (!oldestInStockProduct) return false;
-        const daysSinceImport = differenceInDays(new Date(), new Date(oldestInStockProduct.importDate));
+        if (!item.oldestImportDate) return false;
+        const daysSinceImport = differenceInDays(new Date(), new Date(item.oldestImportDate));
         if (daysSinceImport < filters.oldStockDays) return false;
       }
       return true;
