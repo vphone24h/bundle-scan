@@ -77,11 +77,33 @@ Deno.serve(async (req) => {
         });
       }
 
-      const { password } = body;
+      const { password, old_password } = body;
       if (!password || password.length < 4) {
         return new Response(JSON.stringify({ error: "Mật khẩu phải có ít nhất 4 ký tự" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      // Check if password already exists (changing vs setting)
+      const { data: existingPw } = await supabaseAdmin
+        .from("security_passwords")
+        .select("password_hash")
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+
+      if (existingPw) {
+        // Changing password - must verify old password
+        if (!old_password) {
+          return new Response(JSON.stringify({ error: "Phải nhập mật khẩu cũ để đổi mật khẩu" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const oldHashed = await hashPassword(old_password);
+        if (existingPw.password_hash !== oldHashed) {
+          return new Response(JSON.stringify({ error: "Mật khẩu cũ không đúng" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
 
       const hashed = await hashPassword(password);

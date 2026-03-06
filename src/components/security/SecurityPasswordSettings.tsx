@@ -3,19 +3,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useSecurityPasswordStatus, useSetSecurityPassword, useRemoveSecurityPassword } from '@/hooks/useSecurityPassword';
+import { useSecurityPasswordStatus, useSetSecurityPassword, useRemoveSecurityPassword, useRequestResetOTP, useVerifyResetOTP } from '@/hooks/useSecurityPassword';
 import { toast } from 'sonner';
-import { Shield, Loader2, Trash2, KeyRound } from 'lucide-react';
+import { Shield, Loader2, Trash2, KeyRound, Mail } from 'lucide-react';
 
 export function SecurityPasswordSettings() {
   const { data: hasPassword, isLoading } = useSecurityPasswordStatus();
   const setPassword = useSetSecurityPassword();
   const removePassword = useRemoveSecurityPassword();
+  const requestOTP = useRequestResetOTP();
+  const verifyOTP = useVerifyResetOTP();
 
+  const [oldPw, setOldPw] = useState('');
   const [pw1, setPw1] = useState('');
   const [pw2, setPw2] = useState('');
   const [removePw, setRemovePw] = useState('');
   const [showRemove, setShowRemove] = useState(false);
+
+  // OTP reset flow
+  const [showOtpReset, setShowOtpReset] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [newPwOtp, setNewPwOtp] = useState('');
+  const [newPwOtp2, setNewPwOtp2] = useState('');
 
   const handleSet = async () => {
     if (pw1 !== pw2) {
@@ -26,9 +36,14 @@ export function SecurityPasswordSettings() {
       toast.error('Mật khẩu phải có ít nhất 4 ký tự');
       return;
     }
+    if (hasPassword && !oldPw) {
+      toast.error('Vui lòng nhập mật khẩu cũ');
+      return;
+    }
     try {
-      await setPassword.mutateAsync(pw1);
+      await setPassword.mutateAsync({ password: pw1, oldPassword: hasPassword ? oldPw : undefined });
       toast.success(hasPassword ? 'Đã đổi mật khẩu bảo mật' : 'Đã đặt mật khẩu bảo mật');
+      setOldPw('');
       setPw1('');
       setPw2('');
     } catch (e: any) {
@@ -42,6 +57,38 @@ export function SecurityPasswordSettings() {
       toast.success('Đã gỡ mật khẩu bảo mật');
       setRemovePw('');
       setShowRemove(false);
+    } catch (e: any) {
+      toast.error(e.message || 'Lỗi');
+    }
+  };
+
+  const handleRequestOTP = async () => {
+    try {
+      await requestOTP.mutateAsync();
+      setOtpSent(true);
+      toast.success('Mã OTP đã được gửi về email chủ cửa hàng');
+    } catch (e: any) {
+      toast.error(e.message || 'Lỗi');
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (newPwOtp !== newPwOtp2) {
+      toast.error('Mật khẩu mới không khớp');
+      return;
+    }
+    if (newPwOtp.length < 4) {
+      toast.error('Mật khẩu phải có ít nhất 4 ký tự');
+      return;
+    }
+    try {
+      await verifyOTP.mutateAsync({ otp, newPassword: newPwOtp });
+      toast.success('Đã khôi phục mật khẩu bảo mật thành công');
+      setShowOtpReset(false);
+      setOtpSent(false);
+      setOtp('');
+      setNewPwOtp('');
+      setNewPwOtp2('');
     } catch (e: any) {
       toast.error(e.message || 'Lỗi');
     }
@@ -68,24 +115,80 @@ export function SecurityPasswordSettings() {
           }
         </p>
 
-        <div className="space-y-3 max-w-sm">
-          <div className="space-y-1.5">
-            <Label className="text-sm">{hasPassword ? 'Mật khẩu mới' : 'Mật khẩu'}</Label>
-            <Input type="password" value={pw1} onChange={(e) => setPw1(e.target.value)} placeholder="Nhập mật khẩu..." />
+        {/* OTP Reset Flow */}
+        {showOtpReset ? (
+          <div className="space-y-3 max-w-sm border rounded-lg p-4 bg-muted/30">
+            <p className="text-sm font-medium">Khôi phục mật khẩu qua OTP</p>
+            {!otpSent ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Hệ thống sẽ gửi mã OTP về email của chủ cửa hàng (Admin Tổng).</p>
+                <div className="flex gap-2">
+                  <Button onClick={handleRequestOTP} disabled={requestOTP.isPending} size="sm">
+                    {requestOTP.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    <Mail className="h-4 w-4 mr-2" />
+                    Gửi mã OTP
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setShowOtpReset(false)}>Hủy</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Mã OTP</Label>
+                  <Input value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="Nhập mã 6 số..." maxLength={6} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Mật khẩu mới</Label>
+                  <Input type="password" value={newPwOtp} onChange={(e) => setNewPwOtp(e.target.value)} placeholder="Mật khẩu mới..." />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Xác nhận mật khẩu mới</Label>
+                  <Input type="password" value={newPwOtp2} onChange={(e) => setNewPwOtp2(e.target.value)} placeholder="Nhập lại..." />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleVerifyOTP} disabled={verifyOTP.isPending || !otp || !newPwOtp} size="sm">
+                    {verifyOTP.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Xác nhận
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => { setShowOtpReset(false); setOtpSent(false); }}>Hủy</Button>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm">Xác nhận mật khẩu</Label>
-            <Input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="Nhập lại mật khẩu..."
-              onKeyDown={(e) => e.key === 'Enter' && handleSet()} />
+        ) : (
+          <div className="space-y-3 max-w-sm">
+            {/* Old password field - only when changing */}
+            {hasPassword && (
+              <div className="space-y-1.5">
+                <Label className="text-sm">Mật khẩu cũ</Label>
+                <Input type="password" value={oldPw} onChange={(e) => setOldPw(e.target.value)} placeholder="Nhập mật khẩu cũ..." />
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label className="text-sm">{hasPassword ? 'Mật khẩu mới' : 'Mật khẩu'}</Label>
+              <Input type="password" value={pw1} onChange={(e) => setPw1(e.target.value)} placeholder="Nhập mật khẩu..." />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Xác nhận mật khẩu</Label>
+              <Input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="Nhập lại mật khẩu..."
+                onKeyDown={(e) => e.key === 'Enter' && handleSet()} />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button onClick={handleSet} disabled={setPassword.isPending || !pw1 || !pw2} size="sm">
+                {setPassword.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                <KeyRound className="h-4 w-4 mr-2" />
+                {hasPassword ? 'Đổi mật khẩu' : 'Đặt mật khẩu'}
+              </Button>
+              {hasPassword && (
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setShowOtpReset(true)}>
+                  Quên mật khẩu?
+                </Button>
+              )}
+            </div>
           </div>
-          <Button onClick={handleSet} disabled={setPassword.isPending || !pw1 || !pw2} size="sm">
-            {setPassword.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            <KeyRound className="h-4 w-4 mr-2" />
-            {hasPassword ? 'Đổi mật khẩu' : 'Đặt mật khẩu'}
-          </Button>
-        </div>
+        )}
 
-        {hasPassword && (
+        {hasPassword && !showOtpReset && (
           <div className="pt-3 border-t">
             {!showRemove ? (
               <Button variant="outline" size="sm" className="text-destructive" onClick={() => setShowRemove(true)}>
