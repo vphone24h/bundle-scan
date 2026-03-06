@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { X, Package, Smartphone } from 'lucide-react';
+import { Package, Smartphone, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -17,15 +17,16 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
-import { ProductDetail } from '@/hooks/useInventory';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface IMEIDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   productName: string;
   sku: string;
-  products: ProductDetail[];
+  branchId?: string | null;
 }
 
 export function IMEIDetailDialog({
@@ -33,15 +34,35 @@ export function IMEIDetailDialog({
   onOpenChange,
   productName,
   sku,
-  products,
+  branchId,
 }: IMEIDetailDialogProps) {
   const { data: permissions } = usePermissions();
   const canViewImportPrice = permissions?.canViewImportPrice ?? false;
 
-  // Only show in_stock products with IMEI
-  const inStockProducts = products.filter(
-    (p) => p.status === 'in_stock' && p.imei
-  );
+  // Fetch IMEI products on-demand when dialog opens
+  const { data: inStockProducts = [], isLoading } = useQuery({
+    queryKey: ['imei-detail', productName, sku, branchId],
+    queryFn: async () => {
+      let query = supabase
+        .from('products')
+        .select('id, name, sku, imei, import_price, import_date, supplier_id, note, suppliers(name), branches(name)')
+        .eq('name', productName)
+        .eq('sku', sku)
+        .eq('status', 'in_stock' as any)
+        .not('imei', 'is', null)
+        .order('import_date', { ascending: false });
+
+      if (branchId) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open,
+    staleTime: 30 * 1000,
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -55,7 +76,11 @@ export function IMEIDetailDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-auto">
-          {inStockProducts.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : inStockProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Package className="h-12 w-12 text-muted-foreground/50 mb-4" />
               <p className="text-muted-foreground">Không có IMEI nào trong kho</p>
@@ -67,7 +92,6 @@ export function IMEIDetailDialog({
                   <TableHead className="w-[50px]">#</TableHead>
                   <TableHead>IMEI</TableHead>
                   <TableHead>Tên sản phẩm</TableHead>
-                  <TableHead>Chi nhánh</TableHead>
                   {canViewImportPrice && <TableHead className="text-right">Giá nhập</TableHead>}
                   <TableHead>Ngày nhập</TableHead>
                   <TableHead>Nhà cung cấp</TableHead>
@@ -75,7 +99,7 @@ export function IMEIDetailDialog({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {inStockProducts.map((product, index) => (
+                {inStockProducts.map((product: any, index: number) => (
                   <TableRow key={product.id}>
                     <TableCell className="text-muted-foreground">
                       {index + 1}
@@ -86,18 +110,17 @@ export function IMEIDetailDialog({
                       </Badge>
                     </TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.branchName || '-'}</TableCell>
                     {canViewImportPrice && (
                       <TableCell className="text-right font-medium">
-                        {formatCurrencyWithSpaces(product.importPrice)}
+                        {formatCurrencyWithSpaces(product.import_price)}
                       </TableCell>
                     )}
                     <TableCell>
-                      {format(new Date(product.importDate), 'dd/MM/yyyy', {
+                      {format(new Date(product.import_date), 'dd/MM/yyyy', {
                         locale: vi,
                       })}
                     </TableCell>
-                    <TableCell>{product.supplierName || '-'}</TableCell>
+                    <TableCell>{product.suppliers?.name || '-'}</TableCell>
                     <TableCell className="max-w-[200px] truncate" title={product.note || ''}>
                       {product.note || '-'}
                     </TableCell>
