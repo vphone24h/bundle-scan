@@ -176,8 +176,8 @@ const Index = () => {
         open={showPasswordDialog}
         onOpenChange={setShowPasswordDialog}
         onSuccess={unlockProfit}
-        title="Xem lợi nhuận"
-        description="Nhập mật khẩu bảo mật để xem lợi nhuận hôm nay"
+        title={passwordDialogContext === 'stockValue' ? 'Xem giá trị kho' : 'Xem lợi nhuận'}
+        description={passwordDialogContext === 'stockValue' ? 'Nhập mật khẩu bảo mật để xem giá trị kho' : 'Nhập mật khẩu bảo mật để xem lợi nhuận hôm nay'}
       />
       <PageHeader
         title={t('pages.dashboard.title')}
