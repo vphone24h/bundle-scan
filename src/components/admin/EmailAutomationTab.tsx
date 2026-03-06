@@ -675,7 +675,7 @@ export function EmailAutomationTab() {
               <Plus className="h-4 w-4 mr-1" /> Tạo kịch bản
             </Button>
             <Button size="sm" variant="outline" asChild>
-              <a href="https://youtube.com/shorts/IrFEYNBVJd8?si=8gw4A_klwSlpFgkP" target="_blank" rel="noopener noreferrer">
+              <a href="https://youtu.be/WYDuxvwrNSs?si=DF1Jd7iLmh-o0RG8" target="_blank" rel="noopener noreferrer">
                 <BookOpen className="h-4 w-4 mr-1" /> Hướng dẫn
               </a>
             </Button>
