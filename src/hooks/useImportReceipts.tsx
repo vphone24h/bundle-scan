@@ -749,11 +749,17 @@ export function useReturnImportReceipt() {
   return useMutation({
     mutationFn: async ({
       receiptId,
+      feeType = 'none',
+      feePercentage = 0,
+      feeAmount = 0,
       payments,
       recordToCashBook = true,
       note,
     }: {
       receiptId: string;
+      feeType?: 'none' | 'percentage' | 'fixed_amount';
+      feePercentage?: number;
+      feeAmount?: number;
       payments: { source: string; amount: number }[];
       recordToCashBook?: boolean;
       note?: string | null;
@@ -793,6 +799,19 @@ export function useReturnImportReceipt() {
         const product = products[i];
         const code = products.length === 1 ? baseCode : `${baseCode}_${i + 1}`;
 
+        // Calculate per-product refund based on fee
+        const totalImportAll = products.reduce((s: number, p: any) => s + Number(p.import_price), 0);
+        const productRatio = totalImportAll > 0 ? Number(product.import_price) / totalImportAll : 0;
+        let productRefund = product.import_price;
+        let productFeeAmount = 0;
+        if (feeType === 'percentage') {
+          productFeeAmount = product.import_price * feePercentage / 100;
+          productRefund = product.import_price - productFeeAmount;
+        } else if (feeType === 'fixed_amount') {
+          productFeeAmount = feeAmount * productRatio;
+          productRefund = product.import_price - productFeeAmount;
+        }
+
         const { data: returnData, error: returnError } = await supabase
           .from('import_returns')
           .insert([{
@@ -806,7 +825,10 @@ export function useReturnImportReceipt() {
             imei: product.imei,
             import_price: product.import_price,
             original_import_date: product.import_date,
-            total_refund_amount: product.import_price,
+            total_refund_amount: productRefund,
+            fee_type: feeType,
+            fee_percentage: feePercentage,
+            fee_amount: productFeeAmount,
             note: note || `Trả toàn bộ phiếu ${receipt.code}`,
             created_by: user.id,
           }])

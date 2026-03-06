@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Plus, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from '@/hooks/use-toast';
 import { useImportReceiptDetails, useReturnImportReceipt, ImportReceipt } from '@/hooks/useImportReceipts';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
@@ -48,18 +49,32 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
   const [note, setNote] = useState('');
   const [recordToCashBook, setRecordToCashBook] = useState(true);
   const [payments, setPayments] = useState<PaymentLine[]>([]);
+  const [feeType, setFeeType] = useState<'none' | 'percentage' | 'fixed_amount'>('none');
+  const [feePercentage, setFeePercentage] = useState<number>(0);
+  const [feeAmount, setFeeAmount] = useState<number>(0);
+  const [feeDisplayAmount, setFeeDisplayAmount] = useState<string>('');
 
   // Count in-stock products
   const inStockProducts = details?.productImports?.filter(
     (item: any) => item.products?.status === 'in_stock'
   ) || [];
   
-  const totalRefundAmount = inStockProducts.reduce(
+  const totalImportAmount = inStockProducts.reduce(
     (sum: number, item: any) => sum + Number(item.import_price),
     0
   );
 
-  // Initialize payments when data loads
+  // Calculate refund based on fee type
+  const calculateRefund = () => {
+    if (feeType === 'none') return totalImportAmount;
+    if (feeType === 'percentage') return totalImportAmount * (1 - feePercentage / 100);
+    return totalImportAmount - feeAmount;
+  };
+
+  const totalRefundAmount = calculateRefund();
+  const supplierKeepAmount = totalImportAmount - totalRefundAmount;
+
+  // Initialize payments when data loads or refund changes
   useEffect(() => {
     if (open && totalRefundAmount > 0) {
       setPayments([{
@@ -68,9 +83,19 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
         amount: totalRefundAmount,
         displayAmount: formatNumberWithSpaces(totalRefundAmount),
       }]);
-      setNote('');
     }
   }, [open, totalRefundAmount]);
+
+  // Reset fee when dialog opens
+  useEffect(() => {
+    if (open) {
+      setFeeType('none');
+      setFeePercentage(0);
+      setFeeAmount(0);
+      setFeeDisplayAmount('');
+      setNote('');
+    }
+  }, [open]);
 
   const handleAddPayment = () => {
     setPayments([
@@ -115,6 +140,9 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
     try {
       const result = await returnReceipt.mutateAsync({
         receiptId: receipt.id,
+        feeType,
+        feePercentage,
+        feeAmount: feeType === 'fixed_amount' ? feeAmount : (feeType === 'percentage' ? supplierKeepAmount : 0),
         payments: recordToCashBook ? payments.filter(p => p.amount > 0).map(p => ({
           source: p.source,
           amount: p.amount,
@@ -196,11 +224,81 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
                 <span className="font-medium">{receipt?.suppliers?.name || '-'}</span>
               </div>
               <div className="flex justify-between text-sm mt-2">
-                <span>Tổng tiền hoàn trả:</span>
+                <span>Tổng giá nhập:</span>
+                <span className="font-bold text-lg">
+                  {formatCurrencyWithSpaces(totalImportAmount)}
+                </span>
+              </div>
+              {feeType !== 'none' && (
+                <div className="flex justify-between text-sm mt-1 text-destructive">
+                  <span>Phí giữ lại:</span>
+                  <span className="font-medium">-{formatCurrencyWithSpaces(supplierKeepAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm mt-1">
+                <span>Hoàn trả NCC:</span>
                 <span className="font-bold text-lg text-primary">
                   {formatCurrencyWithSpaces(totalRefundAmount)}
                 </span>
               </div>
+            </div>
+
+            {/* Fee Type Selection */}
+            <div className="space-y-3">
+              <Label className="font-medium">Hình thức trả hàng</Label>
+              <RadioGroup
+                value={feeType}
+                onValueChange={(v) => setFeeType(v as 'none' | 'percentage' | 'fixed_amount')}
+                className="space-y-2"
+              >
+                <div className="flex items-center space-x-3 p-3 rounded-lg border">
+                  <RadioGroupItem value="none" id="fee_none_receipt" />
+                  <Label htmlFor="fee_none_receipt" className="cursor-pointer flex-1 text-sm">
+                    Trả lại đúng số tiền đã nhập (100%)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3 p-3 rounded-lg border">
+                  <RadioGroupItem value="percentage" id="fee_pct_receipt" />
+                  <Label htmlFor="fee_pct_receipt" className="cursor-pointer flex-1 text-sm">
+                    Trả hàng mất phí theo %
+                  </Label>
+                </div>
+                {feeType === 'percentage' && (
+                  <div className="ml-8">
+                    <Label className="text-xs text-muted-foreground">Phí (%)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={feePercentage || ''}
+                      onChange={(e) => setFeePercentage(Number(e.target.value))}
+                      placeholder="VD: 10"
+                      className="w-32"
+                    />
+                  </div>
+                )}
+                <div className="flex items-center space-x-3 p-3 rounded-lg border">
+                  <RadioGroupItem value="fixed_amount" id="fee_fixed_receipt" />
+                  <Label htmlFor="fee_fixed_receipt" className="cursor-pointer flex-1 text-sm">
+                    Trả hàng mất phí cố định
+                  </Label>
+                </div>
+                {feeType === 'fixed_amount' && (
+                  <div className="ml-8">
+                    <Label className="text-xs text-muted-foreground">Phí cố định</Label>
+                    <Input
+                      value={feeDisplayAmount}
+                      onChange={(e) => {
+                        const num = parseFormattedNumber(e.target.value);
+                        setFeeAmount(num);
+                        setFeeDisplayAmount(formatNumberWithSpaces(num));
+                      }}
+                      placeholder="0"
+                      className="w-48 text-right"
+                    />
+                  </div>
+                )}
+              </RadioGroup>
             </div>
 
             {/* Cash Book Toggle */}

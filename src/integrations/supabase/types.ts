@@ -3012,6 +3012,9 @@ export type Database = {
           code: string
           created_at: string
           created_by: string | null
+          fee_amount: number
+          fee_percentage: number
+          fee_type: string
           id: string
           imei: string | null
           import_price: number
@@ -3032,6 +3035,9 @@ export type Database = {
           code: string
           created_at?: string
           created_by?: string | null
+          fee_amount?: number
+          fee_percentage?: number
+          fee_type?: string
           id?: string
           imei?: string | null
           import_price: number
@@ -3052,6 +3058,9 @@ export type Database = {
           code?: string
           created_at?: string
           created_by?: string | null
+          fee_amount?: number
+          fee_percentage?: number
+          fee_type?: string
           id?: string
           imei?: string | null
           import_price?: number

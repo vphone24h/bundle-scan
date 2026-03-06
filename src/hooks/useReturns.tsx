@@ -232,6 +232,9 @@ export function useCreateImportReturn() {
   return useMutation({
     mutationFn: async ({
       product,
+      feeType = 'none',
+      feePercentage = 0,
+      feeAmount = 0,
       payments,
       recordToCashBook = true,
       note,
@@ -247,6 +250,9 @@ export function useCreateImportReturn() {
         branch_id?: string | null;
         import_date?: string | null;
       };
+      feeType?: 'none' | 'percentage' | 'fixed_amount';
+      feePercentage?: number;
+      feeAmount?: number;
       payments: { source: string; amount: number }[];
       recordToCashBook?: boolean;
       note?: string | null;
@@ -277,6 +283,9 @@ export function useCreateImportReturn() {
           import_price: product.import_price,
           original_import_date: product.import_date,
           total_refund_amount: totalRefund,
+          fee_type: feeType,
+          fee_percentage: feePercentage,
+          fee_amount: feeAmount,
           note,
           created_by: user.id,
           tenant_id: tenantId,

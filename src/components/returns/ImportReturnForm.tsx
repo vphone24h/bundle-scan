@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { formatNumberWithSpaces, parseFormattedNumber, formatCurrencyWithSpaces } from '@/lib/formatNumber';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -33,11 +34,13 @@ interface ImportReturnFormProps {
 }
 
 export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnFormProps) {
+  const [feeType, setFeeType] = useState<'none' | 'percentage' | 'fixed_amount'>('none');
+  const [feePercentage, setFeePercentage] = useState<number>(0);
+  const [feeAmount, setFeeAmount] = useState<number>(0);
+  const [feeDisplayAmount, setFeeDisplayAmount] = useState<string>('');
   const [note, setNote] = useState('');
   const [recordToCashBook, setRecordToCashBook] = useState(true);
-  const [payments, setPayments] = useState<PaymentLine[]>([
-    { id: '1', source: 'cash', amount: product?.import_price || 0, displayAmount: formatNumberWithSpaces(product?.import_price || 0) }
-  ]);
+  const [payments, setPayments] = useState<PaymentLine[]>([]);
 
   const createImportReturn = useCreateImportReturn();
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
@@ -50,6 +53,26 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
     return [...BUILT_IN_PAYMENT_SOURCES, ...custom];
   }, [customPaymentSources]);
 
+  // Calculate refund amount based on fee type
+  const calculateRefund = () => {
+    if (!product) return 0;
+    if (feeType === 'none') return product.import_price;
+    if (feeType === 'percentage') return product.import_price * (1 - feePercentage / 100);
+    return product.import_price - feeAmount;
+  };
+
+  const refundAmount = calculateRefund();
+  const supplierKeepAmount = (product?.import_price || 0) - refundAmount;
+
+  // Initialize payments when refund amount changes
+  useEffect(() => {
+    if (product) {
+      setPayments([
+        { id: '1', source: 'cash', amount: refundAmount, displayAmount: formatNumberWithSpaces(refundAmount) }
+      ]);
+    }
+  }, [refundAmount]);
+
   if (!product) {
     return (
       <Card>
@@ -61,7 +84,7 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
   }
 
   const totalPayment = payments.reduce((sum, p) => sum + p.amount, 0);
-  const remaining = product.import_price - totalPayment;
+  const remaining = refundAmount - totalPayment;
 
   const handleAddPayment = () => {
     setPayments([
@@ -89,10 +112,10 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
   };
 
   const handleSubmit = async () => {
-    if (recordToCashBook && totalPayment !== product.import_price) {
+    if (recordToCashBook && totalPayment !== refundAmount) {
       toast({
         title: 'Số tiền không khớp',
-        description: `Tổng tiền hoàn trả phải bằng ${formatCurrencyWithSpaces(product.import_price)}`,
+        description: `Tổng tiền hoàn trả phải bằng ${formatCurrencyWithSpaces(refundAmount)}`,
         variant: 'destructive',
       });
       return;
@@ -111,6 +134,9 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
           branch_id: product.branch_id,
           import_date: product.import_date,
         },
+        feeType,
+        feePercentage,
+        feeAmount: feeType === 'fixed_amount' ? feeAmount : (feeType === 'percentage' ? supplierKeepAmount : 0),
         payments: recordToCashBook ? payments.filter(p => p.amount > 0).map(p => ({
           source: p.source,
           amount: p.amount,
@@ -172,6 +198,86 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
             <div>
               <Label className="text-muted-foreground">Ngày nhập</Label>
               <p>{new Date(product.import_date).toLocaleDateString('vi-VN')}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Fee Type Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Hình thức trả hàng</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup
+            value={feeType}
+            onValueChange={(v) => setFeeType(v as 'none' | 'percentage' | 'fixed_amount')}
+            className="space-y-3"
+          >
+            <div className="flex items-center space-x-3 p-3 rounded-lg border">
+              <RadioGroupItem value="none" id="fee_none_import" />
+              <Label htmlFor="fee_none_import" className="cursor-pointer flex-1">
+                Trả lại đúng số tiền đã nhập (100%)
+              </Label>
+            </div>
+            <div className="flex items-center space-x-3 p-3 rounded-lg border">
+              <RadioGroupItem value="percentage" id="fee_pct_import" />
+              <Label htmlFor="fee_pct_import" className="cursor-pointer flex-1">
+                Trả hàng mất phí theo %
+              </Label>
+            </div>
+            {feeType === 'percentage' && (
+              <div className="ml-8">
+                <Label className="text-xs text-muted-foreground">Phí (%)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={feePercentage || ''}
+                  onChange={(e) => setFeePercentage(Number(e.target.value))}
+                  placeholder="VD: 10"
+                  className="w-32"
+                />
+              </div>
+            )}
+            <div className="flex items-center space-x-3 p-3 rounded-lg border">
+              <RadioGroupItem value="fixed_amount" id="fee_fixed_import" />
+              <Label htmlFor="fee_fixed_import" className="cursor-pointer flex-1">
+                Trả hàng mất phí cố định
+              </Label>
+            </div>
+            {feeType === 'fixed_amount' && (
+              <div className="ml-8">
+                <Label className="text-xs text-muted-foreground">Phí cố định</Label>
+                <Input
+                  value={feeDisplayAmount}
+                  onChange={(e) => {
+                    const num = parseFormattedNumber(e.target.value);
+                    setFeeAmount(num);
+                    setFeeDisplayAmount(formatNumberWithSpaces(num));
+                  }}
+                  placeholder="0"
+                  className="w-48 text-right"
+                />
+              </div>
+            )}
+          </RadioGroup>
+
+          {/* Summary */}
+          <div className="mt-4 p-3 rounded-lg bg-muted/50 space-y-1">
+            <div className="flex justify-between text-sm">
+              <span>Tổng giá nhập:</span>
+              <span className="font-medium">{formatCurrencyWithSpaces(product.import_price)}</span>
+            </div>
+            {feeType !== 'none' && (
+              <div className="flex justify-between text-sm text-destructive">
+                <span>Phí giữ lại:</span>
+                <span className="font-medium">-{formatCurrencyWithSpaces(supplierKeepAmount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm text-primary font-bold">
+              <span>Hoàn trả NCC:</span>
+              <span>{formatCurrencyWithSpaces(refundAmount)}</span>
             </div>
           </div>
         </CardContent>
@@ -257,7 +363,7 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Cần hoàn trả:</span>
-                  <span className="font-bold">{formatCurrencyWithSpaces(product.import_price)}</span>
+                  <span className="font-bold">{formatCurrencyWithSpaces(refundAmount)}</span>
                 </div>
                 {remaining !== 0 && (
                   <div className="flex justify-between text-sm text-destructive">
@@ -291,7 +397,7 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={createImportReturn.isPending || remaining !== 0}
+          disabled={createImportReturn.isPending || (recordToCashBook && remaining !== 0)}
         >
           {createImportReturn.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Xác nhận trả hàng
