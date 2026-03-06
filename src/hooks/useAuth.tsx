@@ -3,6 +3,9 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 
+// Track whether sign-out was user-initiated
+let userInitiatedSignOut = false;
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
