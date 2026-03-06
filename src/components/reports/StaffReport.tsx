@@ -171,6 +171,7 @@ export function StaffReport() {
       case 'all_time': s = new Date('2020-01-01'); break;
       default: return;
     }
+    setActivePreset(preset);
     setStartDate(format(s, 'yyyy-MM-dd'));
     setEndDate(format(e, 'yyyy-MM-dd'));
   };
