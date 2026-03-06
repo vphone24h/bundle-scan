@@ -437,6 +437,11 @@ export default function ReportsPage() {
               <Lock className="h-4 w-4 mr-2" />
               Nhập mật khẩu
             </Button>
+            {isBiometricLikelySupported() && !hasSavedSecurityPassword() && (
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                💡 Nhập mật khẩu lần đầu, từ lần sau có thể dùng Face ID
+              </p>
+            )}
           </div>
         </div>
       ) : (
