@@ -232,16 +232,23 @@ export function RevenueProfitReport() {
         <CardContent className="pt-6">
           <div className="flex flex-wrap gap-4 items-end">
             <div className="flex flex-wrap gap-2" data-tour="report-time-presets">
-              {timePresets.map((preset) => (
-                <Button
-                  key={preset.value}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleTimePreset(preset.value)}
-                >
-                  {preset.label}
-                </Button>
-              ))}
+              {timePresets.map((preset) => {
+                const isActive = activePreset === preset.value;
+                const isLoadingThis = isActive && statsLoading;
+                return (
+                  <Button
+                    key={preset.value}
+                    variant={isActive ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleTimePreset(preset.value)}
+                    disabled={statsLoading}
+                    className="relative"
+                  >
+                    {isLoadingThis && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
+                    {preset.label}
+                  </Button>
+                );
+              })}
             </div>
             <div className="flex-1" />
             <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!stats}>
