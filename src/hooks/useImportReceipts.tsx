@@ -826,7 +826,7 @@ export function useReturnImportReceipt() {
             total_refund_amount: productRefund,
             fee_type: feeType,
             fee_percentage: feePercentage,
-            fee_amount: feeType === 'fixed_amount' ? feeAmount * (totalImport > 0 ? Number(product.import_price) / totalImport : 0) : (feeType === 'percentage' ? product.import_price - productRefund : 0),
+            fee_amount: feeType === 'fixed_amount' ? feeAmount * ratio : (feeType === 'percentage' ? product.import_price - productRefund : 0),
             note: note || `Trả toàn bộ phiếu ${receipt.code}`,
             created_by: user.id,
           }])
