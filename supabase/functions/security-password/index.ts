@@ -77,6 +77,7 @@ Deno.serve(async (req) => {
     const tenantId = platformUser.tenant_id;
     const body = await req.json();
     const { action } = body;
+    console.log("action:", action, "tenantId:", tenantId);
 
     if (action === "set_password") {
       // Only super_admin can set
