@@ -406,8 +406,7 @@ export function useReportChartData(filters?: {
         query = query.eq('branch_id', effectiveBranchId);
       }
 
-      const { data: receipts, error } = await query.limit(5000);
-      if (error) throw error;
+      const receipts = await fetchAllRows<any>(() => query);
 
       // Lấy trả hàng KHÔNG CÓ PHÍ để trừ lợi nhuận
       let returnQuery = supabase
