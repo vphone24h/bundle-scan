@@ -748,7 +748,7 @@ export function ProductDetailPage({
           switch (btn.action) {
             case 'order':
               return (
-                <Button key={btn.id} className={`flex-1 gap-2 h-11 text-sm font-semibold`} style={{ backgroundColor: primaryColor }}
+                <Button key={btn.id} className={`shrink-0 min-w-[120px] gap-2 h-11 text-sm font-semibold`} style={{ backgroundColor: primaryColor }}
                   onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
                   {btn.icon} {btn.label}
                 </Button>
@@ -758,7 +758,7 @@ export function ProductDetailPage({
               const installmentEnabled = secs.find(s => s.id === 'installment')?.enabled !== false;
               if (!installmentEnabled || !onInstallment) return null;
               return (
-                <Button key={btn.id} variant="outline" className="flex-1 gap-2 h-11 text-sm" onClick={onInstallment}>
+                <Button key={btn.id} variant="outline" className="shrink-0 gap-2 h-11 text-sm px-4" onClick={onInstallment}>
                   {btn.icon} {btn.label}
                 </Button>
               );
@@ -766,16 +766,20 @@ export function ProductDetailPage({
             case 'call':
               if (!warrantyHotline) return null;
               return (
-                <Button key={btn.id} variant="outline" className="h-11 px-4" asChild>
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
                   <a href={`tel:${warrantyHotline}`} className="gap-2">{btn.icon} {btn.label}</a>
                 </Button>
               );
             case 'zalo': {
-              const url = btn.customUrl || zaloUrl;
-              if (!url) return null;
+              const rawUrl = btn.customUrl || zaloUrl;
+              if (!rawUrl) return null;
+              // Convert zalo.me links to deep link format for mobile
+              const zaloDeepLink = rawUrl.match(/zalo\.me\/(\d+)/)
+                ? `https://zalo.me/${rawUrl.match(/zalo\.me\/(\d+)/)?.[1]}`
+                : rawUrl;
               return (
-                <Button key={btn.id} variant="outline" className="h-11 px-4" asChild>
-                  <a href={url} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
+                  <a href={zaloDeepLink} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
                 </Button>
               );
             }
@@ -783,14 +787,14 @@ export function ProductDetailPage({
               const url = btn.customUrl || facebookUrl;
               if (!url) return null;
               return (
-                <Button key={btn.id} variant="outline" className="h-11 px-4" asChild>
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
                   <a href={url} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
                 </Button>
               );
             }
             case 'booking':
               return (
-                <Button key={btn.id} className="flex-1 gap-2 h-11 text-sm font-semibold" style={{ backgroundColor: primaryColor }}
+                <Button key={btn.id} className="shrink-0 min-w-[100px] gap-2 h-11 text-sm font-semibold" style={{ backgroundColor: primaryColor }}
                   onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
                   {btn.icon} {btn.label}
                 </Button>
@@ -798,7 +802,7 @@ export function ProductDetailPage({
             case 'custom_link':
               if (!btn.customUrl) return null;
               return (
-                <Button key={btn.id} variant="outline" className="h-11 px-4" asChild>
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
                   <a href={btn.customUrl} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
                 </Button>
               );
@@ -809,7 +813,7 @@ export function ProductDetailPage({
 
         return (
           <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t safe-area-bottom">
-            <div className="flex items-center gap-2 px-3 py-2.5">
+            <div className="flex items-center gap-2 px-3 py-2.5 overflow-x-auto scrollbar-hide">
               {buttons.map(renderButton)}
             </div>
           </div>
