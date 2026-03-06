@@ -138,6 +138,7 @@ function StaffCard({ staff, rank, onClick }: { staff: StaffWithKPI; rank: number
 }
 
 export function StaffReport() {
+  const [activePreset, setActivePreset] = useState<string | null>('this_month');
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [sortMode, setSortMode] = useState<SortMode>('revenue');
@@ -170,6 +171,7 @@ export function StaffReport() {
       case 'all_time': s = new Date('2020-01-01'); break;
       default: return;
     }
+    setActivePreset(preset);
     setStartDate(format(s, 'yyyy-MM-dd'));
     setEndDate(format(e, 'yyyy-MM-dd'));
   };
@@ -221,7 +223,9 @@ export function StaffReport() {
     });
   };
 
-  if (isLoading) {
+  const isInitialLoad = isLoading && !staffWithKPIAll.length;
+
+  if (isInitialLoad) {
     return <div className="min-h-[400px] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
@@ -233,11 +237,16 @@ export function StaffReport() {
           {/* Time presets - horizontal scroll on mobile */}
           <ScrollArea className="w-full">
             <div className="flex gap-2 pb-2" data-tour="staff-report-filter">
-              {timePresets.map((p) => (
-                <Button key={p.value} variant="outline" size="sm" className="flex-shrink-0 text-xs" onClick={() => handleTimePreset(p.value)}>
-                  {p.label}
-                </Button>
-              ))}
+              {timePresets.map((p) => {
+                const isActive = activePreset === p.value;
+                const isLoadingThis = isActive && isLoading;
+                return (
+                  <Button key={p.value} variant={isActive ? 'default' : 'outline'} size="sm" className="flex-shrink-0 text-xs" onClick={() => handleTimePreset(p.value)} disabled={isLoading}>
+                    {isLoadingThis && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
+                    {p.label}
+                  </Button>
+                );
+              })}
               <Button variant="outline" size="sm" className="flex-shrink-0 text-xs" onClick={handleExportExcel} disabled={!sortedStaff.length}>
                 <Download className="h-3.5 w-3.5 mr-1" />
                 Excel
