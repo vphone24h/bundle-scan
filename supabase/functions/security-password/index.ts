@@ -95,6 +95,7 @@ Deno.serve(async (req) => {
       }
 
       const { password, old_password } = body;
+      console.log("set_password: has old_password:", !!old_password, "password length:", password?.length);
       if (!password || password.length < 4) {
         return new Response(JSON.stringify({ error: "Mật khẩu phải có ít nhất 4 ký tự" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -102,11 +103,12 @@ Deno.serve(async (req) => {
       }
 
       // Check if password already exists (changing vs setting)
-      const { data: existingPw } = await supabaseAdmin
+      const { data: existingPw, error: existErr } = await supabaseAdmin
         .from("security_passwords")
         .select("password_hash")
         .eq("tenant_id", tenantId)
         .maybeSingle();
+      console.log("existingPw:", !!existingPw, "existErr:", existErr?.message);
 
       if (existingPw) {
         // Changing password - must verify old password
@@ -116,7 +118,9 @@ Deno.serve(async (req) => {
           });
         }
         const oldHashed = await hashPassword(old_password);
-        if (existingPw.password_hash !== oldHashed) {
+        const match = existingPw.password_hash === oldHashed;
+        console.log("old password match:", match);
+        if (!match) {
           return new Response(JSON.stringify({ error: "Mật khẩu cũ không đúng" }), {
             status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
@@ -124,10 +128,11 @@ Deno.serve(async (req) => {
       }
 
       const hashed = await hashPassword(password);
-      const { error } = await supabaseAdmin
+      const { error: upsertErr } = await supabaseAdmin
         .from("security_passwords")
         .upsert({ tenant_id: tenantId, password_hash: hashed, updated_at: new Date().toISOString() }, { onConflict: "tenant_id" });
-      if (error) throw error;
+      console.log("upsert result:", upsertErr?.message || "success");
+      if (upsertErr) throw upsertErr;
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
