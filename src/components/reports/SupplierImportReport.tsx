@@ -141,10 +141,12 @@ export function SupplierImportReport() {
               <Download className="h-4 w-4 mr-1" />
               Xuất Excel
             </Button>
-            <div className="flex gap-2 items-end">
-              <div><Label>Từ ngày</Label><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" /></div>
-              <div><Label>Đến ngày</Label><Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" /></div>
-            </div>
+            <DateRangeApplyFilter
+              startDate={startDate}
+              endDate={endDate}
+              onApply={(s, e) => { setStartDate(s); setEndDate(e); }}
+              isLoading={isLoading}
+            />
             {isSuperAdmin && (
               <div>
                 <Label>Chi nhánh</Label>
