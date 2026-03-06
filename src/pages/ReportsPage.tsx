@@ -217,7 +217,10 @@ export default function ReportsPage() {
   const { data: hasSecurityPassword } = useSecurityPasswordStatus();
   const { unlocked: reportsUnlocked, unlock: unlockReports } = useSecurityUnlock('reports_page');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+  const verifyPassword = useVerifySecurityPassword();
   const reportsLocked = hasSecurityPassword && !reportsUnlocked;
+  const biometricSupported = isCredentialManagerSupported();
 
   // Main onboarding tour (revenue tab)
   const { isCompleted: reportsTourDone, completeTour: completeReportsTour, isLoading: tourLoading } = useOnboardingTour('reports_overview');
