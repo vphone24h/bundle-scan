@@ -197,6 +197,7 @@ export function useCreateDebtPayment() {
       payment_source?: string;
       description: string;
       branch_id?: string | null;
+      merged_entity_ids?: string[]; // For merged supplier debts
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       
