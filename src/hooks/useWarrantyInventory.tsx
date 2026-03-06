@@ -77,6 +77,7 @@ function processProductsToWarrantyInventory(products: any[]): InventoryItem[] {
           avgImportPrice: Number(product.import_price),
           totalImportCost: Number(product.import_price),
           products: [productDetail],
+          oldestImportDate: product.import_date || null,
         });
       } else {
         const quantity = product.quantity || 1;
@@ -96,6 +97,7 @@ function processProductsToWarrantyInventory(products: any[]): InventoryItem[] {
           avgImportPrice: Number(product.import_price),
           totalImportCost: totalCost,
           products: [productDetail],
+          oldestImportDate: product.import_date || null,
         });
       }
     }

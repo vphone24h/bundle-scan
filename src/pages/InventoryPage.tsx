@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Download, Package, ClipboardList, FileUp, AlertTriangle, Wrench, ExternalLink, PlayCircle } from 'lucide-react';
 import { differenceInDays, format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
@@ -53,8 +54,7 @@ export default function InventoryPage() {
         const searchLower = filters.search.toLowerCase();
         const matchesName = item.productName.toLowerCase().includes(searchLower);
         const matchesSku = item.sku.toLowerCase().includes(searchLower);
-        const matchesImei = item.products.some((p) => p.imei?.toLowerCase().includes(searchLower));
-        if (!matchesName && !matchesSku && !matchesImei) return false;
+        if (!matchesName && !matchesSku) return false;
       }
       if (filters.categoryId && item.categoryId !== filters.categoryId) return false;
       if (filters.branchId && item.branchId !== filters.branchId) return false;
@@ -64,9 +64,8 @@ export default function InventoryPage() {
       if (filters.stockStatus === 'low_stock' && (item.stock === 0 || item.stock > 2)) return false;
       if (filters.stockStatus === 'out_of_stock' && item.stock !== 0) return false;
       if (filters.oldStockDays !== null) {
-        const oldestInStockProduct = item.products.filter((p) => p.status === 'in_stock').sort((a, b) => new Date(a.importDate).getTime() - new Date(b.importDate).getTime())[0];
-        if (!oldestInStockProduct) return false;
-        const daysSinceImport = differenceInDays(new Date(), new Date(oldestInStockProduct.importDate));
+        if (!item.oldestImportDate) return false;
+        const daysSinceImport = differenceInDays(new Date(), new Date(item.oldestImportDate));
         if (daysSinceImport < filters.oldStockDays) return false;
       }
       return true;
@@ -120,25 +119,37 @@ export default function InventoryPage() {
     toast({ title: t('pages.inventory.exportSuccess'), description: t('pages.inventory.exportedRows', { count: filteredInventory.length }) });
   };
 
-  const handleExportForReimport = () => {
+  const handleExportForReimport = async () => {
     if (filteredInventory.length === 0) {
       toast({ title: t('pages.inventory.noDataExport'), description: t('pages.inventory.noDataExportDesc'), variant: 'destructive' });
       return;
     }
-    const allProducts: any[] = [];
-    filteredInventory.forEach(item => {
-      item.products.forEach(product => {
-        if (product.status === 'in_stock') {
-          allProducts.push({
-            imei: product.imei || '', productName: product.name, sku: product.sku,
-            importPrice: product.importPrice, importDate: product.importDate ? format(new Date(product.importDate), 'dd/MM/yyyy') : '',
-            supplierName: product.supplierName || '', branchName: product.branchName || '',
-            categoryName: item.categoryName || '', quantity: product.imei ? 1 : product.quantity,
-            note: product.note || '', status: t('pages.products.inStock'),
-          });
-        }
-      });
-    });
+    toast({ title: 'Đang tải dữ liệu...', description: 'Vui lòng đợi trong giây lát' });
+    
+    // Fetch all in_stock products for reimport export
+    const { data: products, error } = await supabase
+      .from('products')
+      .select('id, name, sku, imei, import_price, import_date, quantity, note, supplier_id, branch_id, suppliers(name), branches(name)')
+      .eq('status', 'in_stock' as any)
+      .order('name');
+
+    if (error || !products || products.length === 0) {
+      toast({ title: t('pages.inventory.noDataExport'), description: t('pages.inventory.noProductsExport'), variant: 'destructive' });
+      return;
+    }
+
+    // Filter by current inventory filter (name+sku match)
+    const inventoryKeys = new Set(filteredInventory.map(i => `${i.productName}|${i.sku}`));
+    const allProducts = products
+      .filter((p: any) => inventoryKeys.has(`${p.name}|${p.sku}`))
+      .map((p: any) => ({
+        imei: p.imei || '', productName: p.name, sku: p.sku,
+        importPrice: p.import_price, importDate: p.import_date ? format(new Date(p.import_date), 'dd/MM/yyyy') : '',
+        supplierName: p.suppliers?.name || '', branchName: p.branches?.name || '',
+        categoryName: '', quantity: p.imei ? 1 : (p.quantity || 1),
+        note: p.note || '', status: t('pages.products.inStock'),
+      }));
+
     if (allProducts.length === 0) {
       toast({ title: t('pages.inventory.noDataExport'), description: t('pages.inventory.noProductsExport'), variant: 'destructive' });
       return;

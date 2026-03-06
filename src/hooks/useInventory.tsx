@@ -19,6 +19,7 @@ export interface InventoryItem {
   avgImportPrice: number;
   totalImportCost: number;
   products: ProductDetail[];
+  oldestImportDate: string | null;
 }
 
 export interface ProductDetail {
@@ -151,6 +152,7 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
           avgImportPrice: isInStock ? Number(product.import_price) : 0,
           totalImportCost: isInStock ? Number(product.import_price) : 0,
           products: [productDetail],
+          oldestImportDate: isInStock ? product.import_date : null,
         });
       } else {
         const quantity = product.quantity || 1;
@@ -174,6 +176,7 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
           avgImportPrice: isInStock ? Number(product.import_price) : 0,
           totalImportCost: isInStock ? totalCost : 0,
           products: isInStock ? [productDetail] : [],
+          oldestImportDate: isInStock ? product.import_date : null,
         });
       }
     }
@@ -222,6 +225,7 @@ export function useInventory() {
         avgImportPrice: Number(row.avg_import_price),
         totalImportCost: Number(row.total_import_cost),
         products: [], // Products loaded on-demand via detail dialogs
+        oldestImportDate: row.oldest_import_date || null,
       })) as InventoryItem[];
     },
     staleTime: 2 * 60 * 1000,
