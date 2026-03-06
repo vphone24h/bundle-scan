@@ -22,9 +22,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  console.log("security-password called, method:", req.method);
+    console.log("security-password called");
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
+      console.log("No auth header");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -39,13 +40,27 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Try getClaims first, fall back to getUser
+    let userId: string;
+    const token = authHeader.replace("Bearer ", "");
+    try {
+      const { data: claimsData, error: claimsError } = await (supabaseUser.auth as any).getClaims(token);
+      if (claimsError || !claimsData?.claims) {
+        throw new Error("getClaims failed");
+      }
+      userId = claimsData.claims.sub;
+      console.log("Auth via getClaims, userId:", userId);
+    } catch {
+      const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+      if (userError || !user) {
+        console.log("Auth failed:", userError?.message);
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      userId = user.id;
+      console.log("Auth via getUser, userId:", userId);
     }
-    const userId = user.id;
 
     // Get tenant_id and role
     const { data: platformUser } = await supabaseAdmin
