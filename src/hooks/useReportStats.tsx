@@ -172,6 +172,29 @@ export function useReportStats(filters?: {
         }, {} as Record<string, number>);
       }
 
+      // For items without product_id, try to find import price by IMEI
+      const orphanImeis = Array.from(new Set(
+        exportReceipts?.flatMap(r => 
+          r.export_receipt_items?.filter(i => !i.product_id && i.imei).map(i => i.imei as string) || []
+        ) || []
+      ));
+      let imeiPriceMap: Record<string, number> = {};
+      if (orphanImeis.length > 0) {
+        for (let i = 0; i < orphanImeis.length; i += 500) {
+          const chunk = orphanImeis.slice(i, i + 500);
+          const { data: imeiProducts } = await supabase
+            .from('products')
+            .select('imei, import_price')
+            .in('imei', chunk)
+            .gt('import_price', 0);
+          imeiProducts?.forEach(p => {
+            if (p.imei && p.import_price) {
+              imeiPriceMap[p.imei] = Number(p.import_price);
+            }
+          });
+        }
+      }
+
       // 4. Lấy dữ liệu sổ quỹ (chi phí và thu nhập khác)
       let cashBookQuery = supabase
         .from('cash_book')
