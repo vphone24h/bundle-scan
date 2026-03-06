@@ -854,6 +854,25 @@ export function EmailAutomationTab() {
             prefilledTemplate={prefilledTemplate}
           />
         )}
+
+        {/* Test email confirmation dialog */}
+        <AlertDialog open={!!testConfirmItem} onOpenChange={(open) => !open && setTestConfirmItem(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Gửi email thử</AlertDialogTitle>
+              <AlertDialogDescription>
+                Bạn muốn gửi email thử cho kịch bản "<strong>{testConfirmItem?.name}</strong>"? Email sẽ được gửi đến địa chỉ email đăng nhập của bạn.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={sendingTest}>Hủy</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmSendTest} disabled={sendingTest}>
+                {sendingTest ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Send className="h-4 w-4 mr-1" />}
+                Gửi thử
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
