@@ -49,18 +49,32 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
   const [note, setNote] = useState('');
   const [recordToCashBook, setRecordToCashBook] = useState(true);
   const [payments, setPayments] = useState<PaymentLine[]>([]);
+  const [feeType, setFeeType] = useState<'none' | 'percentage' | 'fixed_amount'>('none');
+  const [feePercentage, setFeePercentage] = useState<number>(0);
+  const [feeAmount, setFeeAmount] = useState<number>(0);
+  const [feeDisplayAmount, setFeeDisplayAmount] = useState<string>('');
 
   // Count in-stock products
   const inStockProducts = details?.productImports?.filter(
     (item: any) => item.products?.status === 'in_stock'
   ) || [];
   
-  const totalRefundAmount = inStockProducts.reduce(
+  const totalImportAmount = inStockProducts.reduce(
     (sum: number, item: any) => sum + Number(item.import_price),
     0
   );
 
-  // Initialize payments when data loads
+  // Calculate refund based on fee type
+  const calculateRefund = () => {
+    if (feeType === 'none') return totalImportAmount;
+    if (feeType === 'percentage') return totalImportAmount * (1 - feePercentage / 100);
+    return totalImportAmount - feeAmount;
+  };
+
+  const totalRefundAmount = calculateRefund();
+  const supplierKeepAmount = totalImportAmount - totalRefundAmount;
+
+  // Initialize payments when data loads or refund changes
   useEffect(() => {
     if (open && totalRefundAmount > 0) {
       setPayments([{
@@ -69,9 +83,19 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
         amount: totalRefundAmount,
         displayAmount: formatNumberWithSpaces(totalRefundAmount),
       }]);
-      setNote('');
     }
   }, [open, totalRefundAmount]);
+
+  // Reset fee when dialog opens
+  useEffect(() => {
+    if (open) {
+      setFeeType('none');
+      setFeePercentage(0);
+      setFeeAmount(0);
+      setFeeDisplayAmount('');
+      setNote('');
+    }
+  }, [open]);
 
   const handleAddPayment = () => {
     setPayments([
