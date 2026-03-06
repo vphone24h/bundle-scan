@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { DateRangeApplyFilter } from '@/components/ui/date-range-apply-filter';
 import {
   Collapsible,
   CollapsibleContent,
@@ -128,22 +129,15 @@ export function SupplierFilters({
         <CollapsibleContent>
           <div className="bg-muted/50 border rounded-lg p-3 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Từ ngày</Label>
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => onStartDateChange(e.target.value)}
-                  className="h-9 text-sm"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Đến ngày</Label>
-                <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => onEndDateChange(e.target.value)}
-                  className="h-9 text-sm"
+              <div className="sm:col-span-2">
+                <DateRangeApplyFilter
+                  startDate={startDate}
+                  endDate={endDate}
+                  onApply={(s, e) => { onStartDateChange(s); onEndDateChange(e); }}
+                  isLoading={false}
+                  layout="stacked"
+                  labelClassName="text-xs"
+                  inputClassName="h-9 text-sm"
                 />
               </div>
               {isSuperAdmin && (

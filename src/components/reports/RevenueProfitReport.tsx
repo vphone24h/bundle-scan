@@ -4,8 +4,8 @@ import { ReportStatDetailDialog, type DetailType } from '@/components/reports/Re
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DateRangeApplyFilter } from '@/components/ui/date-range-apply-filter';
 import {
   Select,
   SelectContent,
@@ -246,15 +246,13 @@ export function RevenueProfitReport() {
               <Download className="h-4 w-4 mr-1" />
               {t('common.exportExcel')}
             </Button>
-            <div className="flex gap-2 items-end" data-tour="report-date-filter">
-              <div>
-                <Label>{t('common.fromDate')}</Label>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" />
-              </div>
-              <div>
-                <Label>{t('common.toDate')}</Label>
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" />
-              </div>
+            <div data-tour="report-date-filter">
+              <DateRangeApplyFilter
+                startDate={startDate}
+                endDate={endDate}
+                onApply={(s, e) => { setStartDate(s); setEndDate(e); }}
+                isLoading={statsLoading}
+              />
             </div>
             {isSuperAdmin && (
               <div>

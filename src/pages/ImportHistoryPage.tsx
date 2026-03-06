@@ -15,6 +15,7 @@ import { usePagination } from '@/hooks/usePagination';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DateRangeApplyFilter } from '@/components/ui/date-range-apply-filter';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -657,20 +658,14 @@ export default function ImportHistoryPage() {
               {/* Extended filters */}
               {showFilters && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 pt-4 border-t">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Từ ngày</Label>
-                    <Input
-                      type="date"
-                      value={dateFrom}
-                      onChange={(e) => setDateFrom(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Đến ngày</Label>
-                    <Input
-                      type="date"
-                      value={dateTo}
-                      onChange={(e) => setDateTo(e.target.value)}
+                  <div className="sm:col-span-2 lg:col-span-3">
+                    <DateRangeApplyFilter
+                      startDate={dateFrom}
+                      endDate={dateTo}
+                      onApply={(s, e) => { setDateFrom(s); setDateTo(e); }}
+                      isLoading={productsLoading}
+                      layout="stacked"
+                      labelClassName="text-xs"
                     />
                   </div>
                   <div className="space-y-2">

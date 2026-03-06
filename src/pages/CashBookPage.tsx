@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DateRangeApplyFilter } from '@/components/ui/date-range-apply-filter';
 import { SearchInput } from '@/components/ui/search-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -1183,16 +1184,15 @@ export default function CashBookPage() {
           </div>
 
           {summaryTimePreset === 'custom' && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Từ ngày</Label>
-                <Input type="date" value={summaryCustomFrom} onChange={e => setSummaryCustomFrom(e.target.value)} className="h-8 text-sm" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Đến ngày</Label>
-                <Input type="date" value={summaryCustomTo} onChange={e => setSummaryCustomTo(e.target.value)} className="h-8 text-sm" />
-              </div>
-            </div>
+            <DateRangeApplyFilter
+              startDate={summaryCustomFrom}
+              endDate={summaryCustomTo}
+              onApply={(s, e) => { setSummaryCustomFrom(s); setSummaryCustomTo(e); }}
+              isLoading={false}
+              layout="stacked"
+              labelClassName="text-xs"
+              inputClassName="h-8 text-sm"
+            />
           )}
 
           {/* Income / Expense cards */}
@@ -1323,20 +1323,14 @@ export default function CashBookPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs">Từ ngày</Label>
-                      <Input
-                        type="date"
-                        value={dateFrom}
-                        onChange={(e) => { setDateFrom(e.target.value); setTimePreset(''); }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Đến ngày</Label>
-                      <Input
-                        type="date"
-                        value={dateTo}
-                        onChange={(e) => { setDateTo(e.target.value); setTimePreset(''); }}
+                    <div className="sm:col-span-2 lg:col-span-3">
+                      <DateRangeApplyFilter
+                        startDate={dateFrom}
+                        endDate={dateTo}
+                        onApply={(s, e) => { setDateFrom(s); setDateTo(e); setTimePreset(''); }}
+                        isLoading={false}
+                        layout="stacked"
+                        labelClassName="text-xs"
                       />
                     </div>
                     <div className="space-y-2">
