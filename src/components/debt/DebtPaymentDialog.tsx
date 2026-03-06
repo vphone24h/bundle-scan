@@ -139,6 +139,7 @@ export function DebtPaymentDialog({
             payment_source: ps.source,
             description: description || defaultDescription,
             branch_id: branchId,
+            merged_entity_ids: mergedEntityIds,
           });
           currentRemaining -= amount;
         }

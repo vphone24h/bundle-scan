@@ -35,6 +35,7 @@ export function DebtAdditionDialog({
   entityName,
   remainingAmount,
   branchId,
+  mergedEntityIds,
 }: DebtAdditionDialogProps) {
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
