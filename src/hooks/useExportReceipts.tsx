@@ -688,6 +688,9 @@ export function useCreateExportReceipt() {
         queryClient.invalidateQueries({ queryKey: ['customers-with-points'] }),
         queryClient.invalidateQueries({ queryKey: ['customer-detail'] }),
         queryClient.invalidateQueries({ queryKey: ['point-transactions'] }),
+        queryClient.invalidateQueries({ queryKey: ['customer-debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['supplier-debts'] }),
+        queryClient.invalidateQueries({ queryKey: ['debt-detail'] }),
       ]);
     },
   });
