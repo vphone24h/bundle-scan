@@ -115,17 +115,28 @@
         // Set storeId as temporary title immediately (no "vkho")
         setTitle(storeId || h);
         
-        // CRITICAL: Remove static VKho favicon/icons immediately so iOS doesn't capture them
-        var staticFav = document.getElementById('static-favicon');
-        if (staticFav) staticFav.removeAttribute('href');
-        var staticIcon32 = document.getElementById('static-icon-32');
-        if (staticIcon32) staticIcon32.removeAttribute('href');
-        var staticIcon16 = document.getElementById('static-icon-16');
-        if (staticIcon16) staticIcon16.removeAttribute('href');
+        // CRITICAL: Use cached logo from localStorage immediately (before async fetch)
+        var cacheKey = 'pwa_logo_' + storeId;
+        var cacheNameKey = 'pwa_name_' + storeId;
+        var cachedLogo = null;
+        var cachedName = null;
+        try {
+          cachedLogo = localStorage.getItem(cacheKey);
+          cachedName = localStorage.getItem(cacheNameKey);
+        } catch(e) {}
         
-        // Don't create manifest yet - wait for async to get real logo
+        if (cachedLogo) {
+          setIcon(cachedLogo);
+        }
+        if (cachedName) {
+          setTitle(cachedName);
+        }
+        // Create manifest immediately with cached data if available
+        if (cachedName || cachedLogo) {
+          createManifest(cachedName || storeId || h, cachedLogo);
+        }
 
-        // Resolve tenant async for real name
+        // Resolve tenant async for real name + logo (and update cache)
         var resolvePromise;
         if (isSubdomain && !h.endsWith('.vkho.vn')) {
           resolvePromise = fetch(supaUrl + '/rest/v1/rpc/resolve_tenant_by_domain', {
@@ -154,6 +165,11 @@
               finalIcon = s[0].store_logo_url || null;
               setIcon(finalIcon);
               setTitle(finalName);
+              // Cache for next visit - so icon loads instantly
+              try {
+                if (finalIcon) localStorage.setItem(cacheKey, finalIcon);
+                if (finalName) localStorage.setItem(cacheNameKey, finalName);
+              } catch(e) {}
             }
             createManifest(finalName, finalIcon);
           });
