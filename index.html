@@ -21,10 +21,9 @@
     <link rel="preconnect" href="https://rodpbhesrwykmpywiiyd.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://rodpbhesrwykmpywiiyd.supabase.co" />
     
-    <!-- Icons - NO static href, set dynamically by script below -->
-    <link rel="icon" type="image/png" id="static-favicon" />
-    <link rel="icon" type="image/png" sizes="32x32" id="static-icon-32" />
-    <link rel="icon" type="image/png" sizes="16x16" id="static-icon-16" />
+    <!-- Icons - href set dynamically by script below -->
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" id="static-favicon" />
+    <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" id="static-apple-icon" />
 
     <!-- Dynamically set store icon + title for PWA on store pages -->
     <script>
@@ -35,19 +34,14 @@
         var isSubdomain = h !== 'bundle-scan.lovable.app' && h !== 'localhost' && h !== 'vkho.vn' && h !== 'www.vkho.vn' && !h.endsWith('.lovable.app') && !h.endsWith('.lovableproject.com');
         
         if (!isStore && !isSubdomain) {
-          // Main domain: set static icons + manifest
+          // Main domain: set icons + manifest
           var sf = document.getElementById('static-favicon');
           if (sf) sf.href = '/favicon.png';
-          var si32 = document.getElementById('static-icon-32');
-          if (si32) si32.href = '/icons/icon-32x32.png';
-          var si16 = document.getElementById('static-icon-16');
-          if (si16) si16.href = '/icons/icon-16x16.png';
+          var sai = document.getElementById('static-apple-icon');
+          if (sai) { sai.href = '/icons/apple-touch-icon.png'; sai.setAttribute('sizes','180x180'); }
           var sl = document.createElement('link');
           sl.rel = 'manifest'; sl.href = '/manifest.json';
           document.head.appendChild(sl);
-          var ai = document.createElement('link');
-          ai.rel = 'apple-touch-icon'; ai.setAttribute('sizes','180x180'); ai.href = '/icons/apple-touch-icon.png';
-          document.head.appendChild(ai);
           var tm = document.querySelector('meta[name="apple-mobile-web-app-title"]');
           if (tm) tm.setAttribute('content', 'vkho.vn');
           return;
@@ -62,29 +56,16 @@
 
         function setIcon(url) {
           if (!url) return;
-          // Update or create favicon
+          // Update favicon
           var f = document.getElementById('static-favicon');
-          if (f) { f.href = url; } else {
-            f = document.createElement('link');
-            f.rel = 'icon'; f.type = 'image/png'; f.href = url;
-            document.head.appendChild(f);
-          }
-          // Update other icon tags
-          var si32 = document.getElementById('static-icon-32');
-          if (si32) si32.href = url;
-          var si16 = document.getElementById('static-icon-16');
-          if (si16) si16.href = url;
-          // Remove any existing apple-touch-icons and recreate with store logo
-          document.querySelectorAll('link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]').forEach(function(el){ el.remove(); });
-          // No-size version (iOS prefers this)
+          if (f) f.href = url;
+          // Update the static apple-touch-icon (already in HTML)
+          var sai = document.getElementById('static-apple-icon');
+          if (sai) { sai.href = url; sai.setAttribute('sizes','180x180'); }
+          // Add extra apple-touch-icon variants
           var noSize = document.createElement('link');
           noSize.rel = 'apple-touch-icon'; noSize.href = url;
           document.head.appendChild(noSize);
-          // 180x180 version
-          var s180 = document.createElement('link');
-          s180.rel = 'apple-touch-icon'; s180.setAttribute('sizes','180x180'); s180.href = url;
-          document.head.appendChild(s180);
-          // Precomposed
           var pre = document.createElement('link');
           pre.rel = 'apple-touch-icon-precomposed'; pre.href = url;
           document.head.appendChild(pre);
@@ -125,13 +106,7 @@
         // Set storeId as temporary title immediately (no "vkho")
         setTitle(storeId || h);
         
-        // CRITICAL: Remove empty static favicon tags so Safari doesn't fallback to default hosting icon
-        var staticFav = document.getElementById('static-favicon');
-        if (staticFav) staticFav.remove();
-        var staticIcon32 = document.getElementById('static-icon-32');
-        if (staticIcon32) staticIcon32.remove();
-        var staticIcon16 = document.getElementById('static-icon-16');
-        if (staticIcon16) staticIcon16.remove();
+        // Static tags now have transparent 1px placeholder - no need to remove
         
         // CRITICAL: Use cached logo from localStorage immediately (before async fetch)
         var cacheKey = 'pwa_logo_' + storeId;
