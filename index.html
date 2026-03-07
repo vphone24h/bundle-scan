@@ -62,8 +62,18 @@
 
         function setIcon(url) {
           if (!url) return;
+          // Update or create favicon
           var f = document.getElementById('static-favicon');
-          if (f) f.href = url;
+          if (f) { f.href = url; } else {
+            f = document.createElement('link');
+            f.rel = 'icon'; f.type = 'image/png'; f.href = url;
+            document.head.appendChild(f);
+          }
+          // Update other icon tags
+          var si32 = document.getElementById('static-icon-32');
+          if (si32) si32.href = url;
+          var si16 = document.getElementById('static-icon-16');
+          if (si16) si16.href = url;
           // Remove any existing apple-touch-icons and recreate with store logo
           document.querySelectorAll('link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]').forEach(function(el){ el.remove(); });
           // No-size version (iOS prefers this)
