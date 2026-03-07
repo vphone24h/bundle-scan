@@ -54,7 +54,7 @@ import {
   PlayCircle,
   Loader2,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useBranches } from '@/hooks/useBranches';
 import { 
@@ -829,8 +829,10 @@ export default function ExportHistoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(filteredReceipts || []).map((receipt) => (
-                      <TableRow key={receipt.id}>
+                    {(filteredReceipts || []).map((receipt) => {
+                      const isReceiptToday = isToday(new Date(receipt.export_date));
+                      return (
+                      <TableRow key={receipt.id} className={isReceiptToday ? 'text-destructive' : ''}>
                         <TableCell 
                           className="font-medium text-primary cursor-pointer hover:underline"
                           onClick={() => handleViewDetail(receipt)}
@@ -907,7 +909,8 @@ export default function ExportHistoryPage() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
                 </ScrollableTableWrapper>
@@ -979,9 +982,10 @@ export default function ExportHistoryPage() {
                       const quantity = groupedItem.quantity || 1;
                       const totalPrice = item.sale_price * quantity;
                       const isGrouped = quantity > 1 && !item.imei;
+                      const isItemToday = item.export_receipts?.export_date ? isToday(new Date(item.export_receipts.export_date)) : false;
                       
                       return (
-                        <TableRow key={groupedItem.groupedIds?.join('-') || item.id}>
+                        <TableRow key={groupedItem.groupedIds?.join('-') || item.id} className={isItemToday ? 'text-destructive' : ''}>
                           <TableCell>
                             <div className="font-medium">{item.product_name}</div>
                             <div className="text-xs text-muted-foreground">

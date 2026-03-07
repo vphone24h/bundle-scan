@@ -43,7 +43,7 @@ import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loa
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
-import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isToday } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { exportToExcelMultiSheet, formatDateForExcel } from '@/lib/exportExcel';
 import { fetchAllRows } from '@/lib/fetchAllRows';
@@ -792,8 +792,10 @@ export default function ImportHistoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {receiptsPagination.paginatedData.map((receipt) => (
-                    <tr key={receipt.id}>
+                  {receiptsPagination.paginatedData.map((receipt) => {
+                    const isReceiptToday = isToday(new Date(receipt.import_date));
+                    return (
+                    <tr key={receipt.id} className={isReceiptToday ? 'text-destructive' : ''}>
                       <td 
                         className="font-mono font-medium text-primary cursor-pointer hover:underline"
                         onClick={() => handleView(receipt)}
@@ -865,7 +867,8 @@ export default function ImportHistoryPage() {
                         </DropdownMenu>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
               {filteredReceipts.length === 0 && (
@@ -964,8 +967,10 @@ export default function ImportHistoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {productsPagination.paginatedData.map((product) => (
-                    <tr key={product.id} className={cn(canTransferStock && selectedProductIds.has(product.id) && 'bg-primary/5')}>
+                  {productsPagination.paginatedData.map((product) => {
+                    const isProductToday = isToday(new Date(product.import_date));
+                    return (
+                    <tr key={product.id} className={cn(isProductToday && 'text-destructive', canTransferStock && selectedProductIds.has(product.id) && 'bg-primary/5')}>
                       {canTransferStock && (
                         <td>
                           {product.status === 'in_stock' ? (
@@ -1129,7 +1134,8 @@ export default function ImportHistoryPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
               {filteredProducts.length === 0 && (
