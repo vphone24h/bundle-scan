@@ -386,53 +386,10 @@ export default function ReportsPage() {
             </p>
           </div>
           <div className="flex flex-col items-center gap-3 w-full max-w-xs">
-            {biometricSupported && (
-              <Button
-                onClick={async () => {
-                  setBiometricLoading(true);
-                  try {
-                    const savedPw = getSavedSecurityPassword();
-                    if (!savedPw) {
-                      toast.info('Chưa có mật khẩu đã lưu. Vui lòng nhập thủ công lần đầu.');
-                      setShowPasswordDialog(true);
-                      return;
-                    }
-                    const result = await verifyPassword.mutateAsync(savedPw);
-                    if (result.valid) {
-                      saveSecurityPassword(savedPw);
-                      unlockReports();
-                    } else {
-                      toast.error('Mật khẩu đã lưu không còn đúng. Vui lòng nhập lại.');
-                      setShowPasswordDialog(true);
-                    }
-                  } catch (e: any) {
-                    toast.error(e.message || 'Lỗi xác thực');
-                  } finally {
-                    setBiometricLoading(false);
-                  }
-                }}
-                size="lg"
-                variant="outline"
-                className="w-full h-14 text-base gap-3 border-primary/30 hover:border-primary hover:bg-primary/5"
-                disabled={biometricLoading}
-              >
-                {biometricLoading ? (
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                ) : (
-                  <Fingerprint className="h-6 w-6 text-primary" />
-                )}
-                Mở khoá bằng Face ID
-              </Button>
-            )}
             <Button onClick={() => setShowPasswordDialog(true)} size="lg" className="w-full">
               <Lock className="h-4 w-4 mr-2" />
               Nhập mật khẩu
             </Button>
-            {isBiometricLikelySupported() && !hasSavedSecurityPassword() && (
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                💡 Nhập mật khẩu lần đầu, từ lần sau có thể dùng Face ID
-              </p>
-            )}
           </div>
         </div>
       ) : (
