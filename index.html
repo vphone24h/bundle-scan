@@ -125,6 +125,14 @@
         // Set storeId as temporary title immediately (no "vkho")
         setTitle(storeId || h);
         
+        // CRITICAL: Remove empty static favicon tags so Safari doesn't fallback to default hosting icon
+        var staticFav = document.getElementById('static-favicon');
+        if (staticFav) staticFav.remove();
+        var staticIcon32 = document.getElementById('static-icon-32');
+        if (staticIcon32) staticIcon32.remove();
+        var staticIcon16 = document.getElementById('static-icon-16');
+        if (staticIcon16) staticIcon16.remove();
+        
         // CRITICAL: Use cached logo from localStorage immediately (before async fetch)
         var cacheKey = 'pwa_logo_' + storeId;
         var cacheNameKey = 'pwa_name_' + storeId;
