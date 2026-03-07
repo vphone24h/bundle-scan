@@ -81,34 +81,34 @@
         function createManifest(name, iconUrl) {
           if (!name) return;
           var sn = name.length > 12 ? (name.split(/\s+/).pop() || name).slice(0,12) : name;
-          var ic = iconUrl || '/icons/icon-192x192.png';
-          var ic512 = iconUrl || '/icons/icon-512x512.png';
           var mf = {
             name: name, short_name: sn, description: name,
             start_url: location.href, display: 'standalone',
             orientation: 'portrait', background_color: '#f8fafc', theme_color: '#1e3a5f',
-            icons: [
-              { src: ic, sizes: '192x192', type: 'image/png', purpose: 'any' },
-              { src: ic, sizes: '180x180', type: 'image/png', purpose: 'any' },
-              { src: ic512, sizes: '512x512', type: 'image/png', purpose: 'any' },
-              { src: ic, sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-              { src: ic512, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
-            ]
+            icons: []
           };
+          // Only add icons if we have a real store icon URL
+          if (iconUrl) {
+            mf.icons = [
+              { src: iconUrl, sizes: '192x192', type: 'image/png', purpose: 'any' },
+              { src: iconUrl, sizes: '180x180', type: 'image/png', purpose: 'any' },
+              { src: iconUrl, sizes: '512x512', type: 'image/png', purpose: 'any' },
+              { src: iconUrl, sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+              { src: iconUrl, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+            ];
+          }
           var blob = new Blob([JSON.stringify(mf)], { type: 'application/json' });
           var mfUrl = URL.createObjectURL(blob);
           document.querySelectorAll('link[rel="manifest"]').forEach(function(el){ el.remove(); });
           var link = document.createElement('link');
           link.rel = 'manifest'; link.href = mfUrl;
           document.head.appendChild(link);
-          // Also force apple-mobile-web-app-title again after manifest
           if (titleMeta) titleMeta.setAttribute('content', sn);
         }
 
         // Set storeId as temporary title immediately (no "vkho")
         setTitle(storeId || h);
-        // Create temporary manifest with storeId immediately (before async)
-        createManifest(storeId || h, null);
+        // Don't create manifest yet - wait for async to get real logo
 
         // Resolve tenant async for real name
         var resolvePromise;
