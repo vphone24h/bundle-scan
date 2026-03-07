@@ -47,6 +47,11 @@ function useImportSummaryStats() {
 export function ImportInventorySummary({ isFiltered = false, filteredProducts }: ImportInventorySummaryProps) {
   const { t } = useTranslation();
   const { data: serverStats, isLoading } = useImportSummaryStats();
+  const { data: hasSecurityPassword } = useSecurityPasswordStatus();
+  const { unlocked, unlock } = useSecurityUnlock('dashboard_profit');
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+
+  const valueHidden = hasSecurityPassword && !unlocked;
 
   const stats = useMemo(() => {
     // If filtered, calculate from filtered products
@@ -86,56 +91,78 @@ export function ImportInventorySummary({ isFiltered = false, filteredProducts }:
   if (!stats && isLoading) return null;
   if (!stats) return null;
 
+  const renderValue = (value: number) => valueHidden ? '••••••' : formatCurrency(value);
+  const renderQty = (qty: number) => valueHidden ? '••' : `${qty} ${t('importSummary.products')}`;
+  const cardClick = valueHidden ? () => setShowPasswordDialog(true) : undefined;
+  const cursorClass = valueHidden ? 'cursor-pointer hover:shadow-md transition-shadow' : '';
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-      <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/20"><DollarSign className="h-5 w-5 text-primary" /></div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground truncate">{isFiltered ? t('importSummary.totalImportValueFiltered') : t('importSummary.totalImportValue')}</p>
-              <p className="text-lg font-bold text-primary truncate">{formatCurrency(stats.totalImportValue)}</p>
-              <p className="text-xs text-muted-foreground">{stats.totalQuantity} {t('importSummary.products')}</p>
+    <>
+      <SecurityPasswordDialog
+        open={showPasswordDialog}
+        onOpenChange={setShowPasswordDialog}
+        onSuccess={unlock}
+        title="Xem giá trị nhập kho"
+        description="Nhập mật khẩu bảo mật để xem số liệu"
+      />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <Card className={`bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 ${cursorClass}`} onClick={cardClick}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/20">
+                {valueHidden ? <EyeOff className="h-5 w-5 text-muted-foreground" /> : <DollarSign className="h-5 w-5 text-primary" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-muted-foreground truncate">{isFiltered ? t('importSummary.totalImportValueFiltered') : t('importSummary.totalImportValue')}</p>
+                <p className={`text-lg font-bold truncate ${valueHidden ? 'text-muted-foreground' : 'text-primary'}`}>{renderValue(stats.totalImportValue)}</p>
+                <p className="text-xs text-muted-foreground">{renderQty(stats.totalQuantity)}</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-500/20"><Archive className="h-5 w-5 text-green-600 dark:text-green-400" /></div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground truncate">{t('importSummary.inStockValue')}</p>
-              <p className="text-lg font-bold text-green-600 dark:text-green-400 truncate">{formatCurrency(stats.inStockValue)}</p>
-              <p className="text-xs text-muted-foreground">{stats.inStockQuantity} {t('importSummary.products')}</p>
+          </CardContent>
+        </Card>
+        <Card className={`bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20 ${cursorClass}`} onClick={cardClick}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-500/20">
+                {valueHidden ? <EyeOff className="h-5 w-5 text-muted-foreground" /> : <Archive className="h-5 w-5 text-green-600 dark:text-green-400" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-muted-foreground truncate">{t('importSummary.inStockValue')}</p>
+                <p className={`text-lg font-bold truncate ${valueHidden ? 'text-muted-foreground' : 'text-green-600 dark:text-green-400'}`}>{renderValue(stats.inStockValue)}</p>
+                <p className="text-xs text-muted-foreground">{renderQty(stats.inStockQuantity)}</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/20"><ShoppingCart className="h-5 w-5 text-blue-600 dark:text-blue-400" /></div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground truncate">{t('importSummary.soldValue')}</p>
-              <p className="text-lg font-bold text-blue-600 dark:text-blue-400 truncate">{formatCurrency(stats.soldValue)}</p>
-              <p className="text-xs text-muted-foreground">{stats.soldQuantity} {t('importSummary.products')}</p>
+          </CardContent>
+        </Card>
+        <Card className={`bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20 ${cursorClass}`} onClick={cardClick}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-500/20">
+                {valueHidden ? <EyeOff className="h-5 w-5 text-muted-foreground" /> : <ShoppingCart className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-muted-foreground truncate">{t('importSummary.soldValue')}</p>
+                <p className={`text-lg font-bold truncate ${valueHidden ? 'text-muted-foreground' : 'text-blue-600 dark:text-blue-400'}`}>{renderValue(stats.soldValue)}</p>
+                <p className="text-xs text-muted-foreground">{renderQty(stats.soldQuantity)}</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-      <Card className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-orange-500/20">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-orange-500/20"><Package className="h-5 w-5 text-orange-600 dark:text-orange-400" /></div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground truncate">{t('importSummary.returnedValue')}</p>
-              <p className="text-lg font-bold text-orange-600 dark:text-orange-400 truncate">{formatCurrency(stats.returnedValue)}</p>
-              <p className="text-xs text-muted-foreground">{stats.returnedQuantity} {t('importSummary.products')}</p>
+          </CardContent>
+        </Card>
+        <Card className={`bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-orange-500/20 ${cursorClass}`} onClick={cardClick}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-orange-500/20">
+                {valueHidden ? <EyeOff className="h-5 w-5 text-muted-foreground" /> : <Package className="h-5 w-5 text-orange-600 dark:text-orange-400" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-muted-foreground truncate">{t('importSummary.returnedValue')}</p>
+                <p className={`text-lg font-bold truncate ${valueHidden ? 'text-muted-foreground' : 'text-orange-600 dark:text-orange-400'}`}>{renderValue(stats.returnedValue)}</p>
+                <p className="text-xs text-muted-foreground">{renderQty(stats.returnedQuantity)}</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 }
