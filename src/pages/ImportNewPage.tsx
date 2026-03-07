@@ -900,7 +900,7 @@ export default function ImportNewPage() {
                             ))}
                           </div>
                         )}
-                        {suggestions.length === 0 && (
+                        {suggestions.length === 0 && !isSearching && (
                           <div className="px-4 py-3 text-sm text-muted-foreground">
                             {t('tours.importNew.noMatchingProducts')}
                           </div>
