@@ -967,8 +967,10 @@ export default function ImportHistoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {productsPagination.paginatedData.map((product) => (
-                    <tr key={product.id} className={cn(canTransferStock && selectedProductIds.has(product.id) && 'bg-primary/5')}>
+                  {productsPagination.paginatedData.map((product) => {
+                    const isProductToday = isToday(new Date(product.import_date));
+                    return (
+                    <tr key={product.id} className={cn(isProductToday && 'text-destructive', canTransferStock && selectedProductIds.has(product.id) && 'bg-primary/5')}>
                       {canTransferStock && (
                         <td>
                           {product.status === 'in_stock' ? (

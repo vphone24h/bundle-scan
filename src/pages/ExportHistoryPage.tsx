@@ -982,9 +982,10 @@ export default function ExportHistoryPage() {
                       const quantity = groupedItem.quantity || 1;
                       const totalPrice = item.sale_price * quantity;
                       const isGrouped = quantity > 1 && !item.imei;
+                      const isItemToday = item.export_receipts?.export_date ? isToday(new Date(item.export_receipts.export_date)) : false;
                       
                       return (
-                        <TableRow key={groupedItem.groupedIds?.join('-') || item.id}>
+                        <TableRow key={groupedItem.groupedIds?.join('-') || item.id} className={isItemToday ? 'text-destructive' : ''}>
                           <TableCell>
                             <div className="font-medium">{item.product_name}</div>
                             <div className="text-xs text-muted-foreground">
