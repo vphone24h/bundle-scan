@@ -13,17 +13,22 @@
     <meta name="theme-color" content="#1e3a5f" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="" />
+    <meta name="apple-mobile-web-app-title" content="vkho.vn" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="format-detection" content="telephone=no" />
+    
+    <!-- PWA Manifest - conditionally removed for store pages -->
+    <link rel="manifest" href="/manifest.json" id="static-manifest" />
     
     <!-- Preconnect to critical origins for faster loading -->
     <link rel="preconnect" href="https://rodpbhesrwykmpywiiyd.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://rodpbhesrwykmpywiiyd.supabase.co" />
     
-    <!-- Icons - href set dynamically by script below -->
-    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" id="static-favicon" />
-    <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" id="static-apple-icon" />
+    <!-- Icons -->
+    <link rel="icon" type="image/png" href="/favicon.png" id="static-favicon" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" id="static-apple-icon" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
 
     <!-- Dynamically set store icon + title for PWA on store pages -->
     <script>
@@ -32,146 +37,65 @@
         var isStore = p.indexOf('/store/') === 0;
         var h = location.hostname;
         var isSubdomain = h !== 'bundle-scan.lovable.app' && h !== 'localhost' && h !== 'vkho.vn' && h !== 'www.vkho.vn' && !h.endsWith('.lovable.app') && !h.endsWith('.lovableproject.com');
-        
-        if (!isStore && !isSubdomain) {
-          // Main domain: set icons + manifest
-          var sf = document.getElementById('static-favicon');
-          if (sf) sf.href = '/favicon.png';
-          var sai = document.getElementById('static-apple-icon');
-          if (sai) { sai.href = '/icons/apple-touch-icon.png'; sai.setAttribute('sizes','180x180'); }
-          var sl = document.createElement('link');
-          sl.rel = 'manifest'; sl.href = '/manifest.json';
-          document.head.appendChild(sl);
-          var tm = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-          if (tm) tm.setAttribute('content', 'vkho.vn');
-          return;
-        }
+        if (isStore || isSubdomain) {
+          var m = document.getElementById('static-manifest');
+          if (m) m.remove();
+          var supaUrl = 'https://rodpbhesrwykmpywiiyd.supabase.co';
+          var anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZHBiaGVzcnd5a21weXdpaXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MjM4MDMsImV4cCI6MjA4NDk5OTgwM30.P7Kc0pxkUdyHi8AgDBlRmPqxg0MWr2C_J_EUqORQY_s';
+          var hdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' };
+          // Default title to storeId instead of "vkho"
+          var storeId = isStore ? p.split('/')[2] : (h.endsWith('.vkho.vn') ? h.replace('.vkho.vn','') : h.split('.').slice(0,-1).join('.') || h);
+          var titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+          if (titleMeta) titleMeta.setAttribute('content', storeId || '');
+          document.title = storeId || '';
 
-        // Store page or custom domain
-        var supaUrl = 'https://rodpbhesrwykmpywiiyd.supabase.co';
-        var anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZHBiaGVzcnd5a21weXdpaXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MjM4MDMsImV4cCI6MjA4NDk5OTgwM30.P7Kc0pxkUdyHi8AgDBlRmPqxg0MWr2C_J_EUqORQY_s';
-        var hdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' };
-        var storeId = isStore ? p.split('/')[2] : (h.endsWith('.vkho.vn') ? h.replace('.vkho.vn','') : h);
-        var titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-
-        function setIcon(url) {
-          if (!url) return;
-          // Remove ALL existing icon links to prevent Safari using stale/placeholder icons
-          document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]').forEach(function(el){ el.remove(); });
-          // Create fresh favicon
-          var fav = document.createElement('link');
-          fav.rel = 'icon'; fav.type = 'image/png'; fav.href = url;
-          document.head.appendChild(fav);
-          // Create apple-touch-icon with sizes (iOS priority)
-          var a180 = document.createElement('link');
-          a180.rel = 'apple-touch-icon'; a180.setAttribute('sizes','180x180'); a180.href = url;
-          document.head.appendChild(a180);
-          // Create apple-touch-icon without sizes (fallback)
-          var aNoSize = document.createElement('link');
-          aNoSize.rel = 'apple-touch-icon'; aNoSize.href = url;
-          document.head.appendChild(aNoSize);
-          // Precomposed variant
-          var pre = document.createElement('link');
-          pre.rel = 'apple-touch-icon-precomposed'; pre.href = url;
-          document.head.appendChild(pre);
-        }
-        function setTitle(name) {
-          if (!name) return;
-          document.title = name;
-          if (titleMeta) titleMeta.setAttribute('content', name);
-        }
-        function createManifest(name, iconUrl) {
-          if (!name) return;
-          var sn = name.length > 12 ? (name.split(/\s+/).pop() || name).slice(0,12) : name;
-          var mf = {
-            name: name, short_name: sn, description: name,
-            start_url: location.href, display: 'standalone',
-            orientation: 'portrait', background_color: '#f8fafc', theme_color: '#1e3a5f',
-            icons: []
-          };
-          // Only add icons if we have a real store icon URL
-          if (iconUrl) {
-            mf.icons = [
-              { src: iconUrl, sizes: '192x192', type: 'image/png', purpose: 'any' },
-              { src: iconUrl, sizes: '180x180', type: 'image/png', purpose: 'any' },
-              { src: iconUrl, sizes: '512x512', type: 'image/png', purpose: 'any' },
-              { src: iconUrl, sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-              { src: iconUrl, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
-            ];
+          function setIcon(url) {
+            if (!url) return;
+            var a = document.getElementById('static-apple-icon');
+            if (a) a.href = url;
+            var f = document.getElementById('static-favicon');
+            if (f) f.href = url;
+            var noSize = document.createElement('link');
+            noSize.rel = 'apple-touch-icon'; noSize.href = url;
+            document.head.appendChild(noSize);
+            var pl = document.createElement('link');
+            pl.rel = 'preload'; pl.as = 'image'; pl.href = url;
+            document.head.appendChild(pl);
           }
-          var blob = new Blob([JSON.stringify(mf)], { type: 'application/json' });
-          var mfUrl = URL.createObjectURL(blob);
-          document.querySelectorAll('link[rel="manifest"]').forEach(function(el){ el.remove(); });
-          var link = document.createElement('link');
-          link.rel = 'manifest'; link.href = mfUrl;
-          document.head.appendChild(link);
-          if (titleMeta) titleMeta.setAttribute('content', sn);
-        }
+          function setTitle(name) {
+            if (!name) return;
+            document.title = name;
+            if (titleMeta) titleMeta.setAttribute('content', name);
+          }
 
-        // Set storeId as temporary title immediately (no "vkho")
-        setTitle(storeId || h);
-        
-        // Static tags now have transparent 1px placeholder - no need to remove
-        
-        // CRITICAL: Use cached logo from localStorage immediately (before async fetch)
-        var cacheKey = 'pwa_logo_' + storeId;
-        var cacheNameKey = 'pwa_name_' + storeId;
-        var cachedLogo = null;
-        var cachedName = null;
-        try {
-          cachedLogo = localStorage.getItem(cacheKey);
-          cachedName = localStorage.getItem(cacheNameKey);
-        } catch(e) {}
-        
-        if (cachedLogo) {
-          setIcon(cachedLogo);
-        }
-        if (cachedName) {
-          setTitle(cachedName);
-        }
-        // Create manifest immediately with cached data if available
-        if (cachedName || cachedLogo) {
-          createManifest(cachedName || storeId || h, cachedLogo);
-        }
+          // Resolve tenant
+          var resolvePromise;
+          if (isSubdomain) {
+            resolvePromise = fetch(supaUrl + '/rest/v1/rpc/resolve_tenant_by_domain', {
+              method: 'POST', headers: hdrs,
+              body: JSON.stringify({ _domain: h })
+            }).then(function(r) { return r.json(); });
+          } else {
+            resolvePromise = fetch(supaUrl + '/rest/v1/rpc/lookup_tenant_by_subdomain', {
+              method: 'POST', headers: hdrs,
+              body: JSON.stringify({ _subdomain: storeId })
+            }).then(function(r) { return r.json(); }).then(function(data) {
+              if (data && data.length > 0) { setTitle(data[0].name); return data[0].id; }
+              return data && data.id ? (setTitle(data.name), data.id) : null;
+            });
+          }
 
-        // Resolve tenant async for real name + logo (and update cache)
-        var resolvePromise;
-        if (isSubdomain && !h.endsWith('.vkho.vn')) {
-          resolvePromise = fetch(supaUrl + '/rest/v1/rpc/resolve_tenant_by_domain', {
-            method: 'POST', headers: hdrs,
-            body: JSON.stringify({ _domain: h })
-          }).then(function(r) { return r.json(); });
-        } else {
-          resolvePromise = fetch(supaUrl + '/rest/v1/rpc/lookup_tenant_by_subdomain', {
-            method: 'POST', headers: hdrs,
-            body: JSON.stringify({ _subdomain: storeId })
-          }).then(function(r) { return r.json(); }).then(function(data) {
-            if (data && data.length > 0) { setTitle(data[0].name); return data[0].id; }
-            return data && data.id ? (setTitle(data.name), data.id) : null;
-          });
-        }
-
-        resolvePromise.then(function(tenantId) {
-          if (!tenantId) return;
-          return fetch(supaUrl + '/rest/v1/tenant_landing_settings?tenant_id=eq.' + tenantId + '&select=store_logo_url,store_name&is_enabled=eq.true', {
-            headers: { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey }
-          }).then(function(r) { return r.json(); }).then(function(s) {
-            var finalName = storeId;
-            var finalIcon = null;
-            if (s && s.length > 0) {
-              finalName = s[0].store_name || finalName;
-              finalIcon = s[0].store_logo_url || null;
-              setIcon(finalIcon);
-              setTitle(finalName);
-              // Cache for next visit - so icon loads instantly
-              try {
-                if (finalIcon) localStorage.setItem(cacheKey, finalIcon);
-                if (finalName) localStorage.setItem(cacheNameKey, finalName);
-              } catch(e) {}
-            }
-            createManifest(finalName, finalIcon);
-          });
-        }).catch(function(e) { console.warn('PWA init failed:', e); });
+          resolvePromise.then(function(tenantId) {
+            if (!tenantId) return;
+            return fetch(supaUrl + '/rest/v1/tenant_landing_settings?tenant_id=eq.' + tenantId + '&select=store_logo_url,store_name&is_enabled=eq.true', {
+              headers: { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey }
+            }).then(function(r) { return r.json(); }).then(function(s) {
+              if (s && s.length > 0) {
+                setIcon(s[0].store_logo_url);
+                setTitle(s[0].store_name);
+              }
+            });
+          }).catch(function(e) { console.warn('PWA init failed:', e); });
         }
       })();
     </script>
