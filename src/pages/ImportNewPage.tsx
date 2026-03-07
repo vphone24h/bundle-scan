@@ -628,7 +628,7 @@ export default function ImportNewPage() {
       const matchedProduct = data.imei
         ? products?.find(p => p.imei === data.imei && p.status === 'in_stock')
         : data.productName
-          ? groupedProducts.find(p => p.name.toLowerCase() === data.productName!.toLowerCase())
+          ? products?.filter(p => p.status === 'in_stock').find(p => p.name.toLowerCase() === data.productName!.toLowerCase())
           : null;
 
       // Check if already in cart (by IMEI or name+sku)
