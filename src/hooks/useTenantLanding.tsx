@@ -285,6 +285,7 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
           branch_id: item.branch_id || null,
           customer_name: item.customer_name || null,
           customer_id: item.customer_id || null,
+          note: item.note || null,
         }));
       } else {
         // Sử dụng RPC function bảo mật để tra cứu theo IMEI
