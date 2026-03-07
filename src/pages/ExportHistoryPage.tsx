@@ -909,7 +909,8 @@ export default function ExportHistoryPage() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
                 </ScrollableTableWrapper>
