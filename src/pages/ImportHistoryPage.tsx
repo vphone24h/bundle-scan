@@ -867,7 +867,8 @@ export default function ImportHistoryPage() {
                         </DropdownMenu>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
               {filteredReceipts.length === 0 && (
