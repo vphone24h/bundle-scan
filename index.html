@@ -35,7 +35,13 @@
         var isSubdomain = h !== 'bundle-scan.lovable.app' && h !== 'localhost' && h !== 'vkho.vn' && h !== 'www.vkho.vn' && !h.endsWith('.lovable.app') && !h.endsWith('.lovableproject.com');
         
         if (!isStore && !isSubdomain) {
-          // Main domain: add static manifest + apple-touch-icon
+          // Main domain: set static icons + manifest
+          var sf = document.getElementById('static-favicon');
+          if (sf) sf.href = '/favicon.png';
+          var si32 = document.getElementById('static-icon-32');
+          if (si32) si32.href = '/icons/icon-32x32.png';
+          var si16 = document.getElementById('static-icon-16');
+          if (si16) si16.href = '/icons/icon-16x16.png';
           var sl = document.createElement('link');
           sl.rel = 'manifest'; sl.href = '/manifest.json';
           document.head.appendChild(sl);
