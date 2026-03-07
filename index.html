@@ -34,19 +34,14 @@
         var isSubdomain = h !== 'bundle-scan.lovable.app' && h !== 'localhost' && h !== 'vkho.vn' && h !== 'www.vkho.vn' && !h.endsWith('.lovable.app') && !h.endsWith('.lovableproject.com');
         
         if (!isStore && !isSubdomain) {
-          // Main domain: set static icons + manifest
+          // Main domain: set icons + manifest
           var sf = document.getElementById('static-favicon');
           if (sf) sf.href = '/favicon.png';
-          var si32 = document.getElementById('static-icon-32');
-          if (si32) si32.href = '/icons/icon-32x32.png';
-          var si16 = document.getElementById('static-icon-16');
-          if (si16) si16.href = '/icons/icon-16x16.png';
+          var sai = document.getElementById('static-apple-icon');
+          if (sai) { sai.href = '/icons/apple-touch-icon.png'; sai.setAttribute('sizes','180x180'); }
           var sl = document.createElement('link');
           sl.rel = 'manifest'; sl.href = '/manifest.json';
           document.head.appendChild(sl);
-          var ai = document.createElement('link');
-          ai.rel = 'apple-touch-icon'; ai.setAttribute('sizes','180x180'); ai.href = '/icons/apple-touch-icon.png';
-          document.head.appendChild(ai);
           var tm = document.querySelector('meta[name="apple-mobile-web-app-title"]');
           if (tm) tm.setAttribute('content', 'vkho.vn');
           return;
