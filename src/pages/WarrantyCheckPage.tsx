@@ -35,6 +35,7 @@ interface WarrantyItem {
   tenant_id: string;
   customer_name: string | null;
   customer_phone: string | null;
+  note: string | null;
 }
 
 function getWarrantyStatus(exportDate: string, warrantyMonths: string | null) {
