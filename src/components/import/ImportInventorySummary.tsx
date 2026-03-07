@@ -1,12 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/mockData';
-import { Package, DollarSign, Archive, ShoppingCart } from 'lucide-react';
+import { Package, DollarSign, Archive, ShoppingCart, EyeOff, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useBranchFilter } from '@/hooks/useBranchFilter';
 import { useAuth } from '@/hooks/useAuth';
+import { useSecurityPasswordStatus, useSecurityUnlock } from '@/hooks/useSecurityPassword';
+import { SecurityPasswordDialog } from '@/components/security/SecurityPasswordDialog';
 
 interface ImportInventorySummaryProps {
   isFiltered?: boolean;
