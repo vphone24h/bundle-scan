@@ -148,47 +148,65 @@ export default function ImportNewPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const totalAmount = useMemo(
     () => cart.reduce((sum, item) => sum + item.importPrice * item.quantity, 0),
     [cart]
   );
 
-  // Group products by name+SKU for aggregate stock display
-  const groupedProducts = useMemo(() => {
-    if (!products) return [];
-    const groups = new Map<string, { name: string; sku: string; category_id: string | null; import_price: number; sale_price: number | null; totalQty: number }>();
-    for (const p of products) {
-      if (p.status !== 'in_stock') continue;
-      const key = `${p.name}|||${p.sku}`;
-      const existing = groups.get(key);
-      if (existing) {
-        existing.totalQty += p.quantity || 1;
-      } else {
-        groups.set(key, {
-          name: p.name,
-          sku: p.sku,
-          category_id: p.category_id,
-          import_price: p.import_price,
-          sale_price: p.sale_price,
-          totalQty: p.quantity || 1,
-        });
-      }
+  // Debounced server-side product search for suggestions
+  const searchProductsFromDB = useCallback(async (searchValue: string) => {
+    if (searchValue.length < 2) {
+      setSuggestions([]);
+      return;
     }
-    return Array.from(groups.values());
-  }, [products]);
+    setIsSearching(true);
+    try {
+      const s = searchValue.trim();
+      const { data, error } = await supabase
+        .from('products')
+        .select('name, sku, category_id, import_price, sale_price, quantity, status')
+        .eq('status', 'in_stock')
+        .or(`name.ilike.%${s}%,sku.ilike.%${s}%`)
+        .limit(200);
+
+      if (error) throw error;
+
+      // Group by name+SKU for aggregate stock
+      const groups = new Map<string, { name: string; sku: string; category_id: string | null; import_price: number; sale_price: number | null; totalQty: number }>();
+      for (const p of (data || [])) {
+        const key = `${p.name}|||${p.sku}`;
+        const existing = groups.get(key);
+        if (existing) {
+          existing.totalQty += p.quantity || 1;
+        } else {
+          groups.set(key, {
+            name: p.name,
+            sku: p.sku,
+            category_id: p.category_id,
+            import_price: p.import_price,
+            sale_price: p.sale_price,
+            totalQty: p.quantity || 1,
+          });
+        }
+      }
+      setSuggestions(Array.from(groups.values()).slice(0, 8));
+    } catch (err) {
+      console.error('Product search error:', err);
+      setSuggestions([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
 
   const handleProductNameChange = (value: string) => {
     setForm({ ...form, productName: value });
-    if (value.length >= 2 && groupedProducts.length > 0) {
-      const lowerVal = value.toLowerCase();
-      const matches = groupedProducts.filter((p) =>
-        p.name.toLowerCase().includes(lowerVal) || p.sku.toLowerCase().includes(lowerVal)
-      );
-      setSuggestions(matches.slice(0, 8));
-    } else {
-      setSuggestions([]);
-    }
+    // Debounce the DB search
+    if ((window as any).__productSearchTimer) clearTimeout((window as any).__productSearchTimer);
+    (window as any).__productSearchTimer = setTimeout(() => {
+      searchProductsFromDB(value);
+    }, 300);
   };
 
   const handleSelectSuggestion = (product: any) => {
@@ -610,7 +628,7 @@ export default function ImportNewPage() {
       const matchedProduct = data.imei
         ? products?.find(p => p.imei === data.imei && p.status === 'in_stock')
         : data.productName
-          ? groupedProducts.find(p => p.name.toLowerCase() === data.productName!.toLowerCase())
+          ? products?.filter(p => p.status === 'in_stock').find(p => p.name.toLowerCase() === data.productName!.toLowerCase())
           : null;
 
       // Check if already in cart (by IMEI or name+sku)
@@ -661,7 +679,7 @@ export default function ImportNewPage() {
       // Single scan mode: fill form
       if (data.productName) {
         // Try to find and select existing product
-        const match = groupedProducts.find(
+        const match = products?.filter(p => p.status === 'in_stock').find(
           p => p.name.toLowerCase() === data.productName!.toLowerCase()
         );
         if (match) {
@@ -683,7 +701,7 @@ export default function ImportNewPage() {
       setProductFormMode('form');
       setSuggestions([]);
     }
-  }, [products, groupedProducts, cart, handleSelectSuggestion]);
+  }, [products, cart, handleSelectSuggestion]);
 
   return (
     <MainLayout>
@@ -882,7 +900,7 @@ export default function ImportNewPage() {
                             ))}
                           </div>
                         )}
-                        {suggestions.length === 0 && (
+                        {suggestions.length === 0 && !isSearching && (
                           <div className="px-4 py-3 text-sm text-muted-foreground">
                             {t('tours.importNew.noMatchingProducts')}
                           </div>
