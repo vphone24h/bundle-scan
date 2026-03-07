@@ -43,7 +43,7 @@ import { Search, Download, FileText, MoreHorizontal, Eye, Pencil, RotateCcw, Loa
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
-import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay, isToday } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { exportToExcelMultiSheet, formatDateForExcel } from '@/lib/exportExcel';
 import { fetchAllRows } from '@/lib/fetchAllRows';
