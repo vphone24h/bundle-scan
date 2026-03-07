@@ -792,8 +792,10 @@ export default function ImportHistoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {receiptsPagination.paginatedData.map((receipt) => (
-                    <tr key={receipt.id}>
+                  {receiptsPagination.paginatedData.map((receipt) => {
+                    const isReceiptToday = isToday(new Date(receipt.import_date));
+                    return (
+                    <tr key={receipt.id} className={isReceiptToday ? 'text-destructive' : ''}>
                       <td 
                         className="font-mono font-medium text-primary cursor-pointer hover:underline"
                         onClick={() => handleView(receipt)}
