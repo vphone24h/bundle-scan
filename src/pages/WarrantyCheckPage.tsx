@@ -181,14 +181,6 @@ export default function WarrantyCheckPage() {
                         </Badge>
                       </div>
 
-                      {item.note && (
-                        <div className="mt-3 p-2.5 rounded-md bg-amber-50 border border-amber-200">
-                          <div className="flex gap-2 text-xs">
-                            <MessageSquareText className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
-                            <span className="text-amber-800">{item.note}</span>
-                          </div>
-                        </div>
-                      )}
                       <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1.5">
                           <Calendar className="h-3 w-3" />
@@ -210,6 +202,15 @@ export default function WarrantyCheckPage() {
                           </div>
                         )}
                       </div>
+
+                      {item.note && (
+                        <div className="mt-3 p-2.5 rounded-md bg-amber-50 border border-amber-200">
+                          <div className="flex gap-2 text-xs">
+                            <MessageSquareText className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                            <span className="text-amber-800">{item.note}</span>
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
