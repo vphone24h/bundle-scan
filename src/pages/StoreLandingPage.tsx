@@ -20,9 +20,14 @@ function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?:
     const cacheBust = logoUrl ? `?v=${Date.now()}` : '';
     const iconSrc = logoUrl ? `${logoUrl}${cacheBust}` : '/icons/icon-192x192.png';
     const iconSrc512 = logoUrl ? `${logoUrl}${cacheBust}` : '/icons/icon-512x512.png';
+    // iOS home screen short_name limit ~12 chars, if too long use last word
+    const fullName = storeName || storeId || 'vkho';
+    const shortName = fullName.length > 12
+      ? (fullName.split(/\s+/).pop() || fullName).slice(0, 12)
+      : fullName;
     const manifest = {
       name: storeName || `${storeId} - vkho.vn`,
-      short_name: storeName || storeId,
+      short_name: shortName,
       description: `${storeName || storeId}`,
       start_url: window.location.href,
       display: 'standalone',
