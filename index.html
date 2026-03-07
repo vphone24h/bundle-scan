@@ -35,10 +35,13 @@
         var isSubdomain = h !== 'bundle-scan.lovable.app' && h !== 'localhost' && h !== 'vkho.vn' && h !== 'www.vkho.vn' && !h.endsWith('.lovable.app') && !h.endsWith('.lovableproject.com');
         
         if (!isStore && !isSubdomain) {
-          // Main domain: add static manifest
+          // Main domain: add static manifest + apple-touch-icon
           var sl = document.createElement('link');
           sl.rel = 'manifest'; sl.href = '/manifest.json';
           document.head.appendChild(sl);
+          var ai = document.createElement('link');
+          ai.rel = 'apple-touch-icon'; ai.setAttribute('sizes','180x180'); ai.href = '/icons/apple-touch-icon.png';
+          document.head.appendChild(ai);
           var tm = document.querySelector('meta[name="apple-mobile-web-app-title"]');
           if (tm) tm.setAttribute('content', 'vkho.vn');
           return;
