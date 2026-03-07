@@ -164,47 +164,20 @@ export default function ImportNewPage() {
     setIsSearching(true);
     try {
       const s = searchValue.trim();
-      // Fetch ALL matching products (no status filter, no hard limit)
-      // to ensure full coverage of tenant's product catalog
-      const allResults: any[] = [];
-      let from = 0;
-      const pageSize = 500;
-      while (true) {
-        const { data, error } = await supabase
-          .from('products')
-          .select('name, sku, category_id, import_price, sale_price, quantity, status')
-          .or(`name.ilike.%${s}%,sku.ilike.%${s}%`)
-          .in('status', ['in_stock', 'sold', 'returned'])
-          .range(from, from + pageSize - 1);
+      const { data, error } = await supabase.rpc('search_product_suggestions' as any, {
+        p_search: s,
+        p_limit: 20,
+      });
 
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        allResults.push(...data);
-        if (data.length < pageSize) break;
-        from += pageSize;
-      }
-
-      // Group by name+SKU for aggregate stock display
-      const groups = new Map<string, { name: string; sku: string; category_id: string | null; import_price: number; sale_price: number | null; totalQty: number }>();
-      for (const p of allResults) {
-        const key = `${p.name}|||${p.sku}`;
-        const existing = groups.get(key);
-        if (existing) {
-          if (p.status === 'in_stock') {
-            existing.totalQty += p.quantity || 1;
-          }
-        } else {
-          groups.set(key, {
-            name: p.name,
-            sku: p.sku,
-            category_id: p.category_id,
-            import_price: p.import_price,
-            sale_price: p.sale_price,
-            totalQty: p.status === 'in_stock' ? (p.quantity || 1) : 0,
-          });
-        }
-      }
-      setSuggestions(Array.from(groups.values()).slice(0, 20));
+      if (error) throw error;
+      setSuggestions(((data as any[]) || []).map((r: any) => ({
+        name: r.product_name,
+        sku: r.product_sku,
+        category_id: r.category_id,
+        import_price: r.latest_import_price,
+        sale_price: r.latest_sale_price,
+        totalQty: r.in_stock_qty,
+      })));
     } catch (err) {
       console.error('Product search error:', err);
       setSuggestions([]);

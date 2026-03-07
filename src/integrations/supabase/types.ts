@@ -6791,6 +6791,17 @@ export type Database = {
       }
       refresh_materialized_views: { Args: never; Returns: undefined }
       resolve_tenant_by_domain: { Args: { _domain: string }; Returns: string }
+      search_product_suggestions: {
+        Args: { p_limit?: number; p_search: string }
+        Returns: {
+          category_id: string
+          in_stock_qty: number
+          latest_import_price: number
+          latest_sale_price: number
+          product_name: string
+          product_sku: string
+        }[]
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       submit_staff_review: {
