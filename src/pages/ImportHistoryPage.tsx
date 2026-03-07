@@ -1134,7 +1134,8 @@ export default function ImportHistoryPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
               {filteredProducts.length === 0 && (
