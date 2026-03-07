@@ -108,6 +108,15 @@
 
         // Set storeId as temporary title immediately (no "vkho")
         setTitle(storeId || h);
+        
+        // CRITICAL: Remove static VKho favicon/icons immediately so iOS doesn't capture them
+        var staticFav = document.getElementById('static-favicon');
+        if (staticFav) staticFav.removeAttribute('href');
+        var staticIcon32 = document.getElementById('static-icon-32');
+        if (staticIcon32) staticIcon32.removeAttribute('href');
+        var staticIcon16 = document.getElementById('static-icon-16');
+        if (staticIcon16) staticIcon16.removeAttribute('href');
+        
         // Don't create manifest yet - wait for async to get real logo
 
         // Resolve tenant async for real name
