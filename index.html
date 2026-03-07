@@ -13,12 +13,9 @@
     <meta name="theme-color" content="#1e3a5f" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="vkho.vn" />
+    <meta name="apple-mobile-web-app-title" content="" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="format-detection" content="telephone=no" />
-    
-    <!-- PWA Manifest - conditionally removed for store pages -->
-    <link rel="manifest" href="/manifest.json" id="static-manifest" />
     
     <!-- Preconnect to critical origins for faster loading -->
     <link rel="preconnect" href="https://rodpbhesrwykmpywiiyd.supabase.co" crossorigin />
@@ -37,101 +34,105 @@
         var isStore = p.indexOf('/store/') === 0;
         var h = location.hostname;
         var isSubdomain = h !== 'bundle-scan.lovable.app' && h !== 'localhost' && h !== 'vkho.vn' && h !== 'www.vkho.vn' && !h.endsWith('.lovable.app') && !h.endsWith('.lovableproject.com');
-        if (isStore || isSubdomain) {
-          var m = document.getElementById('static-manifest');
-          if (m) m.remove();
-          var supaUrl = 'https://rodpbhesrwykmpywiiyd.supabase.co';
-          var anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZHBiaGVzcnd5a21weXdpaXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MjM4MDMsImV4cCI6MjA4NDk5OTgwM30.P7Kc0pxkUdyHi8AgDBlRmPqxg0MWr2C_J_EUqORQY_s';
-          var hdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' };
-          // Default title to storeId instead of "vkho"
-          var storeId = isStore ? p.split('/')[2] : (h.endsWith('.vkho.vn') ? h.replace('.vkho.vn','') : h.split('.').slice(0,-1).join('.') || h);
-          var titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-          if (titleMeta) titleMeta.setAttribute('content', storeId || '');
-          document.title = storeId || '';
+        
+        if (!isStore && !isSubdomain) {
+          // Main domain: add static manifest
+          var sl = document.createElement('link');
+          sl.rel = 'manifest'; sl.href = '/manifest.json';
+          document.head.appendChild(sl);
+          var tm = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+          if (tm) tm.setAttribute('content', 'vkho.vn');
+          return;
+        }
 
-          function setIcon(url) {
-            if (!url) return;
-            var a = document.getElementById('static-apple-icon');
-            if (a) a.href = url;
-            var f = document.getElementById('static-favicon');
-            if (f) f.href = url;
-            var noSize = document.createElement('link');
-            noSize.rel = 'apple-touch-icon'; noSize.href = url;
-            document.head.appendChild(noSize);
-            var pl = document.createElement('link');
-            pl.rel = 'preload'; pl.as = 'image'; pl.href = url;
-            document.head.appendChild(pl);
-          }
-          function setTitle(name) {
-            if (!name) return;
-            document.title = name;
-            if (titleMeta) titleMeta.setAttribute('content', name);
-          }
-          function createManifest(name, iconUrl) {
-            if (!name) return;
-            var sn = name.length > 12 ? (name.split(/\s+/).pop() || name).slice(0,12) : name;
-            var ic = iconUrl || '/icons/icon-192x192.png';
-            var ic512 = iconUrl || '/icons/icon-512x512.png';
-            var mf = {
-              name: name,
-              short_name: sn,
-              description: name,
-              start_url: location.href,
-              display: 'standalone',
-              orientation: 'portrait',
-              background_color: '#f8fafc',
-              theme_color: '#1e3a5f',
-              icons: [
-                { src: ic, sizes: '192x192', type: 'image/png', purpose: 'any' },
-                { src: ic, sizes: '180x180', type: 'image/png', purpose: 'any' },
-                { src: ic512, sizes: '512x512', type: 'image/png', purpose: 'any' },
-                { src: ic, sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-                { src: ic512, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
-              ]
-            };
-            var blob = new Blob([JSON.stringify(mf)], { type: 'application/json' });
-            var mfUrl = URL.createObjectURL(blob);
-            var old = document.querySelector('link[rel="manifest"]');
-            if (old) old.remove();
-            var link = document.createElement('link');
-            link.rel = 'manifest';
-            link.href = mfUrl;
-            document.head.appendChild(link);
-          }
+        // Store page or custom domain
+        var supaUrl = 'https://rodpbhesrwykmpywiiyd.supabase.co';
+        var anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZHBiaGVzcnd5a21weXdpaXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MjM4MDMsImV4cCI6MjA4NDk5OTgwM30.P7Kc0pxkUdyHi8AgDBlRmPqxg0MWr2C_J_EUqORQY_s';
+        var hdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' };
+        var storeId = isStore ? p.split('/')[2] : (h.endsWith('.vkho.vn') ? h.replace('.vkho.vn','') : h);
+        var titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
 
-          // Resolve tenant
-          var resolvedName = null;
-          var resolvedIcon = null;
-          var resolvePromise;
-          if (isSubdomain) {
-            resolvePromise = fetch(supaUrl + '/rest/v1/rpc/resolve_tenant_by_domain', {
-              method: 'POST', headers: hdrs,
-              body: JSON.stringify({ _domain: h })
-            }).then(function(r) { return r.json(); });
-          } else {
-            resolvePromise = fetch(supaUrl + '/rest/v1/rpc/lookup_tenant_by_subdomain', {
-              method: 'POST', headers: hdrs,
-              body: JSON.stringify({ _subdomain: storeId })
-            }).then(function(r) { return r.json(); }).then(function(data) {
-              if (data && data.length > 0) { setTitle(data[0].name); resolvedName = data[0].name; return data[0].id; }
-              return data && data.id ? (setTitle(data.name), resolvedName = data.name, data.id) : null;
-            });
-          }
+        function setIcon(url) {
+          if (!url) return;
+          var a = document.getElementById('static-apple-icon');
+          if (a) a.href = url;
+          var f = document.getElementById('static-favicon');
+          if (f) f.href = url;
+          document.querySelectorAll('link[rel="apple-touch-icon"]').forEach(function(el){ el.href = url; });
+          var noSize = document.createElement('link');
+          noSize.rel = 'apple-touch-icon'; noSize.href = url;
+          document.head.appendChild(noSize);
+        }
+        function setTitle(name) {
+          if (!name) return;
+          document.title = name;
+          if (titleMeta) titleMeta.setAttribute('content', name);
+        }
+        function createManifest(name, iconUrl) {
+          if (!name) return;
+          var sn = name.length > 12 ? (name.split(/\s+/).pop() || name).slice(0,12) : name;
+          var ic = iconUrl || '/icons/icon-192x192.png';
+          var ic512 = iconUrl || '/icons/icon-512x512.png';
+          var mf = {
+            name: name, short_name: sn, description: name,
+            start_url: location.href, display: 'standalone',
+            orientation: 'portrait', background_color: '#f8fafc', theme_color: '#1e3a5f',
+            icons: [
+              { src: ic, sizes: '192x192', type: 'image/png', purpose: 'any' },
+              { src: ic, sizes: '180x180', type: 'image/png', purpose: 'any' },
+              { src: ic512, sizes: '512x512', type: 'image/png', purpose: 'any' },
+              { src: ic, sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+              { src: ic512, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+            ]
+          };
+          var blob = new Blob([JSON.stringify(mf)], { type: 'application/json' });
+          var mfUrl = URL.createObjectURL(blob);
+          document.querySelectorAll('link[rel="manifest"]').forEach(function(el){ el.remove(); });
+          var link = document.createElement('link');
+          link.rel = 'manifest'; link.href = mfUrl;
+          document.head.appendChild(link);
+          // Also force apple-mobile-web-app-title again after manifest
+          if (titleMeta) titleMeta.setAttribute('content', sn);
+        }
 
-          resolvePromise.then(function(tenantId) {
-            if (!tenantId) return;
-            return fetch(supaUrl + '/rest/v1/tenant_landing_settings?tenant_id=eq.' + tenantId + '&select=store_logo_url,store_name&is_enabled=eq.true', {
-              headers: { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey }
-            }).then(function(r) { return r.json(); }).then(function(s) {
-              if (s && s.length > 0) {
-                setIcon(s[0].store_logo_url);
-                setTitle(s[0].store_name);
-                resolvedName = s[0].store_name || resolvedName;
-                resolvedIcon = s[0].store_logo_url || resolvedIcon;
-              }
-              createManifest(resolvedName || storeId, resolvedIcon);
-            });
-          }).catch(function(e) { console.warn('PWA init failed:', e); });
+        // Set storeId as temporary title immediately (no "vkho")
+        setTitle(storeId || h);
+        // Create temporary manifest with storeId immediately (before async)
+        createManifest(storeId || h, null);
+
+        // Resolve tenant async for real name
+        var resolvePromise;
+        if (isSubdomain && !h.endsWith('.vkho.vn')) {
+          resolvePromise = fetch(supaUrl + '/rest/v1/rpc/resolve_tenant_by_domain', {
+            method: 'POST', headers: hdrs,
+            body: JSON.stringify({ _domain: h })
+          }).then(function(r) { return r.json(); });
+        } else {
+          resolvePromise = fetch(supaUrl + '/rest/v1/rpc/lookup_tenant_by_subdomain', {
+            method: 'POST', headers: hdrs,
+            body: JSON.stringify({ _subdomain: storeId })
+          }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data && data.length > 0) { setTitle(data[0].name); return data[0].id; }
+            return data && data.id ? (setTitle(data.name), data.id) : null;
+          });
+        }
+
+        resolvePromise.then(function(tenantId) {
+          if (!tenantId) return;
+          return fetch(supaUrl + '/rest/v1/tenant_landing_settings?tenant_id=eq.' + tenantId + '&select=store_logo_url,store_name&is_enabled=eq.true', {
+            headers: { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey }
+          }).then(function(r) { return r.json(); }).then(function(s) {
+            var finalName = storeId;
+            var finalIcon = null;
+            if (s && s.length > 0) {
+              finalName = s[0].store_name || finalName;
+              finalIcon = s[0].store_logo_url || null;
+              setIcon(finalIcon);
+              setTitle(finalName);
+            }
+            createManifest(finalName, finalIcon);
+          });
+        }).catch(function(e) { console.warn('PWA init failed:', e); });
         }
       })();
     </script>
