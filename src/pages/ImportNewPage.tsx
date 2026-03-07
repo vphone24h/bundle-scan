@@ -701,7 +701,7 @@ export default function ImportNewPage() {
       setProductFormMode('form');
       setSuggestions([]);
     }
-  }, [products, groupedProducts, cart, handleSelectSuggestion]);
+  }, [products, cart, handleSelectSuggestion]);
 
   return (
     <MainLayout>
