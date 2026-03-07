@@ -6639,6 +6639,7 @@ export type Database = {
           export_date: string
           id: string
           imei: string
+          note: string
           product_name: string
           sale_price: number
           sku: string
@@ -6657,6 +6658,7 @@ export type Database = {
           export_date: string
           id: string
           imei: string
+          note: string
           product_name: string
           sale_price: number
           sku: string
