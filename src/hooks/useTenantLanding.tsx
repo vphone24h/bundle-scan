@@ -93,6 +93,7 @@ export interface WarrantyResult {
   branch_id: string | null;
   customer_name: string | null;
   customer_id: string | null;
+  note: string | null;
 }
 
 export interface CustomerPointsPublic {
