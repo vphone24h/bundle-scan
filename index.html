@@ -56,16 +56,21 @@
 
         function setIcon(url) {
           if (!url) return;
-          // Update favicon
-          var f = document.getElementById('static-favicon');
-          if (f) f.href = url;
-          // Update the static apple-touch-icon (already in HTML)
-          var sai = document.getElementById('static-apple-icon');
-          if (sai) { sai.href = url; sai.setAttribute('sizes','180x180'); }
-          // Add extra apple-touch-icon variants
-          var noSize = document.createElement('link');
-          noSize.rel = 'apple-touch-icon'; noSize.href = url;
-          document.head.appendChild(noSize);
+          // Remove ALL existing icon links to prevent Safari using stale/placeholder icons
+          document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]').forEach(function(el){ el.remove(); });
+          // Create fresh favicon
+          var fav = document.createElement('link');
+          fav.rel = 'icon'; fav.type = 'image/png'; fav.href = url;
+          document.head.appendChild(fav);
+          // Create apple-touch-icon with sizes (iOS priority)
+          var a180 = document.createElement('link');
+          a180.rel = 'apple-touch-icon'; a180.setAttribute('sizes','180x180'); a180.href = url;
+          document.head.appendChild(a180);
+          // Create apple-touch-icon without sizes (fallback)
+          var aNoSize = document.createElement('link');
+          aNoSize.rel = 'apple-touch-icon'; aNoSize.href = url;
+          document.head.appendChild(aNoSize);
+          // Precomposed variant
           var pre = document.createElement('link');
           pre.rel = 'apple-touch-icon-precomposed'; pre.href = url;
           document.head.appendChild(pre);
