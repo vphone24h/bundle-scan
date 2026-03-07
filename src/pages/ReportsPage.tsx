@@ -20,13 +20,7 @@ import {
   Receipt,
   PlayCircle,
   Lock,
-  Fingerprint,
-  Loader2,
 } from 'lucide-react';
-import { isCredentialManagerSupported, getSecurityCredential, saveSecurityCredential } from '@/lib/credentialManager';
-import { isBiometricLikelySupported, getSavedSecurityPassword, saveSecurityPassword, hasSavedSecurityPassword } from '@/lib/biometricAuth';
-import { useVerifySecurityPassword } from '@/hooks/useSecurityPassword';
-import { toast } from 'sonner';
 import { useReportsGuideUrl } from '@/hooks/useAppConfig';
 import { usePermissions } from '@/hooks/usePermissions';
 import { RevenueProfitReport } from '@/components/reports/RevenueProfitReport';
