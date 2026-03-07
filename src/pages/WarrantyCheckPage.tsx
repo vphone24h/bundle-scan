@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import vkhoLogo from '@/assets/vkho-logo.png';
-import { Shield, Search, Package, Calendar, Store, Phone, ArrowLeft, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Shield, Search, Package, Calendar, Store, Phone, ArrowLeft, Loader2, AlertCircle, CheckCircle2, MessageSquareText } from 'lucide-react';
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -35,6 +35,7 @@ interface WarrantyItem {
   tenant_id: string;
   customer_name: string | null;
   customer_phone: string | null;
+  note: string | null;
 }
 
 function getWarrantyStatus(exportDate: string, warrantyMonths: string | null) {
@@ -201,6 +202,15 @@ export default function WarrantyCheckPage() {
                           </div>
                         )}
                       </div>
+
+                      {item.note && (
+                        <div className="mt-3 p-2.5 rounded-md bg-amber-50 border border-amber-200">
+                          <div className="flex gap-2 text-xs">
+                            <MessageSquareText className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                            <span className="text-amber-800">{item.note}</span>
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );

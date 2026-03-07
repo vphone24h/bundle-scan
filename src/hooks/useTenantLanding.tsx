@@ -93,6 +93,7 @@ export interface WarrantyResult {
   branch_id: string | null;
   customer_name: string | null;
   customer_id: string | null;
+  note: string | null;
 }
 
 export interface CustomerPointsPublic {
@@ -285,6 +286,7 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
           branch_id: item.branch_id || null,
           customer_name: item.customer_name || null,
           customer_id: item.customer_id || null,
+          note: item.note || null,
         }));
       } else {
         // Sử dụng RPC function bảo mật để tra cứu theo IMEI
@@ -314,6 +316,7 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
           branch_id: item.branch_id || null,
           customer_name: item.customer_name || null,
           customer_id: item.customer_id || null,
+          note: item.note || null,
         }));
       }
     },

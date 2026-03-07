@@ -1049,6 +1049,14 @@ export default function AppleStyleLandingTemplate({
                             {ws?.endDate && <InfoCell icon={<Shield className="h-3.5 w-3.5" />} label="BH đến" value={format(ws.endDate, 'dd/MM/yyyy', { locale: vi })} />}
                             {item.branch_name && <InfoCell icon={<Building2 className="h-3.5 w-3.5" />} label="Chi nhánh" value={item.branch_name} />}
                           </div>
+                          {item.note && (
+                            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                              <p className="text-xs text-amber-800 flex items-start gap-2">
+                                <span className="font-medium shrink-0">📝 Ghi chú:</span>
+                                <span>{item.note}</span>
+                              </p>
+                            </div>
+                          )}
                           {item.staff_name && item.staff_user_id && tenantId && (
                             <StaffRatingForm staffName={item.staff_name} staffUserId={item.staff_user_id} tenantId={tenantId} branchId={item.branch_id} exportReceiptItemId={item.id} primaryColor={accentColor}
                               defaultCustomerName={item.customer_name || customerName} defaultCustomerPhone={isPhoneSearch ? submittedValue : (item.customer_phone || '')} customerId={item.customer_id || customerId}
