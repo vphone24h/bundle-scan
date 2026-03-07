@@ -164,13 +164,13 @@ export default function ImportNewPage() {
     setIsSearching(true);
     try {
       const s = searchValue.trim();
-      const { data, error } = await supabase.rpc('search_product_suggestions', {
+      const { data, error } = await supabase.rpc('search_product_suggestions' as any, {
         p_search: s,
         p_limit: 20,
       });
 
       if (error) throw error;
-      setSuggestions((data || []).map((r: any) => ({
+      setSuggestions(((data as any[]) || []).map((r: any) => ({
         name: r.product_name,
         sku: r.product_sku,
         category_id: r.category_id,
