@@ -90,7 +90,7 @@ function CategoryTreeNode({
         const isLast = idx === categories.length - 1;
         return (
           <div key={cat.id}>
-            <div className={`flex items-center gap-2 py-2 px-2 rounded-lg hover:bg-muted/50 group ${level > 0 ? 'ml-5' : ''}`}>
+            <div className={`flex flex-wrap items-center gap-1.5 py-2 px-2 rounded-lg hover:bg-muted/50 group ${level > 0 ? 'ml-5' : ''}`}>
               <button
                 onClick={() => setExpanded(prev => ({ ...prev, [cat.id]: !isExpanded }))}
                 className={`h-6 w-6 flex items-center justify-center rounded hover:bg-muted shrink-0 ${!hasChildren ? 'invisible' : ''}`}
@@ -110,8 +110,8 @@ function CategoryTreeNode({
                   <ImagePlus className="h-3.5 w-3.5 text-muted-foreground" />
                 )}
               </button>
-              <div className="flex-1 min-w-0">
-                <p className={`font-medium text-sm truncate ${cat.is_hidden ? 'text-muted-foreground line-through' : ''}`}>{cat.name}</p>
+              <div className="min-w-[80px] flex-1">
+                <p className={`font-medium text-sm break-words ${cat.is_hidden ? 'text-muted-foreground line-through' : ''}`}>{cat.name}</p>
                 {hasChildren && <p className="text-[10px] text-muted-foreground">{cat.children!.length} danh mục con</p>}
               </div>
               <div className="flex items-center gap-0.5 shrink-0">
@@ -131,7 +131,7 @@ function CategoryTreeNode({
                 >
                   {cat.is_hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                 </Button>
-                <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAddChild(cat.id)} title="Thêm danh mục con">
                     <Plus className="h-3.5 w-3.5" />
                   </Button>
