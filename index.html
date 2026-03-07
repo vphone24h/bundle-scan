@@ -56,14 +56,22 @@
 
         function setIcon(url) {
           if (!url) return;
-          var a = document.getElementById('static-apple-icon');
-          if (a) a.href = url;
           var f = document.getElementById('static-favicon');
           if (f) f.href = url;
-          document.querySelectorAll('link[rel="apple-touch-icon"]').forEach(function(el){ el.href = url; });
+          // Remove any existing apple-touch-icons and recreate with store logo
+          document.querySelectorAll('link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]').forEach(function(el){ el.remove(); });
+          // No-size version (iOS prefers this)
           var noSize = document.createElement('link');
           noSize.rel = 'apple-touch-icon'; noSize.href = url;
           document.head.appendChild(noSize);
+          // 180x180 version
+          var s180 = document.createElement('link');
+          s180.rel = 'apple-touch-icon'; s180.setAttribute('sizes','180x180'); s180.href = url;
+          document.head.appendChild(s180);
+          // Precomposed
+          var pre = document.createElement('link');
+          pre.rel = 'apple-touch-icon-precomposed'; pre.href = url;
+          document.head.appendChild(pre);
         }
         function setTitle(name) {
           if (!name) return;
