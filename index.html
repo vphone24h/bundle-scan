@@ -21,10 +21,10 @@
     <link rel="preconnect" href="https://rodpbhesrwykmpywiiyd.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://rodpbhesrwykmpywiiyd.supabase.co" />
     
-    <!-- Icons - added dynamically by script below for store pages -->
-    <link rel="icon" type="image/png" href="/favicon.png" id="static-favicon" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" id="static-icon-32" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" id="static-icon-16" />
+    <!-- Icons - NO static href, set dynamically by script below -->
+    <link rel="icon" type="image/png" id="static-favicon" />
+    <link rel="icon" type="image/png" sizes="32x32" id="static-icon-32" />
+    <link rel="icon" type="image/png" sizes="16x16" id="static-icon-16" />
 
     <!-- Dynamically set store icon + title for PWA on store pages -->
     <script>
@@ -35,7 +35,13 @@
         var isSubdomain = h !== 'bundle-scan.lovable.app' && h !== 'localhost' && h !== 'vkho.vn' && h !== 'www.vkho.vn' && !h.endsWith('.lovable.app') && !h.endsWith('.lovableproject.com');
         
         if (!isStore && !isSubdomain) {
-          // Main domain: add static manifest + apple-touch-icon
+          // Main domain: set static icons + manifest
+          var sf = document.getElementById('static-favicon');
+          if (sf) sf.href = '/favicon.png';
+          var si32 = document.getElementById('static-icon-32');
+          if (si32) si32.href = '/icons/icon-32x32.png';
+          var si16 = document.getElementById('static-icon-16');
+          if (si16) si16.href = '/icons/icon-16x16.png';
           var sl = document.createElement('link');
           sl.rel = 'manifest'; sl.href = '/manifest.json';
           document.head.appendChild(sl);
