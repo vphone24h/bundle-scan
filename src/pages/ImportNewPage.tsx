@@ -679,7 +679,7 @@ export default function ImportNewPage() {
       // Single scan mode: fill form
       if (data.productName) {
         // Try to find and select existing product
-        const match = groupedProducts.find(
+        const match = products?.filter(p => p.status === 'in_stock').find(
           p => p.name.toLowerCase() === data.productName!.toLowerCase()
         );
         if (match) {
