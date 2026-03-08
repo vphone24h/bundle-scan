@@ -31,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const TRIGGER_LABELS: Record<string, string> = {
   signup_days: 'Sau khi đăng ký X ngày',
   inactive_days: 'Không hoạt động X ngày',
+  no_login_since: 'Sau X ngày không truy cập (gửi 1 lần)',
   trial_expiring: 'Sắp hết dùng thử (còn X ngày)',
   no_import: 'Chưa nhập hàng sau X ngày',
   no_export: 'Chưa xuất hàng sau X ngày',
@@ -52,6 +53,10 @@ const DEFAULT_TEMPLATES: Record<string, { subject: string; html_content: string 
   inactive_days: {
     subject: 'VKho nhớ bạn! Quay lại nhé 👋',
     html_content: '<h2>Chào {{tenant_name}}!</h2><p>Chúng tôi nhận thấy bạn chưa đăng nhập gần đây. Có vấn đề gì không?</p><p>Hãy quay lại và tiếp tục quản lý cửa hàng của bạn nhé!</p><p><a href="https://vkho.vn">Đăng nhập ngay →</a></p>',
+  },
+  no_login_since: {
+    subject: 'Bạn đã lâu không ghé VKho – Chúng tôi nhớ bạn! 💙',
+    html_content: '<h2>Chào {{tenant_name}}!</h2><p>Đã hơn {{trigger_days}} ngày bạn chưa truy cập VKho. Cửa hàng của bạn vẫn đang chờ!</p><p>Đăng nhập ngay để kiểm tra tồn kho, doanh thu và các cập nhật mới nhất.</p><p><a href="https://vkho.vn">Quay lại VKho →</a></p><p style="color:#888;font-size:12px;">Email này chỉ gửi một lần duy nhất để tránh làm phiền bạn.</p>',
   },
   trial_expiring: {
     subject: 'Gói dùng thử sắp hết hạn ⏰',
