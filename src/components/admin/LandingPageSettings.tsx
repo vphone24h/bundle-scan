@@ -1927,6 +1927,12 @@ export function LandingPageSettings() {
         </CardContent>
       </Card>
 
+      {/* Payment Config */}
+      <PaymentConfigSection
+        formData={formData as any}
+        onChange={(key, value) => handleChange(key as any, value)}
+      />
+
       {/* Auto-save indicator */}
       {updateSettings.isPending && (
         <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
