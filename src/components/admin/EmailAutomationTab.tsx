@@ -96,6 +96,8 @@ const VARIABLES = [
   { key: '{{phone}}', label: 'SĐT cửa hàng' },
   { key: '{{address}}', label: 'Địa chỉ cửa hàng' },
   { key: '{{staff_name}}', label: 'Tên nhân viên bán' },
+  { key: '{{action_date}}', label: 'Ngày hẹn' },
+  { key: '{{action_time}}', label: 'Giờ hẹn' },
 ];
 
 interface BlockItem {
