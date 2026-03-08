@@ -108,7 +108,7 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickF
           <Hash className="mr-2 h-4 w-4" /> Gắn hashtag
         </DropdownMenuItem>
         {(() => {
-          const match = getOffsetMatch(debt.entity_phone);
+          const match = getOffsetMatch(debt.entity_code);
           if (match) return (
             <DropdownMenuItem onClick={() => { setSelectedOffsetMatch(match); setShowOffset(true); }}>
               <ArrowLeftRight className="mr-2 h-4 w-4" /> Bù trừ công nợ
