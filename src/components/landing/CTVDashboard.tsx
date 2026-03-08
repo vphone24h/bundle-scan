@@ -67,6 +67,9 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   });
   const [profileForm, setProfileForm] = useState<any>(null);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
+  const [productSortPrice, setProductSortPrice] = useState<'none' | 'asc' | 'desc'>('none');
 
   const handleLogout = async () => {
     // Build target URL FIRST: the store's website (NOT admin/kho)
