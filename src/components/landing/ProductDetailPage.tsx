@@ -344,6 +344,7 @@ export function ProductDetailPage({
     }
   };
 
+  return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Sticky header with back button */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b safe-area-top">
