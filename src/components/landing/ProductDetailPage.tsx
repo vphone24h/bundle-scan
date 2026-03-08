@@ -1240,7 +1240,7 @@ export function ProductDetailPage({
         onClose={() => setActiveDialog(null)}
         tenantId={tenantId} primaryColor={primaryColor} branches={branches}
         productName={product.name}
-        groupUrl={enabledButtons.find(b => b.action === 'join_member')?.customUrl || ''}
+        groupUrl={(ctaButtons || []).find(b => b.action === 'join_member')?.customUrl || ''}
       />
     </div>
   );
