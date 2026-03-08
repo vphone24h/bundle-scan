@@ -42,7 +42,7 @@ interface ContactFormDialogProps extends CTADialogProps {
 export function ContactFormDialog({
   open, onClose, tenantId, primaryColor, branches,
   productName, productId, productImageUrl, productPrice,
-  title, description, actionLabel, requireEmail = true, showMessage = true, notePrefix = '',
+  title, description, actionLabel, requireEmail = true, showMessage = true, notePrefix = '', actionType = 'order',
 }: ContactFormDialogProps) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
