@@ -657,7 +657,40 @@ export function EmailAutomationTab() {
     }
   };
 
-  const handleSendTest = (item: EmailAutomation) => {
+  const handleResendSingle = async (logId: string) => {
+    setResendingIds(prev => new Set(prev).add(logId));
+    try {
+      const { error } = await supabase.functions.invoke('run-email-automations', {
+        body: { resendLogIds: [logId] },
+      });
+      if (error) throw error;
+      toast.success('Đã gửi lại email thành công');
+      queryClient.invalidateQueries({ queryKey: ['email-automation-logs'] });
+    } catch (e: any) {
+      toast.error('Lỗi gửi lại: ' + e.message);
+    } finally {
+      setResendingIds(prev => { const n = new Set(prev); n.delete(logId); return n; });
+    }
+  };
+
+  const handleResendAllFailed = async (failedLogIds: string[]) => {
+    if (!failedLogIds.length) return;
+    if (!confirm(`Gửi lại ${failedLogIds.length} email thất bại?`)) return;
+    setResendingAll(true);
+    try {
+      const { error } = await supabase.functions.invoke('run-email-automations', {
+        body: { resendLogIds: failedLogIds },
+      });
+      if (error) throw error;
+      toast.success(`Đã gửi lại ${failedLogIds.length} email`);
+      queryClient.invalidateQueries({ queryKey: ['email-automation-logs'] });
+    } catch (e: any) {
+      toast.error('Lỗi gửi lại: ' + e.message);
+    } finally {
+      setResendingAll(false);
+    }
+  };
+
     setTestConfirmItem(item);
   };
 
