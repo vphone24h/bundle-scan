@@ -95,7 +95,7 @@ export function useReportStats(filters?: {
           export_receipts!inner(export_date, branch_id, status),
           products(import_price)
         `)
-        .eq('status', 'sold')
+        .in('status', ['sold', 'returned'])
         .neq('export_receipts.status', 'cancelled')
         .gte('export_receipts.export_date', startISO)
         .lte('export_receipts.export_date', endISO)
