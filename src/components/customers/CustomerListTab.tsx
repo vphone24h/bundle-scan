@@ -186,13 +186,14 @@ export function CustomerListTab({
          <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
            <div className="flex flex-col gap-3">
              <div className="flex gap-2">
-               <SearchInput
-                 placeholder="Tìm theo tên, SĐT..."
-                 value={search}
-                 onChange={handleSearchChange}
-                 containerClassName="flex-1"
-                 className="h-9 text-sm"
-               />
+                <SearchInput
+                  placeholder="Tìm theo tên, SĐT..."
+                  value={search}
+                  onChange={handleSearchChange}
+                  containerClassName="flex-1"
+                  className="h-9 text-sm"
+                  loading={isLoading && !!debouncedSearch}
+                />
                <Button size="sm" onClick={() => setShowFormDialog(true)} className="h-9 px-3">
                  <Plus className="h-4 w-4 sm:mr-2" />
                  <span className="hidden sm:inline">Thêm</span>
