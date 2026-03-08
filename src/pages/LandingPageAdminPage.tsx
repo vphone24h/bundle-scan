@@ -154,6 +154,11 @@ export default function LandingPageAdminPage() {
                   <span className="flex items-center gap-1">Email Automation</span>
                 </TabsTrigger>
               )}
+              {showSettings && (
+                <TabsTrigger value="ctv" className="py-2.5 px-4 text-sm">
+                  <span className="flex items-center gap-1">👥 CTV</span>
+                </TabsTrigger>
+              )}
             </TabsList>
             {showSettings && (
               <TabsContent value="settings">
