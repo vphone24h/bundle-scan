@@ -262,6 +262,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
               const authKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
               if (authKey) localStorage.removeItem(authKey);
               try { await supabase.auth.signOut(); } catch {}
+              sessionStorage.setItem('ctv_logged_out', '1');
               setLoggedOut(true);
             }}
           >
