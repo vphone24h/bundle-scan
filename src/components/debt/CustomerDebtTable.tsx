@@ -112,7 +112,15 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
         <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowTagAssign(true); }}>
           <Hash className="mr-2 h-4 w-4" /> Gắn hashtag
         </DropdownMenuItem>
-        {debt.entity_phone && (
+        {(() => {
+          const match = getOffsetMatch(debt.entity_phone);
+          if (match) return (
+            <DropdownMenuItem onClick={() => { setSelectedOffsetMatch(match); setShowOffset(true); }}>
+              <ArrowLeftRight className="mr-2 h-4 w-4" /> Bù trừ công nợ
+            </DropdownMenuItem>
+          );
+          return null;
+        })()}
           <>
             <DropdownMenuItem onClick={() => window.open(`tel:${debt.entity_phone}`, '_self')}>
               <Phone className="mr-2 h-4 w-4" /> Gọi nhắc nợ
