@@ -47,7 +47,7 @@ interface ProductDetailPageProps {
   warrantyHotline?: string | null;
   onShare?: () => void;
   onInstallment?: () => void;
-  showInstallmentButton?: boolean; // deprecated, use detailSections
+  showInstallmentButton?: boolean;
   detailSections?: ProductDetailSectionConfig[] | null;
   ctaButtons?: CTAButtonItem[] | null;
   websiteTemplate?: string | null;
@@ -58,6 +58,7 @@ interface ProductDetailPageProps {
   zaloUrl?: string | null;
   facebookUrl?: string | null;
   paymentConfig?: PaymentConfig | null;
+  onNavigateOrderLookup?: () => void;
 }
 
 export function ProductDetailPage({

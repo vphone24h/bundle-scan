@@ -1522,6 +1522,17 @@ export default function UniversalStoreTemplate({
             case 'reviews': {
               return <GenericSystemPage {...systemPageProps} pageId={pageView} pageLabel={activeNav?.label || pageView} />;
             }
+            case 'order-lookup': {
+              return (
+                <OrderLookupPage
+                  tenantId={tenantId!}
+                  accentColor={accentColor}
+                  storePhone={settings?.store_phone || warrantyHotline}
+                  zaloUrl={settings?.zalo_url}
+                  onBack={() => navigateTo('home')}
+                />
+              );
+            }
             default: return null;
           }
         })()}
