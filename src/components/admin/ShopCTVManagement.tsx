@@ -22,7 +22,6 @@ import {
   useShopCTVSettings, useUpdateShopCTVSettings,
   useShopCTVList, useUpdateShopCTV, useCreateShopCTV,
   useShopCTVWithdrawals, useProcessCTVWithdrawal,
-  useShopCTVOrders,
 } from '@/hooks/useShopCTV';
 
 export function ShopCTVManagement() {
