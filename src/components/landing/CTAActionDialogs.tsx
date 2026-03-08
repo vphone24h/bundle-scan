@@ -630,7 +630,7 @@ export function JoinMemberDialog({
             </div>
             <div>
               <Label className="text-sm">Email <span className="text-destructive">*</span></Label>
-              <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập email" type="email" inputMode="email" className="h-11 text-base" />
+              <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập đúng email để nhận thông tin đơn hàng" type="email" inputMode="email" className="h-11 text-base" />
             </div>
             {branches.length > 1 && (
               <div>

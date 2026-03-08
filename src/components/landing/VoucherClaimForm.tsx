@@ -136,7 +136,7 @@ export function VoucherClaimForm({ tenantId, branches, primaryColor }: VoucherCl
                 </div>
                 <div>
                   <Label className="text-xs">Email <span className="text-destructive">*</span></Label>
-                  <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập email" inputMode="email" type="email" className="h-10" />
+                  <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập đúng email để nhận thông tin đơn hàng" inputMode="email" type="email" className="h-10" />
                 </div>
                 {branches.length > 1 && (
                   <div>
