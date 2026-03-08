@@ -1235,6 +1235,13 @@ export function ProductDetailPage({
         title={activeDialog === 'today_offer' ? '🔥 Ưu đãi hôm nay' : activeDialog === 'today_gift' ? '🎁 Quà tặng hôm nay' : '⚡ Deal hot'}
         productName={product.name}
       />
+      <JoinMemberDialog
+        open={activeDialog === 'join_member'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        productName={product.name}
+        groupUrl={enabledButtons.find(b => b.action === 'join_member')?.customUrl || ''}
+      />
     </div>
   );
 }
