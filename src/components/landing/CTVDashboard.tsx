@@ -61,7 +61,18 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
 
   const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
   const [selectedF1, setSelectedF1] = useState<any>(null);
-  const [registerForm, setRegisterForm] = useState({ full_name: '', phone: '', referrer_code: '' });
+  // Pre-fill referrer code from URL param or localStorage
+  const urlRefCode = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ref') : null;
+  const storedRef = (() => {
+    try {
+      const raw = localStorage.getItem(`ctv_ref_${tenantId}`);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed?.code || null;
+    } catch { return null; }
+  })();
+  const prefilledRefCode = urlRefCode || storedRef || '';
+  const [registerForm, setRegisterForm] = useState({ full_name: '', phone: '', referrer_code: prefilledRefCode });
   const [withdrawForm, setWithdrawForm] = useState({
     amount: '', bank_name: '', bank_account_number: '', bank_account_holder: '', note: '',
   });
