@@ -90,7 +90,7 @@ export default function PlatformAdminPage() {
               <TabsTrigger value="plans" className="text-xs px-2.5 py-1.5">{t('pages.platformAdmin.plans')}</TabsTrigger>
               <TabsTrigger value="affiliate" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
                 <Users className="h-3 w-3" />
-                <span className="hidden sm:inline">Affiliate</span>
+                <span className="hidden sm:inline">Cấu hình CTV</span>
               </TabsTrigger>
               <TabsTrigger value="ads" className="text-xs px-2.5 py-1.5 flex items-center gap-1">
                 <Megaphone className="h-3 w-3" />

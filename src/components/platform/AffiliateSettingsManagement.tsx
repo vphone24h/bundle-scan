@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Save, Settings, Shield, Clock, Wallet, FileText } from 'lucide-react';
 import { useAffiliateSettings, useUpdateAffiliateSettings } from '@/hooks/useAffiliate';
 
@@ -22,6 +23,9 @@ export function AffiliateSettingsManagement() {
     hold_days: 7,
     min_withdrawal_amount: 500000,
     commission_description: '',
+    cookie_tracking_days: 30,
+    default_commission_rate: 3,
+    default_commission_type: 'percentage',
   });
 
   useEffect(() => {
@@ -36,6 +40,9 @@ export function AffiliateSettingsManagement() {
         hold_days: settings.hold_days,
         min_withdrawal_amount: settings.min_withdrawal_amount,
         commission_description: (settings as any).commission_description || '',
+        cookie_tracking_days: (settings as any).cookie_tracking_days ?? 30,
+        default_commission_rate: (settings as any).default_commission_rate ?? 3,
+        default_commission_type: (settings as any).default_commission_type ?? 'percentage',
       });
     }
   }, [settings]);
@@ -203,19 +210,77 @@ export function AffiliateSettingsManagement() {
         </CardContent>
       </Card>
 
-      {/* Cấu hình thanh toán */}
+      {/* Hoa hồng mặc định */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wallet className="h-5 w-5" />
-            Cấu hình thanh toán
+            Hoa hồng giới thiệu mặc định
           </CardTitle>
           <CardDescription>
-            Cấu hình thời gian treo thưởng và điều kiện rút tiền
+            % hoa hồng mặc định khi CTV giới thiệu thành công
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Kiểu hoa hồng</Label>
+              <Select
+                value={form.default_commission_type}
+                onValueChange={(v) => setForm({ ...form, default_commission_type: v })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percentage">Phần trăm (%)</SelectItem>
+                  <SelectItem value="fixed">Số tiền cố định (₫)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{form.default_commission_type === 'percentage' ? '% Hoa hồng' : 'Số tiền hoa hồng (₫)'}</Label>
+              <Input
+                type="number"
+                min="0"
+                step={form.default_commission_type === 'percentage' ? '0.5' : '10000'}
+                value={form.default_commission_rate}
+                onChange={(e) => setForm({ ...form, default_commission_rate: parseFloat(e.target.value) || 0 })}
+              />
+              <p className="text-xs text-muted-foreground">
+                {form.default_commission_type === 'percentage'
+                  ? `CTV nhận ${form.default_commission_rate}% trên mỗi đơn hàng`
+                  : `CTV nhận ${Number(form.default_commission_rate).toLocaleString('vi-VN')}₫ trên mỗi đơn hàng`}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Cookie tracking & Thanh toán */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Cookie tracking & Thanh toán
+          </CardTitle>
+          <CardDescription>
+            Cấu hình thời gian cookie, treo thưởng và điều kiện rút tiền
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Thời gian cookie tracking (ngày)</Label>
+              <Input
+                type="number"
+                min="1"
+                value={form.cookie_tracking_days}
+                onChange={(e) => setForm({ ...form, cookie_tracking_days: parseInt(e.target.value) || 30 })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Cookie ref được lưu trong {form.cookie_tracking_days} ngày
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label>Thời gian treo thưởng (ngày)</Label>
               <Input
@@ -225,12 +290,12 @@ export function AffiliateSettingsManagement() {
                 onChange={(e) => setForm({ ...form, hold_days: parseInt(e.target.value) || 0 })}
               />
               <p className="text-xs text-muted-foreground">
-                Hoa hồng sẽ được giữ trong {form.hold_days} ngày trước khi có thể rút
+                Hoa hồng giữ {form.hold_days} ngày trước khi rút
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label>Số tiền tối thiểu để rút (VND)</Label>
+              <Label>Số tiền tối thiểu rút (VND)</Label>
               <Input
                 type="number"
                 min="0"
@@ -239,7 +304,7 @@ export function AffiliateSettingsManagement() {
                 onChange={(e) => setForm({ ...form, min_withdrawal_amount: parseInt(e.target.value) || 0 })}
               />
               <p className="text-xs text-muted-foreground">
-                Số dư tối thiểu: {form.min_withdrawal_amount.toLocaleString('vi-VN')} VND
+                Tối thiểu: {form.min_withdrawal_amount.toLocaleString('vi-VN')} VND
               </p>
             </div>
           </div>

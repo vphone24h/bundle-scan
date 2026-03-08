@@ -358,7 +358,10 @@ export type Database = {
           check_same_ip: boolean
           check_same_phone: boolean
           commission_description: string | null
+          cookie_tracking_days: number
           created_at: string
+          default_commission_rate: number
+          default_commission_type: string
           hold_days: number
           id: string
           is_enabled: boolean
@@ -372,7 +375,10 @@ export type Database = {
           check_same_ip?: boolean
           check_same_phone?: boolean
           commission_description?: string | null
+          cookie_tracking_days?: number
           created_at?: string
+          default_commission_rate?: number
+          default_commission_type?: string
           hold_days?: number
           id?: string
           is_enabled?: boolean
@@ -386,7 +392,10 @@ export type Database = {
           check_same_ip?: boolean
           check_same_phone?: boolean
           commission_description?: string | null
+          cookie_tracking_days?: number
           created_at?: string
+          default_commission_rate?: number
+          default_commission_type?: string
           hold_days?: number
           id?: string
           is_enabled?: boolean
@@ -1184,6 +1193,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ctv_product_commissions: {
+        Row: {
+          commission_type: string
+          commission_value: number
+          created_at: string
+          id: string
+          is_active: boolean
+          target_id: string
+          target_name: string
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          target_id: string
+          target_name?: string
+          target_type: string
+          updated_at?: string
+        }
+        Update: {
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          target_id?: string
+          target_name?: string
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       custom_domains: {
         Row: {
