@@ -688,6 +688,9 @@ export function EmailAutomationTab() {
             Email Automation
           </CardTitle>
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={handleRunNow} disabled={runningNow}>
+              <Play className={`h-4 w-4 mr-1 ${runningNow ? 'animate-spin' : ''}`} /> {runningNow ? 'Đang chạy...' : 'Chạy ngay'}
+            </Button>
             <Button size="sm" onClick={handleCreate}>
               <Plus className="h-4 w-4 mr-1" /> Tạo kịch bản
             </Button>
