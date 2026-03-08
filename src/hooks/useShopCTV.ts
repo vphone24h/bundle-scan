@@ -85,6 +85,19 @@ export function useRegisterShopCTV() {
   });
 }
 
+// ===== My Referred CTVs (F1) =====
+export function useMyReferredCTVs(ctvId: string | null) {
+  return useQuery({
+    queryKey: ['my-referred-ctvs', ctvId],
+    enabled: !!ctvId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_my_referred_ctvs', { _ctv_id: ctvId! });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+}
+
 // ===== CTV Orders (for CTV dashboard) =====
 export function useMyCTVOrders(ctvId: string | null) {
   return useQuery({
@@ -181,7 +194,6 @@ export function useCreateShopCTV() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (params: { tenant_id: string; full_name: string; phone?: string; email?: string; commission_rate?: number; commission_type?: string }) => {
-      // Generate code via RPC
       const { data: code, error: codeErr } = await supabase.rpc('generate_shop_ctv_code', { _tenant_id: params.tenant_id });
       if (codeErr) throw codeErr;
       
