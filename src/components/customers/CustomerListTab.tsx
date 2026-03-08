@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { SearchInput } from '@/components/ui/search-input';
 import { Button } from '@/components/ui/button';
@@ -58,9 +58,18 @@ export function CustomerListTab({
     const { data: permissions } = usePermissions();
     const isSuperAdmin = permissions?.canViewAllBranches === true;
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [sourceFilter, setSourceFilter] = useState('_all_');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(25);
+
+    // Debounce search input (400ms)
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setDebouncedSearch(search);
+      }, 400);
+      return () => clearTimeout(timer);
+    }, [search]);
 
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
     const [editingCustomer, setEditingCustomer] = useState<any>(null);
@@ -93,7 +102,7 @@ export function CustomerListTab({
     };
 
     const { data: customers, isLoading, hasMore } = useCustomersWithPoints({
-      search: search || undefined,
+      search: debouncedSearch || undefined,
       branchId: branchFilter !== '_all_' ? branchFilter : undefined,
       tier: tierFilter !== '_all_' ? tierFilter : undefined,
       status: undefined,
@@ -177,13 +186,14 @@ export function CustomerListTab({
          <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
            <div className="flex flex-col gap-3">
              <div className="flex gap-2">
-               <SearchInput
-                 placeholder="Tìm theo tên, SĐT..."
-                 value={search}
-                 onChange={handleSearchChange}
-                 containerClassName="flex-1"
-                 className="h-9 text-sm"
-               />
+                <SearchInput
+                  placeholder="Tìm theo tên, SĐT..."
+                  value={search}
+                  onChange={handleSearchChange}
+                  containerClassName="flex-1"
+                  className="h-9 text-sm"
+                  loading={isLoading && !!debouncedSearch}
+                />
                <Button size="sm" onClick={() => setShowFormDialog(true)} className="h-9 px-3">
                  <Plus className="h-4 w-4 sm:mr-2" />
                  <span className="hidden sm:inline">Thêm</span>
