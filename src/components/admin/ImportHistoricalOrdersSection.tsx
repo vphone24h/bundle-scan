@@ -39,6 +39,55 @@ function isFlat(headerRow: any[]): boolean {
     h0.includes('mã đơn') || h0.includes('ma don') || h0 === 'mã đơn hàng'
   );
 }
+const STORAGE_KEY = 'import-historical-orders-state';
+
+interface PersistedState {
+  importing: boolean;
+  progress: number;
+  fileName: string;
+  results: ImportResult | null;
+  startedAt: number | null;
+}
+
+function loadPersistedState(): PersistedState {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { importing: false, progress: 0, fileName: '', results: null, startedAt: null };
+}
+
+function savePersistedState(state: Partial<PersistedState>) {
+  try {
+    const current = loadPersistedState();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...current, ...state }));
+  } catch {}
+}
+
+interface ParsedOrder {
+  orderId: string;
+  imei: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  customerAddress: string;
+  productName: string;
+  productVariant: string;
+  salePrice: number;
+  note: string;
+  orderDate: string;
+  status: string;
+  warranty: string;
+}
+
+interface ImportResult {
+  totalOrders: number;
+  completedOrders: number;
+  createdReceipts: number;
+  createdItems: number;
+  customersCreated: number;
+  skipped: number;
+}
 
 function parseFlatRow(row: any[]): ParsedOrder | null {
   try {
