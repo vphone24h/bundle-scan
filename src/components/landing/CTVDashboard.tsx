@@ -42,6 +42,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const { data: landingProducts } = usePublicLandingProducts(tenantId);
   const registerCTV = useRegisterShopCTV();
   const createWithdrawal = useCreateCTVWithdrawal();
+  const updateCTV = useUpdateShopCTV();
 
   const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
   const [selectedF1, setSelectedF1] = useState<any>(null);
