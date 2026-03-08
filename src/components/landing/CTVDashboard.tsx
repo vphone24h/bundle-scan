@@ -19,7 +19,7 @@ import { formatNumber } from '@/lib/formatNumber';
 import {
   useMyShopCTV, useRegisterShopCTV, useMyCTVOrders,
   useMyCTVWithdrawals, useCreateCTVWithdrawal, useShopCTVSettings,
-  useMyReferredCTVs,
+  useMyReferredCTVs, useUpdateShopCTV,
 } from '@/hooks/useShopCTV';
 import { usePublicLandingProducts } from '@/hooks/useLandingProducts';
 import { supabase } from '@/integrations/supabase/client';
