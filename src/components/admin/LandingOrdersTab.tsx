@@ -238,10 +238,11 @@ export function LandingOrdersTab() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Thời gian</TableHead>
-                  <TableHead>Khách hàng</TableHead>
-                  <TableHead>Sản phẩm</TableHead>
-                  <TableHead>Thanh toán</TableHead>
+                    <TableHead>Thời gian</TableHead>
+                    <TableHead>Hành động</TableHead>
+                    <TableHead>Khách hàng</TableHead>
+                    <TableHead>Sản phẩm</TableHead>
+                    <TableHead>Thanh toán</TableHead>
                   <TableHead>Chi nhánh</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead>Liên hệ</TableHead>
