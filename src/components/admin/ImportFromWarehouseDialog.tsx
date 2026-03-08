@@ -161,16 +161,20 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
   const resolveLandingCategoryId = async (categoryId: string | null, categoryName: string | null): Promise<string | null> => {
     if (!categoryId || !categoryName) return null;
     try {
+      const tenantId = tenant?.id;
+      if (!tenantId) return null;
+
+      // Search within the same tenant's landing categories
       const { data: existing } = await supabase
         .from('landing_product_categories' as any)
         .select('id')
+        .eq('tenant_id', tenantId)
         .eq('name', categoryName)
         .limit(1)
         .maybeSingle();
       if (existing) return (existing as any).id;
 
-      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
-      if (!tenantId) return null;
+      // Auto-create the category for this tenant
       const { data: created } = await supabase
         .from('landing_product_categories' as any)
         .insert([{ name: categoryName, tenant_id: tenantId }])
