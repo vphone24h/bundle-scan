@@ -92,18 +92,16 @@ interface ImportResult {
 
 function parseFlatRow(row: any[]): ParsedOrder | null {
   try {
-    const orderId = String(row[0] || '').trim();
-    if (!orderId) return null;
-    const imei = String(row[1] || '').trim();
-    const customerName = String(row[2] || '').trim() || 'Khách lẻ';
-    const customerPhone = String(row[3] || '').replace(/\s/g, '');
-    const customerEmail = String(row[4] || '').trim();
-    const customerAddress = String(row[5] || '').trim();
-    const productName = String(row[6] || '').trim() || 'Sản phẩm';
-    const productVariant = String(row[7] || '').trim();
+    // New flat format: IMEI, Tên KH, SĐT, Email, Địa chỉ, Tên SP, Giá bán, Ghi chú, Ngày bán, Trạng thái, Gói BH
+    const imei = String(row[0] || '').trim();
+    const customerName = String(row[1] || '').trim() || 'Khách lẻ';
+    const customerPhone = String(row[2] || '').replace(/\s/g, '');
+    const customerEmail = String(row[3] || '').trim();
+    const customerAddress = String(row[4] || '').trim();
+    const productName = String(row[5] || '').trim() || 'Sản phẩm';
 
     let salePrice = 0;
-    const priceVal = row[8];
+    const priceVal = row[6];
     if (typeof priceVal === 'number') {
       salePrice = priceVal;
     } else if (priceVal) {
@@ -111,15 +109,21 @@ function parseFlatRow(row: any[]): ParsedOrder | null {
       if (parsed > 0) salePrice = parsed;
     }
 
-    const note = String(row[9] || '').trim();
-    const orderDate = String(row[10] || '').trim();
-    const status = String(row[11] || '').trim();
-    const warranty = String(row[12] || '').trim();
+    const note = String(row[7] || '').trim();
+    const orderDate = String(row[8] || '').trim();
+    const status = String(row[9] || '').trim();
+    const warranty = String(row[10] || '').trim();
+
+    // Must have at least product name or IMEI
+    if (!productName && !imei) return null;
+
+    // Auto-generate orderId
+    autoOrderCounter++;
+    const orderId = `AUTO-${autoOrderCounter.toString().padStart(6, '0')}`;
 
     return {
       orderId, imei, customerName, customerPhone, customerEmail, customerAddress,
-      productName: productName + (productVariant ? ` - ${productVariant}` : ''),
-      productVariant, salePrice, note, orderDate, status,
+      productName, productVariant: '', salePrice, note, orderDate, status,
       warranty: warranty === 'N/A' ? '' : warranty,
     };
   } catch {
