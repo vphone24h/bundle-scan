@@ -5171,6 +5171,8 @@ export type Database = {
           created_at: string
           default_commission_rate: number
           default_commission_type: string
+          f1_commission_rate: number
+          f1_commission_type: string
           high_commission_rate: number
           high_commission_type: string
           id: string
@@ -5191,6 +5193,8 @@ export type Database = {
           created_at?: string
           default_commission_rate?: number
           default_commission_type?: string
+          f1_commission_rate?: number
+          f1_commission_type?: string
           high_commission_rate?: number
           high_commission_type?: string
           id?: string
@@ -5211,6 +5215,8 @@ export type Database = {
           created_at?: string
           default_commission_rate?: number
           default_commission_type?: string
+          f1_commission_rate?: number
+          f1_commission_type?: string
           high_commission_rate?: number
           high_commission_type?: string
           id?: string
