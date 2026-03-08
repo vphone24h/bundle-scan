@@ -875,19 +875,9 @@ export function ProductDetailPage({
             }
 
             case 'consult_now': {
-              const consultUrl = btn.customUrl || zaloUrl || facebookUrl;
-              if (consultUrl) {
-                let link = consultUrl.trim();
-                if (!link.startsWith('http')) link = `https://${link}`;
-                return (
-                  <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
-                    <a href={link} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
-                  </Button>
-                );
-              }
               return (
                 <Button key={btn.id} variant="outline" className="shrink-0 gap-2 h-11 text-sm px-4"
-                  onClick={() => setActiveDialog('send_request')}>
+                  onClick={() => setShowConsultDialog(true)}>
                   {btn.icon} {btn.label}
                 </Button>
               );
