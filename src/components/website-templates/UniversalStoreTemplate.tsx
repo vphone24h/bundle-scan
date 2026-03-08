@@ -425,6 +425,7 @@ export default function UniversalStoreTemplate({
             confirmZaloUrl: (settings as any)?.payment_confirm_zalo_url || null,
             confirmMessengerUrl: (settings as any)?.payment_confirm_messenger_url || null,
           }}
+          onNavigateOrderLookup={() => { setSelectedProduct(null); navigateTo('order-lookup' as PageView); }}
         />
         <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
       </>
