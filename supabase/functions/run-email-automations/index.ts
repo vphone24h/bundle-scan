@@ -449,8 +449,8 @@ Deno.serve(async (req) => {
             customers: c,
           }))
         } else if (automation.trigger_type === 'customer_registration_anniversary') {
-          // Customers registered exactly X years ago (same month-day, X years back)
-          const triggerYears = Math.max(1, Math.floor(automation.trigger_days / 365))
+          // Customers registered exactly X years ago (trigger_days = number of years)
+          const triggerYears = Math.max(1, automation.trigger_days)
           const anniversaryDate = new Date(today)
           anniversaryDate.setFullYear(today.getFullYear() - triggerYears)
           const dayStart = anniversaryDate.toISOString().split('T')[0]
