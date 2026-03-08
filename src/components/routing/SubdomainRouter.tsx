@@ -49,7 +49,21 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
         return 'app';
       }
       
-      if (user) return 'app';
+      // CTV user on main domain after email verification → redirect to store
+      if (user) {
+        const ctvStoreMode = localStorage.getItem('ctv_store_mode');
+        const ctvTenantId = user.user_metadata?.ctv_tenant_id;
+        if (ctvStoreMode || ctvTenantId) {
+          const storeId = ctvStoreMode || ctvTenantId;
+          // On main domain, redirect CTV to their store
+          const storeUrl = buildStoreUrl(storeId);
+          if (storeUrl !== window.location.href && !storeUrl.includes(window.location.hostname)) {
+            window.location.href = storeUrl;
+            return 'app'; // Show app shell while redirecting
+          }
+        }
+        return 'app';
+      }
       
       if (location.pathname === '/' && publicLandingPage) {
         return 'public_landing';
