@@ -32,6 +32,7 @@ const TRIGGER_LABELS: Record<string, string> = {
   signup_days: 'Sau khi đăng ký X ngày',
   inactive_days: 'Không hoạt động X ngày',
   no_login_since: 'Sau X ngày không truy cập (gửi 1 lần)',
+  post_purchase_days: 'Sau khi mua hàng X ngày (gửi 1 lần)',
   trial_expiring: 'Sắp hết dùng thử (còn X ngày)',
   no_import: 'Chưa nhập hàng sau X ngày',
   no_export: 'Chưa xuất hàng sau X ngày',
