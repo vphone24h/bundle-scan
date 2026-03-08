@@ -312,6 +312,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
             <TabsTrigger value="orders" className="flex-1 text-xs">Đơn hàng</TabsTrigger>
             <TabsTrigger value="team" className="flex-1 text-xs">Đội nhóm</TabsTrigger>
             <TabsTrigger value="withdrawals" className="flex-1 text-xs">Rút tiền</TabsTrigger>
+            <TabsTrigger value="profile" className="flex-1 text-xs">Tài khoản</TabsTrigger>
           </TabsList>
 
           {/* Products with CTV links */}
