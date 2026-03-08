@@ -59,6 +59,10 @@ export function usePlaceLandingOrder() {
       action_type?: string;
       action_date?: string;
       action_time?: string;
+      order_source?: string;
+      ctv_code?: string;
+      ctv_id?: string;
+      ctv_name?: string;
     }) => {
       const { data, error } = await supabase
         .from('landing_orders' as any)
