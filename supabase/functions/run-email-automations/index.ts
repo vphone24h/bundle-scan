@@ -372,6 +372,7 @@ Deno.serve(async (req) => {
         const today = new Date()
 
         if (automation.trigger_type === 'days_after_purchase') {
+          // Exactly X days after purchase
           const targetDate = new Date(today.getTime() - automation.trigger_days * 86400000)
           const dayStart = targetDate.toISOString().split('T')[0]
           const dayEnd = new Date(targetDate.getTime() + 86400000).toISOString().split('T')[0]
@@ -383,6 +384,20 @@ Deno.serve(async (req) => {
             .eq('status', 'completed')
             .gte('export_date', dayStart)
             .lt('export_date', dayEnd)
+            .limit(500)
+
+          eligibleReceipts = data || []
+        } else if (automation.trigger_type === 'days_after_purchase_onwards') {
+          // X days or more after purchase (all customers who bought >= X days ago)
+          const cutoffDate = new Date(today.getTime() - automation.trigger_days * 86400000)
+          const cutoffStr = cutoffDate.toISOString().split('T')[0]
+
+          const { data } = await supabase
+            .from('export_receipts')
+            .select('id, customer_id, export_date, sales_staff_id, customers(id, name, phone, email)')
+            .eq('tenant_id', automation.tenant_id)
+            .eq('status', 'completed')
+            .lt('export_date', cutoffStr)
             .limit(500)
 
           eligibleReceipts = data || []
@@ -419,8 +434,8 @@ Deno.serve(async (req) => {
           const customer = Array.isArray(receipt.customers) ? receipt.customers[0] : receipt.customers
           if (!customer?.email) continue
 
-          // For days_after_purchase: only send ONCE per customer (regardless of how many orders)
-          if (automation.trigger_type === 'days_after_purchase') {
+          // For purchase-based triggers: only send ONCE per customer (regardless of how many orders)
+          if (automation.trigger_type === 'days_after_purchase' || automation.trigger_type === 'days_after_purchase_onwards') {
             const { count } = await supabase
               .from('email_automation_logs')
               .select('id', { count: 'exact', head: true })
