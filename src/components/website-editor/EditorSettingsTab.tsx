@@ -243,6 +243,48 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
               <Input value={formData.store_email || ''} onChange={e => onChange('store_email', e.target.value)} placeholder="email@..." />
             </div>
           </div>
+
+          <div className="border-t pt-3 mt-1 space-y-3">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Liên hệ & Mạng xã hội</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Zalo</Label>
+                <Input value={formData.zalo_url || ''} onChange={e => onChange('zalo_url', e.target.value)} placeholder="0xxx hoặc zalo.me/..." />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Facebook</Label>
+                <Input value={formData.facebook_url || ''} onChange={e => onChange('facebook_url', e.target.value)} placeholder="fb.com/..." />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs">TikTok</Label>
+                <Input value={(formData as any).tiktok_url || ''} onChange={e => onChange('tiktok_url', e.target.value)} placeholder="tiktok.com/@..." />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Hotline</Label>
+                <Input value={formData.warranty_hotline || ''} onChange={e => onChange('warranty_hotline', e.target.value)} placeholder="1900xxxx" />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t pt-3 mt-1 space-y-3">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Tài khoản ngân hàng</p>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Ngân hàng</Label>
+              <Input value={formData.payment_bank_name || ''} onChange={e => onChange('payment_bank_name', e.target.value)} placeholder="Vietcombank, MB Bank..." />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Số tài khoản</Label>
+                <Input value={formData.payment_account_number || ''} onChange={e => onChange('payment_account_number', e.target.value)} placeholder="0123456789" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Chủ tài khoản</Label>
+                <Input value={formData.payment_account_holder || ''} onChange={e => onChange('payment_account_holder', e.target.value)} placeholder="NGUYEN VAN A" />
+              </div>
+            </div>
+          </div>
         </div>
       </SettingsBlock>
 
