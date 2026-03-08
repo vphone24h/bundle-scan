@@ -53,67 +53,47 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const WarrantyCheckPage = lazy(() => import("./pages/WarrantyCheckPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Aggressively preload all main page chunks after initial render
-// so clicking any tab opens instantly (no white flash)
-function preloadAllPages() {
+// Only preload admin pages when user is logged in (not on store landing / CTV pages)
+function preloadAdminPages() {
+  // Skip preloading if on a store subdomain and not logged in
+  const hostname = window.location.hostname;
+  const isMainDomain = hostname === 'localhost' || hostname === 'vkho.vn' || hostname === 'www.vkho.vn' || hostname.includes('lovable');
+  const hasAuth = !!localStorage.getItem('sb-rodpbhesrwykmpywiiyd-auth-token');
+  const isCTVMode = !!localStorage.getItem('ctv_store_mode');
+  
+  // Don't preload all pages for store visitors / CTV users
+  if (!isMainDomain && !hasAuth) return;
+  if (isCTVMode) return;
+  if (!hasAuth) return;
+
   const pages = [
     () => import("./pages/Index"),
-    () => import("./pages/AuthPage"),
-    () => import("./pages/PlatformAuthPage"),
-    () => import("./pages/RegisterPage"),
-    () => import("./pages/ForgotPasswordPage"),
-    () => import("./pages/ResetPasswordPage"),
-    () => import("./pages/ForgotStoreIdPage"),
     () => import("./pages/ProductsPage"),
-    () => import("./pages/CategoriesPage"),
-    () => import("./pages/SuppliersPage"),
-    () => import("./pages/ImportNewPage"),
-    () => import("./pages/ImportHistoryPage"),
     () => import("./pages/ExportNewPage"),
-    () => import("./pages/ExportHistoryPage"),
-    () => import("./pages/InvoiceTemplatePage"),
-    () => import("./pages/ReportsPage"),
-    () => import("./pages/CashBookPage"),
-    () => import("./pages/BranchesPage"),
-    () => import("./pages/ReturnsPage"),
-    () => import("./pages/InventoryPage"),
-    () => import("./pages/UsersPage"),
-    () => import("./pages/AuditLogsPage"),
-    () => import("./pages/DebtPage"),
+    () => import("./pages/ImportNewPage"),
     () => import("./pages/CustomersPage"),
-    () => import("./pages/PlatformAdminPage"),
-    () => import("./pages/SubscriptionPage"),
-    () => import("./pages/AffiliatePage"),
-    () => import("./pages/EInvoicePage"),
-    () => import("./pages/ApplicationsPage"),
-    () => import("./pages/AdvertisementsAdminPage"),
-    () => import("./pages/StoreLandingPage"),
-    () => import("./pages/PublicLandingPage"),
-    () => import("./pages/LandingPageAdminPage"),
-    () => import("./pages/InstallAppPage"),
-    () => import("./pages/TaxPolicyPage"),
-    () => import("./pages/StockTransferPage"),
-    () => import("./pages/PlatformArticlesPage"),
-    () => import("./pages/SocialPage"),
+    () => import("./pages/CashBookPage"),
+    () => import("./pages/ReportsPage"),
+    () => import("./pages/ExportHistoryPage"),
+    () => import("./pages/ImportHistoryPage"),
   ];
-  // Load them sequentially with small delays to avoid blocking the main thread
   let i = 0;
   function loadNext() {
     if (i < pages.length) {
       pages[i]().catch(() => {});
       i++;
-      setTimeout(loadNext, 100);
+      setTimeout(loadNext, 200);
     }
   }
   loadNext();
 }
 
-// Start preloading after the app is interactive
+// Start preloading only after app is fully interactive
 if (typeof window !== 'undefined') {
   if ('requestIdleCallback' in window) {
-    (window as any).requestIdleCallback(() => preloadAllPages());
+    (window as any).requestIdleCallback(() => preloadAdminPages());
   } else {
-    setTimeout(preloadAllPages, 1000);
+    setTimeout(preloadAdminPages, 2000);
   }
 }
 
