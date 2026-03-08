@@ -185,20 +185,25 @@ export function CustomerListTab({
         <Card>
          <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
            <div className="flex flex-col gap-3">
-             <div className="flex gap-2">
-                <SearchInput
-                  placeholder="Tìm theo tên, SĐT..."
-                  value={search}
-                  onChange={handleSearchChange}
-                  containerClassName="flex-1"
-                  className="h-9 text-sm"
-                  loading={isLoading && !!debouncedSearch}
-                />
-               <Button size="sm" onClick={() => setShowFormDialog(true)} className="h-9 px-3">
-                 <Plus className="h-4 w-4 sm:mr-2" />
-                 <span className="hidden sm:inline">Thêm</span>
-               </Button>
-             </div>
+              <div className="flex gap-2">
+                <form className="flex-1 flex gap-1" onSubmit={(e) => { e.preventDefault(); handleSearchSubmit(); }}>
+                 <SearchInput
+                   placeholder="Tìm theo tên, SĐT..."
+                   value={search}
+                   onChange={handleSearchChange}
+                   containerClassName="flex-1"
+                   className="h-9 text-sm"
+                   loading={isLoading && !!committedSearch}
+                 />
+                 <Button type="submit" size="sm" variant="outline" className="h-9 px-3 shrink-0">
+                   Tìm
+                 </Button>
+                </form>
+                <Button size="sm" onClick={() => setShowFormDialog(true)} className="h-9 px-3">
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Thêm</span>
+                </Button>
+              </div>
              <div className="flex flex-wrap gap-2 overflow-x-auto">
                 <Select value={branchFilter} onValueChange={onBranchFilterChange}>
                  <SelectTrigger className="w-[100px] sm:w-[140px] h-9 text-xs sm:text-sm">
