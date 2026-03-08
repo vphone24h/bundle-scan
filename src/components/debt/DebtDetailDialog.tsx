@@ -692,7 +692,7 @@ export function DebtDetailDialog({
                 });
               })()}
             </div>
-          </ScrollArea>
+          </div>
 
           {selectedReceipt?.note && (
             <div className="mt-2 p-2 bg-muted/50 rounded text-sm text-muted-foreground">
