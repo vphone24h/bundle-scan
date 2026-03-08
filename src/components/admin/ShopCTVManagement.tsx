@@ -47,6 +47,16 @@ export function ShopCTVManagement() {
   const [settingsForm, setSettingsForm] = useState<any>(null);
   const activeSettings = settingsForm || settings || {};
 
+  const defaultTiers = [
+    { threshold: 1000000, rate: 15, type: 'percentage' },
+    { threshold: 3000000, rate: 12, type: 'percentage' },
+    { threshold: 5000000, rate: 10, type: 'percentage' },
+    { threshold: 10000000, rate: 200000, type: 'fixed' },
+    { threshold: null, rate: 500000, type: 'fixed' },
+  ];
+
+  const commissionTiers = activeSettings.commission_tiers || defaultTiers;
+
   const handleSaveSettings = async () => {
     await updateSettings.mutateAsync({
       tenantId: currentTenantId,
@@ -58,13 +68,38 @@ export function ShopCTVManagement() {
       allow_self_register: activeSettings.allow_self_register ?? true,
       auto_approve_ctv: activeSettings.auto_approve_ctv ?? true,
       program_description: activeSettings.program_description || '',
-      commission_threshold: parseFloat(activeSettings.commission_threshold) || 5000000,
-      low_commission_rate: parseFloat(activeSettings.low_commission_rate) || 10,
-      low_commission_type: activeSettings.low_commission_type || 'percentage',
-      high_commission_rate: parseFloat(activeSettings.high_commission_rate) || 200000,
-      high_commission_type: activeSettings.high_commission_type || 'fixed',
+      commission_tiers: commissionTiers,
+      // Keep legacy fields in sync with first/last tier
+      commission_threshold: commissionTiers[0]?.threshold || 5000000,
+      low_commission_rate: commissionTiers[0]?.rate || 10,
+      low_commission_type: commissionTiers[0]?.type || 'percentage',
+      high_commission_rate: commissionTiers[commissionTiers.length - 1]?.rate || 200000,
+      high_commission_type: commissionTiers[commissionTiers.length - 1]?.type || 'fixed',
     });
     setSettingsForm(null);
+  };
+
+  const updateTier = (index: number, field: string, value: any) => {
+    const newTiers = [...commissionTiers];
+    newTiers[index] = { ...newTiers[index], [field]: value };
+    updateField('commission_tiers', newTiers);
+  };
+
+  const addTier = () => {
+    const lastThreshold = commissionTiers.filter((t: any) => t.threshold).pop()?.threshold || 5000000;
+    const newTiers = [...commissionTiers];
+    // Insert before the last "unlimited" tier
+    const insertIdx = newTiers.length > 0 && newTiers[newTiers.length - 1].threshold === null
+      ? newTiers.length - 1
+      : newTiers.length;
+    newTiers.splice(insertIdx, 0, { threshold: lastThreshold + 5000000, rate: 8, type: 'percentage' });
+    updateField('commission_tiers', newTiers);
+  };
+
+  const removeTier = (index: number) => {
+    if (commissionTiers.length <= 2) return;
+    const newTiers = commissionTiers.filter((_: any, i: number) => i !== index);
+    updateField('commission_tiers', newTiers);
   };
 
   const updateField = (field: string, value: any) => {
