@@ -20,7 +20,9 @@ import {
   usePlatformEmailAutomationLogs,
   type PlatformEmailAutomation,
 } from '@/hooks/usePlatformEmailAutomations';
-import { Plus, Pencil, Trash2, Mail, Clock, Zap, Users, Eye, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Mail, Clock, Zap, Users, Eye, CheckCircle, XCircle, Send } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -75,6 +77,7 @@ export function PlatformEmailAutomationManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PlatformEmailAutomation | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [sendingTestId, setSendingTestId] = useState<string | null>(null);
 
   // Form state
   const [name, setName] = useState('');
@@ -146,6 +149,30 @@ export function PlatformEmailAutomationManagement() {
     await updateMutation.mutateAsync({ id: a.id, is_enabled: !a.is_enabled });
   };
 
+  const handleSendTest = async (a: PlatformEmailAutomation) => {
+    setSendingTestId(a.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        toast.error('Không tìm thấy email admin');
+        return;
+      }
+      const { error } = await supabase.functions.invoke('send-bulk-email', {
+        body: {
+          emails: [user.email],
+          subject: `[TEST] ${a.subject}`,
+          htmlContent: a.html_content,
+        },
+      });
+      if (error) throw error;
+      toast.success(`Đã gửi mail test đến ${user.email}`);
+    } catch (err: any) {
+      toast.error('Lỗi gửi test: ' + err.message);
+    } finally {
+      setSendingTestId(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Tabs defaultValue="scenarios">
@@ -205,6 +232,16 @@ export function PlatformEmailAutomationManagement() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-primary"
+                          onClick={() => handleSendTest(a)}
+                          disabled={sendingTestId === a.id}
+                          title="Gửi mail test đến admin"
+                        >
+                          <Send className={`h-4 w-4 ${sendingTestId === a.id ? 'animate-pulse' : ''}`} />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewHtml(a.html_content)}>
                           <Eye className="h-4 w-4" />
                         </Button>
