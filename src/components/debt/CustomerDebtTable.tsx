@@ -178,7 +178,14 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
               <div key={debt.entity_id} className="rounded-lg border bg-card p-3 space-y-2 cursor-pointer active:bg-muted/50" onClick={() => { setSelectedDebt(debt); setShowDetail(true); }}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-sm truncate">{debt.entity_name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-semibold text-sm truncate">{debt.entity_name}</p>
+                      {getOffsetMatch(debt.entity_phone) && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-purple-100 text-purple-700 border-purple-200 shrink-0">
+                          2 chiều
+                        </Badge>
+                      )}
+                    </div>
                     {debt.entity_phone && (
                       <p className="text-xs text-muted-foreground">{debt.entity_phone}</p>
                     )}
