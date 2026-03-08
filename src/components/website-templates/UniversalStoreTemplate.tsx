@@ -44,6 +44,7 @@ import { CTVAuthDialog } from '@/components/landing/CTVAuthDialog';
 import { CTVDashboard } from '@/components/landing/CTVDashboard';
 import { useShopCTVSettings } from '@/hooks/useShopCTV';
 import { supabase } from '@/integrations/supabase/client';
+import { OrderLookupPage } from '@/components/landing/OrderLookupPage';
 
 
 export interface UniversalTemplateProps {
