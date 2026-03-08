@@ -1116,7 +1116,7 @@ export function ProductDetailPage({
         tenantId={tenantId} primaryColor={primaryColor} branches={branches}
         productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={displayPrice}
         title="📋 Đặt trước sản phẩm" description="Đặt trước để nhận thông báo khi hàng về"
-        actionLabel="Đặt trước" requireEmail={true} notePrefix="[Đặt trước]"
+        actionLabel="Đặt trước" requireEmail={true} notePrefix="[Đặt trước]" actionType="pre_order"
       />
       <ContactFormDialog
         open={activeDialog === 'notify_stock'}
@@ -1124,7 +1124,7 @@ export function ProductDetailPage({
         tenantId={tenantId} primaryColor={primaryColor} branches={branches}
         productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={0}
         title="🔔 Báo khi có hàng" description="Nhập thông tin để nhận thông báo khi sản phẩm có lại"
-        actionLabel="Đăng ký nhận thông báo" requireEmail={true} showMessage={false} notePrefix="[Báo khi có hàng]"
+        actionLabel="Đăng ký nhận thông báo" requireEmail={true} showMessage={false} notePrefix="[Báo khi có hàng]" actionType="notify_stock"
       />
       <ContactFormDialog
         open={activeDialog === 'get_quote'}
@@ -1132,7 +1132,7 @@ export function ProductDetailPage({
         tenantId={tenantId} primaryColor={primaryColor} branches={branches}
         productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={displayPrice}
         title="📄 Nhận báo giá" description="Nhập thông tin để nhận báo giá chi tiết"
-        actionLabel="Gửi yêu cầu báo giá" requireEmail={false} notePrefix="[Yêu cầu báo giá]"
+        actionLabel="Gửi yêu cầu báo giá" requireEmail={false} notePrefix="[Yêu cầu báo giá]" actionType="get_quote"
       />
       <ContactFormDialog
         open={activeDialog === 'send_request'}
@@ -1140,7 +1140,7 @@ export function ProductDetailPage({
         tenantId={tenantId} primaryColor={primaryColor} branches={branches}
         productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={0}
         title="📩 Gửi yêu cầu" description="Gửi yêu cầu hoặc câu hỏi đến cửa hàng"
-        actionLabel="Gửi yêu cầu" requireEmail={false} notePrefix="[Yêu cầu chung]"
+        actionLabel="Gửi yêu cầu" requireEmail={false} notePrefix="[Yêu cầu chung]" actionType="send_request"
       />
       <ContactFormDialog
         open={activeDialog === 'best_price'}
@@ -1148,7 +1148,7 @@ export function ProductDetailPage({
         tenantId={tenantId} primaryColor={primaryColor} branches={branches}
         productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={displayPrice}
         title="💰 Xem giá tốt nhất" description="Liên hệ để nhận giá ưu đãi đặc biệt"
-        actionLabel="Nhận giá tốt nhất" requireEmail={false} notePrefix="[Yêu cầu giá tốt nhất]"
+        actionLabel="Nhận giá tốt nhất" requireEmail={false} notePrefix="[Yêu cầu giá tốt nhất]" actionType="best_price"
       />
       <ContactFormDialog
         open={activeDialog === 'get_coupon'}
@@ -1156,7 +1156,7 @@ export function ProductDetailPage({
         tenantId={tenantId} primaryColor={primaryColor} branches={branches}
         productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={0}
         title="🎫 Nhận mã giảm giá" description="Đăng ký để nhận mã khuyến mãi"
-        actionLabel="Nhận mã giảm giá" requireEmail={true} showMessage={false} notePrefix="[Nhận mã giảm giá]"
+        actionLabel="Nhận mã giảm giá" requireEmail={true} showMessage={false} notePrefix="[Nhận mã giảm giá]" actionType="get_coupon"
       />
       <ContactFormDialog
         open={activeDialog === 'get_offer'}
@@ -1164,7 +1164,7 @@ export function ProductDetailPage({
         tenantId={tenantId} primaryColor={primaryColor} branches={branches}
         productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={0}
         title="🎁 Nhận ưu đãi" description="Đăng ký để nhận ưu đãi đặc biệt"
-        actionLabel="Nhận ưu đãi" requireEmail={true} showMessage={false} notePrefix="[Nhận ưu đãi]"
+        actionLabel="Nhận ưu đãi" requireEmail={true} showMessage={false} notePrefix="[Nhận ưu đãi]" actionType="get_offer"
       />
 
       {/* Booking dialogs */}

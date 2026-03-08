@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Phone, CheckCircle, XCircle, Clock, Search, Package, Loader2, PhoneCall, PhoneOff, UserPlus } from 'lucide-react';
+import { Phone, CheckCircle, XCircle, Clock, Search, Package, Loader2, PhoneCall, PhoneOff, UserPlus, CalendarDays, Tag } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
@@ -29,6 +29,21 @@ const CALL_STATUS_MAP: Record<string, { label: string; color: string }> = {
   none: { label: 'Chưa gọi', color: 'bg-muted text-muted-foreground' },
   called: { label: 'Đã gọi', color: 'bg-green-100 text-green-700' },
   unreachable: { label: 'Không liên hệ được', color: 'bg-red-100 text-red-700' },
+};
+
+const ACTION_TYPE_MAP: Record<string, { label: string; icon: string }> = {
+  order: { label: 'Đặt hàng', icon: '🛒' },
+  pre_order: { label: 'Đặt trước', icon: '📋' },
+  notify_stock: { label: 'Báo khi có hàng', icon: '🔔' },
+  get_quote: { label: 'Yêu cầu báo giá', icon: '📄' },
+  send_request: { label: 'Gửi yêu cầu', icon: '📩' },
+  best_price: { label: 'Xem giá tốt nhất', icon: '💰' },
+  get_coupon: { label: 'Nhận mã giảm giá', icon: '🎫' },
+  get_offer: { label: 'Nhận ưu đãi', icon: '🎁' },
+  booking: { label: 'Đặt lịch hẹn', icon: '📅' },
+  join_member: { label: 'Đăng ký thành viên', icon: '👤' },
+  book_table: { label: 'Đặt bàn', icon: '🪑' },
+  book_party: { label: 'Đặt tiệc', icon: '🎉' },
 };
 
 function useStaffList(branchId?: string | null, isSuperAdmin?: boolean) {
@@ -223,10 +238,11 @@ export function LandingOrdersTab() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Thời gian</TableHead>
-                  <TableHead>Khách hàng</TableHead>
-                  <TableHead>Sản phẩm</TableHead>
-                  <TableHead>Thanh toán</TableHead>
+                    <TableHead>Thời gian</TableHead>
+                    <TableHead>Hành động</TableHead>
+                    <TableHead>Khách hàng</TableHead>
+                    <TableHead>Sản phẩm</TableHead>
+                    <TableHead>Thanh toán</TableHead>
                   <TableHead>Chi nhánh</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead>Liên hệ</TableHead>
@@ -242,6 +258,24 @@ export function LandingOrdersTab() {
                     <TableRow key={order.id} className="cursor-pointer" onClick={() => setDetailOrder(order)}>
                       <TableCell className="text-xs whitespace-nowrap">
                         {format(new Date(order.created_at), 'dd/MM/yy HH:mm', { locale: vi })}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const actionInfo = ACTION_TYPE_MAP[order.action_type || 'order'] || ACTION_TYPE_MAP.order;
+                          return (
+                            <div>
+                              <Badge variant="outline" className="text-[10px] whitespace-nowrap">
+                                {actionInfo.icon} {actionInfo.label}
+                              </Badge>
+                              {order.action_date && (
+                                <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-0.5">
+                                  <CalendarDays className="h-2.5 w-2.5" />
+                                  {order.action_date}{order.action_time ? ` ${order.action_time}` : ''}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         <div>
@@ -430,6 +464,23 @@ export function LandingOrdersTab() {
                   <span className="text-muted-foreground">Ngày đặt:</span>
                   <span>{format(new Date(detailOrder.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}</span>
                 </div>
+                {/* Action type */}
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Loại yêu cầu:</span>
+                  <Badge variant="outline" className="text-xs">
+                    {(ACTION_TYPE_MAP[detailOrder.action_type || 'order'] || ACTION_TYPE_MAP.order).icon}{' '}
+                    {(ACTION_TYPE_MAP[detailOrder.action_type || 'order'] || ACTION_TYPE_MAP.order).label}
+                  </Badge>
+                </div>
+                {detailOrder.action_date && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Ngày hẹn:</span>
+                    <span className="font-medium flex items-center gap-1">
+                      <CalendarDays className="h-3.5 w-3.5 text-primary" />
+                      {detailOrder.action_date}{detailOrder.action_time ? ` lúc ${detailOrder.action_time}` : ''}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Liên hệ:</span>
                   <Badge className={`${CALL_STATUS_MAP[detailOrder.call_status]?.color} text-[10px]`} variant="secondary">
