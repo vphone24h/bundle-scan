@@ -845,6 +845,48 @@ export function ProductDetailPage({
           </div>
         );
       })()}
+
+      {/* Payment Flow Dialog */}
+      <PaymentFlowDialog
+        open={showPaymentFlow}
+        onClose={() => setShowPaymentFlow(false)}
+        product={{ id: product.id, name: product.name, image_url: product.image_url, sku: (product as any).sku }}
+        price={displayPrice}
+        variant={getVariantLabel()}
+        quantity={quantity}
+        primaryColor={primaryColor}
+        codEnabled={paymentConfig?.codEnabled !== false}
+        transferEnabled={!!paymentConfig?.transferEnabled}
+        bankName={paymentConfig?.bankName}
+        accountNumber={paymentConfig?.accountNumber}
+        accountHolder={paymentConfig?.accountHolder}
+        confirmZaloUrl={paymentConfig?.confirmZaloUrl}
+        confirmMessengerUrl={paymentConfig?.confirmMessengerUrl}
+        branches={branches}
+        isSubmitting={placeOrder.isPending}
+        onPlaceOrder={async (data) => {
+          if (uses2LevelVariants && variantOptions1.length > 0 && !selectedOption1) {
+            toast.error(`Vui lòng chọn ${product.variant_group_1_name || 'biến thể'}`);
+            throw new Error('missing variant');
+          }
+          await placeOrder.mutateAsync({
+            tenant_id: tenantId,
+            branch_id: data.branch_id,
+            product_id: product.id,
+            product_name: product.name,
+            product_image_url: product.image_url,
+            product_price: displayPrice,
+            variant: getVariantLabel(),
+            quantity,
+            customer_name: data.customer_name,
+            customer_phone: data.customer_phone,
+            customer_address: data.customer_address,
+            note: data.note,
+            payment_method: data.payment_method,
+            transfer_content: data.transfer_content,
+          });
+        }}
+      />
     </div>
   );
 }
