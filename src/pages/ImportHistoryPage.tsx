@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { SearchInput } from '@/components/ui/search-input';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
