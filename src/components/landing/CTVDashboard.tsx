@@ -54,6 +54,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   });
   const [profileForm, setProfileForm] = useState<any>(null);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [loggedOut, setLoggedOut] = useState(false);
 
   const handleLogout = async () => {
     // Build target URL FIRST: the store's website (NOT admin/kho)
@@ -227,32 +228,45 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white border-b px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onBack}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onBack}
+              className={loggedOut ? 'animate-pulse ring-2 ring-primary' : ''}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            {loggedOut && (
+              <span className="absolute -bottom-6 left-0 whitespace-nowrap text-[10px] font-medium text-primary animate-bounce">
+                ← Về website
+              </span>
+            )}
+          </div>
           <div>
             <h1 className="font-semibold text-sm">CTV Dashboard</h1>
             <p className="text-xs text-muted-foreground">{storeName} • {ctv.ctv_code}</p>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-destructive hover:bg-destructive/10"
-          onClick={async () => {
-            const targetUrl = storeUrl || window.location.origin;
-            localStorage.removeItem('ctv_store_mode');
-            // Clear auth token manually to guarantee logout
-            const authKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-            if (authKey) localStorage.removeItem(authKey);
-            // Sign out then redirect
-            try { await supabase.auth.signOut(); } catch {}
-            window.location.replace(targetUrl);
-          }}
-        >
-          <LogOut className="h-4 w-4 mr-1" />
-          Đăng xuất
-        </Button>
+        {!loggedOut ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:bg-destructive/10"
+            onClick={async () => {
+              localStorage.removeItem('ctv_store_mode');
+              const authKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+              if (authKey) localStorage.removeItem(authKey);
+              try { await supabase.auth.signOut(); } catch {}
+              setLoggedOut(true);
+            }}
+          >
+            <LogOut className="h-4 w-4 mr-1" />
+            Đăng xuất
+          </Button>
+        ) : (
+          <span className="text-xs text-emerald-600 font-medium">✓ Đã đăng xuất</span>
+        )}
       </div>
 
       <div className="p-4 space-y-4 max-w-2xl mx-auto">
