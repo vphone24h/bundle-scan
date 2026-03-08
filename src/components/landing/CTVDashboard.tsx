@@ -411,31 +411,40 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                   <p className="text-center text-muted-foreground text-sm py-6">Chưa có sản phẩm</p>
                 ) : (
                   <div className="space-y-2">
-                    {products.map((p: any) => (
-                      <div key={p.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                        {p.image_url && (
-                          <img src={p.image_url} alt={p.name} className="w-12 h-12 rounded object-cover flex-shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{p.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {p.sale_price ? (
-                              <><span className="line-through">{formatNumber(p.price)}</span> <span className="text-red-500 font-semibold">{formatNumber(p.sale_price)}</span></>
-                            ) : (
-                              formatNumber(p.price)
+                    {products.map((p: any) => {
+                      const commission = getProductCommission(p);
+                      return (
+                        <div key={p.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                          {p.image_url && (
+                            <img src={p.image_url} alt={p.name} className="w-12 h-12 rounded object-cover flex-shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{p.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {p.sale_price ? (
+                                <><span className="line-through">{formatNumber(p.price)}</span> <span className="text-red-500 font-semibold">{formatNumber(p.sale_price)}</span></>
+                              ) : (
+                                formatNumber(p.price)
+                              )}
+                            </p>
+                            {commission > 0 && (
+                              <p className="text-xs font-medium mt-0.5" style={{ color: accentColor || '#16a34a' }}>
+                                <Coins className="h-3 w-3 inline mr-0.5" />
+                                Hoa hồng: {formatNumber(commission)}đ
+                              </p>
                             )}
-                          </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-shrink-0"
+                            onClick={() => handleCopyLink(`/product/${p.id}`)}
+                          >
+                            <Copy className="h-3 w-3 mr-1" />Link
+                          </Button>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-shrink-0"
-                          onClick={() => handleCopyLink(`/product/${p.id}`)}
-                        >
-                          <Copy className="h-3 w-3 mr-1" />Link
-                        </Button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
