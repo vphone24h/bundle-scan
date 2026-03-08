@@ -446,6 +446,24 @@ export function LandingOrdersTab() {
                     <p className="mt-1 bg-muted/50 rounded p-2 text-sm">{detailOrder.note}</p>
                   </div>
                 )}
+                {/* Payment method */}
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Thanh toán:</span>
+                  <Badge variant="secondary" className={`text-xs ${(detailOrder as any).payment_method === 'transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                    {(detailOrder as any).payment_method === 'transfer' ? 'Chuyển khoản ngân hàng' : 'COD (Thu tiền khi nhận hàng)'}
+                  </Badge>
+                </div>
+                {(detailOrder as any).payment_method === 'transfer' && (detailOrder as any).transfer_content && (
+                  <div>
+                    <span className="text-muted-foreground">Nội dung CK:</span>
+                    <p className="mt-1 bg-blue-50 rounded p-2 text-sm font-mono font-bold text-blue-700">
+                      {(detailOrder as any).transfer_content}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Đối chiếu với lịch sử giao dịch ngân hàng để xác nhận thanh toán
+                    </p>
+                  </div>
+                )}
                 {detailOrder.cancelled_reason && (
                   <div>
                     <span className="text-muted-foreground">Lý do hủy:</span>
