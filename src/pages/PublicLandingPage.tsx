@@ -3,25 +3,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import vkhoLogo from '@/assets/vkho-logo.png';
+// Only import icons actually used on initial render - others lazy loaded via tree-shaking
 import { 
-  Package, 
-  BarChart3, 
-  Users, 
-  Shield, 
-  Smartphone, 
-  Clock, 
-  CheckCircle2, 
-  ArrowRight,
-  Store,
-  Receipt,
-  TrendingUp,
-  Phone,
-  Mail,
-  MapPin,
-  ChevronRight,
-  Star,
-  Zap,
-  Globe
+  Package, BarChart3, Users, Shield, Smartphone,
+  CheckCircle2, ArrowRight, Store, Receipt, TrendingUp,
+  Phone, Mail, ChevronRight, Zap, Globe
 } from 'lucide-react';
 
 export default function PublicLandingPage() {

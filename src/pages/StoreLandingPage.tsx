@@ -1,18 +1,17 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import DOMPurify from 'dompurify';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useParams, useLocation, useSearchParams } from 'react-router-dom';
-import { usePublicLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo } from '@/hooks/useTenantLanding';
-import { usePublicLandingProducts, LandingProduct } from '@/hooks/useLandingProducts';
-import { usePublicLandingArticles, LandingArticle } from '@/hooks/useLandingArticles';
+import { usePublicLandingSettings, BranchInfo } from '@/hooks/useTenantLanding';
+import { usePublicLandingProducts } from '@/hooks/useLandingProducts';
+import { usePublicLandingArticles } from '@/hooks/useLandingArticles';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
-import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
-import UniversalStoreTemplate from '@/components/website-templates/UniversalStoreTemplate';
-import AppleStyleLandingTemplate from '@/components/website-templates/AppleStyleLandingTemplate';
 import { LandingCartProvider } from '@/hooks/useLandingCart';
-import { Loader2, Store } from 'lucide-react';
+import { Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
+// Lazy load heavy templates - they import DOMPurify and many components
+const UniversalStoreTemplate = lazy(() => import('@/components/website-templates/UniversalStoreTemplate'));
+const AppleStyleLandingTemplate = lazy(() => import('@/components/website-templates/AppleStyleLandingTemplate'));
 // === PWA Manifest Hook ===
 function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?: string | null) {
   const location = useLocation();
