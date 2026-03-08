@@ -620,7 +620,7 @@ export function CTAButtonsEditor({ buttons, onChange, templateId }: CTAButtonsEd
                     </SelectContent>
                   </Select>
                 </div>
-                {(btn.action === 'custom_link' || btn.action === 'zalo' || btn.action === 'facebook') && (
+                {['custom_link', 'zalo', 'facebook'].includes(btn.action) && (
                   <div className="space-y-1">
                     <Label className="text-[10px]">
                       {btn.action === 'zalo' ? 'Link Zalo' : btn.action === 'facebook' ? 'Link Facebook' : 'URL tùy chỉnh'}
