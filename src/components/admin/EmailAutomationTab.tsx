@@ -579,16 +579,16 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
 
           if (existing) {
             return (
-              <div key={ot.value} className="border rounded-lg p-3 flex items-center gap-3">
+              <div key={ot.value} className="border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-medium text-sm">{ot.label}</h4>
+                    <h4 className="font-medium text-sm break-words">{ot.label}</h4>
                     <Badge variant={existing.is_active ? 'default' : 'secondary'} className="text-[10px]">
                       {existing.is_active ? 'Đang bật' : 'Tắt'}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">📌 {ot.condition}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Subject: {existing.subject}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 break-all">Subject: {existing.subject}</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <Switch checked={existing.is_active} onCheckedChange={() => onToggle(existing)} />
@@ -604,12 +604,12 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
           }
 
           return (
-            <div key={ot.value} className="border border-dashed rounded-lg p-3 flex items-center gap-3">
+            <div key={ot.value} className="border border-dashed rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-sm text-muted-foreground">{ot.label}</h4>
+                <h4 className="font-medium text-sm text-muted-foreground break-words">{ot.label}</h4>
                 <p className="text-xs text-muted-foreground/70">📌 {ot.condition}</p>
               </div>
-              <Button variant="outline" size="sm" className="text-xs" onClick={() => preset && onCreateFromPreset(preset)}>
+              <Button variant="outline" size="sm" className="text-xs w-full sm:w-auto" onClick={() => preset && onCreateFromPreset(preset)}>
                 <Plus className="h-3.5 w-3.5 mr-1" />
                 Tạo mẫu
               </Button>
