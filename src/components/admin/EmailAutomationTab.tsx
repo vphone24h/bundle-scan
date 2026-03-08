@@ -635,6 +635,23 @@ export function EmailAutomationTab() {
 
   const [testConfirmItem, setTestConfirmItem] = useState<EmailAutomation | null>(null);
   const [sendingTest, setSendingTest] = useState(false);
+  const [runningNow, setRunningNow] = useState(false);
+
+  const handleRunNow = async () => {
+    setRunningNow(true);
+    try {
+      const { error } = await supabase.functions.invoke('run-email-automations', {
+        body: { tenantId: tenant?.id },
+      });
+      if (error) throw error;
+      toast.success('Đã chạy email automation thành công!');
+      qc.invalidateQueries({ queryKey: ['email-automation-logs'] });
+    } catch (err: any) {
+      toast.error('Lỗi chạy automation: ' + err.message);
+    } finally {
+      setRunningNow(false);
+    }
+  };
 
   const handleSendTest = (item: EmailAutomation) => {
     setTestConfirmItem(item);
