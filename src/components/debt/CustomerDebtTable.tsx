@@ -328,6 +328,9 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
         </>
       )}
       <CreateDebtDialog open={showCreateDebt} onOpenChange={setShowCreateDebt} entityType="customer" />
+      {selectedOffsetMatch && (
+        <DebtOffsetDialog open={showOffset} onOpenChange={setShowOffset} match={selectedOffsetMatch} />
+      )}
     </>
   );
 }
