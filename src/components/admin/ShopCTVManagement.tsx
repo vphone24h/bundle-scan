@@ -57,6 +57,11 @@ export function ShopCTVManagement() {
       allow_self_register: activeSettings.allow_self_register ?? true,
       auto_approve_ctv: activeSettings.auto_approve_ctv ?? true,
       program_description: activeSettings.program_description || '',
+      commission_threshold: parseFloat(activeSettings.commission_threshold) || 5000000,
+      low_commission_rate: parseFloat(activeSettings.low_commission_rate) || 10,
+      low_commission_type: activeSettings.low_commission_type || 'percentage',
+      high_commission_rate: parseFloat(activeSettings.high_commission_rate) || 200000,
+      high_commission_type: activeSettings.high_commission_type || 'fixed',
     });
     setSettingsForm(null);
   };
