@@ -187,7 +187,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                 style={accentColor ? { backgroundColor: accentColor } : {}}
               >
                 {registerCTV.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Đăng ký CTV
+                Xác nhận & Đăng ký CTV
               </Button>
             </CardContent>
           </Card>
