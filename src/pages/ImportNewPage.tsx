@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ImportCart } from '@/components/import/ImportCart';
+import { SupplierSearchCombobox } from '@/components/import/SupplierSearchCombobox';
 import { PaymentDialog } from '@/components/import/PaymentDialog';
 import { ExcelImportDialog } from '@/components/import/ExcelImportDialog';
 import { ProductNamingTip } from '@/components/import/ProductNamingTip';
