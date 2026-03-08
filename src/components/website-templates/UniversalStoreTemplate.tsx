@@ -797,6 +797,9 @@ export default function UniversalStoreTemplate({
                       ? ((settings as any)?.custom_product_tabs as { id: string; name: string }[] || []).find(t => t.id === productFilterTag)?.name || config.navLabels.products
                     : config.navLabels.products}
                 </h2>
+                <button onClick={() => copyShareLink('page', 'products')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#f5f5f7] hover:bg-black/10 transition-colors">
+                  <Link2 className="h-3.5 w-3.5" /> Copy link
+                </button>
               </div>
               {productFilterTag && (
                 <button
