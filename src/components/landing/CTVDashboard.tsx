@@ -35,6 +35,7 @@ interface CTVDashboardProps {
 }
 
 export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBack }: CTVDashboardProps) {
+  const { signOut: authSignOut } = useAuth();
   const { data: ctv, isLoading: ctvLoading } = useMyShopCTV(tenantId);
   const { data: settings } = useShopCTVSettings(tenantId);
   const { data: orders } = useMyCTVOrders(ctv?.id);
