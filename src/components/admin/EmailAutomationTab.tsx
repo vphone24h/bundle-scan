@@ -850,6 +850,9 @@ export function EmailAutomationTab() {
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                           <Switch checked={a.is_active} onCheckedChange={() => handleToggle(a)} />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRunSingle(a.id)} disabled={runningItemId === a.id} title="Chạy ngay">
+                            <Play className={`h-4 w-4 ${runningItemId === a.id ? 'animate-spin' : ''}`} />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSendTest(a)} title="Gửi thử">
                             <Send className="h-4 w-4" />
                           </Button>
