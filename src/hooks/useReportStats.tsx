@@ -144,13 +144,14 @@ export function useReportStats(filters?: {
       // Build detail arrays for popup
       const salesDetails: SaleDetailItem[] = (salesRaw || []).map((item: any) => {
         const salePrice = Number(item.sale_price);
+        const importPrice = Number(item.products?.import_price || 0);
         return {
           date: item.export_receipts?.export_date || '',
           productName: item.product_name || 'SP',
           sku: item.sku || '',
           salePrice,
-          importPrice: 0,
-          profit: salePrice,
+          importPrice,
+          profit: salePrice - importPrice,
           branchName: '',
           categoryName: item.categories?.name || 'Chưa phân loại',
         };
