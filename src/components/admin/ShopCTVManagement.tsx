@@ -148,6 +148,29 @@ export function ShopCTVManagement() {
     updateField('commission_tiers', newTiers);
   };
 
+  // F1 tier helpers
+  const updateF1Tier = (index: number, field: string, value: any) => {
+    const newTiers = [...f1CommissionTiers];
+    newTiers[index] = { ...newTiers[index], [field]: value };
+    updateField('f1_commission_tiers', newTiers);
+  };
+
+  const addF1Tier = () => {
+    const lastThreshold = f1CommissionTiers.filter((t: any) => t.threshold).pop()?.threshold || 3000000;
+    const newTiers = [...f1CommissionTiers];
+    const insertIdx = newTiers.length > 0 && newTiers[newTiers.length - 1].threshold === null
+      ? newTiers.length - 1
+      : newTiers.length;
+    newTiers.splice(insertIdx, 0, { threshold: lastThreshold + 5000000, rate: 100000, type: 'fixed' });
+    updateField('f1_commission_tiers', newTiers);
+  };
+
+  const removeF1Tier = (index: number) => {
+    if (f1CommissionTiers.length <= 2) return;
+    const newTiers = f1CommissionTiers.filter((_: any, i: number) => i !== index);
+    updateField('f1_commission_tiers', newTiers);
+  };
+
   const updateField = (field: string, value: any) => {
     setSettingsForm((prev: any) => ({ ...(prev || settings || {}), [field]: value }));
   };
