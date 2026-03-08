@@ -213,9 +213,14 @@ export function PlatformEmailAutomationManagement() {
               <h3 className="text-base font-semibold">Email Automation</h3>
               <p className="text-xs text-muted-foreground">Tự động gửi email chăm sóc khách hàng theo điều kiện</p>
             </div>
-            <Button size="sm" onClick={openCreate}>
-              <Plus className="h-4 w-4 mr-1" /> Thêm kịch bản
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={handleRunNow} disabled={runningNow}>
+                <Play className={`h-4 w-4 mr-1 ${runningNow ? 'animate-spin' : ''}`} /> {runningNow ? 'Đang chạy...' : 'Chạy ngay'}
+              </Button>
+              <Button size="sm" onClick={openCreate}>
+                <Plus className="h-4 w-4 mr-1" /> Thêm kịch bản
+              </Button>
+            </div>
           </div>
 
           {isLoading ? (
