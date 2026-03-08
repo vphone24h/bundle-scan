@@ -144,7 +144,7 @@ export function DebtOffsetScanDialog({ open, onOpenChange }: DebtOffsetScanDialo
                       <Checkbox checked={isSelected} onCheckedChange={() => toggleIndex(i)} />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{match.customerDebt.entity_name}</p>
-                        <p className="text-xs text-muted-foreground">{match.matchedPhone}</p>
+                        <p className="text-xs text-muted-foreground">Mã: {match.matchedEntityCode}</p>
                       </div>
                       <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-200 text-[10px] shrink-0">
                         2 chiều

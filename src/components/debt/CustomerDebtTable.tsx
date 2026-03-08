@@ -78,9 +78,9 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
   const offsetMatches = useDebtOffsetMatches();
   const pagination = usePagination(debts || [], { storageKey: 'customer-debt' });
 
-  const getOffsetMatch = (phone: string | null) => {
-    if (!phone) return null;
-    return offsetMatches.find(m => m.matchedPhone === phone.trim()) || null;
+  const getOffsetMatch = (entityCode: string | null) => {
+    if (!entityCode) return null;
+    return offsetMatches.find(m => m.matchedEntityCode === entityCode.trim()) || null;
   };
 
   const getEntityTags = (entityId: string) => {
