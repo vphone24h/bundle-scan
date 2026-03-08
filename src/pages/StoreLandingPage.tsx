@@ -10,8 +10,17 @@ import { Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 // Lazy load heavy templates - they import DOMPurify and many components
-const UniversalStoreTemplate = lazy(() => import('@/components/website-templates/UniversalStoreTemplate'));
-const AppleStyleLandingTemplate = lazy(() => import('@/components/website-templates/AppleStyleLandingTemplate'));
+const universalImport = () => import('@/components/website-templates/UniversalStoreTemplate');
+const appleImport = () => import('@/components/website-templates/AppleStyleLandingTemplate');
+const UniversalStoreTemplate = lazy(universalImport);
+const AppleStyleLandingTemplate = lazy(appleImport);
+
+// Eagerly preload the most common template on idle
+if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+  (window as any).requestIdleCallback(() => universalImport(), { timeout: 2000 });
+} else if (typeof window !== 'undefined') {
+  setTimeout(() => universalImport(), 100);
+}
 // === PWA Manifest Hook ===
 function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?: string | null) {
   const location = useLocation();
