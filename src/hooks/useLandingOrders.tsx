@@ -24,6 +24,8 @@ export interface LandingOrder {
   approved_at: string | null;
   cancelled_reason: string | null;
   order_code: string | null;
+  payment_method: 'cod' | 'transfer' | null;
+  transfer_content: string | null;
   created_at: string;
   updated_at: string;
 }
