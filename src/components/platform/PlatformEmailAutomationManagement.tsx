@@ -149,6 +149,30 @@ export function PlatformEmailAutomationManagement() {
     await updateMutation.mutateAsync({ id: a.id, is_enabled: !a.is_enabled });
   };
 
+  const handleSendTest = async (a: PlatformEmailAutomation) => {
+    setSendingTestId(a.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        toast.error('Không tìm thấy email admin');
+        return;
+      }
+      const { error } = await supabase.functions.invoke('send-bulk-email', {
+        body: {
+          emails: [user.email],
+          subject: `[TEST] ${a.subject}`,
+          htmlContent: a.html_content,
+        },
+      });
+      if (error) throw error;
+      toast.success(`Đã gửi mail test đến ${user.email}`);
+    } catch (err: any) {
+      toast.error('Lỗi gửi test: ' + err.message);
+    } finally {
+      setSendingTestId(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Tabs defaultValue="scenarios">
