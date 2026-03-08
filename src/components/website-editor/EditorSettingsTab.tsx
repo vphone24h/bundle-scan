@@ -247,10 +247,42 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
           <div className="border-t pt-3 mt-1 space-y-3">
             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Liên hệ & Mạng xã hội</p>
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 col-span-2">
                 <Label className="text-xs">Zalo</Label>
-                <Input value={formData.zalo_url || ''} onChange={e => onChange('zalo_url', e.target.value)} placeholder="0xxx hoặc zalo.me/..." />
+                <div className="flex gap-1 mb-1">
+                  {['personal', 'oa'].map(type => {
+                    const isOA = (formData.zalo_url || '').startsWith('https://oa.zalo.me') || (formData.zalo_url || '').startsWith('https://zalo.me/g/');
+                    const currentType = isOA ? 'oa' : 'personal';
+                    return (
+                      <button key={type} type="button"
+                        className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${currentType === type ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted border-border text-muted-foreground'}`}
+                        onClick={() => {
+                          if (type === 'personal') onChange('zalo_url', '');
+                          else onChange('zalo_url', 'https://oa.zalo.me/');
+                        }}>
+                        {type === 'personal' ? '👤 Cá nhân' : '🏢 Zalo OA'}
+                      </button>
+                    );
+                  })}
+                </div>
+                {(() => {
+                  const isOA = (formData.zalo_url || '').startsWith('https://oa.zalo.me') || (formData.zalo_url || '').startsWith('https://zalo.me/g/');
+                  return (
+                    <>
+                      <Input
+                        value={formData.zalo_url || ''}
+                        onChange={e => onChange('zalo_url', e.target.value)}
+                        placeholder={isOA ? 'https://oa.zalo.me/1234567890' : '0971xxx (SĐT Zalo)'}
+                        inputMode={isOA ? 'url' : 'tel'}
+                      />
+                      <p className="text-[10px] text-muted-foreground">
+                        {isOA ? '💡 Nhập link OA từ trang quản trị Zalo OA' : '💡 Nhập SĐT Zalo cá nhân, khách sẽ nhắn tin trực tiếp'}
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
+            </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Facebook</Label>
                 <Input value={formData.facebook_url || ''} onChange={e => onChange('facebook_url', e.target.value)} placeholder="fb.com/..." />
