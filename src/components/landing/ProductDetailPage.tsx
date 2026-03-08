@@ -26,6 +26,16 @@ interface ProductDetailSectionConfig {
   enabled: boolean;
 }
 
+interface PaymentConfig {
+  codEnabled: boolean;
+  transferEnabled: boolean;
+  bankName?: string | null;
+  accountNumber?: string | null;
+  accountHolder?: string | null;
+  confirmZaloUrl?: string | null;
+  confirmMessengerUrl?: string | null;
+}
+
 interface ProductDetailPageProps {
   product: LandingProduct;
   onBack: () => void;
