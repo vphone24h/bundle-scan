@@ -23,6 +23,7 @@ import {
 } from '@/hooks/useShopCTV';
 import { usePublicLandingProducts } from '@/hooks/useLandingProducts';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
 
 interface CTVDashboardProps {
@@ -34,6 +35,7 @@ interface CTVDashboardProps {
 }
 
 export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBack }: CTVDashboardProps) {
+  const { signOut: authSignOut } = useAuth();
   const { data: ctv, isLoading: ctvLoading } = useMyShopCTV(tenantId);
   const { data: settings } = useShopCTVSettings(tenantId);
   const { data: orders } = useMyCTVOrders(ctv?.id);
@@ -54,16 +56,16 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const [profileSaving, setProfileSaving] = useState(false);
 
   const handleLogout = async () => {
-    localStorage.removeItem('ctv_store_mode');
     localStorage.setItem('ctv_just_logged_out', '1');
     try {
-      await supabase.auth.signOut();
+      // Use authSignOut which sets userInitiatedSignOut flag
+      // preventing auth recovery from re-authenticating
+      await authSignOut();
     } catch (e) {
       console.error('SignOut error:', e);
     }
-    // Redirect back to the store landing page, not the admin dashboard
-    // Use storeUrl if available (for subdomain stores), otherwise reload current page
-    window.location.href = storeUrl || window.location.origin;
+    // CTV logout → back to store website, NOT admin kho
+    window.location.reload();
   };
 
   if (ctvLoading) {
