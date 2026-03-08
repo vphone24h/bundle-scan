@@ -9,6 +9,7 @@ import { ImagePlus, Send, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { SocialPostCard } from './SocialPostCard';
+import { StoriesBar } from './StoriesBar';
 import { toast } from 'sonner';
 
 interface Props {
