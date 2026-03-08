@@ -591,6 +591,7 @@ export function JoinMemberDialog({
         customer_phone: phone.trim(),
         customer_email: email.trim(),
         note: `Đăng ký thành viên${productName ? ` - SP: ${productName}` : ''}`,
+        action_type: 'join_member',
       });
       setSubmitted(true);
     } catch { toast.error('Gửi thất bại, vui lòng thử lại'); }
