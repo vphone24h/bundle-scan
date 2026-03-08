@@ -61,8 +61,9 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
     } catch (e) {
       console.error('SignOut error:', e);
     }
-    // Navigate to store root to ensure clean state
-    window.location.href = window.location.origin;
+    // Redirect back to the store landing page, not the admin dashboard
+    // Use storeUrl if available (for subdomain stores), otherwise reload current page
+    window.location.href = storeUrl || window.location.origin;
   };
 
   if (ctvLoading) {
