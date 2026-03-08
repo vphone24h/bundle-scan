@@ -248,7 +248,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
           }}
         >
           <LogOut className="h-4 w-4 mr-1" />
-          Thoát
+          Đăng xuất
         </Button>
       </div>
 
