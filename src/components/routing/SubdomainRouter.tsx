@@ -43,7 +43,6 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
       if (!user && (resolvedTenant.status === 'loading' || authLoading)) {
         return 'store_landing';
       }
-      // Even with authLoading, if we don't have a user yet, show store
       if (authLoading && !user) {
         return 'store_landing';
       }
@@ -56,17 +55,16 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
         return 'app';
       }
       
-      // CTV user on main domain after email verification → redirect to store
+      // CTV user on main domain → redirect to store (they cannot access admin)
       if (user) {
         const ctvStoreMode = localStorage.getItem('ctv_store_mode');
         const ctvTenantId = user.user_metadata?.ctv_tenant_id;
         if (ctvStoreMode || ctvTenantId) {
           const storeId = ctvStoreMode || ctvTenantId;
-          // On main domain, redirect CTV to their store
           const storeUrl = buildStoreUrl(storeId);
           if (storeUrl !== window.location.href && !storeUrl.includes(window.location.hostname)) {
             window.location.href = storeUrl;
-            return 'app'; // Show app shell while redirecting
+            return 'app';
           }
         }
         return 'app';
@@ -87,22 +85,24 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
       return 'store_landing';
     }
     
-    // CTV store mode: user logged in as CTV on a store page — keep showing store
+    // CTV store mode OR CTV user on store page → ALWAYS show store landing
     const ctvStoreMode = localStorage.getItem('ctv_store_mode');
-    if (user && ctvStoreMode && (resolvedTenant.subdomain || resolvedTenant.tenantId)) {
+    const isCTVUser = !!user?.user_metadata?.ctv_tenant_id;
+    if (user && (ctvStoreMode || isCTVUser) && (resolvedTenant.subdomain || resolvedTenant.tenantId)) {
       return 'store_landing';
     }
 
+    // Regular staff/admin user on subdomain → show admin app
     if (user) {
       return 'app';
     }
     
-    // Có subdomain hoặc custom domain + tenant tồn tại + chưa đăng nhập → landing page cửa hàng
+    // No user + subdomain/custom domain resolved → show store landing
     if (resolvedTenant.status === 'resolved' && (resolvedTenant.subdomain || resolvedTenant.tenantId)) {
       return 'store_landing';
     }
     
-    // Subdomain/custom domain không tồn tại → landing page sẽ hiển thị "không tìm thấy"
+    // Subdomain/custom domain not found → store landing will show "not found"
     if (resolvedTenant.status === 'not_found' && (resolvedTenant.subdomain || !resolvedTenant.isMainDomain)) {
       return 'store_landing';
     }
