@@ -61,9 +61,11 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
     } catch (e) {
       console.error('SignOut error:', e);
     }
-    // Redirect back to the store landing page, not the admin dashboard
-    // Use storeUrl if available (for subdomain stores), otherwise reload current page
-    window.location.href = storeUrl || window.location.origin;
+    // CTV logout must go back to the store website, NOT admin kho
+    // Just reload current page - without ctv_store_mode and without session,
+    // SubdomainRouter will show store_landing on subdomains
+    // On main domain, force navigate to store URL
+    window.location.reload();
   };
 
   if (ctvLoading) {
