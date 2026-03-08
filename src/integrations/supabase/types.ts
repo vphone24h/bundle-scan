@@ -4007,6 +4007,99 @@ export type Database = {
           },
         ]
       }
+      platform_email_automation_logs: {
+        Row: {
+          automation_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          recipient_email: string
+          recipient_name: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          tenant_id: string | null
+        }
+        Insert: {
+          automation_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          recipient_email: string
+          recipient_name?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          tenant_id?: string | null
+        }
+        Update: {
+          automation_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          recipient_email?: string
+          recipient_name?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_email_automation_logs_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "platform_email_automations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_email_automation_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_email_automations: {
+        Row: {
+          created_at: string
+          html_content: string
+          id: string
+          is_enabled: boolean
+          name: string
+          subject: string
+          target_audience: string
+          trigger_days: number
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          html_content?: string
+          id?: string
+          is_enabled?: boolean
+          name: string
+          subject?: string
+          target_audience?: string
+          trigger_days?: number
+          trigger_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          html_content?: string
+          id?: string
+          is_enabled?: boolean
+          name?: string
+          subject?: string
+          target_audience?: string
+          trigger_days?: number
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           admin_phone: string | null
