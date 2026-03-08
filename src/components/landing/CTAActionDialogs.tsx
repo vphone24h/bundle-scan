@@ -68,6 +68,7 @@ export function ContactFormDialog({
         customer_phone: phone.trim(),
         customer_email: email.trim() || undefined,
         note: [notePrefix, message.trim()].filter(Boolean).join(' - ') || undefined,
+        action_type: actionType,
       });
       setSubmitted(true);
     } catch { toast.error('Gửi thất bại, vui lòng thử lại'); }
