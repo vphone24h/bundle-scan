@@ -645,7 +645,7 @@ export function EmailAutomationTab() {
       });
       if (error) throw error;
       toast.success('Đã chạy email automation thành công!');
-      qc.invalidateQueries({ queryKey: ['email-automation-logs'] });
+      // Logs will refresh on next tab switch
     } catch (err: any) {
       toast.error('Lỗi chạy automation: ' + err.message);
     } finally {
