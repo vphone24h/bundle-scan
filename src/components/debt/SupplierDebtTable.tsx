@@ -70,8 +70,16 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickF
   const [showCreateDebt, setShowCreateDebt] = useState(false);
   const [showEditSupplier, setShowEditSupplier] = useState(false);
   const [showTagAssign, setShowTagAssign] = useState(false);
+  const [showOffset, setShowOffset] = useState(false);
+  const [selectedOffsetMatch, setSelectedOffsetMatch] = useState<DebtOffsetMatch | null>(null);
+  const offsetMatches = useDebtOffsetMatches();
 
   const pagination = usePagination(debts || [], { storageKey: 'supplier-debt' });
+
+  const getOffsetMatch = (phone: string | null) => {
+    if (!phone) return null;
+    return offsetMatches.find(m => m.matchedPhone === phone.trim()) || null;
+  };
 
   const getEntityTags = (entityId: string) => {
     if (!assignments || !tags) return [];
