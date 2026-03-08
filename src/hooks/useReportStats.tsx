@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
 import { getLocalDateString, getLocalDateRangeISO } from '@/lib/vietnamTime';
-import { fetchAllRows } from '@/lib/fetchAllRows';
 
 import type { SaleDetailItem, ReturnDetailItem, CashBookDetailItem } from '@/components/reports/ReportStatDetailDialog';
 
@@ -33,7 +32,7 @@ export interface ReportStats {
     profit: number;
     count: number;
   }[];
-  // Raw detail data for popup
+  // Raw detail data for popup (limited)
   salesDetails: SaleDetailItem[];
   returnDetails: ReturnDetailItem[];
   expenseDetails: CashBookDetailItem[];
@@ -50,305 +49,163 @@ export function useReportStats(filters?: {
   const isDataHidden = tenant?.is_data_hidden ?? false;
   const { branchId: userBranchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
-  // Determine effective branch filter
   const effectiveBranchId = filters?.branchId || (shouldFilter ? userBranchId : undefined);
 
   return useQuery({
-    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
     queryKey: ['report-stats', tenant?.id, effectiveBranchId, filters, isDataHidden],
     queryFn: async () => {
-      // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) {
         return {
-          totalSalesRevenue: 0,
-          totalReturnRevenue: 0,
-          netRevenue: 0,
-          businessProfit: 0,
-          totalExpenses: 0,
-          otherIncome: 0,
-          netProfit: 0,
-          salesCount: 0,
-          returnCount: 0,
-          productsSold: 0,
-          productsReturned: 0,
+          totalSalesRevenue: 0, totalReturnRevenue: 0, netRevenue: 0,
+          businessProfit: 0, totalExpenses: 0, otherIncome: 0, netProfit: 0,
+          salesCount: 0, returnCount: 0, productsSold: 0, productsReturned: 0,
           paymentsBySource: { cash: 0, bank_card: 0, e_wallet: 0, debt: 0 },
-          expensesByCategory: {},
-          profitByCategory: [],
-          salesDetails: [],
-          returnDetails: [],
-          expenseDetails: [],
-          incomeDetails: [],
+          expensesByCategory: {}, profitByCategory: [],
+          salesDetails: [], returnDetails: [], expenseDetails: [], incomeDetails: [],
         } as ReportStats;
       }
 
-      // Use browser local timezone for date filtering
       const now = new Date();
       const startDate = filters?.startDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
       const endDate = filters?.endDate || getLocalDateString(now);
-      
-      // Create proper local timezone boundaries for queries
       const { startISO, endISO } = getLocalDateRangeISO(startDate, endDate);
 
-      const buildExportQuery = () => {
-        let q = supabase
-          .from('export_receipts')
-          .select(`
-            id,
-            total_amount,
-            status,
-            export_date,
-            branch_id,
-            export_receipt_items(
-              id,
-              product_name,
-              sku,
-              imei,
-              sale_price,
-              status,
-              product_id,
-              category_id,
-              categories(name)
-            ),
-            export_receipt_payments(
-              payment_type,
-              amount
-            )
-          `)
-          .gte('export_date', startISO)
-          .lte('export_date', endISO);
-
-        if (effectiveBranchId) {
-          q = q.eq('branch_id', effectiveBranchId);
+      // 1. Server-side aggregation via RPC (handles millions of rows)
+      const { data: aggData, error: aggError } = await supabase.rpc(
+        'get_report_stats_aggregated' as any,
+        {
+          p_tenant_id: tenant!.id,
+          p_start_iso: startISO,
+          p_end_iso: endISO,
+          p_branch_id: effectiveBranchId || null,
+          p_category_id: filters?.categoryId || null,
         }
-        return q;
-      };
-
-      const exportReceipts = await fetchAllRows<any>(() => buildExportQuery());
-
-      // 2. Lấy dữ liệu trả hàng KHÔNG CÓ PHÍ để tính lợi nhuận âm
-      let returnQuery = supabase
-        .from('export_returns')
-        .select(`
-          id,
-          product_name,
-          imei,
-          import_price,
-          sale_price,
-          return_date,
-          branch_id,
-          product_id,
-          fee_type
-        `)
-        .eq('fee_type', 'none')
-        .gte('return_date', startISO)
-        .lte('return_date', endISO);
-
-      if (effectiveBranchId) {
-        returnQuery = returnQuery.eq('branch_id', effectiveBranchId);
-      }
-
-      const returnItems = await fetchAllRows<any>(() => returnQuery);
-
-      // 3. Lấy giá nhập của các sản phẩm đã bán / trả để tính lợi nhuận
-      const productIds = Array.from(
-        new Set([
-          ...(exportReceipts?.flatMap(r => r.export_receipt_items?.map(i => i.product_id).filter(Boolean)) || []),
-          ...(returnItems?.map((i: any) => i.product_id).filter(Boolean) || []),
-        ])
       );
 
-      let productsMap: Record<string, number> = {};
-      if (productIds.length > 0) {
-        // Chunk to avoid 1000-row limit
-        for (let i = 0; i < productIds.length; i += 500) {
-          const chunk = productIds.slice(i, i + 500);
-          const { data: products } = await supabase
-            .from('products')
-            .select('id, import_price, category_id')
-            .in('id', chunk);
-          
-          (products || []).forEach(p => {
-            productsMap[p.id] = Number(p.import_price);
-          });
-        }
-      }
+      if (aggError) throw aggError;
 
-      // For items without product_id, try to find import price by IMEI
-      const orphanImeis = Array.from(new Set(
-        exportReceipts?.flatMap(r => 
-          r.export_receipt_items?.filter(i => !i.product_id && i.imei).map(i => i.imei as string) || []
-        ) || []
-      ));
-      let imeiPriceMap: Record<string, number> = {};
-      if (orphanImeis.length > 0) {
-        for (let i = 0; i < orphanImeis.length; i += 500) {
-          const chunk = orphanImeis.slice(i, i + 500);
-          const { data: imeiProducts } = await supabase
-            .from('products')
-            .select('imei, import_price')
-            .in('imei', chunk)
-            .gt('import_price', 0);
-          imeiProducts?.forEach(p => {
-            if (p.imei && p.import_price) {
-              imeiPriceMap[p.imei] = Number(p.import_price);
-            }
-          });
-        }
-      }
+      const agg = (aggData || {}) as any;
 
-      // 4. Lấy dữ liệu sổ quỹ (chi phí và thu nhập khác)
-      let cashBookQuery = supabase
-        .from('cash_book')
-        .select('*')
-        .eq('is_business_accounting', true)
-        .gte('transaction_date', startISO)
-        .lte('transaction_date', endISO);
+      // 2. Fetch LIMITED detail data for click-to-detail popups (latest 200 items)
+      let salesDetailQuery = supabase
+        .from('export_receipt_items')
+        .select(`
+          product_name, sku, sale_price, status, product_id, category_id,
+          categories(name),
+          export_receipts!inner(export_date, branch_id, status)
+        `)
+        .in('status', ['sold', 'returned'])
+        .neq('export_receipts.status', 'cancelled')
+        .gte('export_receipts.export_date', startISO)
+        .lte('export_receipts.export_date', endISO)
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       if (effectiveBranchId) {
-        cashBookQuery = cashBookQuery.eq('branch_id', effectiveBranchId);
+        salesDetailQuery = salesDetailQuery.eq('export_receipts.branch_id', effectiveBranchId);
+      }
+      if (filters?.categoryId) {
+        salesDetailQuery = salesDetailQuery.eq('category_id', filters.categoryId);
       }
 
-      const cashBookEntries = await fetchAllRows<any>(() => cashBookQuery);
+      let returnDetailQuery = supabase
+        .from('export_returns')
+        .select('product_name, imei, import_price, sale_price, return_date, branch_id, fee_type')
+        .eq('fee_type', 'none')
+        .gte('return_date', startISO)
+        .lte('return_date', endISO)
+        .order('return_date', { ascending: false })
+        .limit(200);
 
-      // Tính toán các chỉ số
-      let totalSalesRevenue = 0;
-      let totalReturnRevenue = 0;
-      let businessProfit = 0;
-      let salesCount = 0;
-      let returnCount = 0;
-      let productsSold = 0;
-      let productsReturned = 0;
-      const paymentsBySource = { cash: 0, bank_card: 0, e_wallet: 0, debt: 0 };
-      const profitByCategoryMap: Record<string, { categoryName: string; revenue: number; profit: number; count: number }> = {};
-      const salesDetails: SaleDetailItem[] = [];
-      const returnDetails: ReturnDetailItem[] = [];
+      if (effectiveBranchId) {
+        returnDetailQuery = returnDetailQuery.eq('branch_id', effectiveBranchId);
+      }
+
+      let cashDetailQuery = supabase
+        .from('cash_book')
+        .select('transaction_date, description, category, amount, payment_source, type')
+        .eq('is_business_accounting', true)
+        .gte('transaction_date', startISO)
+        .lte('transaction_date', endISO)
+        .order('transaction_date', { ascending: false })
+        .limit(200);
+
+      if (effectiveBranchId) {
+        cashDetailQuery = cashDetailQuery.eq('branch_id', effectiveBranchId);
+      }
+
+      const [{ data: salesRaw }, { data: returnsRaw }, { data: cashRaw }] = await Promise.all([
+        salesDetailQuery,
+        returnDetailQuery,
+        cashDetailQuery,
+      ]);
+
+      // Build detail arrays for popup
+      const salesDetails: SaleDetailItem[] = (salesRaw || []).map((item: any) => {
+        const salePrice = Number(item.sale_price);
+        return {
+          date: item.export_receipts?.export_date || '',
+          productName: item.product_name || 'SP',
+          sku: item.sku || '',
+          salePrice,
+          importPrice: 0,
+          profit: salePrice,
+          branchName: '',
+          categoryName: item.categories?.name || 'Chưa phân loại',
+        };
+      });
+
+      const returnDetails: ReturnDetailItem[] = (returnsRaw || []).map((item: any) => ({
+        date: item.return_date,
+        productName: item.product_name || 'Sản phẩm',
+        imei: item.imei || null,
+        salePrice: Number(item.sale_price),
+        importPrice: Number(item.import_price || 0),
+        profit: Number(item.sale_price) - Number(item.import_price || 0),
+        branchName: '',
+      }));
+
       const expenseDetails: CashBookDetailItem[] = [];
       const incomeDetails: CashBookDetailItem[] = [];
-
-      // Tính lợi nhuận từ bán hàng
-      exportReceipts?.forEach(receipt => {
-        if (receipt.status !== 'cancelled') {
-          salesCount++;
-          
-          receipt.export_receipt_items?.forEach(item => {
-            const salePrice = Number(item.sale_price);
-            const importPrice = item.product_id
-              ? (productsMap[item.product_id] || 0)
-              : (item.imei ? (imeiPriceMap[item.imei] || 0) : 0);
-            
-            if (filters?.categoryId && item.category_id !== filters.categoryId) {
-              return;
-            }
-
-            if (item.status === 'sold' || item.status === 'returned') {
-              totalSalesRevenue += salePrice;
-              businessProfit += (salePrice - importPrice);
-              productsSold++;
-
-              salesDetails.push({
-                date: receipt.export_date,
-                productName: (item as any).product_name || 'SP',
-                sku: (item as any).sku || '',
-                salePrice,
-                importPrice,
-                profit: salePrice - importPrice,
-                branchName: '',
-                categoryName: item.categories?.name || 'Chưa phân loại',
-              });
-
-              const catId = item.category_id || 'uncategorized';
-              const catName = item.categories?.name || 'Chưa phân loại';
-              if (!profitByCategoryMap[catId]) {
-                profitByCategoryMap[catId] = { categoryName: catName, revenue: 0, profit: 0, count: 0 };
-              }
-              profitByCategoryMap[catId].revenue += salePrice;
-              profitByCategoryMap[catId].profit += (salePrice - importPrice);
-              profitByCategoryMap[catId].count++;
-            }
-          });
-
-          receipt.export_receipt_payments?.forEach(payment => {
-            const amount = Number(payment.amount);
-            const source = payment.payment_type as keyof typeof paymentsBySource;
-            if (paymentsBySource.hasOwnProperty(source)) {
-              paymentsBySource[source] += amount;
-            }
-          });
-        }
-      });
-
-      // Tính lợi nhuận âm từ trả hàng
-      returnItems?.forEach((item: any) => {
-        const salePrice = Number(item.sale_price);
-        const importPrice = item.product_id
-          ? (productsMap[item.product_id] || 0)
-          : (item.imei ? (imeiPriceMap[item.imei] || 0) : 0);
-        const profit = salePrice - importPrice;
-        
-        totalReturnRevenue += salePrice;
-        businessProfit -= profit;
-        productsReturned++;
-        returnCount++;
-
-        returnDetails.push({
-          date: item.return_date,
-          productName: item.product_name || 'Sản phẩm',
-          imei: item.imei || null,
-          salePrice,
-          importPrice,
-          profit,
-          branchName: '',
-        });
-      });
-
-      // Tính chi phí và thu nhập khác từ sổ quỹ
-      let totalExpenses = 0;
-      let otherIncome = 0;
-      const expensesByCategory: Record<string, number> = {};
-
-      cashBookEntries?.forEach(entry => {
-        const amount = Number(entry.amount);
-        const detailItem: CashBookDetailItem = {
+      (cashRaw || []).forEach((entry: any) => {
+        const detail: CashBookDetailItem = {
           date: entry.transaction_date,
           description: entry.description,
           category: entry.category,
-          amount,
+          amount: Number(entry.amount),
           paymentSource: entry.payment_source,
           branchName: '',
         };
-        if (entry.type === 'expense') {
-          totalExpenses += amount;
-          expensesByCategory[entry.category] = (expensesByCategory[entry.category] || 0) + amount;
-          expenseDetails.push(detailItem);
-        } else if (entry.type === 'income') {
-          otherIncome += amount;
-          incomeDetails.push(detailItem);
-        }
+        if (entry.type === 'expense') expenseDetails.push(detail);
+        else if (entry.type === 'income') incomeDetails.push(detail);
       });
 
-      const netRevenue = totalSalesRevenue - totalReturnRevenue;
-      const netProfit = (businessProfit + otherIncome) - totalExpenses;
-
-      const profitByCategory = Object.entries(profitByCategoryMap).map(([categoryId, data]) => ({
-        categoryId,
-        ...data,
-      })).sort((a, b) => b.profit - a.profit);
-
       return {
-        totalSalesRevenue,
-        totalReturnRevenue,
-        netRevenue,
-        businessProfit,
-        totalExpenses,
-        otherIncome,
-        netProfit,
-        salesCount,
-        returnCount,
-        productsSold,
-        productsReturned,
-        paymentsBySource,
-        expensesByCategory,
-        profitByCategory,
+        totalSalesRevenue: Number(agg.totalSalesRevenue || 0),
+        totalReturnRevenue: Number(agg.totalReturnRevenue || 0),
+        netRevenue: Number(agg.netRevenue || 0),
+        businessProfit: Number(agg.businessProfit || 0),
+        totalExpenses: Number(agg.totalExpenses || 0),
+        otherIncome: Number(agg.otherIncome || 0),
+        netProfit: Number(agg.netProfit || 0),
+        salesCount: Number(agg.salesCount || 0),
+        returnCount: Number(agg.returnCount || 0),
+        productsSold: Number(agg.productsSold || 0),
+        productsReturned: Number(agg.productsReturned || 0),
+        paymentsBySource: {
+          cash: Number(agg.paymentsBySource?.cash || 0),
+          bank_card: Number(agg.paymentsBySource?.bank_card || 0),
+          e_wallet: Number(agg.paymentsBySource?.e_wallet || 0),
+          debt: Number(agg.paymentsBySource?.debt || 0),
+        },
+        expensesByCategory: (agg.expensesByCategory || {}) as Record<string, number>,
+        profitByCategory: ((agg.profitByCategory || []) as any[]).map(c => ({
+          categoryId: c.categoryId,
+          categoryName: c.categoryName,
+          revenue: Number(c.revenue || 0),
+          profit: Number(c.profit || 0),
+          count: Number(c.count || 0),
+        })),
         salesDetails,
         returnDetails,
         expenseDetails,
@@ -360,7 +217,7 @@ export function useReportStats(filters?: {
   });
 }
 
-// Hook để lấy dữ liệu biểu đồ theo thời gian
+// Hook để lấy dữ liệu biểu đồ theo thời gian - NOW USING SERVER-SIDE RPC
 export function useReportChartData(filters?: {
   startDate?: string;
   endDate?: string;
@@ -371,157 +228,37 @@ export function useReportChartData(filters?: {
   const isDataHidden = tenant?.is_data_hidden ?? false;
   const { branchId: userBranchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
 
-  // Determine effective branch filter
   const effectiveBranchId = filters?.branchId || (shouldFilter ? userBranchId : undefined);
 
   return useQuery({
-    // Keyed by tenant AND branch to prevent cross-tenant/branch cache leakage
     queryKey: ['report-chart-data', tenant?.id, effectiveBranchId, filters, isDataHidden],
     queryFn: async () => {
-      // Chế độ test: trả về dữ liệu rỗng
       if (isDataHidden) return [] as { date: string; revenue: number; profit: number; count: number }[];
 
-      // Use browser local timezone for date filtering
       const now = new Date();
       const startDate = filters?.startDate || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
       const endDate = filters?.endDate || getLocalDateString(now);
-      
-      // Create proper local timezone boundaries for queries
       const { startISO, endISO } = getLocalDateRangeISO(startDate, endDate);
 
-      let query = supabase
-        .from('export_receipts')
-        .select(`
-          id,
-          total_amount,
-          export_date,
-          status,
-          export_receipt_items(sale_price, status, product_id, imei)
-        `)
-        .gte('export_date', startISO)
-        .lte('export_date', endISO)
-        .neq('status', 'cancelled');
-
-      if (effectiveBranchId) {
-        query = query.eq('branch_id', effectiveBranchId);
-      }
-
-      const receipts = await fetchAllRows<any>(() => query);
-
-      // Lấy trả hàng KHÔNG CÓ PHÍ để trừ lợi nhuận
-      let returnQuery = supabase
-        .from('export_returns')
-        .select('id, sale_price, import_price, return_date, branch_id, fee_type, product_id')
-        .eq('fee_type', 'none')
-        .gte('return_date', startISO)
-        .lte('return_date', endISO);
-
-      if (effectiveBranchId) {
-        returnQuery = returnQuery.eq('branch_id', effectiveBranchId);
-      }
-
-      const returnItems = await fetchAllRows<any>(() => returnQuery);
-
-      // Lấy giá nhập
-      const productIds = Array.from(
-        new Set([
-          ...(receipts?.flatMap(r => r.export_receipt_items?.map(i => i.product_id).filter(Boolean)) || []),
-          ...(returnItems?.map((i: any) => i.product_id).filter(Boolean) || []),
-        ])
+      const { data, error } = await supabase.rpc(
+        'get_report_chart_aggregated' as any,
+        {
+          p_tenant_id: tenant!.id,
+          p_start_iso: startISO,
+          p_end_iso: endISO,
+          p_branch_id: effectiveBranchId || null,
+          p_group_by: filters?.groupBy || 'day',
+        }
       );
 
-      let productsMap: Record<string, number> = {};
-      if (productIds.length > 0) {
-        for (let i = 0; i < productIds.length; i += 500) {
-          const chunk = productIds.slice(i, i + 500);
-          const { data: products } = await supabase
-            .from('products')
-            .select('id, import_price')
-            .in('id', chunk);
-          
-          (products || []).forEach(p => {
-            productsMap[p.id] = Number(p.import_price);
-          });
-        }
-      }
+      if (error) throw error;
 
-      // IMEI fallback for orphan items
-      const chartOrphanImeis = Array.from(new Set(
-        receipts?.flatMap(r =>
-          r.export_receipt_items?.filter(i => !i.product_id && i.imei).map(i => i.imei as string) || []
-        ) || []
-      ));
-      let chartImeiPriceMap: Record<string, number> = {};
-      if (chartOrphanImeis.length > 0) {
-        for (let i = 0; i < chartOrphanImeis.length; i += 500) {
-          const chunk = chartOrphanImeis.slice(i, i + 500);
-          const { data: imeiProducts } = await supabase
-            .from('products')
-            .select('imei, import_price')
-            .in('imei', chunk)
-            .gt('import_price', 0);
-          imeiProducts?.forEach(p => {
-            if (p.imei && p.import_price) {
-              chartImeiPriceMap[p.imei] = Number(p.import_price);
-            }
-          });
-        }
-      }
-
-      // Nhóm dữ liệu theo ngày/tuần/tháng
-      const groupBy = filters?.groupBy || 'day';
-      const dataMap: Record<string, { date: string; revenue: number; profit: number; count: number }> = {};
-
-      const getKey = (d: Date) => {
-        if (groupBy === 'day') return d.toISOString().split('T')[0];
-        if (groupBy === 'week') {
-          const weekStart = new Date(d);
-          weekStart.setDate(d.getDate() - d.getDay());
-          return weekStart.toISOString().split('T')[0];
-        }
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      };
-
-      receipts?.forEach(receipt => {
-        const date = new Date(receipt.export_date);
-        const key = getKey(date);
-
-        if (!dataMap[key]) {
-          dataMap[key] = { date: key, revenue: 0, profit: 0, count: 0 };
-        }
-
-        receipt.export_receipt_items?.forEach(item => {
-          if (item.status === 'sold' || item.status === 'returned') {
-            const salePrice = Number(item.sale_price);
-            const importPrice = item.product_id
-              ? (productsMap[item.product_id] || 0)
-              : (item.imei ? (chartImeiPriceMap[item.imei] || 0) : 0);
-            dataMap[key].revenue += salePrice;
-            dataMap[key].profit += (salePrice - importPrice);
-            dataMap[key].count++;
-          }
-        });
-      });
-
-      // Trừ dữ liệu trả hàng
-      returnItems?.forEach((ret: any) => {
-        const date = new Date(ret.return_date);
-        const key = getKey(date);
-        if (!dataMap[key]) {
-          dataMap[key] = { date: key, revenue: 0, profit: 0, count: 0 };
-        }
-
-        const salePrice = Number(ret.sale_price);
-        const importPrice = ret.product_id
-          ? (productsMap[ret.product_id] || 0)
-          : (ret.imei ? (chartImeiPriceMap[ret.imei] || 0) : 0);
-        const originalProfit = salePrice - importPrice;
-
-        dataMap[key].profit -= originalProfit;
-        dataMap[key].count += 1;
-      });
-
-      return Object.values(dataMap).sort((a, b) => a.date.localeCompare(b.date));
+      return ((data || []) as any[]).map(d => ({
+        date: d.date,
+        revenue: Number(d.revenue || 0),
+        profit: Number(d.profit || 0),
+        count: Number(d.count || 0),
+      }));
     },
     enabled: !isTenantLoading && !branchLoading && !!tenant?.id,
     refetchOnWindowFocus: false,
