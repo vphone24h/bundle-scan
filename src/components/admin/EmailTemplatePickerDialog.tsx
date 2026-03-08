@@ -97,7 +97,82 @@ export const ORDER_EMAIL_PRESETS: EmailTemplatePreset[] = [
 
 // === Auto-fill presets: trigger_type → default template (auto-fills when user selects trigger) ===
 export const TRIGGER_TYPE_PRESETS: Record<string, { name: string; subject: string; blocks: Array<{ block_type: string; content: any }> }> = {
-  on_booking: { name: 'Email xác nhận đặt lịch', subject: 'Xác nhận đặt lịch tại {{store_name}}', blocks: [
+  // === Chăm sóc tự động ===
+  days_after_purchase: { name: 'Chăm sóc sau X ngày mua hàng', subject: 'Cảm ơn bạn đã tin tưởng {{store_name}}', blocks: [
+    { block_type: 'heading', content: { text: 'Cảm ơn bạn đã mua hàng!', level: 'h2' } },
+    { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\nCảm ơn bạn đã mua {{product_name}} tại {{store_name}}.\n\nChúng tôi hy vọng bạn đang có trải nghiệm tốt. Nếu cần hỗ trợ, hãy liên hệ ngay!' } },
+    { block_type: 'divider', content: {} },
+    { block_type: 'button', content: { text: '📞 Gọi điện', url: 'tel:{{phone}}', color: '#1a56db' } },
+    { block_type: 'spacer', content: { height: 12 } },
+    { block_type: 'text', content: { text: 'Trân trọng,\n{{store_name}}' } },
+  ]},
+  days_after_purchase_onwards: { name: 'Chăm sóc khách mua từ X ngày trở đi', subject: 'Cảm ơn bạn đã mua hàng tại {{store_name}}', blocks: [
+    { block_type: 'heading', content: { text: 'Cảm ơn bạn đã đồng hành!', level: 'h2' } },
+    { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\nCảm ơn bạn đã tin tưởng và mua sắm tại {{store_name}}.\n\nNếu bạn cần hỗ trợ, đừng ngần ngại liên hệ!' } },
+    { block_type: 'divider', content: {} },
+    { block_type: 'button', content: { text: '📞 Gọi Hotline', url: 'tel:{{phone}}', color: '#1a56db' } },
+    { block_type: 'spacer', content: { height: 12 } },
+    { block_type: 'text', content: { text: 'Trân trọng,\n{{store_name}}' } },
+  ]},
+  days_before_warranty_expires: { name: 'Nhắc bảo hành sắp hết hạn', subject: 'Bảo hành sản phẩm sắp hết hạn - {{store_name}}', blocks: [
+    { block_type: 'heading', content: { text: '🛡️ Bảo hành sắp hết hạn', level: 'h2' } },
+    { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\nBảo hành sản phẩm {{product_name}} sắp hết hạn vào {{warranty_end}}.\n\nHãy mang thiết bị đến cửa hàng để kiểm tra miễn phí trước khi hết hạn.' } },
+    { block_type: 'divider', content: {} },
+    { block_type: 'button', content: { text: '📍 Xem địa chỉ', url: 'https://maps.google.com/', color: '#16a34a' } },
+    { block_type: 'button', content: { text: '📞 Gọi Hotline', url: 'tel:{{phone}}', color: '#1a56db' } },
+    { block_type: 'spacer', content: { height: 12 } },
+    { block_type: 'text', content: { text: 'Trân trọng,\n{{store_name}}' } },
+  ]},
+  days_inactive: { name: 'Nhắc khách lâu không mua', subject: 'Chúng tôi nhớ bạn - {{store_name}}', blocks: [
+    { block_type: 'heading', content: { text: '👋 Chúng tôi nhớ bạn!', level: 'h2' } },
+    { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\nĐã lâu không thấy bạn ghé thăm {{store_name}}.\n\nChúng tôi có nhiều sản phẩm mới và ưu đãi hấp dẫn dành riêng cho bạn!' } },
+    { block_type: 'divider', content: {} },
+    { block_type: 'button', content: { text: '🛒 Xem sản phẩm mới', url: '/', color: '#1a56db' } },
+    { block_type: 'spacer', content: { height: 12 } },
+    { block_type: 'text', content: { text: 'Hẹn gặp lại bạn!\n{{store_name}}' } },
+  ]},
+  customer_birthday: { name: 'Chúc mừng sinh nhật', subject: '🎂 Chúc mừng sinh nhật {{customer_name}}!', blocks: [
+    { block_type: 'heading', content: { text: '🎂 Chúc mừng sinh nhật!', level: 'h1' } },
+    { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\n{{store_name}} chúc bạn một ngày sinh nhật thật vui vẻ và hạnh phúc!\n\nĐến cửa hàng để nhận ưu đãi đặc biệt dành riêng cho bạn nhé!' } },
+    { block_type: 'divider', content: {} },
+    { block_type: 'button', content: { text: '🎁 Xem ưu đãi', url: '/', color: '#e11d48' } },
+    { block_type: 'spacer', content: { height: 12 } },
+    { block_type: 'text', content: { text: 'Yêu thương,\n{{store_name}}' } },
+  ]},
+  customer_registration_anniversary: { name: 'Kỷ niệm ngày đăng ký', subject: 'Kỷ niệm cùng {{store_name}}!', blocks: [
+    { block_type: 'heading', content: { text: '🎉 Chúc mừng kỷ niệm!', level: 'h1' } },
+    { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\nCảm ơn bạn đã đồng hành cùng {{store_name}}!\n\nChúng tôi gửi tặng bạn ưu đãi đặc biệt nhân dịp kỷ niệm.' } },
+    { block_type: 'divider', content: {} },
+    { block_type: 'button', content: { text: '🎁 Nhận ưu đãi', url: '/', color: '#7c3aed' } },
+    { block_type: 'spacer', content: { height: 12 } },
+    { block_type: 'text', content: { text: 'Trân trọng,\n{{store_name}}' } },
+  ]},
+  after_customer_review: { name: 'Cảm ơn đã đánh giá', subject: 'Cảm ơn đánh giá của bạn - {{store_name}}', blocks: [
+    { block_type: 'heading', content: { text: '⭐ Cảm ơn đánh giá!', level: 'h1' } },
+    { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\nCảm ơn bạn đã dành thời gian đánh giá sản phẩm tại {{store_name}}.\n\nÝ kiến của bạn giúp chúng tôi phục vụ tốt hơn!' } },
+    { block_type: 'divider', content: {} },
+    { block_type: 'button', content: { text: '📞 Gọi điện', url: 'tel:{{phone}}', color: '#1a56db' } },
+    { block_type: 'spacer', content: { height: 12 } },
+    { block_type: 'text', content: { text: 'Trân trọng,\n{{store_name}}' } },
+  ]},
+  after_voucher_received: { name: 'Sau khi nhận voucher', subject: 'Bạn vừa nhận voucher từ {{store_name}}!', blocks: [
+    { block_type: 'heading', content: { text: '🎫 Bạn có voucher mới!', level: 'h1' } },
+    { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\nBạn vừa nhận được voucher từ {{store_name}}.\n\nHãy sử dụng voucher để tận hưởng ưu đãi nhé!' } },
+    { block_type: 'divider', content: {} },
+    { block_type: 'button', content: { text: '🛒 Mua sắm ngay', url: '/', color: '#16a34a' } },
+    { block_type: 'spacer', content: { height: 12 } },
+    { block_type: 'text', content: { text: 'Trân trọng,\n{{store_name}}' } },
+  ]},
+  days_before_care_schedule: { name: 'Nhắc lịch chăm sóc', subject: 'Nhắc nhở lịch chăm sóc - {{store_name}}', blocks: [
+    { block_type: 'heading', content: { text: '📅 Nhắc lịch chăm sóc', level: 'h1' } },
+    { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\nBạn có lịch hẹn chăm sóc sắp tới tại {{store_name}}.\n\nVui lòng sắp xếp thời gian để đến đúng hẹn!' } },
+    { block_type: 'divider', content: {} },
+    { block_type: 'button', content: { text: '📞 Gọi điện', url: 'tel:{{phone}}', color: '#1a56db' } },
+    { block_type: 'spacer', content: { height: 12 } },
+    { block_type: 'text', content: { text: 'Trân trọng,\n{{store_name}}' } },
+  ]},
+  // === Đặt lịch ===
+  on_booking_confirmation: { name: 'Email xác nhận đặt lịch', subject: 'Xác nhận đặt lịch tại {{store_name}}', blocks: [
     { block_type: 'heading', content: { text: '📅 Xác nhận đặt lịch', level: 'h1' } },
     { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\nLịch hẹn của bạn tại {{store_name}} đã được ghi nhận.' } },
     { block_type: 'text', content: { text: '📋 Dịch vụ: {{product_name}}\n📅 Ngày hẹn: {{action_date}}\n⏰ Giờ hẹn: {{action_time}}' } },
