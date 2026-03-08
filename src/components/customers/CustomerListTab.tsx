@@ -124,7 +124,10 @@ export function CustomerListTab({
 
     const handleSearchChange = useCallback((val: string) => {
       setSearch(val);
-      setCurrentPage(1);
+      if (!val) {
+        setCommittedSearch('');
+        setCurrentPage(1);
+      }
     }, []);
 
     const handlePageSizeChange = useCallback((val: number) => {
