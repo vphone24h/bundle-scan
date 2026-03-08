@@ -149,21 +149,41 @@ export function PaymentDialog({ open, onClose, totalAmount, onConfirm, isSubmitt
                 <Label>{t('common.enterAmountPerSource')}</Label>
                 {selectedTypes.map((type) => {
                   const option = paymentOptions.find((o) => o.type === type)!;
+                  const remaining = totalAmount - selectedTypes.reduce((sum, t) => t === type ? sum : sum + (amounts[t] || 0), 0);
                   return (
-                    <div key={type} className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 w-32">
-                        {option.icon}
-                        <span className="text-sm">{option.label}</span>
+                    <div key={type} className="space-y-1.5">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 w-32">
+                          {option.icon}
+                          <span className="text-sm">{option.label}</span>
+                        </div>
+                        <Input
+                          type="number"
+                          value={amounts[type] || ''}
+                          onChange={(e) =>
+                            setAmounts({ ...amounts, [type]: Number(e.target.value) || 0 })
+                          }
+                          className="flex-1"
+                          placeholder="0"
+                        />
                       </div>
-                      <Input
-                        type="number"
-                        value={amounts[type] || ''}
-                        onChange={(e) =>
-                          setAmounts({ ...amounts, [type]: Number(e.target.value) || 0 })
-                        }
-                        className="flex-1"
-                        placeholder="0"
-                      />
+                      <div className="flex gap-1.5 ml-[8.5rem]">
+                        {[totalAmount, remaining > 0 ? remaining : null, ...[500000, 1000000, 5000000, 10000000].filter(v => v <= totalAmount)].filter((v, i, arr) => v != null && v > 0 && arr.indexOf(v) === i).slice(0, 4).map((quickVal) => (
+                          <button
+                            key={quickVal}
+                            type="button"
+                            onClick={() => setAmounts({ ...amounts, [type]: quickVal! })}
+                            className={cn(
+                              'text-[10px] px-1.5 py-0.5 rounded border transition-colors',
+                              amounts[type] === quickVal
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
+                            )}
+                          >
+                            {quickVal! >= 1000000 ? `${(quickVal! / 1000000).toLocaleString('vi-VN')}tr` : `${(quickVal! / 1000).toLocaleString('vi-VN')}k`}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   );
                 })}
