@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileText, PenLine, Clock, ShieldCheck, Package, Star, ShoppingCart, CheckCircle2, Truck, Shield } from 'lucide-react';
+import { FileText, PenLine, Clock, ShieldCheck, Package, Star, ShoppingCart, CheckCircle2, Truck, Shield, CalendarCheck, CalendarClock, UtensilsCrossed, BedDouble, GraduationCap, Car, Heart, Cake, UserPlus, Gift, MessageSquare, XCircle } from 'lucide-react';
 
 export interface EmailTemplatePreset {
   id: string;
