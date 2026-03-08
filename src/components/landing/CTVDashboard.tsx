@@ -21,7 +21,7 @@ import {
   useMyCTVWithdrawals, useCreateCTVWithdrawal, useShopCTVSettings,
   useMyReferredCTVs,
 } from '@/hooks/useShopCTV';
-import { usePublicLandingData } from '@/hooks/useLandingProducts';
+import { usePublicLandingProducts } from '@/hooks/useLandingProducts';
 import { supabase } from '@/integrations/supabase/client';
 import { VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
 
