@@ -97,6 +97,7 @@ export function useSupplierDebts(showSettled: boolean = false) {
         entity_id: row.entity_id,
         entity_name: row.entity_name,
         entity_phone: row.entity_phone,
+        entity_code: row.entity_code || null,
         branch_id: row.branch_id,
         branch_name: row.branch_name,
         total_amount: Number(row.total_amount) || 0,

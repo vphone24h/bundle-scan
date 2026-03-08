@@ -53,14 +53,14 @@ export function useDebtOffsetMatches() {
 /**
  * Check if a specific entity (customer or supplier) has a 2-way debt match.
  */
-export function useEntityOffsetMatch(entityType: 'customer' | 'supplier', entityPhone: string | null) {
+export function useEntityOffsetMatch(entityType: 'customer' | 'supplier', entityCode: string | null) {
   const matches = useDebtOffsetMatches();
   
   return useMemo(() => {
-    if (!entityPhone || matches.length === 0) return null;
-    const phone = entityPhone.trim();
-    return matches.find(m => m.matchedPhone === phone) || null;
-  }, [matches, entityPhone]);
+    if (!entityCode || matches.length === 0) return null;
+    const code = entityCode.trim();
+    return matches.find(m => m.matchedEntityCode === code) || null;
+  }, [matches, entityCode]);
 }
 
 /**
