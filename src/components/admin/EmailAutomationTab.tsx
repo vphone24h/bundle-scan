@@ -428,10 +428,12 @@ function AutomationFormDialog({
                     </SelectContent>
                   </Select>
                 </div>
+                {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled'].includes(triggerType) && (
                 <div>
-                  <Label>Số ngày</Label>
+                  <Label>{triggerType === 'customer_registration_anniversary' ? 'Số năm' : 'Số ngày'}</Label>
                   <Input type="number" min={1} value={triggerDays} onChange={e => setTriggerDays(Number(e.target.value))} />
                 </div>
+                )}
               </div>
             )}
             <div>
