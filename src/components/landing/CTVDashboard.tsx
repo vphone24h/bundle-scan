@@ -228,7 +228,11 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
       return true;
     })
     .sort((a: any, b: any) => {
-      if (productSortPrice === 'none') return 0;
+      if (productSortPrice === 'none') {
+        const orderA = a.display_order ?? 999999;
+        const orderB = b.display_order ?? 999999;
+        return orderA - orderB;
+      }
       const priceA = a.sale_price || a.price || 0;
       const priceB = b.sale_price || b.price || 0;
       return productSortPrice === 'asc' ? priceA - priceB : priceB - priceA;
