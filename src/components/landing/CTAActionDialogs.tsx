@@ -428,7 +428,7 @@ export function WriteReviewDialog({ open, onClose, tenantId, primaryColor, produ
             </div>
             <div>
               <Label className="text-sm">Email <span className="text-destructive">*</span></Label>
-              <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập email" type="email" className="h-11 text-base" />
+              <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập đúng email để nhận thông tin đơn hàng" type="email" className="h-11 text-base" />
             </div>
             <div>
               <Label className="text-sm">Nội dung đánh giá</Label>
