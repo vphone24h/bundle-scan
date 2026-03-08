@@ -496,9 +496,8 @@ export default function AppleStyleLandingTemplate({
           product={selectedProduct}
           onBack={() => {
             setSelectedProduct(null);
-            const np = new URLSearchParams(searchParams);
-            np.delete('product');
-            setSearchParams(np, { replace: true });
+            window.history.replaceState(null, '', buildPagePath('products'));
+            setSearchParams(new URLSearchParams(), { replace: true });
           }}
           tenantId={tenantId}
           branches={branches.map(b => ({ id: b.id, name: b.name }))}
