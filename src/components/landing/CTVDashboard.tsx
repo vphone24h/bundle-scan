@@ -272,12 +272,39 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
     return rate;
   };
 
-  // Calculate F1 commission (when your referred CTV sells this product)
+  // Calculate F1 commission using tiered system (same logic as product tiers)
   const getF1Commission = (product: any) => {
+    const price = product.sale_price || product.price || 0;
+    const f1Tiers = (settings as any)?.f1_commission_tiers;
+    
+    if (f1Tiers && Array.isArray(f1Tiers) && f1Tiers.length > 0) {
+      let matchedTier = f1Tiers[0];
+      for (const tier of f1Tiers) {
+        if (tier.threshold === null) {
+          matchedTier = tier;
+          break;
+        }
+        if (price <= tier.threshold) {
+          matchedTier = tier;
+          break;
+        }
+        matchedTier = tier;
+      }
+      const lastTier = f1Tiers.find((t: any) => t.threshold === null);
+      if (lastTier && !f1Tiers.some((t: any) => t.threshold !== null && price <= t.threshold)) {
+        matchedTier = lastTier;
+      }
+      if (matchedTier) {
+        return matchedTier.type === 'percentage'
+          ? Math.round(price * matchedTier.rate / 100)
+          : matchedTier.rate;
+      }
+    }
+
+    // Fallback to flat F1 rate
     const f1Rate = (settings as any)?.f1_commission_rate || 0;
     const f1Type = (settings as any)?.f1_commission_type || 'percentage';
     if (f1Rate <= 0) return 0;
-    const price = product.sale_price || product.price || 0;
     if (f1Type === 'percentage') {
       return Math.round(price * f1Rate / 100);
     }
