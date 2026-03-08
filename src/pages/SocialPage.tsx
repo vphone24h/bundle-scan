@@ -1,9 +1,7 @@
 import { useState, lazy, Suspense, useRef, useCallback } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { MessageCircle, Users, Home, User, Bell, Loader2, Search, X } from 'lucide-react';
+import { Home, User, Bell, Loader2, Search, X } from 'lucide-react';
 import { useUnreadSocialNotifCount, useSearchUsers } from '@/hooks/useSocial';
-import { useUnreadChatCount } from '@/hooks/useChat';
-import { usePendingFriendCount } from '@/hooks/useFriends';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -11,16 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Conversation, useStartConversation } from '@/hooks/useChat';
 import { useTranslation } from 'react-i18next';
-import { cn } from '@/lib/utils';
 
 const SocialProfileTab = lazy(() => import('@/components/social/SocialProfileTab').then(m => ({ default: m.SocialProfileTab })));
 const SocialFeedTab = lazy(() => import('@/components/social/SocialFeedTab').then(m => ({ default: m.SocialFeedTab })));
 const SocialNotificationsTab = lazy(() => import('@/components/social/SocialNotificationsTab').then(m => ({ default: m.SocialNotificationsTab })));
-const ChatListTab = lazy(() => import('@/components/social/ChatListTab').then(m => ({ default: m.ChatListTab })));
-const ChatScreen = lazy(() => import('@/components/social/ChatScreen').then(m => ({ default: m.ChatScreen })));
-const ContactsTab = lazy(() => import('@/components/social/ContactsTab').then(m => ({ default: m.ContactsTab })));
 
 const TabFallback = () => <div className="text-center py-8 text-muted-foreground">Đang tải...</div>;
 
@@ -32,12 +25,8 @@ const SocialPage = () => {
   const [viewUserId, setViewUserId] = useState<string | undefined>();
   const [focusPostId, setFocusPostId] = useState<string | null>(null);
   const [focusCommentId, setFocusCommentId] = useState<string | null>(null);
-  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const { data: unreadNotifCount } = useUnreadSocialNotifCount();
-  const { data: unreadChatCount } = useUnreadChatCount();
-  const { data: pendingFriendCount } = usePendingFriendCount();
   const queryClient = useQueryClient();
-  const startConversation = useStartConversation();
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { data: searchResults } = useSearchUsers(searchQuery);
@@ -54,7 +43,6 @@ const SocialPage = () => {
     await queryClient.invalidateQueries({ queryKey: ['social-feed'] });
     await queryClient.invalidateQueries({ queryKey: ['social-profile'] });
     await queryClient.invalidateQueries({ queryKey: ['social-notifications'] });
-    await queryClient.invalidateQueries({ queryKey: ['conversations'] });
     await new Promise(r => setTimeout(r, 500));
     setIsRefreshing(false);
   }, [queryClient]);
@@ -101,49 +89,7 @@ const SocialPage = () => {
     setActiveTab('feed');
   };
 
-  const handleStartChat = async (userId: string) => {
-    try {
-      const convId = await startConversation.mutateAsync(userId);
-      await queryClient.invalidateQueries({ queryKey: ['conversations'] });
-      // Create a minimal conversation object to navigate
-      setActiveConversation({
-        id: convId,
-        type: 'direct',
-        name: null,
-        avatar_url: null,
-        updated_at: new Date().toISOString(),
-        other_user_id: userId,
-        other_user_name: 'Đang tải...',
-      });
-      setActiveTab('messages');
-    } catch {
-      // ignore
-    }
-  };
-
-  const handleSelectConversation = (conv: Conversation) => {
-    setActiveConversation(conv);
-  };
-
-  // If we're in a chat screen, render only that
-  if (activeTab === 'messages' && activeConversation) {
-    return (
-      <MainLayout>
-        <div className="-mx-4 -mt-2 sm:mx-0 sm:mt-0">
-          <Suspense fallback={<TabFallback />}>
-            <ChatScreen
-              conversation={activeConversation}
-              onBack={() => setActiveConversation(null)}
-            />
-          </Suspense>
-        </div>
-      </MainLayout>
-    );
-  }
-
   const tabTitles: Record<string, { title: string; description: string }> = {
-    messages: { title: 'Tin nhắn', description: 'Trò chuyện với bạn bè' },
-    contacts: { title: 'Danh bạ', description: 'Bạn bè & kết bạn' },
     feed: { title: 'Mạng xã hội', description: 'Kết nối cộng đồng VKHO' },
     profile: { title: 'Cá nhân', description: 'Trang cá nhân' },
     notifications: { title: 'Thông báo', description: '' },
@@ -252,29 +198,10 @@ const SocialPage = () => {
         <Tabs value={activeTab} onValueChange={(v) => {
           setActiveTab(v);
           if (v === 'profile') setViewUserId(undefined);
-          setActiveConversation(null);
         }}>
           <div className="pb-16 sm:pb-0">
             {/* Desktop tabs at top */}
-            <TabsList className="w-full grid-cols-4 mb-4 hidden sm:grid">
-              <TabsTrigger value="messages" className="gap-1.5 relative">
-                <MessageCircle className="h-4 w-4" />
-                <span>Tin nhắn</span>
-                {(unreadChatCount || 0) > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-4 min-w-4 flex items-center justify-center px-1">
-                    {unreadChatCount}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="contacts" className="gap-1.5 relative">
-                <Users className="h-4 w-4" />
-                <span>Danh bạ</span>
-                {(pendingFriendCount || 0) > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full h-4 min-w-4 flex items-center justify-center px-1">
-                    {pendingFriendCount}
-                  </span>
-                )}
-              </TabsTrigger>
+            <TabsList className="w-full grid-cols-2 mb-4 hidden sm:grid">
               <TabsTrigger value="feed" className="gap-1.5">
                 <Home className="h-4 w-4" />
                 <span>Tường</span>
@@ -284,24 +211,6 @@ const SocialPage = () => {
                 <span>Cá nhân</span>
               </TabsTrigger>
             </TabsList>
-
-            <TabsContent value="messages" forceMount={activeTab === 'messages' ? undefined : true} className={activeTab !== 'messages' ? 'hidden' : ''}>
-              <Suspense fallback={<TabFallback />}>
-                <ChatListTab
-                  onSelectConversation={handleSelectConversation}
-                  onStartChat={handleStartChat}
-                />
-              </Suspense>
-            </TabsContent>
-
-            <TabsContent value="contacts" forceMount={activeTab === 'contacts' ? undefined : true} className={activeTab !== 'contacts' ? 'hidden' : ''}>
-              <Suspense fallback={<TabFallback />}>
-                <ContactsTab
-                  onViewProfile={handleViewProfile}
-                  onStartChat={handleStartChat}
-                />
-              </Suspense>
-            </TabsContent>
 
             <TabsContent value="feed" forceMount={activeTab === 'feed' ? undefined : true} className={activeTab !== 'feed' ? 'hidden' : ''}>
               <Suspense fallback={<TabFallback />}>
@@ -322,27 +231,9 @@ const SocialPage = () => {
             </TabsContent>
           </div>
 
-          {/* Mobile bottom tab bar - Zalo style */}
+          {/* Mobile bottom tab bar */}
           <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t sm:hidden safe-area-bottom">
-            <TabsList className="w-full grid grid-cols-4 h-14 rounded-none border-0 bg-background">
-              <TabsTrigger value="messages" className="flex-col gap-0.5 h-full data-[state=active]:bg-transparent data-[state=active]:text-primary rounded-none relative">
-                <MessageCircle className="h-5 w-5" />
-                <span className="text-[10px]">Tin nhắn</span>
-                {(unreadChatCount || 0) > 0 && (
-                  <span className="absolute top-1 left-1/2 ml-2 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full h-4 min-w-4 flex items-center justify-center px-1">
-                    {unreadChatCount}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="contacts" className="flex-col gap-0.5 h-full data-[state=active]:bg-transparent data-[state=active]:text-primary rounded-none relative">
-                <Users className="h-5 w-5" />
-                <span className="text-[10px]">Danh bạ</span>
-                {(pendingFriendCount || 0) > 0 && (
-                  <span className="absolute top-1 left-1/2 ml-2 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full h-4 min-w-4 flex items-center justify-center px-1">
-                    {pendingFriendCount}
-                  </span>
-                )}
-              </TabsTrigger>
+            <TabsList className="w-full grid grid-cols-2 h-14 rounded-none border-0 bg-background">
               <TabsTrigger value="feed" className="flex-col gap-0.5 h-full data-[state=active]:bg-transparent data-[state=active]:text-primary rounded-none">
                 <Home className="h-5 w-5" />
                 <span className="text-[10px]">Tường</span>
