@@ -204,18 +204,20 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   // Apple Landing uses its own standalone template
   if (template === 'apple_landing') {
     return (
-      <AppleStyleLandingTemplate
-        settings={settings}
-        tenant={tenant}
-        tenantId={tenantId}
-        storeId={storeId}
-        branches={branches}
-        productsData={productsData}
-        articlesData={articlesData}
-        searchParams={searchParams}
-        setSearchParams={setSearchParams}
-        queryClient={queryClient}
-      />
+      <LandingCartProvider>
+        <AppleStyleLandingTemplate
+          settings={settings}
+          tenant={tenant}
+          tenantId={tenantId}
+          storeId={storeId}
+          branches={branches}
+          productsData={productsData}
+          articlesData={articlesData}
+          searchParams={searchParams}
+          setSearchParams={setSearchParams}
+          queryClient={queryClient}
+        />
+      </LandingCartProvider>
     );
   }
 
