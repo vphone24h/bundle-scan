@@ -1,8 +1,8 @@
-import { ReactNode, useMemo } from 'react';
+import { ReactNode, useMemo, useEffect } from 'react';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'react-router-dom';
-import { detectTenantFromHostname } from '@/lib/tenantResolver';
+import { detectTenantFromHostname, buildStoreUrl } from '@/lib/tenantResolver';
 
 interface SubdomainRouterProps {
   /** Component hiển thị khi là landing page của store (subdomain) */
