@@ -991,10 +991,30 @@ export function ProductDetailPage({
               );
 
             case 'compare':
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
+                  style={{ backgroundColor: primaryColor, color: '#fff', borderColor: primaryColor }}
+                  onClick={() => {
+                    if (btn.customUrl) { window.open(btn.customUrl, '_blank'); return; }
+                    // Scroll to related products section for comparison
+                    const el = document.getElementById('related-products') || document.querySelector('[data-section="relatedProducts"]');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    else window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                  }}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+
             case 'view_detail':
               return (
                 <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
-                  onClick={() => { if (btn.customUrl) window.open(btn.customUrl, '_blank'); else window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+                  onClick={() => {
+                    if (btn.customUrl) { window.open(btn.customUrl, '_blank'); return; }
+                    // Scroll to description/specs section
+                    const el = document.getElementById('product-description') || document.querySelector('[data-section="description"]');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    else window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}>
                   {btn.icon} {btn.label}
                 </Button>
               );
