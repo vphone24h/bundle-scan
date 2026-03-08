@@ -54,7 +54,11 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   });
   const [profileForm, setProfileForm] = useState<any>(null);
   const [profileSaving, setProfileSaving] = useState(false);
-  const [loggedOut, setLoggedOut] = useState(false);
+  const [loggedOut, setLoggedOut] = useState(() => {
+    const val = sessionStorage.getItem('ctv_logged_out');
+    if (val) { sessionStorage.removeItem('ctv_logged_out'); return true; }
+    return false;
+  });
 
   const handleLogout = async () => {
     // Build target URL FIRST: the store's website (NOT admin/kho)
@@ -258,6 +262,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
               const authKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
               if (authKey) localStorage.removeItem(authKey);
               try { await supabase.auth.signOut(); } catch {}
+              sessionStorage.setItem('ctv_logged_out', '1');
               setLoggedOut(true);
             }}
           >
