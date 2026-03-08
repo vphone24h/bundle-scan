@@ -47,6 +47,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   });
 
   const handleLogout = async () => {
+    localStorage.removeItem('ctv_store_mode');
     await supabase.auth.signOut();
     window.location.reload();
   };
