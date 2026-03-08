@@ -136,8 +136,11 @@ export default function UniversalStoreTemplate({
   useEffect(() => {
     if (refCode && tenantId) {
       localStorage.setItem(`ctv_ref_${tenantId}`, JSON.stringify({ code: refCode, ts: Date.now() }));
-      // Auto-open CTV registration dialog if not already logged in as CTV
-      if (!ctvSession && ctvEnabled) {
+      if (ctvSession && ctvEnabled) {
+        // Already logged in as CTV — go straight to dashboard
+        setPageView('ctv-dashboard');
+      } else if (!ctvSession && ctvEnabled) {
+        // Not logged in — open registration dialog
         setCtvAuthOpen(true);
       }
     }
