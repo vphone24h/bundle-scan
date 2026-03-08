@@ -642,7 +642,7 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
           {((formData as any)?.custom_cta_buttons as CTAButtonItem[] || getDefaultCTAButtons(templateId))
             .filter(b => b.enabled)
             .map(btn => {
-              const isPrimary = btn.action === 'order' || btn.action === 'booking';
+              const isPrimary = ['order', 'booking', 'add_to_cart', 'order_food', 'pre_order', 'booking_consult', 'booking_repair', 'booking_beauty', 'booking_clinic', 'booking_store', 'book_table', 'book_party'].includes(btn.action);
               return (
                 <button
                   key={btn.id}
