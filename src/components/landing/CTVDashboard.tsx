@@ -56,16 +56,21 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const [profileSaving, setProfileSaving] = useState(false);
 
   const handleLogout = async () => {
+    localStorage.removeItem('ctv_store_mode');
     localStorage.setItem('ctv_just_logged_out', '1');
     try {
-      // Use authSignOut which sets userInitiatedSignOut flag
-      // preventing auth recovery from re-authenticating
       await authSignOut();
     } catch (e) {
       console.error('SignOut error:', e);
     }
-    // CTV logout → back to store website, NOT admin kho
-    window.location.reload();
+    // CTV logout → redirect to store website, NOT admin/kho
+    // storeUrl points to the store's landing page (subdomain or /store/xxx)
+    if (storeUrl) {
+      window.location.href = storeUrl;
+    } else {
+      // Fallback: reload current page — SubdomainRouter will show store landing
+      window.location.reload();
+    }
   };
 
   if (ctvLoading) {
