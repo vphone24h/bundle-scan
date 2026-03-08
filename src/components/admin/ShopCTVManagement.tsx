@@ -621,7 +621,58 @@ export function ShopCTVManagement() {
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              {/* F1 Referral Commission Config */}
+              <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+                <div>
+                  <h4 className="font-semibold text-sm flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Hoa hồng F1 (giới thiệu CTV)
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Khi CTV A giới thiệu CTV B, mỗi đơn hàng CTV B bán được thì CTV A nhận thêm hoa hồng F1.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Loại hoa hồng F1</Label>
+                    <Select
+                      value={activeSettings.f1_commission_type || 'percentage'}
+                      onValueChange={v => updateField('f1_commission_type', v)}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentage">Phần trăm (%)</SelectItem>
+                        <SelectItem value="fixed">Cố định (VND)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">
+                      {(activeSettings.f1_commission_type || 'percentage') === 'percentage' ? 'Tỷ lệ F1 (%)' : 'Hoa hồng F1 (VND)'}
+                    </Label>
+                    {(activeSettings.f1_commission_type || 'percentage') === 'percentage' ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          value={activeSettings.f1_commission_rate ?? 0}
+                          onChange={e => updateField('f1_commission_rate', parseFloat(e.target.value) || 0)}
+                          className="flex-1 h-9"
+                        />
+                        <span className="text-sm text-muted-foreground">%</span>
+                      </div>
+                    ) : (
+                      <PriceInput
+                        value={activeSettings.f1_commission_rate ?? 0}
+                        onChange={v => updateField('f1_commission_rate', v)}
+                        suffix="đ"
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+
                 <div className="space-y-2">
                   <Label>Cookie tracking (ngày)</Label>
                   <Input
