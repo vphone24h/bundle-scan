@@ -72,6 +72,8 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
       
       // Auto-login after successful registration (email is auto-confirmed)
       if (data?.auto_login) {
+        // Close dialog immediately so user doesn't see the form anymore
+        onOpenChange(false);
         localStorage.setItem('ctv_store_mode', tenantId);
         const { error: loginErr } = await supabase.auth.signInWithPassword({
           email: form.email,
@@ -79,11 +81,11 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
         });
         if (loginErr) {
           toast({ title: 'Đăng ký thành công!', description: 'Vui lòng đăng nhập.' });
+          onOpenChange(true);
           setMode('login');
         } else {
-          toast({ title: 'Đăng ký thành công! Đang đăng nhập...' });
+          toast({ title: 'Đăng ký thành công!' });
           onSuccess();
-          onOpenChange(false);
         }
       } else {
         toast({ title: 'Đăng ký thành công!', description: 'Vui lòng đăng nhập.' });
