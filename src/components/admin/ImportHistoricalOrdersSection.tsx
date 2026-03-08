@@ -30,15 +30,16 @@ function downloadTemplate() {
   XLSX.writeFile(wb, 'mau-nhap-don-hang-cu.xlsx');
 }
 
-// Detect format: if header row matches flat format (>=12 cols, no newlines) → flat
+// Detect format: if header row matches flat format (no newlines, starts with IMEI) → flat
 function isFlat(headerRow: any[]): boolean {
-  if (!headerRow || headerRow.length < 10) return false;
+  if (!headerRow || headerRow.length < 8) return false;
   const h0 = String(headerRow[0] || '').trim().toLowerCase();
-  // Old format has newlines in headers; flat format is clean single-value
   return !String(headerRow[0] || '').includes('\n') && (
-    h0.includes('mã đơn') || h0.includes('ma don') || h0 === 'mã đơn hàng'
+    h0 === 'imei' || h0.includes('mã đơn') || h0.includes('ma don')
   );
 }
+
+let autoOrderCounter = 0;
 const STORAGE_KEY = 'import-historical-orders-state';
 
 interface PersistedState {
