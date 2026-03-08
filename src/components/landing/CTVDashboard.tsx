@@ -235,11 +235,13 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
           : catRule.commission_value;
       }
     }
-    // 3. Fall back to CTV default commission
-    if (ctv.commission_type === 'percentage') {
-      return Math.round(price * (ctv.commission_rate || 0) / 100);
+    // 3. Fall back to CTV's own commission rate
+    const rate = ctv.commission_rate || settings?.default_commission_rate || 0;
+    const type = ctv.commission_type || settings?.default_commission_type || 'percentage';
+    if (type === 'percentage') {
+      return Math.round(price * rate / 100);
     }
-    return ctv.commission_rate || 0;
+    return rate;
   };
 
   const handleCopyLink = (path?: string) => {
