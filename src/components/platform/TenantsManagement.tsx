@@ -647,71 +647,73 @@ export function TenantsManagement() {
                     />
                   </div>
                 </div>
-                <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => {
-                      setSelectedTenant(tenant);
-                      setShowProductsDialog(true);
-                    }}
-                  >
-                    <Package className="h-4 w-4 mr-2" />
-                    Sản phẩm
-                  </Button>
-                  {tenant.status !== 'locked' ? (
+                <div className="mt-3 overflow-x-auto -mx-4 px-4 pb-1" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex gap-2 min-w-max">
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="flex-1"
+                      className="shrink-0 h-9 text-xs px-3"
                       onClick={() => {
                         setSelectedTenant(tenant);
-                        setActionDialog('lock');
+                        setShowProductsDialog(true);
                       }}
                     >
-                      <Lock className="h-4 w-4 mr-2" />
-                      Khóa
+                      <Package className="h-3.5 w-3.5 mr-1.5" />
+                      Sản phẩm
                     </Button>
-                  ) : (
+                    {tenant.status !== 'locked' ? (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="shrink-0 h-9 text-xs px-3"
+                        onClick={() => {
+                          setSelectedTenant(tenant);
+                          setActionDialog('lock');
+                        }}
+                      >
+                        <Lock className="h-3.5 w-3.5 mr-1.5" />
+                        Khóa
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="shrink-0 h-9 text-xs px-3"
+                        onClick={() => {
+                          setSelectedTenant(tenant);
+                          setActionDialog('unlock');
+                        }}
+                      >
+                        <Unlock className="h-3.5 w-3.5 mr-1.5" />
+                        Mở khóa
+                      </Button>
+                    )}
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="flex-1"
+                      className="shrink-0 h-9 text-xs px-3"
                       onClick={() => {
                         setSelectedTenant(tenant);
-                        setActionDialog('unlock');
+                        setActionDialog('extend');
                       }}
                     >
-                      <Unlock className="h-4 w-4 mr-2" />
-                      Mở khóa
+                      <CalendarPlus className="h-3.5 w-3.5 mr-1.5" />
+                      Gia hạn
                     </Button>
-                  )}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => {
-                      setSelectedTenant(tenant);
-                      setActionDialog('extend');
-                    }}
-                  >
-                    <CalendarPlus className="h-4 w-4 mr-2" />
-                    Gia hạn
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => {
-                      setSelectedTenant(tenant);
-                      setSetDaysValue(String(calculateRemainingDays(tenant)));
-                      setActionDialog('set_days');
-                    }}
-                  >
-                    <CalendarPlus className="h-4 w-4 mr-2" />
-                    Chỉnh ngày
-                  </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="shrink-0 h-9 text-xs px-3"
+                      onClick={() => {
+                        setSelectedTenant(tenant);
+                        setSetDaysValue(String(calculateRemainingDays(tenant)));
+                        setActionDialog('set_days');
+                      }}
+                    >
+                      <CalendarPlus className="h-3.5 w-3.5 mr-1.5" />
+                      Chỉnh ngày
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
