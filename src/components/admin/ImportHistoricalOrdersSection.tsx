@@ -252,29 +252,17 @@ export function ImportHistoricalOrdersSection() {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rawData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
-      // Skip header row if exists (check if first row looks like header)
-      const startRow = rawData.length > 0 && typeof rawData[0][4] !== 'number' ? 1 : 0;
+      // Auto-detect flat vs legacy format
+      const useFlat = rawData.length > 0 && isFlat(rawData[0]);
+      const startRow = rawData.length > 0 && (useFlat || typeof rawData[0][4] !== 'number') ? 1 : 0;
 
-      // DEBUG: Log first 5 data rows to see column structure
-      for (let i = startRow; i < Math.min(startRow + 5, rawData.length); i++) {
-        const row = rawData[i];
-        console.log(`[DEBUG ROW ${i}] cols=${row?.length}`, {
-          col0: String(row?.[0] || '').substring(0, 30),
-          col1: String(row?.[1] || '').substring(0, 30),
-          col2: String(row?.[2] || '').substring(0, 30),
-          col3_type: typeof row?.[3], col3: row?.[3],
-          col4_type: typeof row?.[4], col4: row?.[4],
-          col5_type: typeof row?.[5], col5: row?.[5],
-          col6: String(row?.[6] || '').substring(0, 30),
-          col7: String(row?.[7] || '').substring(0, 30),
-        });
-      }
+      console.log(`[FORMAT] ${useFlat ? 'FLAT' : 'LEGACY'}, startRow=${startRow}, totalRows=${rawData.length}`);
 
       const orders: ParsedOrder[] = [];
       for (let i = startRow; i < rawData.length; i++) {
         const row = rawData[i];
-        if (!row || row.length < 7) continue;
-        const parsed = parseVPhoneRow(row);
+        if (!row || row.length < (useFlat ? 6 : 7)) continue;
+        const parsed = useFlat ? parseFlatRow(row) : parseVPhoneRow(row);
         if (parsed) orders.push(parsed);
       }
 
