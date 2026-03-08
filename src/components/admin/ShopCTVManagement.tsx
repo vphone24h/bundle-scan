@@ -26,7 +26,8 @@ import {
 } from '@/hooks/useShopCTV';
 
 export function ShopCTVManagement() {
-  const { currentTenantId } = useTenantContext();
+  const { data: tenant } = useCurrentTenant();
+  const currentTenantId = tenant?.id || null;
   const { data: settings, isLoading: settingsLoading } = useShopCTVSettings(currentTenantId);
   const updateSettings = useUpdateShopCTVSettings();
   const { data: ctvList } = useShopCTVList(currentTenantId);
