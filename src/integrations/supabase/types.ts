@@ -7297,6 +7297,7 @@ export type Database = {
           total_sold: number
         }[]
       }
+      get_my_referred_ctvs: { Args: { _ctv_id: string }; Returns: Json }
       get_my_shop_ctv: { Args: { _tenant_id: string }; Returns: Json }
       get_or_create_direct_conversation: {
         Args: { p_other_user_id: string; p_user_id: string }

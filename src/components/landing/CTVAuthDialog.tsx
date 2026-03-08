@@ -17,14 +17,13 @@ interface CTVAuthDialogProps {
 }
 
 export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentColor, onSuccess }: CTVAuthDialogProps) {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register'>('register');
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: '', password: '', full_name: '', phone: '' });
 
   const handleLogin = async () => {
     setLoading(true);
     try {
-      // Mark as CTV login BEFORE signing in to prevent redirect
       localStorage.setItem('ctv_store_mode', tenantId);
       const { error } = await supabase.auth.signInWithPassword({
         email: form.email,
@@ -33,7 +32,7 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
       if (error) {
         localStorage.removeItem('ctv_store_mode');
         if (error.message?.includes('Email not confirmed')) {
-          throw new Error('Email chưa được xác thực. Vui lòng kiểm tra hộp thư (kể cả Spam) để xác nhận email trước khi đăng nhập.');
+          throw new Error('Email chưa được xác thực. Vui lòng kiểm tra hộp thư.');
         }
         throw error;
       }
@@ -54,7 +53,6 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
     }
     setLoading(true);
     try {
-      // Use edge function to signup CTV and send verification via store's SMTP
       const { data, error } = await supabase.functions.invoke('signup-ctv', {
         body: {
           email: form.email,
@@ -69,11 +67,26 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       
-      toast({
-        title: 'Đăng ký thành công!',
-        description: 'Vui lòng kiểm tra email để xác thực tài khoản. Email được gửi từ cửa hàng.',
-      });
-      setMode('login');
+      // Auto-login after successful registration (email is auto-confirmed)
+      if (data?.auto_login) {
+        localStorage.setItem('ctv_store_mode', tenantId);
+        const { error: loginErr } = await supabase.auth.signInWithPassword({
+          email: form.email,
+          password: form.password,
+        });
+        if (loginErr) {
+          // If auto-login fails, just show success and ask to login
+          toast({ title: 'Đăng ký thành công!', description: 'Vui lòng đăng nhập.' });
+          setMode('login');
+        } else {
+          toast({ title: 'Đăng ký thành công! Đang đăng nhập...' });
+          onSuccess();
+          onOpenChange(false);
+        }
+      } else {
+        toast({ title: 'Đăng ký thành công!', description: 'Vui lòng đăng nhập.' });
+        setMode('login');
+      }
     } catch (e: any) {
       toast({ title: 'Lỗi đăng ký', description: e.message, variant: 'destructive' });
     } finally {
