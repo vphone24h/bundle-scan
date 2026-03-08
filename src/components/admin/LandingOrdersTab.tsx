@@ -260,6 +260,24 @@ export function LandingOrdersTab() {
                         {format(new Date(order.created_at), 'dd/MM/yy HH:mm', { locale: vi })}
                       </TableCell>
                       <TableCell>
+                        {(() => {
+                          const actionInfo = ACTION_TYPE_MAP[order.action_type || 'order'] || ACTION_TYPE_MAP.order;
+                          return (
+                            <div>
+                              <Badge variant="outline" className="text-[10px] whitespace-nowrap">
+                                {actionInfo.icon} {actionInfo.label}
+                              </Badge>
+                              {order.action_date && (
+                                <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-0.5">
+                                  <CalendarDays className="h-2.5 w-2.5" />
+                                  {order.action_date}{order.action_time ? ` ${order.action_time}` : ''}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell>
                         <div>
                           <p className="font-medium text-sm">{order.customer_name}</p>
                           <p className="text-xs text-muted-foreground">{order.customer_phone}</p>
