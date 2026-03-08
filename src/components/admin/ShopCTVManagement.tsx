@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { PriceInput } from '@/components/ui/price-input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import {
   Users, Settings, Wallet, Plus,
-  Lock, Unlock, Loader2, Search,
+  Lock, Unlock, Loader2, Search, Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -46,6 +47,16 @@ export function ShopCTVManagement() {
   const [settingsForm, setSettingsForm] = useState<any>(null);
   const activeSettings = settingsForm || settings || {};
 
+  const defaultTiers = [
+    { threshold: 1000000, rate: 15, type: 'percentage' },
+    { threshold: 3000000, rate: 12, type: 'percentage' },
+    { threshold: 5000000, rate: 10, type: 'percentage' },
+    { threshold: 10000000, rate: 200000, type: 'fixed' },
+    { threshold: null, rate: 500000, type: 'fixed' },
+  ];
+
+  const commissionTiers = activeSettings.commission_tiers || defaultTiers;
+
   const handleSaveSettings = async () => {
     await updateSettings.mutateAsync({
       tenantId: currentTenantId,
@@ -57,13 +68,38 @@ export function ShopCTVManagement() {
       allow_self_register: activeSettings.allow_self_register ?? true,
       auto_approve_ctv: activeSettings.auto_approve_ctv ?? true,
       program_description: activeSettings.program_description || '',
-      commission_threshold: parseFloat(activeSettings.commission_threshold) || 5000000,
-      low_commission_rate: parseFloat(activeSettings.low_commission_rate) || 10,
-      low_commission_type: activeSettings.low_commission_type || 'percentage',
-      high_commission_rate: parseFloat(activeSettings.high_commission_rate) || 200000,
-      high_commission_type: activeSettings.high_commission_type || 'fixed',
+      commission_tiers: commissionTiers,
+      // Keep legacy fields in sync with first/last tier
+      commission_threshold: commissionTiers[0]?.threshold || 5000000,
+      low_commission_rate: commissionTiers[0]?.rate || 10,
+      low_commission_type: commissionTiers[0]?.type || 'percentage',
+      high_commission_rate: commissionTiers[commissionTiers.length - 1]?.rate || 200000,
+      high_commission_type: commissionTiers[commissionTiers.length - 1]?.type || 'fixed',
     });
     setSettingsForm(null);
+  };
+
+  const updateTier = (index: number, field: string, value: any) => {
+    const newTiers = [...commissionTiers];
+    newTiers[index] = { ...newTiers[index], [field]: value };
+    updateField('commission_tiers', newTiers);
+  };
+
+  const addTier = () => {
+    const lastThreshold = commissionTiers.filter((t: any) => t.threshold).pop()?.threshold || 5000000;
+    const newTiers = [...commissionTiers];
+    // Insert before the last "unlimited" tier
+    const insertIdx = newTiers.length > 0 && newTiers[newTiers.length - 1].threshold === null
+      ? newTiers.length - 1
+      : newTiers.length;
+    newTiers.splice(insertIdx, 0, { threshold: lastThreshold + 5000000, rate: 8, type: 'percentage' });
+    updateField('commission_tiers', newTiers);
+  };
+
+  const removeTier = (index: number) => {
+    if (commissionTiers.length <= 2) return;
+    const newTiers = commissionTiers.filter((_: any, i: number) => i !== index);
+    updateField('commission_tiers', newTiers);
   };
 
   const updateField = (field: string, value: any) => {
@@ -278,48 +314,88 @@ export function ShopCTVManagement() {
                 />
               </div>
 
-              {/* Tiered Commission Config */}
+              {/* Multi-tier Commission Config */}
               <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
-                <h4 className="font-semibold text-sm">Cấu hình hoa hồng theo giá trị đơn</h4>
-                
-                <div className="space-y-2">
-                  <Label>Ngưỡng giá trị đơn hàng (VND)</Label>
-                  <Input
-                    type="number"
-                    value={activeSettings.commission_threshold ?? 5000000}
-                    onChange={e => updateField('commission_threshold', e.target.value)}
-                    placeholder="5000000"
-                  />
-                  <p className="text-[11px] text-muted-foreground">Đơn hàng dưới ngưỡng này sẽ tính hoa hồng theo %, trên ngưỡng sẽ tính số tiền cố định</p>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-sm">Cấu hình hoa hồng theo giá trị đơn</h4>
+                  <Button variant="outline" size="sm" onClick={addTier}>
+                    <Plus className="h-3 w-3 mr-1" />Thêm mức
+                  </Button>
                 </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Thiết lập nhiều mức hoa hồng theo ngưỡng giá trị đơn hàng. Mỗi mức có thể tính theo % hoặc số tiền cố định.
+                </p>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2 border rounded-md p-3">
-                    <Label className="text-xs font-semibold">📉 Đơn dưới {formatNumber(activeSettings.commission_threshold ?? 5000000)}đ</Label>
-                    <p className="text-[11px] text-muted-foreground">Sản phẩm giá trị thấp → tính %</p>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        value={activeSettings.low_commission_rate ?? 10}
-                        onChange={e => updateField('low_commission_rate', e.target.value)}
-                        className="flex-1"
-                      />
-                      <span className="text-sm font-medium text-muted-foreground">%</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2 border rounded-md p-3">
-                    <Label className="text-xs font-semibold">📈 Đơn từ {formatNumber(activeSettings.commission_threshold ?? 5000000)}đ trở lên</Label>
-                    <p className="text-[11px] text-muted-foreground">Sản phẩm giá trị cao → số tiền cố định</p>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        value={activeSettings.high_commission_rate ?? 200000}
-                        onChange={e => updateField('high_commission_rate', e.target.value)}
-                        className="flex-1"
-                      />
-                      <span className="text-sm font-medium text-muted-foreground">VND</span>
-                    </div>
-                  </div>
+                <div className="space-y-3">
+                  {commissionTiers.map((tier: any, index: number) => {
+                    const prevThreshold = index > 0 ? commissionTiers[index - 1]?.threshold : 0;
+                    const isLast = tier.threshold === null;
+                    const label = isLast
+                      ? `Trên ${formatNumber(prevThreshold || 0)}đ`
+                      : index === 0
+                        ? `Dưới ${formatNumber(tier.threshold)}đ`
+                        : `${formatNumber(prevThreshold)}đ - ${formatNumber(tier.threshold)}đ`;
+
+                    return (
+                      <div key={index} className="border rounded-md p-3 space-y-2 bg-background">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-semibold">{isLast ? '📈' : index === 0 ? '📉' : '📊'} {label}</Label>
+                          {commissionTiers.length > 2 && (
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeTier(index)}>
+                              <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2">
+                          {!isLast && (
+                            <div className="space-y-1">
+                              <Label className="text-[10px] text-muted-foreground">Ngưỡng (VND)</Label>
+                              <PriceInput
+                                value={tier.threshold || 0}
+                                onChange={(v) => updateTier(index, 'threshold', v)}
+                                suffix="đ"
+                              />
+                            </div>
+                          )}
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">Loại</Label>
+                            <Select value={tier.type} onValueChange={(v) => updateTier(index, 'type', v)}>
+                              <SelectTrigger className="h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="percentage">Phần trăm (%)</SelectItem>
+                                <SelectItem value="fixed">Cố định (VND)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">
+                              {tier.type === 'percentage' ? 'Hoa hồng (%)' : 'Hoa hồng (VND)'}
+                            </Label>
+                            {tier.type === 'percentage' ? (
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  value={tier.rate}
+                                  onChange={e => updateTier(index, 'rate', parseFloat(e.target.value) || 0)}
+                                  className="flex-1"
+                                />
+                                <span className="text-sm text-muted-foreground">%</span>
+                              </div>
+                            ) : (
+                              <PriceInput
+                                value={tier.rate || 0}
+                                onChange={(v) => updateTier(index, 'rate', v)}
+                                suffix="đ"
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -334,10 +410,10 @@ export function ShopCTVManagement() {
                 </div>
                 <div className="space-y-2">
                   <Label>Rút tiền tối thiểu (VND)</Label>
-                  <Input
-                    type="number"
+                  <PriceInput
                     value={activeSettings.min_withdrawal_amount ?? 200000}
-                    onChange={e => updateField('min_withdrawal_amount', e.target.value)}
+                    onChange={v => updateField('min_withdrawal_amount', v)}
+                    suffix="đ"
                   />
                 </div>
               </div>
