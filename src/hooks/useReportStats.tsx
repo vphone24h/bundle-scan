@@ -111,7 +111,7 @@ export function useReportStats(filters?: {
 
       let returnDetailQuery = supabase
         .from('export_returns')
-        .select('product_name, imei, import_price, sale_price, return_date, branch_id, fee_type')
+        .select('product_name, imei, import_price, sale_price, return_date, branch_id, fee_type, product_id, products(import_price)')
         .eq('fee_type', 'none')
         .gte('return_date', startISO)
         .lte('return_date', endISO)
@@ -157,15 +157,20 @@ export function useReportStats(filters?: {
         };
       });
 
-      const returnDetails: ReturnDetailItem[] = (returnsRaw || []).map((item: any) => ({
-        date: item.return_date,
-        productName: item.product_name || 'Sản phẩm',
-        imei: item.imei || null,
-        salePrice: Number(item.sale_price),
-        importPrice: Number(item.import_price || 0),
-        profit: Number(item.sale_price) - Number(item.import_price || 0),
-        branchName: '',
-      }));
+      const returnDetails: ReturnDetailItem[] = (returnsRaw || []).map((item: any) => {
+        const salePrice = Number(item.sale_price);
+        const importPrice = Number(item.products?.import_price || item.import_price || 0);
+        const profit = salePrice - importPrice;
+        return {
+          date: item.return_date,
+          productName: item.product_name || 'Sản phẩm',
+          imei: item.imei || null,
+          salePrice,
+          importPrice,
+          profit,
+          branchName: '',
+        };
+      });
 
       const expenseDetails: CashBookDetailItem[] = [];
       const incomeDetails: CashBookDetailItem[] = [];
