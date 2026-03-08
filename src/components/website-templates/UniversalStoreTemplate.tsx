@@ -161,12 +161,30 @@ export default function UniversalStoreTemplate({
 
   const location = useLocation();
 
-  // Deep-link from query params OR path-based URLs
+  // Deep-link from path-based URLs, query params, or legacy product paths
   useEffect(() => {
     const productId = searchParams.get('product');
     const articleId = searchParams.get('article');
     
-    // Try path-based product URL: /category/product-slug-SHORTID
+    // Try path-based page detection: /san-pham/, /tin-tuc/, /san-pham/slug-ID
+    const pageInfo = detectPageFromPath(location.pathname);
+    if (pageInfo) {
+      if (pageInfo.pageView === 'products' && pageInfo.contentId) {
+        // Product detail: /san-pham/category/product-slug-SHORTID
+        const p = productsData?.products?.find(x => x.id.startsWith(pageInfo.contentId!));
+        if (p) { setSelectedProduct(p); setPageView('products'); return; }
+      } else if (pageInfo.pageView === 'news' && pageInfo.contentId) {
+        // Article detail: /tin-tuc/article-slug-SHORTID
+        const a = articlesData?.articles?.find(x => x.id.startsWith(pageInfo.contentId!));
+        if (a) { setSelectedArticle(a); setPageView('article-detail'); return; }
+      } else if (!pageInfo.contentId) {
+        // Page-level navigation: /san-pham/, /tin-tuc/, etc.
+        setPageView(pageInfo.pageView as PageView);
+        return;
+      }
+    }
+    
+    // Legacy: Try path-based product URL: /category/product-slug-SHORTID
     if (!productId && !articleId && productsData?.products) {
       const shortId = extractProductIdFromPath(location.pathname);
       if (shortId) {
@@ -175,6 +193,7 @@ export default function UniversalStoreTemplate({
       }
     }
     
+    // Query param fallback
     if (productId && productsData?.products) {
       const p = productsData.products.find(x => x.id === productId);
       if (p) { setSelectedProduct(p); setPageView('products'); }
