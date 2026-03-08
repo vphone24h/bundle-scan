@@ -39,7 +39,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const { data: orders } = useMyCTVOrders(ctv?.id);
   const { data: withdrawals } = useMyCTVWithdrawals(ctv?.id);
   const { data: referredCTVs } = useMyReferredCTVs(ctv?.id);
-  const { data: landingData } = usePublicLandingData(tenantId);
+  const { data: products } = usePublicLandingProducts(tenantId);
   const registerCTV = useRegisterShopCTV();
   const createWithdrawal = useCreateCTVWithdrawal();
 
