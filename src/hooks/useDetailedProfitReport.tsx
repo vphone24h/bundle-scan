@@ -27,6 +27,8 @@ export function useDetailedProfitReport(filters?: {
   branchId?: string;
   categoryId?: string;
   search?: string;
+  page?: number;
+  pageSize?: number;
 }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
