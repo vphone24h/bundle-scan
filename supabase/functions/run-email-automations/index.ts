@@ -563,15 +563,23 @@ Deno.serve(async (req) => {
           const customer = Array.isArray(receipt.customers) ? receipt.customers[0] : receipt.customers
           if (!customer?.email) continue
 
-          // For purchase-based triggers: only send ONCE per customer (regardless of how many orders)
-          if (automation.trigger_type === 'days_after_purchase' || automation.trigger_type === 'days_after_purchase_onwards') {
-            const { count } = await supabase
-              .from('email_automation_logs')
-              .select('id', { count: 'exact', head: true })
-              .eq('automation_id', automation.id)
-              .eq('customer_id', customer.id)
+          // Triggers that send ONCE per customer (regardless of how many records match)
+          const oncePerCustomerTriggers = [
+            'days_after_purchase', 'days_after_purchase_onwards', 'days_inactive',
+            'customer_birthday', 'customer_registration_anniversary',
+            'after_customer_review', 'after_voucher_received',
+          ]
+          if (oncePerCustomerTriggers.includes(automation.trigger_type)) {
+            const customerId = customer.id
+            if (customerId) {
+              const { count } = await supabase
+                .from('email_automation_logs')
+                .select('id', { count: 'exact', head: true })
+                .eq('automation_id', automation.id)
+                .eq('customer_id', customerId)
 
-            if ((count || 0) > 0) continue
+              if ((count || 0) > 0) continue
+            }
           } else {
             // Other triggers: check per receipt
             const { count } = await supabase
