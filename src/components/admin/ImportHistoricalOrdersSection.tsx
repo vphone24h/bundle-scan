@@ -10,34 +10,35 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 
+// ── Flat-column template (one field per column) ──
+const FLAT_HEADERS = [
+  'Mã đơn hàng', 'IMEI', 'Tên khách hàng', 'SĐT', 'Email', 'Địa chỉ',
+  'Tên sản phẩm', 'Phiên bản', 'Giá bán', 'Ghi chú', 'Ngày đặt (dd/mm/yyyy)',
+  'Trạng thái', 'Gói bảo hành',
+];
+
 function downloadTemplate() {
-  const headers = [
-    'Mã đơn hàng\nIMEI: xxx',
-    'Tên khách hàng\n0901234567\nemail@example.com\nĐịa chỉ',
-    'Tên sản phẩm\nPhiên bản\nGhi chú: ...\nGói bảo hành: ...',
-    'Số lượng',
-    'Giá bán',
-    'Thành tiền',
-    'Ngày đặt\n01/01/2024\nAdmin',
-    'Trạng thái',
-  ];
   const sample = [
-    'DH001\nIMEI: 123456789012345',
-    'Nguyễn Văn A\n0901234567\na@email.com\n123 Đường ABC',
-    'iPhone 15 Pro Max\n256GB Đen\nGhi chú: Máy mới\nGói bảo hành: 12 tháng',
-    1,
-    29990000,
-    29990000,
-    '01/06/2024\nAdmin',
-    'Hoàn tất',
+    'DH001', '123456789012345', 'Nguyễn Văn A', '0901234567',
+    'a@email.com', '123 Đường ABC, Q9', 'iPhone 15 Pro Max', '256GB Đen',
+    29990000, 'Máy mới nguyên seal', '01/06/2024', 'Hoàn tất', '12 tháng',
   ];
-  const ws = XLSX.utils.aoa_to_sheet([headers, sample]);
-  ws['!cols'] = [{ wch: 28 }, { wch: 30 }, { wch: 35 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 14 }];
+  const ws = XLSX.utils.aoa_to_sheet([FLAT_HEADERS, sample]);
+  ws['!cols'] = FLAT_HEADERS.map(() => ({ wch: 20 }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Mẫu');
   XLSX.writeFile(wb, 'mau-nhap-don-hang-cu.xlsx');
 }
 
+// Detect format: if header row matches flat format (>=12 cols, no newlines) → flat
+function isFlat(headerRow: any[]): boolean {
+  if (!headerRow || headerRow.length < 10) return false;
+  const h0 = String(headerRow[0] || '').trim().toLowerCase();
+  // Old format has newlines in headers; flat format is clean single-value
+  return !String(headerRow[0] || '').includes('\n') && (
+    h0.includes('mã đơn') || h0.includes('ma don') || h0 === 'mã đơn hàng'
+  );
+}
 const STORAGE_KEY = 'import-historical-orders-state';
 
 interface PersistedState {
@@ -88,53 +89,72 @@ interface ImportResult {
   skipped: number;
 }
 
+function parseFlatRow(row: any[]): ParsedOrder | null {
+  try {
+    const orderId = String(row[0] || '').trim();
+    if (!orderId) return null;
+    const imei = String(row[1] || '').trim();
+    const customerName = String(row[2] || '').trim() || 'Khách lẻ';
+    const customerPhone = String(row[3] || '').replace(/\s/g, '');
+    const customerEmail = String(row[4] || '').trim();
+    const customerAddress = String(row[5] || '').trim();
+    const productName = String(row[6] || '').trim() || 'Sản phẩm';
+    const productVariant = String(row[7] || '').trim();
+
+    let salePrice = 0;
+    const priceVal = row[8];
+    if (typeof priceVal === 'number') {
+      salePrice = priceVal;
+    } else if (priceVal) {
+      const parsed = parseInt(String(priceVal).replace(/[^\d]/g, ''));
+      if (parsed > 0) salePrice = parsed;
+    }
+
+    const note = String(row[9] || '').trim();
+    const orderDate = String(row[10] || '').trim();
+    const status = String(row[11] || '').trim();
+    const warranty = String(row[12] || '').trim();
+
+    return {
+      orderId, imei, customerName, customerPhone, customerEmail, customerAddress,
+      productName: productName + (productVariant ? ` - ${productVariant}` : ''),
+      productVariant, salePrice, note, orderDate, status,
+      warranty: warranty === 'N/A' ? '' : warranty,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function parseVPhoneRow(row: any[]): ParsedOrder | null {
   try {
-    // Column 0: orderId + IMEI + Serial
     const col0 = String(row[0] || '');
     const lines0 = col0.split('\n').map((l: string) => l.trim());
     const orderId = lines0[0] || '';
     let imei = '';
     for (const line of lines0) {
       const match = line.match(/^IMEI:\s*(.*)$/i);
-      if (match) {
-        imei = match[1].trim();
-        break;
-      }
+      if (match) { imei = match[1].trim(); break; }
     }
 
-    // Column 1: customerName + email + phone + address
     const col1 = String(row[1] || '');
     const lines1 = col1.split('\n').map((l: string) => l.trim());
     const customerName = lines1[0] || 'Khách lẻ';
-    let customerPhone = '';
-    let customerEmail = '';
-    let customerAddress = '';
+    let customerPhone = '', customerEmail = '', customerAddress = '';
     for (const line of lines1) {
-      if (/^0\d{8,10}$/.test(line.replace(/\s/g, ''))) {
-        customerPhone = line.replace(/\s/g, '');
-      } else if (line.includes('@')) {
-        customerEmail = line;
-      } else if (line !== customerName && line !== '' && !customerPhone) {
-        // Could be address or other info
-      }
+      if (/^0\d{8,10}$/.test(line.replace(/\s/g, ''))) customerPhone = line.replace(/\s/g, '');
+      else if (line.includes('@')) customerEmail = line;
     }
-    // Last non-empty line that's not phone/email/name could be address
     for (let i = lines1.length - 1; i >= 1; i--) {
       const l = lines1[i];
-      if (l && l !== customerPhone && !l.includes('@') && !/^0\d{8,10}$/.test(l.replace(/\s/g, ''))) {
-        customerAddress = l;
-        break;
-      }
+      if (l && l !== customerPhone && !l.includes('@') && !/^0\d{8,10}$/.test(l.replace(/\s/g, ''))) { customerAddress = l; break; }
     }
 
-    // Column 2: product info
     const col2 = String(row[2] || '');
     const lines2 = col2.split('\n').map((l: string) => l.trim());
     const productName = lines2[0] || 'Sản phẩm';
     const productVariant = lines2[1] || '';
-    let note = '';
-    let warranty = 'N/A';
+    let note = '', warranty = 'N/A';
     for (const line of lines2) {
       const noteMatch = line.match(/^Ghi chú:\s*(.*)$/i);
       if (noteMatch) note = noteMatch[1].trim();
@@ -142,54 +162,32 @@ function parseVPhoneRow(row: any[]): ParsedOrder | null {
       if (warrantyMatch) warranty = warrantyMatch[1].trim();
     }
 
-    // Try columns E(4), D(3), F(5), C(2) for price - some exports shift columns
-    // IMPORTANT: Column F often contains "19,990,000₫\n+10 điểm" - must extract only the price part
     let salePrice = 0;
     for (const colIdx of [4, 3, 5, 2]) {
       const val = row[colIdx];
-      if (typeof val === 'number' && val > 1000) {
-        salePrice = val;
-        break;
-      } else if (val) {
-        // Take only the first line (before \n) to avoid "+10 điểm" contamination
+      if (typeof val === 'number' && val > 1000) { salePrice = val; break; }
+      else if (val) {
         const firstLine = String(val).split('\n')[0].split('điểm')[0];
-        // Remove currency symbols and non-digit chars, then parse
         const cleaned = firstLine.replace(/[₫đ]/g, '').trim();
         const parsed = parseInt(cleaned.replace(/[^\d]/g, ''));
         if (parsed > 1000) { salePrice = parsed; break; }
       }
     }
 
-    // Column 6: date + admin info
     const col6 = String(row[6] || '');
-    const lines6 = col6.split('\n').map((l: string) => l.trim());
     let orderDate = '';
-    for (const line of lines6) {
+    for (const line of col6.split('\n').map((l: string) => l.trim())) {
       const dateMatch = line.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
-      if (dateMatch) {
-        orderDate = dateMatch[1];
-        break;
-      }
+      if (dateMatch) { orderDate = dateMatch[1]; break; }
     }
 
-    // Column 7: status
     const status = String(row[7] || '').trim();
-
     if (!orderId) return null;
 
     return {
-      orderId,
-      imei,
-      customerName,
-      customerPhone,
-      customerEmail,
-      customerAddress,
+      orderId, imei, customerName, customerPhone, customerEmail, customerAddress,
       productName: productName + (productVariant ? ` - ${productVariant}` : ''),
-      productVariant,
-      salePrice,
-      note,
-      orderDate,
-      status,
+      productVariant, salePrice, note, orderDate, status,
       warranty: warranty === 'N/A' ? '' : warranty,
     };
   } catch {
@@ -254,29 +252,17 @@ export function ImportHistoricalOrdersSection() {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rawData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
-      // Skip header row if exists (check if first row looks like header)
-      const startRow = rawData.length > 0 && typeof rawData[0][4] !== 'number' ? 1 : 0;
+      // Auto-detect flat vs legacy format
+      const useFlat = rawData.length > 0 && isFlat(rawData[0]);
+      const startRow = rawData.length > 0 && (useFlat || typeof rawData[0][4] !== 'number') ? 1 : 0;
 
-      // DEBUG: Log first 5 data rows to see column structure
-      for (let i = startRow; i < Math.min(startRow + 5, rawData.length); i++) {
-        const row = rawData[i];
-        console.log(`[DEBUG ROW ${i}] cols=${row?.length}`, {
-          col0: String(row?.[0] || '').substring(0, 30),
-          col1: String(row?.[1] || '').substring(0, 30),
-          col2: String(row?.[2] || '').substring(0, 30),
-          col3_type: typeof row?.[3], col3: row?.[3],
-          col4_type: typeof row?.[4], col4: row?.[4],
-          col5_type: typeof row?.[5], col5: row?.[5],
-          col6: String(row?.[6] || '').substring(0, 30),
-          col7: String(row?.[7] || '').substring(0, 30),
-        });
-      }
+      console.log(`[FORMAT] ${useFlat ? 'FLAT' : 'LEGACY'}, startRow=${startRow}, totalRows=${rawData.length}`);
 
       const orders: ParsedOrder[] = [];
       for (let i = startRow; i < rawData.length; i++) {
         const row = rawData[i];
-        if (!row || row.length < 7) continue;
-        const parsed = parseVPhoneRow(row);
+        if (!row || row.length < (useFlat ? 6 : 7)) continue;
+        const parsed = useFlat ? parseFlatRow(row) : parseVPhoneRow(row);
         if (parsed) orders.push(parsed);
       }
 
