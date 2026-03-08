@@ -37,6 +37,18 @@ export interface LandingOrder {
   updated_at: string;
 }
 
+// Helper: get CTV ref from localStorage
+function getCTVRef(tenantId: string): { code: string; ts: number } | null {
+  try {
+    const raw = localStorage.getItem(`ctv_ref_${tenantId}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Expire after 30 days
+    if (Date.now() - parsed.ts > 30 * 24 * 60 * 60 * 1000) return null;
+    return parsed;
+  } catch { return null; }
+}
+
 // Public: place order (no auth needed)
 export function usePlaceLandingOrder() {
   return useMutation({
@@ -64,9 +76,21 @@ export function usePlaceLandingOrder() {
       ctv_id?: string;
       ctv_name?: string;
     }) => {
+      // Auto-detect CTV source if not explicitly set
+      let finalOrder = { ...order };
+      if (!finalOrder.order_source) {
+        const ref = getCTVRef(order.tenant_id);
+        if (ref) {
+          finalOrder.order_source = 'ctv_referral';
+          finalOrder.ctv_code = ref.code;
+        } else {
+          finalOrder.order_source = 'web';
+        }
+      }
+
       const { data, error } = await supabase
         .from('landing_orders' as any)
-        .insert([order])
+        .insert([finalOrder])
         .select()
         .single();
       if (error) throw error;
