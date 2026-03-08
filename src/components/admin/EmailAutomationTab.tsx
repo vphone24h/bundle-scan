@@ -463,7 +463,7 @@ function AutomationFormDialog({
                     </SelectContent>
                   </Select>
                 </div>
-                {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled', 'on_booking_confirmation', 'on_booking_reminder', 'on_booking_cancelled', 'on_table_booking', 'on_food_order', 'on_room_booking', 'on_room_checkin_reminder', 'on_course_registration', 'on_viewing_booking', 'on_quote_request'].includes(triggerType) && (
+                {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled', 'on_booking_confirmation', 'on_booking_consult', 'on_booking_repair', 'on_booking_beauty', 'on_booking_clinic', 'on_booking_store', 'on_booking_reminder', 'on_booking_cancelled', 'on_table_booking', 'on_food_order', 'on_delivery', 'on_book_party', 'on_room_booking', 'on_room_checkin_reminder', 'on_course_registration', 'on_viewing_booking', 'on_quote_request'].includes(triggerType) && (
                 <div>
                   <Label>{triggerType === 'customer_registration_anniversary' ? 'Số năm' : 'Số ngày'}</Label>
                   <Input type="number" min={1} value={triggerDays} onChange={e => setTriggerDays(Number(e.target.value))} />
