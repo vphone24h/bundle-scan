@@ -346,18 +346,32 @@ export function DebtDetailDialog({
                   };
                 });
 
-                // Merge and sort by date descending
+                // Merge and sort by date ascending for running balance
                 const allItems = [
                   ...receiptRows.map(r => ({ ...r, sortDate: new Date(r.date).getTime() })),
                   ...debtAdditions.map(a => ({ ...a, sortDate: new Date(a.date).getTime() })),
-                ].sort((a, b) => b.sortDate - a.sortDate);
+                ].sort((a, b) => a.sortDate - b.sortDate);
+
+                // Calculate running balance (oldest to newest)
+                let runningBalance = 0;
+                const itemsWithBalance = allItems.map(item => {
+                  if (item.type === 'order') {
+                    runningBalance += (item as any).originalDebt;
+                  } else {
+                    runningBalance += (item as any).amount;
+                  }
+                  return { ...item, runningBalance };
+                });
+
+                // Reverse to show newest first
+                const sortedItems = [...itemsWithBalance].reverse();
 
                 const filteredItems = onlyShowDebt
-                  ? allItems.filter(item => {
+                  ? sortedItems.filter(item => {
                       if (item.type === 'addition') return !(item as any).isFullyPaid;
                       return (item as any).originalDebt > 0;
                     })
-                  : allItems;
+                  : sortedItems;
 
                 if (filteredItems.length === 0) {
                   return (
