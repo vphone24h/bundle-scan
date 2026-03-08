@@ -111,6 +111,7 @@ export function LandingOrdersTab() {
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [callStatusFilter, setCallStatusFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
   const [cancelDialogOrder, setCancelDialogOrder] = useState<LandingOrder | null>(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -123,11 +124,13 @@ export function LandingOrdersTab() {
   const filtered = (orders || []).filter(o => {
     if (statusFilter !== 'all' && o.status !== statusFilter) return false;
     if (callStatusFilter !== 'all' && o.call_status !== callStatusFilter) return false;
+    if (sourceFilter !== 'all' && (o as any).order_source !== sourceFilter) return false;
     if (searchText) {
       const s = searchText.toLowerCase();
       return o.customer_name.toLowerCase().includes(s) ||
         o.customer_phone.includes(s) ||
-        o.product_name.toLowerCase().includes(s);
+        o.product_name.toLowerCase().includes(s) ||
+        ((o as any).ctv_name || '').toLowerCase().includes(s);
     }
     return true;
   });
@@ -232,6 +235,17 @@ export function LandingOrdersTab() {
             <SelectItem value="unreachable">Không liên hệ được</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={sourceFilter} onValueChange={setSourceFilter}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Nguồn" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả nguồn</SelectItem>
+            <SelectItem value="web">🌐 Khách lẻ</SelectItem>
+            <SelectItem value="ctv_direct">👤 CTV đặt</SelectItem>
+            <SelectItem value="ctv_referral">🔗 Khách CTV</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Stats */}
@@ -271,6 +285,7 @@ export function LandingOrdersTab() {
                     <TableHead>Khách hàng</TableHead>
                     <TableHead>Sản phẩm</TableHead>
                     <TableHead>Thanh toán</TableHead>
+                  <TableHead>Nguồn</TableHead>
                   <TableHead>Chi nhánh</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead>Liên hệ</TableHead>
@@ -321,6 +336,27 @@ export function LandingOrdersTab() {
                         <Badge variant="secondary" className={`text-[10px] ${(order as any).payment_method === 'transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
                           {(order as any).payment_method === 'transfer' ? 'Chuyển khoản' : 'COD'}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const src = (order as any).order_source || 'web';
+                          const srcMap: Record<string, { label: string; icon: string; cls: string }> = {
+                            web: { label: 'Khách lẻ', icon: '🌐', cls: 'bg-muted text-muted-foreground' },
+                            ctv_direct: { label: 'CTV đặt', icon: '👤', cls: 'bg-blue-100 text-blue-700' },
+                            ctv_referral: { label: 'Khách CTV', icon: '🔗', cls: 'bg-purple-100 text-purple-700' },
+                          };
+                          const info = srcMap[src] || srcMap.web;
+                          return (
+                            <div>
+                              <Badge variant="outline" className={`text-[10px] ${info.cls}`}>
+                                {info.icon} {info.label}
+                              </Badge>
+                              {(order as any).ctv_name && (
+                                <p className="text-[10px] text-muted-foreground mt-0.5">{(order as any).ctv_name}</p>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="text-xs">{branchMap.get(order.branch_id) || '—'}</TableCell>
                       <TableCell>
@@ -507,6 +543,25 @@ export function LandingOrdersTab() {
                       <CalendarDays className="h-3.5 w-3.5 text-primary" />
                       {detailOrder.action_date}{detailOrder.action_time ? ` lúc ${detailOrder.action_time}` : ''}
                     </span>
+                  </div>
+                )}
+                {/* Nguồn đơn */}
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Nguồn:</span>
+                  {(() => {
+                    const src = (detailOrder as any).order_source || 'web';
+                    const srcMap: Record<string, string> = {
+                      web: '🌐 Khách lẻ (web)',
+                      ctv_direct: '👤 CTV đặt hộ',
+                      ctv_referral: '🔗 Khách của CTV',
+                    };
+                    return <span className="font-medium">{srcMap[src] || src}</span>;
+                  })()}
+                </div>
+                {(detailOrder as any).ctv_name && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">CTV:</span>
+                    <span className="font-medium">{(detailOrder as any).ctv_name} {(detailOrder as any).ctv_code ? `(${(detailOrder as any).ctv_code})` : ''}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">

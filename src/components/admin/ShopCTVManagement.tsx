@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Users, Settings, ShoppingBag, Wallet, Plus,
+  Users, Settings, Wallet, Plus,
   Lock, Unlock, Loader2, Search,
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -22,7 +22,6 @@ import {
   useShopCTVSettings, useUpdateShopCTVSettings,
   useShopCTVList, useUpdateShopCTV, useCreateShopCTV,
   useShopCTVWithdrawals, useProcessCTVWithdrawal,
-  useShopCTVOrders,
 } from '@/hooks/useShopCTV';
 
 export function ShopCTVManagement() {
@@ -35,7 +34,7 @@ export function ShopCTVManagement() {
   const createCTV = useCreateShopCTV();
   const { data: withdrawals } = useShopCTVWithdrawals(currentTenantId);
   const processWithdrawal = useProcessCTVWithdrawal();
-  const { data: orders } = useShopCTVOrders(currentTenantId);
+  
 
   const [searchQuery, setSearchQuery] = useState('');
   const [addCTVOpen, setAddCTVOpen] = useState(false);
@@ -104,7 +103,6 @@ export function ShopCTVManagement() {
       <Tabs defaultValue="list">
         <TabsList className="overflow-x-auto w-full justify-start">
           <TabsTrigger value="list"><Users className="h-4 w-4 mr-1" />Danh sách</TabsTrigger>
-          <TabsTrigger value="orders"><ShoppingBag className="h-4 w-4 mr-1" />Đơn hàng</TabsTrigger>
           <TabsTrigger value="withdrawals"><Wallet className="h-4 w-4 mr-1" />Rút tiền</TabsTrigger>
           <TabsTrigger value="settings"><Settings className="h-4 w-4 mr-1" />Cài đặt</TabsTrigger>
         </TabsList>
@@ -192,48 +190,6 @@ export function ShopCTVManagement() {
           </Card>
         </TabsContent>
 
-        {/* Orders */}
-        <TabsContent value="orders" className="mt-4">
-          <Card>
-            <CardContent className="pt-4 overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Ngày</TableHead>
-                    <TableHead>CTV</TableHead>
-                    <TableHead>Khách</TableHead>
-                    <TableHead>Nguồn</TableHead>
-                    <TableHead className="text-right">Đơn hàng</TableHead>
-                    <TableHead className="text-right">Hoa hồng</TableHead>
-                    <TableHead className="text-center">TT</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(orders || []).map((o: any) => (
-                    <TableRow key={o.id}>
-                      <TableCell className="text-xs">{format(new Date(o.created_at), 'dd/MM/yy', { locale: vi })}</TableCell>
-                      <TableCell className="text-xs font-mono">{o.shop_collaborators?.ctv_code}</TableCell>
-                      <TableCell className="text-sm">{o.customer_name || '-'}</TableCell>
-                      <TableCell><Badge variant="outline" className="text-[10px]">{o.source === 'link' ? 'Link' : 'Mã'}</Badge></TableCell>
-                      <TableCell className="text-right">{formatNumber(o.order_amount)}</TableCell>
-                      <TableCell className="text-right text-green-600">{formatNumber(o.commission_amount)}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={o.status === 'approved' ? 'default' : o.status === 'paid' ? 'outline' : 'secondary'} className="text-[10px]">
-                          {o.status === 'pending' ? 'Chờ' : o.status === 'approved' ? 'Duyệt' : o.status === 'paid' ? 'Đã trả' : 'Hủy'}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {!orders?.length && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Chưa có đơn hàng</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Withdrawals */}
         <TabsContent value="withdrawals" className="mt-4">
