@@ -55,22 +55,20 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const [profileForm, setProfileForm] = useState<any>(null);
   const [profileSaving, setProfileSaving] = useState(false);
 
-  const handleLogout = async () => {
-    // Clear CTV state BEFORE signout
+  const handleLogout = () => {
+    // Clear ALL CTV-related state immediately
     localStorage.removeItem('ctv_store_mode');
     localStorage.setItem('ctv_just_logged_out', '1');
     
-    // Save the store URL before signout clears everything
-    const targetUrl = storeUrl || window.location.href;
+    // Build target URL: the store's website (NOT admin/kho)
+    const targetUrl = storeUrl || window.location.origin;
     
-    try {
-      await authSignOut();
-    } catch (e) {
-      console.error('SignOut error:', e);
-    }
+    // Sign out and redirect — use .then to ensure redirect happens
+    // even if signout is slow. The redirect IS the priority.
+    supabase.auth.signOut().catch(() => {});
     
-    // Force navigate to the store website (NOT admin/kho)
-    // Use replace to prevent back-button returning to CTV dashboard
+    // Redirect immediately — don't wait for signout to complete
+    // This prevents auth recovery from kicking in and redirecting to admin
     window.location.replace(targetUrl);
   };
 
