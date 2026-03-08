@@ -237,15 +237,9 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
               variant="ghost"
               size="icon"
               onClick={onBack}
-              className={loggedOut ? 'animate-pulse ring-2 ring-primary' : ''}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            {loggedOut && (
-              <span className="absolute -bottom-6 left-0 whitespace-nowrap text-[10px] font-medium text-primary animate-bounce">
-                ← Về website
-              </span>
-            )}
           </div>
           <div>
             <h1 className="font-semibold text-sm">CTV Dashboard</h1>
