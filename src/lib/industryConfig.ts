@@ -1043,6 +1043,7 @@ export function getDefaultNavItems(config: IndustryConfig): NavItemConfig[] {
     { id: 'products', label: config.navLabels.products, enabled: true, type: 'page', pageView: 'products', icon: '📦' },
     { id: 'news', label: config.navLabels.news, enabled: true, type: 'page', pageView: 'news', icon: '📰' },
     { id: 'warranty', label: config.navLabels.warranty, enabled: true, type: 'page', pageView: 'warranty', icon: '🛡️' },
+    { id: 'order-lookup', label: 'Tra cứu đơn hàng', enabled: true, type: 'page', pageView: 'order-lookup', icon: '📋' },
   ];
 }
 
