@@ -14,14 +14,15 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus, Hash, Phone, MessageSquare, Settings } from 'lucide-react';
+import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus, Hash, Phone, MessageSquare, Settings, ArrowLeftRight } from 'lucide-react';
 import { DebtDetailDialog } from './DebtDetailDialog';
 import { DebtPaymentDialog } from './DebtPaymentDialog';
 import { DebtAdditionDialog } from './DebtAdditionDialog';
 import { CreateDebtDialog } from './CreateDebtDialog';
 import { DebtTagAssignDialog } from './DebtTagAssignDialog';
-
+import { DebtOffsetDialog } from './DebtOffsetDialog';
 import { OverdueDaysDialog } from './OverdueDaysDialog';
+import { useDebtOffsetMatches, DebtOffsetMatch } from '@/hooks/useDebtOffset';
 
 function getDebtStatusBadge(daysOverdue: number, remaining: number, overdueDays: number) {
   if (remaining <= 0) return { label: 'Đã tất toán', className: 'bg-green-50 text-green-700 border-green-200' };
