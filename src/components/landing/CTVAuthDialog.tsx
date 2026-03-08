@@ -55,12 +55,18 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
     }
     setLoading(true);
     try {
+      // Build redirect URL back to the store (subdomain or current origin)
+      const storeRedirectUrl = buildStoreUrl(tenantId);
+      const redirectBase = storeRedirectUrl.includes('?') 
+        ? storeRedirectUrl.split('?')[0] 
+        : storeRedirectUrl;
+      
       const { error } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
         options: {
           data: { full_name: form.full_name, ctv_tenant_id: tenantId },
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: window.location.origin, // Redirect back to current store page
         },
       });
       if (error) throw error;
