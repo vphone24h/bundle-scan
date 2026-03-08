@@ -404,12 +404,15 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
           </Card>
         </div>
 
-        {/* Referral link */}
+        {/* Referral link - for recruiting F1 CTVs */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Link2 className="h-4 w-4" />Link giới thiệu
+              <Link2 className="h-4 w-4" />Link giới thiệu CTV (F1)
             </CardTitle>
+            <CardDescription className="text-xs">
+              Chia sẻ link này để mời CTV mới. Khi F1 bán hàng, bạn nhận hoa hồng.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex gap-2">
@@ -424,9 +427,6 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
             </div>
             <div className="flex gap-2 flex-wrap">
               <Badge variant="outline" className="font-mono text-xs">Mã: {ctv.ctv_code}</Badge>
-              <Badge variant="secondary" className="text-xs">
-                Hoa hồng: {ctv.commission_type === 'percentage' ? `${ctv.commission_rate}%` : formatNumber(ctv.commission_rate)}
-              </Badge>
             </div>
             <Button
               size="sm"
