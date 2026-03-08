@@ -20,7 +20,9 @@ import {
   usePlatformEmailAutomationLogs,
   type PlatformEmailAutomation,
 } from '@/hooks/usePlatformEmailAutomations';
-import { Plus, Pencil, Trash2, Mail, Clock, Zap, Users, Eye, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Mail, Clock, Zap, Users, Eye, CheckCircle, XCircle, Send } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
