@@ -50,6 +50,8 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const [withdrawForm, setWithdrawForm] = useState({
     amount: '', bank_name: '', bank_account_number: '', bank_account_holder: '', note: '',
   });
+  const [profileForm, setProfileForm] = useState<any>(null);
+  const [profileSaving, setProfileSaving] = useState(false);
 
   const handleLogout = async () => {
     localStorage.removeItem('ctv_store_mode');
