@@ -8,7 +8,7 @@ import { createPortal } from 'react-dom';
 import DOMPurify from 'dompurify';
 import { SetURLSearchParams, useLocation } from 'react-router-dom';
 import { QueryClient } from '@tanstack/react-query';
-import { buildProductPath, extractProductIdFromPath } from '@/lib/slugify';
+import { buildProductPath, buildProductDetailPath, buildArticlePath, buildPagePath, extractProductIdFromPath, detectPageFromPath } from '@/lib/slugify';
 import { TenantLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo, HomeSectionItem } from '@/hooks/useTenantLanding';
 import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProducts';
 import { LandingArticle, LandingArticleCategory } from '@/hooks/useLandingArticles';
