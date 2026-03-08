@@ -29,6 +29,10 @@ export interface LandingOrder {
   action_type: string | null;
   action_date: string | null;
   action_time: string | null;
+  order_source: 'web' | 'ctv_direct' | 'ctv_referral';
+  ctv_code: string | null;
+  ctv_id: string | null;
+  ctv_name: string | null;
   created_at: string;
   updated_at: string;
 }
