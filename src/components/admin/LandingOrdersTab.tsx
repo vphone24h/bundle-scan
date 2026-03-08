@@ -235,6 +235,17 @@ export function LandingOrdersTab() {
             <SelectItem value="unreachable">Không liên hệ được</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={sourceFilter} onValueChange={setSourceFilter}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Nguồn" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả nguồn</SelectItem>
+            <SelectItem value="web">🌐 Khách lẻ</SelectItem>
+            <SelectItem value="ctv_direct">👤 CTV đặt</SelectItem>
+            <SelectItem value="ctv_referral">🔗 Khách CTV</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Stats */}
