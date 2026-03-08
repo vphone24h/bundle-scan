@@ -559,7 +559,7 @@ export function ProductDetailPage({
                 case 'relatedProducts':
                   if (relatedProducts.length === 0) return null;
                   return (
-                    <div key="relatedProducts">
+                    <div key="relatedProducts" id="related-products" data-section="relatedProducts">
                       <h3 className="font-bold text-base mb-3">📦 Sản phẩm liên quan</h3>
                       <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
                         {relatedProducts.slice(0, 10).map(rp => (
