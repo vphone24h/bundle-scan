@@ -10,21 +10,23 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Edit, Save, X, MapPin, Phone, Users, Camera, Loader2, UserPlus, UserCheck, ArrowLeft } from 'lucide-react';
+import { Edit, Save, X, MapPin, Phone, Users, Camera, Loader2, UserPlus, UserCheck, ArrowLeft, MessageCircle } from 'lucide-react';
 import { VerifiedBadge } from './VerifiedBadge';
 import { toast } from 'sonner';
 import { SocialPostCard } from './SocialPostCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useUpdateProfile } from '@/hooks/useProfile';
 import { useQueryClient } from '@tanstack/react-query';
+import { useFriendshipStatus, useSendFriendRequest, useRespondFriendRequest } from '@/hooks/useFriends';
 
 interface Props {
   userId?: string;
   onViewProfile: (userId: string) => void;
   onBack?: () => void;
+  onStartChat?: (userId: string) => void;
 }
 
-export const SocialProfileTab = memo(function SocialProfileTab({ userId, onViewProfile, onBack }: Props) {
+export const SocialProfileTab = memo(function SocialProfileTab({ userId, onViewProfile, onBack, onStartChat }: Props) {
   const { user } = useAuth();
   const isOwnProfile = !userId || userId === user?.id;
   const targetId = isOwnProfile ? user?.id : userId;
