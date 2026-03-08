@@ -32,18 +32,46 @@ const CALL_STATUS_MAP: Record<string, { label: string; color: string }> = {
 };
 
 const ACTION_TYPE_MAP: Record<string, { label: string; icon: string }> = {
+  // Mua sắm
   order: { label: 'Đặt hàng', icon: '🛒' },
+  add_to_cart: { label: 'Thêm giỏ hàng', icon: '🛒' },
   pre_order: { label: 'Đặt trước', icon: '📋' },
   notify_stock: { label: 'Báo khi có hàng', icon: '🔔' },
-  get_quote: { label: 'Yêu cầu báo giá', icon: '📄' },
-  send_request: { label: 'Gửi yêu cầu', icon: '📩' },
   best_price: { label: 'Xem giá tốt nhất', icon: '💰' },
-  get_coupon: { label: 'Nhận mã giảm giá', icon: '🎫' },
-  get_offer: { label: 'Nhận ưu đãi', icon: '🎁' },
+  get_quote: { label: 'Yêu cầu báo giá', icon: '📄' },
+  compare: { label: 'So sánh sản phẩm', icon: '⚖️' },
+  track_order: { label: 'Tra cứu đơn hàng', icon: '📦' },
+  // Tài chính
+  installment: { label: 'Trả góp', icon: '💳' },
+  installment_0: { label: 'Trả góp 0%', icon: '💳' },
+  // Tư vấn & Liên hệ
+  consult_now: { label: 'Tư vấn ngay', icon: '💬' },
+  send_request: { label: 'Gửi yêu cầu', icon: '📩' },
+  support: { label: 'Yêu cầu hỗ trợ', icon: '🛟' },
+  // Đặt lịch
   booking: { label: 'Đặt lịch hẹn', icon: '📅' },
-  join_member: { label: 'Đăng ký thành viên', icon: '👤' },
+  booking_consult: { label: 'Đặt lịch tư vấn', icon: '📅' },
+  booking_repair: { label: 'Đặt lịch sửa chữa', icon: '🔧' },
+  booking_beauty: { label: 'Đặt lịch làm đẹp', icon: '💅' },
+  booking_clinic: { label: 'Đặt lịch khám', icon: '🏥' },
+  booking_store: { label: 'Đặt lịch tại CH', icon: '🏪' },
+  // Ẩm thực
+  order_food: { label: 'Đặt món', icon: '🍽️' },
   book_table: { label: 'Đặt bàn', icon: '🪑' },
+  delivery: { label: 'Giao tận nơi', icon: '🚚' },
   book_party: { label: 'Đặt tiệc', icon: '🎉' },
+  // Ưu đãi
+  get_offer: { label: 'Nhận ưu đãi', icon: '🎁' },
+  get_coupon: { label: 'Nhận mã giảm giá', icon: '🎫' },
+  today_offer: { label: 'Ưu đãi hôm nay', icon: '🔥' },
+  today_gift: { label: 'Quà tặng hôm nay', icon: '🎁' },
+  hot_deal: { label: 'Deal hot', icon: '⚡' },
+  join_member: { label: 'Đăng ký thành viên', icon: '👤' },
+  // Đánh giá
+  write_review: { label: 'Viết đánh giá', icon: '✍️' },
+  check_warranty: { label: 'Kiểm tra bảo hành', icon: '🛡️' },
+  // Khác
+  custom_link: { label: 'Liên kết tùy chỉnh', icon: '🔗' },
 };
 
 function useStaffList(branchId?: string | null, isSuperAdmin?: boolean) {
