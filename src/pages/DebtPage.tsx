@@ -13,6 +13,7 @@ import { CustomerDebtTable } from '@/components/debt/CustomerDebtTable';
 import { SupplierDebtTable } from '@/components/debt/SupplierDebtTable';
 import { DebtTagManager } from '@/components/debt/DebtTagManager';
 import { DebtSettingsDialog } from '@/components/debt/DebtSettingsDialog';
+import { DebtOffsetScanDialog } from '@/components/debt/DebtOffsetScanDialog';
 import { DebtDueListDialog } from '@/components/debt/DebtDueListDialog';
 import { useCustomerDebts, useSupplierDebts } from '@/hooks/useDebt';
 import { useDebtTags } from '@/hooks/useDebtTags';
