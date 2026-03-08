@@ -923,7 +923,7 @@ export function EmailAutomationTab() {
                           </div>
                           <p className="text-sm text-muted-foreground mt-0.5">
                             {TRIGGER_TYPES.find(t => t.value === a.trigger_type)?.label || a.trigger_type}
-                            {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled'].includes(a.trigger_type) && (
+                            {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled', 'on_booking_confirmation', 'on_booking_reminder', 'on_booking_cancelled', 'on_table_booking', 'on_food_order', 'on_room_booking', 'on_room_checkin_reminder', 'on_course_registration', 'on_viewing_booking', 'on_quote_request'].includes(a.trigger_type) && (
                               <>: <strong>{a.trigger_type === 'customer_registration_anniversary' ? `${a.trigger_days} năm` : `${a.trigger_days} ngày`}</strong></>
                             )}
                           </p>
