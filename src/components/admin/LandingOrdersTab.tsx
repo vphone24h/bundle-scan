@@ -464,6 +464,23 @@ export function LandingOrdersTab() {
                   <span className="text-muted-foreground">Ngày đặt:</span>
                   <span>{format(new Date(detailOrder.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}</span>
                 </div>
+                {/* Action type */}
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Loại yêu cầu:</span>
+                  <Badge variant="outline" className="text-xs">
+                    {(ACTION_TYPE_MAP[detailOrder.action_type || 'order'] || ACTION_TYPE_MAP.order).icon}{' '}
+                    {(ACTION_TYPE_MAP[detailOrder.action_type || 'order'] || ACTION_TYPE_MAP.order).label}
+                  </Badge>
+                </div>
+                {detailOrder.action_date && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Ngày hẹn:</span>
+                    <span className="font-medium flex items-center gap-1">
+                      <CalendarDays className="h-3.5 w-3.5 text-primary" />
+                      {detailOrder.action_date}{detailOrder.action_time ? ` lúc ${detailOrder.action_time}` : ''}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Liên hệ:</span>
                   <Badge className={`${CALL_STATUS_MAP[detailOrder.call_status]?.color} text-[10px]`} variant="secondary">
