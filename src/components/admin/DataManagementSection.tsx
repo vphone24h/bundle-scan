@@ -420,7 +420,7 @@ export function DataManagementSection() {
             </DialogContent>
           </Dialog>
 
-
+        </CardContent>
       </Card>
     </div>
   );
