@@ -124,6 +124,32 @@ export default function UniversalStoreTemplate({
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [productFilterTag, setProductFilterTag] = useState<string | null>(null);
   const [showInstallmentCalc, setShowInstallmentCalc] = useState(false);
+  const [ctvAuthOpen, setCtvAuthOpen] = useState(false);
+  const [ctvSession, setCtvSession] = useState<any>(null);
+
+  // CTV settings
+  const { data: ctvSettings } = useShopCTVSettings(tenantId);
+  const ctvEnabled = !!ctvSettings?.is_enabled;
+
+  // Track CTV ref cookie
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref && tenantId) {
+      localStorage.setItem(`ctv_ref_${tenantId}`, JSON.stringify({ code: ref, ts: Date.now() }));
+    }
+  }, [searchParams, tenantId]);
+
+  // Check CTV auth session
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCtvSession(session);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCtvSession(session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Load Google Font if needed
   useEffect(() => {
     const fontUrl = GOOGLE_FONTS[config.fontFamily];
