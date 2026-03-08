@@ -578,7 +578,11 @@ export function CTAButtonsEditor({ buttons, onChange, templateId }: CTAButtonsEd
     onChange(updated);
   };
 
-  const handleReset = () => onChange(null);
+  const handleReset = () => {
+    // Reset về bộ CTA mặc định theo ngành nghề (templateId)
+    const defaults = getDefaultCTAButtons(templateId);
+    onChange(defaults);
+  };
 
   return (
     <div className="space-y-3">
