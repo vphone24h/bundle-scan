@@ -584,38 +584,41 @@ export function useDeleteCustomerTag() {
  
  export function useStaffList() {
    const { user } = useAuth();
-   return useQuery({
-     queryKey: ['staff-list', user?.id],
-     queryFn: async () => {
-       const tenantId = await getCurrentTenantId();
-       if (!tenantId) return [];
- 
-       const { data, error } = await supabase
-         .from('user_roles')
-        .select('user_id, user_role, branch_id')
-         .eq('tenant_id', tenantId)
-         .neq('user_role', 'cashier');
- 
-       if (error) throw error;
+    return useQuery({
+      queryKey: ['staff-list', user?.id],
+      queryFn: async () => {
+        const tenantId = await getCurrentTenantId();
+        if (!tenantId) return [];
 
-      // Get profile info for each user
-      if (data.length === 0) return [];
+        const { data, error } = await supabase
+          .from('user_roles')
+         .select('user_id, user_role, branch_id')
+          .eq('tenant_id', tenantId)
+          .neq('user_role', 'cashier');
 
-      const userIds = data.map(d => d.user_id);
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, display_name')
-        .in('user_id', userIds);
+        if (error) throw error;
 
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p.display_name]) || []);
+       // Get profile info for each user
+       if (data.length === 0) return [];
 
-      return data.map(d => ({
-        ...d,
-        display_name: profileMap.get(d.user_id) || 'Nhân viên',
-      }));
-     },
-     enabled: !!user?.id,
-   });
+       const userIds = data.map(d => d.user_id);
+       const { data: profiles } = await supabase
+         .from('profiles')
+         .select('user_id, display_name')
+         .in('user_id', userIds);
+
+       const profileMap = new Map(profiles?.map(p => [p.user_id, p.display_name]) || []);
+
+       return data.map(d => ({
+         ...d,
+         display_name: profileMap.get(d.user_id) || 'Nhân viên',
+       }));
+      },
+      enabled: !!user?.id,
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 30,
+      refetchOnWindowFocus: false,
+    });
  }
  
 export function useAssignStaffToCustomer() {
