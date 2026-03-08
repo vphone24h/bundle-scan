@@ -66,6 +66,12 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
       return 'app';
     }
     
+    // CTV store mode: user logged in as CTV on a store page — keep showing store
+    const ctvStoreMode = localStorage.getItem('ctv_store_mode');
+    if (user && ctvStoreMode && (resolvedTenant.subdomain || resolvedTenant.tenantId)) {
+      return 'store_landing';
+    }
+
     if (user) {
       return 'app';
     }

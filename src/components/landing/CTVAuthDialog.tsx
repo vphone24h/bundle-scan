@@ -24,11 +24,16 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
   const handleLogin = async () => {
     setLoading(true);
     try {
+      // Mark as CTV login BEFORE signing in to prevent redirect
+      localStorage.setItem('ctv_store_mode', tenantId);
       const { error } = await supabase.auth.signInWithPassword({
         email: form.email,
         password: form.password,
       });
-      if (error) throw error;
+      if (error) {
+        localStorage.removeItem('ctv_store_mode');
+        throw error;
+      }
       toast({ title: 'Đăng nhập thành công!' });
       onSuccess();
       onOpenChange(false);
