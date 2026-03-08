@@ -81,7 +81,7 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
         });
         if (loginErr) {
           toast({ title: 'Đăng ký thành công!', description: 'Vui lòng đăng nhập.' });
-          setCtvAuthOpen && onOpenChange(true);
+          onOpenChange(true);
           setMode('login');
         } else {
           toast({ title: 'Đăng ký thành công!' });
