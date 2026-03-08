@@ -111,7 +111,7 @@ export function useReportStats(filters?: {
 
       let returnDetailQuery = supabase
         .from('export_returns')
-        .select('product_name, imei, import_price, sale_price, return_date, branch_id, fee_type')
+        .select('product_name, imei, import_price, sale_price, return_date, branch_id, fee_type, product_id, products(import_price)')
         .eq('fee_type', 'none')
         .gte('return_date', startISO)
         .lte('return_date', endISO)
