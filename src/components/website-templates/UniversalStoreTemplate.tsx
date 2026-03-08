@@ -479,6 +479,7 @@ export default function UniversalStoreTemplate({
           storeName={displayStoreName}
           accentColor={accentColor}
           onSuccess={() => navigateTo('ctv-dashboard' as PageView)}
+          referrerCode={refCode}
         />
       )}
 
