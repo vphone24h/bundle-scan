@@ -272,12 +272,39 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
     return rate;
   };
 
-  // Calculate F1 commission (when your referred CTV sells this product)
+  // Calculate F1 commission using tiered system (same logic as product tiers)
   const getF1Commission = (product: any) => {
+    const price = product.sale_price || product.price || 0;
+    const f1Tiers = (settings as any)?.f1_commission_tiers;
+    
+    if (f1Tiers && Array.isArray(f1Tiers) && f1Tiers.length > 0) {
+      let matchedTier = f1Tiers[0];
+      for (const tier of f1Tiers) {
+        if (tier.threshold === null) {
+          matchedTier = tier;
+          break;
+        }
+        if (price <= tier.threshold) {
+          matchedTier = tier;
+          break;
+        }
+        matchedTier = tier;
+      }
+      const lastTier = f1Tiers.find((t: any) => t.threshold === null);
+      if (lastTier && !f1Tiers.some((t: any) => t.threshold !== null && price <= t.threshold)) {
+        matchedTier = lastTier;
+      }
+      if (matchedTier) {
+        return matchedTier.type === 'percentage'
+          ? Math.round(price * matchedTier.rate / 100)
+          : matchedTier.rate;
+      }
+    }
+
+    // Fallback to flat F1 rate
     const f1Rate = (settings as any)?.f1_commission_rate || 0;
     const f1Type = (settings as any)?.f1_commission_type || 'percentage';
     if (f1Rate <= 0) return 0;
-    const price = product.sale_price || product.price || 0;
     if (f1Type === 'percentage') {
       return Math.round(price * f1Rate / 100);
     }
@@ -377,12 +404,15 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
           </Card>
         </div>
 
-        {/* Referral link */}
+        {/* Referral link - for recruiting F1 CTVs */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Link2 className="h-4 w-4" />Link giới thiệu
+              <Link2 className="h-4 w-4" />Link giới thiệu CTV (F1)
             </CardTitle>
+            <CardDescription className="text-xs">
+              Chia sẻ link này để mời CTV mới. Khi F1 bán hàng, bạn nhận hoa hồng.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex gap-2">
@@ -397,9 +427,6 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
             </div>
             <div className="flex gap-2 flex-wrap">
               <Badge variant="outline" className="font-mono text-xs">Mã: {ctv.ctv_code}</Badge>
-              <Badge variant="secondary" className="text-xs">
-                Hoa hồng: {ctv.commission_type === 'percentage' ? `${ctv.commission_rate}%` : formatNumber(ctv.commission_rate)}
-              </Badge>
             </div>
             <Button
               size="sm"

@@ -92,7 +92,15 @@ export function ShopCTVManagement() {
     { threshold: null, rate: 500000, type: 'fixed' },
   ];
 
+  const defaultF1Tiers = [
+    { threshold: 3000000, rate: 100000, type: 'fixed' },
+    { threshold: null, rate: 300000, type: 'fixed' },
+  ];
+
   const commissionTiers = activeSettings.commission_tiers || defaultTiers;
+  const f1CommissionTiers = activeSettings.f1_commission_tiers && (activeSettings.f1_commission_tiers as any[]).length > 0
+    ? activeSettings.f1_commission_tiers
+    : defaultF1Tiers;
 
   const handleSaveSettings = async () => {
     await updateSettings.mutateAsync({
@@ -108,6 +116,7 @@ export function ShopCTVManagement() {
       auto_approve_ctv: activeSettings.auto_approve_ctv ?? true,
       program_description: activeSettings.program_description || '',
       commission_tiers: commissionTiers,
+      f1_commission_tiers: f1CommissionTiers,
       commission_threshold: commissionTiers[0]?.threshold || 5000000,
       low_commission_rate: commissionTiers[0]?.rate || 10,
       low_commission_type: commissionTiers[0]?.type || 'percentage',
@@ -137,6 +146,29 @@ export function ShopCTVManagement() {
     if (commissionTiers.length <= 2) return;
     const newTiers = commissionTiers.filter((_: any, i: number) => i !== index);
     updateField('commission_tiers', newTiers);
+  };
+
+  // F1 tier helpers
+  const updateF1Tier = (index: number, field: string, value: any) => {
+    const newTiers = [...f1CommissionTiers];
+    newTiers[index] = { ...newTiers[index], [field]: value };
+    updateField('f1_commission_tiers', newTiers);
+  };
+
+  const addF1Tier = () => {
+    const lastThreshold = f1CommissionTiers.filter((t: any) => t.threshold).pop()?.threshold || 3000000;
+    const newTiers = [...f1CommissionTiers];
+    const insertIdx = newTiers.length > 0 && newTiers[newTiers.length - 1].threshold === null
+      ? newTiers.length - 1
+      : newTiers.length;
+    newTiers.splice(insertIdx, 0, { threshold: lastThreshold + 5000000, rate: 100000, type: 'fixed' });
+    updateField('f1_commission_tiers', newTiers);
+  };
+
+  const removeF1Tier = (index: number) => {
+    if (f1CommissionTiers.length <= 2) return;
+    const newTiers = f1CommissionTiers.filter((_: any, i: number) => i !== index);
+    updateField('f1_commission_tiers', newTiers);
   };
 
   const updateField = (field: string, value: any) => {
@@ -621,55 +653,91 @@ export function ShopCTVManagement() {
                 </div>
               </div>
 
-              {/* F1 Referral Commission Config */}
+              {/* F1 Referral Commission Config - Tiered */}
               <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
-                <div>
-                  <h4 className="font-semibold text-sm flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Hoa hồng F1 (giới thiệu CTV)
-                  </h4>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Khi CTV A giới thiệu CTV B, mỗi đơn hàng CTV B bán được thì CTV A nhận thêm hoa hồng F1.
-                  </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold text-sm flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Hoa hồng F1 (giới thiệu CTV)
+                    </h4>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Khi CTV A giới thiệu CTV B, mỗi đơn hàng CTV B bán được thì CTV A nhận thêm hoa hồng F1 theo ngưỡng giá sản phẩm.
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={addF1Tier}>
+                    <Plus className="h-3 w-3 mr-1" />Thêm
+                  </Button>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Loại hoa hồng F1</Label>
-                    <Select
-                      value={activeSettings.f1_commission_type || 'percentage'}
-                      onValueChange={v => updateField('f1_commission_type', v)}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="percentage">Phần trăm (%)</SelectItem>
-                        <SelectItem value="fixed">Cố định (VND)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">
-                      {(activeSettings.f1_commission_type || 'percentage') === 'percentage' ? 'Tỷ lệ F1 (%)' : 'Hoa hồng F1 (VND)'}
-                    </Label>
-                    {(activeSettings.f1_commission_type || 'percentage') === 'percentage' ? (
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="number"
-                          value={activeSettings.f1_commission_rate ?? 0}
-                          onChange={e => updateField('f1_commission_rate', parseFloat(e.target.value) || 0)}
-                          className="flex-1 h-9"
-                        />
-                        <span className="text-sm text-muted-foreground">%</span>
+                <div className="space-y-2">
+                  {f1CommissionTiers.map((tier: any, index: number) => {
+                    const isLast = tier.threshold === null;
+                    const prevThreshold = index > 0 ? f1CommissionTiers[index - 1]?.threshold : 0;
+                    const label = isLast
+                      ? `Trên ${formatNumber(prevThreshold || 0)}đ`
+                      : index === 0
+                        ? `Đến ${formatNumber(tier.threshold)}đ`
+                        : `${formatNumber(prevThreshold || 0)}đ – ${formatNumber(tier.threshold)}đ`;
+
+                    return (
+                      <div key={index} className="border rounded-md p-3 space-y-2 bg-background">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-semibold">{isLast ? '📈' : index === 0 ? '📉' : '📊'} {label}</Label>
+                          {f1CommissionTiers.length > 2 && (
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeF1Tier(index)}>
+                              <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {!isLast && (
+                            <div className="space-y-1">
+                              <Label className="text-[10px] text-muted-foreground">Ngưỡng (VND)</Label>
+                              <PriceInput
+                                value={tier.threshold || 0}
+                                onChange={(v) => updateF1Tier(index, 'threshold', v)}
+                                suffix="đ"
+                              />
+                            </div>
+                          )}
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">Loại</Label>
+                            <Select value={tier.type} onValueChange={(v) => updateF1Tier(index, 'type', v)}>
+                              <SelectTrigger className="h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="percentage">Phần trăm (%)</SelectItem>
+                                <SelectItem value="fixed">Cố định (VND)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">
+                              {tier.type === 'percentage' ? 'Hoa hồng (%)' : 'Hoa hồng (VND)'}
+                            </Label>
+                            {tier.type === 'percentage' ? (
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  value={tier.rate}
+                                  onChange={e => updateF1Tier(index, 'rate', parseFloat(e.target.value) || 0)}
+                                  className="flex-1"
+                                />
+                                <span className="text-sm text-muted-foreground">%</span>
+                              </div>
+                            ) : (
+                              <PriceInput
+                                value={tier.rate || 0}
+                                onChange={(v) => updateF1Tier(index, 'rate', v)}
+                                suffix="đ"
+                              />
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    ) : (
-                      <PriceInput
-                        value={activeSettings.f1_commission_rate ?? 0}
-                        onChange={v => updateField('f1_commission_rate', v)}
-                        suffix="đ"
-                      />
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
 
