@@ -43,6 +43,17 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const { data: withdrawals } = useMyCTVWithdrawals(ctv?.id);
   const { data: referredCTVs } = useMyReferredCTVs(ctv?.id);
   const { data: landingProducts } = usePublicLandingProducts(tenantId);
+  const { data: productCommissions } = useQuery({
+    queryKey: ['ctv-product-commissions-public'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ctv_product_commissions')
+        .select('*')
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    },
+  });
   const registerCTV = useRegisterShopCTV();
   const createWithdrawal = useCreateCTVWithdrawal();
   const updateCTV = useUpdateShopCTV();
