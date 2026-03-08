@@ -598,8 +598,12 @@ export function EmailAutomationTab() {
   const [editItem, setEditItem] = useState<EmailAutomation | null>(null);
   const [tab, setTab] = useState('scenarios');
   const [logSubTab, setLogSubTab] = useState('automation');
+  const [logStatusFilter, setLogStatusFilter] = useState<'all' | 'sent' | 'failed'>('all');
   const [pickerOpen, setPickerOpen] = useState(false);
   const [prefilledTemplate, setPrefilledTemplate] = useState<EmailTemplatePreset | null>(null);
+  const [resendingIds, setResendingIds] = useState<Set<string>>(new Set());
+  const [resendingAll, setResendingAll] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleEdit = (item: EmailAutomation) => {
     setEditItem(item);
