@@ -788,7 +788,10 @@ export function EmailAutomationTab() {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mt-0.5">
-                            {TRIGGER_TYPES.find(t => t.value === a.trigger_type)?.label || a.trigger_type}: <strong>{a.trigger_days} ngày</strong>
+                            {TRIGGER_TYPES.find(t => t.value === a.trigger_type)?.label || a.trigger_type}
+                            {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled'].includes(a.trigger_type) && (
+                              <>: <strong>{a.trigger_type === 'customer_registration_anniversary' ? `${a.trigger_days} năm` : `${a.trigger_days} ngày`}</strong></>
+                            )}
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">Subject: {a.subject}</p>
                         </div>
