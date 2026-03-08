@@ -92,9 +92,9 @@ export function usePlaceLandingOrder() {
         .from('landing_orders' as any)
         .insert([finalOrder])
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
-      return data as unknown as LandingOrder;
+      return (data || finalOrder) as unknown as LandingOrder;
     },
   });
 }
