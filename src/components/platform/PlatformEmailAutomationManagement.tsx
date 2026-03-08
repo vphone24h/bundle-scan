@@ -77,6 +77,7 @@ export function PlatformEmailAutomationManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PlatformEmailAutomation | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [sendingTestId, setSendingTestId] = useState<string | null>(null);
 
   // Form state
   const [name, setName] = useState('');
