@@ -191,7 +191,7 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
         id="store-info"
         icon="🏪"
         title="Thông tin cửa hàng"
-        description="Logo, tên, địa chỉ, SĐT"
+        description="Logo, tên, địa chỉ, SĐT, Zalo, FB, STK"
         isExpanded={expandedBlocks.has('store-info')}
         onToggle={() => toggleBlock('store-info')}
       >
