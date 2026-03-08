@@ -40,6 +40,10 @@ import { LayoutTrustBadges } from './layouts/TrustBadgeVariants';
 import { LayoutHeader } from './layouts/HeaderVariants';
 import { LayoutFooter } from './layouts/FooterVariants';
 import { LayoutStickyBar } from './layouts/StickyBarVariants';
+import { CTVAuthDialog } from '@/components/landing/CTVAuthDialog';
+import { CTVDashboard } from '@/components/landing/CTVDashboard';
+import { useShopCTVSettings } from '@/hooks/useShopCTV';
+import { supabase } from '@/integrations/supabase/client';
 
 
 export interface UniversalTemplateProps {
