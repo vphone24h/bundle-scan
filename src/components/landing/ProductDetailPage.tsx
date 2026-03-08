@@ -94,6 +94,7 @@ export function ProductDetailPage({
   // CTA Dialog states
   const [activeDialog, setActiveDialog] = useState<string | null>(null);
   const [showCartDialog, setShowCartDialog] = useState(false);
+  const [showConsultDialog, setShowConsultDialog] = useState(false);
   const cart = useLandingCart();
 
   const [selectedOption1, setSelectedOption1] = useState<string | null>(null);
@@ -874,19 +875,9 @@ export function ProductDetailPage({
             }
 
             case 'consult_now': {
-              const consultUrl = btn.customUrl || zaloUrl || facebookUrl;
-              if (consultUrl) {
-                let link = consultUrl.trim();
-                if (!link.startsWith('http')) link = `https://${link}`;
-                return (
-                  <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
-                    <a href={link} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
-                  </Button>
-                );
-              }
               return (
                 <Button key={btn.id} variant="outline" className="shrink-0 gap-2 h-11 text-sm px-4"
-                  onClick={() => setActiveDialog('send_request')}>
+                  onClick={() => setShowConsultDialog(true)}>
                   {btn.icon} {btn.label}
                 </Button>
               );
@@ -1242,6 +1233,78 @@ export function ProductDetailPage({
         productName={product.name}
         groupUrl={(ctaButtons || []).find(b => b.action === 'join_member')?.customUrl || ''}
       />
+
+      {/* Consult Contact Dialog */}
+      {showConsultDialog && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50" onClick={() => setShowConsultDialog(false)}>
+          <div className="w-full max-w-sm bg-background rounded-t-2xl sm:rounded-2xl p-5 pb-8 sm:pb-5 space-y-4 animate-in slide-in-from-bottom-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-base">💬 Liên hệ tư vấn</h3>
+              <button onClick={() => setShowConsultDialog(false)} className="h-8 w-8 rounded-full hover:bg-muted flex items-center justify-center">✕</button>
+            </div>
+            <p className="text-sm text-muted-foreground">Chọn kênh liên hệ phù hợp với bạn:</p>
+            <div className="space-y-2.5">
+              {storeInfo?.phone && (
+                <a href={`tel:${storeInfo.phone}`} className="flex items-center gap-3 p-3 rounded-xl border hover:bg-muted/50 transition-colors">
+                  <span className="h-10 w-10 rounded-full flex items-center justify-center text-lg" style={{ backgroundColor: `${primaryColor}15` }}>📞</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">Gọi điện thoại</p>
+                    <p className="text-xs text-muted-foreground">{storeInfo.phone}</p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                </a>
+              )}
+              {warrantyHotline && warrantyHotline !== storeInfo?.phone && (
+                <a href={`tel:${warrantyHotline}`} className="flex items-center gap-3 p-3 rounded-xl border hover:bg-muted/50 transition-colors">
+                  <span className="h-10 w-10 rounded-full flex items-center justify-center text-lg" style={{ backgroundColor: `${primaryColor}15` }}>📱</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">Hotline</p>
+                    <p className="text-xs text-muted-foreground">{warrantyHotline}</p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                </a>
+              )}
+              {zaloUrl && (() => {
+                const raw = zaloUrl.trim();
+                const link = raw.startsWith('http') ? raw : `https://zalo.me/${raw.replace(/\s/g, '')}`;
+                return (
+                  <a href={link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl border hover:bg-muted/50 transition-colors">
+                    <span className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center text-lg">💬</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm">Zalo</p>
+                      <p className="text-xs text-muted-foreground">Nhắn tin qua Zalo</p>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </a>
+                );
+              })()}
+              {facebookUrl && (
+                <a href={facebookUrl.startsWith('http') ? facebookUrl : `https://${facebookUrl}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl border hover:bg-muted/50 transition-colors">
+                  <span className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center text-lg">💬</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">Facebook Messenger</p>
+                    <p className="text-xs text-muted-foreground">Chat qua Facebook</p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                </a>
+              )}
+              {storeInfo?.email && (
+                <a href={`mailto:${storeInfo.email}`} className="flex items-center gap-3 p-3 rounded-xl border hover:bg-muted/50 transition-colors">
+                  <span className="h-10 w-10 rounded-full flex items-center justify-center text-lg" style={{ backgroundColor: `${primaryColor}15` }}>📧</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">Email</p>
+                    <p className="text-xs text-muted-foreground">{storeInfo.email}</p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                </a>
+              )}
+              {!storeInfo?.phone && !warrantyHotline && !zaloUrl && !facebookUrl && !storeInfo?.email && (
+                <p className="text-sm text-muted-foreground text-center py-4">Chưa có thông tin liên hệ</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
