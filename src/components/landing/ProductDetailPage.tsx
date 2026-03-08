@@ -334,7 +334,16 @@ export function ProductDetailPage({
   const promotionTitle = product.promotion_title || 'KHUYẾN MÃI';
   const warrantyTitle = product.warranty_title || 'BẢO HÀNH';
 
-  return (
+  const openOrderFlowFn = () => {
+    const hasPaymentOptions = paymentConfig?.transferEnabled;
+    if (hasPaymentOptions) {
+      setShowPaymentFlow(true);
+    } else {
+      setShowOrderForm(true);
+      setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100);
+    }
+  };
+
     <div className="min-h-screen bg-white flex flex-col">
       {/* Sticky header with back button */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b safe-area-top">
