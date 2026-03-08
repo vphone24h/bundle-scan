@@ -819,9 +819,65 @@ export function ProductDetailPage({
               );
             }
             case 'booking':
+            case 'booking_consult':
+            case 'booking_repair':
+            case 'booking_beauty':
+            case 'booking_clinic':
+            case 'booking_store':
+            case 'order_food':
+            case 'book_table':
+            case 'book_party':
+            case 'pre_order':
               return (
                 <Button key={btn.id} className="shrink-0 min-w-[100px] gap-2 h-11 text-sm font-semibold" style={{ backgroundColor: primaryColor }}
                   onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+            case 'add_to_cart':
+              return (
+                <Button key={btn.id} className="shrink-0 gap-2 h-11 text-sm font-semibold px-4" style={{ backgroundColor: primaryColor }}
+                  onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+            case 'installment_0':
+              return (
+                <Button key={btn.id} variant="outline" className="shrink-0 gap-2 h-11 text-sm px-4" onClick={onInstallment}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+            case 'notify_stock':
+            case 'get_offer':
+            case 'best_price':
+            case 'get_quote':
+            case 'get_coupon':
+            case 'consult_now':
+            case 'support':
+            case 'send_request':
+            case 'join_member':
+              return (
+                <Button key={btn.id} variant="outline" className="shrink-0 gap-2 h-11 text-sm px-4"
+                  onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+            case 'delivery':
+            case 'view_menu':
+            case 'today_offer':
+            case 'today_gift':
+            case 'hot_deal':
+            case 'compare':
+            case 'view_detail':
+            case 'view_reviews':
+            case 'write_review':
+            case 'track_order':
+            case 'check_warranty':
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
+                  onClick={() => {
+                    if (btn.customUrl) { window.open(btn.customUrl, '_blank'); }
+                  }}>
                   {btn.icon} {btn.label}
                 </Button>
               );
@@ -833,7 +889,16 @@ export function ProductDetailPage({
                 </Button>
               );
             default:
-              return null;
+              // Fallback for any new action types - render as outline button
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
+                  onClick={() => {
+                    if (btn.customUrl) { window.open(btn.customUrl, '_blank'); }
+                    else { setShowOrderForm(true); }
+                  }}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
           }
         };
 
