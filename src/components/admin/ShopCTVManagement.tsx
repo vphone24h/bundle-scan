@@ -103,7 +103,6 @@ export function ShopCTVManagement() {
       <Tabs defaultValue="list">
         <TabsList className="overflow-x-auto w-full justify-start">
           <TabsTrigger value="list"><Users className="h-4 w-4 mr-1" />Danh sách</TabsTrigger>
-          <TabsTrigger value="orders"><ShoppingBag className="h-4 w-4 mr-1" />Đơn hàng</TabsTrigger>
           <TabsTrigger value="withdrawals"><Wallet className="h-4 w-4 mr-1" />Rút tiền</TabsTrigger>
           <TabsTrigger value="settings"><Settings className="h-4 w-4 mr-1" />Cài đặt</TabsTrigger>
         </TabsList>
