@@ -23,6 +23,8 @@
     <!-- Preconnect to critical origins for faster loading -->
     <link rel="preconnect" href="https://rodpbhesrwykmpywiiyd.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://rodpbhesrwykmpywiiyd.supabase.co" />
+    <!-- Storage bucket for images -->
+    <link rel="preconnect" href="https://rodpbhesrwykmpywiiyd.supabase.co/storage/v1" crossorigin />
     
     <!-- Icons -->
     <link rel="icon" type="image/png" href="/favicon.png" id="static-favicon" />
@@ -30,24 +32,95 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
 
-    <!-- Dynamically set store icon + title for PWA on store pages -->
+    <!-- Open Graph -->
+    <meta property="og:title" content="Phần mềm quản lý kho chuyên nghiệp cho iPhone/phụ kiện" />
+    <meta property="og:description" content="Miễn phí trải nghiệm ngay! Quản lý nhập xuất, tồn kho, IMEI, công nợ một cách dễ dàng." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="vkho.vn" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Phần mềm quản lý kho chuyên nghiệp cho iPhone/phụ kiện" />
+    <meta name="twitter:description" content="Miễn phí trải nghiệm ngay! Quản lý nhập xuất, tồn kho, IMEI, công nợ một cách dễ dàng." />
+    
+    <!-- Critical CSS for skeleton -->
+    <style>
+      /* Safe area for notch devices */
+      :root {
+        --sat: env(safe-area-inset-top);
+        --sar: env(safe-area-inset-right);
+        --sab: env(safe-area-inset-bottom);
+        --sal: env(safe-area-inset-left);
+      }
+      
+      /* Prevent pull-to-refresh on mobile */
+      html, body {
+        overscroll-behavior-y: none;
+      }
+      
+      /* Smooth touch scrolling */
+      * {
+        -webkit-tap-highlight-color: transparent;
+      }
+      
+      /* PWA Standalone Mode - Critical CSS for iOS/Android */
+      @media all and (display-mode: standalone) {
+        body {
+          padding-top: env(safe-area-inset-top);
+        }
+      }
+      
+      /* Skeleton animation */
+      #app-preloader div > div { animation: skpulse 1.5s ease-in-out infinite; }
+      @keyframes skpulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    </style>
+  </head>
+
+  <body>
+    <div id="root">
+      <!-- Skeleton placeholder before JS loads - looks like real UI -->
+      <div id="app-preloader" style="min-height:100vh;background:#f8fafc">
+        <div style="height:56px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;padding:0 16px;gap:12px">
+          <div style="width:32px;height:32px;border-radius:6px;background:#e2e8f0"></div>
+          <div style="width:128px;height:16px;border-radius:4px;background:#e2e8f0"></div>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+          <div style="width:192px;height:24px;border-radius:4px;background:#e2e8f0"></div>
+          <div style="width:256px;height:16px;border-radius:4px;background:#e2e8f0"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+            <div style="height:96px;border-radius:8px;background:#e2e8f0"></div>
+            <div style="height:96px;border-radius:8px;background:#e2e8f0"></div>
+            <div style="height:96px;border-radius:8px;background:#e2e8f0"></div>
+            <div style="height:96px;border-radius:8px;background:#e2e8f0"></div>
+          </div>
+          <div style="height:160px;border-radius:8px;background:#e2e8f0;margin-top:8px"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- PWA store init - runs async, doesn't block render -->
     <script>
+      // Only run for store pages - use requestIdleCallback to not block main thread
       (function(){
-        var p = location.pathname;
-        var isStore = p.indexOf('/store/') === 0;
-        var h = location.hostname;
-        var isSubdomain = h !== 'bundle-scan.lovable.app' && h !== 'localhost' && h !== 'vkho.vn' && h !== 'www.vkho.vn' && !h.endsWith('.lovable.app') && !h.endsWith('.lovableproject.com');
-        if (isStore || isSubdomain) {
+        var run = function() {
+          var p = location.pathname;
+          var h = location.hostname;
+          var isStore = p.indexOf('/store/') === 0;
+          var isSubdomain = h !== 'bundle-scan.lovable.app' && h !== 'localhost' && h !== 'vkho.vn' && h !== 'www.vkho.vn' && !h.endsWith('.lovable.app') && !h.endsWith('.lovableproject.com');
+          
+          if (!isStore && !isSubdomain) return;
+          
           var m = document.getElementById('static-manifest');
           if (m) m.remove();
+          
           var supaUrl = 'https://rodpbhesrwykmpywiiyd.supabase.co';
           var anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZHBiaGVzcnd5a21weXdpaXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MjM4MDMsImV4cCI6MjA4NDk5OTgwM30.P7Kc0pxkUdyHi8AgDBlRmPqxg0MWr2C_J_EUqORQY_s';
           var hdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' };
-          // Default title to storeId instead of "vkho"
+          
           var storeId = isStore ? p.split('/')[2] : (h.endsWith('.vkho.vn') ? h.replace('.vkho.vn','') : h.split('.').slice(0,-1).join('.') || h);
           var titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-          if (titleMeta) titleMeta.setAttribute('content', storeId || '');
-          document.title = storeId || '';
+          if (titleMeta && storeId) titleMeta.setAttribute('content', storeId);
+          if (storeId) document.title = storeId;
 
           function setIcon(url) {
             if (!url) return;
@@ -55,12 +128,6 @@
             if (a) a.href = url;
             var f = document.getElementById('static-favicon');
             if (f) f.href = url;
-            var noSize = document.createElement('link');
-            noSize.rel = 'apple-touch-icon'; noSize.href = url;
-            document.head.appendChild(noSize);
-            var pl = document.createElement('link');
-            pl.rel = 'preload'; pl.as = 'image'; pl.href = url;
-            document.head.appendChild(pl);
           }
           function setTitle(name) {
             if (!name) return;
@@ -68,7 +135,6 @@
             if (titleMeta) titleMeta.setAttribute('content', name);
           }
 
-          // Resolve tenant
           var resolvePromise;
           if (isSubdomain) {
             resolvePromise = fetch(supaUrl + '/rest/v1/rpc/resolve_tenant_by_domain', {
@@ -95,77 +161,18 @@
                 setTitle(s[0].store_name);
               }
             });
-          }).catch(function(e) { console.warn('PWA init failed:', e); });
+          }).catch(function() {});
+        };
+        
+        // Run after main thread is idle to not block React render
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(run, { timeout: 1000 });
+        } else {
+          setTimeout(run, 100);
         }
       })();
     </script>
-
-    <!-- Open Graph -->
-    <meta property="og:title" content="Phần mềm quản lý kho chuyên nghiệp cho iPhone/phụ kiện" />
-    <meta property="og:description" content="Miễn phí trải nghiệm ngay! Quản lý nhập xuất, tồn kho, IMEI, công nợ một cách dễ dàng." />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="vkho.vn" />
-
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Phần mềm quản lý kho chuyên nghiệp cho iPhone/phụ kiện" />
-    <meta name="twitter:description" content="Miễn phí trải nghiệm ngay! Quản lý nhập xuất, tồn kho, IMEI, công nợ một cách dễ dàng." />
     
-    <!-- Prevent zoom on input focus (iOS) -->
-    <style>
-      /* Safe area for notch devices */
-      :root {
-        --sat: env(safe-area-inset-top);
-        --sar: env(safe-area-inset-right);
-        --sab: env(safe-area-inset-bottom);
-        --sal: env(safe-area-inset-left);
-      }
-      
-      /* Prevent pull-to-refresh on mobile */
-      html, body {
-        overscroll-behavior-y: none;
-      }
-      
-      /* Smooth touch scrolling */
-      * {
-        -webkit-tap-highlight-color: transparent;
-      }
-      
-      /* PWA Standalone Mode - Critical CSS for iOS/Android */
-      @media all and (display-mode: standalone) {
-        body {
-          /* Add padding for status bar in standalone mode */
-          padding-top: env(safe-area-inset-top);
-        }
-      }
-    </style>
-  </head>
-
-  <body>
-    <div id="root">
-      <!-- Skeleton placeholder before JS loads - looks like real UI -->
-      <div id="app-preloader" style="min-height:100vh;background:#f8fafc">
-        <div style="height:56px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;padding:0 16px;gap:12px">
-          <div style="width:32px;height:32px;border-radius:6px;background:#e2e8f0"></div>
-          <div style="width:128px;height:16px;border-radius:4px;background:#e2e8f0"></div>
-        </div>
-        <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
-          <div style="width:192px;height:24px;border-radius:4px;background:#e2e8f0"></div>
-          <div style="width:256px;height:16px;border-radius:4px;background:#e2e8f0"></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
-            <div style="height:96px;border-radius:8px;background:#e2e8f0"></div>
-            <div style="height:96px;border-radius:8px;background:#e2e8f0"></div>
-            <div style="height:96px;border-radius:8px;background:#e2e8f0"></div>
-            <div style="height:96px;border-radius:8px;background:#e2e8f0"></div>
-          </div>
-          <div style="height:160px;border-radius:8px;background:#e2e8f0;margin-top:8px"></div>
-        </div>
-      </div>
-      <style>
-        #app-preloader div > div { animation: skpulse 1.5s ease-in-out infinite; }
-        @keyframes skpulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-      </style>
-    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
