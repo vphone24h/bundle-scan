@@ -71,8 +71,10 @@ export function ProductDetailPage({
   storeInfo,
   zaloUrl,
   facebookUrl,
+  paymentConfig,
 }: ProductDetailPageProps) {
   const [showOrderForm, setShowOrderForm] = useState(false);
+  const [showPaymentFlow, setShowPaymentFlow] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
