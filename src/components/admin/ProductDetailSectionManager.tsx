@@ -310,6 +310,19 @@ export function getDefaultCTAButtons(templateId?: string): CTAButtonItem[] {
   ];
 }
 
+const ALL_DETAIL_SECTIONS: { id: string; label: string; icon: string; description: string }[] = [
+  { id: 'installment', label: 'Nút trả góp', icon: '💳', description: 'Hiển thị nút tính trả góp' },
+  { id: 'compare', label: 'So sánh sản phẩm', icon: '⚖️', description: 'So sánh với sản phẩm khác' },
+  { id: 'tradeIn', label: 'Thu cũ đổi mới', icon: '🔄', description: 'Chương trình thu cũ đổi mới' },
+  { id: 'promotion', label: 'Khung khuyến mãi', icon: '🎁', description: 'Ưu đãi, quà tặng kèm' },
+  { id: 'warranty', label: 'Khung bảo hành', icon: '🛡️', description: 'Chính sách bảo hành' },
+  { id: 'description', label: 'Mô tả sản phẩm', icon: '📝', description: 'Nội dung chi tiết sản phẩm' },
+  { id: 'relatedProducts', label: 'Sản phẩm liên quan', icon: '📦', description: 'SP cùng danh mục' },
+  { id: 'reviews', label: 'Đánh giá khách hàng', icon: '💬', description: 'Đánh giá & nhận xét' },
+  { id: 'recentlyViewed', label: 'Đã xem gần đây', icon: '👁️', description: 'Sản phẩm khách vừa xem' },
+  { id: 'storeInfo', label: 'Thông tin cửa hàng', icon: '📞', description: 'Liên hệ, hotline' },
+];
+
 const EXTRA_LAYOUT_PRESETS = SYSTEM_PAGES
   .filter(p => !['home', 'products', 'news', 'warranty'].includes(p.id))
   .filter(p => !ALL_DETAIL_SECTIONS.some(s => s.id === p.id));
