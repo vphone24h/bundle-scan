@@ -768,20 +768,20 @@ export function EmailAutomationTab() {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between flex-wrap gap-2">
+      <CardHeader className="px-3 sm:px-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Mail className="h-5 w-5" />
             Email Automation
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={handleRunNow} disabled={runningNow}>
+          <div className="flex items-center gap-2 overflow-x-auto">
+            <Button size="sm" variant="outline" onClick={handleRunNow} disabled={runningNow} className="shrink-0">
               <Play className={`h-4 w-4 mr-1 ${runningNow ? 'animate-spin' : ''}`} /> {runningNow ? 'Đang chạy...' : 'Chạy ngay'}
             </Button>
-            <Button size="sm" onClick={handleCreate}>
+            <Button size="sm" onClick={handleCreate} className="shrink-0">
               <Plus className="h-4 w-4 mr-1" /> Tạo kịch bản
             </Button>
-            <Button size="sm" variant="outline" asChild>
+            <Button size="sm" variant="outline" asChild className="shrink-0">
               <a href="https://youtu.be/WYDuxvwrNSs?si=DF1Jd7iLmh-o0RG8" target="_blank" rel="noopener noreferrer">
                 <BookOpen className="h-4 w-4 mr-1" /> Hướng dẫn
               </a>
@@ -789,11 +789,11 @@ export function EmailAutomationTab() {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 sm:px-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
-            <TabsTrigger value="scenarios">Kịch bản ({automations?.length || 0})</TabsTrigger>
-            <TabsTrigger value="logs">Lịch sử gửi ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</TabsTrigger>
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="scenarios" className="flex-1 sm:flex-none">Kịch bản ({automations?.length || 0})</TabsTrigger>
+            <TabsTrigger value="logs" className="flex-1 sm:flex-none">Lịch sử gửi ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="scenarios" className="mt-4 space-y-6">
