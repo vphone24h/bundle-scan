@@ -375,7 +375,7 @@ export default function UniversalStoreTemplate({
       <CTVDashboard
         tenantId={tenantId}
         storeName={displayStoreName}
-        storeUrl={window.location.origin + (storeId ? `/store/${storeId}` : '/')}
+        storeUrl={window.location.origin + window.location.pathname.split('?')[0].replace(/\/ctv.*/, '')}
         accentColor={accentColor}
         onBack={() => navigateTo('home')}
       />

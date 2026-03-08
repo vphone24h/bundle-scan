@@ -56,21 +56,23 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const [profileSaving, setProfileSaving] = useState(false);
 
   const handleLogout = async () => {
+    // Clear CTV state BEFORE signout
     localStorage.removeItem('ctv_store_mode');
     localStorage.setItem('ctv_just_logged_out', '1');
+    
+    // Remember the current page URL (this IS the store website)
+    // Strip any hash/query to get clean store URL
+    const currentStoreUrl = window.location.origin + window.location.pathname;
+    
     try {
       await authSignOut();
     } catch (e) {
       console.error('SignOut error:', e);
     }
-    // CTV logout → redirect to store website, NOT admin/kho
-    // storeUrl points to the store's landing page (subdomain or /store/xxx)
-    if (storeUrl) {
-      window.location.href = storeUrl;
-    } else {
-      // Fallback: reload current page — SubdomainRouter will show store landing
-      window.location.reload();
-    }
+    
+    // Navigate to the store website — use the current origin since
+    // CTV is already ON the store website (subdomain or /store/xxx)
+    window.location.href = currentStoreUrl;
   };
 
   if (ctvLoading) {
