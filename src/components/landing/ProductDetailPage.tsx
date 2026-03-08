@@ -94,6 +94,7 @@ export function ProductDetailPage({
   // CTA Dialog states
   const [activeDialog, setActiveDialog] = useState<string | null>(null);
   const [showCartDialog, setShowCartDialog] = useState(false);
+  const [showConsultDialog, setShowConsultDialog] = useState(false);
   const cart = useLandingCart();
 
   const [selectedOption1, setSelectedOption1] = useState<string | null>(null);
