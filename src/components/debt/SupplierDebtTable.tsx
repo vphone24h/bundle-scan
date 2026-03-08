@@ -174,6 +174,11 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickF
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <p className="font-semibold text-sm truncate">{debt.entity_name}</p>
+                      {debt.entity_code && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-mono shrink-0">
+                          {debt.entity_code}
+                        </Badge>
+                      )}
                       {getOffsetMatch(debt.entity_code) && (
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-purple-100 text-purple-700 border-purple-200 shrink-0">
                           2 chiều
