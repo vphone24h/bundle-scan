@@ -39,6 +39,9 @@ export function AffiliateSettingsManagement() {
         hold_days: settings.hold_days,
         min_withdrawal_amount: settings.min_withdrawal_amount,
         commission_description: (settings as any).commission_description || '',
+        cookie_tracking_days: (settings as any).cookie_tracking_days ?? 30,
+        default_commission_rate: (settings as any).default_commission_rate ?? 3,
+        default_commission_type: (settings as any).default_commission_type ?? 'percentage',
       });
     }
   }, [settings]);
