@@ -1,6 +1,4 @@
-import { create } from 'zustand';
-
-// We use a simple React context + state approach (no zustand needed)
+// Landing page cart state management
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 export interface CartItem {
