@@ -5172,6 +5172,7 @@ export type Database = {
           default_commission_rate: number
           default_commission_type: string
           f1_commission_rate: number
+          f1_commission_tiers: Json | null
           f1_commission_type: string
           high_commission_rate: number
           high_commission_type: string
@@ -5194,6 +5195,7 @@ export type Database = {
           default_commission_rate?: number
           default_commission_type?: string
           f1_commission_rate?: number
+          f1_commission_tiers?: Json | null
           f1_commission_type?: string
           high_commission_rate?: number
           high_commission_type?: string
@@ -5216,6 +5218,7 @@ export type Database = {
           default_commission_rate?: number
           default_commission_type?: string
           f1_commission_rate?: number
+          f1_commission_tiers?: Json | null
           f1_commission_type?: string
           high_commission_rate?: number
           high_commission_type?: string

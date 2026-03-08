@@ -1,0 +1,1 @@
+ALTER TABLE public.shop_ctv_settings ADD COLUMN IF NOT EXISTS f1_commission_tiers jsonb DEFAULT '[]'::jsonb;
