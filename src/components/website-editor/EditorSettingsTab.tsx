@@ -8,6 +8,7 @@ import { CTAButtonsEditor } from '@/components/admin/ProductDetailSectionManager
 import { NewsPageSectionManager } from '@/components/admin/NewsPageSectionManager';
 import { NavMenuEditor } from '@/components/website-editor/NavMenuEditor';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
+import { VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -301,7 +302,18 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Tài khoản ngân hàng</p>
             <div className="space-y-1.5">
               <Label className="text-xs">Ngân hàng</Label>
-              <Input value={formData.payment_bank_name || ''} onChange={e => onChange('payment_bank_name', e.target.value)} placeholder="Vietcombank, MB Bank..." />
+              <Select value={formData.payment_bank_name || ''} onValueChange={v => onChange('payment_bank_name', v)}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Chọn ngân hàng..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {VIETNAMESE_BANKS.map(bank => (
+                    <SelectItem key={bank.code} value={bank.code}>
+                      {bank.name} ({bank.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
