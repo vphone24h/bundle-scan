@@ -105,7 +105,7 @@ export function ContactFormDialog({
             </div>
             <div>
               <Label className="text-sm">Email {requireEmail && <span className="text-destructive">*</span>}</Label>
-              <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập email" type="email" inputMode="email" className="h-11 text-base" />
+              <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập đúng email để nhận thông tin đơn hàng" type="email" inputMode="email" className="h-11 text-base" />
             </div>
             <div>
               <Label className="text-sm">Chi nhánh <span className="text-destructive">*</span></Label>
