@@ -32,14 +32,23 @@ import {
 import { EmailTemplatePickerDialog, EmailTemplatePreset, ORDER_EMAIL_PRESETS } from './EmailTemplatePickerDialog';
 
 const TRIGGER_TYPES = [
+  // Nhóm mua hàng
   { value: 'days_after_purchase', label: 'Sau đúng X ngày mua hàng' },
   { value: 'days_after_purchase_onwards', label: 'Sau X ngày mua hàng trở đi' },
   { value: 'days_before_warranty_expires', label: 'Trước khi hết bảo hành (ngày)' },
   { value: 'days_inactive', label: 'Không mua hàng trong (ngày)' },
+  // Nhóm đơn hàng website
   { value: 'on_order_confirmation', label: 'Khi đặt hàng' },
   { value: 'on_order_confirmed', label: 'Khi đơn đã xác nhận' },
   { value: 'on_order_shipping', label: 'Khi giao hàng' },
   { value: 'on_order_warranty', label: 'Khi gửi bảo hành' },
+  { value: 'on_order_cancelled', label: 'Khi đơn hàng bị huỷ' },
+  // Nhóm chăm sóc khách hàng
+  { value: 'customer_birthday', label: 'Sinh nhật khách hàng' },
+  { value: 'customer_registration_anniversary', label: 'Kỷ niệm ngày đăng ký' },
+  { value: 'after_customer_review', label: 'Sau khi khách đánh giá' },
+  { value: 'after_voucher_received', label: 'Sau khi khách nhận voucher' },
+  { value: 'days_before_care_schedule', label: 'Trước ngày hẹn chăm sóc (ngày)' },
 ];
 
 const BLOCK_TYPES = [
@@ -419,10 +428,12 @@ function AutomationFormDialog({
                     </SelectContent>
                   </Select>
                 </div>
+                {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled'].includes(triggerType) && (
                 <div>
-                  <Label>Số ngày</Label>
+                  <Label>{triggerType === 'customer_registration_anniversary' ? 'Số năm' : 'Số ngày'}</Label>
                   <Input type="number" min={1} value={triggerDays} onChange={e => setTriggerDays(Number(e.target.value))} />
                 </div>
+                )}
               </div>
             )}
             <div>
@@ -777,7 +788,10 @@ export function EmailAutomationTab() {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mt-0.5">
-                            {TRIGGER_TYPES.find(t => t.value === a.trigger_type)?.label || a.trigger_type}: <strong>{a.trigger_days} ngày</strong>
+                            {TRIGGER_TYPES.find(t => t.value === a.trigger_type)?.label || a.trigger_type}
+                            {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled'].includes(a.trigger_type) && (
+                              <>: <strong>{a.trigger_type === 'customer_registration_anniversary' ? `${a.trigger_days} năm` : `${a.trigger_days} ngày`}</strong></>
+                            )}
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">Subject: {a.subject}</p>
                         </div>
