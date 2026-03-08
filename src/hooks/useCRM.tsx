@@ -115,18 +115,21 @@
  
  export function useCustomerTags() {
    const { user } = useAuth();
-   return useQuery({
-     queryKey: ['customer-tags', user?.id],
-     queryFn: async () => {
-       const { data, error } = await supabase
-         .from('customer_tags')
-         .select('*')
-         .order('name');
-       if (error) throw error;
-       return data as CustomerTag[];
-     },
-     enabled: !!user?.id,
-   });
+    return useQuery({
+      queryKey: ['customer-tags', user?.id],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from('customer_tags')
+          .select('*')
+          .order('name');
+        if (error) throw error;
+        return data as CustomerTag[];
+      },
+      enabled: !!user?.id,
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 30,
+      refetchOnWindowFocus: false,
+    });
  }
  
  export function useCreateCustomerTag() {
