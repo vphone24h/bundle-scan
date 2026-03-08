@@ -10,17 +10,17 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 
-// ── Flat-column template (one field per column) ──
+// ── Flat-column template (one field per column, no orderId – auto-generated) ──
 const FLAT_HEADERS = [
-  'Mã đơn hàng', 'IMEI', 'Tên khách hàng', 'SĐT', 'Email', 'Địa chỉ',
-  'Tên sản phẩm', 'Phiên bản', 'Giá bán', 'Ghi chú', 'Ngày đặt (dd/mm/yyyy)',
+  'IMEI', 'Tên khách hàng', 'SĐT', 'Email', 'Địa chỉ',
+  'Tên sản phẩm', 'Giá bán', 'Ghi chú', 'Ngày bán (dd/mm/yyyy)',
   'Trạng thái', 'Gói bảo hành',
 ];
 
 function downloadTemplate() {
   const sample = [
-    'DH001', '123456789012345', 'Nguyễn Văn A', '0901234567',
-    'a@email.com', '123 Đường ABC, Q9', 'iPhone 15 Pro Max', '256GB Đen',
+    '123456789012345', 'Nguyễn Văn A', '0901234567',
+    'a@email.com', '123 Đường ABC, Q9', 'iPhone 15 Pro Max 256GB Đen',
     29990000, 'Máy mới nguyên seal', '01/06/2024', 'Hoàn tất', '12 tháng',
   ];
   const ws = XLSX.utils.aoa_to_sheet([FLAT_HEADERS, sample]);
@@ -30,15 +30,16 @@ function downloadTemplate() {
   XLSX.writeFile(wb, 'mau-nhap-don-hang-cu.xlsx');
 }
 
-// Detect format: if header row matches flat format (>=12 cols, no newlines) → flat
+// Detect format: if header row matches flat format (no newlines, starts with IMEI) → flat
 function isFlat(headerRow: any[]): boolean {
-  if (!headerRow || headerRow.length < 10) return false;
+  if (!headerRow || headerRow.length < 8) return false;
   const h0 = String(headerRow[0] || '').trim().toLowerCase();
-  // Old format has newlines in headers; flat format is clean single-value
   return !String(headerRow[0] || '').includes('\n') && (
-    h0.includes('mã đơn') || h0.includes('ma don') || h0 === 'mã đơn hàng'
+    h0 === 'imei' || h0.includes('mã đơn') || h0.includes('ma don')
   );
 }
+
+let autoOrderCounter = 0;
 const STORAGE_KEY = 'import-historical-orders-state';
 
 interface PersistedState {
@@ -91,18 +92,16 @@ interface ImportResult {
 
 function parseFlatRow(row: any[]): ParsedOrder | null {
   try {
-    const orderId = String(row[0] || '').trim();
-    if (!orderId) return null;
-    const imei = String(row[1] || '').trim();
-    const customerName = String(row[2] || '').trim() || 'Khách lẻ';
-    const customerPhone = String(row[3] || '').replace(/\s/g, '');
-    const customerEmail = String(row[4] || '').trim();
-    const customerAddress = String(row[5] || '').trim();
-    const productName = String(row[6] || '').trim() || 'Sản phẩm';
-    const productVariant = String(row[7] || '').trim();
+    // New flat format: IMEI, Tên KH, SĐT, Email, Địa chỉ, Tên SP, Giá bán, Ghi chú, Ngày bán, Trạng thái, Gói BH
+    const imei = String(row[0] || '').trim();
+    const customerName = String(row[1] || '').trim() || 'Khách lẻ';
+    const customerPhone = String(row[2] || '').replace(/\s/g, '');
+    const customerEmail = String(row[3] || '').trim();
+    const customerAddress = String(row[4] || '').trim();
+    const productName = String(row[5] || '').trim() || 'Sản phẩm';
 
     let salePrice = 0;
-    const priceVal = row[8];
+    const priceVal = row[6];
     if (typeof priceVal === 'number') {
       salePrice = priceVal;
     } else if (priceVal) {
@@ -110,15 +109,21 @@ function parseFlatRow(row: any[]): ParsedOrder | null {
       if (parsed > 0) salePrice = parsed;
     }
 
-    const note = String(row[9] || '').trim();
-    const orderDate = String(row[10] || '').trim();
-    const status = String(row[11] || '').trim();
-    const warranty = String(row[12] || '').trim();
+    const note = String(row[7] || '').trim();
+    const orderDate = String(row[8] || '').trim();
+    const status = String(row[9] || '').trim();
+    const warranty = String(row[10] || '').trim();
+
+    // Must have at least product name or IMEI
+    if (!productName && !imei) return null;
+
+    // Auto-generate orderId
+    autoOrderCounter++;
+    const orderId = `AUTO-${autoOrderCounter.toString().padStart(6, '0')}`;
 
     return {
       orderId, imei, customerName, customerPhone, customerEmail, customerAddress,
-      productName: productName + (productVariant ? ` - ${productVariant}` : ''),
-      productVariant, salePrice, note, orderDate, status,
+      productName, productVariant: '', salePrice, note, orderDate, status,
       warranty: warranty === 'N/A' ? '' : warranty,
     };
   } catch {
@@ -258,10 +263,11 @@ export function ImportHistoricalOrdersSection() {
 
       console.log(`[FORMAT] ${useFlat ? 'FLAT' : 'LEGACY'}, startRow=${startRow}, totalRows=${rawData.length}`);
 
+      autoOrderCounter = 0; // Reset counter for each file
       const orders: ParsedOrder[] = [];
       for (let i = startRow; i < rawData.length; i++) {
         const row = rawData[i];
-        if (!row || row.length < (useFlat ? 6 : 7)) continue;
+        if (!row || row.length < (useFlat ? 5 : 7)) continue;
         const parsed = useFlat ? parseFlatRow(row) : parseVPhoneRow(row);
         if (parsed) orders.push(parsed);
       }
