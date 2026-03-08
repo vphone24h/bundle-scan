@@ -5165,12 +5165,17 @@ export type Database = {
         Row: {
           allow_self_register: boolean
           auto_approve_ctv: boolean
+          commission_threshold: number
           cookie_tracking_days: number
           created_at: string
           default_commission_rate: number
           default_commission_type: string
+          high_commission_rate: number
+          high_commission_type: string
           id: string
           is_enabled: boolean
+          low_commission_rate: number
+          low_commission_type: string
           min_withdrawal_amount: number
           program_description: string | null
           tenant_id: string
@@ -5179,12 +5184,17 @@ export type Database = {
         Insert: {
           allow_self_register?: boolean
           auto_approve_ctv?: boolean
+          commission_threshold?: number
           cookie_tracking_days?: number
           created_at?: string
           default_commission_rate?: number
           default_commission_type?: string
+          high_commission_rate?: number
+          high_commission_type?: string
           id?: string
           is_enabled?: boolean
+          low_commission_rate?: number
+          low_commission_type?: string
           min_withdrawal_amount?: number
           program_description?: string | null
           tenant_id: string
@@ -5193,12 +5203,17 @@ export type Database = {
         Update: {
           allow_self_register?: boolean
           auto_approve_ctv?: boolean
+          commission_threshold?: number
           cookie_tracking_days?: number
           created_at?: string
           default_commission_rate?: number
           default_commission_type?: string
+          high_commission_rate?: number
+          high_commission_type?: string
           id?: string
           is_enabled?: boolean
+          low_commission_rate?: number
+          low_commission_type?: string
           min_withdrawal_amount?: number
           program_description?: string | null
           tenant_id?: string
