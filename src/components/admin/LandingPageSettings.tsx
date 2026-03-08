@@ -931,6 +931,13 @@ export function LandingPageSettings() {
         zalo_app_secret: (settings as any).zalo_app_secret || '',
         zalo_refresh_token: (settings as any).zalo_refresh_token || '',
         zalo_zns_template_id: (settings as any).zalo_zns_template_id || '',
+        payment_cod_enabled: (settings as any).payment_cod_enabled ?? true,
+        payment_transfer_enabled: (settings as any).payment_transfer_enabled ?? false,
+        payment_bank_name: (settings as any).payment_bank_name || '',
+        payment_account_number: (settings as any).payment_account_number || '',
+        payment_account_holder: (settings as any).payment_account_holder || '',
+        payment_confirm_zalo_url: (settings as any).payment_confirm_zalo_url || '',
+        payment_confirm_messenger_url: (settings as any).payment_confirm_messenger_url || '',
       } as any);
     } else if (tenant) {
       setFormData(prev => ({
