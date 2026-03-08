@@ -624,6 +624,16 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                 })()}
               </CardContent>
             </Card>
+
+            {/* Logout Button */}
+            <Button
+              variant="outline"
+              className="w-full mt-4 text-destructive border-destructive/30 hover:bg-destructive/5"
+              onClick={handleLogout}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Đăng xuất
+            </Button>
           </TabsContent>
         </Tabs>
       </div>
