@@ -212,10 +212,10 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const canWithdraw = ctv.available_balance >= (settings?.min_withdrawal_amount || 200000);
   const products = landingProducts?.products || [];
 
-  // Calculate commission for a product
+  // Calculate commission for a product using tiered system
   const getProductCommission = (product: any) => {
     const price = product.sale_price || product.price || 0;
-    // 1. Check product-specific commission
+    // 1. Check product-specific commission override
     const productRule = productCommissions?.find(
       (c: any) => c.target_type === 'product' && c.target_id === product.id
     );
@@ -224,7 +224,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
         ? Math.round(price * productRule.commission_value / 100)
         : productRule.commission_value;
     }
-    // 2. Check category-specific commission
+    // 2. Check category-specific commission override
     if (product.category_id) {
       const catRule = productCommissions?.find(
         (c: any) => c.target_type === 'category' && c.target_id === product.category_id
@@ -235,7 +235,35 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
           : catRule.commission_value;
       }
     }
-    // 3. Fall back to CTV's own commission rate
+    // 3. Use tiered commission from settings (commission_tiers)
+    const tiers = (settings as any)?.commission_tiers;
+    if (tiers && Array.isArray(tiers) && tiers.length > 0) {
+      // Tiers are sorted by threshold ascending, last tier has threshold = null (catch-all for highest)
+      let matchedTier = tiers[0]; // default to first tier
+      for (const tier of tiers) {
+        if (tier.threshold === null) {
+          // This is the "above all thresholds" tier
+          matchedTier = tier;
+          break;
+        }
+        if (price <= tier.threshold) {
+          matchedTier = tier;
+          break;
+        }
+        matchedTier = tier; // keep updating to the highest matched
+      }
+      // If price exceeds all non-null thresholds, use the last tier (null threshold)
+      const lastTier = tiers.find((t: any) => t.threshold === null);
+      if (lastTier && !tiers.some((t: any) => t.threshold !== null && price <= t.threshold)) {
+        matchedTier = lastTier;
+      }
+      if (matchedTier) {
+        return matchedTier.type === 'percentage'
+          ? Math.round(price * matchedTier.rate / 100)
+          : matchedTier.rate;
+      }
+    }
+    // 4. Fall back to CTV's flat rate
     const rate = ctv.commission_rate || settings?.default_commission_rate || 0;
     const type = ctv.commission_type || settings?.default_commission_type || 'percentage';
     if (type === 'percentage') {
