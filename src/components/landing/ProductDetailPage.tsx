@@ -548,7 +548,7 @@ export function ProductDetailPage({
                 case 'description':
                   if (!product.description) return null;
                   return (
-                    <div key="description" className="border rounded-lg overflow-hidden">
+                    <div key="description" id="product-description" data-section="description" className="border rounded-lg overflow-hidden">
                       <div className="px-3 py-2.5 font-semibold text-sm bg-gray-100">
                         📝 MÔ TẢ SẢN PHẨM
                       </div>
@@ -559,7 +559,7 @@ export function ProductDetailPage({
                 case 'relatedProducts':
                   if (relatedProducts.length === 0) return null;
                   return (
-                    <div key="relatedProducts">
+                    <div key="relatedProducts" id="related-products" data-section="relatedProducts">
                       <h3 className="font-bold text-base mb-3">📦 Sản phẩm liên quan</h3>
                       <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
                         {relatedProducts.slice(0, 10).map(rp => (
@@ -991,10 +991,30 @@ export function ProductDetailPage({
               );
 
             case 'compare':
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
+                  style={{ backgroundColor: primaryColor, color: '#fff', borderColor: primaryColor }}
+                  onClick={() => {
+                    if (btn.customUrl) { window.open(btn.customUrl, '_blank'); return; }
+                    // Scroll to related products section for comparison
+                    const el = document.getElementById('related-products') || document.querySelector('[data-section="relatedProducts"]');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    else window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                  }}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+
             case 'view_detail':
               return (
                 <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
-                  onClick={() => { if (btn.customUrl) window.open(btn.customUrl, '_blank'); else window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+                  onClick={() => {
+                    if (btn.customUrl) { window.open(btn.customUrl, '_blank'); return; }
+                    // Scroll to description/specs section
+                    const el = document.getElementById('product-description') || document.querySelector('[data-section="description"]');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    else window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}>
                   {btn.icon} {btn.label}
                 </Button>
               );
