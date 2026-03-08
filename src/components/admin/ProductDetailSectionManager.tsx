@@ -308,6 +308,7 @@ export function getDefaultCTAButtons(templateId?: string): CTAButtonItem[] {
     { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
     { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
   ];
+}
 
 const EXTRA_LAYOUT_PRESETS = SYSTEM_PAGES
   .filter(p => !['home', 'products', 'news', 'warranty'].includes(p.id))
