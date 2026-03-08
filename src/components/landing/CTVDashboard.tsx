@@ -427,6 +427,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                   <div className="space-y-2">
                     {products.map((p: any) => {
                       const commission = getProductCommission(p);
+                      const f1Commission = getF1Commission(p);
                       return (
                         <div key={p.id} className="flex items-center gap-3 p-3 border rounded-lg">
                           {p.image_url && (
@@ -444,7 +445,13 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                             {commission > 0 && (
                               <p className="text-xs font-medium mt-0.5" style={{ color: accentColor || '#16a34a' }}>
                                 <Coins className="h-3 w-3 inline mr-0.5" />
-                                Hoa hồng: {formatNumber(commission)}đ
+                                Bán trực tiếp: {formatNumber(commission)}đ
+                              </p>
+                            )}
+                            {f1Commission > 0 && (
+                              <p className="text-xs font-medium mt-0.5 text-blue-600">
+                                <Users className="h-3 w-3 inline mr-0.5" />
+                                F1 bán: {formatNumber(f1Commission)}đ
                               </p>
                             )}
                           </div>
