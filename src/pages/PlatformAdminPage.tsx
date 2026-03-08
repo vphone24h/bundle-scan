@@ -13,6 +13,7 @@ import { PlatformAdvertisementsManagement } from '@/components/platform/Platform
 import { AdGateManagement } from '@/components/platform/AdGateManagement';
 import { TaxPolicyArticleEditor } from '@/components/admin/TaxPolicyArticleEditor';
 import { EmailHistoryTable } from '@/components/platform/EmailHistoryTable';
+import { PlatformEmailAutomationManagement } from '@/components/platform/PlatformEmailAutomationManagement';
 import { CustomDomainsManagement } from '@/components/platform/CustomDomainsManagement';
 import { PlatformArticlesManagement } from '@/components/platform/PlatformArticlesManagement';
 import { WelcomeEmailConfig } from '@/components/platform/WelcomeEmailConfig';
