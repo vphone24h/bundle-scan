@@ -891,13 +891,19 @@ export function EmailAutomationTab() {
             {/* === Email đơn hàng mặc định === */}
             <OrderEmailSection automations={automations || []} tenantId={tenant.id} onEdit={handleEdit} onToggle={handleToggle} onSendTest={handleSendTest} onDelete={handleDelete} onCreateFromPreset={(preset) => { setEditItem(null); setPrefilledTemplate(preset); setFormOpen(true); }} />
 
+            {/* === Các ngành nghề khác === */}
+            {INDUSTRY_SECTIONS.map(section => (
+              <IndustryEmailSection key={section.key} section={section} automations={automations || []} tenantId={tenant.id} onEdit={handleEdit} onToggle={handleToggle} onSendTest={handleSendTest} onDelete={handleDelete} onCreateFromPreset={(preset) => { setEditItem(null); setPrefilledTemplate(preset); setFormOpen(true); }} />
+            ))}
+
             {/* === Kịch bản tự động === */}
             <div>
               <h3 className="text-sm font-semibold text-muted-foreground mb-3">⏱️ Kịch bản chăm sóc tự động</h3>
               {isLoading ? (
                 <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
               ) : (() => {
-                const automationScenarios = (automations || []).filter(a => !a.trigger_type.startsWith('on_order_'));
+                const allIndustryTriggers = INDUSTRY_SECTIONS.flatMap(s => s.triggers.map(t => t.value));
+                const automationScenarios = (automations || []).filter(a => !a.trigger_type.startsWith('on_order_') && !allIndustryTriggers.includes(a.trigger_type));
                 return !automationScenarios.length ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Mail className="h-8 w-8 mx-auto mb-2 opacity-40" />
