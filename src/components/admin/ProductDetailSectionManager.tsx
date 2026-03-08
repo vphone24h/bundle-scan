@@ -16,19 +16,73 @@ export interface CTAButtonItem {
   id: string;
   label: string;
   icon: string;
-  action: 'order' | 'installment' | 'call' | 'zalo' | 'facebook' | 'booking' | 'custom_link';
+  action: string; // flexible action string
   enabled: boolean;
   customUrl?: string;
 }
 
-const CTA_ACTION_OPTIONS: { value: CTAButtonItem['action']; label: string; defaultIcon: string; defaultLabel: string }[] = [
-  { value: 'order', label: 'Đặt mua / Mua ngay', defaultIcon: '🛒', defaultLabel: 'Đặt mua' },
-  { value: 'installment', label: 'Trả góp', defaultIcon: '💳', defaultLabel: 'Trả góp' },
-  { value: 'call', label: 'Gọi điện', defaultIcon: '📞', defaultLabel: 'Gọi' },
-  { value: 'zalo', label: 'Tư vấn qua Zalo', defaultIcon: '💬', defaultLabel: 'Zalo' },
-  { value: 'facebook', label: 'Tư vấn qua Facebook', defaultIcon: '💬', defaultLabel: 'Facebook' },
-  { value: 'booking', label: 'Đặt lịch', defaultIcon: '📅', defaultLabel: 'Đặt lịch' },
-  { value: 'custom_link', label: 'Link tùy chỉnh', defaultIcon: '🔗', defaultLabel: 'Liên hệ' },
+export interface CTAActionOption {
+  value: string;
+  label: string;
+  defaultIcon: string;
+  defaultLabel: string;
+  category: string;
+}
+
+export const CTA_ACTION_OPTIONS: CTAActionOption[] = [
+  // Mua sắm
+  { value: 'order', label: 'Đặt mua / Mua ngay', defaultIcon: '🛒', defaultLabel: 'Mua ngay', category: 'Mua sắm' },
+  { value: 'add_to_cart', label: 'Thêm vào giỏ hàng', defaultIcon: '🛒', defaultLabel: 'Thêm vào giỏ', category: 'Mua sắm' },
+  { value: 'pre_order', label: 'Đặt trước', defaultIcon: '📋', defaultLabel: 'Đặt trước', category: 'Mua sắm' },
+  { value: 'notify_stock', label: 'Báo khi có hàng', defaultIcon: '🔔', defaultLabel: 'Báo khi có hàng', category: 'Mua sắm' },
+  { value: 'best_price', label: 'Xem giá tốt nhất', defaultIcon: '💰', defaultLabel: 'Giá tốt nhất', category: 'Mua sắm' },
+  { value: 'get_quote', label: 'Nhận báo giá', defaultIcon: '📄', defaultLabel: 'Nhận báo giá', category: 'Mua sắm' },
+  { value: 'compare', label: 'So sánh sản phẩm', defaultIcon: '⚖️', defaultLabel: 'So sánh', category: 'Mua sắm' },
+  { value: 'view_detail', label: 'Xem chi tiết', defaultIcon: '🔍', defaultLabel: 'Xem chi tiết', category: 'Mua sắm' },
+  { value: 'track_order', label: 'Tra cứu đơn hàng', defaultIcon: '📦', defaultLabel: 'Tra cứu đơn', category: 'Mua sắm' },
+
+  // Tài chính
+  { value: 'installment', label: 'Trả góp', defaultIcon: '💳', defaultLabel: 'Trả góp', category: 'Tài chính' },
+  { value: 'installment_0', label: 'Trả góp 0%', defaultIcon: '💳', defaultLabel: 'Trả góp 0%', category: 'Tài chính' },
+
+  // Tư vấn & Liên hệ
+  { value: 'call', label: 'Gọi ngay', defaultIcon: '📞', defaultLabel: 'Gọi ngay', category: 'Tư vấn' },
+  { value: 'consult_now', label: 'Tư vấn ngay', defaultIcon: '💬', defaultLabel: 'Tư vấn ngay', category: 'Tư vấn' },
+  { value: 'zalo', label: 'Tư vấn Zalo', defaultIcon: '💬', defaultLabel: 'Tư vấn Zalo', category: 'Tư vấn' },
+  { value: 'facebook', label: 'Chat Facebook', defaultIcon: '💬', defaultLabel: 'Chat Facebook', category: 'Tư vấn' },
+  { value: 'support', label: 'Yêu cầu hỗ trợ', defaultIcon: '🛟', defaultLabel: 'Yêu cầu hỗ trợ', category: 'Tư vấn' },
+  { value: 'send_request', label: 'Gửi yêu cầu', defaultIcon: '📩', defaultLabel: 'Gửi yêu cầu', category: 'Tư vấn' },
+
+  // Đặt lịch
+  { value: 'booking', label: 'Đặt lịch ngay', defaultIcon: '📅', defaultLabel: 'Đặt lịch ngay', category: 'Đặt lịch' },
+  { value: 'booking_consult', label: 'Đặt lịch tư vấn', defaultIcon: '📅', defaultLabel: 'Đặt lịch tư vấn', category: 'Đặt lịch' },
+  { value: 'booking_repair', label: 'Đặt lịch sửa chữa', defaultIcon: '🔧', defaultLabel: 'Đặt lịch sửa', category: 'Đặt lịch' },
+  { value: 'booking_beauty', label: 'Đặt lịch làm đẹp', defaultIcon: '💅', defaultLabel: 'Đặt lịch làm đẹp', category: 'Đặt lịch' },
+  { value: 'booking_clinic', label: 'Đặt lịch khám', defaultIcon: '🏥', defaultLabel: 'Đặt lịch khám', category: 'Đặt lịch' },
+  { value: 'booking_store', label: 'Đặt lịch tại cửa hàng', defaultIcon: '🏪', defaultLabel: 'Đặt lịch tại CH', category: 'Đặt lịch' },
+
+  // Ẩm thực
+  { value: 'order_food', label: 'Đặt món ngay', defaultIcon: '🍽️', defaultLabel: 'Đặt món ngay', category: 'Ẩm thực' },
+  { value: 'book_table', label: 'Đặt bàn', defaultIcon: '🪑', defaultLabel: 'Đặt bàn', category: 'Ẩm thực' },
+  { value: 'delivery', label: 'Giao tận nơi', defaultIcon: '🚚', defaultLabel: 'Giao tận nơi', category: 'Ẩm thực' },
+  { value: 'view_menu', label: 'Xem menu', defaultIcon: '📋', defaultLabel: 'Xem menu', category: 'Ẩm thực' },
+  { value: 'book_party', label: 'Đặt tiệc', defaultIcon: '🎉', defaultLabel: 'Đặt tiệc', category: 'Ẩm thực' },
+
+  // Ưu đãi & Khuyến mãi
+  { value: 'get_offer', label: 'Nhận ưu đãi', defaultIcon: '🎁', defaultLabel: 'Nhận ưu đãi', category: 'Ưu đãi' },
+  { value: 'get_coupon', label: 'Nhận mã giảm giá', defaultIcon: '🎫', defaultLabel: 'Nhận mã giảm giá', category: 'Ưu đãi' },
+  { value: 'today_offer', label: 'Xem ưu đãi hôm nay', defaultIcon: '🔥', defaultLabel: 'Ưu đãi hôm nay', category: 'Ưu đãi' },
+  { value: 'today_gift', label: 'Quà tặng hôm nay', defaultIcon: '🎁', defaultLabel: 'Quà tặng hôm nay', category: 'Ưu đãi' },
+  { value: 'hot_deal', label: 'Xem deal hot', defaultIcon: '⚡', defaultLabel: 'Deal hot', category: 'Ưu đãi' },
+  { value: 'join_member', label: 'Tham gia thành viên', defaultIcon: '👤', defaultLabel: 'Tham gia thành viên', category: 'Ưu đãi' },
+
+  // Đánh giá & Bảo hành
+  { value: 'view_reviews', label: 'Xem đánh giá', defaultIcon: '⭐', defaultLabel: 'Xem đánh giá', category: 'Đánh giá' },
+  { value: 'write_review', label: 'Đánh giá sản phẩm', defaultIcon: '✍️', defaultLabel: 'Viết đánh giá', category: 'Đánh giá' },
+  { value: 'check_warranty', label: 'Kiểm tra bảo hành', defaultIcon: '🛡️', defaultLabel: 'Kiểm tra bảo hành', category: 'Đánh giá' },
+
+  // Khác
+  { value: 'custom_link', label: 'Link tùy chỉnh', defaultIcon: '🔗', defaultLabel: 'Liên hệ', category: 'Khác' },
 ];
 
 export function getDefaultCTAButtons(templateId?: string): CTAButtonItem[] {
