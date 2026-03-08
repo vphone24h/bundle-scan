@@ -200,11 +200,48 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
 
   const branches: BranchInfo[] = landingData?.branches || [];
 
+  // Skeleton for lazy template loading
+  const templateFallback = (
+    <div className="min-h-screen bg-white">
+      <div className="h-14 bg-muted/30 animate-pulse" />
+      <div className="h-48 bg-muted/20 animate-pulse" />
+      <div className="p-4 space-y-3">
+        <div className="h-6 w-40 bg-muted/30 rounded animate-pulse" />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="h-32 bg-muted/20 rounded-lg animate-pulse" />
+          <div className="h-32 bg-muted/20 rounded-lg animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+
   // Apple Landing uses its own standalone template
   if (template === 'apple_landing') {
     return (
       <LandingCartProvider>
-        <AppleStyleLandingTemplate
+        <Suspense fallback={templateFallback}>
+          <AppleStyleLandingTemplate
+            settings={settings}
+            tenant={tenant}
+            tenantId={tenantId}
+            storeId={storeId}
+            branches={branches}
+            productsData={productsData}
+            articlesData={articlesData}
+            searchParams={searchParams}
+            setSearchParams={setSearchParams}
+            queryClient={queryClient}
+          />
+        </Suspense>
+      </LandingCartProvider>
+    );
+  }
+
+  // All other templates use UniversalStoreTemplate
+  return (
+    <LandingCartProvider>
+      <Suspense fallback={templateFallback}>
+        <UniversalStoreTemplate
           settings={settings}
           tenant={tenant}
           tenantId={tenantId}
@@ -215,27 +252,9 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
           searchParams={searchParams}
           setSearchParams={setSearchParams}
           queryClient={queryClient}
+          templateId={template}
         />
-      </LandingCartProvider>
-    );
-  }
-
-  // All other templates use UniversalStoreTemplate
-  return (
-    <LandingCartProvider>
-      <UniversalStoreTemplate
-        settings={settings}
-        tenant={tenant}
-        tenantId={tenantId}
-        storeId={storeId}
-        branches={branches}
-        productsData={productsData}
-        articlesData={articlesData}
-        searchParams={searchParams}
-        setSearchParams={setSearchParams}
-        queryClient={queryClient}
-        templateId={template}
-      />
+      </Suspense>
     </LandingCartProvider>
   );
 }
