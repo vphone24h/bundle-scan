@@ -131,6 +131,40 @@ export default function ImportHistoryPage() {
   const [receiptPage, setReceiptPage] = useState(1);
   const [receiptPageSize, setReceiptPageSize] = useState(15);
 
+  // Search & filter states (moved up for use in receipts query)
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('_all_');
+  const [supplierFilter, setSupplierFilter] = useState('_all_');
+  const [statusFilter, setStatusFilter] = useState('_all_');
+  const [branchFilter, setBranchFilter] = useState('_all_');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Debounced search for server queries
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Reset pages on filter change
+  useEffect(() => {
+    setReceiptPage(1);
+    setProductPage(1);
+  }, [debouncedSearch, supplierFilter, dateFrom, dateTo, branchFilter, categoryFilter, statusFilter]);
+
+  // Server-side receipts with full filters
+  const { data: receipts, isLoading: receiptsLoading, totalCount: receiptsTotalCount } = useImportReceipts({
+    search: debouncedSearch || undefined,
+    supplierId: supplierFilter !== '_all_' ? supplierFilter : undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    branchId: branchFilter !== '_all_' ? branchFilter : undefined,
+    page: receiptPage,
+    pageSize: receiptPageSize,
+  });
+
   // Server-side pagination state for products tab
   const [productPage, setProductPage] = useState(1);
   const [productPageSize, setProductPageSize] = useState(100);
@@ -181,17 +215,6 @@ export default function ImportHistoryPage() {
     if (!createdBy) return '-';
     return staffNameMap.get(createdBy) || '-';
   };
-
-  
-  // Search & filter states
-  const [searchTerm, setSearchTerm] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('_all_');
-  const [supplierFilter, setSupplierFilter] = useState('_all_');
-  const [statusFilter, setStatusFilter] = useState('_all_');
-  const [branchFilter, setBranchFilter] = useState('_all_');
-  const [showFilters, setShowFilters] = useState(false);
 
   // Server-side filtered products query
   const productServerFilters = useMemo(() => ({
