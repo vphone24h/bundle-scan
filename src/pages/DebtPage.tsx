@@ -16,6 +16,7 @@ import { DebtSettingsDialog } from '@/components/debt/DebtSettingsDialog';
 import { DebtOffsetScanDialog } from '@/components/debt/DebtOffsetScanDialog';
 import { DebtDueListDialog } from '@/components/debt/DebtDueListDialog';
 import { useCustomerDebts, useSupplierDebts } from '@/hooks/useDebt';
+import { useDebtOffsetMatches } from '@/hooks/useDebtOffset';
 import { useDebtTags } from '@/hooks/useDebtTags';
 import { useDebtSettings } from '@/hooks/useDebtSettings';
 import { useBranches } from '@/hooks/useBranches';
