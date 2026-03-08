@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, UserPlus, LogIn } from 'lucide-react';
+import { Loader2, UserPlus, LogIn, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -14,9 +14,11 @@ interface CTVAuthDialogProps {
   storeName: string;
   accentColor?: string;
   onSuccess: () => void;
+  /** Pre-filled referrer code from ?ref= URL param — read-only */
+  referrerCode?: string | null;
 }
 
-export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentColor, onSuccess }: CTVAuthDialogProps) {
+export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentColor, onSuccess, referrerCode }: CTVAuthDialogProps) {
   const [mode, setMode] = useState<'login' | 'register'>('register');
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: '', password: '', full_name: '', phone: '' });
@@ -61,6 +63,7 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
           phone: form.phone || undefined,
           tenant_id: tenantId,
           redirect_url: window.location.origin,
+          referrer_code: referrerCode || undefined,
         },
       });
       
@@ -75,7 +78,6 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
           password: form.password,
         });
         if (loginErr) {
-          // If auto-login fails, just show success and ask to login
           toast({ title: 'Đăng ký thành công!', description: 'Vui lòng đăng nhập.' });
           setMode('login');
         } else {
@@ -125,6 +127,19 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
                   placeholder="0912345678"
                 />
               </div>
+              {referrerCode && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5" />
+                    Mã giới thiệu
+                  </Label>
+                  <Input
+                    readOnly
+                    value={referrerCode}
+                    className="font-mono bg-muted/50 text-muted-foreground"
+                  />
+                </div>
+              )}
             </>
           )}
 

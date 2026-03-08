@@ -131,13 +131,17 @@ export default function UniversalStoreTemplate({
   const { data: ctvSettings } = useShopCTVSettings(tenantId);
   const ctvEnabled = !!ctvSettings?.is_enabled;
 
-  // Track CTV ref cookie
+  // Track CTV ref cookie & auto-open registration
+  const refCode = searchParams.get('ref') || null;
   useEffect(() => {
-    const ref = searchParams.get('ref');
-    if (ref && tenantId) {
-      localStorage.setItem(`ctv_ref_${tenantId}`, JSON.stringify({ code: ref, ts: Date.now() }));
+    if (refCode && tenantId) {
+      localStorage.setItem(`ctv_ref_${tenantId}`, JSON.stringify({ code: refCode, ts: Date.now() }));
+      // Auto-open CTV registration dialog if not already logged in as CTV
+      if (!ctvSession && ctvEnabled) {
+        setCtvAuthOpen(true);
+      }
     }
-  }, [searchParams, tenantId]);
+  }, [refCode, tenantId, ctvSession, ctvEnabled]);
 
   // Check CTV auth session
   useEffect(() => {
@@ -475,6 +479,7 @@ export default function UniversalStoreTemplate({
           storeName={displayStoreName}
           accentColor={accentColor}
           onSuccess={() => navigateTo('ctv-dashboard' as PageView)}
+          referrerCode={refCode}
         />
       )}
 

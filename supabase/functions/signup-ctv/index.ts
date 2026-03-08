@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, password, full_name, phone, tenant_id, redirect_url } = await req.json()
+    const { email, password, full_name, phone, tenant_id, redirect_url, referrer_code } = await req.json()
 
     if (!email || !password || !tenant_id) {
       return new Response(
