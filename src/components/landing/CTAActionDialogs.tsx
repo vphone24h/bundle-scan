@@ -171,6 +171,9 @@ export function BookingDialog({
         customer_phone: phone.trim(),
         customer_email: email.trim() || undefined,
         note: bookingNote,
+        action_type: 'booking',
+        action_date: date,
+        action_time: time || undefined,
       });
       setSubmitted(true);
     } catch { toast.error('Đặt lịch thất bại, vui lòng thử lại'); }
