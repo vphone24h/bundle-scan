@@ -6653,6 +6653,19 @@ export type Database = {
             }
             Returns: Json
           }
+      get_customers_paginated: {
+        Args: {
+          _branch_id?: string
+          _crm_status?: string
+          _page?: number
+          _page_size?: number
+          _search?: string
+          _staff_id?: string
+          _tag_id?: string
+          _tier?: string
+        }
+        Returns: Json
+      }
       get_dashboard_aggregates: {
         Args: { p_branch_id?: string; p_tenant_id: string }
         Returns: Json
