@@ -6622,6 +6622,7 @@ export type Database = {
           branch_id: string
           branch_name: string
           days_overdue: number
+          entity_code: string
           entity_id: string
           entity_name: string
           entity_phone: string
@@ -6781,6 +6782,7 @@ export type Database = {
           branch_id: string
           branch_name: string
           days_overdue: number
+          entity_code: string
           entity_id: string
           entity_name: string
           entity_phone: string

@@ -67,8 +67,8 @@ export function DebtOffsetDialog({ open, onOpenChange, match }: DebtOffsetDialog
               <span className="font-medium">{match.customerDebt.entity_name}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">SĐT:</span>
-              <span className="font-medium">{match.matchedPhone}</span>
+              <span className="text-muted-foreground">Mã đối tượng:</span>
+              <span className="font-medium">{match.matchedEntityCode}</span>
             </div>
           </div>
 

@@ -7,11 +7,11 @@ import { useMemo } from 'react';
 export interface DebtOffsetMatch {
   customerDebt: DebtSummary;
   supplierDebt: DebtSummary;
-  matchedPhone: string;
+  matchedEntityCode: string;
 }
 
 /**
- * Detects 2-way debt matches between customers and suppliers by phone number.
+ * Detects 2-way debt matches between customers and suppliers by entity_code.
  * Only matches entities with remaining_amount > 0 on both sides.
  */
 export function useDebtOffsetMatches() {
@@ -23,24 +23,24 @@ export function useDebtOffsetMatches() {
 
     const matches: DebtOffsetMatch[] = [];
 
-    // Build phone -> supplier map
-    const supplierByPhone = new Map<string, DebtSummary>();
+    // Build entity_code -> supplier map
+    const supplierByCode = new Map<string, DebtSummary>();
     for (const sd of supplierDebts) {
-      if (sd.entity_phone && sd.remaining_amount > 0) {
-        supplierByPhone.set(sd.entity_phone.trim(), sd);
+      if (sd.entity_code && sd.remaining_amount > 0) {
+        supplierByCode.set(sd.entity_code.trim(), sd);
       }
     }
 
-    // Find customers with matching phone
+    // Find customers with matching entity_code
     for (const cd of customerDebts) {
-      if (cd.entity_phone && cd.remaining_amount > 0) {
-        const phone = cd.entity_phone.trim();
-        const matchedSupplier = supplierByPhone.get(phone);
+      if (cd.entity_code && cd.remaining_amount > 0) {
+        const code = cd.entity_code.trim();
+        const matchedSupplier = supplierByCode.get(code);
         if (matchedSupplier) {
           matches.push({
             customerDebt: cd,
             supplierDebt: matchedSupplier,
-            matchedPhone: phone,
+            matchedEntityCode: code,
           });
         }
       }
@@ -53,14 +53,14 @@ export function useDebtOffsetMatches() {
 /**
  * Check if a specific entity (customer or supplier) has a 2-way debt match.
  */
-export function useEntityOffsetMatch(entityType: 'customer' | 'supplier', entityPhone: string | null) {
+export function useEntityOffsetMatch(entityType: 'customer' | 'supplier', entityCode: string | null) {
   const matches = useDebtOffsetMatches();
   
   return useMemo(() => {
-    if (!entityPhone || matches.length === 0) return null;
-    const phone = entityPhone.trim();
-    return matches.find(m => m.matchedPhone === phone) || null;
-  }, [matches, entityPhone]);
+    if (!entityCode || matches.length === 0) return null;
+    const code = entityCode.trim();
+    return matches.find(m => m.matchedEntityCode === code) || null;
+  }, [matches, entityCode]);
 }
 
 /**

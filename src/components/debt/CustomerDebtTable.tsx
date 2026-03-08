@@ -78,9 +78,9 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
   const offsetMatches = useDebtOffsetMatches();
   const pagination = usePagination(debts || [], { storageKey: 'customer-debt' });
 
-  const getOffsetMatch = (phone: string | null) => {
-    if (!phone) return null;
-    return offsetMatches.find(m => m.matchedPhone === phone.trim()) || null;
+  const getOffsetMatch = (entityCode: string | null) => {
+    if (!entityCode) return null;
+    return offsetMatches.find(m => m.matchedEntityCode === entityCode.trim()) || null;
   };
 
   const getEntityTags = (entityId: string) => {
@@ -113,7 +113,7 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
           <Hash className="mr-2 h-4 w-4" /> Gắn hashtag
         </DropdownMenuItem>
         {(() => {
-          const match = getOffsetMatch(debt.entity_phone);
+          const match = getOffsetMatch(debt.entity_code);
           if (match) return (
             <DropdownMenuItem onClick={() => { setSelectedOffsetMatch(match); setShowOffset(true); }}>
               <ArrowLeftRight className="mr-2 h-4 w-4" /> Bù trừ công nợ
@@ -181,7 +181,7 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <p className="font-semibold text-sm truncate">{debt.entity_name}</p>
-                      {getOffsetMatch(debt.entity_phone) && (
+                      {getOffsetMatch(debt.entity_code) && (
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-purple-100 text-purple-700 border-purple-200 shrink-0">
                           2 chiều
                         </Badge>
@@ -254,7 +254,7 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
                       <div>
                         <div className="flex items-center gap-1.5">
                           <p className="font-medium">{debt.entity_name}</p>
-                          {getOffsetMatch(debt.entity_phone) && (
+                          {getOffsetMatch(debt.entity_code) && (
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-purple-100 text-purple-700 border-purple-200 shrink-0">
                               Công nợ 2 chiều
                             </Badge>
