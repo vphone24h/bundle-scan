@@ -208,7 +208,7 @@ export function BookingDialog({
             </div>
             <div>
               <Label className="text-sm">Email</Label>
-              <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (không bắt buộc)" type="email" className="h-11 text-base" />
+              <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập đúng email để nhận thông tin đơn hàng" type="email" className="h-11 text-base" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
