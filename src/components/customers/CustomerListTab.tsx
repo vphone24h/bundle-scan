@@ -369,7 +369,14 @@ export function CustomerListTab({
                         </TableCell>
                         <TableCell>
                           <div>
-                            <p className="font-medium">{customer.name}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-medium">{customer.name}</p>
+                              {(customer as any).entity_code && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-mono shrink-0">
+                                  {(customer as any).entity_code}
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-sm text-muted-foreground">{customer.phone}</p>
                             <div className="flex gap-1 mt-1 lg:hidden">
                               <Badge className={MEMBERSHIP_TIER_COLORS[customer.membership_tier]} variant="secondary">
