@@ -420,12 +420,7 @@ export function DataManagementSection() {
             </DialogContent>
           </Dialog>
 
-          {/* Update import dates from old Excel */}
-          <UpdateImportDatesSection />
 
-          {/* Restore supplier & note from old Excel */}
-          <RestoreSupplierNoteSection />
-        </CardContent>
       </Card>
     </div>
   );
