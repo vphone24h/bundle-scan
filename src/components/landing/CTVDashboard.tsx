@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Loader2, Copy, Users, Coins, Wallet, ShoppingBag,
   ArrowLeft, Banknote, LogOut, Link2, Package, ChevronRight, UserCog, Save,
+  Search, ArrowUpDown, X,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -66,6 +67,9 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   });
   const [profileForm, setProfileForm] = useState<any>(null);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
+  const [productSortPrice, setProductSortPrice] = useState<'none' | 'asc' | 'desc'>('none');
 
   const handleLogout = async () => {
     // Build target URL FIRST: the store's website (NOT admin/kho)
@@ -210,7 +214,25 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
 
   // Active CTV Dashboard
   const canWithdraw = ctv.available_balance >= (settings?.min_withdrawal_amount || 200000);
-  const products = landingProducts?.products || [];
+  const allProducts = landingProducts?.products || [];
+  const categories = landingProducts?.categories || [];
+
+  // Filter & sort products
+  const products = allProducts
+    .filter((p: any) => {
+      if (productCategoryFilter !== 'all' && p.category_id !== productCategoryFilter) return false;
+      if (productSearch) {
+        const q = productSearch.toLowerCase();
+        return p.name?.toLowerCase().includes(q);
+      }
+      return true;
+    })
+    .sort((a: any, b: any) => {
+      if (productSortPrice === 'none') return 0;
+      const priceA = a.sale_price || a.price || 0;
+      const priceB = b.sale_price || b.price || 0;
+      return productSortPrice === 'asc' ? priceA - priceB : priceB - priceA;
+    });
 
   // Calculate commission for a product using tiered system
   const getProductCommission = (product: any) => {
@@ -475,9 +497,59 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                   Sao chép link sản phẩm có mã CTV để chia sẻ. Khi khách mua qua link, đơn sẽ tính hoa hồng cho bạn.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm sản phẩm..."
+                    value={productSearch}
+                    onChange={e => setProductSearch(e.target.value)}
+                    className="pl-9 pr-8 h-9 text-sm"
+                  />
+                  {productSearch && (
+                    <button
+                      onClick={() => setProductSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Category filter + Sort */}
+                <div className="flex gap-2">
+                  <Select value={productCategoryFilter} onValueChange={setProductCategoryFilter}>
+                    <SelectTrigger className="h-8 text-xs flex-1">
+                      <SelectValue placeholder="Danh mục" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả danh mục</SelectItem>
+                      {categories.map((cat: any) => (
+                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs gap-1 flex-shrink-0"
+                    onClick={() => setProductSortPrice(prev =>
+                      prev === 'none' ? 'asc' : prev === 'asc' ? 'desc' : 'none'
+                    )}
+                  >
+                    <ArrowUpDown className="h-3 w-3" />
+                    {productSortPrice === 'none' ? 'Giá' : productSortPrice === 'asc' ? 'Giá ↑' : 'Giá ↓'}
+                  </Button>
+                </div>
+
+                {/* Product count */}
+                <p className="text-[11px] text-muted-foreground">
+                  {products.length}/{allProducts.length} sản phẩm
+                </p>
+
                 {!products.length ? (
-                  <p className="text-center text-muted-foreground text-sm py-6">Chưa có sản phẩm</p>
+                  <p className="text-center text-muted-foreground text-sm py-6">Không tìm thấy sản phẩm</p>
                 ) : (
                   <div className="space-y-2">
                     {products.map((p: any) => {
@@ -492,7 +564,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                             <p className="font-medium text-sm truncate">{p.name}</p>
                             <p className="text-xs text-muted-foreground">
                               {p.sale_price ? (
-                                <><span className="line-through">{formatNumber(p.price)}</span> <span className="text-red-500 font-semibold">{formatNumber(p.sale_price)}</span></>
+                                <><span className="line-through">{formatNumber(p.price)}</span> <span className="text-destructive font-semibold">{formatNumber(p.sale_price)}</span></>
                               ) : (
                                 formatNumber(p.price)
                               )}
@@ -500,7 +572,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                             {commission > 0 && (
                               <p className="text-xs font-medium mt-0.5" style={{ color: accentColor || '#16a34a' }}>
                                 <Coins className="h-3 w-3 inline mr-0.5" />
-                                Bán trực tiếp: {formatNumber(commission)}đ
+                                Hoa hồng: {formatNumber(commission)}đ
                               </p>
                             )}
                             {f1Commission > 0 && (
@@ -514,7 +586,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                             variant="outline"
                             size="sm"
                             className="flex-shrink-0"
-                            onClick={() => handleCopyLink(`/product/${p.id}`)}
+                            onClick={() => handleCopyLink(`/san-pham/${p.slug || p.id}`)}
                           >
                             <Copy className="h-3 w-3 mr-1" />Link
                           </Button>
