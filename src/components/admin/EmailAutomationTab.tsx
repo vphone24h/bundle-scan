@@ -445,7 +445,18 @@ function AutomationFormDialog({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Điều kiện gửi</Label>
-                  <Select value={triggerType} onValueChange={setTriggerType}>
+                  <Select value={triggerType} onValueChange={(val) => {
+                    setTriggerType(val);
+                    // Auto-fill from TRIGGER_TYPE_PRESETS when not editing
+                    if (!isEdit) {
+                      const preset = TRIGGER_TYPE_PRESETS[val];
+                      if (preset) {
+                        setName(preset.name);
+                        setSubject(preset.subject);
+                        setBlocks(preset.blocks.map(b => ({ tempId: crypto.randomUUID(), block_type: b.block_type, content: b.content })));
+                      }
+                    }
+                  }}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {TRIGGER_TYPES.filter(t => !t.value.startsWith('on_order_')).map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
