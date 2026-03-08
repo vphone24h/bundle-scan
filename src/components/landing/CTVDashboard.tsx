@@ -170,7 +170,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
 
   // Active CTV Dashboard
   const canWithdraw = ctv.available_balance >= (settings?.min_withdrawal_amount || 200000);
-  const products = landingData?.products || [];
+  const products = landingProducts?.products || [];
 
   const handleCopyLink = (path?: string) => {
     const base = storeUrl.replace(/\/$/, '');
