@@ -376,7 +376,7 @@ export function PlatformEmailAutomationManagement() {
                 <Input type="number" value={triggerDays} onChange={e => setTriggerDays(Number(e.target.value))} min={1} />
               </div>
             </div>
-            {triggerType === 'no_login_since' && (
+            {(triggerType === 'no_login_since' || triggerType === 'post_purchase_days') && (
               <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 rounded p-2">
                 ⚠️ Điều kiện này chỉ gửi <strong>duy nhất 1 lần</strong> cho mỗi tài khoản để tránh spam.
               </p>

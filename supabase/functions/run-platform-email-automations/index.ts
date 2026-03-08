@@ -179,8 +179,8 @@ Deno.serve(async (req) => {
 
         if (!shouldSend) continue;
 
-        // Check if email already sent today for this automation + tenant (except no_login_since which is checked above)
-        if (trigger_type !== "no_login_since") {
+        // Check if email already sent today for this automation + tenant (except once-only types)
+        if (trigger_type !== "no_login_since" && trigger_type !== "post_purchase_days") {
           const todayStart = new Date();
           todayStart.setHours(0, 0, 0, 0);
           const { data: todayLog } = await supabase
