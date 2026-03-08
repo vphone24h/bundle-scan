@@ -32,7 +32,8 @@ import {
 import { EmailTemplatePickerDialog, EmailTemplatePreset, ORDER_EMAIL_PRESETS } from './EmailTemplatePickerDialog';
 
 const TRIGGER_TYPES = [
-  { value: 'days_after_purchase', label: 'Sau khi mua hàng (ngày)' },
+  { value: 'days_after_purchase', label: 'Sau đúng X ngày mua hàng' },
+  { value: 'days_after_purchase_onwards', label: 'Sau X ngày mua hàng trở đi' },
   { value: 'days_before_warranty_expires', label: 'Trước khi hết bảo hành (ngày)' },
   { value: 'days_inactive', label: 'Không mua hàng trong (ngày)' },
   { value: 'on_order_confirmation', label: 'Khi đặt hàng' },
