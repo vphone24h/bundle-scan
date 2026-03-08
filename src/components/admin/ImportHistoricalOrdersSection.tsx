@@ -392,7 +392,7 @@ export function ImportHistoricalOrdersSection() {
             />
             <p className="text-xs text-muted-foreground mt-1">Dùng để phân biệt dữ liệu cũ với dữ liệu VKho</p>
           </div>
-          <div>
+          <div className="space-y-2">
             <Label>Chọn file Excel</Label>
             <Input
               ref={fileRef}
@@ -401,6 +401,10 @@ export function ImportHistoricalOrdersSection() {
               onChange={handleFileSelect}
               disabled={importing}
             />
+            <Button variant="outline" size="sm" onClick={downloadTemplate} type="button">
+              <Download className="h-4 w-4 mr-2" />
+              Tải file mẫu
+            </Button>
           </div>
         </div>
 
