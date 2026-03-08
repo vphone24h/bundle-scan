@@ -7,7 +7,7 @@ import { useMemo } from 'react';
 export interface DebtOffsetMatch {
   customerDebt: DebtSummary;
   supplierDebt: DebtSummary;
-  matchedPhone: string;
+  matchedEntityCode: string;
 }
 
 /**
