@@ -423,7 +423,7 @@ function AutomationFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Chỉnh sửa kịch bản' : 'Tạo kịch bản mới'}</DialogTitle>
         </DialogHeader>
@@ -442,7 +442,7 @@ function AutomationFormDialog({
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label>Điều kiện gửi</Label>
                   <p className="text-xs text-muted-foreground mb-1">Chọn điều kiện gửi sẽ có kịch bản mẫu, sau đó bạn tự sửa cho phù hợp</p>
@@ -540,9 +540,9 @@ function AutomationFormDialog({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>Hủy</Button>
-          <Button onClick={handleSave} disabled={isSaving}>
+        <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+          <Button variant="outline" onClick={() => handleOpenChange(false)} className="w-full sm:w-auto">Hủy</Button>
+          <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
             {isSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
             {isEdit ? 'Cập nhật' : 'Tạo kịch bản'}
           </Button>
@@ -579,16 +579,16 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
 
           if (existing) {
             return (
-              <div key={ot.value} className="border rounded-lg p-3 flex items-center gap-3">
+              <div key={ot.value} className="border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-medium text-sm">{ot.label}</h4>
+                    <h4 className="font-medium text-sm break-words">{ot.label}</h4>
                     <Badge variant={existing.is_active ? 'default' : 'secondary'} className="text-[10px]">
                       {existing.is_active ? 'Đang bật' : 'Tắt'}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">📌 {ot.condition}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Subject: {existing.subject}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 break-all">Subject: {existing.subject}</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <Switch checked={existing.is_active} onCheckedChange={() => onToggle(existing)} />
@@ -604,12 +604,12 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
           }
 
           return (
-            <div key={ot.value} className="border border-dashed rounded-lg p-3 flex items-center gap-3">
+            <div key={ot.value} className="border border-dashed rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
               <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-sm text-muted-foreground">{ot.label}</h4>
+                <h4 className="font-medium text-sm text-muted-foreground break-words">{ot.label}</h4>
                 <p className="text-xs text-muted-foreground/70">📌 {ot.condition}</p>
               </div>
-              <Button variant="outline" size="sm" className="text-xs" onClick={() => preset && onCreateFromPreset(preset)}>
+              <Button variant="outline" size="sm" className="text-xs w-full sm:w-auto" onClick={() => preset && onCreateFromPreset(preset)}>
                 <Plus className="h-3.5 w-3.5 mr-1" />
                 Tạo mẫu
               </Button>
@@ -768,20 +768,20 @@ export function EmailAutomationTab() {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between flex-wrap gap-2">
+      <CardHeader className="px-3 sm:px-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Mail className="h-5 w-5" />
             Email Automation
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={handleRunNow} disabled={runningNow}>
+          <div className="flex items-center gap-2 overflow-x-auto">
+            <Button size="sm" variant="outline" onClick={handleRunNow} disabled={runningNow} className="shrink-0">
               <Play className={`h-4 w-4 mr-1 ${runningNow ? 'animate-spin' : ''}`} /> {runningNow ? 'Đang chạy...' : 'Chạy ngay'}
             </Button>
-            <Button size="sm" onClick={handleCreate}>
+            <Button size="sm" onClick={handleCreate} className="shrink-0">
               <Plus className="h-4 w-4 mr-1" /> Tạo kịch bản
             </Button>
-            <Button size="sm" variant="outline" asChild>
+            <Button size="sm" variant="outline" asChild className="shrink-0">
               <a href="https://youtu.be/WYDuxvwrNSs?si=DF1Jd7iLmh-o0RG8" target="_blank" rel="noopener noreferrer">
                 <BookOpen className="h-4 w-4 mr-1" /> Hướng dẫn
               </a>
@@ -789,11 +789,11 @@ export function EmailAutomationTab() {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 sm:px-6">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
-            <TabsTrigger value="scenarios">Kịch bản ({automations?.length || 0})</TabsTrigger>
-            <TabsTrigger value="logs">Lịch sử gửi ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</TabsTrigger>
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="scenarios" className="flex-1 sm:flex-none">Kịch bản ({automations?.length || 0})</TabsTrigger>
+            <TabsTrigger value="logs" className="flex-1 sm:flex-none">Lịch sử gửi ({(logs?.length || 0) + (orderEmailLogs?.length || 0)})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="scenarios" className="mt-4 space-y-6">
