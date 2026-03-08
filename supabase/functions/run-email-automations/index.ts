@@ -131,7 +131,97 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}))
-    const { testMode, automationId, testEmail } = body
+    const { testMode, automationId, testEmail, resendLogIds } = body
+
+    // === RESEND MODE - Resend failed emails by log IDs ===
+    if (resendLogIds && Array.isArray(resendLogIds) && resendLogIds.length > 0) {
+      const { data: failedLogs } = await supabase
+        .from('email_automation_logs')
+        .select('*')
+        .in('id', resendLogIds)
+        .eq('status', 'failed')
+
+      if (!failedLogs?.length) {
+        return new Response(JSON.stringify({ success: true, resent: 0, message: 'No failed logs found' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      let resent = 0
+      const byTenant: Record<string, typeof failedLogs> = {}
+      for (const log of failedLogs) {
+        const tid = log.tenant_id
+        if (!byTenant[tid]) byTenant[tid] = []
+        byTenant[tid].push(log)
+      }
+
+      for (const [tenantId, tenantLogs] of Object.entries(byTenant)) {
+        const smtp = await getTenantSmtp(tenantId)
+        if (!smtp) continue
+
+        const transporter = nodemailer.createTransport({
+          host: 'smtp.gmail.com', port: 465, secure: true,
+          auth: { user: smtp.user, pass: smtp.pass },
+        })
+
+        for (const log of tenantLogs) {
+          try {
+            let html = ''
+            let subject = log.subject
+
+            if (log.automation_id) {
+              const { data: automation } = await supabase
+                .from('email_automations').select('*').eq('id', log.automation_id).single()
+              if (automation) {
+                const { data: blocks } = await supabase
+                  .from('email_automation_blocks').select('*')
+                  .eq('automation_id', log.automation_id).order('display_order')
+                const { data: tenant } = await supabase
+                  .from('tenants').select('store_name, business_name, subdomain')
+                  .eq('id', tenantId).single()
+                const storeName = tenant?.store_name || tenant?.business_name || smtp.storeName
+                const vars: Record<string, string> = {
+                  '{{customer_name}}': log.customer_name || 'Khách hàng',
+                  '{{store_name}}': storeName,
+                }
+                const processedBlocks = (blocks || []).map((b: any) => ({
+                  ...b,
+                  content: JSON.parse(replaceVariables(JSON.stringify(b.content), vars)),
+                }))
+                html = buildEmailHtml(processedBlocks, storeName)
+                subject = replaceVariables(automation.subject, vars)
+              }
+            }
+
+            if (!html) {
+              html = `<p>Email gửi lại cho ${log.customer_name || log.customer_email}</p>`
+            }
+
+            await transporter.sendMail({
+              from: `"${smtp.storeName}" <${smtp.user}>`,
+              to: log.customer_email,
+              subject,
+              html,
+            })
+
+            await supabase
+              .from('email_automation_logs')
+              .update({ status: 'sent', sent_at: new Date().toISOString(), error_message: null } as any)
+              .eq('id', log.id)
+            resent++
+          } catch (e: any) {
+            await supabase
+              .from('email_automation_logs')
+              .update({ error_message: `Resend failed: ${e.message}` } as any)
+              .eq('id', log.id)
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true, resent }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
     // === TEST MODE ===
     if (testMode && automationId && testEmail) {

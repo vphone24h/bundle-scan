@@ -598,8 +598,12 @@ export function EmailAutomationTab() {
   const [editItem, setEditItem] = useState<EmailAutomation | null>(null);
   const [tab, setTab] = useState('scenarios');
   const [logSubTab, setLogSubTab] = useState('automation');
+  const [logStatusFilter, setLogStatusFilter] = useState<'all' | 'sent' | 'failed'>('all');
   const [pickerOpen, setPickerOpen] = useState(false);
   const [prefilledTemplate, setPrefilledTemplate] = useState<EmailTemplatePreset | null>(null);
+  const [resendingIds, setResendingIds] = useState<Set<string>>(new Set());
+  const [resendingAll, setResendingAll] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleEdit = (item: EmailAutomation) => {
     setEditItem(item);
@@ -650,6 +654,40 @@ export function EmailAutomationTab() {
       toast.error('Lỗi chạy automation: ' + err.message);
     } finally {
       setRunningNow(false);
+    }
+  };
+
+  const handleResendSingle = async (logId: string) => {
+    setResendingIds(prev => new Set(prev).add(logId));
+    try {
+      const { error } = await supabase.functions.invoke('run-email-automations', {
+        body: { resendLogIds: [logId] },
+      });
+      if (error) throw error;
+      toast.success('Đã gửi lại email thành công');
+      queryClient.invalidateQueries({ queryKey: ['email-automation-logs'] });
+    } catch (e: any) {
+      toast.error('Lỗi gửi lại: ' + e.message);
+    } finally {
+      setResendingIds(prev => { const n = new Set(prev); n.delete(logId); return n; });
+    }
+  };
+
+  const handleResendAllFailed = async (failedLogIds: string[]) => {
+    if (!failedLogIds.length) return;
+    if (!confirm(`Gửi lại ${failedLogIds.length} email thất bại?`)) return;
+    setResendingAll(true);
+    try {
+      const { error } = await supabase.functions.invoke('run-email-automations', {
+        body: { resendLogIds: failedLogIds },
+      });
+      if (error) throw error;
+      toast.success(`Đã gửi lại ${failedLogIds.length} email`);
+      queryClient.invalidateQueries({ queryKey: ['email-automation-logs'] });
+    } catch (e: any) {
+      toast.error('Lỗi gửi lại: ' + e.message);
+    } finally {
+      setResendingAll(false);
     }
   };
 
@@ -765,22 +803,56 @@ export function EmailAutomationTab() {
 
           <TabsContent value="logs" className="mt-4">
             <div className="flex gap-2 mb-3 flex-wrap">
-              <Button variant={logSubTab === 'automation' ? 'default' : 'outline'} size="sm" onClick={() => setLogSubTab('automation')}>
+              <Button variant={logSubTab === 'automation' ? 'default' : 'outline'} size="sm" onClick={() => { setLogSubTab('automation'); setLogStatusFilter('all'); }}>
                 Automation ({(logs || []).filter(l => l.source === 'automation').length})
               </Button>
-              <Button variant={logSubTab === 'care' ? 'default' : 'outline'} size="sm" onClick={() => setLogSubTab('care')}>
+              <Button variant={logSubTab === 'care' ? 'default' : 'outline'} size="sm" onClick={() => { setLogSubTab('care'); setLogStatusFilter('all'); }}>
                 Chăm sóc ({(logs || []).filter(l => l.source === 'care_bulk').length})
               </Button>
-              <Button variant={logSubTab === 'order' ? 'default' : 'outline'} size="sm" onClick={() => setLogSubTab('order')}>
+              <Button variant={logSubTab === 'order' ? 'default' : 'outline'} size="sm" onClick={() => { setLogSubTab('order'); setLogStatusFilter('all'); }}>
                 Đơn hàng ({orderEmailLogs?.length || 0})
               </Button>
             </div>
 
+            {/* Status filter */}
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <span className="text-xs text-muted-foreground">Lọc:</span>
+              <Button variant={logStatusFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setLogStatusFilter('all')}>
+                Tất cả
+              </Button>
+              <Button variant={logStatusFilter === 'sent' ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setLogStatusFilter('sent')}>
+                <CheckCircle className="h-3 w-3 mr-1" /> Thành công
+              </Button>
+              <Button variant={logStatusFilter === 'failed' ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setLogStatusFilter('failed')}>
+                <XCircle className="h-3 w-3 mr-1" /> Thất bại
+              </Button>
+              {logStatusFilter === 'failed' && logSubTab !== 'order' && (() => {
+                const sourceLogs = (logs || []).filter(l =>
+                  l.source === (logSubTab === 'automation' ? 'automation' : 'care_bulk') && l.status === 'failed'
+                );
+                return sourceLogs.length > 0 ? (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="h-7 text-xs ml-auto"
+                    disabled={resendingAll}
+                    onClick={() => handleResendAllFailed(sourceLogs.map(l => l.id))}
+                  >
+                    <Send className={`h-3 w-3 mr-1 ${resendingAll ? 'animate-pulse' : ''}`} />
+                    {resendingAll ? 'Đang gửi...' : `Gửi lại tất cả (${sourceLogs.length})`}
+                  </Button>
+                ) : null;
+              })()}
+            </div>
+
             {logSubTab === 'automation' && (
               (() => {
-                const filteredLogs = (logs || []).filter(l => l.source === 'automation');
+                const allLogs = (logs || []).filter(l => l.source === 'automation');
+                const filteredLogs = logStatusFilter === 'all' ? allLogs : allLogs.filter(l => l.status === logStatusFilter);
                 return !filteredLogs.length ? (
-                  <p className="text-center py-8 text-muted-foreground text-sm">Chưa có email automation nào được gửi</p>
+                  <p className="text-center py-8 text-muted-foreground text-sm">
+                    {logStatusFilter === 'all' ? 'Chưa có email automation nào được gửi' : `Không có email ${logStatusFilter === 'sent' ? 'thành công' : 'thất bại'}`}
+                  </p>
                 ) : (
                   <ScrollableTableWrapper>
                     <Table>
@@ -791,6 +863,7 @@ export function EmailAutomationTab() {
                           <TableHead>Khách hàng</TableHead>
                           <TableHead>Tiêu đề</TableHead>
                           <TableHead>Trạng thái</TableHead>
+                          <TableHead></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -811,6 +884,20 @@ export function EmailAutomationTab() {
                                 <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Đang gửi</Badge>
                               )}
                             </TableCell>
+                            <TableCell>
+                              {log.status === 'failed' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  disabled={resendingIds.has(log.id)}
+                                  onClick={() => handleResendSingle(log.id)}
+                                >
+                                  <Send className={`h-3 w-3 mr-1 ${resendingIds.has(log.id) ? 'animate-pulse' : ''}`} />
+                                  Gửi lại
+                                </Button>
+                              )}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -822,9 +909,12 @@ export function EmailAutomationTab() {
 
             {logSubTab === 'care' && (
               (() => {
-                const careLogs = (logs || []).filter(l => l.source === 'care_bulk');
+                const allCareLogs = (logs || []).filter(l => l.source === 'care_bulk');
+                const careLogs = logStatusFilter === 'all' ? allCareLogs : allCareLogs.filter(l => l.status === logStatusFilter);
                 return !careLogs.length ? (
-                  <p className="text-center py-8 text-muted-foreground text-sm">Chưa có email chăm sóc nào được gửi</p>
+                  <p className="text-center py-8 text-muted-foreground text-sm">
+                    {logStatusFilter === 'all' ? 'Chưa có email chăm sóc nào được gửi' : `Không có email ${logStatusFilter === 'sent' ? 'thành công' : 'thất bại'}`}
+                  </p>
                 ) : (
                   <ScrollableTableWrapper>
                     <Table>
@@ -836,6 +926,7 @@ export function EmailAutomationTab() {
                           <TableHead>Tiêu đề</TableHead>
                           <TableHead>Trạng thái</TableHead>
                           <TableHead>Lỗi</TableHead>
+                          <TableHead></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -857,6 +948,20 @@ export function EmailAutomationTab() {
                               )}
                             </TableCell>
                             <TableCell className="text-sm text-destructive max-w-[200px] truncate">{log.error_message || '-'}</TableCell>
+                            <TableCell>
+                              {log.status === 'failed' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  disabled={resendingIds.has(log.id)}
+                                  onClick={() => handleResendSingle(log.id)}
+                                >
+                                  <Send className={`h-3 w-3 mr-1 ${resendingIds.has(log.id) ? 'animate-pulse' : ''}`} />
+                                  Gửi lại
+                                </Button>
+                              )}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -867,44 +972,52 @@ export function EmailAutomationTab() {
             )}
 
             {logSubTab === 'order' && (
-              !orderEmailLogs?.length ? (
-                <p className="text-center py-8 text-muted-foreground text-sm">Chưa có email đơn hàng nào được gửi</p>
-              ) : (
-                <ScrollableTableWrapper>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Thời gian</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Loại</TableHead>
-                        <TableHead>Trạng thái</TableHead>
-                        <TableHead>Lỗi</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {orderEmailLogs.map((log: any) => (
-                        <TableRow key={log.id}>
-                          <TableCell className="whitespace-nowrap text-sm">
-                            {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
-                          </TableCell>
-                          <TableCell className="text-sm max-w-[180px] truncate">{log.recipient_email}</TableCell>
-                          <TableCell className="text-sm">{log.email_type}</TableCell>
-                          <TableCell>
-                            {(log.status === 'sent' || log.status === 'success') ? (
-                              <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
-                            ) : (log.status === 'failed' || log.status === 'error') ? (
-                              <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />Lỗi</Badge>
-                            ) : (
-                              <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Đang gửi</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm text-destructive max-w-[200px] truncate">{log.error_message || '-'}</TableCell>
+              (() => {
+                const allOrderLogs = orderEmailLogs || [];
+                const filteredOrderLogs = logStatusFilter === 'all' ? allOrderLogs :
+                  logStatusFilter === 'sent' ? allOrderLogs.filter((l: any) => l.status === 'sent' || l.status === 'success') :
+                  allOrderLogs.filter((l: any) => l.status === 'failed' || l.status === 'error');
+                return !filteredOrderLogs.length ? (
+                  <p className="text-center py-8 text-muted-foreground text-sm">
+                    {logStatusFilter === 'all' ? 'Chưa có email đơn hàng nào được gửi' : `Không có email ${logStatusFilter === 'sent' ? 'thành công' : 'thất bại'}`}
+                  </p>
+                ) : (
+                  <ScrollableTableWrapper>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Thời gian</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Loại</TableHead>
+                          <TableHead>Trạng thái</TableHead>
+                          <TableHead>Lỗi</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollableTableWrapper>
-              )
+                      </TableHeader>
+                      <TableBody>
+                        {filteredOrderLogs.map((log: any) => (
+                          <TableRow key={log.id}>
+                            <TableCell className="whitespace-nowrap text-sm">
+                              {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
+                            </TableCell>
+                            <TableCell className="text-sm max-w-[180px] truncate">{log.recipient_email}</TableCell>
+                            <TableCell className="text-sm">{log.email_type}</TableCell>
+                            <TableCell>
+                              {(log.status === 'sent' || log.status === 'success') ? (
+                                <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
+                              ) : (log.status === 'failed' || log.status === 'error') ? (
+                                <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />Lỗi</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Đang gửi</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-destructive max-w-[200px] truncate">{log.error_message || '-'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollableTableWrapper>
+                );
+              })()
             )}
           </TabsContent>
         </Tabs>
