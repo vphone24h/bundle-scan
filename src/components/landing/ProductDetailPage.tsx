@@ -772,24 +772,43 @@ export function ProductDetailPage({
         const buttons = (ctaButtons || getDefaultCTAButtons(websiteTemplate || undefined)).filter(b => b.enabled);
         if (buttons.length === 0) return null;
 
-        const renderButton = (btn: CTAButtonItem) => {
+        const openOrderFlow = () => {
+          const hasPaymentOptions = paymentConfig?.transferEnabled;
+          if (hasPaymentOptions) {
+            setShowPaymentFlow(true);
+          } else {
+            setShowOrderForm(true);
+            setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100);
+          }
+        };
 
+        const renderButton = (btn: CTAButtonItem) => {
           switch (btn.action) {
             case 'order':
               return (
                 <Button key={btn.id} className="shrink-0 gap-2 h-11 text-sm font-semibold px-4 whitespace-nowrap" style={{ backgroundColor: primaryColor }}
+                  onClick={openOrderFlow}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+
+            case 'add_to_cart':
+              return (
+                <Button key={btn.id} className="shrink-0 gap-2 h-11 text-sm font-semibold px-4" style={{ backgroundColor: primaryColor }}
                   onClick={() => {
-                    const hasPaymentOptions = paymentConfig?.transferEnabled;
-                    if (hasPaymentOptions) {
-                      setShowPaymentFlow(true);
-                    } else {
-                      setShowOrderForm(true);
-                      setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100);
-                    }
+                    cart.addItem({
+                      productId: product.id,
+                      productName: product.name,
+                      productImageUrl: product.image_url,
+                      price: displayPrice,
+                      variant: getVariantLabel(),
+                    });
+                    toast.success('Đã thêm vào giỏ hàng');
                   }}>
                   {btn.icon} {btn.label}
                 </Button>
               );
+
             case 'installment': {
               const secs = detailSections || [{ id: 'installment', enabled: true }];
               const installmentEnabled = secs.find(s => s.id === 'installment')?.enabled !== false;
@@ -800,6 +819,14 @@ export function ProductDetailPage({
                 </Button>
               );
             }
+            case 'installment_0':
+              if (!onInstallment) return null;
+              return (
+                <Button key={btn.id} variant="outline" className="shrink-0 gap-2 h-11 text-sm px-4" onClick={onInstallment}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+
             case 'call':
               if (!warrantyHotline) return null;
               return (
@@ -807,15 +834,14 @@ export function ProductDetailPage({
                   <a href={`tel:${warrantyHotline}`} className="gap-2">{btn.icon} {btn.label}</a>
                 </Button>
               );
+
             case 'zalo': {
               const rawUrl = btn.customUrl || zaloUrl;
               if (!rawUrl) return null;
-              // Convert to proper zalo.me link
               let zaloDeepLink = rawUrl.trim();
               if (zaloDeepLink.match(/zalo\.me\/(\d+)/)) {
                 zaloDeepLink = `https://zalo.me/${zaloDeepLink.match(/zalo\.me\/(\d+)/)?.[1]}`;
               } else if (/^\d{8,15}$/.test(zaloDeepLink.replace(/\s/g, ''))) {
-                // Raw phone number → convert to zalo.me link
                 zaloDeepLink = `https://zalo.me/${zaloDeepLink.replace(/\s/g, '')}`;
               } else if (!zaloDeepLink.startsWith('http')) {
                 zaloDeepLink = `https://${zaloDeepLink}`;
@@ -826,6 +852,7 @@ export function ProductDetailPage({
                 </Button>
               );
             }
+
             case 'facebook': {
               const url = btn.customUrl || facebookUrl;
               if (!url) return null;
@@ -835,61 +862,7 @@ export function ProductDetailPage({
                 </Button>
               );
             }
-            // === Đặt lịch / Đặt hàng: Dùng chung form đặt hàng hiện tại (landing_orders) ===
-            case 'booking':
-            case 'booking_consult':
-            case 'booking_repair':
-            case 'booking_beauty':
-            case 'booking_clinic':
-            case 'booking_store':
-            case 'order_food':
-            case 'book_table':
-            case 'book_party':
-            case 'pre_order':
-            case 'delivery':
-              return (
-                <Button key={btn.id} className="shrink-0 min-w-[100px] gap-2 h-11 text-sm font-semibold" style={{ backgroundColor: primaryColor }}
-                  onClick={() => {
-                    const hasPaymentOptions = paymentConfig?.transferEnabled;
-                    if (hasPaymentOptions && ['order_food', 'delivery'].includes(btn.action)) {
-                      setShowPaymentFlow(true);
-                    } else {
-                      setShowOrderForm(true);
-                      setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100);
-                    }
-                  }}>
-                  {btn.icon} {btn.label}
-                </Button>
-              );
 
-            // === Thêm vào giỏ / Mua ngay: Dùng hệ thống checkout + payment flow hiện tại ===
-            case 'add_to_cart':
-              return (
-                <Button key={btn.id} className="shrink-0 gap-2 h-11 text-sm font-semibold px-4" style={{ backgroundColor: primaryColor }}
-                  onClick={() => {
-                    const hasPaymentOptions = paymentConfig?.transferEnabled;
-                    if (hasPaymentOptions) {
-                      setShowPaymentFlow(true);
-                    } else {
-                      setShowOrderForm(true);
-                      setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100);
-                    }
-                  }}>
-                  {btn.icon} {btn.label}
-                </Button>
-              );
-
-            // === Trả góp 0%: Dùng chung module InstallmentCalculator hiện tại ===
-            case 'installment_0': {
-              if (!onInstallment) return null;
-              return (
-                <Button key={btn.id} variant="outline" className="shrink-0 gap-2 h-11 text-sm px-4" onClick={onInstallment}>
-                  {btn.icon} {btn.label}
-                </Button>
-              );
-            }
-
-            // === Tư vấn ngay: Ưu tiên Zalo > Facebook > Form liên hệ ===
             case 'consult_now': {
               const consultUrl = btn.customUrl || zaloUrl || facebookUrl;
               if (consultUrl) {
@@ -903,84 +876,134 @@ export function ProductDetailPage({
               }
               return (
                 <Button key={btn.id} variant="outline" className="shrink-0 gap-2 h-11 text-sm px-4"
-                  onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
+                  onClick={() => setActiveDialog('send_request')}>
                   {btn.icon} {btn.label}
                 </Button>
               );
             }
 
-            // === Form liên hệ / Yêu cầu: Dùng chung form đặt hàng (landing_orders) ===
-            case 'notify_stock':
-            case 'get_offer':
-            case 'best_price':
-            case 'get_quote':
-            case 'get_coupon':
-            case 'support':
-            case 'send_request':
-            case 'join_member':
+            // Booking actions -> dedicated booking dialog with date/time
+            case 'booking':
+            case 'booking_consult':
+            case 'booking_repair':
+            case 'booking_beauty':
+            case 'booking_clinic':
+            case 'booking_store':
+            case 'book_table':
+            case 'book_party':
               return (
-                <Button key={btn.id} variant="outline" className="shrink-0 gap-2 h-11 text-sm px-4"
-                  onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
+                <Button key={btn.id} className="shrink-0 min-w-[100px] gap-2 h-11 text-sm font-semibold" style={{ backgroundColor: primaryColor }}
+                  onClick={() => setActiveDialog(btn.action)}>
                   {btn.icon} {btn.label}
                 </Button>
               );
 
-            // === Scroll đến section tương ứng trong trang chi tiết SP ===
+            // Order-like actions -> use existing order flow
+            case 'order_food':
+            case 'delivery':
+              return (
+                <Button key={btn.id} className="shrink-0 min-w-[100px] gap-2 h-11 text-sm font-semibold" style={{ backgroundColor: primaryColor }}
+                  onClick={openOrderFlow}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+
+            // Contact form actions -> dedicated dialog
+            case 'pre_order':
+            case 'notify_stock':
+            case 'get_quote':
+            case 'send_request':
+            case 'best_price':
+            case 'get_coupon':
+              return (
+                <Button key={btn.id} variant="outline" className="shrink-0 gap-2 h-11 text-sm px-4"
+                  onClick={() => setActiveDialog(btn.action)}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+
+            // Voucher/offer -> use existing voucher claim system
+            case 'get_offer':
+              return (
+                <Button key={btn.id} variant="outline" className="shrink-0 gap-2 h-11 text-sm px-4"
+                  onClick={() => setActiveDialog('get_offer')}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+
+            case 'join_member': {
+              if (!btn.customUrl) return null;
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
+                  <a href={btn.customUrl} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
+                </Button>
+              );
+            }
+
+            // Review actions
             case 'view_reviews':
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
+                  onClick={() => { document.getElementById('section-reviews')?.scrollIntoView({ behavior: 'smooth' }); }}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
             case 'write_review':
               return (
                 <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
-                  onClick={() => {
-                    const reviewsSection = document.getElementById('section-reviews');
-                    if (reviewsSection) {
-                      reviewsSection.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}>
+                  onClick={() => setActiveDialog('write_review')}>
                   {btn.icon} {btn.label}
                 </Button>
               );
 
-            // === Kiểm tra bảo hành: Link đến trang warranty-check hiện tại ===
+            // System lookups
             case 'check_warranty':
               return (
-                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
-                  <a href={btn.customUrl || '/warranty-check'} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
+                  onClick={() => setActiveDialog('check_warranty')}>
+                  {btn.icon} {btn.label}
                 </Button>
               );
-
-            // === Tra cứu đơn hàng: Dùng hệ thống landing_orders hiện tại ===
             case 'track_order':
               return (
                 <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
-                  onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
+                  onClick={() => setActiveDialog('track_order')}>
                   {btn.icon} {btn.label}
                 </Button>
               );
 
-            // === So sánh / Xem chi tiết: Scroll hoặc mở link ===
+            case 'support':
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
+                  onClick={() => setActiveDialog('support')}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+
             case 'compare':
             case 'view_detail':
               return (
                 <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
-                  onClick={() => {
-                    if (btn.customUrl) { window.open(btn.customUrl, '_blank'); }
-                    else { window.scrollTo({ top: 0, behavior: 'smooth' }); }
-                  }}>
+                  onClick={() => { if (btn.customUrl) window.open(btn.customUrl, '_blank'); else window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
                   {btn.icon} {btn.label}
                 </Button>
               );
 
-            // === Xem menu / Ưu đãi / Deal: Link đến trang chủ hoặc custom URL ===
             case 'view_menu':
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
+                  onClick={() => { if (btn.customUrl) window.open(btn.customUrl, '_blank'); else onBack(); }}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+
+            // Promotion info dialogs
             case 'today_offer':
             case 'today_gift':
             case 'hot_deal':
               return (
                 <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
-                  onClick={() => {
-                    if (btn.customUrl) { window.open(btn.customUrl, '_blank'); }
-                    else { onBack(); }
-                  }}>
+                  onClick={() => { if (btn.customUrl) window.open(btn.customUrl, '_blank'); else setActiveDialog(btn.action); }}>
                   {btn.icon} {btn.label}
                 </Button>
               );
@@ -994,13 +1017,9 @@ export function ProductDetailPage({
               );
 
             default:
-              // Fallback: ưu tiên customUrl, nếu không có thì mở form đặt hàng
               return (
                 <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
-                  onClick={() => {
-                    if (btn.customUrl) { window.open(btn.customUrl, '_blank'); }
-                    else { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }
-                  }}>
+                  onClick={() => { if (btn.customUrl) window.open(btn.customUrl, '_blank'); else setActiveDialog(btn.action); }}>
                   {btn.icon} {btn.label}
                 </Button>
               );
@@ -1056,6 +1075,134 @@ export function ProductDetailPage({
             transfer_content: data.transfer_content,
           });
         }}
+      />
+
+      {/* ===== CTA ACTION DIALOGS ===== */}
+      {/* Contact form dialogs */}
+      <ContactFormDialog
+        open={activeDialog === 'pre_order'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={displayPrice}
+        title="📋 Đặt trước sản phẩm" description="Đặt trước để nhận thông báo khi hàng về"
+        actionLabel="Đặt trước" requireEmail={true} notePrefix="[Đặt trước]"
+      />
+      <ContactFormDialog
+        open={activeDialog === 'notify_stock'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={0}
+        title="🔔 Báo khi có hàng" description="Nhập thông tin để nhận thông báo khi sản phẩm có lại"
+        actionLabel="Đăng ký nhận thông báo" requireEmail={true} showMessage={false} notePrefix="[Báo khi có hàng]"
+      />
+      <ContactFormDialog
+        open={activeDialog === 'get_quote'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={displayPrice}
+        title="📄 Nhận báo giá" description="Nhập thông tin để nhận báo giá chi tiết"
+        actionLabel="Gửi yêu cầu báo giá" requireEmail={false} notePrefix="[Yêu cầu báo giá]"
+      />
+      <ContactFormDialog
+        open={activeDialog === 'send_request'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={0}
+        title="📩 Gửi yêu cầu" description="Gửi yêu cầu hoặc câu hỏi đến cửa hàng"
+        actionLabel="Gửi yêu cầu" requireEmail={false} notePrefix="[Yêu cầu chung]"
+      />
+      <ContactFormDialog
+        open={activeDialog === 'best_price'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={displayPrice}
+        title="💰 Xem giá tốt nhất" description="Liên hệ để nhận giá ưu đãi đặc biệt"
+        actionLabel="Nhận giá tốt nhất" requireEmail={false} notePrefix="[Yêu cầu giá tốt nhất]"
+      />
+      <ContactFormDialog
+        open={activeDialog === 'get_coupon'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={0}
+        title="🎫 Nhận mã giảm giá" description="Đăng ký để nhận mã khuyến mãi"
+        actionLabel="Nhận mã giảm giá" requireEmail={true} showMessage={false} notePrefix="[Nhận mã giảm giá]"
+      />
+      <ContactFormDialog
+        open={activeDialog === 'get_offer'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={0}
+        title="🎁 Nhận ưu đãi" description="Đăng ký để nhận ưu đãi đặc biệt"
+        actionLabel="Nhận ưu đãi" requireEmail={true} showMessage={false} notePrefix="[Nhận ưu đãi]"
+      />
+
+      {/* Booking dialogs */}
+      <BookingDialog
+        open={['booking', 'booking_consult', 'booking_repair', 'booking_beauty', 'booking_clinic', 'booking_store'].includes(activeDialog || '')}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={displayPrice}
+        title={
+          activeDialog === 'booking' ? '📅 Đặt lịch ngay' :
+          activeDialog === 'booking_consult' ? '📅 Đặt lịch tư vấn' :
+          activeDialog === 'booking_repair' ? '🔧 Đặt lịch sửa chữa' :
+          activeDialog === 'booking_beauty' ? '💅 Đặt lịch làm đẹp' :
+          activeDialog === 'booking_clinic' ? '🏥 Đặt lịch khám' :
+          activeDialog === 'booking_store' ? '🏪 Đặt lịch tại cửa hàng' : 'Đặt lịch'
+        }
+        requireTime={true}
+      />
+      <BookingDialog
+        open={activeDialog === 'book_table'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={0}
+        title="🪑 Đặt bàn" requireTime={true}
+      />
+      <BookingDialog
+        open={activeDialog === 'book_party'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={0}
+        title="🎉 Đặt tiệc" requireTime={false}
+      />
+
+      {/* System dialogs */}
+      <TrackOrderDialog
+        open={activeDialog === 'track_order'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+      />
+      <CheckWarrantyDialog
+        open={activeDialog === 'check_warranty'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+      />
+      <WriteReviewDialog
+        open={activeDialog === 'write_review'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        productName={product.name} productId={product.id}
+      />
+      <SupportDialog
+        open={activeDialog === 'support'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        storePhone={storeInfo?.phone || warrantyHotline}
+        zaloUrl={zaloUrl}
+        facebookUrl={facebookUrl}
+      />
+      <CartDialog
+        open={showCartDialog}
+        onClose={() => setShowCartDialog(false)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        onCheckout={openOrderFlowFn}
+      />
+      <PromotionInfoDialog
+        open={['today_offer', 'today_gift', 'hot_deal'].includes(activeDialog || '')}
+        onClose={() => setActiveDialog(null)}
+        title={activeDialog === 'today_offer' ? '🔥 Ưu đãi hôm nay' : activeDialog === 'today_gift' ? '🎁 Quà tặng hôm nay' : '⚡ Deal hot'}
+        productName={product.name}
       />
     </div>
   );
