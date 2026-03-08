@@ -132,7 +132,7 @@ export function VoucherClaimForm({ tenantId, branches, primaryColor }: VoucherCl
                 </div>
                 <div>
                   <Label className="text-xs">Số điện thoại <span className="text-destructive">*</span></Label>
-                  <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Nhập SĐT" inputMode="tel" className="h-10" />
+                  <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Nhập SĐT đã từng mua để được giảm giá" inputMode="tel" className="h-10" />
                 </div>
                 <div>
                   <Label className="text-xs">Email <span className="text-destructive">*</span></Label>
