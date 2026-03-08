@@ -10,17 +10,17 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 
-// ── Flat-column template (one field per column) ──
+// ── Flat-column template (one field per column, no orderId – auto-generated) ──
 const FLAT_HEADERS = [
-  'Mã đơn hàng', 'IMEI', 'Tên khách hàng', 'SĐT', 'Email', 'Địa chỉ',
-  'Tên sản phẩm', 'Phiên bản', 'Giá bán', 'Ghi chú', 'Ngày đặt (dd/mm/yyyy)',
+  'IMEI', 'Tên khách hàng', 'SĐT', 'Email', 'Địa chỉ',
+  'Tên sản phẩm', 'Giá bán', 'Ghi chú', 'Ngày bán (dd/mm/yyyy)',
   'Trạng thái', 'Gói bảo hành',
 ];
 
 function downloadTemplate() {
   const sample = [
-    'DH001', '123456789012345', 'Nguyễn Văn A', '0901234567',
-    'a@email.com', '123 Đường ABC, Q9', 'iPhone 15 Pro Max', '256GB Đen',
+    '123456789012345', 'Nguyễn Văn A', '0901234567',
+    'a@email.com', '123 Đường ABC, Q9', 'iPhone 15 Pro Max 256GB Đen',
     29990000, 'Máy mới nguyên seal', '01/06/2024', 'Hoàn tất', '12 tháng',
   ];
   const ws = XLSX.utils.aoa_to_sheet([FLAT_HEADERS, sample]);
