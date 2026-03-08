@@ -862,6 +862,9 @@ export default function AppleStyleLandingTemplate({
                 <ArrowLeft className="h-4 w-4" />
               </button>
               <h2 className="text-2xl font-bold tracking-tight flex-1">Sản phẩm</h2>
+              <button onClick={() => copyShareLink('page', 'products')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#f5f5f7] hover:bg-[#e8e8ed] transition-colors text-[#1d1d1f]">
+                <Link2 className="h-3.5 w-3.5" /> Copy link
+              </button>
             </div>
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#86868b]" />
