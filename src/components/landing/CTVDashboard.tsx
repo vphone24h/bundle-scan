@@ -252,26 +252,15 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
             <p className="text-xs text-muted-foreground">{storeName} • {ctv.ctv_code}</p>
           </div>
         </div>
-        {!loggedOut ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:bg-destructive/10"
-            onClick={async () => {
-              localStorage.removeItem('ctv_store_mode');
-              const authKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-              if (authKey) localStorage.removeItem(authKey);
-              try { await supabase.auth.signOut(); } catch {}
-              sessionStorage.setItem('ctv_logged_out', '1');
-              setLoggedOut(true);
-            }}
-          >
-            <LogOut className="h-4 w-4 mr-1" />
-            Đăng xuất
-          </Button>
-        ) : (
-          <span className="text-xs text-emerald-600 font-medium">✓ Đã đăng xuất</span>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-destructive hover:bg-destructive/10"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4 mr-1" />
+          Đăng xuất
+        </Button>
       </div>
 
       <div className="p-4 space-y-4 max-w-2xl mx-auto">
