@@ -327,6 +327,7 @@ export default function DebtPage() {
       </div>
 
       <DebtTagManager open={showTagManager} onOpenChange={setShowTagManager} />
+      <DebtOffsetScanDialog open={showOffsetScan} onOpenChange={setShowOffsetScan} />
       <DebtSettingsDialog open={showSettings} onOpenChange={setShowSettings} />
       <DebtDueListDialog
         open={showDueToday}
