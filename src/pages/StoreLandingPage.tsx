@@ -223,18 +223,20 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
 
   // All other templates use UniversalStoreTemplate
   return (
-    <UniversalStoreTemplate
-      settings={settings}
-      tenant={tenant}
-      tenantId={tenantId}
-      storeId={storeId}
-      branches={branches}
-      productsData={productsData}
-      articlesData={articlesData}
-      searchParams={searchParams}
-      setSearchParams={setSearchParams}
-      queryClient={queryClient}
-      templateId={template}
-    />
+    <LandingCartProvider>
+      <UniversalStoreTemplate
+        settings={settings}
+        tenant={tenant}
+        tenantId={tenantId}
+        storeId={storeId}
+        branches={branches}
+        productsData={productsData}
+        articlesData={articlesData}
+        searchParams={searchParams}
+        setSearchParams={setSearchParams}
+        queryClient={queryClient}
+        templateId={template}
+      />
+    </LandingCartProvider>
   );
 }
