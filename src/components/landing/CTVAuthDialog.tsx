@@ -55,24 +55,24 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
     }
     setLoading(true);
     try {
-      // Build redirect URL back to the store (subdomain or current origin)
-      const storeRedirectUrl = buildStoreUrl(tenantId);
-      const redirectBase = storeRedirectUrl.includes('?') 
-        ? storeRedirectUrl.split('?')[0] 
-        : storeRedirectUrl;
-      
-      const { error } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: {
-          data: { full_name: form.full_name, ctv_tenant_id: tenantId },
-          emailRedirectTo: window.location.origin, // Redirect back to current store page
+      // Use edge function to signup CTV and send verification via store's SMTP
+      const { data, error } = await supabase.functions.invoke('signup-ctv', {
+        body: {
+          email: form.email,
+          password: form.password,
+          full_name: form.full_name,
+          phone: form.phone || undefined,
+          tenant_id: tenantId,
+          redirect_url: window.location.origin,
         },
       });
+      
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
       toast({
         title: 'Đăng ký thành công!',
-        description: 'Vui lòng kiểm tra email để xác thực tài khoản.',
+        description: 'Vui lòng kiểm tra email để xác thực tài khoản. Email được gửi từ cửa hàng.',
       });
       setMode('login');
     } catch (e: any) {
