@@ -419,21 +419,6 @@ export function EmailTemplatePickerDialog({ open, onOpenChange, onSelectTemplate
 
           {/* Chăm sóc tự động */}
           <TemplateGroup title="⏱️ Chăm sóc tự động" templates={EMAIL_TEMPLATE_PRESETS} onSelect={onSelectTemplate} onClose={() => onOpenChange(false)} showDays />
-
-          {/* Đặt lịch */}
-          <TemplateGroup title="📅 Đặt lịch / Tư vấn / Spa" templates={BOOKING_EMAIL_PRESETS} onSelect={onSelectTemplate} onClose={() => onOpenChange(false)} />
-
-          {/* Nhà hàng */}
-          <TemplateGroup title="🍽️ Nhà hàng / Ẩm thực" templates={RESTAURANT_EMAIL_PRESETS} onSelect={onSelectTemplate} onClose={() => onOpenChange(false)} />
-
-          {/* Khách sạn */}
-          <TemplateGroup title="🏨 Khách sạn / Du lịch" templates={HOTEL_EMAIL_PRESETS} onSelect={onSelectTemplate} onClose={() => onOpenChange(false)} />
-
-          {/* Giáo dục */}
-          <TemplateGroup title="🎓 Giáo dục / Đào tạo" templates={EDUCATION_EMAIL_PRESETS} onSelect={onSelectTemplate} onClose={() => onOpenChange(false)} />
-
-          {/* BĐS / Ô tô */}
-          <TemplateGroup title="🏠 Bất động sản / Ô tô" templates={REALESTATE_EMAIL_PRESETS} onSelect={onSelectTemplate} onClose={() => onOpenChange(false)} />
         </div>
       </DialogContent>
     </Dialog>
