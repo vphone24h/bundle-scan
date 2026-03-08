@@ -178,17 +178,23 @@ export default function PlatformAdminPage() {
           </TabsContent>
 
           <TabsContent value="email-history" className="mt-6">
-            <Tabs defaultValue="history">
+            <Tabs defaultValue="manual-email">
               <TabsList className="mb-4">
-                <TabsTrigger value="history" className="text-xs sm:text-sm">
-                  <Mail className="h-3 w-3 mr-1" /> Lịch sử email
+                <TabsTrigger value="manual-email" className="text-xs sm:text-sm">
+                  <Mail className="h-3 w-3 mr-1" /> Thủ công
+                </TabsTrigger>
+                <TabsTrigger value="auto-email" className="text-xs sm:text-sm">
+                  <Zap className="h-3 w-3 mr-1" /> Tự động
                 </TabsTrigger>
                 <TabsTrigger value="email-automation" className="text-xs sm:text-sm">
-                  <Zap className="h-3 w-3 mr-1" /> Email Automation
+                  <Zap className="h-3 w-3 mr-1" /> Kịch bản
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="history">
+              <TabsContent value="manual-email">
                 <EmailHistoryTable />
+              </TabsContent>
+              <TabsContent value="auto-email">
+                <AutoEmailHistoryTable />
               </TabsContent>
               <TabsContent value="email-automation">
                 <PlatformEmailAutomationManagement />
