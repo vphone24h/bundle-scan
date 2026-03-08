@@ -29,7 +29,7 @@ import {
   EmailAutomation,
   EmailAutomationBlock,
 } from '@/hooks/useEmailAutomations';
-import { EmailTemplatePickerDialog, EmailTemplatePreset, ORDER_EMAIL_PRESETS } from './EmailTemplatePickerDialog';
+import { EmailTemplatePickerDialog, EmailTemplatePreset, ORDER_EMAIL_PRESETS, BOOKING_EMAIL_PRESETS, RESTAURANT_EMAIL_PRESETS, HOTEL_EMAIL_PRESETS, EDUCATION_EMAIL_PRESETS, REALESTATE_EMAIL_PRESETS } from './EmailTemplatePickerDialog';
 
 const TRIGGER_TYPES = [
   // Nhóm mua hàng
