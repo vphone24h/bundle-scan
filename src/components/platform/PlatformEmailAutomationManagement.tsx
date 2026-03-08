@@ -71,6 +71,10 @@ const DEFAULT_TEMPLATES: Record<string, { subject: string; html_content: string 
     subject: 'Bạn chưa xuất hàng – Thử ngay! 🛒',
     html_content: '<h2>Chào {{tenant_name}}!</h2><p>Tính năng Xuất hàng giúp bạn ghi nhận doanh thu nhanh chóng. Hãy thử ngay!</p>',
   },
+  post_purchase_days: {
+    subject: 'Cảm ơn bạn đã sử dụng VKho! 🎉',
+    html_content: '<h2>Chào {{tenant_name}}!</h2><p>Cảm ơn bạn đã thực hiện giao dịch bán hàng trên VKho. Hy vọng bạn hài lòng với trải nghiệm!</p><p>Hãy tiếp tục khám phá các tính năng báo cáo, quản lý kho và chăm sóc khách hàng nhé.</p><p><a href="https://vkho.vn">Truy cập VKho →</a></p><p style="color:#888;font-size:12px;">Email này chỉ gửi một lần duy nhất.</p>',
+  },
 };
 
 export function PlatformEmailAutomationManagement() {
