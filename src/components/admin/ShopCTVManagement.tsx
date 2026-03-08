@@ -116,6 +116,7 @@ export function ShopCTVManagement() {
       auto_approve_ctv: activeSettings.auto_approve_ctv ?? true,
       program_description: activeSettings.program_description || '',
       commission_tiers: commissionTiers,
+      f1_commission_tiers: f1CommissionTiers,
       commission_threshold: commissionTiers[0]?.threshold || 5000000,
       low_commission_rate: commissionTiers[0]?.rate || 10,
       low_commission_type: commissionTiers[0]?.type || 'percentage',
