@@ -101,7 +101,7 @@ export function ContactFormDialog({
             </div>
             <div>
               <Label className="text-sm">Số điện thoại <span className="text-destructive">*</span></Label>
-              <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Nhập số điện thoại" inputMode="tel" className="h-11 text-base" />
+              <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Nhập SĐT đã từng mua để được giảm giá" inputMode="tel" className="h-11 text-base" />
             </div>
             <div>
               <Label className="text-sm">Email {requireEmail && <span className="text-destructive">*</span>}</Label>
