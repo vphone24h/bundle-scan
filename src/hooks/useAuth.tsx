@@ -76,10 +76,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             
             // Auto-detect CTV user: if user has ctv_tenant_id in metadata,
             // set ctv_store_mode so they stay on the store page (not admin)
+            // But skip if user just explicitly logged out as CTV
             const ctvTenantId = newSession?.user?.user_metadata?.ctv_tenant_id;
-            if (ctvTenantId && !localStorage.getItem('ctv_store_mode')) {
+            const justLoggedOut = localStorage.getItem('ctv_just_logged_out');
+            if (ctvTenantId && !localStorage.getItem('ctv_store_mode') && !justLoggedOut) {
               localStorage.setItem('ctv_store_mode', ctvTenantId);
               console.log('[Auth] Auto-set ctv_store_mode for CTV user:', ctvTenantId);
+            }
+            // Clear the flag after checking
+            if (justLoggedOut) {
+              localStorage.removeItem('ctv_just_logged_out');
             }
           }
           setSession(newSession);
