@@ -249,31 +249,36 @@ export default function UniversalStoreTemplate({
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
   const navigateTo = (view: PageView, opts?: { keepCategory?: boolean; filterTag?: string | null }) => {
-    setPageView(view); setSelectedArticle(null);
+    setPageView(view); setSelectedArticle(null); setSelectedProduct(null);
     if (!opts?.keepCategory) setSelectedCategoryId(null);
     setProductFilterTag(opts?.filterTag ?? null);
-    const newParams = new URLSearchParams(searchParams);
-    newParams.delete('product'); newParams.delete('article');
+    const newParams = new URLSearchParams();
     setSearchParams(newParams, { replace: true });
+    // Update browser URL path
+    const pagePath = buildPagePath(view);
+    window.history.replaceState(null, '', pagePath === '/' ? '/' : pagePath);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const openArticle = (article: LandingArticle) => {
     setSelectedArticle(article); setPageView('article-detail');
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('article', article.id); newParams.delete('product');
-    setSearchParams(newParams, { replace: true });
+    const articlePath = buildArticlePath(article.title, article.id);
+    window.history.replaceState(null, '', articlePath);
+    setSearchParams(new URLSearchParams(), { replace: true });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const openProduct = (p: LandingProduct) => {
     setSelectedProduct(p);
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('product', p.id); newParams.delete('article');
-    setSearchParams(newParams, { replace: true });
+    const categories = productsData?.categories || [];
+    const category = categories.find(c => c.id === p.category_id);
+    const parentCategory = category?.parent_id ? categories.find(c => c.id === category.parent_id) : null;
+    const productPath = buildProductDetailPath(p.name, p.id, category?.name, parentCategory?.name);
+    window.history.replaceState(null, '', productPath);
+    setSearchParams(new URLSearchParams(), { replace: true });
   };
 
-  const copyShareLink = (type: 'product' | 'article', id: string) => {
+  const copyShareLink = (type: 'product' | 'article' | 'page', id: string) => {
     const baseUrl = new URL(window.location.href);
     baseUrl.search = '';
     baseUrl.hash = '';
@@ -284,13 +289,19 @@ export default function UniversalStoreTemplate({
         const categories = productsData?.categories || [];
         const category = categories.find(c => c.id === product.category_id);
         const parentCategory = category?.parent_id ? categories.find(c => c.id === category.parent_id) : null;
-        const productPath = buildProductPath(product.name, product.id, category?.name, parentCategory?.name);
-        baseUrl.pathname = productPath;
+        baseUrl.pathname = buildProductDetailPath(product.name, product.id, category?.name, parentCategory?.name);
       } else {
         baseUrl.searchParams.set('product', id);
       }
-    } else {
-      baseUrl.searchParams.set('article', id);
+    } else if (type === 'article') {
+      const article = articlesData?.articles?.find(a => a.id === id);
+      if (article) {
+        baseUrl.pathname = buildArticlePath(article.title, article.id);
+      } else {
+        baseUrl.searchParams.set('article', id);
+      }
+    } else if (type === 'page') {
+      baseUrl.pathname = buildPagePath(id);
     }
     
     const cleanUrl = baseUrl.toString();
