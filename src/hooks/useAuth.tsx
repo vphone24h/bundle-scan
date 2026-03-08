@@ -252,6 +252,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userInitiatedSignOut = true;
     queryClient.clear();
     localStorage.removeItem(CURRENT_STORE_ID_KEY);
+    localStorage.removeItem('ctv_store_mode');
     await supabase.auth.signOut();
   };
 
