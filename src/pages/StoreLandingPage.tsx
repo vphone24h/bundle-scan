@@ -9,6 +9,7 @@ import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import UniversalStoreTemplate from '@/components/website-templates/UniversalStoreTemplate';
 import AppleStyleLandingTemplate from '@/components/website-templates/AppleStyleLandingTemplate';
+import { LandingCartProvider } from '@/hooks/useLandingCart';
 import { Loader2, Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
