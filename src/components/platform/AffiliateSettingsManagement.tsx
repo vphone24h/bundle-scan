@@ -22,6 +22,9 @@ export function AffiliateSettingsManagement() {
     hold_days: 7,
     min_withdrawal_amount: 500000,
     commission_description: '',
+    cookie_tracking_days: 30,
+    default_commission_rate: 3,
+    default_commission_type: 'percentage',
   });
 
   useEffect(() => {
