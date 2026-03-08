@@ -34,7 +34,7 @@ export function ShopCTVManagement() {
   const createCTV = useCreateShopCTV();
   const { data: withdrawals } = useShopCTVWithdrawals(currentTenantId);
   const processWithdrawal = useProcessCTVWithdrawal();
-  const { data: orders } = useShopCTVOrders(currentTenantId);
+  
 
   const [searchQuery, setSearchQuery] = useState('');
   const [addCTVOpen, setAddCTVOpen] = useState(false);
