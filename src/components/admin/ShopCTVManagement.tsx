@@ -57,6 +57,11 @@ export function ShopCTVManagement() {
       allow_self_register: activeSettings.allow_self_register ?? true,
       auto_approve_ctv: activeSettings.auto_approve_ctv ?? true,
       program_description: activeSettings.program_description || '',
+      commission_threshold: parseFloat(activeSettings.commission_threshold) || 5000000,
+      low_commission_rate: parseFloat(activeSettings.low_commission_rate) || 10,
+      low_commission_type: activeSettings.low_commission_type || 'percentage',
+      high_commission_rate: parseFloat(activeSettings.high_commission_rate) || 200000,
+      high_commission_type: activeSettings.high_commission_type || 'fixed',
     });
     setSettingsForm(null);
   };
@@ -273,25 +278,52 @@ export function ShopCTVManagement() {
                 />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              {/* Tiered Commission Config */}
+              <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
+                <h4 className="font-semibold text-sm">Cấu hình hoa hồng theo giá trị đơn</h4>
+                
                 <div className="space-y-2">
-                  <Label>Hoa hồng mặc định (%)</Label>
+                  <Label>Ngưỡng giá trị đơn hàng (VND)</Label>
                   <Input
                     type="number"
-                    value={activeSettings.default_commission_rate ?? 5}
-                    onChange={e => updateField('default_commission_rate', e.target.value)}
+                    value={activeSettings.commission_threshold ?? 5000000}
+                    onChange={e => updateField('commission_threshold', e.target.value)}
+                    placeholder="5000000"
                   />
+                  <p className="text-[11px] text-muted-foreground">Đơn hàng dưới ngưỡng này sẽ tính hoa hồng theo %, trên ngưỡng sẽ tính số tiền cố định</p>
                 </div>
-                <div className="space-y-2">
-                  <Label>Loại hoa hồng</Label>
-                  <Select value={activeSettings.default_commission_type || 'percentage'} onValueChange={v => updateField('default_commission_type', v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="percentage">Phần trăm (%)</SelectItem>
-                      <SelectItem value="fixed">Cố định (VND)</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2 border rounded-md p-3">
+                    <Label className="text-xs font-semibold">📉 Đơn dưới {formatNumber(activeSettings.commission_threshold ?? 5000000)}đ</Label>
+                    <p className="text-[11px] text-muted-foreground">Sản phẩm giá trị thấp → tính %</p>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={activeSettings.low_commission_rate ?? 10}
+                        onChange={e => updateField('low_commission_rate', e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="text-sm font-medium text-muted-foreground">%</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2 border rounded-md p-3">
+                    <Label className="text-xs font-semibold">📈 Đơn từ {formatNumber(activeSettings.commission_threshold ?? 5000000)}đ trở lên</Label>
+                    <p className="text-[11px] text-muted-foreground">Sản phẩm giá trị cao → số tiền cố định</p>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={activeSettings.high_commission_rate ?? 200000}
+                        onChange={e => updateField('high_commission_rate', e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="text-sm font-medium text-muted-foreground">VND</span>
+                    </div>
+                  </div>
                 </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Cookie tracking (ngày)</Label>
                   <Input
