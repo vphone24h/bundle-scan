@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { PullToRefresh } from '@/components/layout/PullToRefresh';
 import DOMPurify from 'dompurify';
 import { SetURLSearchParams, useLocation } from 'react-router-dom';
-import { buildProductPath, extractProductIdFromPath } from '@/lib/slugify';
+import { buildProductPath, buildProductDetailPath, buildArticlePath, buildPagePath, extractProductIdFromPath, detectPageFromPath } from '@/lib/slugify';
 import { QueryClient } from '@tanstack/react-query';
 import { TenantLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo, HomeSectionItem } from '@/hooks/useTenantLanding';
 import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProducts';
