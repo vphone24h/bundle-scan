@@ -32,14 +32,23 @@ import {
 import { EmailTemplatePickerDialog, EmailTemplatePreset, ORDER_EMAIL_PRESETS } from './EmailTemplatePickerDialog';
 
 const TRIGGER_TYPES = [
+  // Nhóm mua hàng
   { value: 'days_after_purchase', label: 'Sau đúng X ngày mua hàng' },
   { value: 'days_after_purchase_onwards', label: 'Sau X ngày mua hàng trở đi' },
   { value: 'days_before_warranty_expires', label: 'Trước khi hết bảo hành (ngày)' },
   { value: 'days_inactive', label: 'Không mua hàng trong (ngày)' },
+  // Nhóm đơn hàng website
   { value: 'on_order_confirmation', label: 'Khi đặt hàng' },
   { value: 'on_order_confirmed', label: 'Khi đơn đã xác nhận' },
   { value: 'on_order_shipping', label: 'Khi giao hàng' },
   { value: 'on_order_warranty', label: 'Khi gửi bảo hành' },
+  { value: 'on_order_cancelled', label: 'Khi đơn hàng bị huỷ' },
+  // Nhóm chăm sóc khách hàng
+  { value: 'customer_birthday', label: 'Sinh nhật khách hàng' },
+  { value: 'customer_registration_anniversary', label: 'Kỷ niệm ngày đăng ký' },
+  { value: 'after_customer_review', label: 'Sau khi khách đánh giá' },
+  { value: 'after_voucher_received', label: 'Sau khi khách nhận voucher' },
+  { value: 'days_before_care_schedule', label: 'Trước ngày hẹn chăm sóc (ngày)' },
 ];
 
 const BLOCK_TYPES = [
