@@ -336,6 +336,15 @@ export default function UniversalStoreTemplate({
           storeInfo={{ name: displayStoreName, phone: settings?.store_phone || '', address: settings?.store_address || '', email: settings?.store_email || '' }}
           zaloUrl={settings?.zalo_url}
           facebookUrl={settings?.facebook_url}
+          paymentConfig={{
+            codEnabled: (settings as any)?.payment_cod_enabled !== false,
+            transferEnabled: !!(settings as any)?.payment_transfer_enabled,
+            bankName: (settings as any)?.payment_bank_name || null,
+            accountNumber: (settings as any)?.payment_account_number || null,
+            accountHolder: (settings as any)?.payment_account_holder || null,
+            confirmZaloUrl: (settings as any)?.payment_confirm_zalo_url || null,
+            confirmMessengerUrl: (settings as any)?.payment_confirm_messenger_url || null,
+          }}
         />
         <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
       </>

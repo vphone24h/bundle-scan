@@ -19,6 +19,7 @@ import { TemplateSelector } from '@/components/website-templates/TemplateSelecto
 import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, PageItemConfig, InstallmentRateConfig, DEFAULT_INSTALLMENT_RATES, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems, SYSTEM_PAGES, SYSTEM_PAGE_IDS, getSystemPageById, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
 import { HomeSectionManager, HomeSectionItem } from './HomeSectionManager';
 import { ZaloOASetupWizard } from './ZaloOASetupWizard';
+import { PaymentConfigSection } from './PaymentConfigSection';
 
 import {
   Dialog,
@@ -930,6 +931,13 @@ export function LandingPageSettings() {
         zalo_app_secret: (settings as any).zalo_app_secret || '',
         zalo_refresh_token: (settings as any).zalo_refresh_token || '',
         zalo_zns_template_id: (settings as any).zalo_zns_template_id || '',
+        payment_cod_enabled: (settings as any).payment_cod_enabled ?? true,
+        payment_transfer_enabled: (settings as any).payment_transfer_enabled ?? false,
+        payment_bank_name: (settings as any).payment_bank_name || '',
+        payment_account_number: (settings as any).payment_account_number || '',
+        payment_account_holder: (settings as any).payment_account_holder || '',
+        payment_confirm_zalo_url: (settings as any).payment_confirm_zalo_url || '',
+        payment_confirm_messenger_url: (settings as any).payment_confirm_messenger_url || '',
       } as any);
     } else if (tenant) {
       setFormData(prev => ({
@@ -1918,6 +1926,12 @@ export function LandingPageSettings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Payment Config */}
+      <PaymentConfigSection
+        formData={formData as any}
+        onChange={(key, value) => handleChange(key as any, value)}
+      />
 
       {/* Auto-save indicator */}
       {updateSettings.isPending && (

@@ -3451,6 +3451,7 @@ export type Database = {
           id: string
           note: string | null
           order_code: string | null
+          payment_method: string | null
           product_id: string
           product_image_url: string | null
           product_name: string
@@ -3458,6 +3459,7 @@ export type Database = {
           quantity: number
           status: string
           tenant_id: string
+          transfer_content: string | null
           updated_at: string
           variant: string | null
         }
@@ -3477,6 +3479,7 @@ export type Database = {
           id?: string
           note?: string | null
           order_code?: string | null
+          payment_method?: string | null
           product_id: string
           product_image_url?: string | null
           product_name: string
@@ -3484,6 +3487,7 @@ export type Database = {
           quantity?: number
           status?: string
           tenant_id: string
+          transfer_content?: string | null
           updated_at?: string
           variant?: string | null
         }
@@ -3503,6 +3507,7 @@ export type Database = {
           id?: string
           note?: string | null
           order_code?: string | null
+          payment_method?: string | null
           product_id?: string
           product_image_url?: string | null
           product_name?: string
@@ -3510,6 +3515,7 @@ export type Database = {
           quantity?: number
           status?: string
           tenant_id?: string
+          transfer_content?: string | null
           updated_at?: string
           variant?: string | null
         }
@@ -5789,6 +5795,13 @@ export type Database = {
           order_email_on_shipping: boolean | null
           order_email_on_warranty: boolean | null
           order_email_sender: string | null
+          payment_account_holder: string | null
+          payment_account_number: string | null
+          payment_bank_name: string | null
+          payment_cod_enabled: boolean | null
+          payment_confirm_messenger_url: string | null
+          payment_confirm_zalo_url: string | null
+          payment_transfer_enabled: boolean | null
           primary_color: string | null
           show_banner: boolean | null
           show_branches: boolean
@@ -5862,6 +5875,13 @@ export type Database = {
           order_email_on_shipping?: boolean | null
           order_email_on_warranty?: boolean | null
           order_email_sender?: string | null
+          payment_account_holder?: string | null
+          payment_account_number?: string | null
+          payment_bank_name?: string | null
+          payment_cod_enabled?: boolean | null
+          payment_confirm_messenger_url?: string | null
+          payment_confirm_zalo_url?: string | null
+          payment_transfer_enabled?: boolean | null
           primary_color?: string | null
           show_banner?: boolean | null
           show_branches?: boolean
@@ -5935,6 +5955,13 @@ export type Database = {
           order_email_on_shipping?: boolean | null
           order_email_on_warranty?: boolean | null
           order_email_sender?: string | null
+          payment_account_holder?: string | null
+          payment_account_number?: string | null
+          payment_bank_name?: string | null
+          payment_cod_enabled?: boolean | null
+          payment_confirm_messenger_url?: string | null
+          payment_confirm_zalo_url?: string | null
+          payment_transfer_enabled?: boolean | null
           primary_color?: string | null
           show_banner?: boolean | null
           show_branches?: boolean

@@ -66,6 +66,14 @@ export interface TenantLandingSettings {
   order_email_on_shipping: boolean;
   order_email_on_warranty: boolean;
   order_email_on_export: boolean;
+  // Payment config
+  payment_cod_enabled: boolean;
+  payment_transfer_enabled: boolean;
+  payment_bank_name: string | null;
+  payment_account_number: string | null;
+  payment_account_holder: string | null;
+  payment_confirm_zalo_url: string | null;
+  payment_confirm_messenger_url: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -24,6 +24,8 @@ export interface LandingOrder {
   approved_at: string | null;
   cancelled_reason: string | null;
   order_code: string | null;
+  payment_method: 'cod' | 'transfer' | null;
+  transfer_content: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,6 +47,8 @@ export function usePlaceLandingOrder() {
       customer_email?: string;
       customer_address?: string;
       note?: string;
+      payment_method?: string;
+      transfer_content?: string;
     }) => {
       const { data, error } = await supabase
         .from('landing_orders' as any)
