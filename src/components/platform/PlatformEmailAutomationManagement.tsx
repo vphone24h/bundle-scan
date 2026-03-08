@@ -20,7 +20,7 @@ import {
   usePlatformEmailAutomationLogs,
   type PlatformEmailAutomation,
 } from '@/hooks/usePlatformEmailAutomations';
-import { Plus, Pencil, Trash2, Mail, Clock, Zap, Users, Eye, CheckCircle, XCircle, Send } from 'lucide-react';
+import { Plus, Pencil, Trash2, Mail, Clock, Zap, Users, Eye, CheckCircle, XCircle, Send, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -83,7 +83,7 @@ export function PlatformEmailAutomationManagement() {
   const [editing, setEditing] = useState<PlatformEmailAutomation | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [sendingTestId, setSendingTestId] = useState<string | null>(null);
-
+  const [runningNow, setRunningNow] = useState(false);
   // Form state
   const [name, setName] = useState('');
   const [triggerType, setTriggerType] = useState('signup_days');
@@ -178,6 +178,23 @@ export function PlatformEmailAutomationManagement() {
     }
   };
 
+  const handleRunNow = async () => {
+    setRunningNow(true);
+    try {
+      const { error } = await supabase.functions.invoke('run-platform-email-automations');
+      if (error) throw error;
+      toast.success('Đã chạy email automation thành công!');
+      // Refresh logs
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err: any) {
+      toast.error('Lỗi chạy automation: ' + err.message);
+    } finally {
+      setRunningNow(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Tabs defaultValue="scenarios">
@@ -196,9 +213,14 @@ export function PlatformEmailAutomationManagement() {
               <h3 className="text-base font-semibold">Email Automation</h3>
               <p className="text-xs text-muted-foreground">Tự động gửi email chăm sóc khách hàng theo điều kiện</p>
             </div>
-            <Button size="sm" onClick={openCreate}>
-              <Plus className="h-4 w-4 mr-1" /> Thêm kịch bản
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={handleRunNow} disabled={runningNow}>
+                <Play className={`h-4 w-4 mr-1 ${runningNow ? 'animate-spin' : ''}`} /> {runningNow ? 'Đang chạy...' : 'Chạy ngay'}
+              </Button>
+              <Button size="sm" onClick={openCreate}>
+                <Plus className="h-4 w-4 mr-1" /> Thêm kịch bản
+              </Button>
+            </div>
           </div>
 
           {isLoading ? (
