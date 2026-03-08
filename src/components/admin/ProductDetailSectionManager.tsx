@@ -620,12 +620,20 @@ export function CTAButtonsEditor({ buttons, onChange, templateId }: CTAButtonsEd
                     </SelectContent>
                   </Select>
                 </div>
-                {['custom_link', 'zalo', 'facebook'].includes(btn.action) && (
+                {['custom_link', 'zalo', 'facebook', 'join_member'].includes(btn.action) && (
                   <div className="space-y-1">
                     <Label className="text-[10px]">
-                      {btn.action === 'zalo' ? 'Link Zalo' : btn.action === 'facebook' ? 'Link Facebook' : 'URL tùy chỉnh'}
+                      {btn.action === 'zalo' ? 'Link Zalo' : btn.action === 'facebook' ? 'Link Facebook' : btn.action === 'join_member' ? 'Link nhóm (Zalo/Facebook) *' : 'URL tùy chỉnh'}
                     </Label>
-                    <Input className="h-7 text-xs" value={btn.customUrl || ''} onChange={e => handleUpdate(i, 'customUrl', e.target.value)} placeholder="https://..." />
+                    <Input
+                      className={`h-7 text-xs ${btn.action === 'join_member' && !btn.customUrl?.trim() ? 'border-destructive ring-1 ring-destructive' : ''}`}
+                      value={btn.customUrl || ''}
+                      onChange={e => handleUpdate(i, 'customUrl', e.target.value)}
+                      placeholder={btn.action === 'join_member' ? 'https://zalo.me/g/... hoặc fb.com/groups/...' : 'https://...'}
+                    />
+                    {btn.action === 'join_member' && !btn.customUrl?.trim() && (
+                      <p className="text-[10px] text-destructive font-medium">⚠️ Điền link tham gia nhóm, nếu không nút sẽ không hoạt động</p>
+                    )}
                   </div>
                 )}
               </div>

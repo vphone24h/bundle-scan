@@ -14,7 +14,7 @@ import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { useCustomerPointsPublic } from '@/hooks/useTenantLanding';
 import { useLandingCart } from '@/hooks/useLandingCart';
-import { ContactFormDialog, BookingDialog, TrackOrderDialog, CheckWarrantyDialog, WriteReviewDialog, SupportDialog, CartDialog, PromotionInfoDialog } from '@/components/landing/CTAActionDialogs';
+import { ContactFormDialog, BookingDialog, TrackOrderDialog, CheckWarrantyDialog, WriteReviewDialog, SupportDialog, CartDialog, PromotionInfoDialog, JoinMemberDialog } from '@/components/landing/CTAActionDialogs';
 import { toast } from 'sonner';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
 
@@ -944,8 +944,9 @@ export function ProductDetailPage({
             case 'join_member': {
               if (!btn.customUrl) return null;
               return (
-                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
-                  <a href={btn.customUrl} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
+                  onClick={() => setActiveDialog('join_member')}>
+                  {btn.icon} {btn.label}
                 </Button>
               );
             }
@@ -1233,6 +1234,13 @@ export function ProductDetailPage({
         onClose={() => setActiveDialog(null)}
         title={activeDialog === 'today_offer' ? '🔥 Ưu đãi hôm nay' : activeDialog === 'today_gift' ? '🎁 Quà tặng hôm nay' : '⚡ Deal hot'}
         productName={product.name}
+      />
+      <JoinMemberDialog
+        open={activeDialog === 'join_member'}
+        onClose={() => setActiveDialog(null)}
+        tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+        productName={product.name}
+        groupUrl={(ctaButtons || []).find(b => b.action === 'join_member')?.customUrl || ''}
       />
     </div>
   );

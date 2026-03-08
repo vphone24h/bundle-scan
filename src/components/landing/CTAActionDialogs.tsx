@@ -553,3 +553,96 @@ export function PromotionInfoDialog({ open, onClose, title, productName }: { ope
     </Dialog>
   );
 }
+
+// ===== JOIN MEMBER DIALOG =====
+interface JoinMemberDialogProps extends CTADialogProps {
+  groupUrl: string; // required: Zalo or Facebook group link
+}
+
+export function JoinMemberDialog({
+  open, onClose, tenantId, primaryColor, branches,
+  productName, groupUrl,
+}: JoinMemberDialogProps) {
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [branch, setBranch] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const placeOrder = usePlaceLandingOrder();
+
+  const handleSubmit = async () => {
+    if (!name.trim() || !phone.trim()) { toast.error('Vui lòng nhập họ tên và số điện thoại'); return; }
+    if (!email.trim()) { toast.error('Vui lòng nhập email'); return; }
+    if (!branch && branches.length > 0) { toast.error('Vui lòng chọn chi nhánh'); return; }
+    try {
+      await placeOrder.mutateAsync({
+        tenant_id: tenantId,
+        branch_id: branch || branches[0]?.id || '',
+        product_id: 'join_member',
+        product_name: 'Đăng ký thành viên',
+        product_image_url: null,
+        product_price: 0,
+        customer_name: name.trim(),
+        customer_phone: phone.trim(),
+        customer_email: email.trim(),
+        note: `Đăng ký thành viên${productName ? ` - SP: ${productName}` : ''}`,
+      });
+      setSubmitted(true);
+    } catch { toast.error('Gửi thất bại, vui lòng thử lại'); }
+  };
+
+  const handleClose = () => { onClose(); setTimeout(() => { setName(''); setPhone(''); setEmail(''); setBranch(''); setSubmitted(false); }, 300); };
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && handleClose()}>
+      <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-base">👤 Tham gia thành viên</DialogTitle>
+          <DialogDescription className="text-sm">Đăng ký để nhận ưu đãi dành riêng cho thành viên</DialogDescription>
+        </DialogHeader>
+        {submitted ? (
+          <div className="text-center py-6 space-y-3">
+            <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
+            <p className="font-semibold">Đăng ký thành công!</p>
+            <p className="text-sm text-muted-foreground">Tham gia nhóm để nhận thông tin ưu đãi mới nhất:</p>
+            <Button className="w-full h-11 font-semibold gap-2" style={{ backgroundColor: primaryColor }} asChild>
+              <a href={groupUrl} target="_blank" rel="noopener noreferrer">
+                {groupUrl.includes('zalo') ? '💬 Tham gia nhóm Zalo' : groupUrl.includes('facebook') || groupUrl.includes('fb.') ? '👥 Tham gia nhóm Facebook' : '🔗 Tham gia nhóm'}
+              </a>
+            </Button>
+            <Button variant="outline" onClick={handleClose} className="h-9 text-sm">Đóng</Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm">Họ tên <span className="text-destructive">*</span></Label>
+              <Input value={name} onChange={e => setName(e.target.value)} placeholder="Nhập họ tên" className="h-11 text-base" />
+            </div>
+            <div>
+              <Label className="text-sm">Số điện thoại <span className="text-destructive">*</span></Label>
+              <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Nhập số điện thoại" inputMode="tel" className="h-11 text-base" />
+            </div>
+            <div>
+              <Label className="text-sm">Email <span className="text-destructive">*</span></Label>
+              <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập email" type="email" inputMode="email" className="h-11 text-base" />
+            </div>
+            {branches.length > 1 && (
+              <div>
+                <Label className="text-sm">Chi nhánh</Label>
+                <select value={branch} onChange={e => setBranch(e.target.value)}
+                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base">
+                  <option value="">Chọn chi nhánh</option>
+                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+            )}
+            <Button className="w-full h-11 font-semibold" style={{ backgroundColor: primaryColor }} onClick={handleSubmit} disabled={placeOrder.isPending}>
+              {placeOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Đăng ký thành viên
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
