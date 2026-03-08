@@ -473,8 +473,8 @@ export function ShopCTVManagement() {
               <Input value={addForm.phone} onChange={e => setAddForm(f => ({ ...f, phone: e.target.value }))} />
             </div>
             <div className="space-y-2">
-              <Label>Email</Label>
-              <Input value={addForm.email} onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))} />
+              <Label>Email *</Label>
+              <Input type="email" value={addForm.email} onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))} placeholder="email@example.com" />
             </div>
             <div className="space-y-2">
               <Label>Hoa hồng (%)</Label>
@@ -484,7 +484,7 @@ export function ShopCTVManagement() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddCTVOpen(false)}>Hủy</Button>
             <Button
-              disabled={createCTV.isPending || !addForm.full_name.trim()}
+              disabled={createCTV.isPending || !addForm.full_name.trim() || !addForm.email.trim()}
               onClick={async () => {
                 await createCTV.mutateAsync({
                   tenant_id: currentTenantId!,
