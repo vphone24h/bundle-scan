@@ -774,6 +774,16 @@ export function ProductDetailPage({
                   Gọi ngay: {warrantyHotline}
                 </a>
               )}
+              {onNavigateOrderLookup && (
+                <Button
+                  variant="outline"
+                  className="w-full h-11 mt-2"
+                  onClick={onNavigateOrderLookup}
+                  style={{ borderColor: primaryColor, color: primaryColor }}
+                >
+                  <Search className="h-4 w-4 mr-1.5" /> Kiểm tra đơn hàng
+                </Button>
+              )}
               <Button variant="outline" className="w-full mt-2 h-11" onClick={onBack}>Quay lại</Button>
             </div>
           )}
