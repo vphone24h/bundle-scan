@@ -5166,6 +5166,7 @@ export type Database = {
           allow_self_register: boolean
           auto_approve_ctv: boolean
           commission_threshold: number
+          commission_tiers: Json
           cookie_tracking_days: number
           created_at: string
           default_commission_rate: number
@@ -5185,6 +5186,7 @@ export type Database = {
           allow_self_register?: boolean
           auto_approve_ctv?: boolean
           commission_threshold?: number
+          commission_tiers?: Json
           cookie_tracking_days?: number
           created_at?: string
           default_commission_rate?: number
@@ -5204,6 +5206,7 @@ export type Database = {
           allow_self_register?: boolean
           auto_approve_ctv?: boolean
           commission_threshold?: number
+          commission_tiers?: Json
           cookie_tracking_days?: number
           created_at?: string
           default_commission_rate?: number
