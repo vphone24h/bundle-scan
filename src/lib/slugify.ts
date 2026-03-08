@@ -96,6 +96,7 @@ const PAGE_PATH_MAP: Record<string, string> = {
   collection: 'bo-suu-tap',
   promotion: 'khuyen-mai',
   reviews: 'danh-gia',
+  'order-lookup': 'tra-cuu-don-hang',
 };
 
 const PATH_TO_PAGE_MAP: Record<string, string> = Object.fromEntries(
