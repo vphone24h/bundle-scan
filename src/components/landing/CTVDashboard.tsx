@@ -54,11 +54,6 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   });
   const [profileForm, setProfileForm] = useState<any>(null);
   const [profileSaving, setProfileSaving] = useState(false);
-  const [loggedOut, setLoggedOut] = useState(() => {
-    const val = sessionStorage.getItem('ctv_logged_out');
-    if (val) { sessionStorage.removeItem('ctv_logged_out'); return true; }
-    return false;
-  });
 
   const handleLogout = async () => {
     // Build target URL FIRST: the store's website (NOT admin/kho)
@@ -237,41 +232,24 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
               variant="ghost"
               size="icon"
               onClick={onBack}
-              className={loggedOut ? 'animate-pulse ring-2 ring-primary' : ''}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            {loggedOut && (
-              <span className="absolute -bottom-6 left-0 whitespace-nowrap text-[10px] font-medium text-primary animate-bounce">
-                ← Về website
-              </span>
-            )}
           </div>
           <div>
             <h1 className="font-semibold text-sm">CTV Dashboard</h1>
             <p className="text-xs text-muted-foreground">{storeName} • {ctv.ctv_code}</p>
           </div>
         </div>
-        {!loggedOut ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:bg-destructive/10"
-            onClick={async () => {
-              localStorage.removeItem('ctv_store_mode');
-              const authKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-              if (authKey) localStorage.removeItem(authKey);
-              try { await supabase.auth.signOut(); } catch {}
-              sessionStorage.setItem('ctv_logged_out', '1');
-              setLoggedOut(true);
-            }}
-          >
-            <LogOut className="h-4 w-4 mr-1" />
-            Đăng xuất
-          </Button>
-        ) : (
-          <span className="text-xs text-emerald-600 font-medium">✓ Đã đăng xuất</span>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-destructive hover:bg-destructive/10"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4 mr-1" />
+          Đăng xuất
+        </Button>
       </div>
 
       <div className="p-4 space-y-4 max-w-2xl mx-auto">
