@@ -497,7 +497,23 @@ export function CTAButtonsEditor({ buttons, onChange, templateId }: CTAButtonsEd
     onChange(updated);
   };
 
-  const handleAdd = () => {
+  const [showAddPicker, setShowAddPicker] = useState(false);
+
+  const handleAddPreset = (opt: CTAActionOption) => {
+    const newId = `cta_${Date.now()}`;
+    onChange([...currentButtons, {
+      id: newId,
+      label: opt.defaultLabel,
+      icon: opt.defaultIcon,
+      action: opt.value,
+      enabled: true,
+      customUrl: '',
+    }]);
+    setShowAddPicker(false);
+    setEditingId(newId);
+  };
+
+  const handleAddCustom = () => {
     const newId = `cta_${Date.now()}`;
     onChange([...currentButtons, {
       id: newId,
@@ -507,6 +523,7 @@ export function CTAButtonsEditor({ buttons, onChange, templateId }: CTAButtonsEd
       enabled: true,
       customUrl: '',
     }]);
+    setShowAddPicker(false);
     setEditingId(newId);
   };
 
