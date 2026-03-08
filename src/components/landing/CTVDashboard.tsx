@@ -163,9 +163,11 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
               <div className="space-y-2">
                 <Label>Mã giới thiệu (nếu có)</Label>
                 <Input
+                  readOnly={!!prefilledRefCode}
                   value={registerForm.referrer_code}
-                  onChange={e => setRegisterForm(f => ({ ...f, referrer_code: e.target.value }))}
+                  onChange={e => !prefilledRefCode && setRegisterForm(f => ({ ...f, referrer_code: e.target.value }))}
                   placeholder="CTV..."
+                  className={prefilledRefCode ? 'font-mono bg-muted/50' : ''}
                 />
               </div>
               <Button
