@@ -253,7 +253,14 @@ export default function SuppliersPage() {
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="font-semibold">{supplier.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold">{supplier.name}</h3>
+                      {(supplier as any).entity_code && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-mono">
+                          {(supplier as any).entity_code}
+                        </Badge>
+                      )}
+                    </div>
                     {isSuperAdmin && supplier.branch_id && (
                       <p className="text-[10px] text-primary/70 flex items-center gap-1 mt-0.5">
                         <Building2 className="h-3 w-3" />
