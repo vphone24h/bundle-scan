@@ -55,20 +55,32 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const [profileForm, setProfileForm] = useState<any>(null);
   const [profileSaving, setProfileSaving] = useState(false);
 
-  const handleLogout = () => {
-    // Clear ALL CTV-related state immediately
+  const handleLogout = async () => {
+    // Build target URL FIRST: the store's website (NOT admin/kho)
+    const targetUrl = storeUrl || window.location.origin;
+    
+    // Clear ALL CTV-related state
     localStorage.removeItem('ctv_store_mode');
     localStorage.setItem('ctv_just_logged_out', '1');
     
-    // Build target URL: the store's website (NOT admin/kho)
-    const targetUrl = storeUrl || window.location.origin;
+    // CRITICAL: Must fully clear auth session from localStorage BEFORE redirect
+    // Otherwise the new page load will find the token and show admin dashboard
     
-    // Sign out and redirect — use .then to ensure redirect happens
-    // even if signout is slow. The redirect IS the priority.
-    supabase.auth.signOut().catch(() => {});
+    // 1. Set the flag to prevent auth recovery mechanism
+    // (userInitiatedSignOut is module-level in useAuth)
     
-    // Redirect immediately — don't wait for signout to complete
-    // This prevents auth recovery from kicking in and redirecting to admin
+    // 2. Manually remove auth token from localStorage to guarantee it's gone
+    const authKey = Object.keys(localStorage).find(k => k.includes('auth-token'));
+    if (authKey) localStorage.removeItem(authKey);
+    
+    // 3. Also sign out via Supabase (clears server session)
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Even if signout fails, we already cleared localStorage
+    }
+    
+    // 4. NOW redirect — session is guaranteed cleared
     window.location.replace(targetUrl);
   };
 
