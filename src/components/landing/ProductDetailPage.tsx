@@ -818,6 +818,7 @@ export function ProductDetailPage({
                 </Button>
               );
             }
+            // === Đặt lịch / Đặt hàng: Dùng chung form đặt hàng hiện tại (landing_orders) ===
             case 'booking':
             case 'booking_consult':
             case 'booking_repair':
@@ -828,31 +829,75 @@ export function ProductDetailPage({
             case 'book_table':
             case 'book_party':
             case 'pre_order':
+            case 'delivery':
               return (
                 <Button key={btn.id} className="shrink-0 min-w-[100px] gap-2 h-11 text-sm font-semibold" style={{ backgroundColor: primaryColor }}
-                  onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
+                  onClick={() => {
+                    const hasPaymentOptions = paymentConfig?.transferEnabled;
+                    if (hasPaymentOptions && ['order_food', 'delivery'].includes(btn.action)) {
+                      setShowPaymentFlow(true);
+                    } else {
+                      setShowOrderForm(true);
+                      setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100);
+                    }
+                  }}>
                   {btn.icon} {btn.label}
                 </Button>
               );
+
+            // === Thêm vào giỏ / Mua ngay: Dùng hệ thống checkout + payment flow hiện tại ===
             case 'add_to_cart':
               return (
                 <Button key={btn.id} className="shrink-0 gap-2 h-11 text-sm font-semibold px-4" style={{ backgroundColor: primaryColor }}
-                  onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
+                  onClick={() => {
+                    const hasPaymentOptions = paymentConfig?.transferEnabled;
+                    if (hasPaymentOptions) {
+                      setShowPaymentFlow(true);
+                    } else {
+                      setShowOrderForm(true);
+                      setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100);
+                    }
+                  }}>
                   {btn.icon} {btn.label}
                 </Button>
               );
-            case 'installment_0':
+
+            // === Trả góp 0%: Dùng chung module InstallmentCalculator hiện tại ===
+            case 'installment_0': {
+              if (!onInstallment) return null;
               return (
                 <Button key={btn.id} variant="outline" className="shrink-0 gap-2 h-11 text-sm px-4" onClick={onInstallment}>
                   {btn.icon} {btn.label}
                 </Button>
               );
+            }
+
+            // === Tư vấn ngay: Ưu tiên Zalo > Facebook > Form liên hệ ===
+            case 'consult_now': {
+              const consultUrl = btn.customUrl || zaloUrl || facebookUrl;
+              if (consultUrl) {
+                let link = consultUrl.trim();
+                if (!link.startsWith('http')) link = `https://${link}`;
+                return (
+                  <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
+                    <a href={link} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
+                  </Button>
+                );
+              }
+              return (
+                <Button key={btn.id} variant="outline" className="shrink-0 gap-2 h-11 text-sm px-4"
+                  onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+            }
+
+            // === Form liên hệ / Yêu cầu: Dùng chung form đặt hàng (landing_orders) ===
             case 'notify_stock':
             case 'get_offer':
             case 'best_price':
             case 'get_quote':
             case 'get_coupon':
-            case 'consult_now':
             case 'support':
             case 'send_request':
             case 'join_member':
@@ -862,25 +907,67 @@ export function ProductDetailPage({
                   {btn.icon} {btn.label}
                 </Button>
               );
-            case 'delivery':
-            case 'view_menu':
-            case 'today_offer':
-            case 'today_gift':
-            case 'hot_deal':
-            case 'compare':
-            case 'view_detail':
+
+            // === Scroll đến section tương ứng trong trang chi tiết SP ===
             case 'view_reviews':
             case 'write_review':
-            case 'track_order':
-            case 'check_warranty':
               return (
                 <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
                   onClick={() => {
-                    if (btn.customUrl) { window.open(btn.customUrl, '_blank'); }
+                    const reviewsSection = document.getElementById('section-reviews');
+                    if (reviewsSection) {
+                      reviewsSection.scrollIntoView({ behavior: 'smooth' });
+                    }
                   }}>
                   {btn.icon} {btn.label}
                 </Button>
               );
+
+            // === Kiểm tra bảo hành: Link đến trang warranty-check hiện tại ===
+            case 'check_warranty':
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
+                  <a href={btn.customUrl || '/warranty-check'} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
+                </Button>
+              );
+
+            // === Tra cứu đơn hàng: Dùng hệ thống landing_orders hiện tại ===
+            case 'track_order':
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
+                  onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+
+            // === So sánh / Xem chi tiết: Scroll hoặc mở link ===
+            case 'compare':
+            case 'view_detail':
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
+                  onClick={() => {
+                    if (btn.customUrl) { window.open(btn.customUrl, '_blank'); }
+                    else { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+                  }}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+
+            // === Xem menu / Ưu đãi / Deal: Link đến trang chủ hoặc custom URL ===
+            case 'view_menu':
+            case 'today_offer':
+            case 'today_gift':
+            case 'hot_deal':
+              return (
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
+                  onClick={() => {
+                    if (btn.customUrl) { window.open(btn.customUrl, '_blank'); }
+                    else { onBack(); }
+                  }}>
+                  {btn.icon} {btn.label}
+                </Button>
+              );
+
             case 'custom_link':
               if (!btn.customUrl) return null;
               return (
@@ -888,13 +975,14 @@ export function ProductDetailPage({
                   <a href={btn.customUrl} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
                 </Button>
               );
+
             default:
-              // Fallback for any new action types - render as outline button
+              // Fallback: ưu tiên customUrl, nếu không có thì mở form đặt hàng
               return (
                 <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
                   onClick={() => {
                     if (btn.customUrl) { window.open(btn.customUrl, '_blank'); }
-                    else { setShowOrderForm(true); }
+                    else { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }
                   }}>
                   {btn.icon} {btn.label}
                 </Button>
