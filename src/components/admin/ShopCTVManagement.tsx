@@ -92,7 +92,15 @@ export function ShopCTVManagement() {
     { threshold: null, rate: 500000, type: 'fixed' },
   ];
 
+  const defaultF1Tiers = [
+    { threshold: 3000000, rate: 100000, type: 'fixed' },
+    { threshold: null, rate: 300000, type: 'fixed' },
+  ];
+
   const commissionTiers = activeSettings.commission_tiers || defaultTiers;
+  const f1CommissionTiers = activeSettings.f1_commission_tiers && (activeSettings.f1_commission_tiers as any[]).length > 0
+    ? activeSettings.f1_commission_tiers
+    : defaultF1Tiers;
 
   const handleSaveSettings = async () => {
     await updateSettings.mutateAsync({
