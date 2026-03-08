@@ -54,6 +54,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   });
   const [profileForm, setProfileForm] = useState<any>(null);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [loggedOut, setLoggedOut] = useState(false);
 
   const handleLogout = async () => {
     // Build target URL FIRST: the store's website (NOT admin/kho)
