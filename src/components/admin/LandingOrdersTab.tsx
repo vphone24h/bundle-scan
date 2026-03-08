@@ -285,6 +285,7 @@ export function LandingOrdersTab() {
                     <TableHead>Khách hàng</TableHead>
                     <TableHead>Sản phẩm</TableHead>
                     <TableHead>Thanh toán</TableHead>
+                  <TableHead>Nguồn</TableHead>
                   <TableHead>Chi nhánh</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead>Liên hệ</TableHead>
