@@ -239,12 +239,15 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
           variant="ghost"
           size="sm"
           className="text-destructive hover:bg-destructive/10"
-          onClick={() => {
+          onClick={async () => {
             const targetUrl = storeUrl || window.location.origin;
             localStorage.removeItem('ctv_store_mode');
+            // Clear auth token manually to guarantee logout
+            const authKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+            if (authKey) localStorage.removeItem(authKey);
+            // Sign out then redirect
+            try { await supabase.auth.signOut(); } catch {}
             window.location.replace(targetUrl);
-            // Sign out in background
-            supabase.auth.signOut().catch(() => {});
           }}
         >
           <LogOut className="h-4 w-4 mr-1" />
