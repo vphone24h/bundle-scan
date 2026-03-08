@@ -55,6 +55,7 @@ interface ProductDetailPageProps {
   storeInfo?: { name?: string; phone?: string; address?: string; email?: string } | null;
   zaloUrl?: string | null;
   facebookUrl?: string | null;
+  paymentConfig?: PaymentConfig | null;
 }
 
 export function ProductDetailPage({
