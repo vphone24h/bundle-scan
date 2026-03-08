@@ -57,18 +57,15 @@ export function CustomerListTab({
     const [searchParams, setSearchParams] = useSearchParams();
     const { data: permissions } = usePermissions();
     const isSuperAdmin = permissions?.canViewAllBranches === true;
-    const [search, setSearch] = useState('');
-    const [debouncedSearch, setDebouncedSearch] = useState('');
+     const [search, setSearch] = useState('');
+    const [committedSearch, setCommittedSearch] = useState('');
     const [sourceFilter, setSourceFilter] = useState('_all_');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(25);
 
-    // Debounce search input (400ms)
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        setDebouncedSearch(search);
-      }, 400);
-      return () => clearTimeout(timer);
+    const handleSearchSubmit = useCallback(() => {
+      setCommittedSearch(search.trim());
+      setCurrentPage(1);
     }, [search]);
 
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
@@ -102,7 +99,7 @@ export function CustomerListTab({
     };
 
     const { data: customers, isLoading, hasMore } = useCustomersWithPoints({
-      search: debouncedSearch || undefined,
+      search: committedSearch || undefined,
       branchId: branchFilter !== '_all_' ? branchFilter : undefined,
       tier: tierFilter !== '_all_' ? tierFilter : undefined,
       status: undefined,
@@ -127,7 +124,10 @@ export function CustomerListTab({
 
     const handleSearchChange = useCallback((val: string) => {
       setSearch(val);
-      setCurrentPage(1);
+      if (!val) {
+        setCommittedSearch('');
+        setCurrentPage(1);
+      }
     }, []);
 
     const handlePageSizeChange = useCallback((val: number) => {
@@ -185,20 +185,25 @@ export function CustomerListTab({
         <Card>
          <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
            <div className="flex flex-col gap-3">
-             <div className="flex gap-2">
-                <SearchInput
-                  placeholder="Tìm theo tên, SĐT..."
-                  value={search}
-                  onChange={handleSearchChange}
-                  containerClassName="flex-1"
-                  className="h-9 text-sm"
-                  loading={isLoading && !!debouncedSearch}
-                />
-               <Button size="sm" onClick={() => setShowFormDialog(true)} className="h-9 px-3">
-                 <Plus className="h-4 w-4 sm:mr-2" />
-                 <span className="hidden sm:inline">Thêm</span>
-               </Button>
-             </div>
+              <div className="flex gap-2">
+                <form className="flex-1 flex gap-1" onSubmit={(e) => { e.preventDefault(); handleSearchSubmit(); }}>
+                 <SearchInput
+                   placeholder="Tìm theo tên, SĐT..."
+                   value={search}
+                   onChange={handleSearchChange}
+                   containerClassName="flex-1"
+                   className="h-9 text-sm"
+                   loading={isLoading && !!committedSearch}
+                 />
+                 <Button type="submit" size="sm" variant="outline" className="h-9 px-3 shrink-0">
+                   Tìm
+                 </Button>
+                </form>
+                <Button size="sm" onClick={() => setShowFormDialog(true)} className="h-9 px-3">
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Thêm</span>
+                </Button>
+              </div>
              <div className="flex flex-wrap gap-2 overflow-x-auto">
                 <Select value={branchFilter} onValueChange={onBranchFilterChange}>
                  <SelectTrigger className="w-[100px] sm:w-[140px] h-9 text-xs sm:text-sm">
