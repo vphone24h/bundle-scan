@@ -3498,6 +3498,9 @@ export type Database = {
       }
       landing_orders: {
         Row: {
+          action_date: string | null
+          action_time: string | null
+          action_type: string | null
           approved_at: string | null
           approved_by: string | null
           assigned_staff_id: string | null
@@ -3526,6 +3529,9 @@ export type Database = {
           variant: string | null
         }
         Insert: {
+          action_date?: string | null
+          action_time?: string | null
+          action_type?: string | null
           approved_at?: string | null
           approved_by?: string | null
           assigned_staff_id?: string | null
@@ -3554,6 +3560,9 @@ export type Database = {
           variant?: string | null
         }
         Update: {
+          action_date?: string | null
+          action_time?: string | null
+          action_type?: string | null
           approved_at?: string | null
           approved_by?: string | null
           assigned_staff_id?: string | null

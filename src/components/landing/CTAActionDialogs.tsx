@@ -36,12 +36,13 @@ interface ContactFormDialogProps extends CTADialogProps {
   requireEmail?: boolean;
   showMessage?: boolean;
   notePrefix?: string;
+  actionType?: string;
 }
 
 export function ContactFormDialog({
   open, onClose, tenantId, primaryColor, branches,
   productName, productId, productImageUrl, productPrice,
-  title, description, actionLabel, requireEmail = true, showMessage = true, notePrefix = '',
+  title, description, actionLabel, requireEmail = true, showMessage = true, notePrefix = '', actionType = 'order',
 }: ContactFormDialogProps) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -67,6 +68,7 @@ export function ContactFormDialog({
         customer_phone: phone.trim(),
         customer_email: email.trim() || undefined,
         note: [notePrefix, message.trim()].filter(Boolean).join(' - ') || undefined,
+        action_type: actionType,
       });
       setSubmitted(true);
     } catch { toast.error('Gửi thất bại, vui lòng thử lại'); }
@@ -169,6 +171,9 @@ export function BookingDialog({
         customer_phone: phone.trim(),
         customer_email: email.trim() || undefined,
         note: bookingNote,
+        action_type: 'booking',
+        action_date: date,
+        action_time: time || undefined,
       });
       setSubmitted(true);
     } catch { toast.error('Đặt lịch thất bại, vui lòng thử lại'); }
@@ -586,6 +591,7 @@ export function JoinMemberDialog({
         customer_phone: phone.trim(),
         customer_email: email.trim(),
         note: `Đăng ký thành viên${productName ? ` - SP: ${productName}` : ''}`,
+        action_type: 'join_member',
       });
       setSubmitted(true);
     } catch { toast.error('Gửi thất bại, vui lòng thử lại'); }
