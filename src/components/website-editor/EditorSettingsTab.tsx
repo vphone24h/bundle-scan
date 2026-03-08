@@ -8,6 +8,7 @@ import { CTAButtonsEditor } from '@/components/admin/ProductDetailSectionManager
 import { NewsPageSectionManager } from '@/components/admin/NewsPageSectionManager';
 import { NavMenuEditor } from '@/components/website-editor/NavMenuEditor';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
+import { VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
