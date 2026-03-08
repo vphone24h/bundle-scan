@@ -107,6 +107,15 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickF
         <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowTagAssign(true); }}>
           <Hash className="mr-2 h-4 w-4" /> Gắn hashtag
         </DropdownMenuItem>
+        {(() => {
+          const match = getOffsetMatch(debt.entity_phone);
+          if (match) return (
+            <DropdownMenuItem onClick={() => { setSelectedOffsetMatch(match); setShowOffset(true); }}>
+              <ArrowLeftRight className="mr-2 h-4 w-4" /> Bù trừ công nợ
+            </DropdownMenuItem>
+          );
+          return null;
+        })()}
         {debt.entity_phone && (
           <DropdownMenuItem onClick={() => window.open(`tel:${debt.entity_phone}`, '_self')}>
             <Phone className="mr-2 h-4 w-4" /> Gọi NCC
