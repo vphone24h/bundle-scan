@@ -24,6 +24,7 @@ import {
 import { usePublicLandingProducts } from '@/hooks/useLandingProducts';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
 import { VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
 
 interface CTVDashboardProps {
