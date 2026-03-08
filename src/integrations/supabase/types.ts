@@ -3697,6 +3697,7 @@ export type Database = {
           customer_email: string | null
           customer_name: string
           customer_phone: string
+          delivery_status: string | null
           id: string
           note: string | null
           order_code: string | null
@@ -3707,8 +3708,10 @@ export type Database = {
           product_name: string
           product_price: number
           quantity: number
+          shipping_carrier: string | null
           status: string
           tenant_id: string
+          tracking_number: string | null
           transfer_content: string | null
           updated_at: string
           variant: string | null
@@ -3732,6 +3735,7 @@ export type Database = {
           customer_email?: string | null
           customer_name: string
           customer_phone: string
+          delivery_status?: string | null
           id?: string
           note?: string | null
           order_code?: string | null
@@ -3742,8 +3746,10 @@ export type Database = {
           product_name: string
           product_price?: number
           quantity?: number
+          shipping_carrier?: string | null
           status?: string
           tenant_id: string
+          tracking_number?: string | null
           transfer_content?: string | null
           updated_at?: string
           variant?: string | null
@@ -3767,6 +3773,7 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string
           customer_phone?: string
+          delivery_status?: string | null
           id?: string
           note?: string | null
           order_code?: string | null
@@ -3777,8 +3784,10 @@ export type Database = {
           product_name?: string
           product_price?: number
           quantity?: number
+          shipping_carrier?: string | null
           status?: string
           tenant_id?: string
+          tracking_number?: string | null
           transfer_content?: string | null
           updated_at?: string
           variant?: string | null

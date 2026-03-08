@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Gift, Star, Ticket, Link2, CreditCard, Shield, ArrowLeft, Mail, ExternalLink } from 'lucide-react';
+import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Gift, Star, Ticket, Link2, CreditCard, Shield, ArrowLeft, Mail, ExternalLink, Search } from 'lucide-react';
 import { PaymentFlowDialog } from '@/components/landing/PaymentFlowDialog';
 import { CTAButtonItem, getDefaultCTAButtons } from '@/components/admin/ProductDetailSectionManager';
 import { formatNumber } from '@/lib/formatNumber';
@@ -47,7 +47,7 @@ interface ProductDetailPageProps {
   warrantyHotline?: string | null;
   onShare?: () => void;
   onInstallment?: () => void;
-  showInstallmentButton?: boolean; // deprecated, use detailSections
+  showInstallmentButton?: boolean;
   detailSections?: ProductDetailSectionConfig[] | null;
   ctaButtons?: CTAButtonItem[] | null;
   websiteTemplate?: string | null;
@@ -58,6 +58,7 @@ interface ProductDetailPageProps {
   zaloUrl?: string | null;
   facebookUrl?: string | null;
   paymentConfig?: PaymentConfig | null;
+  onNavigateOrderLookup?: () => void;
 }
 
 export function ProductDetailPage({
@@ -74,6 +75,7 @@ export function ProductDetailPage({
   zaloUrl,
   facebookUrl,
   paymentConfig,
+  onNavigateOrderLookup,
 }: ProductDetailPageProps) {
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [showPaymentFlow, setShowPaymentFlow] = useState(false);
@@ -771,6 +773,16 @@ export function ProductDetailPage({
                   <Phone className="h-4 w-4" />
                   Gọi ngay: {warrantyHotline}
                 </a>
+              )}
+              {onNavigateOrderLookup && (
+                <Button
+                  variant="outline"
+                  className="w-full h-11 mt-2"
+                  onClick={onNavigateOrderLookup}
+                  style={{ borderColor: primaryColor, color: primaryColor }}
+                >
+                  <Search className="h-4 w-4 mr-1.5" /> Kiểm tra đơn hàng
+                </Button>
               )}
               <Button variant="outline" className="w-full mt-2 h-11" onClick={onBack}>Quay lại</Button>
             </div>

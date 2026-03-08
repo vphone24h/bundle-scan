@@ -44,6 +44,7 @@ import { CTVAuthDialog } from '@/components/landing/CTVAuthDialog';
 import { CTVDashboard } from '@/components/landing/CTVDashboard';
 import { useShopCTVSettings } from '@/hooks/useShopCTV';
 import { supabase } from '@/integrations/supabase/client';
+import { OrderLookupPage } from '@/components/landing/OrderLookupPage';
 
 
 export interface UniversalTemplateProps {
@@ -72,7 +73,7 @@ function calculateWarrantyStatus(item: WarrantyResult): WarrantyStatus | null {
   return { valid: isValid, message: isValid ? `Còn ${daysLeft} ngày` : 'Hết BH', endDate, startDate: saleDate, months: warrantyMonths, daysLeft };
 }
 
-type PageView = 'home' | 'products' | 'news' | 'warranty' | 'article-detail' | 'repair' | 'tradein' | 'installment' | 'accessories' | 'compare' | 'pricelist' | 'booking' | 'branches' | 'contact' | 'services' | 'rooms' | 'courses' | 'doctors' | 'collection' | 'promotion' | 'reviews' | 'system-page' | 'ctv-dashboard';
+type PageView = 'home' | 'products' | 'news' | 'warranty' | 'article-detail' | 'repair' | 'tradein' | 'installment' | 'accessories' | 'compare' | 'pricelist' | 'booking' | 'branches' | 'contact' | 'services' | 'rooms' | 'courses' | 'doctors' | 'collection' | 'promotion' | 'reviews' | 'system-page' | 'ctv-dashboard' | 'order-lookup';
 
 export default function UniversalStoreTemplate({
   settings, tenant, tenantId, storeId, branches,
@@ -424,6 +425,7 @@ export default function UniversalStoreTemplate({
             confirmZaloUrl: (settings as any)?.payment_confirm_zalo_url || null,
             confirmMessengerUrl: (settings as any)?.payment_confirm_messenger_url || null,
           }}
+          onNavigateOrderLookup={() => { setSelectedProduct(null); navigateTo('order-lookup' as PageView); }}
         />
         <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
       </>
@@ -1520,6 +1522,17 @@ export default function UniversalStoreTemplate({
             case 'promotion':
             case 'reviews': {
               return <GenericSystemPage {...systemPageProps} pageId={pageView} pageLabel={activeNav?.label || pageView} />;
+            }
+            case 'order-lookup': {
+              return (
+                <OrderLookupPage
+                  tenantId={tenantId!}
+                  accentColor={accentColor}
+                  storePhone={settings?.store_phone || warrantyHotline}
+                  zaloUrl={settings?.zalo_url}
+                  onBack={() => navigateTo('home')}
+                />
+              );
             }
             default: return null;
           }
