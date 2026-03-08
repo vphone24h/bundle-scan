@@ -17,7 +17,7 @@ import {
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
-import { useTenantContext } from '@/hooks/useTenant';
+import { useCurrentTenant } from '@/hooks/useTenant';
 import {
   useShopCTVSettings, useUpdateShopCTVSettings,
   useShopCTVList, useUpdateShopCTV, useCreateShopCTV,
