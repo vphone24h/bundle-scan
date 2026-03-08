@@ -35,6 +35,7 @@ export default function DebtPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [showDueToday, setShowDueToday] = useState(false);
   const [showOverdue, setShowOverdue] = useState(false);
+  const [showOffsetScan, setShowOffsetScan] = useState(false);
   
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
