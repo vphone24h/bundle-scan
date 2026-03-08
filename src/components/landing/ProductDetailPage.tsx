@@ -346,11 +346,21 @@ export function ProductDetailPage({
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="text-sm font-medium truncate flex-1">{product.name}</h1>
-          {onShare && (
-            <Button variant="ghost" size="sm" className="gap-1 text-xs shrink-0" onClick={onShare}>
-              <Link2 className="h-3.5 w-3.5" /> Chia sẻ
-            </Button>
-          )}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {cart.totalItems > 0 && (
+              <button onClick={() => setShowCartDialog(true)} className="relative h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
+                <ShoppingCart className="h-5 w-5" />
+                <span className="absolute -top-0.5 -right-0.5 h-4.5 min-w-[18px] px-1 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold leading-none">
+                  {cart.totalItems}
+                </span>
+              </button>
+            )}
+            {onShare && (
+              <Button variant="ghost" size="sm" className="gap-1 text-xs shrink-0" onClick={onShare}>
+                <Link2 className="h-3.5 w-3.5" /> Chia sẻ
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
