@@ -43,6 +43,8 @@ export default function DebtPage() {
   const { data: tags } = useDebtTags();
   const { data: debtSettings } = useDebtSettings();
   const isSuperAdmin = permissions?.canViewAllBranches === true;
+  const offsetMatches = useDebtOffsetMatches();
+  const offsetCount = offsetMatches.length;
   const overdueDays = debtSettings?.overdue_days ?? 15;
   
   useEffect(() => {
