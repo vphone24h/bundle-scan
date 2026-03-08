@@ -6634,6 +6634,26 @@ export type Database = {
               rating: number
             }[]
           }
+      get_report_chart_aggregated: {
+        Args: {
+          p_branch_id?: string
+          p_end_iso: string
+          p_group_by?: string
+          p_start_iso: string
+          p_tenant_id: string
+        }
+        Returns: Json
+      }
+      get_report_stats_aggregated: {
+        Args: {
+          p_branch_id?: string
+          p_category_id?: string
+          p_end_iso: string
+          p_start_iso: string
+          p_tenant_id: string
+        }
+        Returns: Json
+      }
       get_revenue_daily: {
         Args: {
           _branch_id?: string
