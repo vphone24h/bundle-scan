@@ -36,6 +36,7 @@ interface ContactFormDialogProps extends CTADialogProps {
   requireEmail?: boolean;
   showMessage?: boolean;
   notePrefix?: string;
+  actionType?: string;
 }
 
 export function ContactFormDialog({
