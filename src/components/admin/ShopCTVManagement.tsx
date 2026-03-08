@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { PriceInput } from '@/components/ui/price-input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,18 +14,28 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Users, Settings, Wallet, Plus,
-  Lock, Unlock, Loader2, Search, Trash2,
+  Users, Settings, Wallet, Plus, Mail,
+  Lock, Unlock, Loader2, Search, Trash2, Send, CheckCircle, XCircle, RefreshCw,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
 import { useCurrentTenant } from '@/hooks/useTenant';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import {
   useShopCTVSettings, useUpdateShopCTVSettings,
   useShopCTVList, useUpdateShopCTV, useCreateShopCTV,
   useShopCTVWithdrawals, useProcessCTVWithdrawal,
 } from '@/hooks/useShopCTV';
+
+// ===== CTV Email Variables =====
+const CTV_EMAIL_VARIABLES = [
+  { key: '{{ctv_name}}', label: 'Tên CTV' },
+  { key: '{{ctv_code}}', label: 'Mã CTV' },
+  { key: '{{ctv_phone}}', label: 'SĐT CTV' },
+  { key: '{{store_name}}', label: 'Tên cửa hàng' },
+];
 
 export function ShopCTVManagement() {
   const { data: tenant } = useCurrentTenant();
@@ -35,13 +47,38 @@ export function ShopCTVManagement() {
   const createCTV = useCreateShopCTV();
   const { data: withdrawals } = useShopCTVWithdrawals(currentTenantId);
   const processWithdrawal = useProcessCTVWithdrawal();
-  
+  const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [addCTVOpen, setAddCTVOpen] = useState(false);
   const [addForm, setAddForm] = useState({ full_name: '', phone: '', email: '', commission_rate: '' });
   const [rejectOpen, setRejectOpen] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+
+  // Multi-select for email
+  const [selectedCTVIds, setSelectedCTVIds] = useState<Set<string>>(new Set());
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailContent, setEmailContent] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  // Email history
+  const [logStatusFilter, setLogStatusFilter] = useState<'all' | 'sent' | 'failed'>('all');
+  const { data: emailLogs, isLoading: logsLoading } = useQuery({
+    queryKey: ['ctv-email-logs', currentTenantId],
+    enabled: !!currentTenantId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('email_automation_logs' as any)
+        .select('*')
+        .eq('tenant_id', currentTenantId!)
+        .eq('source', 'ctv_bulk')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
 
   // Settings form
   const [settingsForm, setSettingsForm] = useState<any>(null);
@@ -69,7 +106,6 @@ export function ShopCTVManagement() {
       auto_approve_ctv: activeSettings.auto_approve_ctv ?? true,
       program_description: activeSettings.program_description || '',
       commission_tiers: commissionTiers,
-      // Keep legacy fields in sync with first/last tier
       commission_threshold: commissionTiers[0]?.threshold || 5000000,
       low_commission_rate: commissionTiers[0]?.rate || 10,
       low_commission_type: commissionTiers[0]?.type || 'percentage',
@@ -88,7 +124,6 @@ export function ShopCTVManagement() {
   const addTier = () => {
     const lastThreshold = commissionTiers.filter((t: any) => t.threshold).pop()?.threshold || 5000000;
     const newTiers = [...commissionTiers];
-    // Insert before the last "unlimited" tier
     const insertIdx = newTiers.length > 0 && newTiers[newTiers.length - 1].threshold === null
       ? newTiers.length - 1
       : newTiers.length;
@@ -119,6 +154,61 @@ export function ShopCTVManagement() {
   const totalCommission = ctvList?.reduce((s: number, c: any) => s + (c.total_commission || 0), 0) || 0;
   const totalOrders = ctvList?.reduce((s: number, c: any) => s + (c.total_orders || 0), 0) || 0;
 
+  // Toggle select CTV
+  const toggleSelect = (id: string) => {
+    setSelectedCTVIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const ctvsWithEmail = filteredCTVs.filter((c: any) => c.email);
+    if (selectedCTVIds.size === ctvsWithEmail.length) {
+      setSelectedCTVIds(new Set());
+    } else {
+      setSelectedCTVIds(new Set(ctvsWithEmail.map((c: any) => c.id)));
+    }
+  };
+
+  // Send bulk email
+  const handleSendEmail = async () => {
+    if (!emailSubject.trim() || !emailContent.trim()) {
+      toast.error('Vui lòng nhập tiêu đề và nội dung email');
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      const htmlContent = emailContent.replace(/\n/g, '<br/>');
+      const { data, error } = await supabase.functions.invoke('send-ctv-email', {
+        body: {
+          ctvIds: Array.from(selectedCTVIds),
+          subject: emailSubject,
+          htmlContent,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success(`Đã gửi ${data.sent}/${data.total} email${data.failed ? `, ${data.failed} thất bại` : ''}`);
+      setEmailDialogOpen(false);
+      setEmailSubject('');
+      setEmailContent('');
+      setSelectedCTVIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ['ctv-email-logs'] });
+    } catch (e: any) {
+      toast.error('Lỗi gửi email: ' + e.message);
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  // Filter logs
+  const filteredLogs = (emailLogs || []).filter((l: any) =>
+    logStatusFilter === 'all' ? true : l.status === logStatusFilter
+  );
+
   return (
     <div className="space-y-4">
       {/* Stats */}
@@ -144,6 +234,7 @@ export function ShopCTVManagement() {
       <Tabs defaultValue="list">
         <TabsList className="overflow-x-auto w-full justify-start">
           <TabsTrigger value="list"><Users className="h-4 w-4 mr-1" />Danh sách</TabsTrigger>
+          <TabsTrigger value="email"><Mail className="h-4 w-4 mr-1" />Email</TabsTrigger>
           <TabsTrigger value="withdrawals"><Wallet className="h-4 w-4 mr-1" />Rút tiền</TabsTrigger>
           <TabsTrigger value="settings"><Settings className="h-4 w-4 mr-1" />Cài đặt</TabsTrigger>
         </TabsList>
@@ -191,27 +282,15 @@ export function ShopCTVManagement() {
                       </TableCell>
                       <TableCell>
                         {c.status === 'active' ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => updateCTV.mutate({ id: c.id, status: 'blocked' })}
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => updateCTV.mutate({ id: c.id, status: 'blocked' })}>
                             <Lock className="h-4 w-4" />
                           </Button>
                         ) : c.status === 'blocked' ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => updateCTV.mutate({ id: c.id, status: 'active' })}
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => updateCTV.mutate({ id: c.id, status: 'active' })}>
                             <Unlock className="h-4 w-4" />
                           </Button>
                         ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => updateCTV.mutate({ id: c.id, status: 'active' })}
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => updateCTV.mutate({ id: c.id, status: 'active' })}>
                             Duyệt
                           </Button>
                         )}
@@ -231,6 +310,149 @@ export function ShopCTVManagement() {
           </Card>
         </TabsContent>
 
+        {/* Email Tab */}
+        <TabsContent value="email" className="mt-4 space-y-4">
+          {/* Select CTVs to email */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Send className="h-4 w-4" />
+                Gửi Email cho CTV
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Checkbox
+                  checked={
+                    filteredCTVs.filter((c: any) => c.email).length > 0 &&
+                    selectedCTVIds.size === filteredCTVs.filter((c: any) => c.email).length
+                  }
+                  onCheckedChange={toggleSelectAll}
+                />
+                <span className="text-sm">Chọn tất cả ({filteredCTVs.filter((c: any) => c.email).length} có email)</span>
+                {selectedCTVIds.size > 0 && (
+                  <Badge variant="secondary">{selectedCTVIds.size} đã chọn</Badge>
+                )}
+                {selectedCTVIds.size > 0 && (
+                  <Button size="sm" onClick={() => setEmailDialogOpen(true)}>
+                    <Mail className="h-4 w-4 mr-1" />Soạn email
+                  </Button>
+                )}
+              </div>
+
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm CTV..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              <div className="max-h-[300px] overflow-y-auto border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10"></TableHead>
+                      <TableHead>Mã CTV</TableHead>
+                      <TableHead>Họ tên</TableHead>
+                      <TableHead>Email</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCTVs.map((c: any) => (
+                      <TableRow key={c.id} className={!c.email ? 'opacity-50' : ''}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedCTVIds.has(c.id)}
+                            onCheckedChange={() => toggleSelect(c.id)}
+                            disabled={!c.email}
+                          />
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{c.ctv_code}</TableCell>
+                        <TableCell className="text-sm font-medium">{c.full_name}</TableCell>
+                        <TableCell className="text-xs">{c.email || <span className="text-destructive">Chưa có email</span>}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Email History */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Lịch sử gửi email</CardTitle>
+                <div className="flex gap-1">
+                  <Button
+                    variant={logStatusFilter === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setLogStatusFilter('all')}
+                  >
+                    Tất cả
+                  </Button>
+                  <Button
+                    variant={logStatusFilter === 'sent' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setLogStatusFilter('sent')}
+                  >
+                    <CheckCircle className="h-3 w-3 mr-1" />Thành công
+                  </Button>
+                  <Button
+                    variant={logStatusFilter === 'failed' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setLogStatusFilter('failed')}
+                  >
+                    <XCircle className="h-3 w-3 mr-1" />Thất bại
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              {logsLoading ? (
+                <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+              ) : !filteredLogs.length ? (
+                <p className="text-center py-8 text-muted-foreground text-sm">
+                  {logStatusFilter === 'all' ? 'Chưa gửi email CTV nào' : `Không có email ${logStatusFilter === 'sent' ? 'thành công' : 'thất bại'}`}
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Thời gian</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Tên CTV</TableHead>
+                      <TableHead>Tiêu đề</TableHead>
+                      <TableHead className="text-center">TT</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredLogs.map((log: any) => (
+                      <TableRow key={log.id}>
+                        <TableCell className="text-xs whitespace-nowrap">
+                          {format(new Date(log.created_at), 'dd/MM/yy HH:mm', { locale: vi })}
+                        </TableCell>
+                        <TableCell className="text-xs">{log.customer_email}</TableCell>
+                        <TableCell className="text-xs">{log.customer_name || '-'}</TableCell>
+                        <TableCell className="text-xs max-w-[200px] truncate">{log.subject}</TableCell>
+                        <TableCell className="text-center">
+                          {log.status === 'sent' ? (
+                            <Badge variant="default" className="text-[10px]"><CheckCircle className="h-3 w-3 mr-0.5" />OK</Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-[10px]"><XCircle className="h-3 w-3 mr-0.5" />Lỗi</Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Withdrawals */}
         <TabsContent value="withdrawals" className="mt-4">
@@ -265,16 +487,14 @@ export function ShopCTVManagement() {
                         {w.status === 'pending' && (
                           <div className="flex gap-1">
                             <Button
-                              size="sm"
-                              variant="default"
+                              size="sm" variant="default"
                               onClick={() => processWithdrawal.mutate({ id: w.id, status: 'approved' })}
                               disabled={processWithdrawal.isPending}
                             >
                               Duyệt
                             </Button>
                             <Button
-                              size="sm"
-                              variant="destructive"
+                              size="sm" variant="destructive"
                               onClick={() => { setRejectOpen(w.id); setRejectReason(''); }}
                               disabled={processWithdrawal.isPending}
                             >
@@ -499,6 +719,57 @@ export function ShopCTVManagement() {
             >
               {createCTV.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Thêm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Compose Email Dialog */}
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Gửi Email cho {selectedCTVIds.size} CTV</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tiêu đề *</Label>
+              <Input
+                value={emailSubject}
+                onChange={e => setEmailSubject(e.target.value)}
+                placeholder="Tiêu đề email..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nội dung *</Label>
+              <Textarea
+                value={emailContent}
+                onChange={e => setEmailContent(e.target.value)}
+                placeholder="Nội dung email..."
+                rows={8}
+              />
+            </div>
+            <div className="flex flex-wrap gap-1">
+              <span className="text-xs text-muted-foreground mr-1">Biến:</span>
+              {CTV_EMAIL_VARIABLES.map(v => (
+                <Badge
+                  key={v.key}
+                  variant="outline"
+                  className="cursor-pointer text-[10px] hover:bg-primary/10"
+                  onClick={() => setEmailContent(prev => prev + v.key)}
+                >
+                  {v.key} - {v.label}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Hủy</Button>
+            <Button
+              onClick={handleSendEmail}
+              disabled={sendingEmail || !emailSubject.trim() || !emailContent.trim()}
+            >
+              {sendingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              Gửi email
             </Button>
           </DialogFooter>
         </DialogContent>
