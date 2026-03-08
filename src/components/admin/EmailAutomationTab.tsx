@@ -45,11 +45,18 @@ const TRIGGER_TYPES = [
   { value: 'on_order_cancelled', label: 'Khi đơn hàng bị huỷ' },
   // Nhóm đặt lịch / tư vấn
   { value: 'on_booking_confirmation', label: 'Khi đặt lịch hẹn' },
+  { value: 'on_booking_consult', label: 'Khi đặt lịch tư vấn' },
+  { value: 'on_booking_repair', label: 'Khi đặt lịch sửa chữa' },
+  { value: 'on_booking_beauty', label: 'Khi đặt lịch làm đẹp' },
+  { value: 'on_booking_clinic', label: 'Khi đặt lịch khám' },
+  { value: 'on_booking_store', label: 'Khi đặt lịch tại cửa hàng' },
   { value: 'on_booking_reminder', label: 'Nhắc lịch hẹn' },
   { value: 'on_booking_cancelled', label: 'Khi huỷ lịch hẹn' },
   // Nhóm nhà hàng
-  { value: 'on_table_booking', label: 'Khi đặt bàn' },
   { value: 'on_food_order', label: 'Khi đặt món online' },
+  { value: 'on_table_booking', label: 'Khi đặt bàn' },
+  { value: 'on_delivery', label: 'Khi đặt giao tận nơi' },
+  { value: 'on_book_party', label: 'Khi đặt tiệc' },
   // Nhóm khách sạn
   { value: 'on_room_booking', label: 'Khi đặt phòng' },
   { value: 'on_room_checkin_reminder', label: 'Nhắc check-in' },
@@ -438,14 +445,25 @@ function AutomationFormDialog({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Điều kiện gửi</Label>
-                  <Select value={triggerType} onValueChange={setTriggerType}>
+                  <Select value={triggerType} onValueChange={(val) => {
+                    setTriggerType(val);
+                    // Auto-fill from TRIGGER_TYPE_PRESETS when not editing
+                    if (!isEdit) {
+                      const preset = TRIGGER_TYPE_PRESETS[val];
+                      if (preset) {
+                        setName(preset.name);
+                        setSubject(preset.subject);
+                        setBlocks(preset.blocks.map(b => ({ tempId: crypto.randomUUID(), block_type: b.block_type, content: b.content })));
+                      }
+                    }
+                  }}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {TRIGGER_TYPES.filter(t => !t.value.startsWith('on_order_')).map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled', 'on_booking_confirmation', 'on_booking_reminder', 'on_booking_cancelled', 'on_table_booking', 'on_food_order', 'on_room_booking', 'on_room_checkin_reminder', 'on_course_registration', 'on_viewing_booking', 'on_quote_request'].includes(triggerType) && (
+                {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled', 'on_booking_confirmation', 'on_booking_consult', 'on_booking_repair', 'on_booking_beauty', 'on_booking_clinic', 'on_booking_store', 'on_booking_reminder', 'on_booking_cancelled', 'on_table_booking', 'on_food_order', 'on_delivery', 'on_book_party', 'on_room_booking', 'on_room_checkin_reminder', 'on_course_registration', 'on_viewing_booking', 'on_quote_request'].includes(triggerType) && (
                 <div>
                   <Label>{triggerType === 'customer_registration_anniversary' ? 'Số năm' : 'Số ngày'}</Label>
                   <Input type="number" min={1} value={triggerDays} onChange={e => setTriggerDays(Number(e.target.value))} />
