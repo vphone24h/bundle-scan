@@ -1020,6 +1020,115 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          content: string | null
+          conversation_id: string
+          created_at: string
+          file_name: string | null
+          file_url: string | null
+          id: string
+          message_type: string
+          metadata: Json | null
+          sender_id: string
+        }
+        Insert: {
+          content?: string | null
+          conversation_id: string
+          created_at?: string
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          message_type?: string
+          metadata?: Json | null
+          sender_id: string
+        }
+        Update: {
+          content?: string | null
+          conversation_id?: string
+          created_at?: string
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          message_type?: string
+          metadata?: Json | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_members: {
+        Row: {
+          conversation_id: string
+          id: string
+          joined_at: string
+          last_read_at: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          role?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_members_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_notifications: {
         Row: {
           created_at: string
@@ -2905,6 +3014,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      friend_requests: {
+        Row: {
+          created_at: string
+          id: string
+          receiver_id: string
+          sender_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          receiver_id: string
+          sender_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       imei_histories: {
         Row: {
@@ -5490,6 +5626,68 @@ export type Database = {
           },
         ]
       }
+      stories: {
+        Row: {
+          content: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          media_type: string | null
+          media_url: string | null
+          user_id: string
+          view_count: number | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          user_id: string
+          view_count?: number | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          user_id?: string
+          view_count?: number | null
+        }
+        Relationships: []
+      }
+      story_views: {
+        Row: {
+          id: string
+          story_id: string
+          viewed_at: string
+          viewer_id: string
+        }
+        Insert: {
+          id?: string
+          story_id: string
+          viewed_at?: string
+          viewer_id: string
+        }
+        Update: {
+          id?: string
+          story_id?: string
+          viewed_at?: string
+          viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_views_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_history: {
         Row: {
           action: string
@@ -6727,6 +6925,10 @@ export type Database = {
           total_imported: number
           total_sold: number
         }[]
+      }
+      get_or_create_direct_conversation: {
+        Args: { p_other_user_id: string; p_user_id: string }
+        Returns: string
       }
       get_public_reviews:
         | {

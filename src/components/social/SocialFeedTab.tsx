@@ -9,6 +9,7 @@ import { ImagePlus, Send, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { SocialPostCard } from './SocialPostCard';
+import { StoriesBar } from './StoriesBar';
 import { toast } from 'sonner';
 
 interface Props {
@@ -78,6 +79,9 @@ export const SocialFeedTab = memo(function SocialFeedTab({ onViewProfile, focusP
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
+      {/* Stories */}
+      <StoriesBar />
+
       {/* Create post */}
       <Card>
         <CardContent className="pt-4">
