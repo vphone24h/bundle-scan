@@ -1,14 +1,16 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, ArrowLeft, QrCode, CheckCircle2, ExternalLink, Copy, Loader2, ShoppingCart, MapPin, MessageCircle } from 'lucide-react';
+import { Banknote, CreditCard, ArrowLeft, QrCode, CheckCircle2, ExternalLink, Copy, Loader2, ShoppingCart, MapPin, MessageCircle, Gift, Ticket, Star } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { generateVietQRUrl, getBankCode, VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
 import { toast } from 'sonner';
+import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
+import { useCustomerPointsPublic } from '@/hooks/useTenantLanding';
 
 interface PaymentFlowDialogProps {
   open: boolean;
@@ -23,6 +25,7 @@ interface PaymentFlowDialogProps {
   variant?: string;
   quantity: number;
   primaryColor: string;
+  tenantId?: string | null;
   // Payment config from tenant settings
   codEnabled: boolean;
   transferEnabled: boolean;
@@ -42,6 +45,7 @@ interface PaymentFlowDialogProps {
     branch_id: string;
     payment_method: 'cod' | 'transfer';
     transfer_content?: string;
+    final_price?: number;
   }) => Promise<void>;
   isSubmitting?: boolean;
 }
@@ -50,6 +54,7 @@ type Step = 'method' | 'cod_form' | 'transfer_qr';
 
 export function PaymentFlowDialog({
   open, onClose, product, price, variant, quantity, primaryColor,
+  tenantId,
   codEnabled, transferEnabled, bankName, accountNumber, accountHolder,
   confirmZaloUrl, confirmMessengerUrl,
   branches, onPlaceOrder, isSubmitting,
@@ -66,6 +71,57 @@ export function PaymentFlowDialog({
   const [attempted, setAttempted] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
 
+  // Voucher & Points
+  const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
+  const [usePoints, setUsePoints] = useState(false);
+
+  const [debouncedPhone, setDebouncedPhone] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (customerPhone.replace(/\s/g, '').length >= 10) {
+        setDebouncedPhone(customerPhone.trim());
+      } else {
+        setDebouncedPhone('');
+      }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [customerPhone]);
+
+  const { data: customerVouchers } = usePublicCustomerVouchers(debouncedPhone, tenantId || null);
+  const { data: customerPoints } = useCustomerPointsPublic(debouncedPhone, tenantId || null);
+
+  const unusedVouchers = useMemo(() =>
+    (customerVouchers || []).filter((v: any) => v.status === 'unused'),
+    [customerVouchers]
+  );
+
+  const basePrice = price * quantity;
+
+  const selectedVoucher = useMemo(() => {
+    if (!selectedVoucherId) return null;
+    return unusedVouchers.find((v: any) => v.id === selectedVoucherId) || null;
+  }, [selectedVoucherId, unusedVouchers]);
+
+  const voucherDiscount = useMemo(() => {
+    if (!selectedVoucher) return 0;
+    if (selectedVoucher.discount_type === 'percentage') {
+      return Math.floor(basePrice * selectedVoucher.discount_value / 100);
+    }
+    return Math.min(selectedVoucher.discount_value, basePrice);
+  }, [selectedVoucher, basePrice]);
+
+  const pointsDiscount = useMemo(() => {
+    if (!usePoints || !customerPoints || !customerPoints.is_points_enabled) return 0;
+    if (customerPoints.current_points <= 0 || customerPoints.redeem_points <= 0 || customerPoints.point_value <= 0) return 0;
+    const rawDiscount = Math.floor(customerPoints.current_points / customerPoints.redeem_points) * customerPoints.point_value;
+    const hasMaxLimit = customerPoints.max_redemption_amount && customerPoints.max_redemption_amount > 0;
+    const cappedDiscount = hasMaxLimit ? Math.min(rawDiscount, customerPoints.max_redemption_amount) : rawDiscount;
+    return Math.min(cappedDiscount, basePrice);
+  }, [usePoints, customerPoints, basePrice]);
+
+  const totalDiscount = selectedVoucherId ? voucherDiscount : (usePoints ? pointsDiscount : 0);
+  const finalPrice = Math.max(0, basePrice - totalDiscount);
+
   // Generate transfer content
   const transferContent = useMemo(() => {
     const productCode = (product.sku || product.name || '')
@@ -79,11 +135,10 @@ export function PaymentFlowDialog({
   // VietQR URL
   const qrUrl = useMemo(() => {
     if (!bankName || !accountNumber) return null;
-    // bankName is stored as bank code (e.g., 'VCB')
     const bank = VIETNAMESE_BANKS.find(b => b.code === bankName);
     if (!bank) return null;
-    return generateVietQRUrl(bank.bin, accountNumber, price * quantity, transferContent, accountHolder || undefined);
-  }, [bankName, accountNumber, accountHolder, price, quantity, transferContent]);
+    return generateVietQRUrl(bank.bin, accountNumber, finalPrice, transferContent, accountHolder || undefined);
+  }, [bankName, accountNumber, accountHolder, finalPrice, transferContent]);
 
   const bankDisplayName = useMemo(() => {
     const bank = VIETNAMESE_BANKS.find(b => b.code === bankName);
@@ -116,20 +171,26 @@ export function PaymentFlowDialog({
     }
 
     if (paymentMethod === 'transfer') {
-      // Go to QR step
       setStep('transfer_qr');
       return;
     }
 
-    // Place COD order
+    const discountNote = selectedVoucher
+      ? `[Voucher: ${selectedVoucher.code} - Giảm ${formatNumber(voucherDiscount)}đ]`
+      : usePoints && pointsDiscount > 0
+        ? `[Điểm tích lũy: Giảm ${formatNumber(pointsDiscount)}đ]`
+        : '';
+    const fullNote = [discountNote, note.trim()].filter(Boolean).join(' ');
+
     try {
       await onPlaceOrder({
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
         customer_address: customerAddress.trim() || undefined,
-        note: note.trim() || undefined,
+        note: fullNote || undefined,
         branch_id: branchId,
         payment_method: 'cod',
+        final_price: totalDiscount > 0 ? finalPrice : undefined,
       });
       setOrderPlaced(true);
     } catch {
@@ -139,15 +200,23 @@ export function PaymentFlowDialog({
 
   const handlePlaceTransferOrder = async () => {
     const branchId = selectedBranch || (branches.length === 1 ? branches[0].id : '');
+    const discountNote = selectedVoucher
+      ? `[Voucher: ${selectedVoucher.code} - Giảm ${formatNumber(voucherDiscount)}đ]`
+      : usePoints && pointsDiscount > 0
+        ? `[Điểm tích lũy: Giảm ${formatNumber(pointsDiscount)}đ]`
+        : '';
+    const fullNote = [discountNote, note.trim()].filter(Boolean).join(' ');
+
     try {
       await onPlaceOrder({
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
         customer_address: customerAddress.trim() || undefined,
-        note: note.trim() || undefined,
+        note: fullNote || undefined,
         branch_id: branchId,
         payment_method: 'transfer',
         transfer_content: transferContent,
+        final_price: totalDiscount > 0 ? finalPrice : undefined,
       });
       setOrderPlaced(true);
     } catch {
@@ -188,6 +257,9 @@ export function PaymentFlowDialog({
     setSelectedBranch(branches.length === 1 ? branches[0].id : '');
     setAttempted(false);
     setOrderPlaced(false);
+    setSelectedVoucherId(null);
+    setUsePoints(false);
+    setDebouncedPhone('');
     onClose();
   };
 
@@ -229,7 +301,10 @@ export function PaymentFlowDialog({
                 <p className="text-sm font-medium line-clamp-2">{product.name}</p>
                 {variant && <Badge variant="outline" className="text-[10px] mt-0.5">{variant}</Badge>}
                 <p className="text-sm font-bold mt-1" style={{ color: primaryColor }}>
-                  {formatNumber(price * quantity)}đ
+                  {formatNumber(finalPrice)}đ
+                  {totalDiscount > 0 && (
+                    <span className="text-xs font-normal text-gray-400 line-through ml-2">{formatNumber(basePrice)}đ</span>
+                  )}
                   {quantity > 1 && <span className="text-xs font-normal text-gray-500 ml-1">x{quantity}</span>}
                 </p>
               </div>
@@ -325,6 +400,66 @@ export function PaymentFlowDialog({
                 </div>
               )}
 
+              {/* Voucher & Points */}
+              {debouncedPhone && (unusedVouchers.length > 0 || (customerPoints?.is_points_enabled && customerPoints.current_points > 0)) && (
+                <div className="space-y-2 border rounded-lg p-3 bg-gray-50">
+                  <p className="text-xs font-medium flex items-center gap-1.5">
+                    <Gift className="h-3.5 w-3.5" style={{ color: primaryColor }} />
+                    Ưu đãi của bạn
+                  </p>
+                  {unusedVouchers.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs flex items-center gap-1"><Ticket className="h-3 w-3" /> Voucher ({unusedVouchers.length})</Label>
+                      <select value={selectedVoucherId || ''} onChange={e => { setSelectedVoucherId(e.target.value || null); if (e.target.value) setUsePoints(false); }}
+                        className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                        <option value="">Không sử dụng voucher</option>
+                        {unusedVouchers.map((v: any) => (
+                          <option key={v.id} value={v.id}>
+                            {v.voucher_name} - {v.discount_type === 'percentage' ? `${v.discount_value}%` : `${formatNumber(v.discount_value)}đ`} ({v.code})
+                          </option>
+                        ))}
+                      </select>
+                      {selectedVoucher && voucherDiscount > 0 && (
+                        <p className="text-xs text-green-600 font-medium">Giảm: {formatNumber(voucherDiscount)}đ</p>
+                      )}
+                    </div>
+                  )}
+                  {customerPoints?.is_points_enabled && customerPoints.current_points > 0 && customerPoints.redeem_points > 0 && (
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={usePoints} onChange={e => { setUsePoints(e.target.checked); if (e.target.checked) setSelectedVoucherId(null); }}
+                          className="rounded border-input" disabled={!!selectedVoucherId} />
+                        <span className="text-xs flex items-center gap-1">
+                          <Star className="h-3 w-3 text-amber-500" />
+                          Dùng {formatNumber(customerPoints.current_points)} điểm
+                          {pointsDiscount > 0 && !selectedVoucherId && (
+                            <span className="text-green-600 font-medium">(Giảm {formatNumber(pointsDiscount)}đ)</span>
+                          )}
+                        </span>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Order summary with discount */}
+              {totalDiscount > 0 && (
+                <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1.5">
+                  <div className="flex justify-between text-gray-400">
+                    <span>Giá gốc:</span>
+                    <span>{formatNumber(basePrice)}đ</span>
+                  </div>
+                  <div className="flex justify-between text-green-600">
+                    <span>{selectedVoucher ? `Voucher (${selectedVoucher.code})` : 'Điểm tích lũy'}:</span>
+                    <span>-{formatNumber(totalDiscount)}đ</span>
+                  </div>
+                  <div className="flex justify-between font-bold pt-1.5 border-t">
+                    <span>Tổng thanh toán:</span>
+                    <span style={{ color: primaryColor }}>{formatNumber(finalPrice)}đ</span>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <Label className="text-sm">Ghi chú</Label>
                 <Textarea
@@ -355,8 +490,11 @@ export function PaymentFlowDialog({
               <div className="text-center space-y-1">
                 <p className="text-sm text-muted-foreground">Số tiền cần thanh toán</p>
                 <p className="text-3xl font-bold" style={{ color: primaryColor }}>
-                  {formatNumber(price * quantity)}đ
+                  {formatNumber(finalPrice)}đ
                 </p>
+                {totalDiscount > 0 && (
+                  <p className="text-xs text-green-600">Đã giảm {formatNumber(totalDiscount)}đ</p>
+                )}
               </div>
 
               {/* QR Code */}
