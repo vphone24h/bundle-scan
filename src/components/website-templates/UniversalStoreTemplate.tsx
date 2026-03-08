@@ -40,6 +40,10 @@ import { LayoutTrustBadges } from './layouts/TrustBadgeVariants';
 import { LayoutHeader } from './layouts/HeaderVariants';
 import { LayoutFooter } from './layouts/FooterVariants';
 import { LayoutStickyBar } from './layouts/StickyBarVariants';
+import { CTVAuthDialog } from '@/components/landing/CTVAuthDialog';
+import { CTVDashboard } from '@/components/landing/CTVDashboard';
+import { useShopCTVSettings } from '@/hooks/useShopCTV';
+import { supabase } from '@/integrations/supabase/client';
 
 
 export interface UniversalTemplateProps {
@@ -68,7 +72,7 @@ function calculateWarrantyStatus(item: WarrantyResult): WarrantyStatus | null {
   return { valid: isValid, message: isValid ? `Còn ${daysLeft} ngày` : 'Hết BH', endDate, startDate: saleDate, months: warrantyMonths, daysLeft };
 }
 
-type PageView = 'home' | 'products' | 'news' | 'warranty' | 'article-detail' | 'repair' | 'tradein' | 'installment' | 'accessories' | 'compare' | 'pricelist' | 'booking' | 'branches' | 'contact' | 'services' | 'rooms' | 'courses' | 'doctors' | 'collection' | 'promotion' | 'reviews' | 'system-page';
+type PageView = 'home' | 'products' | 'news' | 'warranty' | 'article-detail' | 'repair' | 'tradein' | 'installment' | 'accessories' | 'compare' | 'pricelist' | 'booking' | 'branches' | 'contact' | 'services' | 'rooms' | 'courses' | 'doctors' | 'collection' | 'promotion' | 'reviews' | 'system-page' | 'ctv-dashboard';
 
 export default function UniversalStoreTemplate({
   settings, tenant, tenantId, storeId, branches,
@@ -120,6 +124,32 @@ export default function UniversalStoreTemplate({
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [productFilterTag, setProductFilterTag] = useState<string | null>(null);
   const [showInstallmentCalc, setShowInstallmentCalc] = useState(false);
+  const [ctvAuthOpen, setCtvAuthOpen] = useState(false);
+  const [ctvSession, setCtvSession] = useState<any>(null);
+
+  // CTV settings
+  const { data: ctvSettings } = useShopCTVSettings(tenantId);
+  const ctvEnabled = !!ctvSettings?.is_enabled;
+
+  // Track CTV ref cookie
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref && tenantId) {
+      localStorage.setItem(`ctv_ref_${tenantId}`, JSON.stringify({ code: ref, ts: Date.now() }));
+    }
+  }, [searchParams, tenantId]);
+
+  // Check CTV auth session
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCtvSession(session);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCtvSession(session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Load Google Font if needed
   useEffect(() => {
     const fontUrl = GOOGLE_FONTS[config.fontFamily];
@@ -339,6 +369,19 @@ export default function UniversalStoreTemplate({
     return false;
   };
 
+  // CTV Dashboard view
+  if (pageView === 'ctv-dashboard' && tenantId) {
+    return (
+      <CTVDashboard
+        tenantId={tenantId}
+        storeName={displayStoreName}
+        storeUrl={window.location.origin + (storeId ? `/store/${storeId}` : '/')}
+        accentColor={accentColor}
+        onBack={() => navigateTo('home')}
+      />
+    );
+  }
+
   // If a product is selected, show full page instead of template
   if (selectedProduct) {
     return (
@@ -399,6 +442,41 @@ export default function UniversalStoreTemplate({
         onCloseMenu={() => setMobileMenuOpen(false)}
         menuPosition={(settings as any)?.menu_position || 'left'}
       />
+
+      {/* CTV Login/Dashboard Button */}
+      {ctvEnabled && (
+        <div className="bg-white border-b border-black/5 px-4 py-1.5 flex justify-end">
+          {ctvSession ? (
+            <button
+              onClick={() => navigateTo('ctv-dashboard' as PageView)}
+              className="text-xs font-medium px-3 py-1.5 rounded-full border transition-colors hover:bg-black/5"
+              style={{ borderColor: accentColor, color: accentColor }}
+            >
+              👤 Dashboard CTV
+            </button>
+          ) : (
+            <button
+              onClick={() => setCtvAuthOpen(true)}
+              className="text-xs font-medium px-3 py-1.5 rounded-full border transition-colors hover:bg-black/5"
+              style={{ borderColor: accentColor, color: accentColor }}
+            >
+              🤝 Đăng nhập CTV
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* CTV Auth Dialog */}
+      {tenantId && (
+        <CTVAuthDialog
+          open={ctvAuthOpen}
+          onOpenChange={setCtvAuthOpen}
+          tenantId={tenantId}
+          storeName={displayStoreName}
+          accentColor={accentColor}
+          onSuccess={() => navigateTo('ctv-dashboard' as PageView)}
+        />
+      )}
 
       <main>
         {/* === HOME PAGE === */}

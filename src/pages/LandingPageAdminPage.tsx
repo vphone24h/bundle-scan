@@ -8,6 +8,7 @@ import { LandingArticlesTab } from '@/components/admin/LandingArticlesTab';
 import { LandingOrdersTab } from '@/components/admin/LandingOrdersTab';
 import { LandingZaloMailTab } from '@/components/admin/LandingZaloMailTab';
 import { EmailAutomationTab } from '@/components/admin/EmailAutomationTab';
+import { ShopCTVManagement } from '@/components/admin/ShopCTVManagement';
 import { usePermissions } from '@/hooks/usePermissions';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useLandingGuideUrl } from '@/hooks/useAppConfig';
@@ -153,6 +154,11 @@ export default function LandingPageAdminPage() {
                   <span className="flex items-center gap-1">Email Automation</span>
                 </TabsTrigger>
               )}
+              {showSettings && (
+                <TabsTrigger value="ctv" className="py-2.5 px-4 text-sm">
+                  <span className="flex items-center gap-1">👥 CTV</span>
+                </TabsTrigger>
+              )}
             </TabsList>
             {showSettings && (
               <TabsContent value="settings">
@@ -183,6 +189,11 @@ export default function LandingPageAdminPage() {
             {showSettings && (
               <TabsContent value="email-automation">
                 <EmailAutomationTab />
+              </TabsContent>
+            )}
+            {showSettings && (
+              <TabsContent value="ctv">
+                <ShopCTVManagement />
               </TabsContent>
             )}
           </Tabs>

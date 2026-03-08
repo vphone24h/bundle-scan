@@ -3690,6 +3690,8 @@ export type Database = {
           call_status: string
           cancelled_reason: string | null
           created_at: string
+          ctv_code: string | null
+          ctv_id: string | null
           customer_address: string | null
           customer_email: string | null
           customer_name: string
@@ -3721,6 +3723,8 @@ export type Database = {
           call_status?: string
           cancelled_reason?: string | null
           created_at?: string
+          ctv_code?: string | null
+          ctv_id?: string | null
           customer_address?: string | null
           customer_email?: string | null
           customer_name: string
@@ -3752,6 +3756,8 @@ export type Database = {
           call_status?: string
           cancelled_reason?: string | null
           created_at?: string
+          ctv_code?: string | null
+          ctv_id?: string | null
           customer_address?: string | null
           customer_email?: string | null
           customer_name?: string
@@ -3777,6 +3783,13 @@ export type Database = {
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "landing_orders_ctv_id_fkey"
+            columns: ["ctv_id"]
+            isOneToOne: false
+            referencedRelation: "shop_collaborators"
             referencedColumns: ["id"]
           },
           {
@@ -4965,6 +4978,297 @@ export type Database = {
             foreignKeyName: "security_passwords_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_collaborators: {
+        Row: {
+          available_balance: number
+          bank_account_holder: string | null
+          bank_account_number: string | null
+          bank_name: string | null
+          blocked_reason: string | null
+          commission_rate: number
+          commission_type: string
+          created_at: string
+          ctv_code: string
+          email: string | null
+          full_name: string
+          id: string
+          paid_balance: number
+          pending_balance: number
+          phone: string | null
+          referrer_id: string | null
+          status: string
+          tenant_id: string
+          total_commission: number
+          total_orders: number
+          total_revenue: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          available_balance?: number
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          blocked_reason?: string | null
+          commission_rate?: number
+          commission_type?: string
+          created_at?: string
+          ctv_code: string
+          email?: string | null
+          full_name: string
+          id?: string
+          paid_balance?: number
+          pending_balance?: number
+          phone?: string | null
+          referrer_id?: string | null
+          status?: string
+          tenant_id: string
+          total_commission?: number
+          total_orders?: number
+          total_revenue?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          available_balance?: number
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          blocked_reason?: string | null
+          commission_rate?: number
+          commission_type?: string
+          created_at?: string
+          ctv_code?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          paid_balance?: number
+          pending_balance?: number
+          phone?: string | null
+          referrer_id?: string | null
+          status?: string
+          tenant_id?: string
+          total_commission?: number
+          total_orders?: number
+          total_revenue?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_collaborators_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "shop_collaborators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_collaborators_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_ctv_orders: {
+        Row: {
+          commission_amount: number
+          commission_rate: number
+          commission_type: string
+          created_at: string
+          ctv_id: string
+          customer_name: string | null
+          customer_phone: string | null
+          id: string
+          landing_order_id: string | null
+          order_amount: number
+          order_code: string | null
+          order_id: string | null
+          source: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          commission_amount?: number
+          commission_rate?: number
+          commission_type?: string
+          created_at?: string
+          ctv_id: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          landing_order_id?: string | null
+          order_amount?: number
+          order_code?: string | null
+          order_id?: string | null
+          source?: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          commission_amount?: number
+          commission_rate?: number
+          commission_type?: string
+          created_at?: string
+          ctv_id?: string
+          customer_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          landing_order_id?: string | null
+          order_amount?: number
+          order_code?: string | null
+          order_id?: string | null
+          source?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_ctv_orders_ctv_id_fkey"
+            columns: ["ctv_id"]
+            isOneToOne: false
+            referencedRelation: "shop_collaborators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_ctv_orders_landing_order_id_fkey"
+            columns: ["landing_order_id"]
+            isOneToOne: false
+            referencedRelation: "landing_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_ctv_orders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_ctv_settings: {
+        Row: {
+          allow_self_register: boolean
+          auto_approve_ctv: boolean
+          cookie_tracking_days: number
+          created_at: string
+          default_commission_rate: number
+          default_commission_type: string
+          id: string
+          is_enabled: boolean
+          min_withdrawal_amount: number
+          program_description: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          allow_self_register?: boolean
+          auto_approve_ctv?: boolean
+          cookie_tracking_days?: number
+          created_at?: string
+          default_commission_rate?: number
+          default_commission_type?: string
+          id?: string
+          is_enabled?: boolean
+          min_withdrawal_amount?: number
+          program_description?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          allow_self_register?: boolean
+          auto_approve_ctv?: boolean
+          cookie_tracking_days?: number
+          created_at?: string
+          default_commission_rate?: number
+          default_commission_type?: string
+          id?: string
+          is_enabled?: boolean
+          min_withdrawal_amount?: number
+          program_description?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_ctv_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_ctv_withdrawals: {
+        Row: {
+          amount: number
+          bank_account_holder: string
+          bank_account_number: string
+          bank_name: string
+          created_at: string
+          ctv_id: string
+          id: string
+          note: string | null
+          processed_at: string | null
+          processed_by: string | null
+          rejected_reason: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          bank_account_holder: string
+          bank_account_number: string
+          bank_name: string
+          created_at?: string
+          ctv_id: string
+          id?: string
+          note?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          rejected_reason?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          bank_account_holder?: string
+          bank_account_number?: string
+          bank_name?: string
+          created_at?: string
+          ctv_id?: string
+          id?: string
+          note?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          rejected_reason?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_ctv_withdrawals_ctv_id_fkey"
+            columns: ["ctv_id"]
+            isOneToOne: false
+            referencedRelation: "shop_collaborators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_ctv_withdrawals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
@@ -6866,6 +7170,7 @@ export type Database = {
       encrypt_api_key: { Args: { _plaintext: string }; Returns: string }
       generate_affiliate_code: { Args: never; Returns: string }
       generate_domain_verification_token: { Args: never; Returns: string }
+      generate_shop_ctv_code: { Args: { _tenant_id: string }; Returns: string }
       generate_voucher_code: { Args: never; Returns: string }
       get_current_tenant: { Args: never; Returns: string }
       get_customer_debt_summary: {
@@ -6971,6 +7276,7 @@ export type Database = {
           total_sold: number
         }[]
       }
+      get_my_shop_ctv: { Args: { _tenant_id: string }; Returns: Json }
       get_or_create_direct_conversation: {
         Args: { p_other_user_id: string; p_user_id: string }
         Returns: string
@@ -7266,6 +7572,16 @@ export type Database = {
         Returns: undefined
       }
       refresh_materialized_views: { Args: never; Returns: undefined }
+      register_shop_ctv: {
+        Args: {
+          _email: string
+          _full_name: string
+          _phone?: string
+          _referrer_code?: string
+          _tenant_id: string
+        }
+        Returns: Json
+      }
       resolve_tenant_by_domain: { Args: { _domain: string }; Returns: string }
       search_product_suggestions: {
         Args: { p_limit?: number; p_search: string }
