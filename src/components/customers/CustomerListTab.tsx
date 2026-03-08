@@ -58,9 +58,18 @@ export function CustomerListTab({
     const { data: permissions } = usePermissions();
     const isSuperAdmin = permissions?.canViewAllBranches === true;
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [sourceFilter, setSourceFilter] = useState('_all_');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(25);
+
+    // Debounce search input (400ms)
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setDebouncedSearch(search);
+      }, 400);
+      return () => clearTimeout(timer);
+    }, [search]);
 
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
     const [editingCustomer, setEditingCustomer] = useState<any>(null);
