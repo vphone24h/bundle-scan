@@ -87,213 +87,195 @@ export const CTA_ACTION_OPTIONS: CTAActionOption[] = [
 
 export function getDefaultCTAButtons(templateId?: string): CTAButtonItem[] {
   // Default CTA buttons per industry template - tối ưu theo ngành nghề
+  // "Thêm vào giỏ hàng" là nút chính thay cho "Mua ngay" để khách có thể mua nhiều SP cùng lúc
   const INDUSTRY_CTA: Record<string, CTAButtonItem[]> = {
-    // ===== CÔNG NGHỆ - mua + trả góp + bảo hành =====
+    // ===== CÔNG NGHỆ / ĐIỆN THOẠI / ĐIỆN MÁY =====
+    // Thêm giỏ hàng + Trả góp + So sánh + Kiểm tra BH + Tư vấn
     phone_store: [
-      { id: 'cta_order', label: 'Mua ngay', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_cart', label: 'Thêm vào giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
       { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
-      { id: 'cta_cart', label: 'Thêm giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
-      { id: 'cta_compare', label: 'So sánh', icon: '⚖️', action: 'compare', enabled: false },
-      { id: 'cta_warranty', label: 'Kiểm tra BH', icon: '🛡️', action: 'check_warranty', enabled: false },
-      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_compare', label: 'So sánh sản phẩm', icon: '⚖️', action: 'compare', enabled: true },
+      { id: 'cta_warranty', label: 'Kiểm tra bảo hành', icon: '🛡️', action: 'check_warranty', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
     laptop_store: [
-      { id: 'cta_order', label: 'Mua ngay', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_cart', label: 'Thêm vào giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
       { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
-      { id: 'cta_compare', label: 'So sánh', icon: '⚖️', action: 'compare', enabled: true },
-      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_compare', label: 'So sánh sản phẩm', icon: '⚖️', action: 'compare', enabled: true },
+      { id: 'cta_warranty', label: 'Kiểm tra bảo hành', icon: '🛡️', action: 'check_warranty', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
     electronics_store: [
-      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_cart', label: 'Thêm vào giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
       { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
-      { id: 'cta_cart', label: 'Thêm giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
-      { id: 'cta_warranty', label: 'Kiểm tra BH', icon: '🛡️', action: 'check_warranty', enabled: false },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_compare', label: 'So sánh sản phẩm', icon: '⚖️', action: 'compare', enabled: true },
+      { id: 'cta_warranty', label: 'Kiểm tra bảo hành', icon: '🛡️', action: 'check_warranty', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
     accessories_store: [
-      { id: 'cta_order', label: 'Mua ngay', icon: '🛒', action: 'order', enabled: true },
-      { id: 'cta_cart', label: 'Thêm giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
-      { id: 'cta_offer', label: 'Nhận ưu đãi', icon: '🎁', action: 'get_offer', enabled: false },
-      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_cart', label: 'Thêm vào giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
+      { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
+      { id: 'cta_compare', label: 'So sánh sản phẩm', icon: '⚖️', action: 'compare', enabled: true },
+      { id: 'cta_warranty', label: 'Kiểm tra bảo hành', icon: '🛡️', action: 'check_warranty', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
     apple_landing: [
-      { id: 'cta_order', label: 'Mua ngay', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_cart', label: 'Thêm vào giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
       { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
-      { id: 'cta_installment0', label: 'Trả góp 0%', icon: '💳', action: 'installment_0', enabled: false },
-      { id: 'cta_compare', label: 'So sánh', icon: '⚖️', action: 'compare', enabled: true },
-      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_fb', label: 'Facebook', icon: '💬', action: 'facebook', enabled: false },
+      { id: 'cta_compare', label: 'So sánh sản phẩm', icon: '⚖️', action: 'compare', enabled: true },
+      { id: 'cta_warranty', label: 'Kiểm tra bảo hành', icon: '🛡️', action: 'check_warranty', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
 
-    // ===== THỜI TRANG & LÀM ĐẸP - mua + tư vấn + ưu đãi =====
+    // ===== THỜI TRANG / LÀM ĐẸP =====
+    // Thêm giỏ hàng + Xem giỏ hàng + Nhận mã giảm giá + Tư vấn
     fashion_store: [
-      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
-      { id: 'cta_cart', label: 'Thêm giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
-      { id: 'cta_coupon', label: 'Mã giảm giá', icon: '🎫', action: 'get_coupon', enabled: false },
-      { id: 'cta_zalo', label: 'Tư vấn Zalo', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_cart', label: 'Thêm vào giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
+      { id: 'cta_view_cart', label: 'Xem giỏ hàng', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_coupon', label: 'Nhận mã giảm giá', icon: '🎫', action: 'get_coupon', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
     shoes_store: [
-      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
-      { id: 'cta_cart', label: 'Thêm giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
-      { id: 'cta_zalo', label: 'Tư vấn size', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_review', label: 'Xem đánh giá', icon: '⭐', action: 'view_reviews', enabled: false },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_cart', label: 'Thêm vào giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
+      { id: 'cta_view_cart', label: 'Xem giỏ hàng', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_coupon', label: 'Nhận mã giảm giá', icon: '🎫', action: 'get_coupon', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
     cosmetics_store: [
-      { id: 'cta_order', label: 'Mua ngay', icon: '🛒', action: 'order', enabled: true },
-      { id: 'cta_cart', label: 'Thêm giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
-      { id: 'cta_consult', label: 'Tư vấn da', icon: '💬', action: 'consult_now', enabled: true },
-      { id: 'cta_offer', label: 'Nhận ưu đãi', icon: '🎁', action: 'get_offer', enabled: false },
-      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_cart', label: 'Thêm vào giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
+      { id: 'cta_view_cart', label: 'Xem giỏ hàng', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_coupon', label: 'Nhận mã giảm giá', icon: '🎫', action: 'get_coupon', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
     watch_store: [
-      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
-      { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
-      { id: 'cta_warranty', label: 'Kiểm tra BH', icon: '🛡️', action: 'check_warranty', enabled: false },
-      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
+      { id: 'cta_cart', label: 'Thêm vào giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
+      { id: 'cta_view_cart', label: 'Xem giỏ hàng', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_coupon', label: 'Nhận mã giảm giá', icon: '🎫', action: 'get_coupon', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
     jewelry_store: [
-      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
-      { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
-      { id: 'cta_booking', label: 'Đặt lịch xem', icon: '📅', action: 'booking_store', enabled: false },
-      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_cart', label: 'Thêm vào giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
+      { id: 'cta_view_cart', label: 'Xem giỏ hàng', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_coupon', label: 'Nhận mã giảm giá', icon: '🎫', action: 'get_coupon', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
 
-    // ===== SPA & SALON - đặt lịch là chính =====
+    // ===== SPA / SALON =====
+    // Đặt lịch làm đẹp + Tư vấn + Nhận ưu đãi + Tham gia thành viên
     spa_store: [
-      { id: 'cta_booking', label: 'Đặt lịch', icon: '📅', action: 'booking_beauty', enabled: true },
-      { id: 'cta_consult', label: 'Tư vấn ngay', icon: '💬', action: 'consult_now', enabled: true },
-      { id: 'cta_offer', label: 'Nhận ưu đãi', icon: '🎁', action: 'get_offer', enabled: false },
-      { id: 'cta_member', label: 'Thành viên', icon: '👤', action: 'join_member', enabled: false },
-      { id: 'cta_zalo', label: 'Tư vấn Zalo', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_booking', label: 'Đặt lịch làm đẹp', icon: '💅', action: 'booking_beauty', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
+      { id: 'cta_offer', label: 'Nhận ưu đãi', icon: '🎁', action: 'get_offer', enabled: true },
+      { id: 'cta_member', label: 'Tham gia thành viên', icon: '👤', action: 'join_member', enabled: true },
     ],
     salon_store: [
-      { id: 'cta_booking', label: 'Đặt lịch', icon: '📅', action: 'booking_beauty', enabled: true },
-      { id: 'cta_offer', label: 'Ưu đãi hôm nay', icon: '🔥', action: 'today_offer', enabled: false },
-      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_booking', label: 'Đặt lịch làm đẹp', icon: '💅', action: 'booking_beauty', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
+      { id: 'cta_offer', label: 'Nhận ưu đãi', icon: '🎁', action: 'get_offer', enabled: true },
+      { id: 'cta_member', label: 'Tham gia thành viên', icon: '👤', action: 'join_member', enabled: true },
     ],
 
-    // ===== ẨM THỰC - đặt món + đặt bàn + giao hàng =====
+    // ===== ẨM THỰC / NHÀ HÀNG =====
+    // Đặt món ngay + Đặt bàn + Đặt tiệc + Giao tận nơi
     restaurant_store: [
-      { id: 'cta_food', label: 'Đặt món', icon: '🍽️', action: 'order_food', enabled: true },
+      { id: 'cta_food', label: 'Đặt món ngay', icon: '🍽️', action: 'order_food', enabled: true },
       { id: 'cta_table', label: 'Đặt bàn', icon: '🪑', action: 'book_table', enabled: true },
-      { id: 'cta_party', label: 'Đặt tiệc', icon: '🎉', action: 'book_party', enabled: false },
-      { id: 'cta_delivery', label: 'Giao tận nơi', icon: '🚚', action: 'delivery', enabled: false },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_party', label: 'Đặt tiệc', icon: '🎉', action: 'book_party', enabled: true },
+      { id: 'cta_delivery', label: 'Giao tận nơi', icon: '🚚', action: 'delivery', enabled: true },
     ],
     cafe_store: [
-      { id: 'cta_order', label: 'Đặt hàng', icon: '🛒', action: 'order', enabled: true },
-      { id: 'cta_delivery', label: 'Giao tận nơi', icon: '🚚', action: 'delivery', enabled: false },
-      { id: 'cta_offer', label: 'Ưu đãi hôm nay', icon: '🔥', action: 'today_offer', enabled: false },
-      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_food', label: 'Đặt món ngay', icon: '🍽️', action: 'order_food', enabled: true },
+      { id: 'cta_table', label: 'Đặt bàn', icon: '🪑', action: 'book_table', enabled: true },
+      { id: 'cta_party', label: 'Đặt tiệc', icon: '🎉', action: 'book_party', enabled: true },
+      { id: 'cta_delivery', label: 'Giao tận nơi', icon: '🚚', action: 'delivery', enabled: true },
     ],
     boba_store: [
-      { id: 'cta_order', label: 'Đặt hàng', icon: '🛒', action: 'order', enabled: true },
-      { id: 'cta_delivery', label: 'Giao tận nơi', icon: '🚚', action: 'delivery', enabled: false },
-      { id: 'cta_coupon', label: 'Mã giảm giá', icon: '🎫', action: 'get_coupon', enabled: false },
-      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_food', label: 'Đặt món ngay', icon: '🍽️', action: 'order_food', enabled: true },
+      { id: 'cta_table', label: 'Đặt bàn', icon: '🪑', action: 'book_table', enabled: true },
+      { id: 'cta_party', label: 'Đặt tiệc', icon: '🎉', action: 'book_party', enabled: true },
+      { id: 'cta_delivery', label: 'Giao tận nơi', icon: '🚚', action: 'delivery', enabled: true },
     ],
 
-    // ===== BẤT ĐỘNG SẢN & Ô TÔ - tư vấn + đặt lịch xem =====
+    // ===== BẤT ĐỘNG SẢN / Ô TÔ =====
+    // Đặt lịch xem + Nhận báo giá + Tư vấn
     realestate_store: [
       { id: 'cta_booking', label: 'Đặt lịch xem', icon: '📅', action: 'booking_consult', enabled: true },
       { id: 'cta_quote', label: 'Nhận báo giá', icon: '📄', action: 'get_quote', enabled: true },
-      { id: 'cta_consult', label: 'Tư vấn ngay', icon: '💬', action: 'consult_now', enabled: true },
-      { id: 'cta_zalo', label: 'Tư vấn Zalo', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi ngay', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
     car_showroom: [
-      { id: 'cta_booking', label: 'Đặt lịch lái thử', icon: '📅', action: 'booking_store', enabled: true },
+      { id: 'cta_booking', label: 'Đặt lịch xem', icon: '📅', action: 'booking_store', enabled: true },
       { id: 'cta_quote', label: 'Nhận báo giá', icon: '📄', action: 'get_quote', enabled: true },
-      { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
-      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
     motorbike_showroom: [
-      { id: 'cta_order', label: 'Đặt xe', icon: '🛒', action: 'order', enabled: true },
-      { id: 'cta_installment', label: 'Trả góp', icon: '💳', action: 'installment', enabled: true },
-      { id: 'cta_quote', label: 'Báo giá', icon: '📄', action: 'get_quote', enabled: false },
-      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_booking', label: 'Đặt lịch xem', icon: '📅', action: 'booking_store', enabled: true },
+      { id: 'cta_quote', label: 'Nhận báo giá', icon: '📄', action: 'get_quote', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
 
-    // ===== NỘI THẤT & XÂY DỰNG - báo giá, tư vấn =====
+    // ===== NỘI THẤT / XÂY DỰNG =====
+    // Nhận báo giá + Gửi yêu cầu + Đặt lịch tư vấn
     furniture_store: [
-      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
       { id: 'cta_quote', label: 'Nhận báo giá', icon: '📄', action: 'get_quote', enabled: true },
-      { id: 'cta_consult', label: 'Tư vấn ngay', icon: '💬', action: 'consult_now', enabled: false },
-      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_request', label: 'Gửi yêu cầu', icon: '📩', action: 'send_request', enabled: true },
+      { id: 'cta_booking', label: 'Đặt lịch tư vấn', icon: '📅', action: 'booking_consult', enabled: true },
     ],
     construction_store: [
       { id: 'cta_quote', label: 'Nhận báo giá', icon: '📄', action: 'get_quote', enabled: true },
       { id: 'cta_request', label: 'Gửi yêu cầu', icon: '📩', action: 'send_request', enabled: true },
-      { id: 'cta_booking', label: 'Đặt lịch tư vấn', icon: '📅', action: 'booking_consult', enabled: false },
-      { id: 'cta_zalo', label: 'Tư vấn Zalo', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_booking', label: 'Đặt lịch tư vấn', icon: '📅', action: 'booking_consult', enabled: true },
     ],
 
-    // ===== KHÁCH SẠN - đặt phòng =====
+    // ===== KHÁCH SẠN / HOMESTAY =====
+    // Đặt phòng + Giá tốt nhất + Xem ưu đãi
     hotel_store: [
       { id: 'cta_booking', label: 'Đặt phòng', icon: '📅', action: 'booking', enabled: true },
       { id: 'cta_best', label: 'Giá tốt nhất', icon: '💰', action: 'best_price', enabled: true },
-      { id: 'cta_offer', label: 'Ưu đãi hôm nay', icon: '🔥', action: 'today_offer', enabled: false },
-      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_offer', label: 'Xem ưu đãi', icon: '🎁', action: 'get_offer', enabled: true },
     ],
 
-    // ===== DỊCH VỤ - đặt lịch, tư vấn =====
+    // ===== SỬA CHỮA / KỸ THUẬT =====
+    // Đặt lịch sửa chữa + Nhận báo giá + Tra cứu đơn + Kiểm tra BH
     repair_service: [
-      { id: 'cta_booking', label: 'Đặt lịch sửa', icon: '🔧', action: 'booking_repair', enabled: true },
-      { id: 'cta_quote', label: 'Báo giá sửa chữa', icon: '📄', action: 'get_quote', enabled: true },
-      { id: 'cta_track', label: 'Tra cứu đơn', icon: '📦', action: 'track_order', enabled: false },
-      { id: 'cta_warranty', label: 'Kiểm tra BH', icon: '🛡️', action: 'check_warranty', enabled: true },
-      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_booking', label: 'Đặt lịch sửa chữa', icon: '🔧', action: 'booking_repair', enabled: true },
+      { id: 'cta_quote', label: 'Nhận báo giá', icon: '📄', action: 'get_quote', enabled: true },
+      { id: 'cta_track', label: 'Tra cứu đơn', icon: '📦', action: 'track_order', enabled: true },
+      { id: 'cta_warranty', label: 'Kiểm tra bảo hành', icon: '🛡️', action: 'check_warranty', enabled: true },
     ],
-    training_center: [
-      { id: 'cta_booking', label: 'Đăng ký khóa học', icon: '📅', action: 'booking', enabled: true },
-      { id: 'cta_consult', label: 'Tư vấn ngay', icon: '💬', action: 'consult_now', enabled: true },
-      { id: 'cta_request', label: 'Nhận lịch học', icon: '📩', action: 'send_request', enabled: false },
-      { id: 'cta_zalo', label: 'Tư vấn Zalo', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
-    ],
+
+    // ===== Y TẾ / NHÀ THUỐC =====
+    // Đặt lịch khám + Tư vấn dược sĩ
     clinic_store: [
       { id: 'cta_booking', label: 'Đặt lịch khám', icon: '🏥', action: 'booking_clinic', enabled: true },
-      { id: 'cta_consult', label: 'Tư vấn ngay', icon: '💬', action: 'consult_now', enabled: true },
-      { id: 'cta_zalo', label: 'Tư vấn Zalo', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn dược sĩ', icon: '💬', action: 'consult_now', enabled: true },
     ],
     pharmacy_store: [
-      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
-      { id: 'cta_cart', label: 'Thêm giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
+      { id: 'cta_booking', label: 'Đặt lịch khám', icon: '🏥', action: 'booking_clinic', enabled: true },
       { id: 'cta_consult', label: 'Tư vấn dược sĩ', icon: '💬', action: 'consult_now', enabled: true },
-      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
     ],
+
+    // ===== ĐÀO TẠO / GIÁO DỤC =====
+    // Đăng ký khóa học + Tư vấn
+    training_center: [
+      { id: 'cta_booking', label: 'Đăng ký khóa học', icon: '📅', action: 'booking', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
+    ],
+
+    // ===== DOANH NGHIỆP / DỊCH VỤ =====
+    // Gửi yêu cầu + Đặt lịch tư vấn + Nhận báo giá
     company_site: [
       { id: 'cta_request', label: 'Gửi yêu cầu', icon: '📩', action: 'send_request', enabled: true },
       { id: 'cta_booking', label: 'Đặt lịch tư vấn', icon: '📅', action: 'booking_consult', enabled: true },
-      { id: 'cta_quote', label: 'Nhận báo giá', icon: '📄', action: 'get_quote', enabled: false },
-      { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_quote', label: 'Nhận báo giá', icon: '📄', action: 'get_quote', enabled: true },
     ],
 
     // ===== ĐẶC THÙ =====
     pet_store: [
-      { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
-      { id: 'cta_cart', label: 'Thêm giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
-      { id: 'cta_booking', label: 'Đặt lịch dịch vụ', icon: '📅', action: 'booking', enabled: false },
-      { id: 'cta_zalo', label: 'Tư vấn', icon: '💬', action: 'zalo', enabled: true },
-      { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
+      { id: 'cta_cart', label: 'Thêm vào giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
+      { id: 'cta_view_cart', label: 'Xem giỏ hàng', icon: '🛒', action: 'order', enabled: true },
+      { id: 'cta_coupon', label: 'Nhận mã giảm giá', icon: '🎫', action: 'get_coupon', enabled: true },
+      { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     ],
   };
 
@@ -303,9 +285,9 @@ export function getDefaultCTAButtons(templateId?: string): CTAButtonItem[] {
 
   // Fallback mặc định cho ngành bán lẻ chung
   return [
-    { id: 'cta_order', label: 'Đặt mua', icon: '🛒', action: 'order', enabled: true },
-    { id: 'cta_cart', label: 'Thêm giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
-    { id: 'cta_zalo', label: 'Zalo', icon: '💬', action: 'zalo', enabled: true },
+    { id: 'cta_cart', label: 'Thêm vào giỏ hàng', icon: '🛒', action: 'add_to_cart', enabled: true },
+    { id: 'cta_view_cart', label: 'Xem giỏ hàng', icon: '🛒', action: 'order', enabled: true },
+    { id: 'cta_consult', label: 'Tư vấn', icon: '💬', action: 'consult_now', enabled: true },
     { id: 'cta_call', label: 'Gọi', icon: '📞', action: 'call', enabled: true },
   ];
 }
