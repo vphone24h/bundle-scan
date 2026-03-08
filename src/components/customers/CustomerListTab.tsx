@@ -102,7 +102,7 @@ export function CustomerListTab({
     };
 
     const { data: customers, isLoading, hasMore } = useCustomersWithPoints({
-      search: search || undefined,
+      search: debouncedSearch || undefined,
       branchId: branchFilter !== '_all_' ? branchFilter : undefined,
       tier: tierFilter !== '_all_' ? tierFilter : undefined,
       status: undefined,
