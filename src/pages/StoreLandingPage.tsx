@@ -9,6 +9,7 @@ import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import UniversalStoreTemplate from '@/components/website-templates/UniversalStoreTemplate';
 import AppleStyleLandingTemplate from '@/components/website-templates/AppleStyleLandingTemplate';
+import { LandingCartProvider } from '@/hooks/useLandingCart';
 import { Loader2, Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -203,7 +204,27 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   // Apple Landing uses its own standalone template
   if (template === 'apple_landing') {
     return (
-      <AppleStyleLandingTemplate
+      <LandingCartProvider>
+        <AppleStyleLandingTemplate
+          settings={settings}
+          tenant={tenant}
+          tenantId={tenantId}
+          storeId={storeId}
+          branches={branches}
+          productsData={productsData}
+          articlesData={articlesData}
+          searchParams={searchParams}
+          setSearchParams={setSearchParams}
+          queryClient={queryClient}
+        />
+      </LandingCartProvider>
+    );
+  }
+
+  // All other templates use UniversalStoreTemplate
+  return (
+    <LandingCartProvider>
+      <UniversalStoreTemplate
         settings={settings}
         tenant={tenant}
         tenantId={tenantId}
@@ -214,24 +235,8 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
         searchParams={searchParams}
         setSearchParams={setSearchParams}
         queryClient={queryClient}
+        templateId={template}
       />
-    );
-  }
-
-  // All other templates use UniversalStoreTemplate
-  return (
-    <UniversalStoreTemplate
-      settings={settings}
-      tenant={tenant}
-      tenantId={tenantId}
-      storeId={storeId}
-      branches={branches}
-      productsData={productsData}
-      articlesData={articlesData}
-      searchParams={searchParams}
-      setSearchParams={setSearchParams}
-      queryClient={queryClient}
-      templateId={template}
-    />
+    </LandingCartProvider>
   );
 }
