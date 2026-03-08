@@ -83,7 +83,7 @@ export function PlatformEmailAutomationManagement() {
   const [editing, setEditing] = useState<PlatformEmailAutomation | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [sendingTestId, setSendingTestId] = useState<string | null>(null);
-
+  const [runningNow, setRunningNow] = useState(false);
   // Form state
   const [name, setName] = useState('');
   const [triggerType, setTriggerType] = useState('signup_days');
