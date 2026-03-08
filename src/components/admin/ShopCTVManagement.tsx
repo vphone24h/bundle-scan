@@ -100,6 +100,8 @@ export function ShopCTVManagement() {
       is_enabled: activeSettings.is_enabled ?? false,
       default_commission_rate: parseFloat(activeSettings.default_commission_rate) || 5,
       default_commission_type: activeSettings.default_commission_type || 'percentage',
+      f1_commission_rate: parseFloat(activeSettings.f1_commission_rate) || 0,
+      f1_commission_type: activeSettings.f1_commission_type || 'percentage',
       cookie_tracking_days: parseInt(activeSettings.cookie_tracking_days) || 30,
       min_withdrawal_amount: parseFloat(activeSettings.min_withdrawal_amount) || 200000,
       allow_self_register: activeSettings.allow_self_register ?? true,
