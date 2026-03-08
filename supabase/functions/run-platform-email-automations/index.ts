@@ -146,12 +146,41 @@ Deno.serve(async (req) => {
             }
             break;
           }
+          case "post_purchase_days": {
+            // Check last export (sale) date, only send ONCE
+            const { data: lastExport } = await supabase
+              .from("export_receipts")
+              .select("export_date")
+              .eq("tenant_id", tenant.id)
+              .eq("status", "completed")
+              .order("export_date", { ascending: false })
+              .limit(1)
+              .single();
+
+            if (lastExport?.export_date) {
+              const lastExportDate = new Date(lastExport.export_date);
+              const daysSinceExport = Math.floor((now.getTime() - lastExportDate.getTime()) / (1000 * 60 * 60 * 24));
+              
+              if (daysSinceExport >= trigger_days) {
+                // Check if already sent for this automation + tenant (send only once)
+                const { data: existingLog } = await supabase
+                  .from("platform_email_automation_logs")
+                  .select("id")
+                  .eq("automation_id", automationId)
+                  .eq("tenant_id", tenant.id)
+                  .limit(1);
+
+                shouldSend = !existingLog || existingLog.length === 0;
+              }
+            }
+            break;
+          }
         }
 
         if (!shouldSend) continue;
 
-        // Check if email already sent today for this automation + tenant (except no_login_since which is checked above)
-        if (trigger_type !== "no_login_since") {
+        // Check if email already sent today for this automation + tenant (except once-only types)
+        if (trigger_type !== "no_login_since" && trigger_type !== "post_purchase_days") {
           const todayStart = new Date();
           todayStart.setHours(0, 0, 0, 0);
           const { data: todayLog } = await supabase

@@ -32,6 +32,7 @@ const TRIGGER_LABELS: Record<string, string> = {
   signup_days: 'Sau khi đăng ký X ngày',
   inactive_days: 'Không hoạt động X ngày',
   no_login_since: 'Sau X ngày không truy cập (gửi 1 lần)',
+  post_purchase_days: 'Sau khi mua hàng X ngày (gửi 1 lần)',
   trial_expiring: 'Sắp hết dùng thử (còn X ngày)',
   no_import: 'Chưa nhập hàng sau X ngày',
   no_export: 'Chưa xuất hàng sau X ngày',
@@ -69,6 +70,10 @@ const DEFAULT_TEMPLATES: Record<string, { subject: string; html_content: string 
   no_export: {
     subject: 'Bạn chưa xuất hàng – Thử ngay! 🛒',
     html_content: '<h2>Chào {{tenant_name}}!</h2><p>Tính năng Xuất hàng giúp bạn ghi nhận doanh thu nhanh chóng. Hãy thử ngay!</p>',
+  },
+  post_purchase_days: {
+    subject: 'Cảm ơn bạn đã sử dụng VKho! 🎉',
+    html_content: '<h2>Chào {{tenant_name}}!</h2><p>Cảm ơn bạn đã thực hiện giao dịch bán hàng trên VKho. Hy vọng bạn hài lòng với trải nghiệm!</p><p>Hãy tiếp tục khám phá các tính năng báo cáo, quản lý kho và chăm sóc khách hàng nhé.</p><p><a href="https://vkho.vn">Truy cập VKho →</a></p><p style="color:#888;font-size:12px;">Email này chỉ gửi một lần duy nhất.</p>',
   },
 };
 
@@ -371,7 +376,7 @@ export function PlatformEmailAutomationManagement() {
                 <Input type="number" value={triggerDays} onChange={e => setTriggerDays(Number(e.target.value))} min={1} />
               </div>
             </div>
-            {triggerType === 'no_login_since' && (
+            {(triggerType === 'no_login_since' || triggerType === 'post_purchase_days') && (
               <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 rounded p-2">
                 ⚠️ Điều kiện này chỉ gửi <strong>duy nhất 1 lần</strong> cho mỗi tài khoản để tránh spam.
               </p>
