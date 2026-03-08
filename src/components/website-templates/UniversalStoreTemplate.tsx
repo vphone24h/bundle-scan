@@ -1026,7 +1026,10 @@ export default function UniversalStoreTemplate({
                     <button onClick={() => navigateTo('home')} className="h-8 w-8 rounded-full bg-[#f5f5f7] flex items-center justify-center hover:bg-black/10 transition-colors">
                       <ArrowLeft className="h-4 w-4" />
                     </button>
-                    <h2 className="text-2xl font-bold tracking-tight">{config.navLabels.news}</h2>
+                    <h2 className="text-2xl font-bold tracking-tight flex-1">{config.navLabels.news}</h2>
+                    <button onClick={() => copyShareLink('page', 'news')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#f5f5f7] hover:bg-black/10 transition-colors">
+                      <Link2 className="h-3.5 w-3.5" /> Copy link
+                    </button>
                   </div>
 
                   {newsSections.map((section: any) => {
