@@ -443,6 +443,41 @@ export default function UniversalStoreTemplate({
         menuPosition={(settings as any)?.menu_position || 'left'}
       />
 
+      {/* CTV Login/Dashboard Button */}
+      {ctvEnabled && (
+        <div className="bg-white border-b border-black/5 px-4 py-1.5 flex justify-end">
+          {ctvSession ? (
+            <button
+              onClick={() => navigateTo('ctv-dashboard' as PageView)}
+              className="text-xs font-medium px-3 py-1.5 rounded-full border transition-colors hover:bg-black/5"
+              style={{ borderColor: accentColor, color: accentColor }}
+            >
+              👤 Dashboard CTV
+            </button>
+          ) : (
+            <button
+              onClick={() => setCtvAuthOpen(true)}
+              className="text-xs font-medium px-3 py-1.5 rounded-full border transition-colors hover:bg-black/5"
+              style={{ borderColor: accentColor, color: accentColor }}
+            >
+              🤝 Đăng nhập CTV
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* CTV Auth Dialog */}
+      {tenantId && (
+        <CTVAuthDialog
+          open={ctvAuthOpen}
+          onOpenChange={setCtvAuthOpen}
+          tenantId={tenantId}
+          storeName={displayStoreName}
+          accentColor={accentColor}
+          onSuccess={() => navigateTo('ctv-dashboard' as PageView)}
+        />
+      )}
+
       <main>
         {/* === HOME PAGE === */}
         {pageView === 'home' && (
