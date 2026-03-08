@@ -8,6 +8,7 @@ import { LandingArticlesTab } from '@/components/admin/LandingArticlesTab';
 import { LandingOrdersTab } from '@/components/admin/LandingOrdersTab';
 import { LandingZaloMailTab } from '@/components/admin/LandingZaloMailTab';
 import { EmailAutomationTab } from '@/components/admin/EmailAutomationTab';
+import { ShopCTVManagement } from '@/components/admin/ShopCTVManagement';
 import { usePermissions } from '@/hooks/usePermissions';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useLandingGuideUrl } from '@/hooks/useAppConfig';
