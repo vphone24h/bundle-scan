@@ -540,9 +540,9 @@ function AutomationFormDialog({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>Hủy</Button>
-          <Button onClick={handleSave} disabled={isSaving}>
+        <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+          <Button variant="outline" onClick={() => handleOpenChange(false)} className="w-full sm:w-auto">Hủy</Button>
+          <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
             {isSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
             {isEdit ? 'Cập nhật' : 'Tạo kịch bản'}
           </Button>
