@@ -466,6 +466,9 @@ export function DebtDetailDialog({
                                 {a.isFullyPaid && <span className="text-xs ml-1">✓</span>}
                               </span>
                             </div>
+                            <div className="text-xs text-muted-foreground mt-1 pt-1 border-t border-dashed">
+                              Dư nợ tại thời điểm: <span className="font-semibold text-foreground">{formatNumber((item as any).runningBalance)}</span>
+                            </div>
                           </div>
                         );
                       }
