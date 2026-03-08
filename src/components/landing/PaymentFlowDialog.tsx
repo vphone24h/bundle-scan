@@ -364,7 +364,7 @@ export function PaymentFlowDialog({
                 <Input
                   value={customerPhone}
                   onChange={e => setCustomerPhone(e.target.value)}
-                  placeholder="Nhập số điện thoại"
+                  placeholder="Nhập SĐT đã từng mua để được giảm giá"
                   inputMode="tel"
                   className={`h-11 text-base ${attempted && !customerPhone.trim() ? 'border-red-400' : ''}`}
                 />

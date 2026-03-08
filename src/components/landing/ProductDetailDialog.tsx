@@ -517,7 +517,7 @@ export function ProductDetailDialog({
 
               <div>
                 <Label className="text-xs">Số điện thoại <span className="text-destructive">*</span></Label>
-                <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Nhập SĐT" inputMode="tel" className={`h-10 ${attempted && !customerPhone.trim() ? 'border-destructive ring-destructive' : ''}`} />
+                <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Nhập SĐT đã từng mua để được giảm giá" inputMode="tel" className={`h-10 ${attempted && !customerPhone.trim() ? 'border-destructive ring-destructive' : ''}`} />
               </div>
 
               <div>

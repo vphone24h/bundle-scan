@@ -656,7 +656,7 @@ export function ProductDetailPage({
 
               <div>
                 <Label className="text-sm flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> Email <span className="text-muted-foreground text-xs">(nhận thông tin đơn hàng)</span></Label>
-                <Input value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder="Nhập email (không bắt buộc)" inputMode="email" type="email" className="h-11 text-base" />
+                <Input value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder="Nhập đúng email để nhận thông tin đơn hàng" inputMode="email" type="email" className="h-11 text-base" />
               </div>
 
               <div>
