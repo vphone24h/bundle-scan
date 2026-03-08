@@ -61,11 +61,113 @@ export function buildProductPath(
  * The short ID is the last 8 chars after the final hyphen in the last segment
  */
 export function extractProductIdFromPath(path: string): string | null {
-  const segments = path.replace(/^\//, '').split('/');
+  // Strip known page prefixes
+  const cleaned = path.replace(/^\/(san-pham|tin-tuc)\/?/, '/');
+  const segments = cleaned.replace(/^\//, '').split('/');
   const lastSegment = segments[segments.length - 1];
   if (!lastSegment) return null;
   
   // The short ID is appended: product-slug-SHORTID
   const match = lastSegment.match(/-([a-f0-9]{8})$/);
   return match ? match[1] : null;
+}
+
+/**
+ * Map page view names to URL path segments
+ */
+const PAGE_PATH_MAP: Record<string, string> = {
+  products: 'san-pham',
+  news: 'tin-tuc',
+  warranty: 'bao-hanh',
+  'article-detail': 'tin-tuc',
+  repair: 'sua-chua',
+  tradein: 'thu-cu',
+  installment: 'tra-gop',
+  accessories: 'phu-kien',
+  compare: 'so-sanh',
+  pricelist: 'bang-gia',
+  booking: 'dat-lich',
+  branches: 'chi-nhanh',
+  contact: 'lien-he',
+  services: 'dich-vu',
+  rooms: 'phong',
+  courses: 'khoa-hoc',
+  doctors: 'bac-si',
+  collection: 'bo-suu-tap',
+  promotion: 'khuyen-mai',
+  reviews: 'danh-gia',
+};
+
+const PATH_TO_PAGE_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(PAGE_PATH_MAP).map(([k, v]) => [v, k])
+);
+
+/**
+ * Build a path-based URL for a page view
+ */
+export function buildPagePath(pageView: string): string {
+  const segment = PAGE_PATH_MAP[pageView];
+  return segment ? `/${segment}` : '/';
+}
+
+/**
+ * Build a full product detail URL under /san-pham/
+ */
+export function buildProductDetailPath(
+  productName: string,
+  productId: string,
+  categoryName?: string | null,
+  parentCategoryName?: string | null,
+): string {
+  const shortId = productId.slice(0, 8);
+  const productSlug = slugify(productName);
+  const parts: string[] = ['san-pham'];
+
+  if (parentCategoryName) {
+    parts.push(slugify(parentCategoryName));
+  }
+  if (categoryName) {
+    parts.push(slugify(categoryName));
+  }
+  parts.push(`${productSlug}-${shortId}`);
+
+  return '/' + parts.join('/');
+}
+
+/**
+ * Build a full article detail URL under /tin-tuc/
+ */
+export function buildArticlePath(
+  articleTitle: string,
+  articleId: string,
+): string {
+  const shortId = articleId.slice(0, 8);
+  const articleSlug = slugify(articleTitle);
+  return `/tin-tuc/${articleSlug}-${shortId}`;
+}
+
+/**
+ * Detect page view and content ID from pathname
+ * Returns { pageView, contentId } or null if path is root
+ */
+export function detectPageFromPath(path: string): { pageView: string; contentId: string | null } | null {
+  const segments = path.replace(/^\//, '').split('/').filter(Boolean);
+  if (segments.length === 0) return null;
+  
+  const firstSegment = segments[0];
+  const pageView = PATH_TO_PAGE_MAP[firstSegment];
+  if (!pageView) {
+    // Could be a legacy product path (category/product-slug-ID)
+    return null;
+  }
+  
+  // Check if there's a content ID (product or article detail)
+  if (segments.length > 1) {
+    const lastSegment = segments[segments.length - 1];
+    const match = lastSegment.match(/-([a-f0-9]{8})$/);
+    const contentId = match ? match[1] : null;
+    return { pageView, contentId };
+  }
+  
+  return { pageView, contentId: null };
 }
