@@ -72,24 +72,31 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
   const [totalSteps, setTotalSteps] = useState(0);
 
-  // Build a set of existing product names for filtering
-  const existingNames = useMemo(() => {
-    return new Set((existingProducts || []).map(p => p.name.toLowerCase().trim()));
+  // Build sets for matching existing products (by name AND by SKU)
+  const existingMatchers = useMemo(() => {
+    const names = new Set((existingProducts || []).map(p => p.name.toLowerCase().trim()));
+    const skus = new Set(
+      (existingProducts || [])
+        .map(p => (p as any).sku?.toLowerCase().trim())
+        .filter(Boolean)
+    );
+    return { names, skus };
   }, [existingProducts]);
 
   const filteredItems = useMemo(() => {
     if (!inventory) return [];
     return inventory.filter(item => {
       if (item.stock <= 0) return false;
-      // Hide products already added to landing page
-      if (existingNames.has(item.productName.toLowerCase().trim())) return false;
+      // Hide products already added to landing page (match by name or SKU)
+      if (existingMatchers.names.has(item.productName.toLowerCase().trim())) return false;
+      if (item.sku && existingMatchers.skus.has(item.sku.toLowerCase().trim())) return false;
       const matchSearch = !search ||
         item.productName.toLowerCase().includes(search.toLowerCase()) ||
         item.sku.toLowerCase().includes(search.toLowerCase());
       const matchCat = categoryFilter === '_all_' || item.categoryId === categoryFilter;
       return matchSearch && matchCat;
     });
-  }, [inventory, search, categoryFilter, existingNames]);
+  }, [inventory, search, categoryFilter, existingMatchers]);
 
   const toggleSelect = (id: string) => {
     setSelected(prev => {
