@@ -27,6 +27,8 @@ export function useDetailedProfitReport(filters?: {
   branchId?: string;
   categoryId?: string;
   search?: string;
+  page?: number;
+  pageSize?: number;
 }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
@@ -98,7 +100,13 @@ export function useDetailedProfitReport(filters?: {
         return q;
       };
 
-      const { data: soldItems, error: soldError } = await buildSoldQuery().limit(5000);
+      const page = filters?.page ?? 1;
+      const pageSize = filters?.pageSize ?? 200;
+      const from = (page - 1) * pageSize;
+
+      const { data: soldItems, error: soldError, count: soldCount } = await buildSoldQuery()
+        .order('created_at', { ascending: false })
+        .range(from, from + pageSize - 1);
       if (soldError) throw soldError;
 
       // 2. Lấy dữ liệu trả hàng từ export_returns

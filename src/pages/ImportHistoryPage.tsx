@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { SearchInput } from '@/components/ui/search-input';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -126,7 +126,44 @@ export default function ImportHistoryPage() {
   const [manualTourActive, setManualTourActive] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const navigate = useNavigate();
-  const { data: receipts, isLoading: receiptsLoading } = useImportReceipts({ pageSize: 500 });
+
+  // Server-side pagination state for receipts tab
+  const [receiptPage, setReceiptPage] = useState(1);
+  const [receiptPageSize, setReceiptPageSize] = useState(15);
+
+  // Search & filter states (moved up for use in receipts query)
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('_all_');
+  const [supplierFilter, setSupplierFilter] = useState('_all_');
+  const [statusFilter, setStatusFilter] = useState('_all_');
+  const [branchFilter, setBranchFilter] = useState('_all_');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Debounced search for server queries
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Reset pages on filter change
+  useEffect(() => {
+    setReceiptPage(1);
+    setProductPage(1);
+  }, [debouncedSearch, supplierFilter, dateFrom, dateTo, branchFilter, categoryFilter, statusFilter]);
+
+  // Server-side receipts with full filters
+  const { data: receipts, isLoading: receiptsLoading, totalCount: receiptsTotalCount } = useImportReceipts({
+    search: debouncedSearch || undefined,
+    supplierId: supplierFilter !== '_all_' ? supplierFilter : undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    branchId: branchFilter !== '_all_' ? branchFilter : undefined,
+    page: receiptPage,
+    pageSize: receiptPageSize,
+  });
 
   // Server-side pagination state for products tab
   const [productPage, setProductPage] = useState(1);
@@ -179,17 +216,6 @@ export default function ImportHistoryPage() {
     return staffNameMap.get(createdBy) || '-';
   };
 
-  
-  // Search & filter states
-  const [searchTerm, setSearchTerm] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('_all_');
-  const [supplierFilter, setSupplierFilter] = useState('_all_');
-  const [statusFilter, setStatusFilter] = useState('_all_');
-  const [branchFilter, setBranchFilter] = useState('_all_');
-  const [showFilters, setShowFilters] = useState(false);
-
   // Server-side filtered products query
   const productServerFilters = useMemo(() => ({
     search: searchTerm || undefined,
@@ -228,61 +254,29 @@ export default function ImportHistoryPage() {
   // Calculate receipt return status
   const getReceiptReturnStatus = (receipt: ImportReceipt): 'completed' | 'cancelled' | 'full_return' => {
     if (receipt.status === 'cancelled') return 'cancelled';
-    
-    // Check if all products from this receipt are returned
-    const receiptProducts = products?.filter(p => p.import_receipt_id === receipt.id) || [];
-    if (receiptProducts.length === 0) return receipt.status as 'completed' | 'cancelled';
-    
-    const allReturned = receiptProducts.every(p => p.status === 'returned');
-    if (allReturned) return 'full_return';
-    
     return 'completed';
   };
 
-  // Filter receipts
-  const filteredReceipts = useMemo(() => {
-    if (!receipts) return [];
-    
-    return receipts.filter((r) => {
-      // Search filter
-      const matchesSearch = 
-        r.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.suppliers?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // Date filter
-      let matchesDate = true;
-      if (dateFrom || dateTo) {
-        const receiptDate = startOfDay(new Date(r.import_date));
-        if (dateFrom && dateTo) {
-          matchesDate = isWithinInterval(receiptDate, {
-            start: startOfDay(parseISO(dateFrom)),
-            end: endOfDay(parseISO(dateTo))
-          });
-        } else if (dateFrom) {
-          matchesDate = receiptDate >= startOfDay(parseISO(dateFrom));
-        } else if (dateTo) {
-          matchesDate = receiptDate <= endOfDay(parseISO(dateTo));
-        }
-      }
-      
-      // Supplier filter
-      const matchesSupplier = supplierFilter === '_all_' || r.supplier_id === supplierFilter;
-      
-      // Branch filter
-      const matchesBranch = branchFilter === '_all_' || r.branch_id === branchFilter;
-      
-      return matchesSearch && matchesDate && matchesSupplier && matchesBranch;
-    });
-  }, [receipts, searchTerm, dateFrom, dateTo, supplierFilter, branchFilter]);
+  // Receipts are now server-side filtered & paginated
+  const filteredReceipts = receipts || [];
+  const receiptsTotalPages = Math.max(1, Math.ceil(receiptsTotalCount / receiptPageSize));
 
   // Products are already server-side filtered & paginated
   const filteredProducts = products || [];
   const productsTotalPages = Math.max(1, Math.ceil(productsTotalCount / productPageSize));
 
-  // Pagination for receipts tab (client-side)
-  const receiptsPagination = usePagination(filteredReceipts, { 
-    storageKey: 'import-receipts'
-  });
+  // Server-side pagination wrapper for receipts tab
+  const receiptsPagination = {
+    paginatedData: filteredReceipts as ImportReceipt[],
+    currentPage: receiptPage,
+    pageSize: receiptPageSize,
+    totalItems: receiptsTotalCount,
+    totalPages: receiptsTotalPages,
+    setPage: setReceiptPage,
+    setPageSize: (size: number) => { setReceiptPageSize(size); setReceiptPage(1); },
+    startIndex: (receiptPage - 1) * receiptPageSize + 1,
+    endIndex: Math.min(receiptPage * receiptPageSize, receiptsTotalCount),
+  };
 
   // Server-side pagination wrapper for products tab
   const productsPagination = {
