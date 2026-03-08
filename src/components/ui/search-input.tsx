@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
@@ -7,13 +7,18 @@ interface SearchInputProps extends Omit<React.ComponentProps<"input">, "onChange
   value: string;
   onChange: (value: string) => void;
   containerClassName?: string;
+  loading?: boolean;
 }
 
 const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
-  ({ className, value, onChange, containerClassName, ...props }, ref) => {
+  ({ className, value, onChange, containerClassName, loading, ...props }, ref) => {
     return (
       <div className={cn("relative", containerClassName)}>
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        {loading ? (
+          <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary animate-spin pointer-events-none" />
+        ) : (
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        )}
         <Input
           ref={ref}
           value={value}
