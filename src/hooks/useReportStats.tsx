@@ -92,7 +92,8 @@ export function useReportStats(filters?: {
         .select(`
           product_name, sku, sale_price, status, product_id, category_id,
           categories(name),
-          export_receipts!inner(export_date, branch_id, status)
+          export_receipts!inner(export_date, branch_id, status),
+          products(import_price)
         `)
         .in('status', ['sold', 'returned'])
         .neq('export_receipts.status', 'cancelled')
