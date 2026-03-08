@@ -212,6 +212,36 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const canWithdraw = ctv.available_balance >= (settings?.min_withdrawal_amount || 200000);
   const products = landingProducts?.products || [];
 
+  // Calculate commission for a product
+  const getProductCommission = (product: any) => {
+    const price = product.sale_price || product.price || 0;
+    // 1. Check product-specific commission
+    const productRule = productCommissions?.find(
+      (c: any) => c.target_type === 'product' && c.target_id === product.id
+    );
+    if (productRule) {
+      return productRule.commission_type === 'percentage'
+        ? Math.round(price * productRule.commission_value / 100)
+        : productRule.commission_value;
+    }
+    // 2. Check category-specific commission
+    if (product.category_id) {
+      const catRule = productCommissions?.find(
+        (c: any) => c.target_type === 'category' && c.target_id === product.category_id
+      );
+      if (catRule) {
+        return catRule.commission_type === 'percentage'
+          ? Math.round(price * catRule.commission_value / 100)
+          : catRule.commission_value;
+      }
+    }
+    // 3. Fall back to CTV default commission
+    if (ctv.commission_type === 'percentage') {
+      return Math.round(price * (ctv.commission_rate || 0) / 100);
+    }
+    return ctv.commission_rate || 0;
+  };
+
   const handleCopyLink = (path?: string) => {
     const base = storeUrl.replace(/\/$/, '');
     const link = path
