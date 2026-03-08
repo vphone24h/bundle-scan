@@ -29,7 +29,7 @@ import {
   EmailAutomation,
   EmailAutomationBlock,
 } from '@/hooks/useEmailAutomations';
-import { EmailTemplatePickerDialog, EmailTemplatePreset, ORDER_EMAIL_PRESETS } from './EmailTemplatePickerDialog';
+import { EmailTemplatePickerDialog, EmailTemplatePreset, ORDER_EMAIL_PRESETS, BOOKING_EMAIL_PRESETS, RESTAURANT_EMAIL_PRESETS, HOTEL_EMAIL_PRESETS, EDUCATION_EMAIL_PRESETS, REALESTATE_EMAIL_PRESETS } from './EmailTemplatePickerDialog';
 
 const TRIGGER_TYPES = [
   // Nhóm mua hàng
@@ -43,6 +43,21 @@ const TRIGGER_TYPES = [
   { value: 'on_order_shipping', label: 'Khi giao hàng' },
   { value: 'on_order_warranty', label: 'Khi gửi bảo hành' },
   { value: 'on_order_cancelled', label: 'Khi đơn hàng bị huỷ' },
+  // Nhóm đặt lịch / tư vấn
+  { value: 'on_booking_confirmation', label: 'Khi đặt lịch hẹn' },
+  { value: 'on_booking_reminder', label: 'Nhắc lịch hẹn' },
+  { value: 'on_booking_cancelled', label: 'Khi huỷ lịch hẹn' },
+  // Nhóm nhà hàng
+  { value: 'on_table_booking', label: 'Khi đặt bàn' },
+  { value: 'on_food_order', label: 'Khi đặt món online' },
+  // Nhóm khách sạn
+  { value: 'on_room_booking', label: 'Khi đặt phòng' },
+  { value: 'on_room_checkin_reminder', label: 'Nhắc check-in' },
+  // Nhóm giáo dục
+  { value: 'on_course_registration', label: 'Khi đăng ký khoá học' },
+  // Nhóm BĐS / ô tô
+  { value: 'on_viewing_booking', label: 'Khi đặt lịch xem' },
+  { value: 'on_quote_request', label: 'Khi yêu cầu báo giá' },
   // Nhóm chăm sóc khách hàng
   { value: 'customer_birthday', label: 'Sinh nhật khách hàng' },
   { value: 'customer_registration_anniversary', label: 'Kỷ niệm ngày đăng ký' },
@@ -81,6 +96,8 @@ const VARIABLES = [
   { key: '{{phone}}', label: 'SĐT cửa hàng' },
   { key: '{{address}}', label: 'Địa chỉ cửa hàng' },
   { key: '{{staff_name}}', label: 'Tên nhân viên bán' },
+  { key: '{{action_date}}', label: 'Ngày hẹn' },
+  { key: '{{action_time}}', label: 'Giờ hẹn' },
 ];
 
 interface BlockItem {
@@ -428,7 +445,7 @@ function AutomationFormDialog({
                     </SelectContent>
                   </Select>
                 </div>
-                {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled'].includes(triggerType) && (
+                {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled', 'on_booking_confirmation', 'on_booking_reminder', 'on_booking_cancelled', 'on_table_booking', 'on_food_order', 'on_room_booking', 'on_room_checkin_reminder', 'on_course_registration', 'on_viewing_booking', 'on_quote_request'].includes(triggerType) && (
                 <div>
                   <Label>{triggerType === 'customer_registration_anniversary' ? 'Số năm' : 'Số ngày'}</Label>
                   <Input type="number" min={1} value={triggerDays} onChange={e => setTriggerDays(Number(e.target.value))} />
@@ -540,6 +557,117 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
         {ORDER_TRIGGER_TYPES.map(ot => {
           const existing = automations.find(a => a.trigger_type === ot.value);
           const preset = ORDER_EMAIL_PRESETS.find(p => p.id === ot.presetId);
+
+          if (existing) {
+            return (
+              <div key={ot.value} className="border rounded-lg p-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-medium text-sm">{ot.label}</h4>
+                    <Badge variant={existing.is_active ? 'default' : 'secondary'} className="text-[10px]">
+                      {existing.is_active ? 'Đang bật' : 'Tắt'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">📌 {ot.condition}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Subject: {existing.subject}</p>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Switch checked={existing.is_active} onCheckedChange={() => onToggle(existing)} />
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSendTest(existing)} title="Gửi thử">
+                    <Send className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(existing)} title="Chỉnh sửa">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div key={ot.value} className="border border-dashed rounded-lg p-3 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-sm text-muted-foreground">{ot.label}</h4>
+                <p className="text-xs text-muted-foreground/70">📌 {ot.condition}</p>
+              </div>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => preset && onCreateFromPreset(preset)}>
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Tạo mẫu
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// === Generic Industry Email Section (reusable for booking, restaurant, hotel, education, realestate) ===
+const INDUSTRY_SECTIONS = [
+  {
+    key: 'booking',
+    title: '📅 Email đặt lịch / Tư vấn / Spa',
+    presets: BOOKING_EMAIL_PRESETS,
+    triggers: [
+      { value: 'on_booking_confirmation', label: 'Email xác nhận đặt lịch', presetId: 'booking_confirmation', condition: 'Tự động gửi khi khách đặt lịch hẹn' },
+      { value: 'on_booking_reminder', label: 'Email nhắc lịch hẹn', presetId: 'booking_reminder', condition: 'Tự động gửi trước ngày hẹn để nhắc khách' },
+      { value: 'on_booking_cancelled', label: 'Email khi huỷ lịch hẹn', presetId: 'booking_cancelled', condition: 'Tự động gửi khi lịch hẹn bị huỷ' },
+    ],
+  },
+  {
+    key: 'restaurant',
+    title: '🍽️ Email nhà hàng / Ẩm thực',
+    presets: RESTAURANT_EMAIL_PRESETS,
+    triggers: [
+      { value: 'on_table_booking', label: 'Email xác nhận đặt bàn', presetId: 'table_booking_confirmation', condition: 'Tự động gửi khi khách đặt bàn' },
+      { value: 'on_food_order', label: 'Email xác nhận đặt món', presetId: 'food_order_confirmation', condition: 'Tự động gửi khi khách đặt món online' },
+    ],
+  },
+  {
+    key: 'hotel',
+    title: '🏨 Email khách sạn / Du lịch',
+    presets: HOTEL_EMAIL_PRESETS,
+    triggers: [
+      { value: 'on_room_booking', label: 'Email xác nhận đặt phòng', presetId: 'room_booking_confirmation', condition: 'Tự động gửi khi khách đặt phòng' },
+      { value: 'on_room_checkin_reminder', label: 'Email nhắc check-in', presetId: 'room_checkin_reminder', condition: 'Tự động gửi trước ngày check-in' },
+    ],
+  },
+  {
+    key: 'education',
+    title: '🎓 Email giáo dục / Đào tạo',
+    presets: EDUCATION_EMAIL_PRESETS,
+    triggers: [
+      { value: 'on_course_registration', label: 'Email xác nhận đăng ký khoá học', presetId: 'course_registration', condition: 'Tự động gửi khi học viên đăng ký' },
+    ],
+  },
+  {
+    key: 'realestate',
+    title: '🏠 Email BĐS / Ô tô',
+    presets: REALESTATE_EMAIL_PRESETS,
+    triggers: [
+      { value: 'on_viewing_booking', label: 'Email xác nhận lịch xem', presetId: 'viewing_booking', condition: 'Tự động gửi khi khách đặt lịch xem' },
+      { value: 'on_quote_request', label: 'Email xác nhận báo giá', presetId: 'quote_request', condition: 'Tự động gửi khi khách yêu cầu báo giá' },
+    ],
+  },
+];
+
+function IndustryEmailSection({ section, automations, tenantId, onEdit, onToggle, onSendTest, onDelete, onCreateFromPreset }: {
+  section: typeof INDUSTRY_SECTIONS[0];
+  automations: EmailAutomation[];
+  tenantId: string;
+  onEdit: (a: EmailAutomation) => void;
+  onToggle: (a: EmailAutomation) => void;
+  onSendTest: (a: EmailAutomation) => void;
+  onDelete: (a: EmailAutomation) => void;
+  onCreateFromPreset: (preset: EmailTemplatePreset) => void;
+}) {
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-muted-foreground mb-3">{section.title}</h3>
+      <div className="space-y-2">
+        {section.triggers.map(ot => {
+          const existing = automations.find(a => a.trigger_type === ot.value);
+          const preset = section.presets.find(p => p.id === ot.presetId);
 
           if (existing) {
             return (
@@ -763,13 +891,19 @@ export function EmailAutomationTab() {
             {/* === Email đơn hàng mặc định === */}
             <OrderEmailSection automations={automations || []} tenantId={tenant.id} onEdit={handleEdit} onToggle={handleToggle} onSendTest={handleSendTest} onDelete={handleDelete} onCreateFromPreset={(preset) => { setEditItem(null); setPrefilledTemplate(preset); setFormOpen(true); }} />
 
+            {/* === Các ngành nghề khác === */}
+            {INDUSTRY_SECTIONS.map(section => (
+              <IndustryEmailSection key={section.key} section={section} automations={automations || []} tenantId={tenant.id} onEdit={handleEdit} onToggle={handleToggle} onSendTest={handleSendTest} onDelete={handleDelete} onCreateFromPreset={(preset) => { setEditItem(null); setPrefilledTemplate(preset); setFormOpen(true); }} />
+            ))}
+
             {/* === Kịch bản tự động === */}
             <div>
               <h3 className="text-sm font-semibold text-muted-foreground mb-3">⏱️ Kịch bản chăm sóc tự động</h3>
               {isLoading ? (
                 <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
               ) : (() => {
-                const automationScenarios = (automations || []).filter(a => !a.trigger_type.startsWith('on_order_'));
+                const allIndustryTriggers = INDUSTRY_SECTIONS.flatMap(s => s.triggers.map(t => t.value));
+                const automationScenarios = (automations || []).filter(a => !a.trigger_type.startsWith('on_order_') && !allIndustryTriggers.includes(a.trigger_type));
                 return !automationScenarios.length ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Mail className="h-8 w-8 mx-auto mb-2 opacity-40" />
@@ -789,7 +923,7 @@ export function EmailAutomationTab() {
                           </div>
                           <p className="text-sm text-muted-foreground mt-0.5">
                             {TRIGGER_TYPES.find(t => t.value === a.trigger_type)?.label || a.trigger_type}
-                            {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled'].includes(a.trigger_type) && (
+                            {!['customer_birthday', 'after_customer_review', 'after_voucher_received', 'on_order_cancelled', 'on_booking_confirmation', 'on_booking_reminder', 'on_booking_cancelled', 'on_table_booking', 'on_food_order', 'on_room_booking', 'on_room_checkin_reminder', 'on_course_registration', 'on_viewing_booking', 'on_quote_request'].includes(a.trigger_type) && (
                               <>: <strong>{a.trigger_type === 'customer_registration_anniversary' ? `${a.trigger_days} năm` : `${a.trigger_days} ngày`}</strong></>
                             )}
                           </p>
