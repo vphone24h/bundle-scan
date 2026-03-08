@@ -132,10 +132,10 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
             <CardHeader className="text-center">
               <CardTitle className="flex items-center justify-center gap-2">
                 <Users className="h-5 w-5" />
-                Đăng ký CTV - {storeName}
+                Xác nhận thông tin CTV
               </CardTitle>
               <CardDescription>
-                Trở thành cộng tác viên và nhận hoa hồng khi giới thiệu khách hàng
+                Vui lòng xác nhận lại thông tin để hoàn tất đăng ký CTV tại {storeName}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
