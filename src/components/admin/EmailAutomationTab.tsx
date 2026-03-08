@@ -691,6 +691,7 @@ export function EmailAutomationTab() {
     }
   };
 
+  const handleSendTest = (item: EmailAutomation) => {
     setTestConfirmItem(item);
   };
 
