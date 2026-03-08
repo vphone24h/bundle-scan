@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import {
   Loader2, Copy, Users, Coins, Wallet, ShoppingBag,
-  ArrowLeft, Banknote, LogOut, Link2, Package, ChevronRight,
+  ArrowLeft, Banknote, LogOut, Link2, Package, ChevronRight, UserCog, Save,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
