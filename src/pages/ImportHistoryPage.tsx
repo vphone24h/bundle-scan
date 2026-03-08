@@ -126,7 +126,10 @@ export default function ImportHistoryPage() {
   const [manualTourActive, setManualTourActive] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const navigate = useNavigate();
-  const { data: receipts, isLoading: receiptsLoading } = useImportReceipts({ pageSize: 500 });
+
+  // Server-side pagination state for receipts tab
+  const [receiptPage, setReceiptPage] = useState(1);
+  const [receiptPageSize, setReceiptPageSize] = useState(15);
 
   // Server-side pagination state for products tab
   const [productPage, setProductPage] = useState(1);
