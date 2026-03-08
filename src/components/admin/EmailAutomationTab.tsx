@@ -442,7 +442,7 @@ function AutomationFormDialog({
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label>Điều kiện gửi</Label>
                   <p className="text-xs text-muted-foreground mb-1">Chọn điều kiện gửi sẽ có kịch bản mẫu, sau đó bạn tự sửa cho phù hợp</p>
