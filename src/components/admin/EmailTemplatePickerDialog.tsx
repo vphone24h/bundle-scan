@@ -452,27 +452,23 @@ export function EmailTemplatePickerDialog({ open, onOpenChange, onSelectTemplate
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          {/* Template options */}
-          <div className="space-y-2">
-            {EMAIL_TEMPLATE_PRESETS.map((tpl) => (
-              <Card key={tpl.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => { onOpenChange(false); onSelectTemplate(tpl); }}>
-                <CardContent className="flex items-center gap-4 p-4">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <tpl.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-medium text-sm">{tpl.name}</h4>
-                      <Badge variant="secondary" className="text-[10px]">{tpl.triggerDays} ngày</Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{tpl.description}</p>
-                    <p className="text-xs text-muted-foreground/70 mt-0.5 truncate">Subject: {tpl.subject}</p>
-                  </div>
-                  <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {/* Chăm sóc tự động */}
+          <TemplateGroup title="⏱️ Chăm sóc tự động" templates={EMAIL_TEMPLATE_PRESETS} onSelect={onSelectTemplate} onClose={() => onOpenChange(false)} showDays />
+
+          {/* Đặt lịch */}
+          <TemplateGroup title="📅 Đặt lịch / Tư vấn / Spa" templates={BOOKING_EMAIL_PRESETS} onSelect={onSelectTemplate} onClose={() => onOpenChange(false)} />
+
+          {/* Nhà hàng */}
+          <TemplateGroup title="🍽️ Nhà hàng / Ẩm thực" templates={RESTAURANT_EMAIL_PRESETS} onSelect={onSelectTemplate} onClose={() => onOpenChange(false)} />
+
+          {/* Khách sạn */}
+          <TemplateGroup title="🏨 Khách sạn / Du lịch" templates={HOTEL_EMAIL_PRESETS} onSelect={onSelectTemplate} onClose={() => onOpenChange(false)} />
+
+          {/* Giáo dục */}
+          <TemplateGroup title="🎓 Giáo dục / Đào tạo" templates={EDUCATION_EMAIL_PRESETS} onSelect={onSelectTemplate} onClose={() => onOpenChange(false)} />
+
+          {/* BĐS / Ô tô */}
+          <TemplateGroup title="🏠 Bất động sản / Ô tô" templates={REALESTATE_EMAIL_PRESETS} onSelect={onSelectTemplate} onClose={() => onOpenChange(false)} />
         </div>
       </DialogContent>
     </Dialog>
