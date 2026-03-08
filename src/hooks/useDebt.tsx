@@ -13,6 +13,7 @@ export interface DebtSummary {
   entity_id: string;
   entity_name: string;
   entity_phone: string | null;
+  entity_code: string | null;
   branch_id: string | null;
   branch_name: string | null;
   total_amount: number; // Tổng phát sinh
