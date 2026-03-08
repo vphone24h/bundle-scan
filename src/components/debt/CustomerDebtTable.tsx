@@ -73,7 +73,15 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
   const [showTagAssign, setShowTagAssign] = useState(false);
   
   const [showOverdueDays, setShowOverdueDays] = useState(false);
+  const [showOffset, setShowOffset] = useState(false);
+  const [selectedOffsetMatch, setSelectedOffsetMatch] = useState<DebtOffsetMatch | null>(null);
+  const offsetMatches = useDebtOffsetMatches();
   const pagination = usePagination(debts || [], { storageKey: 'customer-debt' });
+
+  const getOffsetMatch = (phone: string | null) => {
+    if (!phone) return null;
+    return offsetMatches.find(m => m.matchedPhone === phone.trim()) || null;
+  };
 
   const getEntityTags = (entityId: string) => {
     if (!assignments || !tags) return [];
