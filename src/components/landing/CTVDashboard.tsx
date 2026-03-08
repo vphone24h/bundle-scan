@@ -24,6 +24,7 @@ import {
 import { usePublicLandingProducts } from '@/hooks/useLandingProducts';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
 import { VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
 
 interface CTVDashboardProps {
@@ -42,6 +43,17 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const { data: withdrawals } = useMyCTVWithdrawals(ctv?.id);
   const { data: referredCTVs } = useMyReferredCTVs(ctv?.id);
   const { data: landingProducts } = usePublicLandingProducts(tenantId);
+  const { data: productCommissions } = useQuery({
+    queryKey: ['ctv-product-commissions-public'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ctv_product_commissions')
+        .select('*')
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    },
+  });
   const registerCTV = useRegisterShopCTV();
   const createWithdrawal = useCreateCTVWithdrawal();
   const updateCTV = useUpdateShopCTV();
@@ -199,6 +211,36 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   // Active CTV Dashboard
   const canWithdraw = ctv.available_balance >= (settings?.min_withdrawal_amount || 200000);
   const products = landingProducts?.products || [];
+
+  // Calculate commission for a product
+  const getProductCommission = (product: any) => {
+    const price = product.sale_price || product.price || 0;
+    // 1. Check product-specific commission
+    const productRule = productCommissions?.find(
+      (c: any) => c.target_type === 'product' && c.target_id === product.id
+    );
+    if (productRule) {
+      return productRule.commission_type === 'percentage'
+        ? Math.round(price * productRule.commission_value / 100)
+        : productRule.commission_value;
+    }
+    // 2. Check category-specific commission
+    if (product.category_id) {
+      const catRule = productCommissions?.find(
+        (c: any) => c.target_type === 'category' && c.target_id === product.category_id
+      );
+      if (catRule) {
+        return catRule.commission_type === 'percentage'
+          ? Math.round(price * catRule.commission_value / 100)
+          : catRule.commission_value;
+      }
+    }
+    // 3. Fall back to CTV default commission
+    if (ctv.commission_type === 'percentage') {
+      return Math.round(price * (ctv.commission_rate || 0) / 100);
+    }
+    return ctv.commission_rate || 0;
+  };
 
   const handleCopyLink = (path?: string) => {
     const base = storeUrl.replace(/\/$/, '');
@@ -369,31 +411,40 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                   <p className="text-center text-muted-foreground text-sm py-6">Chưa có sản phẩm</p>
                 ) : (
                   <div className="space-y-2">
-                    {products.map((p: any) => (
-                      <div key={p.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                        {p.image_url && (
-                          <img src={p.image_url} alt={p.name} className="w-12 h-12 rounded object-cover flex-shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{p.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {p.sale_price ? (
-                              <><span className="line-through">{formatNumber(p.price)}</span> <span className="text-red-500 font-semibold">{formatNumber(p.sale_price)}</span></>
-                            ) : (
-                              formatNumber(p.price)
+                    {products.map((p: any) => {
+                      const commission = getProductCommission(p);
+                      return (
+                        <div key={p.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                          {p.image_url && (
+                            <img src={p.image_url} alt={p.name} className="w-12 h-12 rounded object-cover flex-shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{p.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {p.sale_price ? (
+                                <><span className="line-through">{formatNumber(p.price)}</span> <span className="text-red-500 font-semibold">{formatNumber(p.sale_price)}</span></>
+                              ) : (
+                                formatNumber(p.price)
+                              )}
+                            </p>
+                            {commission > 0 && (
+                              <p className="text-xs font-medium mt-0.5" style={{ color: accentColor || '#16a34a' }}>
+                                <Coins className="h-3 w-3 inline mr-0.5" />
+                                Hoa hồng: {formatNumber(commission)}đ
+                              </p>
                             )}
-                          </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-shrink-0"
+                            onClick={() => handleCopyLink(`/product/${p.id}`)}
+                          >
+                            <Copy className="h-3 w-3 mr-1" />Link
+                          </Button>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-shrink-0"
-                          onClick={() => handleCopyLink(`/product/${p.id}`)}
-                        >
-                          <Copy className="h-3 w-3 mr-1" />Link
-                        </Button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
