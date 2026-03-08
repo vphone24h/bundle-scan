@@ -31,6 +31,21 @@ const CALL_STATUS_MAP: Record<string, { label: string; color: string }> = {
   unreachable: { label: 'Không liên hệ được', color: 'bg-red-100 text-red-700' },
 };
 
+const ACTION_TYPE_MAP: Record<string, { label: string; icon: string }> = {
+  order: { label: 'Đặt hàng', icon: '🛒' },
+  pre_order: { label: 'Đặt trước', icon: '📋' },
+  notify_stock: { label: 'Báo khi có hàng', icon: '🔔' },
+  get_quote: { label: 'Yêu cầu báo giá', icon: '📄' },
+  send_request: { label: 'Gửi yêu cầu', icon: '📩' },
+  best_price: { label: 'Xem giá tốt nhất', icon: '💰' },
+  get_coupon: { label: 'Nhận mã giảm giá', icon: '🎫' },
+  get_offer: { label: 'Nhận ưu đãi', icon: '🎁' },
+  booking: { label: 'Đặt lịch hẹn', icon: '📅' },
+  join_member: { label: 'Đăng ký thành viên', icon: '👤' },
+  book_table: { label: 'Đặt bàn', icon: '🪑' },
+  book_party: { label: 'Đặt tiệc', icon: '🎉' },
+};
+
 function useStaffList(branchId?: string | null, isSuperAdmin?: boolean) {
   return useQuery({
     queryKey: ['staff-list-for-orders', branchId, isSuperAdmin],
