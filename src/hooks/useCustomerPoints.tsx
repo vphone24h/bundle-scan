@@ -307,7 +307,12 @@ export function useCustomersWithPoints(filters?: {
             .order('created_at', { ascending: false });
 
       if (filters?.search) {
-        query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
+        const isPhoneSearch = /^\d+$/.test(filters.search);
+        if (isPhoneSearch) {
+          query = query.ilike('phone', `${filters.search}%`);
+        } else {
+          query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
+        }
       }
       if (filters?.branchId && filters.branchId !== '_all_') {
         query = query.eq('preferred_branch_id', filters.branchId);
