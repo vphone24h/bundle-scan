@@ -191,6 +191,11 @@ export default function LandingPageAdminPage() {
                 <EmailAutomationTab />
               </TabsContent>
             )}
+            {showSettings && (
+              <TabsContent value="ctv">
+                <ShopCTVManagement />
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </div>
