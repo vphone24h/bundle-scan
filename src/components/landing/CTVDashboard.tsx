@@ -214,7 +214,25 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
 
   // Active CTV Dashboard
   const canWithdraw = ctv.available_balance >= (settings?.min_withdrawal_amount || 200000);
-  const products = landingProducts?.products || [];
+  const allProducts = landingProducts?.products || [];
+  const categories = landingProducts?.categories || [];
+
+  // Filter & sort products
+  const products = allProducts
+    .filter((p: any) => {
+      if (productCategoryFilter !== 'all' && p.category_id !== productCategoryFilter) return false;
+      if (productSearch) {
+        const q = productSearch.toLowerCase();
+        return p.name?.toLowerCase().includes(q);
+      }
+      return true;
+    })
+    .sort((a: any, b: any) => {
+      if (productSortPrice === 'none') return 0;
+      const priceA = a.sale_price || a.price || 0;
+      const priceB = b.sale_price || b.price || 0;
+      return productSortPrice === 'asc' ? priceA - priceB : priceB - priceA;
+    });
 
   // Calculate commission for a product using tiered system
   const getProductCommission = (product: any) => {
