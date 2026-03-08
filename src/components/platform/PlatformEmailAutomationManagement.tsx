@@ -178,6 +178,23 @@ export function PlatformEmailAutomationManagement() {
     }
   };
 
+  const handleRunNow = async () => {
+    setRunningNow(true);
+    try {
+      const { error } = await supabase.functions.invoke('run-platform-email-automations');
+      if (error) throw error;
+      toast.success('Đã chạy email automation thành công!');
+      // Refresh logs
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err: any) {
+      toast.error('Lỗi chạy automation: ' + err.message);
+    } finally {
+      setRunningNow(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Tabs defaultValue="scenarios">
