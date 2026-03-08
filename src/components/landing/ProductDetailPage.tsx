@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Gift, Star, Ticket, Link2, CreditCard, Shield, ArrowLeft, Mail, ExternalLink } from 'lucide-react';
+import { PaymentFlowDialog } from '@/components/landing/PaymentFlowDialog';
 import { CTAButtonItem, getDefaultCTAButtons } from '@/components/admin/ProductDetailSectionManager';
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
