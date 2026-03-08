@@ -164,6 +164,11 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const storeName = settings?.store_name || tenant?.name || storeId || '';
   const template = settings?.website_template || 'phone_store';
 
+  // Preload apple template if needed
+  useEffect(() => {
+    if (template === 'apple_landing') appleImport();
+  }, [template]);
+
   const { data: productsData } = usePublicLandingProducts(tenantId);
   const { data: articlesData } = usePublicLandingArticles(tenantId);
 
