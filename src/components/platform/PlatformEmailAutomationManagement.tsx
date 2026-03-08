@@ -232,6 +232,16 @@ export function PlatformEmailAutomationManagement() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-primary"
+                          onClick={() => handleSendTest(a)}
+                          disabled={sendingTestId === a.id}
+                          title="Gửi mail test đến admin"
+                        >
+                          <Send className={`h-4 w-4 ${sendingTestId === a.id ? 'animate-pulse' : ''}`} />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewHtml(a.html_content)}>
                           <Eye className="h-4 w-4" />
                         </Button>
