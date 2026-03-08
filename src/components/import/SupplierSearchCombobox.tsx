@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
-import { Search, X, Loader2 } from 'lucide-react';
+import { Search, X, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Supplier {
@@ -22,7 +22,7 @@ export function SupplierSearchCombobox({
   suppliers,
   value,
   onChange,
-  placeholder = 'Tìm NCC theo tên hoặc SĐT...',
+  placeholder = 'Tìm hoặc chọn NCC...',
   className,
   hasError,
 }: SupplierSearchComboboxProps) {
@@ -32,15 +32,14 @@ export function SupplierSearchCombobox({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Selected supplier display
   const selectedSupplier = useMemo(
     () => suppliers.find((s) => s.id === value),
     [suppliers, value]
   );
 
-  // Filter suggestions: min 2 chars, match name or phone
-  const suggestions = useMemo(() => {
-    if (search.length < 2) return [];
+  // Show all when no search, filter when typing 2+ chars
+  const filtered = useMemo(() => {
+    if (search.length < 2) return suppliers;
     const q = search.toLowerCase().trim();
     return suppliers.filter(
       (s) =>
@@ -60,8 +59,6 @@ export function SupplierSearchCombobox({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const showDropdown = open && search.length >= 2 && suggestions.length > 0;
-
   const handleSelect = (supplierId: string) => {
     onChange(supplierId);
     const sup = suppliers.find((s) => s.id === supplierId);
@@ -75,7 +72,7 @@ export function SupplierSearchCombobox({
     inputRef.current?.focus();
   };
 
-  // Sync display when value changes externally (e.g. after creating new supplier)
+  // Sync display when value changes externally
   useEffect(() => {
     if (selectedSupplier && !focused) {
       setSearch(selectedSupplier.name);
@@ -93,61 +90,69 @@ export function SupplierSearchCombobox({
         onChange={(e) => {
           setSearch(e.target.value);
           setOpen(true);
-          // Clear selection if user edits
           if (value) onChange('');
         }}
         onFocus={() => {
           setFocused(true);
-          if (search.length >= 2) setOpen(true);
+          setOpen(true);
         }}
-        onBlur={() => {
-          setFocused(false);
-        }}
+        onBlur={() => setFocused(false)}
         placeholder={placeholder}
         className={cn(
-          'pl-9 pr-8',
+          'pl-9 pr-14',
           hasError && 'border-destructive ring-destructive/30 ring-2'
         )}
       />
-      {(search || value) && (
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 z-10">
+        {(search || value) && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="p-0.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
         <button
           type="button"
-          onClick={handleClear}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors z-10"
+          onClick={() => {
+            setOpen(!open);
+            inputRef.current?.focus();
+          }}
+          className="p-0.5 rounded-full text-muted-foreground hover:text-foreground transition-colors"
         >
-          <X className="h-3.5 w-3.5" />
+          <ChevronDown className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} />
         </button>
-      )}
+      </div>
 
       {/* Dropdown */}
-      {showDropdown && (
+      {open && (
         <div className="absolute z-50 top-full mt-1 w-full bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
-          {suggestions.map((sup) => (
-            <button
-              key={sup.id}
-              type="button"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                handleSelect(sup.id);
-              }}
-              className={cn(
-                'w-full text-left px-3 py-2.5 text-sm hover:bg-accent transition-colors flex flex-col',
-                sup.id === value && 'bg-primary/10 text-primary font-medium'
-              )}
-            >
-              <span>{sup.name}</span>
-              {sup.phone && (
-                <span className="text-xs text-muted-foreground">{sup.phone}</span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* No results */}
-      {open && search.length >= 2 && suggestions.length === 0 && (
-        <div className="absolute z-50 top-full mt-1 w-full bg-popover border rounded-md shadow-lg p-3 text-sm text-muted-foreground text-center">
-          Không tìm thấy NCC
+          {filtered.length > 0 ? (
+            filtered.map((sup) => (
+              <button
+                key={sup.id}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSelect(sup.id);
+                }}
+                className={cn(
+                  'w-full text-left px-3 py-2.5 text-sm hover:bg-accent transition-colors flex flex-col',
+                  sup.id === value && 'bg-primary/10 text-primary font-medium'
+                )}
+              >
+                <span>{sup.name}</span>
+                {sup.phone && (
+                  <span className="text-xs text-muted-foreground">{sup.phone}</span>
+                )}
+              </button>
+            ))
+          ) : (
+            <div className="p-3 text-sm text-muted-foreground text-center">
+              Không tìm thấy NCC
+            </div>
+          )}
         </div>
       )}
     </div>
