@@ -1066,6 +1066,7 @@ export function ProductDetailPage({
         variant={getVariantLabel()}
         quantity={quantity}
         primaryColor={primaryColor}
+        tenantId={tenantId}
         codEnabled={paymentConfig?.codEnabled !== false}
         transferEnabled={!!paymentConfig?.transferEnabled}
         bankName={paymentConfig?.bankName}
