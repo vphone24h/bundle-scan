@@ -32,6 +32,9 @@ export function CTVAuthDialog({ open, onOpenChange, tenantId, storeName, accentC
       });
       if (error) {
         localStorage.removeItem('ctv_store_mode');
+        if (error.message?.includes('Email not confirmed')) {
+          throw new Error('Email chưa được xác thực. Vui lòng kiểm tra hộp thư (kể cả Spam) để xác nhận email trước khi đăng nhập.');
+        }
         throw error;
       }
       toast({ title: 'Đăng nhập thành công!' });
