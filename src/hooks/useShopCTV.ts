@@ -184,6 +184,7 @@ export function useUpdateShopCTV() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['shop-ctv-list'] });
+      qc.invalidateQueries({ queryKey: ['my-shop-ctv'] });
       toast({ title: 'Đã cập nhật CTV' });
     },
     onError: (e: any) => toast({ title: 'Lỗi', description: e.message, variant: 'destructive' }),
