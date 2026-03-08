@@ -43,6 +43,21 @@ const TRIGGER_TYPES = [
   { value: 'on_order_shipping', label: 'Khi giao hàng' },
   { value: 'on_order_warranty', label: 'Khi gửi bảo hành' },
   { value: 'on_order_cancelled', label: 'Khi đơn hàng bị huỷ' },
+  // Nhóm đặt lịch / tư vấn
+  { value: 'on_booking_confirmation', label: 'Khi đặt lịch hẹn' },
+  { value: 'on_booking_reminder', label: 'Nhắc lịch hẹn' },
+  { value: 'on_booking_cancelled', label: 'Khi huỷ lịch hẹn' },
+  // Nhóm nhà hàng
+  { value: 'on_table_booking', label: 'Khi đặt bàn' },
+  { value: 'on_food_order', label: 'Khi đặt món online' },
+  // Nhóm khách sạn
+  { value: 'on_room_booking', label: 'Khi đặt phòng' },
+  { value: 'on_room_checkin_reminder', label: 'Nhắc check-in' },
+  // Nhóm giáo dục
+  { value: 'on_course_registration', label: 'Khi đăng ký khoá học' },
+  // Nhóm BĐS / ô tô
+  { value: 'on_viewing_booking', label: 'Khi đặt lịch xem' },
+  { value: 'on_quote_request', label: 'Khi yêu cầu báo giá' },
   // Nhóm chăm sóc khách hàng
   { value: 'customer_birthday', label: 'Sinh nhật khách hàng' },
   { value: 'customer_registration_anniversary', label: 'Kỷ niệm ngày đăng ký' },
