@@ -155,6 +155,15 @@ export function detectPageFromPath(path: string): { pageView: string; contentId:
   if (segments.length === 0) return null;
   
   const firstSegment = segments[0];
+  
+  // Handle /product/FULL-UUID format (from CTV share links)
+  if (firstSegment === 'product' && segments.length > 1) {
+    const fullId = segments[1];
+    // Full UUID or starts with 8-char hex
+    const shortId = fullId.length >= 8 ? fullId.slice(0, 8) : null;
+    return { pageView: 'products', contentId: shortId };
+  }
+  
   const pageView = PATH_TO_PAGE_MAP[firstSegment];
   if (!pageView) {
     // Could be a legacy product path (category/product-slug-ID)
