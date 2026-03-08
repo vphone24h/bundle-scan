@@ -235,6 +235,21 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
             <p className="text-xs text-muted-foreground">{storeName} • {ctv.ctv_code}</p>
           </div>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-destructive hover:bg-destructive/10"
+          onClick={() => {
+            const targetUrl = storeUrl || window.location.origin;
+            localStorage.removeItem('ctv_store_mode');
+            window.location.replace(targetUrl);
+            // Sign out in background
+            supabase.auth.signOut().catch(() => {});
+          }}
+        >
+          <LogOut className="h-4 w-4 mr-1" />
+          Thoát
+        </Button>
       </div>
 
       <div className="p-4 space-y-4 max-w-2xl mx-auto">
