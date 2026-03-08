@@ -263,10 +263,11 @@ export function ImportHistoricalOrdersSection() {
 
       console.log(`[FORMAT] ${useFlat ? 'FLAT' : 'LEGACY'}, startRow=${startRow}, totalRows=${rawData.length}`);
 
+      autoOrderCounter = 0; // Reset counter for each file
       const orders: ParsedOrder[] = [];
       for (let i = startRow; i < rawData.length; i++) {
         const row = rawData[i];
-        if (!row || row.length < (useFlat ? 6 : 7)) continue;
+        if (!row || row.length < (useFlat ? 5 : 7)) continue;
         const parsed = useFlat ? parseFlatRow(row) : parseVPhoneRow(row);
         if (parsed) orders.push(parsed);
       }
