@@ -484,7 +484,7 @@ export function ShopCTVManagement() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddCTVOpen(false)}>Hủy</Button>
             <Button
-              disabled={createCTV.isPending || !addForm.full_name.trim()}
+              disabled={createCTV.isPending || !addForm.full_name.trim() || !addForm.email.trim()}
               onClick={async () => {
                 await createCTV.mutateAsync({
                   tenant_id: currentTenantId!,
