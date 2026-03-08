@@ -60,9 +60,8 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
     localStorage.removeItem('ctv_store_mode');
     localStorage.setItem('ctv_just_logged_out', '1');
     
-    // Remember the current page URL (this IS the store website)
-    // Strip any hash/query to get clean store URL
-    const currentStoreUrl = window.location.origin + window.location.pathname;
+    // Save the store URL before signout clears everything
+    const targetUrl = storeUrl || window.location.href;
     
     try {
       await authSignOut();
@@ -70,9 +69,9 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
       console.error('SignOut error:', e);
     }
     
-    // Navigate to the store website — use the current origin since
-    // CTV is already ON the store website (subdomain or /store/xxx)
-    window.location.href = currentStoreUrl;
+    // Force navigate to the store website (NOT admin/kho)
+    // Use replace to prevent back-button returning to CTV dashboard
+    window.location.replace(targetUrl);
   };
 
   if (ctvLoading) {
