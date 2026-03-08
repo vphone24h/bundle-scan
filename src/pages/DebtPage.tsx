@@ -13,6 +13,7 @@ import { CustomerDebtTable } from '@/components/debt/CustomerDebtTable';
 import { SupplierDebtTable } from '@/components/debt/SupplierDebtTable';
 import { DebtTagManager } from '@/components/debt/DebtTagManager';
 import { DebtSettingsDialog } from '@/components/debt/DebtSettingsDialog';
+import { DebtOffsetScanDialog } from '@/components/debt/DebtOffsetScanDialog';
 import { DebtDueListDialog } from '@/components/debt/DebtDueListDialog';
 import { useCustomerDebts, useSupplierDebts } from '@/hooks/useDebt';
 import { useDebtTags } from '@/hooks/useDebtTags';
@@ -20,7 +21,7 @@ import { useDebtSettings } from '@/hooks/useDebtSettings';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatNumber } from '@/lib/formatNumber';
-import { Users, Truck, TrendingUp, TrendingDown, Building2, Hash, Settings, AlertTriangle, CalendarClock, UserCheck, Settings2 } from 'lucide-react';
+import { Users, Truck, TrendingUp, TrendingDown, Building2, Hash, Settings, AlertTriangle, CalendarClock, UserCheck, Settings2, ArrowLeftRight } from 'lucide-react';
 
 type QuickFilter = 'all' | 'due_today' | 'overdue' | 'hard_collect';
 
@@ -34,6 +35,7 @@ export default function DebtPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [showDueToday, setShowDueToday] = useState(false);
   const [showOverdue, setShowOverdue] = useState(false);
+  const [showOffsetScan, setShowOffsetScan] = useState(false);
   
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
@@ -209,6 +211,10 @@ export default function DebtPage() {
             </Label>
           </div>
           <div className="flex gap-1 ml-auto">
+            <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1 text-xs sm:text-sm" onClick={() => setShowOffsetScan(true)}>
+              <ArrowLeftRight className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Bù trừ</span>
+            </Button>
             <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1 text-xs sm:text-sm" onClick={() => setShowSettings(true)}>
               <Settings2 className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{t('pages.debt.settings')}</span>
@@ -321,6 +327,7 @@ export default function DebtPage() {
       </div>
 
       <DebtTagManager open={showTagManager} onOpenChange={setShowTagManager} />
+      <DebtOffsetScanDialog open={showOffsetScan} onOpenChange={setShowOffsetScan} />
       <DebtSettingsDialog open={showSettings} onOpenChange={setShowSettings} />
       <DebtDueListDialog
         open={showDueToday}
