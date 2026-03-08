@@ -211,6 +211,10 @@ export default function DebtPage() {
             </Label>
           </div>
           <div className="flex gap-1 ml-auto">
+            <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1 text-xs sm:text-sm" onClick={() => setShowOffsetScan(true)}>
+              <ArrowLeftRight className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Bù trừ</span>
+            </Button>
             <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1 text-xs sm:text-sm" onClick={() => setShowSettings(true)}>
               <Settings2 className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{t('pages.debt.settings')}</span>
