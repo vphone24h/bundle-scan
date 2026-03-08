@@ -1551,20 +1551,7 @@ export default function UniversalStoreTemplate({
     </div>
     </PullToRefresh>
   );
-  }
-
-  // Order Lookup view
-  if (pageView === 'order-lookup' && tenantId) {
-    return (
-      <OrderLookupPage
-        tenantId={tenantId}
-        accentColor={accentColor}
-        storePhone={settings?.store_phone || warrantyHotline}
-        zaloUrl={settings?.zalo_url}
-        onBack={() => navigateTo('home')}
-      />
-    );
-  }
+}
 
 
 // === Info Cell ===
