@@ -642,6 +642,7 @@ export default function ExportHistoryPage() {
                   placeholder="Tìm theo mã phiếu, IMEI, tên SP, khách hàng, SĐT..."
                   value={searchTerm}
                   onChange={setSearchTerm}
+                  loading={!!debouncedSearch && (receiptsFetching || itemsFetching)}
                 />
               </div>
               <Button

@@ -640,6 +640,7 @@ export default function ImportHistoryPage() {
                   value={searchTerm}
                   onChange={(v) => { setSearchTerm(v); setProductPage(1); }}
                   containerClassName="flex-1"
+                  loading={!!searchTerm && (receiptsLoading || productsLoading)}
                 />
                 <Button
                   variant={showFilters ? 'secondary' : 'outline'}
