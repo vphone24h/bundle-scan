@@ -944,8 +944,9 @@ export function ProductDetailPage({
             case 'join_member': {
               if (!btn.customUrl) return null;
               return (
-                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0" asChild>
-                  <a href={btn.customUrl} target="_blank" rel="noopener noreferrer" className="gap-2">{btn.icon} {btn.label}</a>
+                <Button key={btn.id} variant="outline" className="h-11 px-4 shrink-0 gap-2"
+                  onClick={() => setActiveDialog('join_member')}>
+                  {btn.icon} {btn.label}
                 </Button>
               );
             }
