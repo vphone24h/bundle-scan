@@ -347,9 +347,8 @@ export default function UniversalStoreTemplate({
           product={selectedProduct}
           onBack={() => {
             setSelectedProduct(null);
-            const newParams = new URLSearchParams(searchParams);
-            newParams.delete('product');
-            setSearchParams(newParams, { replace: true });
+            window.history.replaceState(null, '', buildPagePath('products'));
+            setSearchParams(new URLSearchParams(), { replace: true });
           }}
           tenantId={tenantId}
           branches={branches.map(b => ({ id: b.id, name: b.name }))}
