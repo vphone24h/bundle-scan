@@ -369,6 +369,19 @@ export default function UniversalStoreTemplate({
     return false;
   };
 
+  // CTV Dashboard view
+  if (pageView === 'ctv-dashboard' && tenantId) {
+    return (
+      <CTVDashboard
+        tenantId={tenantId}
+        storeName={displayStoreName}
+        storeUrl={window.location.origin + (storeId ? `/store/${storeId}` : '/')}
+        accentColor={accentColor}
+        onBack={() => navigateTo('home')}
+      />
+    );
+  }
+
   // If a product is selected, show full page instead of template
   if (selectedProduct) {
     return (
