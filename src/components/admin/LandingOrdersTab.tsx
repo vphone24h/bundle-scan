@@ -337,6 +337,27 @@ export function LandingOrdersTab() {
                           {(order as any).payment_method === 'transfer' ? 'Chuyển khoản' : 'COD'}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const src = (order as any).order_source || 'web';
+                          const srcMap: Record<string, { label: string; icon: string; cls: string }> = {
+                            web: { label: 'Khách lẻ', icon: '🌐', cls: 'bg-muted text-muted-foreground' },
+                            ctv_direct: { label: 'CTV đặt', icon: '👤', cls: 'bg-blue-100 text-blue-700' },
+                            ctv_referral: { label: 'Khách CTV', icon: '🔗', cls: 'bg-purple-100 text-purple-700' },
+                          };
+                          const info = srcMap[src] || srcMap.web;
+                          return (
+                            <div>
+                              <Badge variant="outline" className={`text-[10px] ${info.cls}`}>
+                                {info.icon} {info.label}
+                              </Badge>
+                              {(order as any).ctv_name && (
+                                <p className="text-[10px] text-muted-foreground mt-0.5">{(order as any).ctv_name}</p>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </TableCell>
                       <TableCell className="text-xs">{branchMap.get(order.branch_id) || '—'}</TableCell>
                       <TableCell>
                         <Badge className={`${st.color} text-[10px]`} variant="secondary">{st.label}</Badge>
