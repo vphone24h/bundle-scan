@@ -545,6 +545,25 @@ export function LandingOrdersTab() {
                     </span>
                   </div>
                 )}
+                {/* Nguồn đơn */}
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Nguồn:</span>
+                  {(() => {
+                    const src = (detailOrder as any).order_source || 'web';
+                    const srcMap: Record<string, string> = {
+                      web: '🌐 Khách lẻ (web)',
+                      ctv_direct: '👤 CTV đặt hộ',
+                      ctv_referral: '🔗 Khách của CTV',
+                    };
+                    return <span className="font-medium">{srcMap[src] || src}</span>;
+                  })()}
+                </div>
+                {(detailOrder as any).ctv_name && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">CTV:</span>
+                    <span className="font-medium">{(detailOrder as any).ctv_name} {(detailOrder as any).ctv_code ? `(${(detailOrder as any).ctv_code})` : ''}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Liên hệ:</span>
                   <Badge className={`${CALL_STATUS_MAP[detailOrder.call_status]?.color} text-[10px]`} variant="secondary">
