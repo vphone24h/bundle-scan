@@ -1548,6 +1548,7 @@ export type Database = {
           current_points: number
           debt_due_days: number | null
           email: string | null
+          entity_code: string | null
           id: string
           last_care_date: string | null
           last_purchase_date: string | null
@@ -1574,6 +1575,7 @@ export type Database = {
           current_points?: number
           debt_due_days?: number | null
           email?: string | null
+          entity_code?: string | null
           id?: string
           last_care_date?: string | null
           last_purchase_date?: string | null
@@ -1600,6 +1602,7 @@ export type Database = {
           current_points?: number
           debt_due_days?: number | null
           email?: string | null
+          entity_code?: string | null
           id?: string
           last_care_date?: string | null
           last_purchase_date?: string | null
@@ -1693,6 +1696,65 @@ export type Database = {
           },
           {
             foreignKeyName: "daily_stats_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      debt_offsets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_debt_after: number
+          customer_debt_before: number
+          customer_entity_id: string
+          customer_name: string
+          id: string
+          note: string | null
+          offset_amount: number
+          supplier_debt_after: number
+          supplier_debt_before: number
+          supplier_entity_id: string
+          supplier_name: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_debt_after?: number
+          customer_debt_before?: number
+          customer_entity_id: string
+          customer_name: string
+          id?: string
+          note?: string | null
+          offset_amount: number
+          supplier_debt_after?: number
+          supplier_debt_before?: number
+          supplier_entity_id: string
+          supplier_name: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_debt_after?: number
+          customer_debt_before?: number
+          customer_entity_id?: string
+          customer_name?: string
+          id?: string
+          note?: string | null
+          offset_amount?: number
+          supplier_debt_after?: number
+          supplier_debt_before?: number
+          supplier_entity_id?: string
+          supplier_name?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debt_offsets_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -5549,6 +5611,7 @@ export type Database = {
           branch_id: string | null
           created_at: string
           debt_due_days: number | null
+          entity_code: string | null
           id: string
           name: string
           note: string | null
@@ -5561,6 +5624,7 @@ export type Database = {
           branch_id?: string | null
           created_at?: string
           debt_due_days?: number | null
+          entity_code?: string | null
           id?: string
           name: string
           note?: string | null
@@ -5573,6 +5637,7 @@ export type Database = {
           branch_id?: string | null
           created_at?: string
           debt_due_days?: number | null
+          entity_code?: string | null
           id?: string
           name?: string
           note?: string | null

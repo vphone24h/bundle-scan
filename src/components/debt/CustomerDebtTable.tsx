@@ -14,14 +14,15 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus, Hash, Phone, MessageSquare, Settings } from 'lucide-react';
+import { Eye, Wallet, Plus, Printer, MoreHorizontal, UserPlus, Hash, Phone, MessageSquare, Settings, ArrowLeftRight } from 'lucide-react';
 import { DebtDetailDialog } from './DebtDetailDialog';
 import { DebtPaymentDialog } from './DebtPaymentDialog';
 import { DebtAdditionDialog } from './DebtAdditionDialog';
 import { CreateDebtDialog } from './CreateDebtDialog';
 import { DebtTagAssignDialog } from './DebtTagAssignDialog';
-
+import { DebtOffsetDialog } from './DebtOffsetDialog';
 import { OverdueDaysDialog } from './OverdueDaysDialog';
+import { useDebtOffsetMatches, DebtOffsetMatch } from '@/hooks/useDebtOffset';
 
 function getDebtStatusBadge(daysOverdue: number, remaining: number, overdueDays: number) {
   if (remaining <= 0) return { label: 'Đã tất toán', className: 'bg-green-50 text-green-700 border-green-200' };
@@ -72,7 +73,15 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
   const [showTagAssign, setShowTagAssign] = useState(false);
   
   const [showOverdueDays, setShowOverdueDays] = useState(false);
+  const [showOffset, setShowOffset] = useState(false);
+  const [selectedOffsetMatch, setSelectedOffsetMatch] = useState<DebtOffsetMatch | null>(null);
+  const offsetMatches = useDebtOffsetMatches();
   const pagination = usePagination(debts || [], { storageKey: 'customer-debt' });
+
+  const getOffsetMatch = (phone: string | null) => {
+    if (!phone) return null;
+    return offsetMatches.find(m => m.matchedPhone === phone.trim()) || null;
+  };
 
   const getEntityTags = (entityId: string) => {
     if (!assignments || !tags) return [];
@@ -103,6 +112,15 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
         <DropdownMenuItem onClick={() => { setSelectedDebt(debt); setShowTagAssign(true); }}>
           <Hash className="mr-2 h-4 w-4" /> Gắn hashtag
         </DropdownMenuItem>
+        {(() => {
+          const match = getOffsetMatch(debt.entity_phone);
+          if (match) return (
+            <DropdownMenuItem onClick={() => { setSelectedOffsetMatch(match); setShowOffset(true); }}>
+              <ArrowLeftRight className="mr-2 h-4 w-4" /> Bù trừ công nợ
+            </DropdownMenuItem>
+          );
+          return null;
+        })()}
         {debt.entity_phone && (
           <>
             <DropdownMenuItem onClick={() => window.open(`tel:${debt.entity_phone}`, '_self')}>
@@ -161,7 +179,14 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
               <div key={debt.entity_id} className="rounded-lg border bg-card p-3 space-y-2 cursor-pointer active:bg-muted/50" onClick={() => { setSelectedDebt(debt); setShowDetail(true); }}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-sm truncate">{debt.entity_name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-semibold text-sm truncate">{debt.entity_name}</p>
+                      {getOffsetMatch(debt.entity_phone) && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-purple-100 text-purple-700 border-purple-200 shrink-0">
+                          2 chiều
+                        </Badge>
+                      )}
+                    </div>
                     {debt.entity_phone && (
                       <p className="text-xs text-muted-foreground">{debt.entity_phone}</p>
                     )}
@@ -227,7 +252,14 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
                   <TableRow key={debt.entity_id} className="cursor-pointer hover:bg-muted/50" onClick={() => { setSelectedDebt(debt); setShowDetail(true); }}>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{debt.entity_name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-medium">{debt.entity_name}</p>
+                          {getOffsetMatch(debt.entity_phone) && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-purple-100 text-purple-700 border-purple-200 shrink-0">
+                              Công nợ 2 chiều
+                            </Badge>
+                          )}
+                        </div>
                         {debt.entity_phone && (
                           <p className="text-sm text-muted-foreground">{debt.entity_phone}</p>
                         )}
@@ -296,6 +328,9 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
         </>
       )}
       <CreateDebtDialog open={showCreateDebt} onOpenChange={setShowCreateDebt} entityType="customer" />
+      {selectedOffsetMatch && (
+        <DebtOffsetDialog open={showOffset} onOpenChange={setShowOffset} match={selectedOffsetMatch} />
+      )}
     </>
   );
 }
