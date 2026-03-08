@@ -14,6 +14,7 @@ import { AdGateManagement } from '@/components/platform/AdGateManagement';
 import { TaxPolicyArticleEditor } from '@/components/admin/TaxPolicyArticleEditor';
 import { EmailHistoryTable } from '@/components/platform/EmailHistoryTable';
 import { PlatformEmailAutomationManagement } from '@/components/platform/PlatformEmailAutomationManagement';
+import { AutoEmailHistoryTable } from '@/components/platform/AutoEmailHistoryTable';
 import { CustomDomainsManagement } from '@/components/platform/CustomDomainsManagement';
 import { PlatformArticlesManagement } from '@/components/platform/PlatformArticlesManagement';
 import { WelcomeEmailConfig } from '@/components/platform/WelcomeEmailConfig';
