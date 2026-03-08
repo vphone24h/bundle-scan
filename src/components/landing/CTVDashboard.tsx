@@ -244,6 +244,18 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
     return rate;
   };
 
+  // Calculate F1 commission (when your referred CTV sells this product)
+  const getF1Commission = (product: any) => {
+    const f1Rate = (settings as any)?.f1_commission_rate || 0;
+    const f1Type = (settings as any)?.f1_commission_type || 'percentage';
+    if (f1Rate <= 0) return 0;
+    const price = product.sale_price || product.price || 0;
+    if (f1Type === 'percentage') {
+      return Math.round(price * f1Rate / 100);
+    }
+    return f1Rate;
+  };
+
   const handleCopyLink = (path?: string) => {
     const base = storeUrl.replace(/\/$/, '');
     const link = path
@@ -415,6 +427,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                   <div className="space-y-2">
                     {products.map((p: any) => {
                       const commission = getProductCommission(p);
+                      const f1Commission = getF1Commission(p);
                       return (
                         <div key={p.id} className="flex items-center gap-3 p-3 border rounded-lg">
                           {p.image_url && (
@@ -432,7 +445,13 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                             {commission > 0 && (
                               <p className="text-xs font-medium mt-0.5" style={{ color: accentColor || '#16a34a' }}>
                                 <Coins className="h-3 w-3 inline mr-0.5" />
-                                Hoa hồng: {formatNumber(commission)}đ
+                                Bán trực tiếp: {formatNumber(commission)}đ
+                              </p>
+                            )}
+                            {f1Commission > 0 && (
+                              <p className="text-xs font-medium mt-0.5 text-blue-600">
+                                <Users className="h-3 w-3 inline mr-0.5" />
+                                F1 bán: {formatNumber(f1Commission)}đ
                               </p>
                             )}
                           </div>
