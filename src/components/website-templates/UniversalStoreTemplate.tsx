@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { PullToRefresh } from '@/components/layout/PullToRefresh';
 import DOMPurify from 'dompurify';
 import { SetURLSearchParams, useLocation } from 'react-router-dom';
-import { buildProductPath, extractProductIdFromPath } from '@/lib/slugify';
+import { buildProductPath, buildProductDetailPath, buildArticlePath, buildPagePath, extractProductIdFromPath, detectPageFromPath } from '@/lib/slugify';
 import { QueryClient } from '@tanstack/react-query';
 import { TenantLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo, HomeSectionItem } from '@/hooks/useTenantLanding';
 import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProducts';
@@ -161,12 +161,30 @@ export default function UniversalStoreTemplate({
 
   const location = useLocation();
 
-  // Deep-link from query params OR path-based URLs
+  // Deep-link from path-based URLs, query params, or legacy product paths
   useEffect(() => {
     const productId = searchParams.get('product');
     const articleId = searchParams.get('article');
     
-    // Try path-based product URL: /category/product-slug-SHORTID
+    // Try path-based page detection: /san-pham/, /tin-tuc/, /san-pham/slug-ID
+    const pageInfo = detectPageFromPath(location.pathname);
+    if (pageInfo) {
+      if (pageInfo.pageView === 'products' && pageInfo.contentId) {
+        // Product detail: /san-pham/category/product-slug-SHORTID
+        const p = productsData?.products?.find(x => x.id.startsWith(pageInfo.contentId!));
+        if (p) { setSelectedProduct(p); setPageView('products'); return; }
+      } else if (pageInfo.pageView === 'news' && pageInfo.contentId) {
+        // Article detail: /tin-tuc/article-slug-SHORTID
+        const a = articlesData?.articles?.find(x => x.id.startsWith(pageInfo.contentId!));
+        if (a) { setSelectedArticle(a); setPageView('article-detail'); return; }
+      } else if (!pageInfo.contentId) {
+        // Page-level navigation: /san-pham/, /tin-tuc/, etc.
+        setPageView(pageInfo.pageView as PageView);
+        return;
+      }
+    }
+    
+    // Legacy: Try path-based product URL: /category/product-slug-SHORTID
     if (!productId && !articleId && productsData?.products) {
       const shortId = extractProductIdFromPath(location.pathname);
       if (shortId) {
@@ -175,6 +193,7 @@ export default function UniversalStoreTemplate({
       }
     }
     
+    // Query param fallback
     if (productId && productsData?.products) {
       const p = productsData.products.find(x => x.id === productId);
       if (p) { setSelectedProduct(p); setPageView('products'); }
@@ -230,31 +249,36 @@ export default function UniversalStoreTemplate({
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
   const navigateTo = (view: PageView, opts?: { keepCategory?: boolean; filterTag?: string | null }) => {
-    setPageView(view); setSelectedArticle(null);
+    setPageView(view); setSelectedArticle(null); setSelectedProduct(null);
     if (!opts?.keepCategory) setSelectedCategoryId(null);
     setProductFilterTag(opts?.filterTag ?? null);
-    const newParams = new URLSearchParams(searchParams);
-    newParams.delete('product'); newParams.delete('article');
+    const newParams = new URLSearchParams();
     setSearchParams(newParams, { replace: true });
+    // Update browser URL path
+    const pagePath = buildPagePath(view);
+    window.history.replaceState(null, '', pagePath === '/' ? '/' : pagePath);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const openArticle = (article: LandingArticle) => {
     setSelectedArticle(article); setPageView('article-detail');
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('article', article.id); newParams.delete('product');
-    setSearchParams(newParams, { replace: true });
+    const articlePath = buildArticlePath(article.title, article.id);
+    window.history.replaceState(null, '', articlePath);
+    setSearchParams(new URLSearchParams(), { replace: true });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const openProduct = (p: LandingProduct) => {
     setSelectedProduct(p);
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('product', p.id); newParams.delete('article');
-    setSearchParams(newParams, { replace: true });
+    const categories = productsData?.categories || [];
+    const category = categories.find(c => c.id === p.category_id);
+    const parentCategory = category?.parent_id ? categories.find(c => c.id === category.parent_id) : null;
+    const productPath = buildProductDetailPath(p.name, p.id, category?.name, parentCategory?.name);
+    window.history.replaceState(null, '', productPath);
+    setSearchParams(new URLSearchParams(), { replace: true });
   };
 
-  const copyShareLink = (type: 'product' | 'article', id: string) => {
+  const copyShareLink = (type: 'product' | 'article' | 'page', id: string) => {
     const baseUrl = new URL(window.location.href);
     baseUrl.search = '';
     baseUrl.hash = '';
@@ -265,13 +289,19 @@ export default function UniversalStoreTemplate({
         const categories = productsData?.categories || [];
         const category = categories.find(c => c.id === product.category_id);
         const parentCategory = category?.parent_id ? categories.find(c => c.id === category.parent_id) : null;
-        const productPath = buildProductPath(product.name, product.id, category?.name, parentCategory?.name);
-        baseUrl.pathname = productPath;
+        baseUrl.pathname = buildProductDetailPath(product.name, product.id, category?.name, parentCategory?.name);
       } else {
         baseUrl.searchParams.set('product', id);
       }
-    } else {
-      baseUrl.searchParams.set('article', id);
+    } else if (type === 'article') {
+      const article = articlesData?.articles?.find(a => a.id === id);
+      if (article) {
+        baseUrl.pathname = buildArticlePath(article.title, article.id);
+      } else {
+        baseUrl.searchParams.set('article', id);
+      }
+    } else if (type === 'page') {
+      baseUrl.pathname = buildPagePath(id);
     }
     
     const cleanUrl = baseUrl.toString();
@@ -317,9 +347,8 @@ export default function UniversalStoreTemplate({
           product={selectedProduct}
           onBack={() => {
             setSelectedProduct(null);
-            const newParams = new URLSearchParams(searchParams);
-            newParams.delete('product');
-            setSearchParams(newParams, { replace: true });
+            window.history.replaceState(null, '', buildPagePath('products'));
+            setSearchParams(new URLSearchParams(), { replace: true });
           }}
           tenantId={tenantId}
           branches={branches.map(b => ({ id: b.id, name: b.name }))}

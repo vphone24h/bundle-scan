@@ -8,7 +8,7 @@ import { createPortal } from 'react-dom';
 import DOMPurify from 'dompurify';
 import { SetURLSearchParams, useLocation } from 'react-router-dom';
 import { QueryClient } from '@tanstack/react-query';
-import { buildProductPath, extractProductIdFromPath } from '@/lib/slugify';
+import { buildProductPath, buildProductDetailPath, buildArticlePath, buildPagePath, extractProductIdFromPath, detectPageFromPath } from '@/lib/slugify';
 import { TenantLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo, HomeSectionItem } from '@/hooks/useTenantLanding';
 import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProducts';
 import { LandingArticle, LandingArticleCategory } from '@/hooks/useLandingArticles';
@@ -336,12 +336,27 @@ export default function AppleStyleLandingTemplate({
 
   const location = useLocation();
 
-  // Deep-link from query params OR path-based URLs
+  // Deep-link from path-based URLs, query params, or legacy product paths
   useEffect(() => {
     const pid = searchParams.get('product');
     const aid = searchParams.get('article');
     
-    // Try path-based product URL
+    // Try path-based page detection
+    const pageInfo = detectPageFromPath(location.pathname);
+    if (pageInfo) {
+      if (pageInfo.pageView === 'products' && pageInfo.contentId) {
+        const p = productsData?.products?.find(x => x.id.startsWith(pageInfo.contentId!));
+        if (p) { setSelectedProduct(p); setPageView('products'); return; }
+      } else if (pageInfo.pageView === 'news' && pageInfo.contentId) {
+        const a = articlesData?.articles?.find(x => x.id.startsWith(pageInfo.contentId!));
+        if (a) { setSelectedArticle(a); setPageView('article-detail'); return; }
+      } else if (!pageInfo.contentId) {
+        setPageView(pageInfo.pageView as PageView);
+        return;
+      }
+    }
+    
+    // Legacy path-based product URL
     if (!pid && !aid && productsData?.products) {
       const shortId = extractProductIdFromPath(location.pathname);
       if (shortId) {
@@ -387,20 +402,29 @@ export default function AppleStyleLandingTemplate({
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
   const navigateTo = (view: PageView) => {
-    setPageView(view); setSelectedArticle(null); setSelectedCategoryId(null);
-    const np = new URLSearchParams(searchParams); np.delete('product'); np.delete('article'); setSearchParams(np, { replace: true });
+    setPageView(view); setSelectedArticle(null); setSelectedCategoryId(null); setSelectedProduct(null);
+    const pagePath = buildPagePath(view);
+    window.history.replaceState(null, '', pagePath === '/' ? '/' : pagePath);
+    setSearchParams(new URLSearchParams(), { replace: true });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const openArticle = (a: LandingArticle) => {
     setSelectedArticle(a); setPageView('article-detail');
-    const np = new URLSearchParams(searchParams); np.set('article', a.id); np.delete('product'); setSearchParams(np, { replace: true });
+    const articlePath = buildArticlePath(a.title, a.id);
+    window.history.replaceState(null, '', articlePath);
+    setSearchParams(new URLSearchParams(), { replace: true });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const openProduct = (p: LandingProduct) => {
     setSelectedProduct(p);
-    const np = new URLSearchParams(searchParams); np.set('product', p.id); np.delete('article'); setSearchParams(np, { replace: true });
+    const categories = productsData?.categories || [];
+    const category = categories.find(c => c.id === p.category_id);
+    const parentCategory = category?.parent_id ? categories.find(c => c.id === category.parent_id) : null;
+    const productPath = buildProductDetailPath(p.name, p.id, category?.name, parentCategory?.name);
+    window.history.replaceState(null, '', productPath);
+    setSearchParams(new URLSearchParams(), { replace: true });
   };
-  const copyShareLink = (type: 'product' | 'article', id: string) => {
+  const copyShareLink = (type: 'product' | 'article' | 'page', id: string) => {
     const baseUrl = new URL(window.location.href);
     baseUrl.search = '';
     baseUrl.hash = '';
@@ -411,13 +435,19 @@ export default function AppleStyleLandingTemplate({
         const categories = productsData?.categories || [];
         const category = categories.find(c => c.id === product.category_id);
         const parentCategory = category?.parent_id ? categories.find(c => c.id === category.parent_id) : null;
-        const productPath = buildProductPath(product.name, product.id, category?.name, parentCategory?.name);
-        baseUrl.pathname = productPath;
+        baseUrl.pathname = buildProductDetailPath(product.name, product.id, category?.name, parentCategory?.name);
       } else {
         baseUrl.searchParams.set('product', id);
       }
-    } else {
-      baseUrl.searchParams.set('article', id);
+    } else if (type === 'article') {
+      const article = articlesData?.articles?.find(a => a.id === id);
+      if (article) {
+        baseUrl.pathname = buildArticlePath(article.title, article.id);
+      } else {
+        baseUrl.searchParams.set('article', id);
+      }
+    } else if (type === 'page') {
+      baseUrl.pathname = buildPagePath(id);
     }
     
     const cleanUrl = baseUrl.toString();
