@@ -740,6 +740,8 @@ export function ShopCTVManagement() {
                   })}
                 </div>
               </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Cookie tracking (ngày)</Label>
                   <Input
