@@ -761,7 +761,15 @@ export function ProductDetailPage({
             case 'order':
               return (
                 <Button key={btn.id} className="shrink-0 gap-2 h-11 text-sm font-semibold px-4 whitespace-nowrap" style={{ backgroundColor: primaryColor }}
-                  onClick={() => { setShowOrderForm(true); setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100); }}>
+                  onClick={() => {
+                    const hasPaymentOptions = paymentConfig?.transferEnabled;
+                    if (hasPaymentOptions) {
+                      setShowPaymentFlow(true);
+                    } else {
+                      setShowOrderForm(true);
+                      setTimeout(() => { document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth' }); }, 100);
+                    }
+                  }}>
                   {btn.icon} {btn.label}
                 </Button>
               );
