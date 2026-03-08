@@ -3692,6 +3692,7 @@ export type Database = {
           created_at: string
           ctv_code: string | null
           ctv_id: string | null
+          ctv_name: string | null
           customer_address: string | null
           customer_email: string | null
           customer_name: string
@@ -3699,6 +3700,7 @@ export type Database = {
           id: string
           note: string | null
           order_code: string | null
+          order_source: string
           payment_method: string | null
           product_id: string
           product_image_url: string | null
@@ -3725,6 +3727,7 @@ export type Database = {
           created_at?: string
           ctv_code?: string | null
           ctv_id?: string | null
+          ctv_name?: string | null
           customer_address?: string | null
           customer_email?: string | null
           customer_name: string
@@ -3732,6 +3735,7 @@ export type Database = {
           id?: string
           note?: string | null
           order_code?: string | null
+          order_source?: string
           payment_method?: string | null
           product_id: string
           product_image_url?: string | null
@@ -3758,6 +3762,7 @@ export type Database = {
           created_at?: string
           ctv_code?: string | null
           ctv_id?: string | null
+          ctv_name?: string | null
           customer_address?: string | null
           customer_email?: string | null
           customer_name?: string
@@ -3765,6 +3770,7 @@ export type Database = {
           id?: string
           note?: string | null
           order_code?: string | null
+          order_source?: string
           payment_method?: string | null
           product_id?: string
           product_image_url?: string | null
