@@ -136,7 +136,7 @@ export function DebtOffsetScanDialog({ open, onOpenChange }: DebtOffsetScanDialo
                 const isSelected = selectedIndexes.has(i);
                 return (
                   <div
-                    key={match.matchedPhone}
+                    key={match.matchedEntityCode}
                     className={`rounded-lg border p-3 space-y-2 cursor-pointer transition-colors ${isSelected ? 'border-primary/50 bg-primary/5' : 'opacity-60'}`}
                     onClick={() => toggleIndex(i)}
                   >
