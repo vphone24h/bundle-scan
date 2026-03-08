@@ -269,7 +269,7 @@ export function useUpdateMembershipTier() {
   });
 }
 
-// Hook: Lấy danh sách khách hàng với thông tin điểm (server-side pagination, N+1 pattern)
+// Hook: Lấy danh sách khách hàng với thông tin điểm (server-side RPC for max performance)
 export function useCustomersWithPoints(filters?: {
   search?: string;
   branchId?: string;
@@ -290,64 +290,23 @@ export function useCustomersWithPoints(filters?: {
   const result = useQuery({
     queryKey: ['customers-with-points', user?.id, filters],
     queryFn: async () => {
-      const hasTagFilter = filters?.tagId && filters.tagId !== '_all_';
-
-      // When filtering by tag, use inner join with customer_tag_assignments
-      const selectFields = 'id, name, phone, email, address, note, source, total_spent, current_points, pending_points, total_points_earned, total_points_used, membership_tier, status, birthday, last_purchase_date, preferred_branch_id, created_at, updated_at, crm_status, assigned_staff_id, last_care_date';
-      
-      let query = hasTagFilter
-        ? supabase
-            .from('customers')
-            .select(`${selectFields}, customer_tag_assignments!inner(tag_id)`)
-            .eq('customer_tag_assignments.tag_id', filters!.tagId!)
-            .order('created_at', { ascending: false })
-        : supabase
-            .from('customers')
-            .select(selectFields)
-            .order('created_at', { ascending: false });
-
-      if (filters?.search) {
-        const isPhoneSearch = /^\d+$/.test(filters.search);
-        if (isPhoneSearch) {
-          query = query.ilike('phone', `${filters.search}%`);
-        } else {
-          query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
-        }
-      }
-      if (filters?.branchId && filters.branchId !== '_all_') {
-        query = query.eq('preferred_branch_id', filters.branchId);
-      }
-      if (filters?.tier && filters.tier !== '_all_') {
-        query = query.eq('membership_tier', filters.tier as 'regular' | 'silver' | 'gold' | 'vip');
-      }
-      if (filters?.hasPoints === true) {
-        query = query.gt('current_points', 0);
-      }
-      if (filters?.status && filters.status !== '_all_') {
-        query = query.eq('status', filters.status as 'active' | 'inactive');
-      }
-      if (filters?.crmStatus && filters.crmStatus !== '_all_') {
-        query = query.eq('crm_status', filters.crmStatus);
-      }
-      if (filters?.staffId && filters.staffId !== '_all_') {
-        query = query.eq('assigned_staff_id', filters.staffId);
-      }
-
-      // N+1 pattern: fetch one extra to determine hasMore
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize; // fetch pageSize + 1
-      query = query.range(from, to);
-
-      const { data, error } = await query;
+      const { data, error } = await supabase.rpc('get_customers_paginated', {
+        _search: filters?.search || null,
+        _branch_id: (filters?.branchId && filters.branchId !== '_all_') ? filters.branchId : null,
+        _tier: (filters?.tier && filters.tier !== '_all_') ? filters.tier : null,
+        _crm_status: (filters?.crmStatus && filters.crmStatus !== '_all_') ? filters.crmStatus : null,
+        _staff_id: (filters?.staffId && filters.staffId !== '_all_') ? filters.staffId : null,
+        _tag_id: (filters?.tagId && filters.tagId !== '_all_') ? filters.tagId : null,
+        _page: page,
+        _page_size: pageSize,
+      });
       if (error) throw error;
       
-      const items = (data || []).map((d: any) => {
-        // Strip out the join data if present
-        const { customer_tag_assignments, ...rest } = d;
-        return rest;
-      }) as CustomerWithPointsCRM[];
-      const hasMore = items.length > pageSize;
-      const pageItems = hasMore ? items.slice(0, pageSize) : items;
+      const result = data as any;
+      const items = (result?.items || []) as CustomerWithPointsCRM[];
+      const hasMore = result?.hasMore ?? false;
+      // RPC returns pageSize+1 rows; trim to pageSize
+      const pageItems = items.length > pageSize ? items.slice(0, pageSize) : items;
       
       return { items: pageItems, hasMore };
     },
