@@ -419,14 +419,26 @@ Deno.serve(async (req) => {
           const customer = Array.isArray(receipt.customers) ? receipt.customers[0] : receipt.customers
           if (!customer?.email) continue
 
-          const { count } = await supabase
-            .from('email_automation_logs')
-            .select('id', { count: 'exact', head: true })
-            .eq('automation_id', automation.id)
-            .eq('customer_id', customer.id)
-            .eq('export_receipt_id', receipt.id || '00000000-0000-0000-0000-000000000000')
+          // For days_after_purchase: only send ONCE per customer (regardless of how many orders)
+          if (automation.trigger_type === 'days_after_purchase') {
+            const { count } = await supabase
+              .from('email_automation_logs')
+              .select('id', { count: 'exact', head: true })
+              .eq('automation_id', automation.id)
+              .eq('customer_id', customer.id)
 
-          if ((count || 0) > 0) continue
+            if ((count || 0) > 0) continue
+          } else {
+            // Other triggers: check per receipt
+            const { count } = await supabase
+              .from('email_automation_logs')
+              .select('id', { count: 'exact', head: true })
+              .eq('automation_id', automation.id)
+              .eq('customer_id', customer.id)
+              .eq('export_receipt_id', receipt.id || '00000000-0000-0000-0000-000000000000')
+
+            if ((count || 0) > 0) continue
+          }
 
           const vars: Record<string, string> = {
             '{{customer_name}}': customer.name || 'Quý khách',
