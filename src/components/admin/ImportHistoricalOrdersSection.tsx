@@ -5,10 +5,38 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Upload, FileSpreadsheet, AlertTriangle, CheckCircle2, Loader2, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
+
+function downloadTemplate() {
+  const headers = [
+    'Mã đơn hàng\nIMEI: xxx',
+    'Tên khách hàng\n0901234567\nemail@example.com\nĐịa chỉ',
+    'Tên sản phẩm\nPhiên bản\nGhi chú: ...\nGói bảo hành: ...',
+    'Số lượng',
+    'Giá bán',
+    'Thành tiền',
+    'Ngày đặt\n01/01/2024\nAdmin',
+    'Trạng thái',
+  ];
+  const sample = [
+    'DH001\nIMEI: 123456789012345',
+    'Nguyễn Văn A\n0901234567\na@email.com\n123 Đường ABC',
+    'iPhone 15 Pro Max\n256GB Đen\nGhi chú: Máy mới\nGói bảo hành: 12 tháng',
+    1,
+    29990000,
+    29990000,
+    '01/06/2024\nAdmin',
+    'Hoàn tất',
+  ];
+  const ws = XLSX.utils.aoa_to_sheet([headers, sample]);
+  ws['!cols'] = [{ wch: 28 }, { wch: 30 }, { wch: 35 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 14 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Mẫu');
+  XLSX.writeFile(wb, 'mau-nhap-don-hang-cu.xlsx');
+}
 
 const STORAGE_KEY = 'import-historical-orders-state';
 
@@ -364,7 +392,7 @@ export function ImportHistoricalOrdersSection() {
             />
             <p className="text-xs text-muted-foreground mt-1">Dùng để phân biệt dữ liệu cũ với dữ liệu VKho</p>
           </div>
-          <div>
+          <div className="space-y-2">
             <Label>Chọn file Excel</Label>
             <Input
               ref={fileRef}
@@ -373,6 +401,10 @@ export function ImportHistoricalOrdersSection() {
               onChange={handleFileSelect}
               disabled={importing}
             />
+            <Button variant="outline" size="sm" onClick={downloadTemplate} type="button">
+              <Download className="h-4 w-4 mr-2" />
+              Tải file mẫu
+            </Button>
           </div>
         </div>
 
