@@ -92,7 +92,8 @@ export function useReportStats(filters?: {
         .select(`
           product_name, sku, sale_price, status, product_id, category_id,
           categories(name),
-          export_receipts!inner(export_date, branch_id, status)
+          export_receipts!inner(export_date, branch_id, status),
+          products(import_price)
         `)
         .in('status', ['sold', 'returned'])
         .neq('export_receipts.status', 'cancelled')
@@ -143,13 +144,14 @@ export function useReportStats(filters?: {
       // Build detail arrays for popup
       const salesDetails: SaleDetailItem[] = (salesRaw || []).map((item: any) => {
         const salePrice = Number(item.sale_price);
+        const importPrice = Number(item.products?.import_price || 0);
         return {
           date: item.export_receipts?.export_date || '',
           productName: item.product_name || 'SP',
           sku: item.sku || '',
           salePrice,
-          importPrice: 0,
-          profit: salePrice,
+          importPrice,
+          profit: salePrice - importPrice,
           branchName: '',
           categoryName: item.categories?.name || 'Chưa phân loại',
         };
