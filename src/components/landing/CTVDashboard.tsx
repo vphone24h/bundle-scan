@@ -244,6 +244,18 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
     return rate;
   };
 
+  // Calculate F1 commission (when your referred CTV sells this product)
+  const getF1Commission = (product: any) => {
+    const f1Rate = (settings as any)?.f1_commission_rate || 0;
+    const f1Type = (settings as any)?.f1_commission_type || 'percentage';
+    if (f1Rate <= 0) return 0;
+    const price = product.sale_price || product.price || 0;
+    if (f1Type === 'percentage') {
+      return Math.round(price * f1Rate / 100);
+    }
+    return f1Rate;
+  };
+
   const handleCopyLink = (path?: string) => {
     const base = storeUrl.replace(/\/$/, '');
     const link = path
