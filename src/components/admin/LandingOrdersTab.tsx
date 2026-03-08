@@ -255,6 +255,11 @@ export function LandingOrdersTab() {
                           {order.variant && <Badge variant="outline" className="text-[10px] mt-0.5">{order.variant}</Badge>}
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={`text-[10px] ${(order as any).payment_method === 'transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                          {(order as any).payment_method === 'transfer' ? 'Chuyển khoản' : 'COD'}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-xs">{branchMap.get(order.branch_id) || '—'}</TableCell>
                       <TableCell>
                         <Badge className={`${st.color} text-[10px]`} variant="secondary">{st.label}</Badge>
