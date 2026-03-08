@@ -121,6 +121,7 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
           );
           return null;
         })()}
+        {debt.entity_phone && (
           <>
             <DropdownMenuItem onClick={() => window.open(`tel:${debt.entity_phone}`, '_self')}>
               <Phone className="mr-2 h-4 w-4" /> Gọi nhắc nợ
