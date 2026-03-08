@@ -186,6 +186,25 @@ export const EMAIL_TEMPLATE_PRESETS: EmailTemplatePreset[] = [
       { block_type: 'text', content: { text: 'Cảm ơn bạn đã luôn đồng hành cùng chúng tôi.' } },
     ],
   },
+  {
+    id: 'onwards_7_days',
+    name: 'Chăm sóc khách mua từ 7 ngày trở đi',
+    triggerType: 'days_after_purchase_onwards',
+    triggerDays: 7,
+    subject: 'Cảm ơn bạn đã mua hàng tại {{store_name}}',
+    icon: Clock,
+    description: 'Gửi cho tất cả khách đã mua hàng từ 7 ngày trở lên, mỗi khách chỉ nhận 1 lần',
+    blocks: [
+      { block_type: 'heading', content: { text: 'Cảm ơn bạn đã mua hàng tại {{store_name}}', level: 'h2' } },
+      { block_type: 'text', content: { text: 'Xin chào {{customer_name}},\n\nCảm ơn bạn đã tin tưởng và mua sắm tại cửa hàng chúng tôi.\n\nChúng tôi muốn đảm bảo rằng bạn luôn có trải nghiệm tốt nhất với sản phẩm. Nếu bạn cần bất kỳ hỗ trợ nào, đừng ngần ngại liên hệ với chúng tôi nhé!\n\n• Hỗ trợ kỹ thuật\n• Tư vấn phụ kiện\n• Chính sách bảo hành' } },
+      { block_type: 'staff_info', content: { label: 'Nhân viên tư vấn' } },
+      { block_type: 'divider', content: {} },
+      { block_type: 'button', content: { text: '📞 Gọi Hotline', url: 'tel:', color: '#1a56db' } },
+      { block_type: 'button', content: { text: '🌐 Xem Website', url: '/', color: '#16a34a' } },
+      { block_type: 'spacer', content: { height: 12 } },
+      { block_type: 'text', content: { text: 'Trân trọng,\n{{store_name}}' } },
+    ],
+  },
 ];
 
 interface EmailTemplatePickerDialogProps {
