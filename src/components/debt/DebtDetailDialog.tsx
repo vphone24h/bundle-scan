@@ -606,7 +606,7 @@ export function DebtDetailDialog({
 
       {/* Receipt Detail Popup */}
       <Dialog open={!!selectedReceipt} onOpenChange={(open) => !open && setSelectedReceipt(null)}>
-        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
@@ -626,7 +626,7 @@ export function DebtDetailDialog({
             )}
           </div>
 
-          <ScrollArea className="flex-1 max-h-[60vh]">
+          <ScrollArea className="flex-1 min-h-0">
             <div className="space-y-2 pr-2">
               {(() => {
                 const items = entityType === 'customer'
