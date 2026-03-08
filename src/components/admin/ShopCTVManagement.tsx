@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import {
   Users, Settings, Wallet, Plus,
-  Lock, Unlock, Loader2, Search,
+  Lock, Unlock, Loader2, Search, Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
