@@ -71,7 +71,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          if (event === 'SIGNED_IN') queryClient.clear();
+          if (event === 'SIGNED_IN') {
+            queryClient.clear();
+            
+            // Auto-detect CTV user: if user has ctv_tenant_id in metadata,
+            // set ctv_store_mode so they stay on the store page (not admin)
+            const ctvTenantId = newSession?.user?.user_metadata?.ctv_tenant_id;
+            if (ctvTenantId && !localStorage.getItem('ctv_store_mode')) {
+              localStorage.setItem('ctv_store_mode', ctvTenantId);
+              console.log('[Auth] Auto-set ctv_store_mode for CTV user:', ctvTenantId);
+            }
+          }
           setSession(newSession);
           setUser(newSession?.user ?? null);
           setLoading(false);
