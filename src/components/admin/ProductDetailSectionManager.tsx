@@ -634,14 +634,53 @@ export function CTAButtonsEditor({ buttons, onChange, templateId }: CTAButtonsEd
         ))}
       </div>
 
-      {currentButtons.length < 6 && (
-        <Button type="button" variant="outline" size="sm" className="w-full gap-1.5 text-xs border-dashed" onClick={handleAdd}>
+      {currentButtons.length < 10 && !showAddPicker && (
+        <Button type="button" variant="outline" size="sm" className="w-full gap-1.5 text-xs border-dashed" onClick={() => setShowAddPicker(true)}>
           <Plus className="h-3.5 w-3.5" /> Thêm nút
         </Button>
       )}
 
+      {showAddPicker && (
+        <div className="border rounded-lg p-3 space-y-2 bg-muted/20">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium">Chọn loại nút</p>
+            <button type="button" onClick={() => setShowAddPicker(false)}
+              className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted">
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+          <div className="max-h-64 overflow-y-auto space-y-2">
+            {(() => {
+              const categories = [...new Set(CTA_ACTION_OPTIONS.map(o => o.category))];
+              return categories.map(cat => (
+                <div key={cat}>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{cat}</p>
+                  <div className="space-y-0.5">
+                    {CTA_ACTION_OPTIONS.filter(o => o.category === cat).map(opt => {
+                      const alreadyAdded = currentButtons.some(b => b.action === opt.value);
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => handleAddPreset(opt)}
+                          className="w-full text-left px-2.5 py-1.5 text-xs rounded-md hover:bg-muted transition-colors flex items-center gap-2"
+                        >
+                          <span className="text-sm">{opt.defaultIcon}</span>
+                          <span className="flex-1">{opt.defaultLabel}</span>
+                          {alreadyAdded && <span className="text-[10px] text-muted-foreground">Đã thêm</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
+      )}
+
       <p className="text-[10px] text-muted-foreground">
-        💡 Tùy chỉnh các nút hành động hiển thị ở cuối trang chi tiết sản phẩm. Tối đa 6 nút.
+        💡 Tùy chỉnh các nút hành động hiển thị ở cuối trang chi tiết sản phẩm. Tối đa 10 nút.
       </p>
     </div>
   );
