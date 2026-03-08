@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
-import { Plus, Pencil, Trash2, Mail, Eye, Send, Clock, CheckCircle, XCircle, Loader2, GripVertical, Type, AlignLeft, Image, MousePointer, Minus, MoveVertical, Phone, MessageCircle, MapPin, ExternalLink, BookOpen, Star, User, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2, Mail, Eye, Send, Clock, CheckCircle, XCircle, Loader2, GripVertical, Type, AlignLeft, Image, MousePointer, Minus, MoveVertical, Phone, MessageCircle, MapPin, ExternalLink, BookOpen, Star, User, Upload, Play } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -635,6 +635,23 @@ export function EmailAutomationTab() {
 
   const [testConfirmItem, setTestConfirmItem] = useState<EmailAutomation | null>(null);
   const [sendingTest, setSendingTest] = useState(false);
+  const [runningNow, setRunningNow] = useState(false);
+
+  const handleRunNow = async () => {
+    setRunningNow(true);
+    try {
+      const { error } = await supabase.functions.invoke('run-email-automations', {
+        body: { tenantId: tenant?.id },
+      });
+      if (error) throw error;
+      toast.success('Đã chạy email automation thành công!');
+      // Logs will refresh on next tab switch
+    } catch (err: any) {
+      toast.error('Lỗi chạy automation: ' + err.message);
+    } finally {
+      setRunningNow(false);
+    }
+  };
 
   const handleSendTest = (item: EmailAutomation) => {
     setTestConfirmItem(item);
@@ -671,6 +688,9 @@ export function EmailAutomationTab() {
             Email Automation
           </CardTitle>
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={handleRunNow} disabled={runningNow}>
+              <Play className={`h-4 w-4 mr-1 ${runningNow ? 'animate-spin' : ''}`} /> {runningNow ? 'Đang chạy...' : 'Chạy ngay'}
+            </Button>
             <Button size="sm" onClick={handleCreate}>
               <Plus className="h-4 w-4 mr-1" /> Tạo kịch bản
             </Button>
