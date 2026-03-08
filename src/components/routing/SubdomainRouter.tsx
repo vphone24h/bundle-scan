@@ -37,9 +37,16 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
       hostIsMainDomain: hostInfo.isMainDomain,
     });
 
-    // Không cho custom domain/subdomain rơi vào /auth khi đang loading
-    if (!user && !hostInfo.isMainDomain && location.pathname === '/' && (resolvedTenant.status === 'loading' || authLoading)) {
-      return 'store_landing';
+    // CRITICAL: On custom domain/subdomain, ALWAYS show store landing while loading
+    // Never show admin app to store visitors during loading states
+    if (!hostInfo.isMainDomain) {
+      if (!user && (resolvedTenant.status === 'loading' || authLoading)) {
+        return 'store_landing';
+      }
+      // Even with authLoading, if we don't have a user yet, show store
+      if (authLoading && !user) {
+        return 'store_landing';
+      }
     }
     
     // OPTIMIZATION: For main domains, skip loading state entirely
@@ -71,13 +78,13 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
       return 'app';
     }
     
-    // For subdomains/custom domains, don't block with spinner
+    // For subdomains/custom domains during loading — show store landing (not admin)
     if (resolvedTenant.status === 'loading') {
-      return 'app';
+      return 'store_landing';
     }
     
     if (authLoading) {
-      return 'app';
+      return 'store_landing';
     }
     
     // CTV store mode: user logged in as CTV on a store page — keep showing store
