@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import {
   Loader2, Copy, Users, Coins, Wallet, ShoppingBag,
-  ArrowLeft, Banknote, LogOut, Link2, Package, ChevronRight,
+  ArrowLeft, Banknote, LogOut, Link2, Package, ChevronRight, UserCog, Save,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -19,7 +19,7 @@ import { formatNumber } from '@/lib/formatNumber';
 import {
   useMyShopCTV, useRegisterShopCTV, useMyCTVOrders,
   useMyCTVWithdrawals, useCreateCTVWithdrawal, useShopCTVSettings,
-  useMyReferredCTVs,
+  useMyReferredCTVs, useUpdateShopCTV,
 } from '@/hooks/useShopCTV';
 import { usePublicLandingProducts } from '@/hooks/useLandingProducts';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,6 +42,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const { data: landingProducts } = usePublicLandingProducts(tenantId);
   const registerCTV = useRegisterShopCTV();
   const createWithdrawal = useCreateCTVWithdrawal();
+  const updateCTV = useUpdateShopCTV();
 
   const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
   const [selectedF1, setSelectedF1] = useState<any>(null);
@@ -49,6 +50,8 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const [withdrawForm, setWithdrawForm] = useState({
     amount: '', bank_name: '', bank_account_number: '', bank_account_holder: '', note: '',
   });
+  const [profileForm, setProfileForm] = useState<any>(null);
+  const [profileSaving, setProfileSaving] = useState(false);
 
   const handleLogout = async () => {
     localStorage.removeItem('ctv_store_mode');
@@ -309,6 +312,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
             <TabsTrigger value="orders" className="flex-1 text-xs">Đơn hàng</TabsTrigger>
             <TabsTrigger value="team" className="flex-1 text-xs">Đội nhóm</TabsTrigger>
             <TabsTrigger value="withdrawals" className="flex-1 text-xs">Rút tiền</TabsTrigger>
+            <TabsTrigger value="profile" className="flex-1 text-xs">Tài khoản</TabsTrigger>
           </TabsList>
 
           {/* Products with CTV links */}
@@ -494,6 +498,108 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          {/* Profile / Account */}
+          <TabsContent value="profile" className="mt-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <UserCog className="h-4 w-4" />
+                  Thông tin tài khoản
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Cập nhật họ tên, SĐT và thông tin ngân hàng nhận hoa hồng
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {(() => {
+                  const form = profileForm || {
+                    full_name: ctv.full_name || '',
+                    phone: ctv.phone || '',
+                    bank_name: ctv.bank_name || '',
+                    bank_account_number: ctv.bank_account_number || '',
+                    bank_account_holder: ctv.bank_account_holder || '',
+                  };
+                  const updateProfile = (field: string, value: string) => {
+                    setProfileForm((prev: any) => ({
+                      ...(prev || {
+                        full_name: ctv.full_name || '',
+                        phone: ctv.phone || '',
+                        bank_name: ctv.bank_name || '',
+                        bank_account_number: ctv.bank_account_number || '',
+                        bank_account_holder: ctv.bank_account_holder || '',
+                      }),
+                      [field]: value,
+                    }));
+                  };
+                  return (
+                    <>
+                      <div className="space-y-2">
+                        <Label>Họ tên</Label>
+                        <Input value={form.full_name} onChange={e => updateProfile('full_name', e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Số điện thoại</Label>
+                        <Input value={form.phone} onChange={e => updateProfile('phone', e.target.value)} placeholder="0912345678" />
+                      </div>
+
+                      <div className="border-t pt-4 mt-4">
+                        <h4 className="font-semibold text-sm mb-3">🏦 Thông tin ngân hàng</h4>
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label>Ngân hàng</Label>
+                            <Select value={form.bank_name} onValueChange={v => updateProfile('bank_name', v)}>
+                              <SelectTrigger><SelectValue placeholder="Chọn ngân hàng" /></SelectTrigger>
+                              <SelectContent>
+                                {VIETNAMESE_BANKS.map(b => (
+                                  <SelectItem key={b.code} value={b.shortName}>{b.shortName} - {b.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Số tài khoản</Label>
+                            <Input value={form.bank_account_number} onChange={e => updateProfile('bank_account_number', e.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Chủ tài khoản</Label>
+                            <Input value={form.bank_account_holder} onChange={e => updateProfile('bank_account_holder', e.target.value)} placeholder="NGUYEN VAN A" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button
+                        className="w-full"
+                        disabled={profileSaving || !form.full_name?.trim()}
+                        style={accentColor ? { backgroundColor: accentColor } : {}}
+                        onClick={async () => {
+                          setProfileSaving(true);
+                          try {
+                            await updateCTV.mutateAsync({
+                              id: ctv.id,
+                              full_name: form.full_name,
+                              phone: form.phone || null,
+                              bank_name: form.bank_name || null,
+                              bank_account_number: form.bank_account_number || null,
+                              bank_account_holder: form.bank_account_holder || null,
+                            });
+                            setProfileForm(null);
+                            toast({ title: 'Đã cập nhật thông tin!' });
+                          } catch (e: any) {
+                            toast({ title: 'Lỗi', description: e.message, variant: 'destructive' });
+                          } finally {
+                            setProfileSaving(false);
+                          }
+                        }}
+                      >
+                        {profileSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Lưu thông tin
+                      </Button>
+                    </>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
