@@ -787,24 +787,15 @@ export default function ImportNewPage() {
                 <div className="form-field" data-error={!!fieldErrors.supplier || undefined}>
                   <Label>{t('tours.importNew.supplierLabel')}</Label>
                   <div className="flex gap-2">
-                    <Select
+                    <SupplierSearchCombobox
+                      suppliers={suppliers || []}
                       value={selectedSupplierId}
-                      onValueChange={(val) => {
+                      onChange={(val) => {
                         setSelectedSupplierId(val);
                         setFieldErrors(prev => { const { supplier, ...rest } = prev; return rest; });
                       }}
-                    >
-                      <SelectTrigger className={`flex-1 ${fieldErrors.supplier ? 'border-destructive ring-destructive/30 ring-2' : ''}`}>
-                        <SelectValue placeholder={t('tours.importNew.selectSupplier')} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        {suppliers?.map((sup) => (
-                          <SelectItem key={sup.id} value={sup.id}>
-                            {sup.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      hasError={!!fieldErrors.supplier}
+                    />
                     <Button
                       type="button"
                       variant="outline"
