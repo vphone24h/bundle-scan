@@ -124,11 +124,13 @@ export function LandingOrdersTab() {
   const filtered = (orders || []).filter(o => {
     if (statusFilter !== 'all' && o.status !== statusFilter) return false;
     if (callStatusFilter !== 'all' && o.call_status !== callStatusFilter) return false;
+    if (sourceFilter !== 'all' && (o as any).order_source !== sourceFilter) return false;
     if (searchText) {
       const s = searchText.toLowerCase();
       return o.customer_name.toLowerCase().includes(s) ||
         o.customer_phone.includes(s) ||
-        o.product_name.toLowerCase().includes(s);
+        o.product_name.toLowerCase().includes(s) ||
+        ((o as any).ctv_name || '').toLowerCase().includes(s);
     }
     return true;
   });
