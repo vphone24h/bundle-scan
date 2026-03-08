@@ -689,6 +689,7 @@ export function EmailAutomationTab() {
   const [testConfirmItem, setTestConfirmItem] = useState<EmailAutomation | null>(null);
   const [sendingTest, setSendingTest] = useState(false);
   const [runningNow, setRunningNow] = useState(false);
+  const [runningItemId, setRunningItemId] = useState<string | null>(null);
 
   const handleRunNow = async () => {
     setRunningNow(true);
@@ -698,11 +699,26 @@ export function EmailAutomationTab() {
       });
       if (error) throw error;
       toast.success('Đã chạy email automation thành công!');
-      // Logs will refresh on next tab switch
     } catch (err: any) {
       toast.error('Lỗi chạy automation: ' + err.message);
     } finally {
       setRunningNow(false);
+    }
+  };
+
+  const handleRunSingle = async (automationId: string) => {
+    setRunningItemId(automationId);
+    try {
+      const { error } = await supabase.functions.invoke('run-email-automations', {
+        body: { tenantId: tenant?.id, automationId },
+      });
+      if (error) throw error;
+      toast.success('Đã chạy kịch bản thành công!');
+      queryClient.invalidateQueries({ queryKey: ['email-automation-logs'] });
+    } catch (err: any) {
+      toast.error('Lỗi: ' + err.message);
+    } finally {
+      setRunningItemId(null);
     }
   };
 
@@ -834,6 +850,9 @@ export function EmailAutomationTab() {
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                           <Switch checked={a.is_active} onCheckedChange={() => handleToggle(a)} />
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRunSingle(a.id)} disabled={runningItemId === a.id} title="Chạy ngay">
+                            <Play className={`h-4 w-4 ${runningItemId === a.id ? 'animate-spin' : ''}`} />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSendTest(a)} title="Gửi thử">
                             <Send className="h-4 w-4" />
                           </Button>
