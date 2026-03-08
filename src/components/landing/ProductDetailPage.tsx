@@ -548,7 +548,7 @@ export function ProductDetailPage({
                 case 'description':
                   if (!product.description) return null;
                   return (
-                    <div key="description" className="border rounded-lg overflow-hidden">
+                    <div key="description" id="product-description" data-section="description" className="border rounded-lg overflow-hidden">
                       <div className="px-3 py-2.5 font-semibold text-sm bg-gray-100">
                         📝 MÔ TẢ SẢN PHẨM
                       </div>
