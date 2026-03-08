@@ -75,6 +75,70 @@ Deno.serve(async (req) => {
       throw createErr
     }
 
+    const newUserId = userData.user?.id
+
+    // 3b. Auto-register as CTV in shop_collaborators using the DB function
+    if (newUserId) {
+      const { data: ctvResult, error: ctvErr } = await supabaseAdmin.rpc('register_shop_ctv', {
+        _tenant_id: tenant_id,
+        _full_name: full_name || email,
+        _email: email,
+        _phone: phone || null,
+        _referrer_code: referrer_code || null,
+      })
+
+      // The DB function requires auth.uid(), so we call it directly via SQL instead
+      if (ctvErr) {
+        console.warn('RPC register_shop_ctv failed (expected - needs auth context), using direct insert instead')
+        
+        // Get CTV settings
+        const { data: ctvSettings } = await supabaseAdmin
+          .from('shop_ctv_settings')
+          .select('auto_approve_ctv, default_commission_rate, default_commission_type')
+          .eq('tenant_id', tenant_id)
+          .single()
+
+        // Generate CTV code
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+        let ctvCode = 'CTV'
+        for (let i = 0; i < 5; i++) {
+          ctvCode += chars.charAt(Math.floor(Math.random() * chars.length))
+        }
+
+        // Find referrer if provided
+        let referrerId = null
+        if (referrer_code) {
+          const { data: referrer } = await supabaseAdmin
+            .from('shop_collaborators')
+            .select('id')
+            .eq('tenant_id', tenant_id)
+            .eq('ctv_code', referrer_code)
+            .eq('status', 'active')
+            .single()
+          referrerId = referrer?.id || null
+        }
+
+        const ctvStatus = ctvSettings?.auto_approve_ctv ? 'active' : 'pending'
+
+        await supabaseAdmin.from('shop_collaborators').insert({
+          tenant_id,
+          user_id: newUserId,
+          ctv_code: ctvCode,
+          full_name: full_name || email,
+          phone: phone || null,
+          email,
+          status: ctvStatus,
+          commission_rate: ctvSettings?.default_commission_rate || 5,
+          commission_type: ctvSettings?.default_commission_type || 'percentage',
+          referrer_id: referrerId,
+        })
+
+        console.log(`CTV record created directly for user ${newUserId}, code: ${ctvCode}`)
+      } else {
+        console.log(`CTV registered via RPC for user ${newUserId}`, ctvResult)
+      }
+    }
+
     // 4. Send welcome email via store's Gmail SMTP (not verification - already confirmed)
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
