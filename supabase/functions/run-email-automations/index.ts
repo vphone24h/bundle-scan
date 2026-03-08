@@ -428,6 +428,135 @@ Deno.serve(async (req) => {
             customer_id: c.id,
             customers: c,
           }))
+        } else if (automation.trigger_type === 'customer_birthday') {
+          // Customers whose birthday is today (month-day match)
+          const mm = String(today.getMonth() + 1).padStart(2, '0')
+          const dd = String(today.getDate()).padStart(2, '0')
+          const birthdayPattern = `%-${mm}-${dd}%`
+
+          const { data: customers } = await supabase
+            .from('customers')
+            .select('id, name, phone, email, birthday')
+            .eq('tenant_id', automation.tenant_id)
+            .not('email', 'is', null)
+            .not('birthday', 'is', null)
+            .like('birthday', birthdayPattern)
+            .limit(500)
+
+          eligibleReceipts = (customers || []).map((c: any) => ({
+            id: null,
+            customer_id: c.id,
+            customers: c,
+          }))
+        } else if (automation.trigger_type === 'customer_registration_anniversary') {
+          // Customers registered exactly X years ago (same month-day, X years back)
+          const triggerYears = Math.max(1, Math.floor(automation.trigger_days / 365))
+          const anniversaryDate = new Date(today)
+          anniversaryDate.setFullYear(today.getFullYear() - triggerYears)
+          const dayStart = anniversaryDate.toISOString().split('T')[0]
+          const dayEnd = new Date(anniversaryDate.getTime() + 86400000).toISOString().split('T')[0]
+
+          const { data: customers } = await supabase
+            .from('customers')
+            .select('id, name, phone, email')
+            .eq('tenant_id', automation.tenant_id)
+            .not('email', 'is', null)
+            .gte('created_at', dayStart)
+            .lt('created_at', dayEnd)
+            .limit(500)
+
+          eligibleReceipts = (customers || []).map((c: any) => ({
+            id: null,
+            customer_id: c.id,
+            customers: c,
+          }))
+        } else if (automation.trigger_type === 'after_customer_review') {
+          // Customers who left a review in the last 24 hours
+          const yesterday = new Date(today.getTime() - 86400000).toISOString()
+
+          const { data: reviews } = await supabase
+            .from('staff_reviews')
+            .select('id, customer_name, customer_phone, tenant_id')
+            .eq('tenant_id', automation.tenant_id)
+            .gte('created_at', yesterday)
+            .limit(500)
+
+          // Resolve customer from phone
+          for (const review of reviews || []) {
+            if (!review.customer_phone) continue
+            const { data: customer } = await supabase
+              .from('customers')
+              .select('id, name, phone, email')
+              .eq('tenant_id', automation.tenant_id)
+              .eq('phone', review.customer_phone)
+              .maybeSingle()
+            if (customer?.email) {
+              eligibleReceipts.push({
+                id: review.id,
+                customer_id: customer.id,
+                customers: customer,
+              })
+            }
+          }
+        } else if (automation.trigger_type === 'after_voucher_received') {
+          // Customers who received a voucher in the last 24 hours
+          const yesterday = new Date(today.getTime() - 86400000).toISOString()
+
+          const { data: vouchers } = await supabase
+            .from('customer_vouchers')
+            .select('id, customer_id, customer_name, customer_phone, customer_email')
+            .eq('tenant_id', automation.tenant_id)
+            .gte('created_at', yesterday)
+            .limit(500)
+
+          for (const v of vouchers || []) {
+            if (!v.customer_email) continue
+            eligibleReceipts.push({
+              id: v.id,
+              customer_id: v.customer_id,
+              customers: { id: v.customer_id, name: v.customer_name, phone: v.customer_phone, email: v.customer_email },
+            })
+          }
+        } else if (automation.trigger_type === 'days_before_care_schedule') {
+          // Care schedules happening in X days from now
+          const targetDate = new Date(today.getTime() + automation.trigger_days * 86400000)
+          const dayStart = targetDate.toISOString().split('T')[0]
+          const dayEnd = new Date(targetDate.getTime() + 86400000).toISOString().split('T')[0]
+
+          const { data: schedules } = await supabase
+            .from('customer_care_schedules')
+            .select('id, customer_id, care_type_name, scheduled_date, customers(id, name, phone, email)')
+            .eq('tenant_id', automation.tenant_id)
+            .eq('status', 'pending')
+            .gte('scheduled_date', dayStart)
+            .lt('scheduled_date', dayEnd)
+            .limit(500)
+
+          eligibleReceipts = (schedules || []).map((s: any) => ({
+            id: s.id,
+            customer_id: s.customer_id,
+            customers: s.customers,
+          }))
+        } else if (automation.trigger_type === 'on_order_cancelled') {
+          // Landing orders cancelled in the last 24 hours
+          const yesterday = new Date(today.getTime() - 86400000).toISOString()
+
+          const { data: orders } = await supabase
+            .from('landing_orders')
+            .select('id, customer_name, customer_phone, customer_email')
+            .eq('tenant_id', automation.tenant_id)
+            .eq('status', 'cancelled')
+            .gte('updated_at', yesterday)
+            .limit(500)
+
+          for (const o of orders || []) {
+            if (!o.customer_email) continue
+            eligibleReceipts.push({
+              id: o.id,
+              customer_id: null,
+              customers: { id: null, name: o.customer_name, phone: o.customer_phone, email: o.customer_email },
+            })
+          }
         }
 
         for (const receipt of eligibleReceipts) {
