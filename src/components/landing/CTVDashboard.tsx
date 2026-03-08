@@ -56,17 +56,15 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
   const [profileSaving, setProfileSaving] = useState(false);
 
   const handleLogout = async () => {
-    localStorage.removeItem('ctv_store_mode');
     localStorage.setItem('ctv_just_logged_out', '1');
     try {
-      await supabase.auth.signOut();
+      // Use authSignOut which sets userInitiatedSignOut flag
+      // preventing auth recovery from re-authenticating
+      await authSignOut();
     } catch (e) {
       console.error('SignOut error:', e);
     }
-    // CTV logout must go back to the store website, NOT admin kho
-    // Just reload current page - without ctv_store_mode and without session,
-    // SubdomainRouter will show store_landing on subdomains
-    // On main domain, force navigate to store URL
+    // CTV logout → back to store website, NOT admin kho
     window.location.reload();
   };
 
