@@ -239,6 +239,14 @@ export function usePublicLandingProducts(tenantId: string | null) {
     queryKey: ['public-landing-products', tenantId],
     queryFn: async () => {
       if (!tenantId) return { categories: [], products: [] };
+      // Use prefetched data from inline script if available
+      const prefetch = (window as any).__STORE_PREFETCH__;
+      if (prefetch?.data && prefetch.tenantId === tenantId) {
+        return {
+          categories: (prefetch.data.productCategories || []) as unknown as LandingProductCategory[],
+          products: (prefetch.data.products || []) as unknown as LandingProduct[],
+        };
+      }
       const [catRes, prodRes] = await Promise.all([
         supabase.from('landing_product_categories' as any).select('*').eq('tenant_id', tenantId).eq('is_hidden', false).order('display_order', { ascending: true }).order('created_at', { ascending: false }),
         supabase.from('landing_products' as any).select('*').eq('tenant_id', tenantId).eq('is_active', true).order('display_order'),
@@ -249,6 +257,7 @@ export function usePublicLandingProducts(tenantId: string | null) {
       };
     },
     enabled: !!tenantId,
+    staleTime: 1000 * 60 * 5,
   });
 }
 

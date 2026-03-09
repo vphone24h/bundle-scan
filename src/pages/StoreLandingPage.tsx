@@ -15,8 +15,12 @@ const appleImport = () => import('@/components/website-templates/AppleStyleLandi
 const UniversalStoreTemplate = lazy(universalImport);
 const AppleStyleLandingTemplate = lazy(appleImport);
 
-// Eagerly preload the most common template on idle
-if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+// Eagerly preload the most common template immediately for store pages
+const prefetch = typeof window !== 'undefined' ? (window as any).__STORE_PREFETCH__ : null;
+if (prefetch?.storeId) {
+  // Store page detected — preload template immediately, don't wait for idle
+  universalImport();
+} else if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
   (window as any).requestIdleCallback(() => universalImport(), { timeout: 2000 });
 } else if (typeof window !== 'undefined') {
   setTimeout(() => universalImport(), 100);
