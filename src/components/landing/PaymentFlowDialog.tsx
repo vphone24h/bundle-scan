@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, ArrowLeft, QrCode, CheckCircle2, ExternalLink, Copy, Loader2, ShoppingCart, MapPin, MessageCircle, Gift, Ticket, Star, Search } from 'lucide-react';
+import { Banknote, CreditCard, ArrowLeft, QrCode, CheckCircle2, ExternalLink, Copy, Loader2, ShoppingCart, MapPin, MessageCircle, Gift, Ticket, Star, Search, Mail } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { generateVietQRUrl, getBankCode, VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
 import { toast } from 'sonner';
