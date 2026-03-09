@@ -38,9 +38,10 @@ interface SupplierDebtTableProps {
   tagFilter: string | null;
   quickFilter?: 'all' | 'due_today' | 'overdue' | 'hard_collect';
   overdueDays?: number;
+  searchQuery?: string;
 }
 
-export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickFilter = 'all', overdueDays = 15 }: SupplierDebtTableProps) {
+export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickFilter = 'all', overdueDays = 15, searchQuery = '' }: SupplierDebtTableProps) {
   const { data: allDebts, isLoading } = useSupplierDebts(showSettled);
   const { data: tags } = useDebtTags();
   const { data: assignments } = useDebtTagAssignments('supplier');
