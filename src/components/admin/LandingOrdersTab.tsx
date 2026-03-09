@@ -186,6 +186,15 @@ export function LandingOrdersTab() {
 
   const filtered = (orders || []).filter(o => {
     if (statusFilter !== 'all' && o.status !== statusFilter) return false;
+    if (deliveryFilter !== 'all') {
+      if (deliveryFilter === 'not_approved') {
+        if (o.status !== 'pending') return false;
+      } else if (deliveryFilter === 'approved_only') {
+        if (o.status !== 'approved') return false;
+      } else {
+        if (o.delivery_status !== deliveryFilter) return false;
+      }
+    }
     if (callStatusFilter !== 'all' && o.call_status !== callStatusFilter) return false;
     if (sourceFilter !== 'all' && (o as any).order_source !== sourceFilter) return false;
     if (searchText) {
