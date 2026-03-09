@@ -38,9 +38,10 @@ interface CustomerDebtTableProps {
   tagFilter: string | null;
   quickFilter?: 'all' | 'due_today' | 'overdue' | 'hard_collect';
   overdueDays?: number;
+  searchQuery?: string;
 }
 
-export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickFilter = 'all', overdueDays = 15 }: CustomerDebtTableProps) {
+export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickFilter = 'all', overdueDays = 15, searchQuery = '' }: CustomerDebtTableProps) {
   const { data: allDebts, isLoading } = useCustomerDebts(showSettled);
   const { data: tags } = useDebtTags();
   const { data: assignments } = useDebtTagAssignments('customer');
