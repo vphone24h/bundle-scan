@@ -366,6 +366,7 @@ export function DebtDetailDialog({
                     amount: Number(p.amount),
                     description: p.description,
                     createdBy: p.profiles?.display_name || null,
+                    storedBalance: (p as any).balance_after != null ? Number((p as any).balance_after) : null,
                   }));
 
                 // Merge and sort by date ascending for running balance
