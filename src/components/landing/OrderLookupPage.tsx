@@ -521,6 +521,65 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Confirm delivery dialog */}
+      <AlertDialog open={!!confirmDeliveryTarget} onOpenChange={open => { if (!open) setConfirmDeliveryTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <PackageCheck className="h-5 w-5 text-green-500" /> Xác nhận đã nhận hàng
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn xác nhận đã nhận được đơn hàng <strong>{confirmDeliveryTarget?.order_code}</strong> — {confirmDeliveryTarget?.product_name}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={confirming}>Quay lại</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelivery}
+              disabled={confirming}
+              className="text-white"
+              style={{ backgroundColor: '#22c55e' }}
+            >
+              {confirming ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <PackageCheck className="h-4 w-4 mr-1" />}
+              Xác nhận nhận hàng
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delivery success + points dialog */}
+      <Dialog open={!!deliveryResult} onOpenChange={v => { if (!v) setDeliveryResult(null); }}>
+        <DialogContent className="max-w-sm text-center">
+          <div className="flex flex-col items-center gap-3 py-4">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-green-500" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-lg">Cảm ơn bạn!</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-gray-500">
+              Đơn hàng <strong>{deliveryResult?.order.order_code}</strong> đã được xác nhận giao thành công.
+            </p>
+            {deliveryResult && deliveryResult.pointsEarned > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 w-full">
+                <div className="flex items-center justify-center gap-2 text-amber-600 font-semibold">
+                  <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
+                  +{formatNumber(deliveryResult.pointsEarned)} điểm tích lũy
+                </div>
+                <p className="text-xs text-amber-500 mt-1">Điểm đã được cộng vào tài khoản của bạn</p>
+              </div>
+            )}
+            <Button
+              className="w-full mt-2 text-white"
+              style={{ backgroundColor: accentColor }}
+              onClick={() => setDeliveryResult(null)}
+            >
+              Đóng
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
