@@ -177,12 +177,49 @@ export default function ExportNewPage() {
       sessionStorage.removeItem('export_prefill');
       const prefill = JSON.parse(raw);
       
-      // Prefill customer
+      // Prefill customer - try to auto-select existing customer by phone
       if (prefill.customer) {
-        setCustomerName(prefill.customer.name || '');
-        setCustomerPhone(prefill.customer.phone || '');
-        setCustomerEmail(prefill.customer.email || '');
-        setCustomerAddress(prefill.customer.address || '');
+        const phone = prefill.customer.phone || '';
+        const name = prefill.customer.name || '';
+        const email = prefill.customer.email || '';
+        const address = prefill.customer.address || '';
+        
+        setCustomerName(name);
+        setCustomerPhone(phone);
+        setCustomerEmail(email);
+        setCustomerAddress(address);
+
+        // Auto-lookup customer by phone to select them
+        if (phone) {
+          supabase
+            .from('customers')
+            .select('id, name, phone, address, email, source, current_points, pending_points, total_spent, membership_tier, status, birthday')
+            .eq('phone', phone)
+            .limit(1)
+            .then(({ data }) => {
+              if (data && data.length > 0) {
+                const c = data[0];
+                setSelectedCustomer({
+                  id: c.id,
+                  name: c.name,
+                  phone: c.phone,
+                  address: c.address,
+                  email: c.email,
+                  source: c.source,
+                  current_points: c.current_points ?? 0,
+                  pending_points: c.pending_points ?? 0,
+                  total_spent: c.total_spent ?? 0,
+                  membership_tier: (c.membership_tier as SelectedCustomer['membership_tier']) || 'regular',
+                  status: (c.status as SelectedCustomer['status']) || 'active',
+                  birthday: c.birthday,
+                });
+                setCustomerName(c.name);
+                setCustomerPhone(c.phone);
+                setCustomerEmail(c.email || email);
+                setCustomerAddress(c.address || address);
+              }
+            });
+        }
       }
 
       // Prefill product into cart
