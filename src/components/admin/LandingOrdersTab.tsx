@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLandingOrders, useUpdateLandingOrder, LandingOrder } from '@/hooks/useLandingOrders';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useBranches } from '@/hooks/useBranches';
+import { useSearchProductsByName, useCheckProductForSale } from '@/hooks/useExportReceipts';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Phone, CheckCircle, XCircle, Clock, Search, Package, Loader2, PhoneCall, PhoneOff, UserPlus, CalendarDays, Tag, Truck, ChevronRight } from 'lucide-react';
+import { Phone, CheckCircle, XCircle, Clock, Search, Package, Loader2, PhoneCall, PhoneOff, UserPlus, CalendarDays, Tag, Truck, ChevronRight, ScanBarcode } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
