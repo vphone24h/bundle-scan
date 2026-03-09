@@ -1122,6 +1122,7 @@ export function ProductDetailPage({
         productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={displayPrice}
         title="📋 Đặt trước sản phẩm" description="Đặt trước để nhận thông báo khi hàng về"
         actionLabel="Đặt trước" requireEmail={true} notePrefix="[Đặt trước]" actionType="pre_order"
+        onNavigateOrderLookup={onNavigateOrderLookup}
       />
       <ContactFormDialog
         open={activeDialog === 'notify_stock'}
