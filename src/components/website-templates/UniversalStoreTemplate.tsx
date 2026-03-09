@@ -120,6 +120,7 @@ export default function UniversalStoreTemplate({
   const [pageView, setPageView] = useState<PageView>(isStandalone ? 'warranty' : 'home');
   const [selectedArticle, setSelectedArticle] = useState<LandingArticle | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedArticleCategoryId, setSelectedArticleCategoryId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<LandingProduct | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
