@@ -87,6 +87,7 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
   const [cancelTarget, setCancelTarget] = useState<LandingOrderResult | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [showContactDialog, setShowContactDialog] = useState(false);
 
   const handleSearch = async () => {
     const q = searchInput.trim();
