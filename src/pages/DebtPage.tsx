@@ -22,6 +22,7 @@ import { useDebtSettings } from '@/hooks/useDebtSettings';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatNumber } from '@/lib/formatNumber';
+import { SearchInput } from '@/components/ui/search-input';
 import { Users, Truck, TrendingUp, TrendingDown, Building2, Hash, Settings, AlertTriangle, CalendarClock, UserCheck, Settings2, ArrowLeftRight } from 'lucide-react';
 
 type QuickFilter = 'all' | 'due_today' | 'overdue' | 'hard_collect';
