@@ -188,6 +188,26 @@ export function usePlaceLandingOrder() {
   });
 }
 
+// Auto-transition: shipped → delivering after 2 days
+async function autoTransitionShippedOrders(orders: LandingOrder[]) {
+  const now = Date.now();
+  const TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
+  const toUpdate = orders.filter(o =>
+    o.status === 'approved' &&
+    o.delivery_status === 'shipped' &&
+    now - new Date(o.updated_at).getTime() > TWO_DAYS
+  );
+  if (toUpdate.length === 0) return;
+  await Promise.all(
+    toUpdate.map(o =>
+      supabase
+        .from('landing_orders' as any)
+        .update({ delivery_status: 'delivering' })
+        .eq('id', o.id)
+    )
+  );
+}
+
 // Admin: list orders
 export function useLandingOrders(branchId?: string | null) {
   return useQuery({
@@ -202,7 +222,18 @@ export function useLandingOrders(branchId?: string | null) {
       }
       const { data, error } = await query;
       if (error) throw error;
-      return data as unknown as LandingOrder[];
+      const orders = data as unknown as LandingOrder[];
+      // Fire-and-forget auto-transition
+      autoTransitionShippedOrders(orders).catch(() => {});
+      // Apply client-side correction
+      const now = Date.now();
+      const TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
+      return orders.map(o => {
+        if (o.status === 'approved' && o.delivery_status === 'shipped' && now - new Date(o.updated_at).getTime() > TWO_DAYS) {
+          return { ...o, delivery_status: 'delivering' };
+        }
+        return o;
+      });
     },
   });
 }
