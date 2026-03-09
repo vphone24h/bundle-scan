@@ -164,6 +164,8 @@ export function LandingOrdersTab() {
   const [assignDialogOrder, setAssignDialogOrder] = useState<LandingOrder | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string>('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [bulkAssignStaffId, setBulkAssignStaffId] = useState<string>('');
 
   const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
 
