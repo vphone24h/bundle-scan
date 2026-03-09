@@ -279,28 +279,50 @@ export function LandingOrdersTab() {
 
   // Bulk confirm: just approve all selected pending orders
   const handleBulkConfirm = async () => {
-    const eligibleOrders = filtered.filter(o => selectedIds.has(o.id) && o.status === 'pending');
-    if (eligibleOrders.length === 0) {
-      toast.error('Không có đơn chờ duyệt nào được chọn');
+    console.log('[BulkConfirm] selectedIds:', Array.from(selectedIds));
+    console.log('[BulkConfirm] filtered orders:', filtered.map(o => ({ id: o.id, status: o.status })));
+    
+    const selectedOrders = filtered.filter(o => selectedIds.has(o.id));
+    const eligibleOrders = selectedOrders.filter(o => o.status === 'pending');
+    
+    console.log('[BulkConfirm] selectedOrders:', selectedOrders.length, 'eligibleOrders:', eligibleOrders.length);
+    
+    if (selectedOrders.length === 0) {
+      toast.error('Vui lòng chọn ít nhất 1 đơn hàng');
       return;
     }
-    const results = await Promise.allSettled(
-      eligibleOrders.map(o =>
-        updateOrder.mutateAsync({
-          id: o.id,
-          status: 'approved',
-          delivery_status: 'confirmed',
-          approved_at: new Date().toISOString(),
-        } as any)
-      )
-    );
-    const successCount = results.filter(r => r.status === 'fulfilled').length;
-    const failCount = results.filter(r => r.status === 'rejected').length;
-    if (successCount > 0) {
-      toast.success(`Đã xác nhận ${successCount} đơn${failCount > 0 ? `, ${failCount} lỗi` : ''}`);
-      setSelectedIds(new Set());
-    } else {
-      toast.error(`Lỗi xác nhận: ${(results[0] as any)?.reason?.message || 'Không rõ lỗi'}`);
+    
+    if (eligibleOrders.length === 0) {
+      const alreadyApproved = selectedOrders.filter(o => o.status === 'approved').length;
+      const cancelled = selectedOrders.filter(o => o.status === 'cancelled').length;
+      toast.error(`Không có đơn chờ duyệt (${alreadyApproved} đã duyệt, ${cancelled} đã hủy)`);
+      return;
+    }
+    
+    try {
+      const results = await Promise.allSettled(
+        eligibleOrders.map(o =>
+          updateOrder.mutateAsync({
+            id: o.id,
+            status: 'approved',
+            delivery_status: 'confirmed',
+            approved_at: new Date().toISOString(),
+          } as any)
+        )
+      );
+      const successCount = results.filter(r => r.status === 'fulfilled').length;
+      const failCount = results.filter(r => r.status === 'rejected').length;
+      if (successCount > 0) {
+        toast.success(`Đã xác nhận ${successCount} đơn${failCount > 0 ? `, ${failCount} lỗi` : ''}`);
+        setSelectedIds(new Set());
+      } else {
+        const errMsg = (results[0] as any)?.reason?.message || 'Không rõ lỗi';
+        console.error('[BulkConfirm] All failed:', errMsg);
+        toast.error(`Lỗi xác nhận: ${errMsg}`);
+      }
+    } catch (err) {
+      console.error('[BulkConfirm] Exception:', err);
+      toast.error('Lỗi khi xác nhận đơn hàng');
     }
   };
 
