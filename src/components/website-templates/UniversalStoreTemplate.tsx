@@ -1198,7 +1198,7 @@ export default function UniversalStoreTemplate({
                         return (
                           <div key="categoryFilter" className="mb-6">
                             <div className="bg-[#f5f5f7] rounded-2xl py-4 px-2">
-                              <div className="flex items-center overflow-x-auto gap-4 py-2 scrollbar-hide">
+                              <SwipeGuardScroll className="flex items-center overflow-x-auto gap-4 py-2 scrollbar-hide">
                                 <button
                                   onClick={() => setSelectedArticleCategoryId(null)}
                                   className="flex flex-col items-center gap-2 min-w-[90px] group"
