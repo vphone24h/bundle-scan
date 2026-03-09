@@ -350,6 +350,62 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
       </div>
 
       {/* Cancel dialog */}
+      {/* Contact dialog */}
+      <Dialog open={showContactDialog} onOpenChange={setShowContactDialog}>
+        <DialogContent className="max-w-sm mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base">🛟 Liên hệ hỗ trợ</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 pt-1">
+            {storePhone && (
+              <a href={`tel:${storePhone}`}
+                className="flex items-center gap-3 p-3 rounded-xl border hover:bg-gray-50 transition-colors"
+                onClick={() => setShowContactDialog(false)}
+              >
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                  <Phone className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Gọi hotline</p>
+                  <p className="text-xs text-gray-500">{storePhone}</p>
+                </div>
+              </a>
+            )}
+            {zaloUrl && (
+              <a href={zaloUrl.startsWith('http') ? zaloUrl : `https://zalo.me/${zaloUrl.replace(/\s/g, '')}`}
+                target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 rounded-xl border hover:bg-gray-50 transition-colors"
+                onClick={() => setShowContactDialog(false)}
+              >
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                  <MessageCircle className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Chat Zalo</p>
+                  <p className="text-xs text-gray-500">Nhắn tin trực tiếp</p>
+                </div>
+              </a>
+            )}
+            {facebookUrl && (
+              <a href={facebookUrl.startsWith('http') ? facebookUrl : `https://${facebookUrl}`}
+                target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 rounded-xl border hover:bg-gray-50 transition-colors"
+                onClick={() => setShowContactDialog(false)}
+              >
+                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                  <MessageCircle className="h-5 w-5 text-indigo-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Facebook Messenger</p>
+                  <p className="text-xs text-gray-500">Nhắn tin qua Facebook</p>
+                </div>
+              </a>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel dialog */}
       <AlertDialog open={!!cancelTarget} onOpenChange={open => { if (!open) { setCancelTarget(null); setCancelReason(''); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
