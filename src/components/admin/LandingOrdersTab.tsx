@@ -146,6 +146,7 @@ function useStaffList(branchId?: string | null, isSuperAdmin?: boolean) {
 }
 
 export function LandingOrdersTab() {
+  const navigate = useNavigate();
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
   const isSuperAdmin = permissions?.role === 'super_admin';
@@ -155,6 +156,8 @@ export function LandingOrdersTab() {
   const filterBranchId = isSuperAdmin ? null : userBranchId;
   const { data: orders, isLoading } = useLandingOrders(filterBranchId);
   const updateOrder = useUpdateLandingOrder();
+  const searchProducts = useSearchProductsByName();
+  const checkProduct = useCheckProductForSale();
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [callStatusFilter, setCallStatusFilter] = useState<string>('all');
@@ -168,6 +171,13 @@ export function LandingOrdersTab() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [bulkAssignStaffId, setBulkAssignStaffId] = useState<string>('');
+
+  // Product search for "Xác nhận" flow
+  const [productSearchOrder, setProductSearchOrder] = useState<LandingOrder | null>(null);
+  const [productSearchText, setProductSearchText] = useState('');
+  const [productImeiSearch, setProductImeiSearch] = useState('');
+  const [productResults, setProductResults] = useState<any[]>([]);
+  const [productSearching, setProductSearching] = useState(false);
 
   const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
 
