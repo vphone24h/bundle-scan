@@ -320,25 +320,25 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
                       <Truck className="h-3.5 w-3.5 mr-1" /> Theo dõi vận chuyển
                     </Button>
                   )}
+                  {(storePhone || zaloUrl || facebookUrl) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setShowContactDialog(true)}
+                    >
+                      <HeadphonesIcon className="h-3.5 w-3.5 mr-1" /> Liên hệ
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
           );
         })}
 
-        {/* Support buttons */}
+        {/* Bottom action */}
         {searched && (
-          <div className="flex flex-wrap gap-2 justify-center pt-2">
-            {storePhone && (
-              <a href={`tel:${storePhone}`} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium bg-white shadow border hover:bg-gray-50 transition-colors">
-                <Phone className="h-4 w-4" style={{ color: accentColor }} /> Gọi hotline
-              </a>
-            )}
-            {zaloUrl && (
-              <a href={zaloUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium bg-white shadow border hover:bg-gray-50 transition-colors">
-                <MessageCircle className="h-4 w-4 text-blue-500" /> Chat Zalo
-              </a>
-            )}
+          <div className="flex justify-center pt-2">
             <button
               onClick={onBack}
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium bg-white shadow border hover:bg-gray-50 transition-colors"
