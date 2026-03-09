@@ -869,7 +869,10 @@ export function LandingOrdersTab() {
                 <div>
                   <p className="font-semibold">{detailOrder.product_name}</p>
                   {detailOrder.variant && <Badge variant="outline" className="mt-1">{detailOrder.variant}</Badge>}
-                  <p className="font-bold text-primary mt-1">{formatNumber(detailOrder.product_price)}đ</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    SL: {detailOrder.quantity} × {formatNumber(detailOrder.product_price)}đ
+                  </p>
+                  <p className="font-bold text-primary mt-0.5">{formatNumber(detailOrder.quantity * detailOrder.product_price)}đ</p>
                 </div>
               </div>
 
