@@ -11,6 +11,7 @@ import { SYSTEM_PAGES } from '@/lib/industryConfig';
 export interface ProductsPageSectionItem {
   id: string;
   enabled: boolean;
+  displayMode?: 'horizontal' | 'vertical';
 }
 
 const PRODUCTS_PAGE_SECTIONS: { id: string; label: string; icon: string; description: string }[] = [
