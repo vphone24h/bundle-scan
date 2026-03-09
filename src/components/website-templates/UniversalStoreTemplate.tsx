@@ -944,7 +944,7 @@ export default function UniversalStoreTemplate({
                             {cat.name}
                           </button>
                         ))}
-                      </div>
+                      </SwipeGuardScroll>
                     );
                   case 'allProducts':
                     return (
