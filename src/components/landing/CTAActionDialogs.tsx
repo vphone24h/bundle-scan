@@ -90,6 +90,16 @@ export function ContactFormDialog({
             <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
             <p className="font-semibold">Gửi thành công!</p>
             <p className="text-sm text-muted-foreground">Chúng tôi sẽ liên hệ bạn sớm nhất.</p>
+            {onNavigateOrderLookup && (
+              <Button
+                variant="outline"
+                className="w-full h-11"
+                onClick={() => { handleClose(); onNavigateOrderLookup(); }}
+                style={{ borderColor: primaryColor, color: primaryColor }}
+              >
+                <Search className="h-4 w-4 mr-1.5" /> Kiểm tra đơn hàng
+              </Button>
+            )}
             <Button variant="outline" onClick={handleClose} className="h-11">Đóng</Button>
           </div>
         ) : (
