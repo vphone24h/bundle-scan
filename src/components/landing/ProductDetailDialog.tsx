@@ -630,11 +630,17 @@ export function ProductDetailDialog({
                     <span>{getVariantLabel()}</span>
                   </div>
                 )}
+                {quantity > 1 && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Đơn giá × Số lượng:</span>
+                    <span>{formatNumber(displayPrice)}đ × {quantity}</span>
+                  </div>
+                )}
                 {totalDiscount > 0 && (
                   <>
                     <div className="flex justify-between text-muted-foreground">
                       <span>Giá gốc:</span>
-                      <span>{formatNumber(basePrice)}đ</span>
+                      <span>{formatNumber(basePrice * quantity)}đ</span>
                     </div>
                     <div className="flex justify-between text-green-600">
                       <span>{selectedVoucher ? `Voucher (${selectedVoucher.code})` : 'Điểm tích lũy'}:</span>
@@ -644,7 +650,7 @@ export function ProductDetailDialog({
                 )}
                 <div className="flex justify-between font-bold pt-1 border-t">
                   <span>Tổng:</span>
-                  <span style={{ color: primaryColor }}>{formatNumber(displayPrice)}đ</span>
+                  <span style={{ color: primaryColor }}>{formatNumber(displayPrice * quantity)}đ</span>
                 </div>
               </div>
 
