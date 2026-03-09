@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Phone, CheckCircle, XCircle, Clock, Search, Package, Loader2, PhoneCall, PhoneOff, UserPlus, CalendarDays, Tag } from 'lucide-react';
+import { Phone, CheckCircle, XCircle, Clock, Search, Package, Loader2, PhoneCall, PhoneOff, UserPlus, CalendarDays, Tag, Truck, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
@@ -24,6 +24,40 @@ const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = 
   approved: { label: 'Đã duyệt', color: 'bg-green-100 text-green-800', icon: CheckCircle },
   cancelled: { label: 'Đã hủy', color: 'bg-red-100 text-red-800', icon: XCircle },
 };
+
+const DELIVERY_STEPS = [
+  { key: 'pending', label: 'Chờ xác nhận' },
+  { key: 'confirmed', label: 'Đã xác nhận' },
+  { key: 'preparing', label: 'Đang chuẩn bị' },
+  { key: 'shipped', label: 'Đã giao ĐVVC' },
+  { key: 'delivering', label: 'Đang giao' },
+  { key: 'delivered', label: 'Giao thành công' },
+];
+
+function getDeliveryStepIndex(status: string, deliveryStatus: string | null): number {
+  if (status === 'cancelled') return -1;
+  if (status === 'pending') return 0;
+  if (status === 'approved' || status === 'confirmed') {
+    if (!deliveryStatus || deliveryStatus === 'pending') return 1;
+    const map: Record<string, number> = { confirmed: 1, preparing: 2, shipped: 3, delivering: 4, delivered: 5 };
+    return map[deliveryStatus] ?? 1;
+  }
+  return 0;
+}
+
+function getNextDeliveryAction(status: string, deliveryStatus: string | null): { label: string; nextStatus?: string; nextDelivery?: string } | null {
+  if (status === 'cancelled') return null;
+  if (status === 'pending') return { label: 'Xác nhận', nextStatus: 'approved', nextDelivery: 'confirmed' };
+  const step = getDeliveryStepIndex(status, deliveryStatus);
+  if (step >= 5) return null; // delivered
+  const nextMap: Record<number, { label: string; nextDelivery: string }> = {
+    1: { label: 'Chuẩn bị hàng', nextDelivery: 'preparing' },
+    2: { label: 'Giao cho ĐVVC', nextDelivery: 'shipped' },
+    3: { label: 'Đang giao', nextDelivery: 'delivering' },
+    4: { label: 'Đã giao', nextDelivery: 'delivered' },
+  };
+  return nextMap[step] || null;
+}
 
 const CALL_STATUS_MAP: Record<string, { label: string; color: string }> = {
   none: { label: 'Chưa gọi', color: 'bg-muted text-muted-foreground' },
@@ -137,9 +171,8 @@ export function LandingOrdersTab() {
 
   const handleApprove = async (order: LandingOrder) => {
     try {
-      await updateOrder.mutateAsync({ id: order.id, status: 'approved', approved_at: new Date().toISOString() });
-      toast.success('Đã duyệt đơn hàng');
-      // Fire-and-forget: send confirmation email
+      await updateOrder.mutateAsync({ id: order.id, status: 'approved', delivery_status: 'confirmed', approved_at: new Date().toISOString() } as any);
+      toast.success('Đã xác nhận đơn hàng');
       if (order.customer_email) {
         supabase.functions.invoke('send-order-email', {
           body: {
@@ -158,7 +191,19 @@ export function LandingOrdersTab() {
           },
         }).catch(err => console.warn('Order confirmed email failed:', err));
       }
-    } catch { toast.error('Lỗi khi duyệt đơn'); }
+    } catch { toast.error('Lỗi khi xác nhận đơn'); }
+  };
+
+  const handleNextDeliveryStep = async (order: LandingOrder) => {
+    const action = getNextDeliveryAction(order.status, order.delivery_status);
+    if (!action) return;
+    try {
+      const updates: any = { id: order.id };
+      if (action.nextStatus) updates.status = action.nextStatus;
+      if (action.nextDelivery) updates.delivery_status = action.nextDelivery;
+      await updateOrder.mutateAsync(updates);
+      toast.success(`Đã chuyển: ${action.label}`);
+    } catch { toast.error('Lỗi cập nhật trạng thái'); }
   };
 
   const handleCancel = async () => {
@@ -360,7 +405,20 @@ export function LandingOrdersTab() {
                       </TableCell>
                       <TableCell className="text-xs">{branchMap.get(order.branch_id) || '—'}</TableCell>
                       <TableCell>
-                        <Badge className={`${st.color} text-[10px]`} variant="secondary">{st.label}</Badge>
+                        {order.status === 'cancelled' ? (
+                          <Badge className="bg-red-100 text-red-800 text-[10px]" variant="secondary">Đã hủy</Badge>
+                        ) : (
+                          <div>
+                            <Badge className={`${st.color} text-[10px]`} variant="secondary">
+                              {DELIVERY_STEPS[getDeliveryStepIndex(order.status, order.delivery_status)]?.label || st.label}
+                            </Badge>
+                            <div className="flex items-center gap-0.5 mt-1">
+                              {DELIVERY_STEPS.map((_, i) => (
+                                <div key={i} className={`h-1 flex-1 rounded-full ${i <= getDeliveryStepIndex(order.status, order.delivery_status) ? 'bg-primary' : 'bg-muted'}`} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
@@ -402,15 +460,20 @@ export function LandingOrdersTab() {
                           <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
                             <a href={`tel:${order.customer_phone}`}><Phone className="h-3.5 w-3.5" /></a>
                           </Button>
-                          {order.status === 'pending' && (
-                            <>
-                              <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleApprove(order)}>
-                                Duyệt
+                          {order.status !== 'cancelled' && (() => {
+                            const action = getNextDeliveryAction(order.status, order.delivery_status);
+                            if (!action) return null;
+                            return (
+                              <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => handleNextDeliveryStep(order)}>
+                                {action.label}
+                                <ChevronRight className="h-3 w-3" />
                               </Button>
-                              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => setCancelDialogOrder(order)}>
-                                Hủy
-                              </Button>
-                            </>
+                            );
+                          })()}
+                          {order.status !== 'cancelled' && getDeliveryStepIndex(order.status, order.delivery_status) < 3 && (
+                            <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => setCancelDialogOrder(order)}>
+                              Hủy
+                            </Button>
                           )}
                         </div>
                       </TableCell>
@@ -488,6 +551,39 @@ export function LandingOrdersTab() {
           </DialogHeader>
           {detailOrder && (
             <div className="space-y-4">
+              {/* Delivery status timeline */}
+              {detailOrder.status !== 'cancelled' && (
+                <div className="bg-muted/30 rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Tiến trình đơn hàng</p>
+                  <div className="flex items-center gap-0">
+                    {DELIVERY_STEPS.map((step, i) => {
+                      const currentIdx = getDeliveryStepIndex(detailOrder.status, detailOrder.delivery_status);
+                      const active = i <= currentIdx;
+                      return (
+                        <div key={step.key} className="flex items-center flex-1">
+                          <div className="flex flex-col items-center flex-1">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                              {i + 1}
+                            </div>
+                            <span className={`text-[9px] mt-1 text-center leading-tight ${active ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                              {step.label}
+                            </span>
+                          </div>
+                          {i < DELIVERY_STEPS.length - 1 && (
+                            <div className={`h-0.5 w-full mt-[-14px] ${i < currentIdx ? 'bg-primary' : 'bg-muted'}`} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {detailOrder.status === 'cancelled' && (
+                <div className="bg-destructive/10 rounded-lg p-3 text-center">
+                  <Badge variant="destructive">Đơn hàng đã bị hủy</Badge>
+                </div>
+              )}
+
               {/* Product info */}
               <div className="flex gap-3">
                 {detailOrder.product_image_url ? (
@@ -528,7 +624,6 @@ export function LandingOrdersTab() {
                   <span className="text-muted-foreground">Ngày đặt:</span>
                   <span>{format(new Date(detailOrder.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}</span>
                 </div>
-                {/* Action type */}
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Loại yêu cầu:</span>
                   <Badge variant="outline" className="text-xs">
@@ -545,7 +640,6 @@ export function LandingOrdersTab() {
                     </span>
                   </div>
                 )}
-                {/* Nguồn đơn */}
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Nguồn:</span>
                   {(() => {
@@ -580,7 +674,6 @@ export function LandingOrdersTab() {
                     <p className="mt-1 bg-muted/50 rounded p-2 text-sm">{detailOrder.note}</p>
                   </div>
                 )}
-                {/* Payment method */}
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Thanh toán:</span>
                   <Badge variant="secondary" className={`text-xs ${(detailOrder as any).payment_method === 'transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
@@ -601,7 +694,7 @@ export function LandingOrdersTab() {
                 {detailOrder.cancelled_reason && (
                   <div>
                     <span className="text-muted-foreground">Lý do hủy:</span>
-                    <p className="mt-1 bg-red-50 rounded p-2 text-sm text-red-700">{detailOrder.cancelled_reason}</p>
+                    <p className="mt-1 bg-destructive/10 rounded p-2 text-sm text-destructive">{detailOrder.cancelled_reason}</p>
                   </div>
                 )}
               </div>
@@ -611,15 +704,20 @@ export function LandingOrdersTab() {
                 <Button variant="outline" className="flex-1 gap-2" asChild>
                   <a href={`tel:${detailOrder.customer_phone}`}><Phone className="h-4 w-4" />Gọi khách</a>
                 </Button>
-                {detailOrder.status === 'pending' && (
-                  <>
-                    <Button className="flex-1" onClick={() => { handleApprove(detailOrder); setDetailOrder(null); }}>
-                      Duyệt đơn
+                {detailOrder.status !== 'cancelled' && (() => {
+                  const action = getNextDeliveryAction(detailOrder.status, detailOrder.delivery_status);
+                  if (!action) return null;
+                  return (
+                    <Button className="flex-1 gap-1" onClick={() => { handleNextDeliveryStep(detailOrder); setDetailOrder(null); }}>
+                      {action.label}
+                      <ChevronRight className="h-4 w-4" />
                     </Button>
-                    <Button variant="destructive" onClick={() => { setCancelDialogOrder(detailOrder); setDetailOrder(null); }}>
-                      Hủy
-                    </Button>
-                  </>
+                  );
+                })()}
+                {detailOrder.status !== 'cancelled' && getDeliveryStepIndex(detailOrder.status, detailOrder.delivery_status) < 3 && (
+                  <Button variant="destructive" onClick={() => { setCancelDialogOrder(detailOrder); setDetailOrder(null); }}>
+                    Hủy
+                  </Button>
                 )}
               </div>
             </div>
