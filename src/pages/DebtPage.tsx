@@ -22,6 +22,7 @@ import { useDebtSettings } from '@/hooks/useDebtSettings';
 import { useBranches } from '@/hooks/useBranches';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatNumber } from '@/lib/formatNumber';
+import { SearchInput } from '@/components/ui/search-input';
 import { Users, Truck, TrendingUp, TrendingDown, Building2, Hash, Settings, AlertTriangle, CalendarClock, UserCheck, Settings2, ArrowLeftRight } from 'lucide-react';
 
 type QuickFilter = 'all' | 'due_today' | 'overdue' | 'hard_collect';
@@ -30,6 +31,7 @@ export default function DebtPage() {
   const { t } = useTranslation();
   const [showSettled, setShowSettled] = useState(false);
   const [branchFilter, setBranchFilter] = useState('_all_');
+  const [searchQuery, setSearchQuery] = useState('');
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
   const [showTagManager, setShowTagManager] = useState(false);
@@ -58,15 +60,29 @@ export default function DebtPage() {
   
   const filteredCustomerDebts = useMemo(() => {
     if (!customerDebts) return [];
-    if (branchFilter === '_all_') return customerDebts;
-    return customerDebts.filter(d => d.branch_id === branchFilter);
-  }, [customerDebts, branchFilter]);
+    let filtered = branchFilter === '_all_' ? customerDebts : customerDebts.filter(d => d.branch_id === branchFilter);
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(d =>
+        d.entity_name?.toLowerCase().includes(q) ||
+        d.entity_phone?.toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [customerDebts, branchFilter, searchQuery]);
 
   const filteredSupplierDebts = useMemo(() => {
     if (!supplierDebts) return [];
-    if (branchFilter === '_all_') return supplierDebts;
-    return supplierDebts.filter(d => d.branch_id === branchFilter);
-  }, [supplierDebts, branchFilter]);
+    let filtered = branchFilter === '_all_' ? supplierDebts : supplierDebts.filter(d => d.branch_id === branchFilter);
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(d =>
+        d.entity_name?.toLowerCase().includes(q) ||
+        d.entity_phone?.toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [supplierDebts, branchFilter, searchQuery]);
 
   // Derived stats
   const totalCustomerDebt = filteredCustomerDebts.reduce((sum, d) => sum + d.remaining_amount, 0);
@@ -184,7 +200,13 @@ export default function DebtPage() {
           </Card>
         </div>
 
-        {/* Filters */}
+        {/* Search & Filters */}
+        <SearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Tìm tên, SĐT..."
+          className="h-9"
+        />
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-muted/50 p-2 sm:p-3 rounded-lg">
           {isSuperAdmin && (
             <Select value={branchFilter} onValueChange={setBranchFilter}>
@@ -319,6 +341,7 @@ export default function DebtPage() {
               tagFilter={tagFilter}
               quickFilter={effectiveQuickFilter}
               overdueDays={overdueDays}
+              searchQuery={searchQuery}
             />
           </TabsContent>
 
@@ -329,6 +352,7 @@ export default function DebtPage() {
               tagFilter={tagFilter}
               quickFilter={effectiveQuickFilter}
               overdueDays={overdueDays}
+              searchQuery={searchQuery}
             />
           </TabsContent>
         </Tabs>

@@ -38,9 +38,10 @@ interface SupplierDebtTableProps {
   tagFilter: string | null;
   quickFilter?: 'all' | 'due_today' | 'overdue' | 'hard_collect';
   overdueDays?: number;
+  searchQuery?: string;
 }
 
-export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickFilter = 'all', overdueDays = 15 }: SupplierDebtTableProps) {
+export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickFilter = 'all', overdueDays = 15, searchQuery = '' }: SupplierDebtTableProps) {
   const { data: allDebts, isLoading } = useSupplierDebts(showSettled);
   const { data: tags } = useDebtTags();
   const { data: assignments } = useDebtTagAssignments('supplier');
@@ -49,6 +50,13 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickF
   const debts = useMemo(() => {
     if (!allDebts) return [];
     let filtered = branchFilter === '_all_' ? allDebts : allDebts.filter(d => d.branch_id === branchFilter);
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(d =>
+        d.entity_name?.toLowerCase().includes(q) ||
+        d.entity_phone?.toLowerCase().includes(q)
+      );
+    }
     if (tagFilter && assignments) {
       const entityIds = new Set(assignments.filter(a => a.tag_id === tagFilter).map(a => a.entity_id));
       filtered = filtered.filter(d => entityIds.has(d.entity_id));
@@ -61,7 +69,7 @@ export function SupplierDebtTable({ showSettled, branchFilter, tagFilter, quickF
       filtered = filtered.filter(d => d.remaining_amount > 0 && d.days_overdue >= overdueDays * 2);
     }
     return filtered;
-  }, [allDebts, branchFilter, tagFilter, assignments, quickFilter, overdueDays]);
+  }, [allDebts, branchFilter, searchQuery, tagFilter, assignments, quickFilter, overdueDays]);
 
   const [selectedDebt, setSelectedDebt] = useState<DebtSummary | null>(null);
   const [showDetail, setShowDetail] = useState(false);

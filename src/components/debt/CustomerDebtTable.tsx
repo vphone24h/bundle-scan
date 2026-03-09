@@ -38,9 +38,10 @@ interface CustomerDebtTableProps {
   tagFilter: string | null;
   quickFilter?: 'all' | 'due_today' | 'overdue' | 'hard_collect';
   overdueDays?: number;
+  searchQuery?: string;
 }
 
-export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickFilter = 'all', overdueDays = 15 }: CustomerDebtTableProps) {
+export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickFilter = 'all', overdueDays = 15, searchQuery = '' }: CustomerDebtTableProps) {
   const { data: allDebts, isLoading } = useCustomerDebts(showSettled);
   const { data: tags } = useDebtTags();
   const { data: assignments } = useDebtTagAssignments('customer');
@@ -49,21 +50,26 @@ export function CustomerDebtTable({ showSettled, branchFilter, tagFilter, quickF
   const debts = useMemo(() => {
     if (!allDebts) return [];
     let filtered = branchFilter === '_all_' ? allDebts : allDebts.filter(d => d.branch_id === branchFilter);
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(d =>
+        d.entity_name?.toLowerCase().includes(q) ||
+        d.entity_phone?.toLowerCase().includes(q)
+      );
+    }
     if (tagFilter && assignments) {
       const entityIds = new Set(assignments.filter(a => a.tag_id === tagFilter).map(a => a.entity_id));
       filtered = filtered.filter(d => entityIds.has(d.entity_id));
     }
-    // Quick filters
     if (quickFilter === 'due_today') {
       filtered = filtered.filter(d => d.remaining_amount > 0 && (d.days_overdue === overdueDays || d.days_overdue === overdueDays - 1));
     } else if (quickFilter === 'overdue') {
       filtered = filtered.filter(d => d.remaining_amount > 0 && d.days_overdue >= overdueDays);
     } else if (quickFilter === 'hard_collect') {
-      // Hard collect = overdue > 2x overdue days
       filtered = filtered.filter(d => d.remaining_amount > 0 && d.days_overdue >= overdueDays * 2);
     }
     return filtered;
-  }, [allDebts, branchFilter, tagFilter, assignments, quickFilter, overdueDays]);
+  }, [allDebts, branchFilter, searchQuery, tagFilter, assignments, quickFilter, overdueDays]);
 
   const [selectedDebt, setSelectedDebt] = useState<DebtSummary | null>(null);
   const [showDetail, setShowDetail] = useState(false);
