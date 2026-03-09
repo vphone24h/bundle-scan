@@ -45,6 +45,7 @@ import { CTVDashboard } from '@/components/landing/CTVDashboard';
 import { useShopCTVSettings } from '@/hooks/useShopCTV';
 import { supabase } from '@/integrations/supabase/client';
 import { OrderLookupPage } from '@/components/landing/OrderLookupPage';
+import SwipeGuardScroll from '@/components/ui/swipe-guard-scroll';
 
 
 export interface UniversalTemplateProps {
@@ -566,7 +567,7 @@ export default function UniversalStoreTemplate({
                     <ScrollReveal key="categories" animation="fade-up" delay={150}>
                       <section className="bg-[#f5f5f7] py-8">
                         <div className="max-w-[1200px] mx-auto px-4">
-                          <div className="flex items-center overflow-x-auto gap-4 py-2 scrollbar-hide">
+                          <SwipeGuardScroll className="flex items-center overflow-x-auto gap-4 py-2 scrollbar-hide">
                             {productsData.categories.map(cat => (
                               <button key={cat.id} onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products', { keepCategory: true }); }} className="flex flex-col items-center gap-2 min-w-[90px] group">
                                 {cat.image_url ? (
@@ -579,7 +580,7 @@ export default function UniversalStoreTemplate({
                                 <span className="text-[11px] font-medium text-center leading-tight">{cat.name}</span>
                               </button>
                             ))}
-                          </div>
+                          </SwipeGuardScroll>
                         </div>
                       </section>
                     </ScrollReveal>
@@ -927,7 +928,7 @@ export default function UniversalStoreTemplate({
                   case 'categoryFilter':
                     if (!productsData || productsData.categories.length === 0) return null;
                     return (
-                      <div key="categoryFilter" className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+                      <SwipeGuardScroll key="categoryFilter" className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
                         <button
                           onClick={() => setSelectedCategoryId(null)}
                           className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all ${!selectedCategoryId ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-black/10'}`}
@@ -943,7 +944,7 @@ export default function UniversalStoreTemplate({
                             {cat.name}
                           </button>
                         ))}
-                      </div>
+                      </SwipeGuardScroll>
                     );
                   case 'allProducts':
                     return (
@@ -1197,7 +1198,7 @@ export default function UniversalStoreTemplate({
                         return (
                           <div key="categoryFilter" className="mb-6">
                             <div className="bg-[#f5f5f7] rounded-2xl py-4 px-2">
-                              <div className="flex items-center overflow-x-auto gap-4 py-2 scrollbar-hide">
+                              <SwipeGuardScroll className="flex items-center overflow-x-auto gap-4 py-2 scrollbar-hide">
                                 <button
                                   onClick={() => setSelectedArticleCategoryId(null)}
                                   className="flex flex-col items-center gap-2 min-w-[90px] group"
@@ -1229,7 +1230,7 @@ export default function UniversalStoreTemplate({
                                     <span className={`text-[11px] font-medium text-center leading-tight ${selectedArticleCategoryId === cat.id ? 'font-bold' : ''}`}>{cat.name}</span>
                                   </button>
                                 ))}
-                              </div>
+                              </SwipeGuardScroll>
                             </div>
                           </div>
                         );

@@ -37,6 +37,7 @@ import {
   ShoppingBag, Newspaper, ArrowLeft,
   Link2, Menu, X, Smartphone, Tablet, Laptop, Zap,
 } from 'lucide-react';
+import SwipeGuardScroll from '@/components/ui/swipe-guard-scroll';
 
 // ============================
 // Types
@@ -873,12 +874,12 @@ export default function AppleStyleLandingTemplate({
               {productSearchQuery && <button onClick={() => setProductSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-[#d2d2d7] flex items-center justify-center hover:bg-[#86868b]"><X className="h-3 w-3 text-white" /></button>}
             </div>
             {categories.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+              <SwipeGuardScroll className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
                 <button onClick={() => setSelectedCategoryId(null)} className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap ${!selectedCategoryId ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#1d1d1f]'}`}>Tất cả</button>
                 {categories.map(c => (
                   <button key={c.id} onClick={() => setSelectedCategoryId(c.id)} className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap ${selectedCategoryId === c.id ? 'bg-[#1d1d1f] text-white' : 'bg-[#f5f5f7] text-[#1d1d1f]'}`}>{c.name}</button>
                 ))}
-              </div>
+              </SwipeGuardScroll>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredProducts.map(p => <AppleProductCard key={p.id} product={p} onClick={() => openProduct(p)} accentColor={accentColor} />)}
@@ -924,12 +925,12 @@ export default function AppleStyleLandingTemplate({
                         );
                       case 'categoryFilter':
                         return (
-                          <div key="categoryFilter" className="mb-6 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                          <SwipeGuardScroll key="categoryFilter" className="mb-6 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                             <button className="px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" style={{ backgroundColor: accentColor, color: 'white' }}>Tất cả</button>
                             {(articlesData?.categories || []).filter((c: any) => c.is_visible !== false).map((cat: any) => (
                               <button key={cat.id} className="px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-[#f5f5f7] hover:bg-[#e8e8ed] transition-colors">{cat.name}</button>
                             ))}
-                          </div>
+                          </SwipeGuardScroll>
                         );
                       case 'featuredArticles':
                         if (featuredOnes.length === 0) return null;
