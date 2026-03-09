@@ -58,7 +58,7 @@ export function PaymentFlowDialog({
   tenantId,
   codEnabled, transferEnabled, bankName, accountNumber, accountHolder,
   confirmZaloUrl, confirmMessengerUrl,
-  branches, onPlaceOrder, isSubmitting,
+  branches, onPlaceOrder, isSubmitting, onNavigateOrderLookup,
 }: PaymentFlowDialogProps) {
   const [step, setStep] = useState<Step>('method');
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'transfer' | null>(null);
