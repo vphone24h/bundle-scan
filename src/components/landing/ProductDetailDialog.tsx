@@ -37,7 +37,7 @@ interface ProductDetailDialogProps {
 
 export function ProductDetailDialog({
   product, open, onOpenChange, tenantId, branches, primaryColor,
-  warrantyHotline, onShare, onInstallment,
+  warrantyHotline, onShare, onInstallment, onNavigateOrderLookup,
   showPromotionSection = true,
   showWarrantySection = true,
   showInstallmentButton = true,
