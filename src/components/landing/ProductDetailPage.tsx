@@ -1122,6 +1122,7 @@ export function ProductDetailPage({
         productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={displayPrice}
         title="📋 Đặt trước sản phẩm" description="Đặt trước để nhận thông báo khi hàng về"
         actionLabel="Đặt trước" requireEmail={true} notePrefix="[Đặt trước]" actionType="pre_order"
+        onNavigateOrderLookup={onNavigateOrderLookup}
       />
       <ContactFormDialog
         open={activeDialog === 'notify_stock'}
@@ -1130,6 +1131,7 @@ export function ProductDetailPage({
         productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={0}
         title="🔔 Báo khi có hàng" description="Nhập thông tin để nhận thông báo khi sản phẩm có lại"
         actionLabel="Đăng ký nhận thông báo" requireEmail={true} showMessage={false} notePrefix="[Báo khi có hàng]" actionType="notify_stock"
+        onNavigateOrderLookup={onNavigateOrderLookup}
       />
       <ContactFormDialog
         open={activeDialog === 'get_quote'}

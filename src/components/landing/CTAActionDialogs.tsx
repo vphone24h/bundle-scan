@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Star, Loader2, CheckCircle2, Phone, ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
+import { Star, Loader2, CheckCircle2, Phone, ShoppingCart, Trash2, Plus, Minus, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { useLandingCart, CartItem } from '@/hooks/useLandingCart';
@@ -37,12 +37,14 @@ interface ContactFormDialogProps extends CTADialogProps {
   showMessage?: boolean;
   notePrefix?: string;
   actionType?: string;
+  onNavigateOrderLookup?: () => void;
 }
 
 export function ContactFormDialog({
   open, onClose, tenantId, primaryColor, branches,
   productName, productId, productImageUrl, productPrice,
   title, description, actionLabel, requireEmail = true, showMessage = true, notePrefix = '', actionType = 'order',
+  onNavigateOrderLookup,
 }: ContactFormDialogProps) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -88,6 +90,16 @@ export function ContactFormDialog({
             <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
             <p className="font-semibold">Gửi thành công!</p>
             <p className="text-sm text-muted-foreground">Chúng tôi sẽ liên hệ bạn sớm nhất.</p>
+            {onNavigateOrderLookup && (
+              <Button
+                variant="outline"
+                className="w-full h-11"
+                onClick={() => { handleClose(); onNavigateOrderLookup(); }}
+                style={{ borderColor: primaryColor, color: primaryColor }}
+              >
+                <Search className="h-4 w-4 mr-1.5" /> Kiểm tra đơn hàng
+              </Button>
+            )}
             <Button variant="outline" onClick={handleClose} className="h-11">Đóng</Button>
           </div>
         ) : (
