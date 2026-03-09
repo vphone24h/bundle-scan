@@ -575,7 +575,7 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
                   <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
                   +{formatNumber(deliveryResult.pointsEarned)} điểm tích lũy
                 </div>
-                <p className="text-xs text-amber-500 mt-1">Điểm đã được cộng vào tài khoản của bạn khi mua hàng</p>
+                <p className="text-xs text-amber-500 mt-1">Điểm đã được cộng vào tài khoản của bạn</p>
               </div>
             )}
             <Button
