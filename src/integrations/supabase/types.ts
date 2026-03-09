@@ -1920,6 +1920,7 @@ export type Database = {
         Row: {
           allocated_amount: number | null
           amount: number
+          balance_after: number | null
           branch_id: string | null
           created_at: string
           created_by: string | null
@@ -1934,6 +1935,7 @@ export type Database = {
         Insert: {
           allocated_amount?: number | null
           amount: number
+          balance_after?: number | null
           branch_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -1948,6 +1950,7 @@ export type Database = {
         Update: {
           allocated_amount?: number | null
           amount?: number
+          balance_after?: number | null
           branch_id?: string | null
           created_at?: string
           created_by?: string | null
