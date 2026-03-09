@@ -36,6 +36,7 @@ export interface DebtPayment {
   branch_id: string | null;
   created_by: string | null;
   created_at: string;
+  balance_after: number | null;
   // Joined
   profiles?: { display_name: string } | null;
   branches?: { name: string } | null;
@@ -214,7 +215,7 @@ export function useCreateDebtPayment() {
         ? oldDebt - payment.amount 
         : oldDebt + payment.amount;
       
-      // Insert debt payment
+      // Insert debt payment with permanently stored balance_after
       const { data, error } = await supabase
         .from('debt_payments')
         .insert([{
@@ -227,6 +228,7 @@ export function useCreateDebtPayment() {
           branch_id: payment.branch_id,
           created_by: user?.id,
           tenant_id: tenantId,
+          balance_after: Math.max(0, newDebt),
         }])
         .select()
         .single();

@@ -117,8 +117,8 @@ export function DebtDetailDialog({
 
   const paidAtCheckout = totalSalesAmount - liveTotal;
 
-  // Filter and enrich payment history with running balance
-  // Calculate backwards from current remainingAmount for accuracy
+  // Use stored balance_after from DB (immutable history)
+  // For old records without balance_after, fall back to dynamic calculation
   const enrichedHistory = useMemo(() => {
     if (!paymentHistory) return [];
 
@@ -127,15 +127,24 @@ export function DebtDetailDialog({
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
+    // For records without stored balance_after, calculate dynamically as fallback
     // Work backwards from current remaining amount
     let balance = liveRemaining;
     const enriched = sorted.map(payment => {
+      const storedBalance = (payment as any).balance_after;
+      if (storedBalance != null) {
+        // Use permanently stored value - immutable history
+        return {
+          ...payment,
+          balance_after: Number(storedBalance),
+        };
+      }
+      // Fallback for old records without stored balance
       const balanceAfterThis = balance;
-      // Reverse the effect to get balance before this entry
       if (payment.payment_type === 'addition') {
-        balance -= Number(payment.amount); // before this addition, balance was lower
+        balance -= Number(payment.amount);
       } else {
-        balance += Number(payment.amount); // before this payment, balance was higher
+        balance += Number(payment.amount);
       }
       return {
         ...payment,
@@ -324,6 +333,7 @@ export function DebtDetailDialog({
                     isFullyPaid: (Number(p.allocated_amount) || 0) >= Number(p.amount),
                     description: p.description,
                     createdBy: p.profiles?.display_name || null,
+                    storedBalance: (p as any).balance_after != null ? Number((p as any).balance_after) : null,
                   }));
 
                 const receiptRows = (receipts || []).map((r: any) => {
@@ -357,6 +367,7 @@ export function DebtDetailDialog({
                     amount: Number(p.amount),
                     description: p.description,
                     createdBy: p.profiles?.display_name || null,
+                    storedBalance: (p as any).balance_after != null ? Number((p as any).balance_after) : null,
                   }));
 
                 // Merge and sort by date ascending for running balance
@@ -467,7 +478,7 @@ export function DebtDetailDialog({
                               </span>
                             </div>
                             <div className="text-xs text-muted-foreground mt-1 pt-1 border-t border-dashed">
-                              Dư nợ tại thời điểm: <span className="font-semibold text-foreground">{formatNumber((item as any).runningBalance)}</span>
+                              Dư nợ tại thời điểm: <span className="font-semibold text-foreground">{formatNumber((item as any).storedBalance != null ? (item as any).storedBalance : (item as any).runningBalance)}</span>
                             </div>
                           </div>
                         );
@@ -515,7 +526,7 @@ export function DebtDetailDialog({
                               </span>
                             </div>
                             <div className="text-xs text-muted-foreground mt-1 pt-1 border-t border-dashed">
-                              Dư nợ tại thời điểm: <span className="font-semibold text-foreground">{formatNumber((item as any).runningBalance)}</span>
+                              Dư nợ tại thời điểm: <span className="font-semibold text-foreground">{formatNumber((item as any).storedBalance != null ? (item as any).storedBalance : (item as any).runningBalance)}</span>
                             </div>
                           </div>
                         );
