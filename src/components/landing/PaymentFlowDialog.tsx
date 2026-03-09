@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, CreditCard, ArrowLeft, QrCode, CheckCircle2, ExternalLink, Copy, Loader2, ShoppingCart, MapPin, MessageCircle, Gift, Ticket, Star, Search } from 'lucide-react';
+import { Banknote, CreditCard, ArrowLeft, QrCode, CheckCircle2, ExternalLink, Copy, Loader2, ShoppingCart, MapPin, MessageCircle, Gift, Ticket, Star, Search, Mail } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { generateVietQRUrl, getBankCode, VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
 import { toast } from 'sonner';
@@ -40,6 +40,7 @@ interface PaymentFlowDialogProps {
   onPlaceOrder: (data: {
     customer_name: string;
     customer_phone: string;
+    customer_email?: string;
     customer_address?: string;
     note?: string;
     branch_id: string;
@@ -66,6 +67,7 @@ export function PaymentFlowDialog({
   // COD form fields
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [note, setNote] = useState('');
   const [selectedBranch, setSelectedBranch] = useState(branches.length === 1 ? branches[0].id : '');
@@ -187,6 +189,7 @@ export function PaymentFlowDialog({
       await onPlaceOrder({
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
+        customer_email: customerEmail.trim() || undefined,
         customer_address: customerAddress.trim() || undefined,
         note: fullNote || undefined,
         branch_id: branchId,
@@ -212,6 +215,7 @@ export function PaymentFlowDialog({
       await onPlaceOrder({
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
+        customer_email: customerEmail.trim() || undefined,
         customer_address: customerAddress.trim() || undefined,
         note: fullNote || undefined,
         branch_id: branchId,
@@ -253,6 +257,7 @@ export function PaymentFlowDialog({
     setPaymentMethod(null);
     setCustomerName('');
     setCustomerPhone('');
+    setCustomerEmail('');
     setCustomerAddress('');
     setNote('');
     setSelectedBranch(branches.length === 1 ? branches[0].id : '');
@@ -370,6 +375,19 @@ export function PaymentFlowDialog({
                   className={`h-11 text-base ${attempted && !customerPhone.trim() ? 'border-red-400' : ''}`}
                 />
                 <p className="text-xs text-muted-foreground mt-1">Nhập SĐT đã từng mua hàng để được ưu đãi</p>
+              </div>
+
+              <div>
+                <Label className="text-sm flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> Email</Label>
+                <Input
+                  value={customerEmail}
+                  onChange={e => setCustomerEmail(e.target.value)}
+                  placeholder="Nhập email"
+                  inputMode="email"
+                  type="email"
+                  className="h-11 text-base"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Nhập đúng mail để nhận thông tin đơn hàng và bảo hành</p>
               </div>
 
               <div>
