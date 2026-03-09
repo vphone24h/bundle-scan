@@ -668,7 +668,7 @@ export function LandingOrdersTab() {
                               const action = getNextDeliveryAction(order.status, order.delivery_status);
                               if (!action) return null;
                               return (
-                                <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => handleNextDeliveryStep(order)}>
+                                <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => handleConfirmOrder(order)}>
                                   {action.label}
                                   <ChevronRight className="h-3 w-3" />
                                 </Button>
