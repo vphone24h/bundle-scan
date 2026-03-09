@@ -653,12 +653,14 @@ export function ProductDetailPage({
 
               <div>
                 <Label className="text-sm">Số điện thoại <span className="text-red-500">*</span></Label>
-                <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Nhập SĐT đã từng mua để được giảm giá" inputMode="tel" className={`h-11 text-base ${attempted && !customerPhone.trim() ? 'border-red-400 ring-red-400' : ''}`} />
+                <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Nhập số điện thoại" inputMode="tel" className={`h-11 text-base ${attempted && !customerPhone.trim() ? 'border-red-400 ring-red-400' : ''}`} />
+                <p className="text-xs text-muted-foreground mt-1">Nhập SĐT đã từng mua hàng để được ưu đãi</p>
               </div>
 
               <div>
-                <Label className="text-sm flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> Email <span className="text-muted-foreground text-xs">(nhận thông tin đơn hàng)</span></Label>
-                <Input value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder="Nhập đúng email để nhận thông tin đơn hàng" inputMode="email" type="email" className="h-11 text-base" />
+                <Label className="text-sm flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> Email</Label>
+                <Input value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder="Nhập email" inputMode="email" type="email" className="h-11 text-base" />
+                <p className="text-xs text-muted-foreground mt-1">Nhập đúng mail để nhận thông tin đơn hàng và bảo hành</p>
               </div>
 
               <div>
@@ -671,43 +673,49 @@ export function ProductDetailPage({
               </div>
 
               {/* Voucher & Points */}
-              {debouncedPhone && (unusedVouchers.length > 0 || (customerPoints?.is_points_enabled && customerPoints.current_points > 0)) && (
+              {debouncedPhone && (
                 <div className="space-y-2 border rounded-lg p-3 bg-gray-50">
                   <p className="text-xs font-medium flex items-center gap-1.5">
                     <Gift className="h-3.5 w-3.5" style={{ color: primaryColor }} />
                     Ưu đãi của bạn
                   </p>
-                  {unusedVouchers.length > 0 && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs flex items-center gap-1"><Ticket className="h-3 w-3" /> Voucher ({unusedVouchers.length})</Label>
-                      <select value={selectedVoucherId || ''} onChange={e => { setSelectedVoucherId(e.target.value || null); if (e.target.value) setUsePoints(false); }}
-                        className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                        <option value="">Không sử dụng voucher</option>
-                        {unusedVouchers.map((v: any) => (
-                          <option key={v.id} value={v.id}>
-                            {v.voucher_name} - {v.discount_type === 'percentage' ? `${v.discount_value}%` : `${formatNumber(v.discount_value)}đ`} ({v.code})
-                          </option>
-                        ))}
-                      </select>
-                      {selectedVoucher && voucherDiscount > 0 && (
-                        <p className="text-xs text-green-600 font-medium">Giảm: {formatNumber(voucherDiscount)}đ</p>
-                      )}
-                    </div>
-                  )}
-                  {customerPoints?.is_points_enabled && customerPoints.current_points > 0 && customerPoints.redeem_points > 0 && (
-                    <div className="space-y-1.5">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={usePoints} onChange={e => { setUsePoints(e.target.checked); if (e.target.checked) setSelectedVoucherId(null); }}
-                          className="rounded border-input" disabled={!!selectedVoucherId} />
-                        <span className="text-xs flex items-center gap-1">
-                          <Star className="h-3 w-3 text-amber-500" />
-                          Dùng {formatNumber(customerPoints.current_points)} điểm
-                          {pointsDiscount > 0 && !selectedVoucherId && (
-                            <span className="text-green-600 font-medium">(Giảm {formatNumber(pointsDiscount)}đ)</span>
+                  {unusedVouchers.length === 0 && !(customerPoints?.is_points_enabled && customerPoints.current_points > 0) ? (
+                    <p className="text-xs text-muted-foreground italic">Chưa có ưu đãi giảm giá</p>
+                  ) : (
+                    <>
+                      {unusedVouchers.length > 0 && (
+                        <div className="space-y-1.5">
+                          <Label className="text-xs flex items-center gap-1"><Ticket className="h-3 w-3" /> Voucher ({unusedVouchers.length})</Label>
+                          <select value={selectedVoucherId || ''} onChange={e => { setSelectedVoucherId(e.target.value || null); if (e.target.value) setUsePoints(false); }}
+                            className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                            <option value="">Không sử dụng voucher</option>
+                            {unusedVouchers.map((v: any) => (
+                              <option key={v.id} value={v.id}>
+                                {v.voucher_name} - {v.discount_type === 'percentage' ? `${v.discount_value}%` : `${formatNumber(v.discount_value)}đ`} ({v.code})
+                              </option>
+                            ))}
+                          </select>
+                          {selectedVoucher && voucherDiscount > 0 && (
+                            <p className="text-xs text-green-600 font-medium">Giảm: {formatNumber(voucherDiscount)}đ</p>
                           )}
-                        </span>
-                      </label>
-                    </div>
+                        </div>
+                      )}
+                      {customerPoints?.is_points_enabled && customerPoints.current_points > 0 && customerPoints.redeem_points > 0 && (
+                        <div className="space-y-1.5">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked={usePoints} onChange={e => { setUsePoints(e.target.checked); if (e.target.checked) setSelectedVoucherId(null); }}
+                              className="rounded border-input" disabled={!!selectedVoucherId} />
+                            <span className="text-xs flex items-center gap-1">
+                              <Star className="h-3 w-3 text-amber-500" />
+                              Dùng {formatNumber(customerPoints.current_points)} điểm
+                              {pointsDiscount > 0 && !selectedVoucherId && (
+                                <span className="text-green-600 font-medium">(Giảm {formatNumber(pointsDiscount)}đ)</span>
+                              )}
+                            </span>
+                          </label>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
