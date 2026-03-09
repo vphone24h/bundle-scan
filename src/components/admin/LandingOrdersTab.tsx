@@ -618,6 +618,9 @@ export function LandingOrdersTab() {
                           <div>
                             <p className="text-sm line-clamp-1">{order.product_name}</p>
                             {order.variant && <Badge variant="outline" className="text-[10px] mt-0.5">{order.variant}</Badge>}
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              SL: {order.quantity} × {formatNumber(order.product_price)}đ = <span className="font-medium text-foreground">{formatNumber(order.quantity * order.product_price)}đ</span>
+                            </p>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -866,7 +869,10 @@ export function LandingOrdersTab() {
                 <div>
                   <p className="font-semibold">{detailOrder.product_name}</p>
                   {detailOrder.variant && <Badge variant="outline" className="mt-1">{detailOrder.variant}</Badge>}
-                  <p className="font-bold text-primary mt-1">{formatNumber(detailOrder.product_price)}đ</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    SL: {detailOrder.quantity} × {formatNumber(detailOrder.product_price)}đ
+                  </p>
+                  <p className="font-bold text-primary mt-0.5">{formatNumber(detailOrder.quantity * detailOrder.product_price)}đ</p>
                 </div>
               </div>
 
