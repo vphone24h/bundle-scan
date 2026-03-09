@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import {
   Search, ArrowLeft, Phone, Package, MapPin, Clock, CheckCircle2,
   XCircle, Truck, MessageCircle, Loader2, ShoppingBag, AlertCircle, HeadphonesIcon,
+  PackageCheck, Star,
 } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { format } from 'date-fns';
@@ -15,8 +16,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 
 interface LandingOrderResult {
@@ -88,6 +90,9 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
   const [showContactDialog, setShowContactDialog] = useState(false);
+  const [confirmDeliveryTarget, setConfirmDeliveryTarget] = useState<LandingOrderResult | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [deliveryResult, setDeliveryResult] = useState<{ pointsEarned: number; order: LandingOrderResult } | null>(null);
 
   const handleSearch = async () => {
     const q = searchInput.trim();
@@ -109,7 +114,15 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
       }
       const { data, error } = await query;
       if (error) throw error;
-      setOrders((data || []) as unknown as LandingOrderResult[]);
+      const now = Date.now();
+      const TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
+      const results = ((data || []) as unknown as LandingOrderResult[]).map(o => {
+        if ((o.status === 'approved') && o.delivery_status === 'shipped' && o.created_at && now - new Date(o.created_at).getTime() > TWO_DAYS) {
+          return { ...o, delivery_status: 'delivering' };
+        }
+        return o;
+      });
+      setOrders(results);
     } catch {
       setOrders([]);
     } finally {
@@ -133,6 +146,77 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
       setCancelling(false);
       setCancelTarget(null);
       setCancelReason('');
+    }
+  };
+
+  const handleConfirmDelivery = async () => {
+    if (!confirmDeliveryTarget) return;
+    setConfirming(true);
+    try {
+      // Update order to delivered
+      await supabase
+        .from('landing_orders' as any)
+        .update({ delivery_status: 'delivered' })
+        .eq('id', confirmDeliveryTarget.id);
+
+      // Try to award points based on order value
+      let pointsEarned = 0;
+      try {
+        // Get point settings for this tenant
+        const { data: ps } = await supabase
+          .from('point_settings')
+          .select('is_enabled, earn_points, spend_amount')
+          .eq('tenant_id', tenantId)
+          .maybeSingle();
+
+        if (ps?.is_enabled && ps.spend_amount > 0 && ps.earn_points > 0) {
+          const orderValue = confirmDeliveryTarget.product_price * confirmDeliveryTarget.quantity;
+          pointsEarned = Math.floor(orderValue / ps.spend_amount) * ps.earn_points;
+
+          if (pointsEarned > 0) {
+            // Find customer by phone
+            const { data: customer } = await supabase
+              .from('customers')
+              .select('id, current_points, total_points_earned')
+              .eq('tenant_id', tenantId)
+              .eq('phone', confirmDeliveryTarget.customer_phone)
+              .maybeSingle();
+
+            if (customer) {
+              const newBalance = (customer.current_points || 0) + pointsEarned;
+              // Add point transaction
+              await supabase.from('point_transactions').insert({
+                customer_id: customer.id,
+                transaction_type: 'earn',
+                points: pointsEarned,
+                balance_after: newBalance,
+                status: 'active',
+                description: `Xác nhận nhận hàng đơn ${confirmDeliveryTarget.order_code || ''}`,
+                reference_type: 'landing_order',
+                reference_id: confirmDeliveryTarget.id,
+              });
+              // Update customer points
+              await supabase.from('customers')
+                .update({
+                  current_points: newBalance,
+                  total_points_earned: (customer.total_points_earned || 0) + pointsEarned,
+                })
+                .eq('id', customer.id);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Points award failed:', e);
+      }
+
+      // Update local state
+      setOrders(prev => prev.map(o => o.id === confirmDeliveryTarget.id ? { ...o, delivery_status: 'delivered' } : o));
+      setDeliveryResult({ pointsEarned, order: confirmDeliveryTarget });
+    } catch {
+      toast.error('Có lỗi xảy ra, vui lòng thử lại');
+    } finally {
+      setConfirming(false);
+      setConfirmDeliveryTarget(null);
     }
   };
 
@@ -299,7 +383,18 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex gap-2 pt-1">
+                <div className="flex gap-2 pt-1 flex-wrap">
+                  {/* Confirm delivery button - show when delivering or shipped */}
+                  {!isCancelled && stepIdx >= 3 && stepIdx < 5 && order.delivery_status !== 'delivered' && (
+                    <Button
+                      size="sm"
+                      className="flex-1 text-white gap-1"
+                      style={{ backgroundColor: '#22c55e' }}
+                      onClick={() => setConfirmDeliveryTarget(order)}
+                    >
+                      <PackageCheck className="h-3.5 w-3.5" /> Tôi đã nhận hàng
+                    </Button>
+                  )}
                   {canCancel(order.status, order.delivery_status) && (
                     <Button
                       variant="outline"
@@ -434,6 +529,65 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Confirm delivery dialog */}
+      <AlertDialog open={!!confirmDeliveryTarget} onOpenChange={open => { if (!open) setConfirmDeliveryTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <PackageCheck className="h-5 w-5 text-green-500" /> Xác nhận đã nhận hàng
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn xác nhận đã nhận được đơn hàng <strong>{confirmDeliveryTarget?.order_code}</strong> — {confirmDeliveryTarget?.product_name}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={confirming}>Quay lại</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelivery}
+              disabled={confirming}
+              className="text-white"
+              style={{ backgroundColor: '#22c55e' }}
+            >
+              {confirming ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <PackageCheck className="h-4 w-4 mr-1" />}
+              Xác nhận nhận hàng
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delivery success + points dialog */}
+      <Dialog open={!!deliveryResult} onOpenChange={v => { if (!v) setDeliveryResult(null); }}>
+        <DialogContent className="max-w-sm text-center">
+          <div className="flex flex-col items-center gap-3 py-4">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-green-500" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-lg">Cảm ơn bạn!</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-gray-500">
+              Đơn hàng <strong>{deliveryResult?.order.order_code}</strong> đã được xác nhận giao thành công.
+            </p>
+            {deliveryResult && deliveryResult.pointsEarned > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 w-full">
+                <div className="flex items-center justify-center gap-2 text-amber-600 font-semibold">
+                  <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
+                  +{formatNumber(deliveryResult.pointsEarned)} điểm tích lũy
+                </div>
+                <p className="text-xs text-amber-500 mt-1">Điểm đã được cộng vào tài khoản của bạn</p>
+              </div>
+            )}
+            <Button
+              className="w-full mt-2 text-white"
+              style={{ backgroundColor: accentColor }}
+              onClick={() => setDeliveryResult(null)}
+            >
+              Đóng
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
