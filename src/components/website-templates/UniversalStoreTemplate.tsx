@@ -1166,7 +1166,6 @@ export default function UniversalStoreTemplate({
                 : allArticles;
               const featuredOnes = filteredAllArticles.filter(a => a.is_featured);
               const regularOnes = filteredAllArticles.filter(a => !a.is_featured);
-              const catDisplayMode = (config as any)._categoryDisplayMode || 'horizontal';
 
               return (
                 <>
