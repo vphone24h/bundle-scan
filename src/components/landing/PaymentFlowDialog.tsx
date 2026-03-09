@@ -67,6 +67,7 @@ export function PaymentFlowDialog({
   // COD form fields
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [note, setNote] = useState('');
   const [selectedBranch, setSelectedBranch] = useState(branches.length === 1 ? branches[0].id : '');
