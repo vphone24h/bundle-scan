@@ -178,7 +178,7 @@ export function RevenueProfitReport() {
       { label: '1. Tổng doanh thu bán hàng', value: stats.totalSalesRevenue, note: `${stats.productsSold} SP đã bán` },
       { label: '2. Doanh thu trả hàng', value: stats.totalReturnRevenue, note: `${stats.productsReturned} SP trả` },
       { label: '3. Doanh thu thuần', value: stats.netRevenue, note: '= DT bán - DT trả' },
-      { label: '3.1 Lợi nhuận kinh doanh', value: stats.businessProfit, note: 'Σ(Giá bán - Giá nhập)' },
+      { label: '3.1 Lợi nhuận kinh doanh', value: stats.businessProfit, note: 'Σ Lãi bán - Σ Lãi trả hàng' },
       { label: '4. Chi phí', value: stats.totalExpenses, note: 'Từ sổ quỹ' },
       { label: '5. Thu nhập khác', value: stats.otherIncome, note: '' },
       { label: '6. LỢI NHUẬN THUẦN', value: stats.netProfit, note: '= (LN KD + Thu nhập khác) - Chi phí' },
