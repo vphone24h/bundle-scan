@@ -1193,8 +1193,9 @@ export default function UniversalStoreTemplate({
                         );
                       case 'categoryFilter': {
                         if (articleCategories.length === 0) return null;
+                        const newsCatMode = (section as any).displayMode || 'horizontal';
                         
-                        if (catDisplayMode === 'vertical') {
+                        if (newsCatMode === 'vertical') {
                           // Vertical: stacked cards with cover images (same as product categories)
                           return (
                             <div key="categoryFilter" className="mb-6">
