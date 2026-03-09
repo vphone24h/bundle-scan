@@ -352,6 +352,7 @@ export default function DebtPage() {
               tagFilter={tagFilter}
               quickFilter={effectiveQuickFilter}
               overdueDays={overdueDays}
+              searchQuery={searchQuery}
             />
           </TabsContent>
         </Tabs>
