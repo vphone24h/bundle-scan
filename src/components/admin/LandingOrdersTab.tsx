@@ -115,8 +115,7 @@ function useStaffList(branchId?: string | null, isSuperAdmin?: boolean) {
     queryFn: async () => {
       let query = supabase
         .from('user_roles')
-        .select('user_id, user_role, branch_id, profiles!user_roles_user_id_fkey(id, display_name)')
-        .in('user_role', ['staff']);
+        .select('user_id, user_role, branch_id');
 
       // Branch admin: only see staff in their branch
       if (!isSuperAdmin && branchId) {
@@ -125,9 +124,20 @@ function useStaffList(branchId?: string | null, isSuperAdmin?: boolean) {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []).map(r => ({
-        id: (r.profiles as any)?.id || r.user_id,
-        display_name: (r.profiles as any)?.display_name || 'Không tên',
+      if (!data || data.length === 0) return [];
+
+      const userIds = [...new Set(data.map(d => d.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, display_name')
+        .in('user_id', userIds);
+
+      const profileMap = new Map((profiles || []).map(p => [p.user_id, p.display_name]));
+
+      return data.map(r => ({
+        id: r.user_id,
+        display_name: profileMap.get(r.user_id) || 'Không tên',
+        user_role: r.user_role,
       })).sort((a, b) => a.display_name.localeCompare(b.display_name));
     },
   });
