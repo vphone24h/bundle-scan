@@ -944,7 +944,7 @@ export function LandingOrdersTab() {
                   const action = getNextDeliveryAction(detailOrder.status, detailOrder.delivery_status);
                   if (!action) return null;
                   return (
-                    <Button className="flex-1 gap-1" onClick={() => { handleNextDeliveryStep(detailOrder); setDetailOrder(null); }}>
+                    <Button className="flex-1 gap-1" onClick={() => { handleConfirmOrder(detailOrder); setDetailOrder(null); }}>
                       {action.label}
                       <ChevronRight className="h-4 w-4" />
                     </Button>
