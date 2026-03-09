@@ -653,12 +653,14 @@ export function ProductDetailPage({
 
               <div>
                 <Label className="text-sm">Số điện thoại <span className="text-red-500">*</span></Label>
-                <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Nhập SĐT đã từng mua để được giảm giá" inputMode="tel" className={`h-11 text-base ${attempted && !customerPhone.trim() ? 'border-red-400 ring-red-400' : ''}`} />
+                <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Nhập số điện thoại" inputMode="tel" className={`h-11 text-base ${attempted && !customerPhone.trim() ? 'border-red-400 ring-red-400' : ''}`} />
+                <p className="text-xs text-muted-foreground mt-1">Nhập SĐT đã từng mua hàng để được ưu đãi</p>
               </div>
 
               <div>
-                <Label className="text-sm flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> Email <span className="text-muted-foreground text-xs">(nhận thông tin đơn hàng)</span></Label>
-                <Input value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder="Nhập đúng email để nhận thông tin đơn hàng" inputMode="email" type="email" className="h-11 text-base" />
+                <Label className="text-sm flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> Email</Label>
+                <Input value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder="Nhập email" inputMode="email" type="email" className="h-11 text-base" />
+                <p className="text-xs text-muted-foreground mt-1">Nhập đúng mail để nhận thông tin đơn hàng và bảo hành</p>
               </div>
 
               <div>
