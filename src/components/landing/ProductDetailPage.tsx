@@ -1088,6 +1088,7 @@ export function ProductDetailPage({
         confirmMessengerUrl={paymentConfig?.confirmMessengerUrl}
         branches={branches}
         isSubmitting={placeOrder.isPending}
+        onNavigateOrderLookup={onNavigateOrderLookup}
         onPlaceOrder={async (data) => {
           if (uses2LevelVariants && variantOptions1.length > 0 && !selectedOption1) {
             toast.error(`Vui lòng chọn ${product.variant_group_1_name || 'biến thể'}`);
