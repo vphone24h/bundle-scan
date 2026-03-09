@@ -40,6 +40,7 @@ interface PaymentFlowDialogProps {
   onPlaceOrder: (data: {
     customer_name: string;
     customer_phone: string;
+    customer_email?: string;
     customer_address?: string;
     note?: string;
     branch_id: string;
