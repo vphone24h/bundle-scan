@@ -346,19 +346,35 @@ export function DebtDetailDialog({
                   };
                 });
 
+                // Include payment entries to calculate actual remaining balance
+                const paymentEntries = (paymentHistory || [])
+                  .filter(p => p.payment_type === 'payment')
+                  .map(p => ({
+                    id: p.id,
+                    type: 'payment' as const,
+                    date: p.created_at,
+                    sortDate: new Date(p.created_at).getTime(),
+                    amount: Number(p.amount),
+                    description: p.description,
+                    createdBy: p.profiles?.display_name || null,
+                  }));
+
                 // Merge and sort by date ascending for running balance
                 const allItems = [
                   ...receiptRows.map(r => ({ ...r, sortDate: new Date(r.date).getTime() })),
                   ...debtAdditions.map(a => ({ ...a, sortDate: new Date(a.date).getTime() })),
+                  ...paymentEntries,
                 ].sort((a, b) => a.sortDate - b.sortDate);
 
-                // Calculate running balance (oldest to newest)
+                // Calculate running balance (oldest to newest) - includes payments as deductions
                 let runningBalance = 0;
                 const itemsWithBalance = allItems.map(item => {
                   if (item.type === 'order') {
                     runningBalance += (item as any).originalDebt;
-                  } else {
+                  } else if (item.type === 'addition') {
                     runningBalance += (item as any).amount;
+                  } else if (item.type === 'payment') {
+                    runningBalance -= (item as any).amount;
                   }
                   return { ...item, runningBalance };
                 });
@@ -368,6 +384,7 @@ export function DebtDetailDialog({
 
                 const filteredItems = onlyShowDebt
                   ? sortedItems.filter(item => {
+                      if (item.type === 'payment') return true; // Always show payments for balance context
                       if (item.type === 'addition') return !(item as any).isFullyPaid;
                       return (item as any).originalDebt > 0;
                     })
@@ -416,6 +433,37 @@ export function DebtDetailDialog({
                               <span className={`font-semibold ${r.isFullyPaid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
                                 {formatNumber(r.originalDebt)}
                                 {r.isFullyPaid && <span className="text-xs ml-1">✓</span>}
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1 pt-1 border-t border-dashed">
+                              Dư nợ tại thời điểm: <span className="font-semibold text-foreground">{formatNumber((item as any).runningBalance)}</span>
+                            </div>
+                          </div>
+                        );
+                      } else if (item.type === 'payment') {
+                        const p = item as typeof paymentEntries[0];
+                        return (
+                          <div
+                            key={p.id}
+                            className="border border-green-200 rounded-lg p-3 bg-green-50/50 dark:border-green-900 dark:bg-green-950/30"
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="outline" className="text-xs bg-green-100 text-green-700 border-green-300 dark:bg-green-900/50 dark:text-green-300">
+                                Trả nợ
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(p.date), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                              <div>
+                                <p className="truncate text-muted-foreground">{p.description}</p>
+                                {p.createdBy && (
+                                  <p className="text-xs text-muted-foreground">Người thu: {p.createdBy}</p>
+                                )}
+                              </div>
+                              <span className="font-semibold shrink-0 text-green-600 dark:text-green-400">
+                                -{formatNumber(p.amount)}
                               </span>
                             </div>
                             <div className="text-xs text-muted-foreground mt-1 pt-1 border-t border-dashed">
