@@ -100,76 +100,96 @@
     
     <!-- PWA store init - runs async, doesn't block render -->
     <script>
-      // Only run for store pages - use requestIdleCallback to not block main thread
+      // Pre-fetch store data so React hooks can use it immediately (no re-fetch)
       (function(){
-        var run = function() {
-          var p = location.pathname;
-          var h = location.hostname;
-          var isStore = p.indexOf('/store/') === 0;
-          var isSubdomain = h !== 'bundle-scan.lovable.app' && h !== 'localhost' && h !== 'vkho.vn' && h !== 'www.vkho.vn' && !h.endsWith('.lovable.app') && !h.endsWith('.lovableproject.com');
-          
-          if (!isStore && !isSubdomain) return;
-          
-          var m = document.getElementById('static-manifest');
-          if (m) m.remove();
-          
-          var supaUrl = 'https://rodpbhesrwykmpywiiyd.supabase.co';
-          var anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZHBiaGVzcnd5a21weXdpaXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MjM4MDMsImV4cCI6MjA4NDk5OTgwM30.P7Kc0pxkUdyHi8AgDBlRmPqxg0MWr2C_J_EUqORQY_s';
-          var hdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' };
-          
-          var storeId = isStore ? p.split('/')[2] : (h.endsWith('.vkho.vn') ? h.replace('.vkho.vn','') : h.split('.').slice(0,-1).join('.') || h);
-          var titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
-          if (titleMeta && storeId) titleMeta.setAttribute('content', storeId);
-          if (storeId) document.title = storeId;
-
-          function setIcon(url) {
-            if (!url) return;
-            var a = document.getElementById('static-apple-icon');
-            if (a) a.href = url;
-            var f = document.getElementById('static-favicon');
-            if (f) f.href = url;
-          }
-          function setTitle(name) {
-            if (!name) return;
-            document.title = name;
-            if (titleMeta) titleMeta.setAttribute('content', name);
-          }
-
-          var resolvePromise;
-          if (isSubdomain) {
-            resolvePromise = fetch(supaUrl + '/rest/v1/rpc/resolve_tenant_by_domain', {
-              method: 'POST', headers: hdrs,
-              body: JSON.stringify({ _domain: h })
-            }).then(function(r) { return r.json(); });
-          } else {
-            resolvePromise = fetch(supaUrl + '/rest/v1/rpc/lookup_tenant_by_subdomain', {
-              method: 'POST', headers: hdrs,
-              body: JSON.stringify({ _subdomain: storeId })
-            }).then(function(r) { return r.json(); }).then(function(data) {
-              if (data && data.length > 0) { setTitle(data[0].name); return data[0].id; }
-              return data && data.id ? (setTitle(data.name), data.id) : null;
-            });
-          }
-
-          resolvePromise.then(function(tenantId) {
-            if (!tenantId) return;
-            return fetch(supaUrl + '/rest/v1/tenant_landing_settings?tenant_id=eq.' + tenantId + '&select=store_logo_url,store_name&is_enabled=eq.true', {
-              headers: { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey }
-            }).then(function(r) { return r.json(); }).then(function(s) {
-              if (s && s.length > 0) {
-                setIcon(s[0].store_logo_url);
-                setTitle(s[0].store_name);
-              }
-            });
-          }).catch(function() {});
-        };
+        window.__STORE_PREFETCH__ = {};
+        var p = location.pathname;
+        var h = location.hostname;
+        var isStore = p.indexOf('/store/') === 0;
+        var isSubdomain = h !== 'bundle-scan.lovable.app' && h !== 'localhost' && h !== 'vkho.vn' && h !== 'www.vkho.vn' && !h.endsWith('.lovable.app') && !h.endsWith('.lovableproject.com');
         
-        // Run after main thread is idle to not block React render
-        if ('requestIdleCallback' in window) {
-          requestIdleCallback(run, { timeout: 1000 });
-        } else {
-          setTimeout(run, 100);
+        if (!isStore && !isSubdomain) return;
+        
+        var m = document.getElementById('static-manifest');
+        if (m) m.remove();
+        
+        var supaUrl = 'https://rodpbhesrwykmpywiiyd.supabase.co';
+        var anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZHBiaGVzcnd5a21weXdpaXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MjM4MDMsImV4cCI6MjA4NDk5OTgwM30.P7Kc0pxkUdyHi8AgDBlRmPqxg0MWr2C_J_EUqORQY_s';
+        var hdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' };
+        var getHdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey };
+        
+        var storeId = isStore ? p.split('/')[2] : (h.endsWith('.vkho.vn') ? h.replace('.vkho.vn','') : h.split('.').slice(0,-1).join('.') || h);
+        var titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+        if (titleMeta && storeId) titleMeta.setAttribute('content', storeId);
+        if (storeId) document.title = storeId;
+        window.__STORE_PREFETCH__.storeId = storeId;
+        window.__STORE_PREFETCH__.isSubdomain = isSubdomain;
+
+        function setIcon(url) {
+          if (!url) return;
+          var a = document.getElementById('static-apple-icon');
+          if (a) a.href = url;
+          var f = document.getElementById('static-favicon');
+          if (f) f.href = url;
         }
+        function setTitle(name) {
+          if (!name) return;
+          document.title = name;
+          if (titleMeta) titleMeta.setAttribute('content', name);
+        }
+
+        // Fetch all store data in parallel once we have tenantId
+        function fetchStoreData(tenantId) {
+          window.__STORE_PREFETCH__.tenantId = tenantId;
+          // Fetch settings, products, articles, branches ALL IN PARALLEL
+          var settingsP = fetch(supaUrl + '/rest/v1/tenant_landing_settings?tenant_id=eq.' + tenantId + '&is_enabled=eq.true&select=*&limit=1', { headers: getHdrs }).then(function(r) { return r.json(); });
+          var productsP = fetch(supaUrl + '/rest/v1/landing_products?tenant_id=eq.' + tenantId + '&is_active=eq.true&order=display_order&select=*', { headers: getHdrs }).then(function(r) { return r.json(); });
+          var categoriesP = fetch(supaUrl + '/rest/v1/landing_product_categories?tenant_id=eq.' + tenantId + '&is_hidden=eq.false&order=display_order.asc,created_at.desc&select=*', { headers: getHdrs }).then(function(r) { return r.json(); });
+          var articlesP = fetch(supaUrl + '/rest/v1/landing_articles?tenant_id=eq.' + tenantId + '&is_published=eq.true&order=display_order&select=*', { headers: getHdrs }).then(function(r) { return r.json(); });
+          var artCatsP = fetch(supaUrl + '/rest/v1/landing_article_categories?tenant_id=eq.' + tenantId + '&is_visible=eq.true&order=display_order&select=*', { headers: getHdrs }).then(function(r) { return r.json(); });
+          var branchesP = fetch(supaUrl + '/rest/v1/rpc/get_tenant_branches', { method: 'POST', headers: hdrs, body: JSON.stringify({ _tenant_id: tenantId }) }).then(function(r) { return r.json(); });
+
+          // Store the promise so React can await it
+          window.__STORE_PREFETCH__.dataPromise = Promise.all([settingsP, productsP, categoriesP, articlesP, artCatsP, branchesP]).then(function(results) {
+            var settings = results[0] && results[0].length > 0 ? results[0][0] : null;
+            if (settings) {
+              setIcon(settings.store_logo_url);
+              setTitle(settings.store_name);
+            }
+            var data = {
+              settings: settings,
+              products: results[1] || [],
+              productCategories: results[2] || [],
+              articles: results[3] || [],
+              articleCategories: results[4] || [],
+              branches: results[5] || [],
+            };
+            window.__STORE_PREFETCH__.data = data;
+            return data;
+          });
+        }
+
+        var resolvePromise;
+        if (isSubdomain && !h.endsWith('.vkho.vn')) {
+          resolvePromise = fetch(supaUrl + '/rest/v1/rpc/resolve_tenant_by_domain', {
+            method: 'POST', headers: hdrs,
+            body: JSON.stringify({ _domain: h })
+          }).then(function(r) { return r.json(); });
+        } else {
+          resolvePromise = fetch(supaUrl + '/rest/v1/rpc/lookup_tenant_by_subdomain', {
+            method: 'POST', headers: hdrs,
+            body: JSON.stringify({ _subdomain: storeId })
+          }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data && data.length > 0) { setTitle(data[0].name); window.__STORE_PREFETCH__.tenant = data[0]; return data[0].id; }
+            if (data && data.id) { setTitle(data.name); window.__STORE_PREFETCH__.tenant = data; return data.id; }
+            return null;
+          });
+        }
+
+        resolvePromise.then(function(tenantId) {
+          if (!tenantId) return;
+          fetchStoreData(tenantId);
+        }).catch(function() {});
       })();
     </script>
     
