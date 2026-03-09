@@ -168,6 +168,49 @@ export default function ExportNewPage() {
       setAutoEmailEnabled(true);
     }
   }, [landingSettings?.order_email_on_export]);
+
+  // Prefill from landing order (sessionStorage)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('export_prefill');
+      if (!raw) return;
+      sessionStorage.removeItem('export_prefill');
+      const prefill = JSON.parse(raw);
+      
+      // Prefill customer
+      if (prefill.customer) {
+        setCustomerName(prefill.customer.name || '');
+        setCustomerPhone(prefill.customer.phone || '');
+        setCustomerEmail(prefill.customer.email || '');
+        setCustomerAddress(prefill.customer.address || '');
+      }
+
+      // Prefill product into cart
+      if (prefill.product) {
+        const p = prefill.product;
+        const newItem: CartItem = {
+          tempId: `prefill-${Date.now()}`,
+          product_id: p.id,
+          product_name: p.name,
+          imei: p.imei || null,
+          import_price: p.import_price || 0,
+          sale_price: p.sale_price || 0,
+          category_id: p.category_id || null,
+          branch_id: p.branch_id || null,
+          note: null,
+          status: 'sold' as const,
+          categoryName: p.categoryName,
+          branchName: p.branchName,
+          quantity: 1,
+          warranty: '',
+        };
+        setCart([newItem]);
+        setSalePrice(String(p.sale_price || 0));
+      }
+    } catch (e) {
+      console.warn('Failed to parse export_prefill:', e);
+    }
+  }, []);
   
   // Get branch_id from first cart item for invoice template
   const cartBranchId = cart.find(item => item.branch_id)?.branch_id || null;
