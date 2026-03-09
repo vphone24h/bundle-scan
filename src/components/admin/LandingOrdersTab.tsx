@@ -155,7 +155,7 @@ export function LandingOrdersTab() {
   const { data: staffList } = useStaffList(userBranchId, isSuperAdmin);
 
   const filterBranchId = isSuperAdmin ? null : userBranchId;
-  const { data: orders, isLoading } = useLandingOrders(filterBranchId);
+  const { data: orders, isLoading, refetch } = useLandingOrders(filterBranchId);
   const updateOrder = useUpdateLandingOrder();
   const searchProducts = useSearchProductsByName();
   const checkProduct = useCheckProductForSale();
