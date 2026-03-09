@@ -37,6 +37,7 @@ interface ContactFormDialogProps extends CTADialogProps {
   showMessage?: boolean;
   notePrefix?: string;
   actionType?: string;
+  onNavigateOrderLookup?: () => void;
 }
 
 export function ContactFormDialog({
