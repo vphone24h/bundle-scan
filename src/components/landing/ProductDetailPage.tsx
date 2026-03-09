@@ -684,7 +684,7 @@ export function ProductDetailPage({
                     min={1}
                     value={quantity}
                     onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="h-11 text-base text-center w-20"
+                    className="h-11 text-base text-center w-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <Button type="button" variant="outline" size="icon" className="h-11 w-11 text-lg"
                     onClick={() => setQuantity(quantity + 1)}>+</Button>
