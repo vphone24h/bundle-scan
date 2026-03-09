@@ -408,8 +408,12 @@ export function LandingOrdersTab() {
         <>
           {/* Bulk action bar */}
           {selectedIds.size > 0 && (
-            <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+            <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-lg flex-wrap">
               <span className="text-sm font-medium">Đã chọn {selectedIds.size} đơn</span>
+              <Button size="sm" className="gap-1" variant="outline" onClick={() => { setBulkAssignOpen(true); setBulkAssignStaffId(''); }} disabled={updateOrder.isPending}>
+                <UserPlus className="h-3.5 w-3.5" />
+                Phân công NV
+              </Button>
               <Button size="sm" className="gap-1" onClick={handleBulkShipToCarrier} disabled={updateOrder.isPending}>
                 {updateOrder.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
                 <Truck className="h-3.5 w-3.5" />
