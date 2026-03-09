@@ -40,7 +40,7 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
     if (hostInfo.isMainDomain) {
       const result: ResolvedTenant = {
         tenantId: null,
-        subdomain: hostInfo.subdomain, // Could be null or from ?store= param
+        subdomain: hostInfo.subdomain,
         tenantName: null,
         status: 'main_domain',
         isMainDomain: true,
@@ -48,6 +48,31 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
       cachedResult = result;
       cacheHostname = hostname;
       return result;
+    }
+
+    // FAST PATH: Check if inline script already resolved the tenant
+    const prefetch = (window as any).__STORE_PREFETCH__;
+    if (prefetch) {
+      // Wait for prefetch data if it's in progress
+      if (prefetch.dataPromise && !prefetch.data) {
+        try {
+          await prefetch.dataPromise;
+        } catch {}
+      }
+      const tenantId = prefetch.tenantId;
+      const tenant = prefetch.tenant;
+      if (tenantId) {
+        const result: ResolvedTenant = {
+          tenantId,
+          subdomain: tenant?.subdomain || prefetch.storeId || null,
+          tenantName: tenant?.name || null,
+          status: 'resolved',
+          isMainDomain: false,
+        };
+        cachedResult = result;
+        cacheHostname = hostname;
+        return result;
+      }
     }
     
     // Has subdomain - resolve tenant
@@ -98,7 +123,6 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
     
     // Custom domain case - resolve via custom_domains table
     try {
-      // Use resolve_tenant_by_domain RPC for custom domains
       const { data: tenantId, error } = await supabase
         .rpc('resolve_tenant_by_domain', { _domain: hostInfo.hostname });
       
@@ -115,9 +139,6 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
         return result;
       }
       
-      // Custom domain resolved - return with tenantId
-      // Don't query tenants table directly (RLS blocks anon users)
-      // usePublicLandingSettings will fetch tenant info via SECURITY DEFINER RPC
       const result: ResolvedTenant = {
         tenantId: tenantId,
         subdomain: null,
