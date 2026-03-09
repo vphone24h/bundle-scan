@@ -513,7 +513,8 @@ export function LandingOrdersTab() {
                 <UserPlus className="h-3.5 w-3.5" />
                 Phân công NV
               </Button>
-              <Button size="sm" className="gap-1" onClick={() => setBulkConfirmOpen(true)} disabled={updateOrder.isPending}>
+              <Button size="sm" className="gap-1" onClick={handleBulkConfirm} disabled={updateOrder.isPending}>
+                {updateOrder.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
                 <CheckCircle className="h-3.5 w-3.5" />
                 Xác nhận hàng loạt
               </Button>
