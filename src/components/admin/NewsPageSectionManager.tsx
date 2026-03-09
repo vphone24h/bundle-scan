@@ -8,6 +8,7 @@ import { SYSTEM_PAGES } from '@/lib/industryConfig';
 export interface NewsPageSectionItem {
   id: string;
   enabled: boolean;
+  displayMode?: 'horizontal' | 'vertical';
 }
 
 const NEWS_PAGE_SECTIONS: { id: string; label: string; icon: string; description: string }[] = [
