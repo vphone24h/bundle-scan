@@ -113,11 +113,13 @@ export function ContactFormDialog({
             </div>
             <div>
               <Label className="text-sm">Số điện thoại <span className="text-destructive">*</span></Label>
-              <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Nhập SĐT đã từng mua để được giảm giá" inputMode="tel" className="h-11 text-base" />
+              <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Nhập số điện thoại" inputMode="tel" className="h-11 text-base" />
+              <p className="text-xs text-muted-foreground mt-1">Nhập SĐT đã từng mua hàng để được ưu đãi</p>
             </div>
             <div>
               <Label className="text-sm">Email {requireEmail && <span className="text-destructive">*</span>}</Label>
-              <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập đúng email để nhận thông tin đơn hàng" type="email" inputMode="email" className="h-11 text-base" />
+              <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập email" type="email" inputMode="email" className="h-11 text-base" />
+              <p className="text-xs text-muted-foreground mt-1">Nhập đúng mail để nhận thông tin đơn hàng và bảo hành</p>
             </div>
             <div>
               <Label className="text-sm">Chi nhánh <span className="text-destructive">*</span></Label>
