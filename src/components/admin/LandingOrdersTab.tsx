@@ -551,6 +551,39 @@ export function LandingOrdersTab() {
           </DialogHeader>
           {detailOrder && (
             <div className="space-y-4">
+              {/* Delivery status timeline */}
+              {detailOrder.status !== 'cancelled' && (
+                <div className="bg-muted/30 rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Tiến trình đơn hàng</p>
+                  <div className="flex items-center gap-0">
+                    {DELIVERY_STEPS.map((step, i) => {
+                      const currentIdx = getDeliveryStepIndex(detailOrder.status, detailOrder.delivery_status);
+                      const active = i <= currentIdx;
+                      return (
+                        <div key={step.key} className="flex items-center flex-1">
+                          <div className="flex flex-col items-center flex-1">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                              {i + 1}
+                            </div>
+                            <span className={`text-[9px] mt-1 text-center leading-tight ${active ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                              {step.label}
+                            </span>
+                          </div>
+                          {i < DELIVERY_STEPS.length - 1 && (
+                            <div className={`h-0.5 w-full mt-[-14px] ${i < currentIdx ? 'bg-primary' : 'bg-muted'}`} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {detailOrder.status === 'cancelled' && (
+                <div className="bg-destructive/10 rounded-lg p-3 text-center">
+                  <Badge variant="destructive">Đơn hàng đã bị hủy</Badge>
+                </div>
+              )}
+
               {/* Product info */}
               <div className="flex gap-3">
                 {detailOrder.product_image_url ? (
@@ -591,7 +624,6 @@ export function LandingOrdersTab() {
                   <span className="text-muted-foreground">Ngày đặt:</span>
                   <span>{format(new Date(detailOrder.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}</span>
                 </div>
-                {/* Action type */}
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Loại yêu cầu:</span>
                   <Badge variant="outline" className="text-xs">
@@ -608,7 +640,6 @@ export function LandingOrdersTab() {
                     </span>
                   </div>
                 )}
-                {/* Nguồn đơn */}
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Nguồn:</span>
                   {(() => {
@@ -643,7 +674,6 @@ export function LandingOrdersTab() {
                     <p className="mt-1 bg-muted/50 rounded p-2 text-sm">{detailOrder.note}</p>
                   </div>
                 )}
-                {/* Payment method */}
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Thanh toán:</span>
                   <Badge variant="secondary" className={`text-xs ${(detailOrder as any).payment_method === 'transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
@@ -664,7 +694,7 @@ export function LandingOrdersTab() {
                 {detailOrder.cancelled_reason && (
                   <div>
                     <span className="text-muted-foreground">Lý do hủy:</span>
-                    <p className="mt-1 bg-red-50 rounded p-2 text-sm text-red-700">{detailOrder.cancelled_reason}</p>
+                    <p className="mt-1 bg-destructive/10 rounded p-2 text-sm text-destructive">{detailOrder.cancelled_reason}</p>
                   </div>
                 )}
               </div>
@@ -674,15 +704,20 @@ export function LandingOrdersTab() {
                 <Button variant="outline" className="flex-1 gap-2" asChild>
                   <a href={`tel:${detailOrder.customer_phone}`}><Phone className="h-4 w-4" />Gọi khách</a>
                 </Button>
-                {detailOrder.status === 'pending' && (
-                  <>
-                    <Button className="flex-1" onClick={() => { handleApprove(detailOrder); setDetailOrder(null); }}>
-                      Duyệt đơn
+                {detailOrder.status !== 'cancelled' && (() => {
+                  const action = getNextDeliveryAction(detailOrder.status, detailOrder.delivery_status);
+                  if (!action) return null;
+                  return (
+                    <Button className="flex-1 gap-1" onClick={() => { handleNextDeliveryStep(detailOrder); setDetailOrder(null); }}>
+                      {action.label}
+                      <ChevronRight className="h-4 w-4" />
                     </Button>
-                    <Button variant="destructive" onClick={() => { setCancelDialogOrder(detailOrder); setDetailOrder(null); }}>
-                      Hủy
-                    </Button>
-                  </>
+                  );
+                })()}
+                {detailOrder.status !== 'cancelled' && getDeliveryStepIndex(detailOrder.status, detailOrder.delivery_status) < 3 && (
+                  <Button variant="destructive" onClick={() => { setCancelDialogOrder(detailOrder); setDetailOrder(null); }}>
+                    Hủy
+                  </Button>
                 )}
               </div>
             </div>
