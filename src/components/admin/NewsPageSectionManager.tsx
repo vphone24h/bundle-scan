@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
-import { ChevronUp, ChevronDown, RotateCcw, Plus, Pencil, Trash2, X } from 'lucide-react';
+import { ChevronUp, ChevronDown, RotateCcw, Plus, Pencil, Trash2, X, ArrowLeftRight, ArrowDownUp } from 'lucide-react';
 import { SYSTEM_PAGES } from '@/lib/industryConfig';
 
 export interface NewsPageSectionItem {
