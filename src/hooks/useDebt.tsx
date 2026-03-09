@@ -36,6 +36,7 @@ export interface DebtPayment {
   branch_id: string | null;
   created_by: string | null;
   created_at: string;
+  balance_after: number | null;
   // Joined
   profiles?: { display_name: string } | null;
   branches?: { name: string } | null;
