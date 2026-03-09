@@ -171,9 +171,8 @@ export function LandingOrdersTab() {
 
   const handleApprove = async (order: LandingOrder) => {
     try {
-      await updateOrder.mutateAsync({ id: order.id, status: 'approved', approved_at: new Date().toISOString() });
-      toast.success('Đã duyệt đơn hàng');
-      // Fire-and-forget: send confirmation email
+      await updateOrder.mutateAsync({ id: order.id, status: 'approved', delivery_status: 'confirmed', approved_at: new Date().toISOString() } as any);
+      toast.success('Đã xác nhận đơn hàng');
       if (order.customer_email) {
         supabase.functions.invoke('send-order-email', {
           body: {
@@ -192,7 +191,19 @@ export function LandingOrdersTab() {
           },
         }).catch(err => console.warn('Order confirmed email failed:', err));
       }
-    } catch { toast.error('Lỗi khi duyệt đơn'); }
+    } catch { toast.error('Lỗi khi xác nhận đơn'); }
+  };
+
+  const handleNextDeliveryStep = async (order: LandingOrder) => {
+    const action = getNextDeliveryAction(order.status, order.delivery_status);
+    if (!action) return;
+    try {
+      const updates: any = { id: order.id };
+      if (action.nextStatus) updates.status = action.nextStatus;
+      if (action.nextDelivery) updates.delivery_status = action.nextDelivery;
+      await updateOrder.mutateAsync(updates);
+      toast.success(`Đã chuyển: ${action.label}`);
+    } catch { toast.error('Lỗi cập nhật trạng thái'); }
   };
 
   const handleCancel = async () => {
