@@ -391,6 +391,7 @@ export function PaymentFlowDialog({
               </div>
 
               <div>
+                <Label className="text-sm flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5" />
                   Địa chỉ giao hàng
                   {paymentMethod === 'cod' && <span className="text-red-500">*</span>}
