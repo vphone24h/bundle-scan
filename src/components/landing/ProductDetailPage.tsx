@@ -672,6 +672,25 @@ export function ProductDetailPage({
                 </select>
               </div>
 
+              {/* Quantity */}
+              <div>
+                <Label className="text-sm">Số lượng</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Button type="button" variant="outline" size="icon" className="h-11 w-11 text-lg"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1}>−</Button>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    value={quantity}
+                    onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="h-11 text-base text-center w-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <Button type="button" variant="outline" size="icon" className="h-11 w-11 text-lg"
+                    onClick={() => setQuantity(quantity + 1)}>+</Button>
+                </div>
+              </div>
+
               {/* Voucher & Points */}
               {debouncedPhone && (
                 <div className="space-y-2 border rounded-lg p-3 bg-gray-50">
@@ -742,11 +761,21 @@ export function ProductDetailPage({
                     <span>{getVariantLabel()}</span>
                   </div>
                 )}
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Số lượng:</span>
+                  <span>{quantity}</span>
+                </div>
+                {quantity > 1 && (
+                  <div className="flex justify-between text-gray-400">
+                    <span>Đơn giá:</span>
+                    <span>{formatNumber(displayPrice)}đ</span>
+                  </div>
+                )}
                 {totalDiscount > 0 && (
                   <>
                     <div className="flex justify-between text-gray-400">
                       <span>Giá gốc:</span>
-                      <span>{formatNumber(basePrice)}đ</span>
+                      <span>{formatNumber(basePrice * quantity)}đ</span>
                     </div>
                     <div className="flex justify-between text-green-600">
                       <span>{selectedVoucher ? `Voucher (${selectedVoucher.code})` : 'Điểm tích lũy'}:</span>
@@ -756,7 +785,7 @@ export function ProductDetailPage({
                 )}
                 <div className="flex justify-between font-bold pt-1.5 border-t">
                   <span>Tổng:</span>
-                  <span style={{ color: primaryColor }}>{formatNumber(displayPrice)}đ</span>
+                  <span style={{ color: primaryColor }}>{formatNumber(displayPrice * quantity)}đ</span>
                 </div>
               </div>
 
