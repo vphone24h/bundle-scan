@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Gift, Star, Ticket, Link2, CreditCard, Shield } from 'lucide-react';
+import { Package, Phone, ShoppingCart, CheckCircle2, Loader2, ChevronLeft, ChevronRight, Gift, Star, Ticket, Link2, CreditCard, Shield, Search } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import DOMPurify from 'dompurify';
 import { LandingProduct, LandingProductVariant, VariantPriceEntry } from '@/hooks/useLandingProducts';
@@ -29,6 +29,7 @@ interface ProductDetailDialogProps {
   warrantyHotline?: string | null;
   onShare?: () => void;
   onInstallment?: () => void;
+  onNavigateOrderLookup?: () => void;
   showPromotionSection?: boolean;
   showWarrantySection?: boolean;
   showInstallmentButton?: boolean;
@@ -36,7 +37,7 @@ interface ProductDetailDialogProps {
 
 export function ProductDetailDialog({
   product, open, onOpenChange, tenantId, branches, primaryColor,
-  warrantyHotline, onShare, onInstallment,
+  warrantyHotline, onShare, onInstallment, onNavigateOrderLookup,
   showPromotionSection = true,
   showWarrantySection = true,
   showInstallmentButton = true,
@@ -482,6 +483,16 @@ export function ProductDetailDialog({
                   <Phone className="h-4 w-4" />
                   Gọi ngay: {warrantyHotline}
                 </a>
+              )}
+              {onNavigateOrderLookup && (
+                <Button
+                  variant="outline"
+                  className="w-full h-11 mt-1"
+                  onClick={() => { handleClose(false); onNavigateOrderLookup(); }}
+                  style={{ borderColor: primaryColor, color: primaryColor }}
+                >
+                  <Search className="h-4 w-4 mr-1.5" /> Kiểm tra đơn hàng
+                </Button>
               )}
               <Button variant="outline" className="w-full mt-2" onClick={() => handleClose(false)}>Đóng</Button>
             </div>
