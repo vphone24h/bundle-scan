@@ -30,14 +30,44 @@ function LogoBlock({ logoUrl, storeName, onClick }: { logoUrl?: string | null; s
 
 // === Sticky Top Nav Bar (always visible, horizontal scroll) ===
 function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass, inactiveClass }: { navItems: HeaderProps['navItems']; onNavClick: HeaderProps['onNavClick']; isNavActive: HeaderProps['isNavActive']; accentColor?: string; activeClass?: string; inactiveClass?: string }) {
+  const touchStartRef = React.useRef<{ x: number; y: number; time: number } | null>(null);
+  const isDraggingRef = React.useRef(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+    isDraggingRef.current = false;
+  };
+
+  const handleTouchMove = () => {
+    if (touchStartRef.current) {
+      isDraggingRef.current = true;
+    }
+  };
+
+  const handleButtonClick = (item: HeaderProps['navItems'][number], e: React.MouseEvent) => {
+    // On touch devices, prevent click if user was swiping
+    if (isDraggingRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    onNavClick(item);
+  };
+
   return (
-    <div className="overflow-x-auto scrollbar-hide border-t border-black/5" style={{ WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' }}>
+    <div
+      className="overflow-x-auto scrollbar-hide border-t border-black/5"
+      style={{ WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+    >
       <div className="flex items-center gap-1.5 px-3 py-2 min-w-max will-change-transform">
         {navItems.map(item => (
           <button
             key={item.id}
-            onClick={() => onNavClick(item)}
-            className={`shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full transition-all flex items-center gap-1.5 ${
+            onClick={(e) => handleButtonClick(item, e)}
+            className={`shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full transition-all flex items-center gap-1.5 touch-manipulation ${
               isNavActive(item) ? (activeClass || 'text-white') : (inactiveClass || 'hover:bg-black/5 text-foreground/70')
             }`}
             style={isNavActive(item) && accentColor ? { backgroundColor: accentColor } : {}}
