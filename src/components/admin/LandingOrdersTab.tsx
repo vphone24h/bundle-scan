@@ -25,6 +25,40 @@ const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = 
   cancelled: { label: 'Đã hủy', color: 'bg-red-100 text-red-800', icon: XCircle },
 };
 
+const DELIVERY_STEPS = [
+  { key: 'pending', label: 'Chờ xác nhận' },
+  { key: 'confirmed', label: 'Đã xác nhận' },
+  { key: 'preparing', label: 'Đang chuẩn bị' },
+  { key: 'shipped', label: 'Đã giao ĐVVC' },
+  { key: 'delivering', label: 'Đang giao' },
+  { key: 'delivered', label: 'Giao thành công' },
+];
+
+function getDeliveryStepIndex(status: string, deliveryStatus: string | null): number {
+  if (status === 'cancelled') return -1;
+  if (status === 'pending') return 0;
+  if (status === 'approved' || status === 'confirmed') {
+    if (!deliveryStatus || deliveryStatus === 'pending') return 1;
+    const map: Record<string, number> = { confirmed: 1, preparing: 2, shipped: 3, delivering: 4, delivered: 5 };
+    return map[deliveryStatus] ?? 1;
+  }
+  return 0;
+}
+
+function getNextDeliveryAction(status: string, deliveryStatus: string | null): { label: string; nextStatus?: string; nextDelivery?: string } | null {
+  if (status === 'cancelled') return null;
+  if (status === 'pending') return { label: 'Xác nhận', nextStatus: 'approved', nextDelivery: 'confirmed' };
+  const step = getDeliveryStepIndex(status, deliveryStatus);
+  if (step >= 5) return null; // delivered
+  const nextMap: Record<number, { label: string; nextDelivery: string }> = {
+    1: { label: 'Chuẩn bị hàng', nextDelivery: 'preparing' },
+    2: { label: 'Giao cho ĐVVC', nextDelivery: 'shipped' },
+    3: { label: 'Đang giao', nextDelivery: 'delivering' },
+    4: { label: 'Đã giao', nextDelivery: 'delivered' },
+  };
+  return nextMap[step] || null;
+}
+
 const CALL_STATUS_MAP: Record<string, { label: string; color: string }> = {
   none: { label: 'Chưa gọi', color: 'bg-muted text-muted-foreground' },
   called: { label: 'Đã gọi', color: 'bg-green-100 text-green-700' },
