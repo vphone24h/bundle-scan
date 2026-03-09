@@ -114,7 +114,15 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
       }
       const { data, error } = await query;
       if (error) throw error;
-      setOrders((data || []) as unknown as LandingOrderResult[]);
+      const now = Date.now();
+      const TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
+      const results = ((data || []) as unknown as LandingOrderResult[]).map(o => {
+        if ((o.status === 'approved') && o.delivery_status === 'shipped' && o.created_at && now - new Date(o.created_at).getTime() > TWO_DAYS) {
+          return { ...o, delivery_status: 'delivering' };
+        }
+        return o;
+      });
+      setOrders(results);
     } catch {
       setOrders([]);
     } finally {
