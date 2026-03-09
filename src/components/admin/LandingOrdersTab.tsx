@@ -369,170 +369,193 @@ export function LandingOrdersTab() {
           <p>Chưa có đơn đặt hàng nào</p>
         </div>
       ) : (
-        <Card>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
+        <>
+          {/* Bulk action bar */}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+              <span className="text-sm font-medium">Đã chọn {selectedIds.size} đơn</span>
+              <Button size="sm" className="gap-1" onClick={handleBulkShipToCarrier} disabled={updateOrder.isPending}>
+                {updateOrder.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+                <Truck className="h-3.5 w-3.5" />
+                Giao ĐVVC
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>Bỏ chọn</Button>
+            </div>
+          )}
+
+          <Card>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={filtered.filter(o => o.status !== 'cancelled').length > 0 && filtered.filter(o => o.status !== 'cancelled').every(o => selectedIds.has(o.id))}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead>Thời gian</TableHead>
                     <TableHead>Hành động</TableHead>
                     <TableHead>Khách hàng</TableHead>
                     <TableHead>Sản phẩm</TableHead>
                     <TableHead>Thanh toán</TableHead>
-                  <TableHead>Nguồn</TableHead>
-                  <TableHead>Chi nhánh</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead>Liên hệ</TableHead>
-                  <TableHead>Phân công</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map(order => {
-                  const st = STATUS_MAP[order.status] || STATUS_MAP.pending;
-                  const cs = CALL_STATUS_MAP[order.call_status] || CALL_STATUS_MAP.none;
-                  return (
-                    <TableRow key={order.id} className="cursor-pointer" onClick={() => setDetailOrder(order)}>
-                      <TableCell className="text-xs whitespace-nowrap">
-                        {format(new Date(order.created_at), 'dd/MM/yy HH:mm', { locale: vi })}
-                      </TableCell>
-                      <TableCell>
-                        {(() => {
-                          const actionInfo = ACTION_TYPE_MAP[order.action_type || 'order'] || ACTION_TYPE_MAP.order;
-                          return (
-                            <div>
-                              <Badge variant="outline" className="text-[10px] whitespace-nowrap">
-                                {actionInfo.icon} {actionInfo.label}
-                              </Badge>
-                              {order.action_date && (
-                                <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-0.5">
-                                  <CalendarDays className="h-2.5 w-2.5" />
-                                  {order.action_date}{order.action_time ? ` ${order.action_time}` : ''}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium text-sm">{order.customer_name}</p>
-                          <p className="text-xs text-muted-foreground">{order.customer_phone}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="text-sm line-clamp-1">{order.product_name}</p>
-                          {order.variant && <Badge variant="outline" className="text-[10px] mt-0.5">{order.variant}</Badge>}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className={`text-[10px] ${(order as any).payment_method === 'transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                          {(order as any).payment_method === 'transfer' ? 'Chuyển khoản' : 'COD'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {(() => {
-                          const src = (order as any).order_source || 'web';
-                          const srcMap: Record<string, { label: string; icon: string; cls: string }> = {
-                            web: { label: 'Khách lẻ', icon: '🌐', cls: 'bg-muted text-muted-foreground' },
-                            ctv_direct: { label: 'CTV đặt', icon: '👤', cls: 'bg-blue-100 text-blue-700' },
-                            ctv_referral: { label: 'Khách CTV', icon: '🔗', cls: 'bg-purple-100 text-purple-700' },
-                          };
-                          const info = srcMap[src] || srcMap.web;
-                          return (
-                            <div>
-                              <Badge variant="outline" className={`text-[10px] ${info.cls}`}>
-                                {info.icon} {info.label}
-                              </Badge>
-                              {(order as any).ctv_name && (
-                                <p className="text-[10px] text-muted-foreground mt-0.5">{(order as any).ctv_name}</p>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </TableCell>
-                      <TableCell className="text-xs">{branchMap.get(order.branch_id) || '—'}</TableCell>
-                      <TableCell>
-                        {order.status === 'cancelled' ? (
-                          <Badge className="bg-red-100 text-red-800 text-[10px]" variant="secondary">Đã hủy</Badge>
-                        ) : (
-                          <div>
-                            <Badge className={`${st.color} text-[10px]`} variant="secondary">
-                              {DELIVERY_STEPS[getDeliveryStepIndex(order.status, order.delivery_status)]?.label || st.label}
-                            </Badge>
-                            <div className="flex items-center gap-0.5 mt-1">
-                              {DELIVERY_STEPS.map((_, i) => (
-                                <div key={i} className={`h-1 flex-1 rounded-full ${i <= getDeliveryStepIndex(order.status, order.delivery_status) ? 'bg-primary' : 'bg-muted'}`} />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className={`h-7 w-7 ${order.call_status === 'called' ? 'text-green-600 bg-green-50 hover:bg-green-100' : ''}`}
-                            title={order.call_status === 'called' ? 'Bỏ đánh dấu đã gọi' : 'Đánh dấu đã gọi'}
-                            onClick={e => handleToggleCallStatus(e, order)}
-                          >
-                            <PhoneCall className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className={`h-7 w-7 ${order.call_status === 'unreachable' ? 'text-red-600 bg-red-50 hover:bg-red-100' : ''}`}
-                            title={order.call_status === 'unreachable' ? 'Bỏ đánh dấu' : 'Không liên hệ được'}
-                            onClick={e => handleUnreachable(e, order)}
-                          >
-                            <PhoneOff className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell onClick={e => e.stopPropagation()}>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs gap-1"
-                          onClick={() => { setAssignDialogOrder(order); setSelectedStaffId(order.assigned_staff_id || ''); }}
-                        >
-                          <UserPlus className="h-3 w-3" />
-                          <span className="max-w-[60px] truncate">
-                            {order.assigned_staff_name || 'Phân công'}
-                          </span>
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-right" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1">
-                          <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
-                            <a href={`tel:${order.customer_phone}`}><Phone className="h-3.5 w-3.5" /></a>
-                          </Button>
-                          {order.status !== 'cancelled' && (() => {
-                            const action = getNextDeliveryAction(order.status, order.delivery_status);
-                            if (!action) return null;
+                    <TableHead>Nguồn</TableHead>
+                    <TableHead>Chi nhánh</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Liên hệ</TableHead>
+                    <TableHead>Phân công</TableHead>
+                    <TableHead className="text-right">Thao tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map(order => {
+                    const st = STATUS_MAP[order.status] || STATUS_MAP.pending;
+                    return (
+                      <TableRow key={order.id} className="cursor-pointer" onClick={() => setDetailOrder(order)}>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          {order.status !== 'cancelled' && (
+                            <Checkbox
+                              checked={selectedIds.has(order.id)}
+                              onCheckedChange={() => toggleSelect(order.id)}
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs whitespace-nowrap">
+                          {format(new Date(order.created_at), 'dd/MM/yy HH:mm', { locale: vi })}
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const actionInfo = ACTION_TYPE_MAP[order.action_type || 'order'] || ACTION_TYPE_MAP.order;
                             return (
-                              <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => handleNextDeliveryStep(order)}>
-                                {action.label}
-                                <ChevronRight className="h-3 w-3" />
-                              </Button>
+                              <div>
+                                <Badge variant="outline" className="text-[10px] whitespace-nowrap">
+                                  {actionInfo.icon} {actionInfo.label}
+                                </Badge>
+                                {order.action_date && (
+                                  <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-0.5">
+                                    <CalendarDays className="h-2.5 w-2.5" />
+                                    {order.action_date}{order.action_time ? ` ${order.action_time}` : ''}
+                                  </p>
+                                )}
+                              </div>
                             );
                           })()}
-                          {order.status !== 'cancelled' && getDeliveryStepIndex(order.status, order.delivery_status) < 3 && (
-                            <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => setCancelDialogOrder(order)}>
-                              Hủy
-                            </Button>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-sm">{order.customer_name}</p>
+                            <p className="text-xs text-muted-foreground">{order.customer_phone}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="text-sm line-clamp-1">{order.product_name}</p>
+                            {order.variant && <Badge variant="outline" className="text-[10px] mt-0.5">{order.variant}</Badge>}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className={`text-[10px] ${(order as any).payment_method === 'transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                            {(order as any).payment_method === 'transfer' ? 'Chuyển khoản' : 'COD'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const src = (order as any).order_source || 'web';
+                            const srcMap: Record<string, { label: string; icon: string; cls: string }> = {
+                              web: { label: 'Khách lẻ', icon: '🌐', cls: 'bg-muted text-muted-foreground' },
+                              ctv_direct: { label: 'CTV đặt', icon: '👤', cls: 'bg-blue-100 text-blue-700' },
+                              ctv_referral: { label: 'Khách CTV', icon: '🔗', cls: 'bg-purple-100 text-purple-700' },
+                            };
+                            const info = srcMap[src] || srcMap.web;
+                            return (
+                              <div>
+                                <Badge variant="outline" className={`text-[10px] ${info.cls}`}>
+                                  {info.icon} {info.label}
+                                </Badge>
+                                {(order as any).ctv_name && (
+                                  <p className="text-[10px] text-muted-foreground mt-0.5">{(order as any).ctv_name}</p>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </TableCell>
+                        <TableCell className="text-xs">{branchMap.get(order.branch_id) || '—'}</TableCell>
+                        <TableCell>
+                          {order.status === 'cancelled' ? (
+                            <Badge className="bg-destructive/10 text-destructive text-[10px]" variant="secondary">Đã hủy</Badge>
+                          ) : (
+                            <div>
+                              <Badge className={`${st.color} text-[10px]`} variant="secondary">
+                                {DELIVERY_STEPS[getDeliveryStepIndex(order.status, order.delivery_status)]?.label || st.label}
+                              </Badge>
+                              <div className="flex items-center gap-0.5 mt-1">
+                                {DELIVERY_STEPS.map((_, i) => (
+                                  <div key={i} className={`h-1 flex-1 rounded-full ${i <= getDeliveryStepIndex(order.status, order.delivery_status) ? 'bg-primary' : 'bg-muted'}`} />
+                                ))}
+                              </div>
+                            </div>
                           )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
+                        </TableCell>
+                        {/* Single call toggle button */}
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className={`h-7 text-xs gap-1 ${
+                              order.call_status === 'called'
+                                ? 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
+                                : 'border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10'
+                            }`}
+                            title={order.call_status === 'called' ? 'Nhấn để bỏ đánh dấu' : 'Nhấn để đánh dấu đã gọi'}
+                            onClick={e => handleToggleCallStatus(e, order)}
+                          >
+                            <PhoneCall className="h-3 w-3" />
+                            {order.call_status === 'called' ? 'Đã gọi' : 'Chưa gọi'}
+                          </Button>
+                        </TableCell>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => { setAssignDialogOrder(order); setSelectedStaffId(order.assigned_staff_id || ''); }}
+                          >
+                            <UserPlus className="h-3 w-3" />
+                            <span className="max-w-[60px] truncate">
+                              {order.assigned_staff_name || 'Phân công'}
+                            </span>
+                          </Button>
+                        </TableCell>
+                        <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
+                              <a href={`tel:${order.customer_phone}`}><Phone className="h-3.5 w-3.5" /></a>
+                            </Button>
+                            {order.status !== 'cancelled' && (() => {
+                              const action = getNextDeliveryAction(order.status, order.delivery_status);
+                              if (!action) return null;
+                              return (
+                                <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => handleNextDeliveryStep(order)}>
+                                  {action.label}
+                                  <ChevronRight className="h-3 w-3" />
+                                </Button>
+                              );
+                            })()}
+                            {order.status !== 'cancelled' && getDeliveryStepIndex(order.status, order.delivery_status) < 3 && (
+                              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => setCancelDialogOrder(order)}>
+                                Hủy
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </>
       )}
 
       {/* Cancel dialog */}
