@@ -288,7 +288,7 @@ export default function UniversalStoreTemplate({
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
   const navigateTo = (view: PageView, opts?: { keepCategory?: boolean; filterTag?: string | null }) => {
-    setPageView(view); setSelectedArticle(null); setSelectedProduct(null);
+    setPageView(view); setSelectedArticle(null); setSelectedProduct(null); setSelectedArticleCategoryId(null);
     if (!opts?.keepCategory) setSelectedCategoryId(null);
     setProductFilterTag(opts?.filterTag ?? null);
     const newParams = new URLSearchParams();
