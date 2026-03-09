@@ -75,10 +75,11 @@ interface OrderLookupPageProps {
   accentColor: string;
   storePhone?: string;
   zaloUrl?: string;
+  facebookUrl?: string;
   onBack: () => void;
 }
 
-export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, onBack }: OrderLookupPageProps) {
+export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, facebookUrl, onBack }: OrderLookupPageProps) {
   const [searchInput, setSearchInput] = useState('');
   const [orders, setOrders] = useState<LandingOrderResult[]>([]);
   const [loading, setLoading] = useState(false);
