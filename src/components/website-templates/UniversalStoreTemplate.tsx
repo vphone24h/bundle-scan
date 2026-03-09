@@ -1293,7 +1293,7 @@ export default function UniversalStoreTemplate({
                           <div key="latestArticles" className="mb-8">
                             <h3 className="text-lg font-bold mb-4">🆕 Mới nhất</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                              {[...allArticles].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6).map((a, i) => (
+                              {[...filteredAllArticles].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6).map((a, i) => (
                                 <ScrollReveal key={a.id} animation="fade-up" delay={i * 80}>
                                   <button onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden border border-black/5 hover:shadow-lg transition-all text-left group w-full">
                                     {a.thumbnail_url ? (
