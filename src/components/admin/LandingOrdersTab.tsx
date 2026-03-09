@@ -274,20 +274,24 @@ export function LandingOrdersTab() {
       toast.error('Không có đơn chờ duyệt nào được chọn');
       return;
     }
-    try {
-      await Promise.all(
-        eligibleOrders.map(o =>
-          updateOrder.mutateAsync({
-            id: o.id,
-            status: 'approved',
-            delivery_status: 'confirmed',
-            approved_at: new Date().toISOString(),
-          } as any)
-        )
-      );
-      toast.success(`Đã xác nhận ${eligibleOrders.length} đơn`);
+    const results = await Promise.allSettled(
+      eligibleOrders.map(o =>
+        updateOrder.mutateAsync({
+          id: o.id,
+          status: 'approved',
+          delivery_status: 'confirmed',
+          approved_at: new Date().toISOString(),
+        } as any)
+      )
+    );
+    const successCount = results.filter(r => r.status === 'fulfilled').length;
+    const failCount = results.filter(r => r.status === 'rejected').length;
+    if (successCount > 0) {
+      toast.success(`Đã xác nhận ${successCount} đơn${failCount > 0 ? `, ${failCount} lỗi` : ''}`);
       setSelectedIds(new Set());
-    } catch { toast.error('Lỗi xác nhận hàng loạt'); }
+    } else {
+      toast.error(`Lỗi xác nhận: ${(results[0] as any)?.reason?.message || 'Không rõ lỗi'}`);
+    }
   };
 
   // Bulk ship to carrier
