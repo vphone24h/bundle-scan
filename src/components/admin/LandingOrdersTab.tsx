@@ -164,6 +164,8 @@ export function LandingOrdersTab() {
   const [assignDialogOrder, setAssignDialogOrder] = useState<LandingOrder | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string>('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [bulkAssignStaffId, setBulkAssignStaffId] = useState<string>('');
 
   const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
 
@@ -308,6 +310,30 @@ export function LandingOrdersTab() {
     } catch { toast.error('Lỗi phân công'); }
   };
 
+  const handleBulkAssignStaff = async () => {
+    const staff = staffList?.find(s => s.id === bulkAssignStaffId);
+    const targetOrders = filtered.filter(o => selectedIds.has(o.id) && o.status !== 'cancelled');
+    if (targetOrders.length === 0) {
+      toast.error('Không có đơn nào được chọn');
+      return;
+    }
+    try {
+      await Promise.all(
+        targetOrders.map(o =>
+          updateOrder.mutateAsync({
+            id: o.id,
+            assigned_staff_id: bulkAssignStaffId === 'unassign' ? null : (bulkAssignStaffId || null),
+            assigned_staff_name: bulkAssignStaffId === 'unassign' ? null : (staff?.display_name || null),
+          } as any)
+        )
+      );
+      toast.success(`Đã phân công ${targetOrders.length} đơn`);
+      setBulkAssignOpen(false);
+      setBulkAssignStaffId('');
+      setSelectedIds(new Set());
+    } catch { toast.error('Lỗi phân công hàng loạt'); }
+  };
+
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
@@ -382,8 +408,12 @@ export function LandingOrdersTab() {
         <>
           {/* Bulk action bar */}
           {selectedIds.size > 0 && (
-            <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+            <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-lg flex-wrap">
               <span className="text-sm font-medium">Đã chọn {selectedIds.size} đơn</span>
+              <Button size="sm" className="gap-1" variant="outline" onClick={() => { setBulkAssignOpen(true); setBulkAssignStaffId(''); }} disabled={updateOrder.isPending}>
+                <UserPlus className="h-3.5 w-3.5" />
+                Phân công NV
+              </Button>
               <Button size="sm" className="gap-1" onClick={handleBulkShipToCarrier} disabled={updateOrder.isPending}>
                 {updateOrder.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
                 <Truck className="h-3.5 w-3.5" />
@@ -625,7 +655,38 @@ export function LandingOrdersTab() {
         </DialogContent>
       </Dialog>
 
-      {/* Detail dialog */}
+      {/* Bulk assign staff dialog */}
+      <Dialog open={bulkAssignOpen} onOpenChange={v => { if (!v) { setBulkAssignOpen(false); setBulkAssignStaffId(''); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Phân công nhân viên hàng loạt</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Phân công cho <span className="font-medium text-foreground">{selectedIds.size} đơn</span> đã chọn
+            </p>
+            <Select value={bulkAssignStaffId} onValueChange={setBulkAssignStaffId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Chọn nhân viên..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassign">— Bỏ phân công —</SelectItem>
+                {(staffList || []).map(s => (
+                  <SelectItem key={s.id} value={s.id}>{s.display_name || s.id}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setBulkAssignOpen(false); setBulkAssignStaffId(''); }}>Đóng</Button>
+            <Button onClick={handleBulkAssignStaff} disabled={updateOrder.isPending || !bulkAssignStaffId}>
+              {updateOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Phân công
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!detailOrder} onOpenChange={v => !v && setDetailOrder(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
