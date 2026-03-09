@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronUp, ChevronDown, RotateCcw, Plus, Pencil, Trash2, X, Package } from 'lucide-react';
+import { ChevronUp, ChevronDown, RotateCcw, Plus, Pencil, Trash2, X, Package, ArrowLeftRight, ArrowDownUp } from 'lucide-react';
 import { CustomProductTab } from '@/components/admin/HomeSectionManager';
 import { SYSTEM_PAGES } from '@/lib/industryConfig';
 
