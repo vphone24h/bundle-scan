@@ -235,6 +235,8 @@ export function useLandingOrders(branchId?: string | null) {
         return o;
       });
     },
+    refetchOnMount: 'always',
+    staleTime: 0,
   });
 }
 

@@ -380,7 +380,11 @@ export function LandingOrdersTab() {
         delivery_status: 'preparing',
         approved_at: new Date().toISOString(),
       } as any);
-    } catch { /* continue anyway */ }
+      toast.success('Đã xác nhận đơn hàng');
+    } catch (err) {
+      console.error('Failed to update order status:', err);
+      toast.error('Lỗi cập nhật trạng thái đơn hàng');
+    }
 
     // Save prefill data to sessionStorage
     sessionStorage.setItem('export_prefill', JSON.stringify({
