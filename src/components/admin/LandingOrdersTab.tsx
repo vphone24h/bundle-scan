@@ -494,6 +494,19 @@ export function LandingOrdersTab() {
             <SelectItem value="cancelled">Đã hủy</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={deliveryFilter} onValueChange={setDeliveryFilter}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Vận chuyển" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả (VC)</SelectItem>
+            <SelectItem value="not_approved">Chưa duyệt</SelectItem>
+            <SelectItem value="approved_only">Đã duyệt</SelectItem>
+            <SelectItem value="shipped">Đã giao ĐVVC</SelectItem>
+            <SelectItem value="delivering">Đang vận chuyển</SelectItem>
+            <SelectItem value="delivered">Đã giao</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={callStatusFilter} onValueChange={setCallStatusFilter}>
           <SelectTrigger className="w-44">
             <SelectValue placeholder="Trạng thái gọi" />
