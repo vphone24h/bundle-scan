@@ -709,21 +709,40 @@ export function EditorPreviewTab({ formData, deviceMode, tenant, onEditSection }
                 </div>
               </SectionOverlay>
             );
-          case 'categoryFilter':
+          case 'categoryFilter': {
+            const newsCatMode = (section as any).displayMode || 'horizontal';
             return (
               <SectionOverlay key="categoryFilter" sectionId="news-layout" label="Danh mục" onEdit={onEditSection}>
-                <div className="px-4 py-2 bg-white border-b border-black/5">
-                  <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                    {['Tất cả', 'Tin Apple', 'Đánh giá', 'Mẹo hay'].map((cat, i) => (
-                      <span key={i} className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-medium whitespace-nowrap ${i === 0 ? 'text-white' : 'bg-muted/60 text-foreground/70'}`}
-                        style={i === 0 ? { backgroundColor: accentColor } : {}}>
-                        {cat}
-                      </span>
-                    ))}
+                {newsCatMode === 'vertical' ? (
+                  <section className="py-4 bg-[#f5f5f7] px-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      {['Tin Apple', 'Đánh giá', 'Mẹo hay', 'Sự kiện'].map((cat, i) => (
+                        <div key={i} className="rounded-2xl overflow-hidden relative" style={{ minHeight: '100px' }}>
+                          <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted/80" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                          <div className="relative z-10 h-full flex flex-col justify-end p-3" style={{ minHeight: '100px' }}>
+                            <p className="text-xs font-bold text-white">{cat}</p>
+                            <p className="text-[8px] text-white/70">Khám phá →</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ) : (
+                  <div className="px-4 py-2 bg-white border-b border-black/5">
+                    <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                      {['Tất cả', 'Tin Apple', 'Đánh giá', 'Mẹo hay'].map((cat, i) => (
+                        <span key={i} className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-medium whitespace-nowrap ${i === 0 ? 'text-white' : 'bg-muted/60 text-foreground/70'}`}
+                          style={i === 0 ? { backgroundColor: accentColor } : {}}>
+                          {cat}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </SectionOverlay>
             );
+          }
           case 'featuredArticles':
             return (
               <SectionOverlay key="featuredArticles" sectionId="news-layout" label="Nổi bật" onEdit={onEditSection}>
