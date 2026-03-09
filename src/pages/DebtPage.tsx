@@ -30,6 +30,7 @@ export default function DebtPage() {
   const { t } = useTranslation();
   const [showSettled, setShowSettled] = useState(false);
   const [branchFilter, setBranchFilter] = useState('_all_');
+  const [searchQuery, setSearchQuery] = useState('');
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
   const [showTagManager, setShowTagManager] = useState(false);
