@@ -37,6 +37,7 @@ import {
   ShoppingBag, Newspaper, ArrowLeft,
   Link2, Menu, X, Smartphone, Tablet, Laptop, Zap,
 } from 'lucide-react';
+import SwipeGuardScroll from '@/components/ui/swipe-guard-scroll';
 
 // ============================
 // Types
