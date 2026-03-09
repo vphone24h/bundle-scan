@@ -484,6 +484,16 @@ export function ProductDetailDialog({
                   Gọi ngay: {warrantyHotline}
                 </a>
               )}
+              {onNavigateOrderLookup && (
+                <Button
+                  variant="outline"
+                  className="w-full h-11 mt-1"
+                  onClick={() => { handleClose(false); onNavigateOrderLookup(); }}
+                  style={{ borderColor: primaryColor, color: primaryColor }}
+                >
+                  <Search className="h-4 w-4 mr-1.5" /> Kiểm tra đơn hàng
+                </Button>
+              )}
               <Button variant="outline" className="w-full mt-2" onClick={() => handleClose(false)}>Đóng</Button>
             </div>
           ) : !showOrderForm ? (

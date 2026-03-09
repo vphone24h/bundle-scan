@@ -595,6 +595,17 @@ export function PaymentFlowDialog({
                 );
               })()}
 
+              {onNavigateOrderLookup && (
+                <Button
+                  variant="outline"
+                  className="w-full h-11"
+                  onClick={() => { handleClose(); onNavigateOrderLookup(); }}
+                  style={{ borderColor: primaryColor, color: primaryColor }}
+                >
+                  <Search className="h-4 w-4 mr-1.5" /> Kiểm tra đơn hàng
+                </Button>
+              )}
+
               <Button variant="outline" className="w-full h-11" onClick={handleClose}>
                 Đóng
               </Button>
