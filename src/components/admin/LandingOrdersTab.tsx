@@ -172,6 +172,7 @@ export function LandingOrdersTab() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [bulkAssignStaffId, setBulkAssignStaffId] = useState<string>('');
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
 
   // Product search for "Xác nhận" flow
   const [productSearchOrder, setProductSearchOrder] = useState<LandingOrder | null>(null);
