@@ -960,6 +960,107 @@ export function LandingOrdersTab() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Product search dialog for confirm flow */}
+      <Dialog open={!!productSearchOrder} onOpenChange={v => { if (!v) { setProductSearchOrder(null); setProductSearchText(''); setProductImeiSearch(''); setProductResults([]); } }}>
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-base">Chọn sản phẩm thật để xuất hàng</DialogTitle>
+          </DialogHeader>
+          {productSearchOrder && (
+            <p className="text-sm text-muted-foreground -mt-2">
+              Đơn: <span className="font-medium text-foreground">{productSearchOrder.customer_name}</span> — {productSearchOrder.product_name}
+            </p>
+          )}
+          <div className="space-y-3">
+            {/* IMEI search */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Quét / nhập IMEI..."
+                  value={productImeiSearch}
+                  onChange={e => setProductImeiSearch(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleProductImeiSearch()}
+                  className="pl-10"
+                />
+              </div>
+              <Button size="sm" onClick={handleProductImeiSearch} disabled={productSearching || !productImeiSearch.trim()}>
+                {productSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              </Button>
+            </div>
+            {/* Name search */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm theo tên sản phẩm..."
+                  value={productSearchText}
+                  onChange={e => setProductSearchText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleProductNameSearch()}
+                  className="pl-10"
+                />
+              </div>
+              <Button size="sm" onClick={handleProductNameSearch} disabled={productSearching || !productSearchText.trim()}>
+                {productSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Tìm'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Results */}
+          <div className="flex-1 overflow-y-auto space-y-2 min-h-0 mt-2">
+            {productResults.length === 0 && !productSearching && (
+              <p className="text-center text-sm text-muted-foreground py-8">
+                Tìm kiếm sản phẩm bằng IMEI hoặc tên
+              </p>
+            )}
+            {productResults.map((p: any) => (
+              <button
+                key={p.id}
+                className="w-full text-left p-3 rounded-lg border hover:bg-accent/50 transition-colors flex items-center gap-3"
+                onClick={() => handleSelectProductForExport(p)}
+              >
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                  <Package className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{p.name}</p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {p.imei && <span className="font-mono">{p.imei}</span>}
+                    {p.sku && <span>SKU: {p.sku}</span>}
+                    {p.branches?.name && <span>| {p.branches.name}</span>}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs font-medium text-primary">{formatNumber(p.sale_price || 0)}₫</span>
+                    <Badge variant={p.status === 'in_stock' ? 'default' : 'secondary'} className="text-[10px] h-4">
+                      {p.status === 'in_stock' ? 'Còn hàng' : p.status}
+                    </Badge>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </button>
+            ))}
+          </div>
+
+          <DialogFooter className="mt-2">
+            <Button variant="outline" onClick={() => { setProductSearchOrder(null); setProductSearchText(''); setProductImeiSearch(''); setProductResults([]); }}>
+              Đóng
+            </Button>
+            <Button variant="ghost" onClick={() => {
+              // Skip product selection, proceed normally
+              if (productSearchOrder) {
+                handleNextDeliveryStep(productSearchOrder);
+                setProductSearchOrder(null);
+                setProductSearchText('');
+                setProductImeiSearch('');
+                setProductResults([]);
+              }
+            }}>
+              Bỏ qua, xác nhận trực tiếp
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
