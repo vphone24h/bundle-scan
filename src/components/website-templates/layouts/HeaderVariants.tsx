@@ -31,23 +31,36 @@ function LogoBlock({ logoUrl, storeName, onClick }: { logoUrl?: string | null; s
 
 // === Sticky Top Nav Bar (always visible, horizontal scroll) ===
 function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass, inactiveClass }: { navItems: HeaderProps['navItems']; onNavClick: HeaderProps['onNavClick']; isNavActive: HeaderProps['isNavActive']; accentColor?: string; activeClass?: string; inactiveClass?: string }) {
-  const touchStartRef = React.useRef<{ x: number; y: number; time: number } | null>(null);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const touchStartRef = React.useRef<{ x: number; y: number; scrollLeft: number } | null>(null);
   const isDraggingRef = React.useRef(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      scrollLeft: scrollRef.current?.scrollLeft || 0,
+    };
     isDraggingRef.current = false;
   };
 
-  const handleTouchMove = () => {
-    if (touchStartRef.current) {
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current || !scrollRef.current) return;
+    const touch = e.touches[0];
+    const dx = touchStartRef.current.x - touch.clientX;
+    const dy = Math.abs(touch.clientY - touchStartRef.current.y);
+    // Only count as drag if moved more than 8px horizontally
+    if (Math.abs(dx) > 8 || dy > 8) {
       isDraggingRef.current = true;
+    }
+    // Manual scroll so touching anywhere on the bar (including buttons) allows drag
+    if (Math.abs(dx) > dy) {
+      scrollRef.current.scrollLeft = touchStartRef.current.scrollLeft + dx;
     }
   };
 
   const handleButtonClick = (item: HeaderProps['navItems'][number], e: React.MouseEvent) => {
-    // On touch devices, prevent click if user was swiping
     if (isDraggingRef.current) {
       e.preventDefault();
       e.stopPropagation();
@@ -58,8 +71,9 @@ function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass
 
   return (
     <div
+      ref={scrollRef}
       className="overflow-x-auto scrollbar-hide border-t border-black/5"
-      style={{ WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' }}
+      style={{ WebkitOverflowScrolling: 'touch', willChange: 'scroll-position', touchAction: 'pan-x' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
     >
@@ -68,7 +82,7 @@ function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass
           <button
             key={item.id}
             onClick={(e) => handleButtonClick(item, e)}
-            className={`shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full transition-all flex items-center gap-1.5 touch-manipulation ${
+            className={`shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full transition-all flex items-center gap-1.5 select-none ${
               isNavActive(item) ? (activeClass || 'text-white') : (inactiveClass || 'hover:bg-black/5 text-foreground/70')
             }`}
             style={isNavActive(item) && accentColor ? { backgroundColor: accentColor } : {}}
