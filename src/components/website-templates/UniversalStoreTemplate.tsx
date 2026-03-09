@@ -863,7 +863,7 @@ export default function UniversalStoreTemplate({
         {/* === PRODUCTS PAGE === */}
         {pageView === 'products' && (() => {
           // Build products page sections from settings
-          const ppSections = (settings as any)?.custom_products_page_sections as { id: string; enabled: boolean }[] | null;
+          const ppSections = (settings as any)?.custom_products_page_sections as { id: string; enabled: boolean; displayMode?: string }[] | null;
           const ppTabs = (settings as any)?.custom_products_page_tabs as { id: string; name: string; displayStyle: string; enabled: boolean }[] || [];
           
           const defaultSections = [
