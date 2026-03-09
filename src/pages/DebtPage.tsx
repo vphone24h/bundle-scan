@@ -60,15 +60,29 @@ export default function DebtPage() {
   
   const filteredCustomerDebts = useMemo(() => {
     if (!customerDebts) return [];
-    if (branchFilter === '_all_') return customerDebts;
-    return customerDebts.filter(d => d.branch_id === branchFilter);
-  }, [customerDebts, branchFilter]);
+    let filtered = branchFilter === '_all_' ? customerDebts : customerDebts.filter(d => d.branch_id === branchFilter);
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(d =>
+        d.entity_name?.toLowerCase().includes(q) ||
+        d.entity_phone?.toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [customerDebts, branchFilter, searchQuery]);
 
   const filteredSupplierDebts = useMemo(() => {
     if (!supplierDebts) return [];
-    if (branchFilter === '_all_') return supplierDebts;
-    return supplierDebts.filter(d => d.branch_id === branchFilter);
-  }, [supplierDebts, branchFilter]);
+    let filtered = branchFilter === '_all_' ? supplierDebts : supplierDebts.filter(d => d.branch_id === branchFilter);
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(d =>
+        d.entity_name?.toLowerCase().includes(q) ||
+        d.entity_phone?.toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [supplierDebts, branchFilter, searchQuery]);
 
   // Derived stats
   const totalCustomerDebt = filteredCustomerDebts.reduce((sum, d) => sum + d.remaining_amount, 0);
