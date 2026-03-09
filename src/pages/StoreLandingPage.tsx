@@ -190,15 +190,17 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     return (
       <div className="min-h-screen bg-white">
         {/* Skeleton header */}
-        <div className="h-14 bg-muted/30 animate-pulse" />
+        <div className="h-14 bg-gray-100 animate-pulse" />
         {/* Skeleton hero */}
-        <div className="h-48 bg-muted/20 animate-pulse" />
+        <div className="h-48 bg-gray-100 animate-pulse" />
         {/* Skeleton content */}
         <div className="p-4 space-y-3">
-          <div className="h-6 w-40 bg-muted/30 rounded animate-pulse" />
+          <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
           <div className="grid grid-cols-2 gap-3">
-            <div className="h-32 bg-muted/20 rounded-lg animate-pulse" />
-            <div className="h-32 bg-muted/20 rounded-lg animate-pulse" />
+            <div className="h-32 bg-gray-100 rounded-lg animate-pulse" />
+            <div className="h-32 bg-gray-100 rounded-lg animate-pulse" />
+            <div className="h-32 bg-gray-100 rounded-lg animate-pulse" />
+            <div className="h-32 bg-gray-100 rounded-lg animate-pulse" />
           </div>
         </div>
       </div>
@@ -221,13 +223,15 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   // Skeleton for lazy template loading
   const templateFallback = (
     <div className="min-h-screen bg-white">
-      <div className="h-14 bg-muted/30 animate-pulse" />
-      <div className="h-48 bg-muted/20 animate-pulse" />
+      <div className="h-14 bg-gray-100 animate-pulse" />
+      <div className="h-48 bg-gray-100 animate-pulse" />
       <div className="p-4 space-y-3">
-        <div className="h-6 w-40 bg-muted/30 rounded animate-pulse" />
+        <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
         <div className="grid grid-cols-2 gap-3">
-          <div className="h-32 bg-muted/20 rounded-lg animate-pulse" />
-          <div className="h-32 bg-muted/20 rounded-lg animate-pulse" />
+          <div className="h-32 bg-gray-100 rounded-lg animate-pulse" />
+          <div className="h-32 bg-gray-100 rounded-lg animate-pulse" />
+          <div className="h-32 bg-gray-100 rounded-lg animate-pulse" />
+          <div className="h-32 bg-gray-100 rounded-lg animate-pulse" />
         </div>
       </div>
     </div>
