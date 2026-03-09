@@ -120,6 +120,7 @@ export default function UniversalStoreTemplate({
   const [pageView, setPageView] = useState<PageView>(isStandalone ? 'warranty' : 'home');
   const [selectedArticle, setSelectedArticle] = useState<LandingArticle | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedArticleCategoryId, setSelectedArticleCategoryId] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<LandingProduct | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
@@ -287,7 +288,7 @@ export default function UniversalStoreTemplate({
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
   const navigateTo = (view: PageView, opts?: { keepCategory?: boolean; filterTag?: string | null }) => {
-    setPageView(view); setSelectedArticle(null); setSelectedProduct(null);
+    setPageView(view); setSelectedArticle(null); setSelectedProduct(null); setSelectedArticleCategoryId(null);
     if (!opts?.keepCategory) setSelectedCategoryId(null);
     setProductFilterTag(opts?.filterTag ?? null);
     const newParams = new URLSearchParams();
@@ -1105,8 +1106,13 @@ export default function UniversalStoreTemplate({
               ];
               const newsSections = ((settings as any)?.custom_news_page_sections || defaultNewsSections).filter((s: any) => s.enabled);
               const allArticles = articlesData?.articles || [];
-              const featuredOnes = allArticles.filter(a => a.is_featured);
-              const regularOnes = allArticles.filter(a => !a.is_featured);
+              const articleCategories = (articlesData?.categories || []).filter((c: any) => c.is_visible !== false);
+              const filteredAllArticles = selectedArticleCategoryId
+                ? allArticles.filter(a => a.category_id === selectedArticleCategoryId)
+                : allArticles;
+              const featuredOnes = filteredAllArticles.filter(a => a.is_featured);
+              const regularOnes = filteredAllArticles.filter(a => !a.is_featured);
+              const catDisplayMode = (config as any)._categoryDisplayMode || 'horizontal';
 
               return (
                 <>
@@ -1131,19 +1137,103 @@ export default function UniversalStoreTemplate({
                             />
                           </div>
                         );
-                      case 'categoryFilter':
+                      case 'categoryFilter': {
+                        if (articleCategories.length === 0) return null;
+                        
+                        if (catDisplayMode === 'vertical') {
+                          // Vertical: stacked cards with cover images (same as product categories)
+                          return (
+                            <div key="categoryFilter" className="mb-6">
+                              <h3 className="text-lg font-bold tracking-tight mb-4">Danh mục bài viết</h3>
+                              <div className="flex flex-col gap-0">
+                                {/* "All" button */}
+                                <button
+                                  onClick={() => setSelectedArticleCategoryId(null)}
+                                  className={`group w-full overflow-hidden relative text-left min-h-[80px] border-b border-black/5 ${!selectedArticleCategoryId ? 'ring-2' : ''}`}
+                                  style={!selectedArticleCategoryId ? { '--tw-ring-color': accentColor } as any : undefined}
+                                >
+                                  <div className="bg-white h-full flex items-center justify-between p-4 group-hover:shadow-lg transition-shadow">
+                                    <div>
+                                      <h4 className="text-base font-bold text-[#1d1d1f]">Tất cả bài viết</h4>
+                                      <p className="text-xs text-[#86868b] mt-0.5">{allArticles.length} bài viết</p>
+                                    </div>
+                                    <Newspaper className="h-6 w-6 text-[#d2d2d7]" />
+                                  </div>
+                                </button>
+                                {articleCategories.map((cat: any) => (
+                                  <ScrollReveal key={cat.id} animation="fade-up" delay={80}>
+                                    <button
+                                      onClick={() => setSelectedArticleCategoryId(selectedArticleCategoryId === cat.id ? null : cat.id)}
+                                      className={`group w-full overflow-hidden relative text-left ${cat.image_url ? 'min-h-[65vh] sm:min-h-[70vh]' : 'min-h-[80px]'} ${selectedArticleCategoryId === cat.id ? 'ring-2' : ''}`}
+                                      style={selectedArticleCategoryId === cat.id ? { '--tw-ring-color': accentColor } as any : undefined}
+                                    >
+                                      {cat.image_url ? (
+                                        <>
+                                          <img src={cat.image_url} alt={cat.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                                          <div className="relative z-10 h-full flex flex-col justify-end p-6 min-h-[65vh] sm:min-h-[70vh]">
+                                            <h4 className="text-xl font-bold text-white">{cat.name}</h4>
+                                            <p className="text-sm text-white/80 mt-1">Xem bài viết →</p>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <div className="bg-white h-full flex items-center justify-between p-4 border-b border-black/5 group-hover:shadow-lg transition-shadow">
+                                          <div>
+                                            <h4 className="text-base font-bold text-[#1d1d1f]">{cat.name}</h4>
+                                            <p className="text-xs text-[#86868b] mt-0.5">Xem bài viết →</p>
+                                          </div>
+                                          <Newspaper className="h-6 w-6 text-[#d2d2d7]" />
+                                        </div>
+                                      )}
+                                    </button>
+                                  </ScrollReveal>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        // Horizontal: scrollable row with images (same as product categories)
                         return (
-                          <div key="categoryFilter" className="mb-6 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                            <button className="px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" style={{ backgroundColor: accentColor, color: 'white' }}>
-                              Tất cả
-                            </button>
-                            {(articlesData?.categories || []).filter((c: any) => c.is_visible !== false).map((cat: any) => (
-                              <button key={cat.id} className="px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-[#f5f5f7] hover:bg-black/10 transition-colors">
-                                {cat.name}
-                              </button>
-                            ))}
+                          <div key="categoryFilter" className="mb-6">
+                            <div className="bg-[#f5f5f7] rounded-2xl py-4 px-2">
+                              <div className="flex items-center overflow-x-auto gap-4 py-2 scrollbar-hide">
+                                <button
+                                  onClick={() => setSelectedArticleCategoryId(null)}
+                                  className="flex flex-col items-center gap-2 min-w-[90px] group"
+                                >
+                                  <div className={`h-16 w-16 rounded-2xl flex items-center justify-center border group-hover:scale-105 transition-transform ${!selectedArticleCategoryId ? 'border-2' : 'border-black/5 bg-white'}`}
+                                    style={!selectedArticleCategoryId ? { borderColor: accentColor, backgroundColor: accentColor + '15' } : undefined}
+                                  >
+                                    <Newspaper className="h-6 w-6" style={!selectedArticleCategoryId ? { color: accentColor } : { color: '#86868b' }} />
+                                  </div>
+                                  <span className={`text-[11px] font-medium text-center leading-tight ${!selectedArticleCategoryId ? 'font-bold' : ''}`}>Tất cả</span>
+                                </button>
+                                {articleCategories.map((cat: any) => (
+                                  <button
+                                    key={cat.id}
+                                    onClick={() => setSelectedArticleCategoryId(selectedArticleCategoryId === cat.id ? null : cat.id)}
+                                    className="flex flex-col items-center gap-2 min-w-[90px] group"
+                                  >
+                                    {cat.image_url ? (
+                                      <img src={cat.image_url} alt={cat.name} className={`h-16 w-16 rounded-2xl object-cover group-hover:scale-105 transition-transform ${selectedArticleCategoryId === cat.id ? 'border-2' : 'border border-black/5'}`}
+                                        style={selectedArticleCategoryId === cat.id ? { borderColor: accentColor } : undefined}
+                                      />
+                                    ) : (
+                                      <div className={`h-16 w-16 rounded-2xl bg-white flex items-center justify-center group-hover:scale-105 transition-transform ${selectedArticleCategoryId === cat.id ? 'border-2' : 'border border-black/5'}`}
+                                        style={selectedArticleCategoryId === cat.id ? { borderColor: accentColor } : undefined}
+                                      >
+                                        <Newspaper className="h-6 w-6 text-[#86868b]" />
+                                      </div>
+                                    )}
+                                    <span className={`text-[11px] font-medium text-center leading-tight ${selectedArticleCategoryId === cat.id ? 'font-bold' : ''}`}>{cat.name}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                           </div>
                         );
+                      }
                       case 'featuredArticles':
                         if (featuredOnes.length === 0) return null;
                         return (
@@ -1189,7 +1279,7 @@ export default function UniversalStoreTemplate({
                                   </button>
                                 </ScrollReveal>
                               ))}
-                              {allArticles.length === 0 && (
+                              {filteredAllArticles.length === 0 && (
                                 <div className="col-span-full text-center py-16">
                                   <Newspaper className="h-12 w-12 mx-auto text-[#86868b] mb-3" />
                                   <p className="text-sm text-[#86868b]">Chưa có bài viết nào</p>
@@ -1203,7 +1293,7 @@ export default function UniversalStoreTemplate({
                           <div key="latestArticles" className="mb-8">
                             <h3 className="text-lg font-bold mb-4">🆕 Mới nhất</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                              {[...allArticles].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6).map((a, i) => (
+                              {[...filteredAllArticles].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6).map((a, i) => (
                                 <ScrollReveal key={a.id} animation="fade-up" delay={i * 80}>
                                   <button onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden border border-black/5 hover:shadow-lg transition-all text-left group w-full">
                                     {a.thumbnail_url ? (
@@ -1226,7 +1316,7 @@ export default function UniversalStoreTemplate({
                           <div key="popularArticles" className="mb-8">
                             <h3 className="text-lg font-bold mb-4">🔥 Phổ biến</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                              {allArticles.slice(0, 6).map((a, i) => (
+                              {filteredAllArticles.slice(0, 6).map((a, i) => (
                                 <ScrollReveal key={a.id} animation="fade-up" delay={i * 80}>
                                   <button onClick={() => openArticle(a)} className="bg-white rounded-2xl overflow-hidden border border-black/5 hover:shadow-lg transition-all text-left group w-full">
                                     {a.thumbnail_url ? (
