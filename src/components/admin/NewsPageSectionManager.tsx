@@ -225,6 +225,23 @@ export function NewsPageSectionManager({
                 </button>
               )}
 
+              {item.id === 'categoryFilter' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated = [...currentItems];
+                    const currentMode = (updated[i] as any).displayMode || 'horizontal';
+                    updated[i] = { ...updated[i], displayMode: currentMode === 'horizontal' ? 'vertical' : 'horizontal' };
+                    onChange(updated);
+                  }}
+                  className="h-6 px-1.5 flex items-center justify-center gap-0.5 rounded hover:bg-primary/10 text-primary text-[10px] font-medium shrink-0"
+                  title={(item as any).displayMode === 'vertical' ? 'Xếp dọc' : 'Xếp ngang'}
+                >
+                  {(item as any).displayMode === 'vertical' ? <ArrowDownUp className="h-3 w-3" /> : <ArrowLeftRight className="h-3 w-3" />}
+                  {(item as any).displayMode === 'vertical' ? 'Dọc' : 'Ngang'}
+                </button>
+              )}
+
               <Switch checked={item.enabled} onCheckedChange={() => handleToggle(i)} className="shrink-0" />
             </div>
           );
