@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Search, ArrowLeft, Phone, Package, MapPin, Clock, CheckCircle2,
-  XCircle, Truck, MessageCircle, Loader2, ShoppingBag, AlertCircle,
+  XCircle, Truck, MessageCircle, Loader2, ShoppingBag, AlertCircle, HeadphonesIcon,
 } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { format } from 'date-fns';
@@ -14,6 +14,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+
 
 interface LandingOrderResult {
   id: string;
@@ -71,10 +75,11 @@ interface OrderLookupPageProps {
   accentColor: string;
   storePhone?: string;
   zaloUrl?: string;
+  facebookUrl?: string;
   onBack: () => void;
 }
 
-export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, onBack }: OrderLookupPageProps) {
+export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, facebookUrl, onBack }: OrderLookupPageProps) {
   const [searchInput, setSearchInput] = useState('');
   const [orders, setOrders] = useState<LandingOrderResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -82,6 +87,7 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, on
   const [cancelTarget, setCancelTarget] = useState<LandingOrderResult | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [showContactDialog, setShowContactDialog] = useState(false);
 
   const handleSearch = async () => {
     const q = searchInput.trim();
@@ -314,25 +320,25 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, on
                       <Truck className="h-3.5 w-3.5 mr-1" /> Theo dõi vận chuyển
                     </Button>
                   )}
+                  {(storePhone || zaloUrl || facebookUrl) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setShowContactDialog(true)}
+                    >
+                      <HeadphonesIcon className="h-3.5 w-3.5 mr-1" /> Liên hệ
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
           );
         })}
 
-        {/* Support buttons */}
+        {/* Bottom action */}
         {searched && (
-          <div className="flex flex-wrap gap-2 justify-center pt-2">
-            {storePhone && (
-              <a href={`tel:${storePhone}`} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium bg-white shadow border hover:bg-gray-50 transition-colors">
-                <Phone className="h-4 w-4" style={{ color: accentColor }} /> Gọi hotline
-              </a>
-            )}
-            {zaloUrl && (
-              <a href={zaloUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium bg-white shadow border hover:bg-gray-50 transition-colors">
-                <MessageCircle className="h-4 w-4 text-blue-500" /> Chat Zalo
-              </a>
-            )}
+          <div className="flex justify-center pt-2">
             <button
               onClick={onBack}
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium bg-white shadow border hover:bg-gray-50 transition-colors"
@@ -342,6 +348,62 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, on
           </div>
         )}
       </div>
+
+      {/* Cancel dialog */}
+      {/* Contact dialog */}
+      <Dialog open={showContactDialog} onOpenChange={setShowContactDialog}>
+        <DialogContent className="max-w-sm mx-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base">🛟 Liên hệ hỗ trợ</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 pt-1">
+            {storePhone && (
+              <a href={`tel:${storePhone}`}
+                className="flex items-center gap-3 p-3 rounded-xl border hover:bg-gray-50 transition-colors"
+                onClick={() => setShowContactDialog(false)}
+              >
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                  <Phone className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Gọi hotline</p>
+                  <p className="text-xs text-gray-500">{storePhone}</p>
+                </div>
+              </a>
+            )}
+            {zaloUrl && (
+              <a href={zaloUrl.startsWith('http') ? zaloUrl : `https://zalo.me/${zaloUrl.replace(/\s/g, '')}`}
+                target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 rounded-xl border hover:bg-gray-50 transition-colors"
+                onClick={() => setShowContactDialog(false)}
+              >
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                  <MessageCircle className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Chat Zalo</p>
+                  <p className="text-xs text-gray-500">Nhắn tin trực tiếp</p>
+                </div>
+              </a>
+            )}
+            {facebookUrl && (
+              <a href={facebookUrl.startsWith('http') ? facebookUrl : `https://${facebookUrl}`}
+                target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 rounded-xl border hover:bg-gray-50 transition-colors"
+                onClick={() => setShowContactDialog(false)}
+              >
+                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                  <MessageCircle className="h-5 w-5 text-indigo-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Facebook Messenger</p>
+                  <p className="text-xs text-gray-500">Nhắn tin qua Facebook</p>
+                </div>
+              </a>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Cancel dialog */}
       <AlertDialog open={!!cancelTarget} onOpenChange={open => { if (!open) { setCancelTarget(null); setCancelReason(''); } }}>

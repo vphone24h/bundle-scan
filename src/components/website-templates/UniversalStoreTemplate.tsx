@@ -1530,6 +1530,7 @@ export default function UniversalStoreTemplate({
                   accentColor={accentColor}
                   storePhone={settings?.store_phone || warrantyHotline}
                   zaloUrl={settings?.zalo_url}
+                  facebookUrl={facebookUrl}
                   onBack={() => navigateTo('home')}
                 />
               );
