@@ -460,15 +460,20 @@ export function LandingOrdersTab() {
                           <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
                             <a href={`tel:${order.customer_phone}`}><Phone className="h-3.5 w-3.5" /></a>
                           </Button>
-                          {order.status === 'pending' && (
-                            <>
-                              <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => handleApprove(order)}>
-                                Duyệt
+                          {order.status !== 'cancelled' && (() => {
+                            const action = getNextDeliveryAction(order.status, order.delivery_status);
+                            if (!action) return null;
+                            return (
+                              <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => handleNextDeliveryStep(order)}>
+                                {action.label}
+                                <ChevronRight className="h-3 w-3" />
                               </Button>
-                              <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => setCancelDialogOrder(order)}>
-                                Hủy
-                              </Button>
-                            </>
+                            );
+                          })()}
+                          {order.status !== 'cancelled' && getDeliveryStepIndex(order.status, order.delivery_status) < 3 && (
+                            <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => setCancelDialogOrder(order)}>
+                              Hủy
+                            </Button>
                           )}
                         </div>
                       </TableCell>
