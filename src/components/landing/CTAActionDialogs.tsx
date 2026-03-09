@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Star, Loader2, CheckCircle2, Phone, ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
+import { Star, Loader2, CheckCircle2, Phone, ShoppingCart, Trash2, Plus, Minus, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { useLandingCart, CartItem } from '@/hooks/useLandingCart';
