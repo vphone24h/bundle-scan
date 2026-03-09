@@ -925,8 +925,60 @@ export default function UniversalStoreTemplate({
                         )}
                       </div>
                     );
-                  case 'categoryFilter':
+                  case 'categoryFilter': {
                     if (!productsData || productsData.categories.length === 0) return null;
+                    const ppCatMode = (section as any).displayMode || 'horizontal';
+                    
+                    if (ppCatMode === 'vertical') {
+                      return (
+                        <div key="categoryFilter" className="mb-4">
+                          <div className="flex flex-col gap-0">
+                            <button
+                              onClick={() => setSelectedCategoryId(null)}
+                              className={`group w-full overflow-hidden relative text-left min-h-[80px] border-b border-black/5 ${!selectedCategoryId ? 'ring-2' : ''}`}
+                              style={!selectedCategoryId ? { '--tw-ring-color': accentColor } as any : undefined}
+                            >
+                              <div className="bg-white h-full flex items-center justify-between p-4 group-hover:shadow-lg transition-shadow">
+                                <div>
+                                  <h4 className="text-base font-bold text-[#1d1d1f]">Tất cả sản phẩm</h4>
+                                  <p className="text-xs text-[#86868b] mt-0.5">{productsData.products.length} sản phẩm</p>
+                                </div>
+                                <ShoppingBag className="h-6 w-6 text-[#d2d2d7]" />
+                              </div>
+                            </button>
+                            {productsData.categories.map((cat, idx) => (
+                              <ScrollReveal key={cat.id} animation="fade-up" delay={idx * 80}>
+                                <button
+                                  onClick={() => setSelectedCategoryId(selectedCategoryId === cat.id ? null : cat.id)}
+                                  className={`group w-full overflow-hidden relative text-left ${cat.image_url ? 'min-h-[65vh] sm:min-h-[70vh]' : 'min-h-[80px]'} ${selectedCategoryId === cat.id ? 'ring-2' : ''}`}
+                                  style={selectedCategoryId === cat.id ? { '--tw-ring-color': accentColor } as any : undefined}
+                                >
+                                  {cat.image_url ? (
+                                    <>
+                                      <img src={cat.image_url} alt={cat.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                                      <div className="relative z-10 h-full flex flex-col justify-end p-6 min-h-[65vh] sm:min-h-[70vh]">
+                                        <h4 className="text-xl font-bold text-white">{cat.name}</h4>
+                                        <p className="text-sm text-white/80 mt-1">Khám phá ngay →</p>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div className="bg-white h-full flex items-center justify-between p-4 border-b border-black/5 group-hover:shadow-lg transition-shadow">
+                                      <div>
+                                        <h4 className="text-base font-bold text-[#1d1d1f]">{cat.name}</h4>
+                                        <p className="text-xs text-[#86868b] mt-0.5">Khám phá ngay →</p>
+                                      </div>
+                                      <ShoppingBag className="h-6 w-6 text-[#d2d2d7]" />
+                                    </div>
+                                  )}
+                                </button>
+                              </ScrollReveal>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    
                     return (
                       <SwipeGuardScroll key="categoryFilter" className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
                         <button
@@ -946,6 +998,7 @@ export default function UniversalStoreTemplate({
                         ))}
                       </SwipeGuardScroll>
                     );
+                  }
                   case 'allProducts':
                     return (
                       <div key="allProducts">
