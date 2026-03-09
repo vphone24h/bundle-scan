@@ -315,6 +315,8 @@ export function LandingOrdersTab() {
       if (successCount > 0) {
         toast.success(`Đã xác nhận ${successCount} đơn${failCount > 0 ? `, ${failCount} lỗi` : ''}`);
         setSelectedIds(new Set());
+        setStatusFilter('approved');
+        setDeliveryFilter('all');
       } else {
         const errMsg = (results[0] as any)?.reason?.message || 'Không rõ lỗi';
         console.error('[BulkConfirm] All failed:', errMsg);
