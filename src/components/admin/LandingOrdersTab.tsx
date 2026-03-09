@@ -655,7 +655,38 @@ export function LandingOrdersTab() {
         </DialogContent>
       </Dialog>
 
-      {/* Detail dialog */}
+      {/* Bulk assign staff dialog */}
+      <Dialog open={bulkAssignOpen} onOpenChange={v => { if (!v) { setBulkAssignOpen(false); setBulkAssignStaffId(''); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Phân công nhân viên hàng loạt</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Phân công cho <span className="font-medium text-foreground">{selectedIds.size} đơn</span> đã chọn
+            </p>
+            <Select value={bulkAssignStaffId} onValueChange={setBulkAssignStaffId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Chọn nhân viên..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassign">— Bỏ phân công —</SelectItem>
+                {(staffList || []).map(s => (
+                  <SelectItem key={s.id} value={s.id}>{s.display_name || s.id}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setBulkAssignOpen(false); setBulkAssignStaffId(''); }}>Đóng</Button>
+            <Button onClick={handleBulkAssignStaff} disabled={updateOrder.isPending || !bulkAssignStaffId}>
+              {updateOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Phân công
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!detailOrder} onOpenChange={v => !v && setDetailOrder(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
