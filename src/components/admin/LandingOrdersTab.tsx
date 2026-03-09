@@ -21,7 +21,7 @@ import { formatNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { BulkConfirmDialog } from './BulkConfirmDialog';
+
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: 'Chờ duyệt', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
