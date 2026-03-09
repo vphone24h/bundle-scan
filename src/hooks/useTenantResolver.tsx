@@ -200,6 +200,21 @@ export function useTenantResolver() {
       cacheHostname = hostname;
       return result;
     }
+
+    // FAST PATH: Inline script may have already resolved the tenant
+    const prefetch = (window as any).__STORE_PREFETCH__;
+    if (prefetch?.tenantId) {
+      const result: ResolvedTenant = {
+        tenantId: prefetch.tenantId,
+        subdomain: prefetch.tenant?.subdomain || prefetch.storeId || null,
+        tenantName: prefetch.tenant?.name || null,
+        status: 'resolved',
+        isMainDomain: false,
+      };
+      cachedResult = result;
+      cacheHostname = hostname;
+      return result;
+    }
     
     return null;
   }, [hostname]);
