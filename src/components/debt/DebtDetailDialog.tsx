@@ -346,19 +346,35 @@ export function DebtDetailDialog({
                   };
                 });
 
+                // Include payment entries to calculate actual remaining balance
+                const paymentEntries = (paymentHistory || [])
+                  .filter(p => p.payment_type === 'payment')
+                  .map(p => ({
+                    id: p.id,
+                    type: 'payment' as const,
+                    date: p.created_at,
+                    sortDate: new Date(p.created_at).getTime(),
+                    amount: Number(p.amount),
+                    description: p.description,
+                    createdBy: p.profiles?.display_name || null,
+                  }));
+
                 // Merge and sort by date ascending for running balance
                 const allItems = [
                   ...receiptRows.map(r => ({ ...r, sortDate: new Date(r.date).getTime() })),
                   ...debtAdditions.map(a => ({ ...a, sortDate: new Date(a.date).getTime() })),
+                  ...paymentEntries,
                 ].sort((a, b) => a.sortDate - b.sortDate);
 
-                // Calculate running balance (oldest to newest)
+                // Calculate running balance (oldest to newest) - includes payments as deductions
                 let runningBalance = 0;
                 const itemsWithBalance = allItems.map(item => {
                   if (item.type === 'order') {
                     runningBalance += (item as any).originalDebt;
-                  } else {
+                  } else if (item.type === 'addition') {
                     runningBalance += (item as any).amount;
+                  } else if (item.type === 'payment') {
+                    runningBalance -= (item as any).amount;
                   }
                   return { ...item, runningBalance };
                 });
