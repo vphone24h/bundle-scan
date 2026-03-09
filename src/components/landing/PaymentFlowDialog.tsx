@@ -376,7 +376,19 @@ export function PaymentFlowDialog({
               </div>
 
               <div>
-                <Label className="text-sm flex items-center gap-1">
+                <Label className="text-sm flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> Email</Label>
+                <Input
+                  value={customerEmail}
+                  onChange={e => setCustomerEmail(e.target.value)}
+                  placeholder="Nhập email"
+                  inputMode="email"
+                  type="email"
+                  className="h-11 text-base"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Nhập đúng mail để nhận thông tin đơn hàng và bảo hành</p>
+              </div>
+
+              <div>
                   <MapPin className="h-3.5 w-3.5" />
                   Địa chỉ giao hàng
                   {paymentMethod === 'cod' && <span className="text-red-500">*</span>}
