@@ -205,9 +205,9 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+      <div className={`max-w-2xl mx-auto px-4 space-y-5 ${!searched || orders.length === 0 ? 'flex flex-col items-center justify-center min-h-[calc(100vh-60px)] py-4' : 'py-6'}`}>
         {/* Search box */}
-        <Card className="border-0 shadow-md">
+        <Card className="border-0 shadow-md w-full">
           <CardContent className="pt-6 space-y-3">
             <p className="text-sm text-gray-500">Nhập số điện thoại hoặc email đã đặt hàng</p>
             <div className="flex gap-2">
