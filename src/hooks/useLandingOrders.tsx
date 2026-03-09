@@ -177,6 +177,9 @@ export function usePlaceLandingOrder() {
       // Fire-and-forget: Send email alert to shop owner
       sendLandingOrderAlert(result);
       
+      // Fire-and-forget: Send confirmation email to customer
+      sendCustomerConfirmation(result);
+      
       return result;
     },
   });
