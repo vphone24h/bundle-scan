@@ -218,22 +218,69 @@ export function LandingOrdersTab() {
     } catch { toast.error('Lỗi khi hủy đơn'); }
   };
 
+  // Single toggle: chưa gọi (red) → đã gọi (green) + auto confirm order
   const handleToggleCallStatus = async (e: React.MouseEvent, order: LandingOrder) => {
     e.stopPropagation();
-    const nextStatus = order.call_status === 'called' ? 'none' : 'called';
+    const isCalled = order.call_status === 'called';
     try {
-      await updateOrder.mutateAsync({ id: order.id, call_status: nextStatus } as any);
-      toast.success(nextStatus === 'called' ? 'Đã đánh dấu: Đã gọi' : 'Đã bỏ đánh dấu gọi');
+      if (isCalled) {
+        // Toggle back to "chưa gọi"
+        await updateOrder.mutateAsync({ id: order.id, call_status: 'none' } as any);
+        toast.success('Đã bỏ đánh dấu gọi');
+      } else {
+        // Mark as "đã gọi" + auto confirm (delivery_status = confirmed)
+        const updates: any = { id: order.id, call_status: 'called' };
+        if (order.status === 'pending') {
+          updates.status = 'approved';
+          updates.delivery_status = 'confirmed';
+          updates.approved_at = new Date().toISOString();
+        }
+        await updateOrder.mutateAsync(updates);
+        toast.success(order.status === 'pending' ? 'Đã gọi & xác nhận đơn hàng' : 'Đã đánh dấu: Đã gọi');
+      }
     } catch { toast.error('Lỗi cập nhật'); }
   };
 
-  const handleUnreachable = async (e: React.MouseEvent, order: LandingOrder) => {
-    e.stopPropagation();
-    const nextStatus = order.call_status === 'unreachable' ? 'none' : 'unreachable';
+  // Bulk ship to carrier
+  const handleBulkShipToCarrier = async () => {
+    const eligibleOrders = filtered.filter(o =>
+      selectedIds.has(o.id) &&
+      o.status !== 'cancelled' &&
+      (getDeliveryStepIndex(o.status, o.delivery_status) >= 1 && getDeliveryStepIndex(o.status, o.delivery_status) < 3)
+    );
+    if (eligibleOrders.length === 0) {
+      toast.error('Không có đơn nào đủ điều kiện giao ĐVVC');
+      return;
+    }
     try {
-      await updateOrder.mutateAsync({ id: order.id, call_status: nextStatus } as any);
-      toast.success(nextStatus === 'unreachable' ? 'Đánh dấu: Không liên hệ được' : 'Đã bỏ đánh dấu');
-    } catch { toast.error('Lỗi cập nhật'); }
+      await Promise.all(
+        eligibleOrders.map(o =>
+          updateOrder.mutateAsync({ id: o.id, delivery_status: 'shipped' } as any)
+        )
+      );
+      toast.success(`Đã giao ${eligibleOrders.length} đơn cho ĐVVC`);
+      setSelectedIds(new Set());
+    } catch { toast.error('Lỗi cập nhật hàng loạt'); }
+  };
+
+  const toggleSelectAll = () => {
+    const eligibleIds = filtered
+      .filter(o => o.status !== 'cancelled')
+      .map(o => o.id);
+    if (selectedIds.size === eligibleIds.length && eligibleIds.every(id => selectedIds.has(id))) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(eligibleIds));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   const handleAssignStaff = async () => {
