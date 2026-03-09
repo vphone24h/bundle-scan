@@ -90,6 +90,9 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
   const [showContactDialog, setShowContactDialog] = useState(false);
+  const [confirmDeliveryTarget, setConfirmDeliveryTarget] = useState<LandingOrderResult | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [deliveryResult, setDeliveryResult] = useState<{ pointsEarned: number; order: LandingOrderResult } | null>(null);
 
   const handleSearch = async () => {
     const q = searchInput.trim();
