@@ -567,7 +567,7 @@ export default function UniversalStoreTemplate({
                     <ScrollReveal key="categories" animation="fade-up" delay={150}>
                       <section className="bg-[#f5f5f7] py-8">
                         <div className="max-w-[1200px] mx-auto px-4">
-                          <div className="flex items-center overflow-x-auto gap-4 py-2 scrollbar-hide">
+                          <SwipeGuardScroll className="flex items-center overflow-x-auto gap-4 py-2 scrollbar-hide">
                             {productsData.categories.map(cat => (
                               <button key={cat.id} onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products', { keepCategory: true }); }} className="flex flex-col items-center gap-2 min-w-[90px] group">
                                 {cat.image_url ? (
