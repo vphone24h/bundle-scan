@@ -925,12 +925,12 @@ export default function AppleStyleLandingTemplate({
                         );
                       case 'categoryFilter':
                         return (
-                          <div key="categoryFilter" className="mb-6 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                          <SwipeGuardScroll key="categoryFilter" className="mb-6 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                             <button className="px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap" style={{ backgroundColor: accentColor, color: 'white' }}>Tất cả</button>
                             {(articlesData?.categories || []).filter((c: any) => c.is_visible !== false).map((cat: any) => (
                               <button key={cat.id} className="px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-[#f5f5f7] hover:bg-[#e8e8ed] transition-colors">{cat.name}</button>
                             ))}
-                          </div>
+                          </SwipeGuardScroll>
                         );
                       case 'featuredArticles':
                         if (featuredOnes.length === 0) return null;
