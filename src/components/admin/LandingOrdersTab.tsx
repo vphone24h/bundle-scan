@@ -1071,6 +1071,15 @@ export function LandingOrdersTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk confirm dialog */}
+      <BulkConfirmDialog
+        open={bulkConfirmOpen}
+        onOpenChange={setBulkConfirmOpen}
+        orders={filtered.filter(o => selectedIds.has(o.id) && o.status === 'pending')}
+        staffList={staffList || []}
+        onSuccess={() => setSelectedIds(new Set())}
+      />
     </div>
   );
 }
