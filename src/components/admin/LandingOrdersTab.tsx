@@ -310,6 +310,30 @@ export function LandingOrdersTab() {
     } catch { toast.error('Lỗi phân công'); }
   };
 
+  const handleBulkAssignStaff = async () => {
+    const staff = staffList?.find(s => s.id === bulkAssignStaffId);
+    const targetOrders = filtered.filter(o => selectedIds.has(o.id) && o.status !== 'cancelled');
+    if (targetOrders.length === 0) {
+      toast.error('Không có đơn nào được chọn');
+      return;
+    }
+    try {
+      await Promise.all(
+        targetOrders.map(o =>
+          updateOrder.mutateAsync({
+            id: o.id,
+            assigned_staff_id: bulkAssignStaffId === 'unassign' ? null : (bulkAssignStaffId || null),
+            assigned_staff_name: bulkAssignStaffId === 'unassign' ? null : (staff?.display_name || null),
+          } as any)
+        )
+      );
+      toast.success(`Đã phân công ${targetOrders.length} đơn`);
+      setBulkAssignOpen(false);
+      setBulkAssignStaffId('');
+      setSelectedIds(new Set());
+    } catch { toast.error('Lỗi phân công hàng loạt'); }
+  };
+
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
