@@ -537,7 +537,33 @@ export function ProductDetailDialog({
                   className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${attempted && !selectedBranch ? 'border-destructive ring-destructive' : 'border-input'}`}>
                   <option value="">Chọn chi nhánh</option>
                   {branches.map(b => (<option key={b.id} value={b.id}>{b.name}</option>))}
-                </select>
+              </select>
+              </div>
+
+              {/* Quantity selector for purchase actions */}
+              <div>
+                <Label className="text-xs">Số lượng</Label>
+                <div className="flex items-center gap-2">
+                  <Button type="button" variant="outline" size="icon" className="h-10 w-10 shrink-0"
+                    onClick={() => setQuantity(q => Math.max(1, q - 1))} disabled={quantity <= 1}>
+                    <span className="text-lg font-bold">−</span>
+                  </Button>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={quantity}
+                    onChange={e => {
+                      const v = parseInt(e.target.value);
+                      if (!isNaN(v) && v >= 1) setQuantity(v);
+                    }}
+                    className="h-10 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    inputMode="numeric"
+                  />
+                  <Button type="button" variant="outline" size="icon" className="h-10 w-10 shrink-0"
+                    onClick={() => setQuantity(q => q + 1)}>
+                    <span className="text-lg font-bold">+</span>
+                  </Button>
+                </div>
               </div>
 
               {/* Voucher & Points */}
