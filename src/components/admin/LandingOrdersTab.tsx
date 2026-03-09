@@ -161,6 +161,7 @@ export function LandingOrdersTab() {
   const checkProduct = useCheckProductForSale();
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [deliveryFilter, setDeliveryFilter] = useState<string>('all');
   const [callStatusFilter, setCallStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
@@ -185,6 +186,15 @@ export function LandingOrdersTab() {
 
   const filtered = (orders || []).filter(o => {
     if (statusFilter !== 'all' && o.status !== statusFilter) return false;
+    if (deliveryFilter !== 'all') {
+      if (deliveryFilter === 'not_approved') {
+        if (o.status !== 'pending') return false;
+      } else if (deliveryFilter === 'approved_only') {
+        if (o.status !== 'approved') return false;
+      } else {
+        if (o.delivery_status !== deliveryFilter) return false;
+      }
+    }
     if (callStatusFilter !== 'all' && o.call_status !== callStatusFilter) return false;
     if (sourceFilter !== 'all' && (o as any).order_source !== sourceFilter) return false;
     if (searchText) {
@@ -482,6 +492,19 @@ export function LandingOrdersTab() {
             <SelectItem value="pending">Chờ duyệt</SelectItem>
             <SelectItem value="approved">Đã duyệt</SelectItem>
             <SelectItem value="cancelled">Đã hủy</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={deliveryFilter} onValueChange={setDeliveryFilter}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Vận chuyển" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả (VC)</SelectItem>
+            <SelectItem value="not_approved">Chưa duyệt</SelectItem>
+            <SelectItem value="approved_only">Đã duyệt</SelectItem>
+            <SelectItem value="shipped">Đã giao ĐVVC</SelectItem>
+            <SelectItem value="delivering">Đang vận chuyển</SelectItem>
+            <SelectItem value="delivered">Đã giao</SelectItem>
           </SelectContent>
         </Select>
         <Select value={callStatusFilter} onValueChange={setCallStatusFilter}>
