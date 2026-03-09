@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLandingOrders, useUpdateLandingOrder, LandingOrder } from '@/hooks/useLandingOrders';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -21,6 +21,7 @@ import { formatNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { BulkConfirmDialog } from './BulkConfirmDialog';
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: 'Chờ duyệt', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
@@ -171,6 +172,7 @@ export function LandingOrdersTab() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [bulkAssignStaffId, setBulkAssignStaffId] = useState<string>('');
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
 
   // Product search for "Xác nhận" flow
   const [productSearchOrder, setProductSearchOrder] = useState<LandingOrder | null>(null);
@@ -511,7 +513,11 @@ export function LandingOrdersTab() {
                 <UserPlus className="h-3.5 w-3.5" />
                 Phân công NV
               </Button>
-              <Button size="sm" className="gap-1" onClick={handleBulkShipToCarrier} disabled={updateOrder.isPending}>
+              <Button size="sm" className="gap-1" onClick={() => setBulkConfirmOpen(true)} disabled={updateOrder.isPending}>
+                <CheckCircle className="h-3.5 w-3.5" />
+                Xác nhận hàng loạt
+              </Button>
+              <Button size="sm" className="gap-1" variant="outline" onClick={handleBulkShipToCarrier} disabled={updateOrder.isPending}>
                 {updateOrder.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
                 <Truck className="h-3.5 w-3.5" />
                 Giao ĐVVC
@@ -1065,6 +1071,15 @@ export function LandingOrdersTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk confirm dialog */}
+      <BulkConfirmDialog
+        open={bulkConfirmOpen}
+        onOpenChange={setBulkConfirmOpen}
+        orders={filtered.filter(o => selectedIds.has(o.id) && o.status === 'pending')}
+        staffList={staffList || []}
+        onSuccess={() => setSelectedIds(new Set())}
+      />
     </div>
   );
 }
