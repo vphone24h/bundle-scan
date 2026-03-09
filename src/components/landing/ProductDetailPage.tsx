@@ -1113,6 +1113,7 @@ export function ProductDetailPage({
             quantity,
             customer_name: data.customer_name,
             customer_phone: data.customer_phone,
+            customer_email: data.customer_email,
             customer_address: data.customer_address,
             note: data.note,
             payment_method: data.payment_method,
