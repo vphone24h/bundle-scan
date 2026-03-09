@@ -290,8 +290,27 @@ function DetailContent({ type, salesDetails, returnDetails, expenseDetails, inco
           <SalesTable items={salesDetails} />
         </div>
       );
-    case 'businessProfit':
-      return <SalesTable items={salesDetails} />;
+    case 'businessProfit': {
+      const soldProfit = salesDetails.reduce((s, i) => s + i.profit, 0);
+      const returnProfitLoss = returnDetails.reduce((s, i) => s + i.profit, 0);
+      return (
+        <div className="space-y-4">
+          <div className="text-sm space-y-1 border-b pb-3">
+            <div className="flex justify-between"><span>Lợi nhuận bán hàng ({salesDetails.length} SP)</span><span className="font-medium text-green-600">{formatCurrency(soldProfit)}</span></div>
+            <div className="flex justify-between"><span>- Lợi nhuận trả hàng ({returnDetails.length} SP)</span><span className="font-medium text-destructive">-{formatCurrency(returnProfitLoss)}</span></div>
+            <div className="flex justify-between font-bold pt-1"><span>= Lợi nhuận kinh doanh</span><span className={stats?.businessProfit && stats.businessProfit >= 0 ? 'text-green-600' : 'text-destructive'}>{formatCurrency(stats?.businessProfit || 0)}</span></div>
+          </div>
+          <h4 className="font-medium text-sm">Chi tiết bán hàng</h4>
+          <SalesTable items={salesDetails} />
+          {returnDetails.length > 0 && (
+            <>
+              <h4 className="font-medium text-sm mt-4">Chi tiết trả hàng</h4>
+              <ReturnsTable items={returnDetails} />
+            </>
+          )}
+        </div>
+      );
+    }
     case 'expenses':
       return <CashBookTable items={expenseDetails} label="khoản chi" />;
     case 'otherIncome':

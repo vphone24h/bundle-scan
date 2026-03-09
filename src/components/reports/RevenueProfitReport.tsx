@@ -178,7 +178,7 @@ export function RevenueProfitReport() {
       { label: '1. Tổng doanh thu bán hàng', value: stats.totalSalesRevenue, note: `${stats.productsSold} SP đã bán` },
       { label: '2. Doanh thu trả hàng', value: stats.totalReturnRevenue, note: `${stats.productsReturned} SP trả` },
       { label: '3. Doanh thu thuần', value: stats.netRevenue, note: '= DT bán - DT trả' },
-      { label: '3.1 Lợi nhuận kinh doanh', value: stats.businessProfit, note: 'Σ(Giá bán - Giá nhập)' },
+      { label: '3.1 Lợi nhuận kinh doanh', value: stats.businessProfit, note: 'Σ Lãi bán - Σ Lãi trả hàng' },
       { label: '4. Chi phí', value: stats.totalExpenses, note: 'Từ sổ quỹ' },
       { label: '5. Thu nhập khác', value: stats.otherIncome, note: '' },
       { label: '6. LỢI NHUẬN THUẦN', value: stats.netProfit, note: '= (LN KD + Thu nhập khác) - Chi phí' },
@@ -294,7 +294,7 @@ export function RevenueProfitReport() {
         <StatCard title={`1. ${t('common.salesRevenue')}`} value={formatCurrency(stats?.totalSalesRevenue || 0)} icon={<ShoppingCart className="h-5 w-5" />} description={`${stats?.productsSold || 0} ${t('common.productsSold')}`} onClick={() => setDetailType('sales')} />
         <StatCard title={`2. ${t('common.returnRevenue')}`} value={formatCurrency(stats?.totalReturnRevenue || 0)} icon={<RotateCcw className="h-5 w-5" />} trend="down" description={`${stats?.productsReturned || 0} ${t('common.productsReturned')}`} className="border-destructive/20" onClick={() => setDetailType('returns')} />
         <StatCard title={`3. ${t('common.netRevenue')}`} value={formatCurrency(stats?.netRevenue || 0)} icon={<DollarSign className="h-5 w-5" />} description={t('common.salesMinusReturns')} onClick={() => setDetailType('netRevenue')} />
-        <StatCard title={`3.1 ${t('common.businessProfit')}`} value={formatCurrency(stats?.businessProfit || 0)} icon={<Calculator className="h-5 w-5" />} trend={stats?.businessProfit && stats.businessProfit > 0 ? 'up' : 'down'} description={t('common.sumSaleMinusImport')} className={(stats?.businessProfit || 0) > 0 ? 'border-green-500/30' : 'border-destructive/30'} onClick={() => setDetailType('businessProfit')} />
+        <StatCard title={`3.1 ${t('common.businessProfit')}`} value={formatCurrency(stats?.businessProfit || 0)} icon={<Calculator className="h-5 w-5" />} trend={stats?.businessProfit && stats.businessProfit > 0 ? 'up' : 'down'} description={'Σ Lãi bán - Σ Lãi trả hàng'} className={(stats?.businessProfit || 0) > 0 ? 'border-green-500/30' : 'border-destructive/30'} onClick={() => setDetailType('businessProfit')} />
         <StatCard title={`4. ${t('common.expenses')}`} value={formatCurrency(stats?.totalExpenses || 0)} icon={<Wallet className="h-5 w-5" />} trend="down" description={t('common.fromCashBook')} onClick={() => setDetailType('expenses')} />
         <StatCard title={`5. ${t('common.otherIncome')}`} value={formatCurrency(stats?.otherIncome || 0)} icon={<TrendingUp className="h-5 w-5" />} description={t('common.tipsOtherIncome')} onClick={() => setDetailType('otherIncome')} />
       </div>
