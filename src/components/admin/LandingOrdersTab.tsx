@@ -21,7 +21,7 @@ import { formatNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { BulkConfirmDialog } from './BulkConfirmDialog';
+
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: 'Chờ duyệt', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
@@ -172,7 +172,7 @@ export function LandingOrdersTab() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [bulkAssignStaffId, setBulkAssignStaffId] = useState<string>('');
-  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  
 
   // Product search for "Xác nhận" flow
   const [productSearchOrder, setProductSearchOrder] = useState<LandingOrder | null>(null);
@@ -265,6 +265,29 @@ export function LandingOrdersTab() {
         toast.success(order.status === 'pending' ? 'Đã gọi & xác nhận đơn hàng' : 'Đã đánh dấu: Đã gọi');
       }
     } catch { toast.error('Lỗi cập nhật'); }
+  };
+
+  // Bulk confirm: just approve all selected pending orders
+  const handleBulkConfirm = async () => {
+    const eligibleOrders = filtered.filter(o => selectedIds.has(o.id) && o.status === 'pending');
+    if (eligibleOrders.length === 0) {
+      toast.error('Không có đơn chờ duyệt nào được chọn');
+      return;
+    }
+    try {
+      await Promise.all(
+        eligibleOrders.map(o =>
+          updateOrder.mutateAsync({
+            id: o.id,
+            status: 'approved',
+            delivery_status: 'confirmed',
+            approved_at: new Date().toISOString(),
+          } as any)
+        )
+      );
+      toast.success(`Đã xác nhận ${eligibleOrders.length} đơn`);
+      setSelectedIds(new Set());
+    } catch { toast.error('Lỗi xác nhận hàng loạt'); }
   };
 
   // Bulk ship to carrier
@@ -513,7 +536,8 @@ export function LandingOrdersTab() {
                 <UserPlus className="h-3.5 w-3.5" />
                 Phân công NV
               </Button>
-              <Button size="sm" className="gap-1" onClick={() => setBulkConfirmOpen(true)} disabled={updateOrder.isPending}>
+              <Button size="sm" className="gap-1" onClick={handleBulkConfirm} disabled={updateOrder.isPending}>
+                {updateOrder.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
                 <CheckCircle className="h-3.5 w-3.5" />
                 Xác nhận hàng loạt
               </Button>
@@ -1072,14 +1096,6 @@ export function LandingOrdersTab() {
         </DialogContent>
       </Dialog>
 
-      {/* Bulk confirm dialog */}
-      <BulkConfirmDialog
-        open={bulkConfirmOpen}
-        onOpenChange={setBulkConfirmOpen}
-        orders={filtered.filter(o => selectedIds.has(o.id) && o.status === 'pending')}
-        staffList={staffList || []}
-        onSuccess={() => setSelectedIds(new Set())}
-      />
     </div>
   );
 }
