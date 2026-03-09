@@ -29,20 +29,43 @@ function LogoBlock({ logoUrl, storeName, onClick }: { logoUrl?: string | null; s
   );
 }
 
-// === Sticky Top Nav Bar (always visible, horizontal scroll) ===
+// === Sticky Top Nav Bar (always visible, horizontal scroll with momentum) ===
 function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass, inactiveClass }: { navItems: HeaderProps['navItems']; onNavClick: HeaderProps['onNavClick']; isNavActive: HeaderProps['isNavActive']; accentColor?: string; activeClass?: string; inactiveClass?: string }) {
   const scrollRef = React.useRef<HTMLDivElement>(null);
-  const touchStartRef = React.useRef<{ x: number; y: number; scrollLeft: number } | null>(null);
+  const touchStartRef = React.useRef<{ x: number; y: number; scrollLeft: number; time: number } | null>(null);
   const isDraggingRef = React.useRef(false);
+  const velocityRef = React.useRef(0);
+  const lastTouchRef = React.useRef<{ x: number; time: number }>({ x: 0, time: 0 });
+  const momentumRef = React.useRef<number>(0);
+
+  const startMomentum = React.useCallback(() => {
+    cancelAnimationFrame(momentumRef.current);
+    const el = scrollRef.current;
+    if (!el) return;
+    let velocity = velocityRef.current;
+    const friction = 0.95;
+    const step = () => {
+      if (Math.abs(velocity) < 0.5) return;
+      el.scrollLeft += velocity;
+      velocity *= friction;
+      momentumRef.current = requestAnimationFrame(step);
+    };
+    momentumRef.current = requestAnimationFrame(step);
+  }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    cancelAnimationFrame(momentumRef.current);
     const touch = e.touches[0];
+    const now = Date.now();
     touchStartRef.current = {
       x: touch.clientX,
       y: touch.clientY,
       scrollLeft: scrollRef.current?.scrollLeft || 0,
+      time: now,
     };
+    lastTouchRef.current = { x: touch.clientX, time: now };
     isDraggingRef.current = false;
+    velocityRef.current = 0;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -50,14 +73,26 @@ function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass
     const touch = e.touches[0];
     const dx = touchStartRef.current.x - touch.clientX;
     const dy = Math.abs(touch.clientY - touchStartRef.current.y);
-    // Only count as drag if moved more than 8px horizontally
     if (Math.abs(dx) > 8 || dy > 8) {
       isDraggingRef.current = true;
     }
-    // Manual scroll so touching anywhere on the bar (including buttons) allows drag
     if (Math.abs(dx) > dy) {
       scrollRef.current.scrollLeft = touchStartRef.current.scrollLeft + dx;
+      // Track velocity
+      const now = Date.now();
+      const dt = now - lastTouchRef.current.time;
+      if (dt > 0) {
+        velocityRef.current = (lastTouchRef.current.x - touch.clientX) / dt * 16; // per frame
+      }
+      lastTouchRef.current = { x: touch.clientX, time: now };
     }
+  };
+
+  const handleTouchEnd = () => {
+    if (isDraggingRef.current && Math.abs(velocityRef.current) > 1) {
+      startMomentum();
+    }
+    touchStartRef.current = null;
   };
 
   const handleButtonClick = (item: HeaderProps['navItems'][number], e: React.MouseEvent) => {
@@ -76,6 +111,7 @@ function TopNavBar({ navItems, onNavClick, isNavActive, accentColor, activeClass
       style={{ WebkitOverflowScrolling: 'touch', willChange: 'scroll-position', touchAction: 'pan-x' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       <div className="flex items-center gap-1.5 px-3 py-2 min-w-max will-change-transform">
         {navItems.map(item => (
