@@ -375,7 +375,18 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex gap-2 pt-1">
+                <div className="flex gap-2 pt-1 flex-wrap">
+                  {/* Confirm delivery button - show when delivering or shipped */}
+                  {!isCancelled && stepIdx >= 3 && stepIdx < 5 && order.delivery_status !== 'delivered' && (
+                    <Button
+                      size="sm"
+                      className="flex-1 text-white gap-1"
+                      style={{ backgroundColor: '#22c55e' }}
+                      onClick={() => setConfirmDeliveryTarget(order)}
+                    >
+                      <PackageCheck className="h-3.5 w-3.5" /> Tôi đã nhận hàng
+                    </Button>
+                  )}
                   {canCancel(order.status, order.delivery_status) && (
                     <Button
                       variant="outline"
