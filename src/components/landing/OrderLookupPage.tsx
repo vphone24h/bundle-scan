@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Search, ArrowLeft, Phone, Package, MapPin, Clock, CheckCircle2,
-  XCircle, Truck, MessageCircle, Loader2, ShoppingBag, AlertCircle,
+  XCircle, Truck, MessageCircle, Loader2, ShoppingBag, AlertCircle, HeadphonesIcon,
 } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { format } from 'date-fns';
@@ -14,6 +14,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+
 
 interface LandingOrderResult {
   id: string;
