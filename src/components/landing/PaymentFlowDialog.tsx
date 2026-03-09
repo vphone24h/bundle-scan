@@ -189,6 +189,7 @@ export function PaymentFlowDialog({
       await onPlaceOrder({
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
+        customer_email: customerEmail.trim() || undefined,
         customer_address: customerAddress.trim() || undefined,
         note: fullNote || undefined,
         branch_id: branchId,
