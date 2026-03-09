@@ -1,3 +1,4 @@
+import React from 'react';
 import { LayoutStyle } from '@/lib/industryConfig';
 import { Menu, X, Search, ShoppingBag } from 'lucide-react';
 import { createPortal } from 'react-dom';
