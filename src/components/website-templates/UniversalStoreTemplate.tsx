@@ -1230,7 +1230,7 @@ export default function UniversalStoreTemplate({
                                     <span className={`text-[11px] font-medium text-center leading-tight ${selectedArticleCategoryId === cat.id ? 'font-bold' : ''}`}>{cat.name}</span>
                                   </button>
                                 ))}
-                              </div>
+                              </SwipeGuardScroll>
                             </div>
                           </div>
                         );
