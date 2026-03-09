@@ -76,6 +76,56 @@ function sendLandingOrderAlert(order: LandingOrder) {
   });
 }
 
+// Fire-and-forget: Send confirmation email to customer
+async function sendCustomerConfirmation(order: LandingOrder) {
+  if (!order.customer_email) return;
+
+  try {
+    // Get shop info for the email
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('name')
+      .eq('id', order.tenant_id)
+      .maybeSingle();
+
+    // Get branch info
+    let branchName = '';
+    if (order.branch_id) {
+      const { data: branch } = await supabase
+        .from('branches')
+        .select('name, phone')
+        .eq('id', order.branch_id)
+        .maybeSingle();
+      if (branch) branchName = branch.name || '';
+    }
+
+    supabase.functions.invoke('send-customer-order-confirmation', {
+      body: {
+        customer_email: order.customer_email,
+        customer_name: order.customer_name,
+        customer_address: order.customer_address,
+        order_code: order.order_code,
+        action_type: order.action_type,
+        product_name: order.product_name,
+        product_price: order.product_price,
+        variant: order.variant,
+        quantity: order.quantity,
+        branch_name: branchName,
+        note: order.note,
+        shop_name: tenant?.name || 'Cửa hàng',
+        action_date: order.action_date,
+        action_time: order.action_time,
+      },
+    }).then(({ error }) => {
+      if (error) console.warn('Customer confirmation failed:', error.message);
+    }).catch((err) => {
+      console.warn('Customer confirmation failed:', err);
+    });
+  } catch (err) {
+    console.warn('Customer confirmation failed:', err);
+  }
+}
+
 // Public: place order (no auth needed)
 export function usePlaceLandingOrder() {
   return useMutation({
