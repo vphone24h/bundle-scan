@@ -580,7 +580,7 @@ export default function UniversalStoreTemplate({
                                 <span className="text-[11px] font-medium text-center leading-tight">{cat.name}</span>
                               </button>
                             ))}
-                          </div>
+                          </SwipeGuardScroll>
                         </div>
                       </section>
                     </ScrollReveal>
