@@ -1279,7 +1279,7 @@ export default function UniversalStoreTemplate({
                                   </button>
                                 </ScrollReveal>
                               ))}
-                              {allArticles.length === 0 && (
+                              {filteredAllArticles.length === 0 && (
                                 <div className="col-span-full text-center py-16">
                                   <Newspaper className="h-12 w-12 mx-auto text-[#86868b] mb-3" />
                                   <p className="text-sm text-[#86868b]">Chưa có bài viết nào</p>
