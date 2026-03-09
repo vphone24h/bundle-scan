@@ -672,6 +672,25 @@ export function ProductDetailPage({
                 </select>
               </div>
 
+              {/* Quantity */}
+              <div>
+                <Label className="text-sm">Số lượng</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Button type="button" variant="outline" size="icon" className="h-11 w-11 text-lg"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1}>−</Button>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    value={quantity}
+                    onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="h-11 text-base text-center w-20"
+                  />
+                  <Button type="button" variant="outline" size="icon" className="h-11 w-11 text-lg"
+                    onClick={() => setQuantity(quantity + 1)}>+</Button>
+                </div>
+              </div>
+
               {/* Voucher & Points */}
               {debouncedPhone && (
                 <div className="space-y-2 border rounded-lg p-3 bg-gray-50">
