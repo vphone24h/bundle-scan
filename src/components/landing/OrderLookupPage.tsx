@@ -141,6 +141,77 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
     }
   };
 
+  const handleConfirmDelivery = async () => {
+    if (!confirmDeliveryTarget) return;
+    setConfirming(true);
+    try {
+      // Update order to delivered
+      await supabase
+        .from('landing_orders' as any)
+        .update({ delivery_status: 'delivered' })
+        .eq('id', confirmDeliveryTarget.id);
+
+      // Try to award points based on order value
+      let pointsEarned = 0;
+      try {
+        // Get point settings for this tenant
+        const { data: ps } = await supabase
+          .from('point_settings')
+          .select('is_enabled, earn_points, spend_amount')
+          .eq('tenant_id', tenantId)
+          .maybeSingle();
+
+        if (ps?.is_enabled && ps.spend_amount > 0 && ps.earn_points > 0) {
+          const orderValue = confirmDeliveryTarget.product_price * confirmDeliveryTarget.quantity;
+          pointsEarned = Math.floor(orderValue / ps.spend_amount) * ps.earn_points;
+
+          if (pointsEarned > 0) {
+            // Find customer by phone
+            const { data: customer } = await supabase
+              .from('customers')
+              .select('id, current_points, total_points_earned')
+              .eq('tenant_id', tenantId)
+              .eq('phone', confirmDeliveryTarget.customer_phone)
+              .maybeSingle();
+
+            if (customer) {
+              const newBalance = (customer.current_points || 0) + pointsEarned;
+              // Add point transaction
+              await supabase.from('point_transactions').insert({
+                customer_id: customer.id,
+                transaction_type: 'earn',
+                points: pointsEarned,
+                balance_after: newBalance,
+                status: 'active',
+                description: `Xác nhận nhận hàng đơn ${confirmDeliveryTarget.order_code || ''}`,
+                reference_type: 'landing_order',
+                reference_id: confirmDeliveryTarget.id,
+              });
+              // Update customer points
+              await supabase.from('customers')
+                .update({
+                  current_points: newBalance,
+                  total_points_earned: (customer.total_points_earned || 0) + pointsEarned,
+                })
+                .eq('id', customer.id);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Points award failed:', e);
+      }
+
+      // Update local state
+      setOrders(prev => prev.map(o => o.id === confirmDeliveryTarget.id ? { ...o, delivery_status: 'delivered' } : o));
+      setDeliveryResult({ pointsEarned, order: confirmDeliveryTarget });
+    } catch {
+      toast.error('Có lỗi xảy ra, vui lòng thử lại');
+    } finally {
+      setConfirming(false);
+      setConfirmDeliveryTarget(null);
+    }
+  };
+
   const paymentLabel = (m: string | null) => {
     if (m === 'cod') return 'Thanh toán khi nhận hàng';
     if (m === 'transfer') return 'Chuyển khoản';
