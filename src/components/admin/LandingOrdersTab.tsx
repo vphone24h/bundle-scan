@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLandingOrders, useUpdateLandingOrder, LandingOrder } from '@/hooks/useLandingOrders';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useBranches } from '@/hooks/useBranches';
+import { useSearchProductsByName, useCheckProductForSale } from '@/hooks/useExportReceipts';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Phone, CheckCircle, XCircle, Clock, Search, Package, Loader2, PhoneCall, PhoneOff, UserPlus, CalendarDays, Tag, Truck, ChevronRight } from 'lucide-react';
+import { Phone, CheckCircle, XCircle, Clock, Search, Package, Loader2, PhoneCall, PhoneOff, UserPlus, CalendarDays, Tag, Truck, ChevronRight, ScanBarcode } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
@@ -144,6 +146,7 @@ function useStaffList(branchId?: string | null, isSuperAdmin?: boolean) {
 }
 
 export function LandingOrdersTab() {
+  const navigate = useNavigate();
   const { data: permissions } = usePermissions();
   const { data: branches } = useBranches();
   const isSuperAdmin = permissions?.role === 'super_admin';
@@ -153,6 +156,8 @@ export function LandingOrdersTab() {
   const filterBranchId = isSuperAdmin ? null : userBranchId;
   const { data: orders, isLoading } = useLandingOrders(filterBranchId);
   const updateOrder = useUpdateLandingOrder();
+  const searchProducts = useSearchProductsByName();
+  const checkProduct = useCheckProductForSale();
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [callStatusFilter, setCallStatusFilter] = useState<string>('all');
@@ -166,6 +171,13 @@ export function LandingOrdersTab() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [bulkAssignStaffId, setBulkAssignStaffId] = useState<string>('');
+
+  // Product search for "Xác nhận" flow
+  const [productSearchOrder, setProductSearchOrder] = useState<LandingOrder | null>(null);
+  const [productSearchText, setProductSearchText] = useState('');
+  const [productImeiSearch, setProductImeiSearch] = useState('');
+  const [productResults, setProductResults] = useState<any[]>([]);
+  const [productSearching, setProductSearching] = useState(false);
 
   const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
 
@@ -332,6 +344,87 @@ export function LandingOrdersTab() {
       setBulkAssignStaffId('');
       setSelectedIds(new Set());
     } catch { toast.error('Lỗi phân công hàng loạt'); }
+  };
+
+  // Product search for confirm flow
+  const handleProductNameSearch = useCallback(async () => {
+    if (!productSearchText.trim()) return;
+    setProductSearching(true);
+    try {
+      const results = await searchProducts.mutateAsync(productSearchText.trim());
+      setProductResults(results || []);
+    } catch { setProductResults([]); }
+    finally { setProductSearching(false); }
+  }, [productSearchText, searchProducts]);
+
+  const handleProductImeiSearch = useCallback(async () => {
+    if (!productImeiSearch.trim()) return;
+    setProductSearching(true);
+    try {
+      const result = await checkProduct.mutateAsync(productImeiSearch.trim());
+      setProductResults(result ? [result] : []);
+      if (!result) toast.error('Không tìm thấy sản phẩm với IMEI này');
+    } catch { setProductResults([]); }
+    finally { setProductSearching(false); }
+  }, [productImeiSearch, checkProduct]);
+
+  const handleSelectProductForExport = async (product: any) => {
+    if (!productSearchOrder) return;
+    const order = productSearchOrder;
+    
+    // Update order status to approved + preparing
+    try {
+      await updateOrder.mutateAsync({
+        id: order.id,
+        status: 'approved',
+        delivery_status: 'preparing',
+        approved_at: new Date().toISOString(),
+      } as any);
+    } catch { /* continue anyway */ }
+
+    // Save prefill data to sessionStorage
+    sessionStorage.setItem('export_prefill', JSON.stringify({
+      landingOrderId: order.id,
+      product: {
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        imei: product.imei,
+        import_price: product.import_price,
+        sale_price: product.sale_price || order.product_price,
+        status: product.status,
+        category_id: product.category_id,
+        branch_id: product.branch_id,
+        categoryName: product.categories?.name,
+        branchName: product.branches?.name,
+      },
+      customer: {
+        name: order.customer_name,
+        phone: order.customer_phone,
+        email: order.customer_email || '',
+        address: order.customer_address || '',
+      },
+    }));
+
+    setProductSearchOrder(null);
+    setProductSearchText('');
+    setProductImeiSearch('');
+    setProductResults([]);
+    navigate('/export-new');
+  };
+
+  // Override "Xác nhận" for pending orders: open product search
+  const handleConfirmOrder = (order: LandingOrder) => {
+    const step = getDeliveryStepIndex(order.status, order.delivery_status);
+    if (step <= 1) {
+      // Pending or confirmed: open product search
+      setProductSearchOrder(order);
+      setProductSearchText(order.product_name || '');
+      setProductResults([]);
+    } else {
+      // Other steps: proceed normally
+      handleNextDeliveryStep(order);
+    }
   };
 
   if (isLoading) {
@@ -575,7 +668,7 @@ export function LandingOrdersTab() {
                               const action = getNextDeliveryAction(order.status, order.delivery_status);
                               if (!action) return null;
                               return (
-                                <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => handleNextDeliveryStep(order)}>
+                                <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => handleConfirmOrder(order)}>
                                   {action.label}
                                   <ChevronRight className="h-3 w-3" />
                                 </Button>
@@ -851,7 +944,7 @@ export function LandingOrdersTab() {
                   const action = getNextDeliveryAction(detailOrder.status, detailOrder.delivery_status);
                   if (!action) return null;
                   return (
-                    <Button className="flex-1 gap-1" onClick={() => { handleNextDeliveryStep(detailOrder); setDetailOrder(null); }}>
+                    <Button className="flex-1 gap-1" onClick={() => { handleConfirmOrder(detailOrder); setDetailOrder(null); }}>
                       {action.label}
                       <ChevronRight className="h-4 w-4" />
                     </Button>
@@ -865,6 +958,107 @@ export function LandingOrdersTab() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Product search dialog for confirm flow */}
+      <Dialog open={!!productSearchOrder} onOpenChange={v => { if (!v) { setProductSearchOrder(null); setProductSearchText(''); setProductImeiSearch(''); setProductResults([]); } }}>
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-base">Chọn sản phẩm thật để xuất hàng</DialogTitle>
+          </DialogHeader>
+          {productSearchOrder && (
+            <p className="text-sm text-muted-foreground -mt-2">
+              Đơn: <span className="font-medium text-foreground">{productSearchOrder.customer_name}</span> — {productSearchOrder.product_name}
+            </p>
+          )}
+          <div className="space-y-3">
+            {/* IMEI search */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Quét / nhập IMEI..."
+                  value={productImeiSearch}
+                  onChange={e => setProductImeiSearch(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleProductImeiSearch()}
+                  className="pl-10"
+                />
+              </div>
+              <Button size="sm" onClick={handleProductImeiSearch} disabled={productSearching || !productImeiSearch.trim()}>
+                {productSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              </Button>
+            </div>
+            {/* Name search */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm theo tên sản phẩm..."
+                  value={productSearchText}
+                  onChange={e => setProductSearchText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleProductNameSearch()}
+                  className="pl-10"
+                />
+              </div>
+              <Button size="sm" onClick={handleProductNameSearch} disabled={productSearching || !productSearchText.trim()}>
+                {productSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Tìm'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Results */}
+          <div className="flex-1 overflow-y-auto space-y-2 min-h-0 mt-2">
+            {productResults.length === 0 && !productSearching && (
+              <p className="text-center text-sm text-muted-foreground py-8">
+                Tìm kiếm sản phẩm bằng IMEI hoặc tên
+              </p>
+            )}
+            {productResults.map((p: any) => (
+              <button
+                key={p.id}
+                className="w-full text-left p-3 rounded-lg border hover:bg-accent/50 transition-colors flex items-center gap-3"
+                onClick={() => handleSelectProductForExport(p)}
+              >
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                  <Package className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{p.name}</p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {p.imei && <span className="font-mono">{p.imei}</span>}
+                    {p.sku && <span>SKU: {p.sku}</span>}
+                    {p.branches?.name && <span>| {p.branches.name}</span>}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs font-medium text-primary">{formatNumber(p.sale_price || 0)}₫</span>
+                    <Badge variant={p.status === 'in_stock' ? 'default' : 'secondary'} className="text-[10px] h-4">
+                      {p.status === 'in_stock' ? 'Còn hàng' : p.status}
+                    </Badge>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </button>
+            ))}
+          </div>
+
+          <DialogFooter className="mt-2">
+            <Button variant="outline" onClick={() => { setProductSearchOrder(null); setProductSearchText(''); setProductImeiSearch(''); setProductResults([]); }}>
+              Đóng
+            </Button>
+            <Button variant="ghost" onClick={() => {
+              // Skip product selection, proceed normally
+              if (productSearchOrder) {
+                handleNextDeliveryStep(productSearchOrder);
+                setProductSearchOrder(null);
+                setProductSearchText('');
+                setProductImeiSearch('');
+                setProductResults([]);
+              }
+            }}>
+              Bỏ qua, xác nhận trực tiếp
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
