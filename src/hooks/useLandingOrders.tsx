@@ -49,6 +49,33 @@ function getCTVRef(tenantId: string): { code: string; ts: number } | null {
   } catch { return null; }
 }
 
+// Fire-and-forget: Send alert to shop owner
+function sendLandingOrderAlert(order: LandingOrder) {
+  supabase.functions.invoke('send-landing-order-alert', {
+    body: {
+      tenant_id: order.tenant_id,
+      order_id: order.id,
+      order_code: order.order_code,
+      action_type: order.action_type,
+      product_name: order.product_name,
+      product_price: order.product_price,
+      variant: order.variant,
+      quantity: order.quantity,
+      customer_name: order.customer_name,
+      customer_phone: order.customer_phone,
+      customer_email: order.customer_email,
+      customer_address: order.customer_address,
+      branch_id: order.branch_id,
+      note: order.note,
+      ctv_name: order.ctv_name,
+    },
+  }).then(({ error }) => {
+    if (error) console.warn('Landing order alert failed:', error.message);
+  }).catch((err) => {
+    console.warn('Landing order alert failed:', err);
+  });
+}
+
 // Public: place order (no auth needed)
 export function usePlaceLandingOrder() {
   return useMutation({
@@ -94,7 +121,13 @@ export function usePlaceLandingOrder() {
         .select()
         .maybeSingle();
       if (error) throw error;
-      return (data || finalOrder) as unknown as LandingOrder;
+      
+      const result = (data || finalOrder) as unknown as LandingOrder;
+      
+      // Fire-and-forget: Send email alert to shop owner
+      sendLandingOrderAlert(result);
+      
+      return result;
     },
   });
 }
