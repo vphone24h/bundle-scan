@@ -410,7 +410,7 @@ export function LandingOrdersTab() {
     setProductSearchText('');
     setProductImeiSearch('');
     setProductResults([]);
-    navigate('/export-new');
+    navigate('/export/new');
   };
 
   // Override "Xác nhận" for pending orders: open product search
