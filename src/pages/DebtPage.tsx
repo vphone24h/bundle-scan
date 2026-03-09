@@ -200,7 +200,13 @@ export default function DebtPage() {
           </Card>
         </div>
 
-        {/* Filters */}
+        {/* Search & Filters */}
+        <SearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Tìm tên, SĐT..."
+          className="h-9"
+        />
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-muted/50 p-2 sm:p-3 rounded-lg">
           {isSuperAdmin && (
             <Select value={branchFilter} onValueChange={setBranchFilter}>
