@@ -405,7 +405,20 @@ export function LandingOrdersTab() {
                       </TableCell>
                       <TableCell className="text-xs">{branchMap.get(order.branch_id) || '—'}</TableCell>
                       <TableCell>
-                        <Badge className={`${st.color} text-[10px]`} variant="secondary">{st.label}</Badge>
+                        {order.status === 'cancelled' ? (
+                          <Badge className="bg-red-100 text-red-800 text-[10px]" variant="secondary">Đã hủy</Badge>
+                        ) : (
+                          <div>
+                            <Badge className={`${st.color} text-[10px]`} variant="secondary">
+                              {DELIVERY_STEPS[getDeliveryStepIndex(order.status, order.delivery_status)]?.label || st.label}
+                            </Badge>
+                            <div className="flex items-center gap-0.5 mt-1">
+                              {DELIVERY_STEPS.map((_, i) => (
+                                <div key={i} className={`h-1 flex-1 rounded-full ${i <= getDeliveryStepIndex(order.status, order.delivery_status) ? 'bg-primary' : 'bg-muted'}`} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
