@@ -469,7 +469,7 @@ export default function UniversalStoreTemplate({
               className="text-xs font-medium px-3 py-1.5 rounded-full border transition-colors hover:bg-black/5"
               style={{ borderColor: accentColor, color: accentColor }}
             >
-              🤝 Đăng nhập CTV
+              🤝 Đăng nhập
             </button>
           )}
         </div>
