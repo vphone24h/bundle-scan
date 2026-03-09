@@ -4,13 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronUp, ChevronDown, RotateCcw, Plus, Pencil, Trash2, X, Package } from 'lucide-react';
+import { ChevronUp, ChevronDown, RotateCcw, Plus, Pencil, Trash2, X, Package, ArrowLeftRight, ArrowDownUp } from 'lucide-react';
 import { CustomProductTab } from '@/components/admin/HomeSectionManager';
 import { SYSTEM_PAGES } from '@/lib/industryConfig';
 
 export interface ProductsPageSectionItem {
   id: string;
   enabled: boolean;
+  displayMode?: 'horizontal' | 'vertical';
 }
 
 const PRODUCTS_PAGE_SECTIONS: { id: string; label: string; icon: string; description: string }[] = [
@@ -238,6 +239,23 @@ export function ProductsPageSectionManager({ customSections, onChange, customPro
                 <button type="button" onClick={() => removeLayoutSection(item.id)}
                   className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive shrink-0">
                   <Trash2 className="h-3 w-3" />
+                </button>
+              )}
+
+              {item.id === 'categoryFilter' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated = [...currentItems];
+                    const currentMode = (updated[i] as any).displayMode || 'horizontal';
+                    updated[i] = { ...updated[i], displayMode: currentMode === 'horizontal' ? 'vertical' : 'horizontal' };
+                    onChange(updated);
+                  }}
+                  className="h-6 px-1.5 flex items-center justify-center gap-0.5 rounded hover:bg-primary/10 text-primary text-[10px] font-medium shrink-0"
+                  title={(item as any).displayMode === 'vertical' ? 'Xếp dọc' : 'Xếp ngang'}
+                >
+                  {(item as any).displayMode === 'vertical' ? <ArrowDownUp className="h-3 w-3" /> : <ArrowLeftRight className="h-3 w-3" />}
+                  {(item as any).displayMode === 'vertical' ? 'Dọc' : 'Ngang'}
                 </button>
               )}
 
