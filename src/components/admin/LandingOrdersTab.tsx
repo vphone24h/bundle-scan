@@ -315,10 +315,13 @@ export function LandingOrdersTab() {
       } else {
         toast.success(`Đã xác nhận ${ids.length} đơn hàng`);
         setSelectedIds(new Set());
-        // Refetch data then switch filter
-        await refetch();
-        setStatusFilter('approved');
-        setDeliveryFilter('all');
+        // Refetch data, wait for React to process, then switch filter
+        const { data: freshData } = await refetch();
+        // Use setTimeout to ensure state update from refetch is committed before filter change
+        setTimeout(() => {
+          setStatusFilter('approved');
+          setDeliveryFilter('all');
+        }, 100);
       }
     } catch (err: any) {
       console.error('[BulkConfirm] Exception:', err);
