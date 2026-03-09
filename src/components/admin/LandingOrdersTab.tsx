@@ -267,6 +267,29 @@ export function LandingOrdersTab() {
     } catch { toast.error('Lỗi cập nhật'); }
   };
 
+  // Bulk confirm: just approve all selected pending orders
+  const handleBulkConfirm = async () => {
+    const eligibleOrders = filtered.filter(o => selectedIds.has(o.id) && o.status === 'pending');
+    if (eligibleOrders.length === 0) {
+      toast.error('Không có đơn chờ duyệt nào được chọn');
+      return;
+    }
+    try {
+      await Promise.all(
+        eligibleOrders.map(o =>
+          updateOrder.mutateAsync({
+            id: o.id,
+            status: 'approved',
+            delivery_status: 'confirmed',
+            approved_at: new Date().toISOString(),
+          } as any)
+        )
+      );
+      toast.success(`Đã xác nhận ${eligibleOrders.length} đơn`);
+      setSelectedIds(new Set());
+    } catch { toast.error('Lỗi xác nhận hàng loạt'); }
+  };
+
   // Bulk ship to carrier
   const handleBulkShipToCarrier = async () => {
     const eligibleOrders = filtered.filter(o =>
