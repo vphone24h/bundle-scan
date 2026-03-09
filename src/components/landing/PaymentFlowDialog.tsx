@@ -48,6 +48,7 @@ interface PaymentFlowDialogProps {
     final_price?: number;
   }) => Promise<void>;
   isSubmitting?: boolean;
+  onNavigateOrderLookup?: () => void;
 }
 
 type Step = 'method' | 'cod_form' | 'transfer_qr';

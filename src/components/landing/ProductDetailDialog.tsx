@@ -29,6 +29,7 @@ interface ProductDetailDialogProps {
   warrantyHotline?: string | null;
   onShare?: () => void;
   onInstallment?: () => void;
+  onNavigateOrderLookup?: () => void;
   showPromotionSection?: boolean;
   showWarrantySection?: boolean;
   showInstallmentButton?: boolean;
