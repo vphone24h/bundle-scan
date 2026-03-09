@@ -109,6 +109,7 @@ export const SYSTEM_PAGES: SystemPageDef[] = [
   { id: 'collection', label: 'Bộ sưu tập', icon: '👗', description: 'Bộ sưu tập mới', category: 'Sản phẩm' },
   { id: 'promotion', label: 'Khuyến mãi', icon: '🏷️', description: 'Chương trình khuyến mãi', category: 'Sản phẩm' },
   { id: 'reviews', label: 'Đánh giá', icon: '⭐', description: 'Đánh giá khách hàng', category: 'Thông tin' },
+  { id: 'order-lookup', label: 'Tra cứu đơn hàng', icon: '📋', description: 'Khách tra cứu đơn hàng', category: 'Dịch vụ' },
 ];
 
 export function getSystemPageById(id: string): SystemPageDef | undefined {
