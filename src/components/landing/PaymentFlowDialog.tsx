@@ -255,6 +255,7 @@ export function PaymentFlowDialog({
     setPaymentMethod(null);
     setCustomerName('');
     setCustomerPhone('');
+    setCustomerEmail('');
     setCustomerAddress('');
     setNote('');
     setSelectedBranch(branches.length === 1 ? branches[0].id : '');
