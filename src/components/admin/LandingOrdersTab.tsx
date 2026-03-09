@@ -346,7 +346,87 @@ export function LandingOrdersTab() {
     } catch { toast.error('Lỗi phân công hàng loạt'); }
   };
 
-  if (isLoading) {
+  // Product search for confirm flow
+  const handleProductNameSearch = useCallback(async () => {
+    if (!productSearchText.trim()) return;
+    setProductSearching(true);
+    try {
+      const results = await searchProducts.mutateAsync(productSearchText.trim());
+      setProductResults(results || []);
+    } catch { setProductResults([]); }
+    finally { setProductSearching(false); }
+  }, [productSearchText, searchProducts]);
+
+  const handleProductImeiSearch = useCallback(async () => {
+    if (!productImeiSearch.trim()) return;
+    setProductSearching(true);
+    try {
+      const result = await checkProduct.mutateAsync(productImeiSearch.trim());
+      setProductResults(result ? [result] : []);
+      if (!result) toast.error('Không tìm thấy sản phẩm với IMEI này');
+    } catch { setProductResults([]); }
+    finally { setProductSearching(false); }
+  }, [productImeiSearch, checkProduct]);
+
+  const handleSelectProductForExport = async (product: any) => {
+    if (!productSearchOrder) return;
+    const order = productSearchOrder;
+    
+    // Update order status to approved + preparing
+    try {
+      await updateOrder.mutateAsync({
+        id: order.id,
+        status: 'approved',
+        delivery_status: 'preparing',
+        approved_at: new Date().toISOString(),
+      } as any);
+    } catch { /* continue anyway */ }
+
+    // Save prefill data to sessionStorage
+    sessionStorage.setItem('export_prefill', JSON.stringify({
+      landingOrderId: order.id,
+      product: {
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        imei: product.imei,
+        import_price: product.import_price,
+        sale_price: product.sale_price || order.product_price,
+        status: product.status,
+        category_id: product.category_id,
+        branch_id: product.branch_id,
+        categoryName: product.categories?.name,
+        branchName: product.branches?.name,
+      },
+      customer: {
+        name: order.customer_name,
+        phone: order.customer_phone,
+        email: order.customer_email || '',
+        address: order.customer_address || '',
+      },
+    }));
+
+    setProductSearchOrder(null);
+    setProductSearchText('');
+    setProductImeiSearch('');
+    setProductResults([]);
+    navigate('/export-new');
+  };
+
+  // Override "Xác nhận" for pending orders: open product search
+  const handleConfirmOrder = (order: LandingOrder) => {
+    const step = getDeliveryStepIndex(order.status, order.delivery_status);
+    if (step <= 1) {
+      // Pending or confirmed: open product search
+      setProductSearchOrder(order);
+      setProductSearchText(order.product_name || '');
+      setProductResults([]);
+    } else {
+      // Other steps: proceed normally
+      handleNextDeliveryStep(order);
+    }
+  };
+
     return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
 
