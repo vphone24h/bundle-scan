@@ -48,12 +48,12 @@ function getDeliveryStepIndex(status: string, deliveryStatus: string | null): nu
 
 function getNextDeliveryAction(status: string, deliveryStatus: string | null): { label: string; nextStatus?: string; nextDelivery?: string } | null {
   if (status === 'cancelled') return null;
-  if (status === 'pending') return { label: 'Xác nhận', nextStatus: 'approved', nextDelivery: 'confirmed' };
+  if (status === 'pending') return { label: 'Xác nhận', nextStatus: 'approved', nextDelivery: 'preparing' };
   const step = getDeliveryStepIndex(status, deliveryStatus);
   if (step >= 5) return null; // delivered
   const nextMap: Record<number, { label: string; nextDelivery: string }> = {
-    1: { label: 'Chuẩn bị hàng', nextDelivery: 'preparing' },
-    2: { label: 'Giao cho ĐVVC', nextDelivery: 'shipped' },
+    1: { label: 'Xác nhận', nextDelivery: 'preparing' },
+    2: { label: 'Giao ĐVVC', nextDelivery: 'shipped' },
     3: { label: 'Đang giao', nextDelivery: 'delivering' },
     4: { label: 'Đã giao', nextDelivery: 'delivered' },
   };
