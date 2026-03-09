@@ -159,7 +159,7 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
         .update({ delivery_status: 'delivered' })
         .eq('id', confirmDeliveryTarget.id);
 
-      // Calculate points to DISPLAY only (points already awarded when product was linked via export)
+      // Calculate and ACTUALLY award points
       let pointsEarned = 0;
       try {
         const { data: ps } = await supabase
@@ -171,9 +171,42 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
         if (ps?.is_enabled && ps.spend_amount > 0 && ps.earn_points > 0) {
           const orderValue = confirmDeliveryTarget.product_price * confirmDeliveryTarget.quantity;
           pointsEarned = Math.floor(orderValue / ps.spend_amount) * ps.earn_points;
+
+          if (pointsEarned > 0) {
+            // Find customer by phone in this tenant
+            const { data: customer } = await supabase
+              .from('customers')
+              .select('id, current_points, total_points_earned')
+              .eq('tenant_id', tenantId)
+              .eq('phone', confirmDeliveryTarget.customer_phone)
+              .maybeSingle();
+
+            if (customer) {
+              const newBalance = (customer.current_points || 0) + pointsEarned;
+              const newTotalEarned = (customer.total_points_earned || 0) + pointsEarned;
+
+              // Add point transaction
+              await supabase.from('point_transactions').insert([{
+                customer_id: customer.id,
+                transaction_type: 'earn',
+                points: pointsEarned,
+                balance_after: newBalance,
+                status: 'active',
+                description: `Nhận hàng đơn ${confirmDeliveryTarget.order_code || confirmDeliveryTarget.id.slice(0, 8)}`,
+                reference_type: 'landing_order',
+                reference_id: confirmDeliveryTarget.id,
+              }]);
+
+              // Update customer points
+              await supabase.from('customers').update({
+                current_points: newBalance,
+                total_points_earned: newTotalEarned,
+              }).eq('id', customer.id);
+            }
+          }
         }
       } catch (e) {
-        console.warn('Points calc failed:', e);
+        console.warn('Points award failed:', e);
       }
 
       // Update local state
@@ -542,7 +575,7 @@ export function OrderLookupPage({ tenantId, accentColor, storePhone, zaloUrl, fa
                   <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
                   +{formatNumber(deliveryResult.pointsEarned)} điểm tích lũy
                 </div>
-                <p className="text-xs text-amber-500 mt-1">Điểm đã được cộng vào tài khoản của bạn khi mua hàng</p>
+                <p className="text-xs text-amber-500 mt-1">Điểm đã được cộng vào tài khoản của bạn</p>
               </div>
             )}
             <Button
