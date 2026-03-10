@@ -182,6 +182,7 @@ export function useDashboardStats() {
         soldProducts: soldProducts || 0,
         totalImportValue,
         pendingDebt,
+        totalStockQty,
         todayProfit,
         todayRevenue,
         todaySold,
