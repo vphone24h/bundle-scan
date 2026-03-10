@@ -262,9 +262,9 @@ const Index = () => {
               <>
                 <StatCard
                   title={t('pages.dashboard.totalProducts')}
-                  value={stats?.totalProducts || 0}
+                  value={stats?.inStockProducts || 0}
                   icon={<Package className="h-5 w-5 sm:h-6 sm:w-6" />}
-                  onClick={() => navigate('/products')}
+                  onClick={() => navigate('/inventory')}
                   className="cursor-pointer hover:shadow-md transition-shadow"
                 />
                 <StatCard
