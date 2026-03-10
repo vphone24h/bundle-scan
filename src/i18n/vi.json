@@ -61,7 +61,7 @@
       "title": "Tổng quan kho",
       "description": "Theo dõi trạng thái kho và hoạt động nhập hàng",
       "helpText": "Trang tổng quan hiển thị dữ liệu tổng hợp: tổng giá trị tồn kho, doanh thu hôm nay, sản phẩm nhập/bán gần đây. Giúp bạn nắm nhanh tình hình kinh doanh.",
-      "totalProducts": "Tổng sản phẩm",
+      "totalProducts": "Tổng số lượng sản phẩm",
       "inStock": "Đang tồn kho",
       "stockValue": "Giá trị tồn kho",
       "orders": "Đơn hàng mới",
