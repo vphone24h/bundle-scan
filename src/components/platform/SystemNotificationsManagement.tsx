@@ -131,6 +131,7 @@ export function SystemNotificationsManagement() {
       show_as_startup_popup: showAsStartup,
       send_frequency: sendFrequency,
       target_audience: targetAudience,
+      source: 'manual',
     };
 
     try {
