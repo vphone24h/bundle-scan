@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import {
   Dialog,
   DialogContent,
@@ -85,8 +86,11 @@ export function StartupNotificationPopup() {
             </div>
             <DialogTitle className="text-base">{notification.title}</DialogTitle>
           </div>
-          <DialogDescription className="pt-2 whitespace-pre-line">
-            {notification.message}
+          <DialogDescription asChild className="pt-2">
+            <div
+              className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(notification.message) }}
+            />
           </DialogDescription>
         </DialogHeader>
 

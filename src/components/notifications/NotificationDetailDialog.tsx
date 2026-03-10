@@ -30,7 +30,10 @@ export function NotificationDetailDialog({ notification, open, onClose }: Notifi
         </DialogHeader>
 
         <div className="space-y-4">
-          <p className="text-sm text-foreground">{notification.message}</p>
+          <div
+            className="prose prose-sm dark:prose-invert max-w-none text-foreground"
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(notification.message) }}
+          />
 
           {notification.full_content && (
             <div

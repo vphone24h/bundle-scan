@@ -114,7 +114,7 @@ export function SystemNotificationBell() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-            {notification.message}
+            {notification.message.replace(/<[^>]*>/g, '')}
           </p>
           <p className="text-[10px] text-muted-foreground mt-1">
             {formatDistanceToNow(new Date(notification.created_at), {
