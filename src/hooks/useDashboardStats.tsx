@@ -29,8 +29,8 @@ export function useDashboardStats() {
       if (isDataHidden) {
         return {
           totalProducts: 0, inStockProducts: 0, soldProducts: 0,
-          totalImportValue: 0, pendingDebt: 0, todayProfit: 0,
-          todayRevenue: 0, todaySold: 0, todayImports: 0,
+          totalImportValue: 0, pendingDebt: 0, totalStockQty: 0,
+          todayProfit: 0, todayRevenue: 0, todaySold: 0, todayImports: 0,
         } as DashboardStats;
       }
 
