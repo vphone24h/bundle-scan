@@ -10,6 +10,7 @@ export interface DashboardStats {
   soldProducts: number;
   totalImportValue: number;
   pendingDebt: number;
+  totalStockQty: number;
   // Today stats
   todayProfit: number;
   todayRevenue: number;
