@@ -85,7 +85,7 @@ export function StartupNotificationPopup() {
             </div>
             <DialogTitle className="text-base">{notification.title}</DialogTitle>
           </div>
-          <DialogDescription className="pt-2">
+          <DialogDescription className="pt-2 whitespace-pre-line">
             {notification.message}
           </DialogDescription>
         </DialogHeader>
