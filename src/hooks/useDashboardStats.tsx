@@ -50,6 +50,7 @@ export function useDashboardStats() {
       const soldProducts = agg.sold || 0;
       const totalImportValue = Number(agg.total_import_value || 0);
       const pendingDebt = Number(agg.pending_debt || 0);
+      const totalStockQty = Number(agg.total_stock_qty || 0);
 
       // Always use direct queries for today's stats (browser local TZ)
       // to stay in sync with Reports page — don't rely on daily_stats cache
