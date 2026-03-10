@@ -71,13 +71,8 @@ export function SystemNotificationBell() {
     if (!notification.is_read) {
       markRead.mutate(notification.id);
     }
-
-    if (notification.notification_type === 'article' && notification.link_url) {
-      window.open(notification.link_url, '_blank');
-    } else {
-      setSelectedNotification(notification);
-      setOpen(false);
-    }
+    setSelectedNotification(notification);
+    setOpen(false);
   };
 
   const renderNotification = (notification: SystemNotification) => (
