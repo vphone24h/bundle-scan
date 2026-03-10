@@ -262,7 +262,7 @@ const Index = () => {
               <>
                 <StatCard
                   title={t('pages.dashboard.totalProducts')}
-                  value={stats?.inStockProducts || 0}
+                  value={(stats?.totalStockQty || 0).toLocaleString('vi-VN')}
                   icon={<Package className="h-5 w-5 sm:h-6 sm:w-6" />}
                   onClick={() => navigate('/inventory')}
                   className="cursor-pointer hover:shadow-md transition-shadow"

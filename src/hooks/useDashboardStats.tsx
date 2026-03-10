@@ -10,6 +10,7 @@ export interface DashboardStats {
   soldProducts: number;
   totalImportValue: number;
   pendingDebt: number;
+  totalStockQty: number;
   // Today stats
   todayProfit: number;
   todayRevenue: number;
@@ -28,8 +29,8 @@ export function useDashboardStats() {
       if (isDataHidden) {
         return {
           totalProducts: 0, inStockProducts: 0, soldProducts: 0,
-          totalImportValue: 0, pendingDebt: 0, todayProfit: 0,
-          todayRevenue: 0, todaySold: 0, todayImports: 0,
+          totalImportValue: 0, pendingDebt: 0, totalStockQty: 0,
+          todayProfit: 0, todayRevenue: 0, todaySold: 0, todayImports: 0,
         } as DashboardStats;
       }
 
@@ -49,6 +50,7 @@ export function useDashboardStats() {
       const soldProducts = agg.sold || 0;
       const totalImportValue = Number(agg.total_import_value || 0);
       const pendingDebt = Number(agg.pending_debt || 0);
+      const totalStockQty = Number(agg.total_stock_qty || 0);
 
       // Always use direct queries for today's stats (browser local TZ)
       // to stay in sync with Reports page — don't rely on daily_stats cache
@@ -180,6 +182,7 @@ export function useDashboardStats() {
         soldProducts: soldProducts || 0,
         totalImportValue,
         pendingDebt,
+        totalStockQty,
         todayProfit,
         todayRevenue,
         todaySold,
