@@ -44,7 +44,7 @@ export function useSystemNotifications() {
         .from('system_notifications')
         .select('*')
         .eq('is_active', true)
-        .neq('source', 'automation')
+        .or('source.neq.automation,source.is.null')
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -195,7 +195,7 @@ export function useAllSystemNotifications() {
       const { data, error } = await supabase
         .from('system_notifications')
         .select('*')
-        .neq('source', 'automation')
+        .or('source.neq.automation,source.is.null')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as SystemNotification[];
