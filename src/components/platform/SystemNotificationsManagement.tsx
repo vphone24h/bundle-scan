@@ -273,7 +273,7 @@ export function SystemNotificationsManagement() {
             </div>
             <div>
               <Label>Nội dung ngắn *</Label>
-              <Textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Mô tả ngắn" rows={2} />
+              <RichTextEditor value={message} onChange={setMessage} placeholder="Nhập nội dung thông báo..." minHeight="100px" />
             </div>
             <div>
               <Label>Loại thông báo</Label>
