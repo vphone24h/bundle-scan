@@ -170,15 +170,57 @@ export function SystemNotificationsManagement() {
   const handleSend = async (n: SystemNotification) => {
     if (!confirm(`Gửi thông báo "${n.title}" đến đối tượng đã chọn?`)) return;
     try {
-      await supabase.functions.invoke('send-push', {
-        body: {
-          notification_id: n.id,
-          title: n.title,
-          message: n.message,
-          url: n.link_url || '/',
-        },
-      });
-      toast({ title: 'Đã gửi thông báo thành công' });
+      // Ensure notification is active so users can see it in bell
+      if (!n.is_active) {
+        await updateMutation.mutateAsync({ id: n.id, is_active: true });
+      }
+
+      // Build push body with target filtering
+      const pushBody: Record<string, any> = {
+        notification_id: n.id,
+        title: n.title,
+        message: n.message.replace(/<[^>]*>/g, '').substring(0, 200),
+        url: n.link_url || '/',
+      };
+
+      // If targeting specific tenants, send push to each tenant
+      if (n.target_audience === 'group' && n.target_tenant_ids?.length) {
+        let totalSent = 0;
+        let totalFailed = 0;
+        for (const tid of n.target_tenant_ids) {
+          const { data, error } = await supabase.functions.invoke('send-push', {
+            body: { ...pushBody, tenant_id: tid },
+          });
+          if (error) {
+            console.error('Push error for tenant', tid, error);
+            totalFailed++;
+          } else {
+            totalSent += data?.sent || 0;
+            totalFailed += data?.failed || 0;
+          }
+        }
+        toast({
+          title: 'Đã gửi thông báo',
+          description: `Push: ${totalSent} thành công, ${totalFailed} thất bại. Thông báo cũng hiển thị trong chuông.`,
+        });
+      } else {
+        // Send to all
+        const { data, error } = await supabase.functions.invoke('send-push', {
+          body: pushBody,
+        });
+        if (error) {
+          console.error('Push send error:', error);
+          toast({
+            title: 'Thông báo đã lưu',
+            description: 'Push notification gửi thất bại, nhưng thông báo vẫn hiển thị trong chuông cho người dùng.',
+          });
+        } else {
+          toast({
+            title: 'Đã gửi thông báo',
+            description: `Push: ${data?.sent || 0} thành công. Thông báo cũng hiển thị trong chuông.`,
+          });
+        }
+      }
     } catch (err: any) {
       console.error('Push send error:', err);
       toast({ title: 'Lỗi gửi thông báo', description: err.message, variant: 'destructive' });
