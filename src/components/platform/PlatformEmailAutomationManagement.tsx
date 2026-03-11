@@ -168,14 +168,31 @@ export function PlatformEmailAutomationManagement() {
         toast.error('Không tìm thấy email admin');
         return;
       }
-      const { error } = await supabase.functions.invoke('send-bulk-email', {
+
+      const { data, error } = await supabase.functions.invoke('send-bulk-email', {
         body: {
           emails: [user.email],
           subject: `[TEST] ${a.subject}`,
           htmlContent: a.html_content,
         },
       });
-      if (error) throw error;
+
+      if (error) {
+        let message = error.message;
+        try {
+          const payload = await error.context?.json();
+          if (payload?.error) message = payload.error;
+        } catch {
+          // ignore parse errors
+        }
+        throw new Error(message);
+      }
+
+      if ((data?.failed || 0) > 0) {
+        const firstError = data?.errors?.[0] || 'Không thể gửi email test (SMTP đang bị giới hạn tạm thời)';
+        throw new Error(firstError);
+      }
+
       toast.success(`Đã gửi mail test đến ${user.email}`);
     } catch (err: any) {
       toast.error('Lỗi gửi test: ' + err.message);
