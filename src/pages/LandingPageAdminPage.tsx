@@ -26,16 +26,6 @@ const TabLoader = () => (
     <Loader2 className="h-8 w-8 animate-spin text-primary" />
   </div>
 );
-import { usePermissions } from '@/hooks/usePermissions';
-import { usePendingOrderCount } from '@/hooks/useLandingOrders';
-import { useLandingGuideUrl } from '@/hooks/useAppConfig';
-import { useOnboardingTour } from '@/hooks/useOnboardingTour';
-import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { BookOpen, Pencil } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { useTranslation } from 'react-i18next';
 
 const LANDING_TOUR_STEPS: TourStep[] = [
   {
