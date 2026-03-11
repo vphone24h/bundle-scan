@@ -211,9 +211,13 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
       setAiProgress(`Bước 1: AI đang xác minh & viết mô tả ${idx + 1}/${selectedItems.length}: ${item.productName}`);
 
       try {
+        // products array is empty from RPC summary, use avgImportPrice directly  
         const firstProduct = item.products[0];
-        let salePrice = firstProduct ? (await getSalePrice(firstProduct.id)) : item.avgImportPrice;
-        const aiContent = await generateAIDescription(item);
+        let salePrice: number | null = null;
+        if (firstProduct) {
+          salePrice = await getSalePrice(firstProduct.id);
+        }
+        const finalPrice = Math.round(salePrice || item.avgImportPrice || 0);
         const landingCategoryId = item.categoryId ? (categoryMap.get(item.categoryId) ?? null) : null;
 
         // Use verified name from AI if available
