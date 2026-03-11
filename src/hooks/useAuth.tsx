@@ -20,9 +20,24 @@ const CURRENT_STORE_ID_KEY = 'current_store_id';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  // OPTIMIZATION: Try to resolve user synchronously from localStorage
+  // to avoid the loading flash on subsequent visits
+  const initialSession = (() => {
+    try {
+      const stored = localStorage.getItem('sb-rodpbhesrwykmpywiiyd-auth-token');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.user && parsed?.access_token) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return null;
+  })();
+
+  const [user, setUser] = useState<User | null>(initialSession?.user ?? null);
+  const [session, setSession] = useState<Session | null>(initialSession as Session | null);
+  const [loading, setLoading] = useState(!initialSession); // Skip loading if we have cached session
   const queryClient = useQueryClient();
 
   // Debounce guard: prevent multiple simultaneous refresh calls across tabs
