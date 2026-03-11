@@ -19,7 +19,16 @@ function createTransporter(user: string, pass: string) {
     port: 465,
     secure: true,
     auth: { user, pass },
+    pool: true,
+    maxConnections: 1,
+    maxMessages: 100,
+    rateDelta: 1500,
+    rateLimit: 1,
   })
+}
+
+function shouldSwitchToBackup(errMsg: string): boolean {
+  return /(550|454|daily user sending quota|too many login attempts|rate limit|invalid login)/i.test(errMsg)
 }
 
 Deno.serve(async (req) => {
