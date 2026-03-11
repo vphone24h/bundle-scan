@@ -298,6 +298,7 @@ Deno.serve(async (req) => {
           }
 
           console.error(`❌ ${recipientEmail}: ${sendError.message}`);
+          const sErrMsg = sendError.message || '';
           await supabase.from("platform_email_automation_logs").insert({
             automation_id: automationId,
             tenant_id: t.tenant_id,
@@ -305,8 +306,9 @@ Deno.serve(async (req) => {
             recipient_name: tenantName,
             subject: finalSubject,
             status: "error",
-            error_message: sendError.message,
+            error_message: sErrMsg,
             body_html: fullHtml,
+            skip_resend: isInvalidEmailError(sErrMsg),
           });
         }
       }
