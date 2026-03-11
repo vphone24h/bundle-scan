@@ -32,10 +32,27 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: claims, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claims?.claims) {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token);
+
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { data: platformUser, error: platformUserError } = await supabase
+      .from('platform_users')
+      .select('platform_role')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (platformUserError || platformUser?.platform_role !== 'platform_admin') {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

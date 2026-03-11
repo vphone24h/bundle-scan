@@ -199,7 +199,7 @@ export function useAllSystemNotifications() {
       const { data, error } = await supabase
         .from('system_notifications')
         .select('*')
-        .neq('source', 'automation')
+        .or('source.eq.manual,source.is.null')
         .order('created_at', { ascending: false })
         .limit(200);
       if (error) throw error;
