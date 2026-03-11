@@ -149,6 +149,8 @@ export function LandingArticlesTab() {
   const [editingArticle, setEditingArticle] = useState<LandingArticle | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [articlePage, setArticlePage] = useState(1);
+  const ARTICLE_PAGE_SIZE = 20;
   const [form, setForm] = useState({
     title: '', summary: '', content: '', category_id: '_none_',
     thumbnail_url: '', is_published: false, is_featured: false, is_featured_home: false,
