@@ -35,6 +35,7 @@ import { Separator } from '@/components/ui/separator';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { PriceInput } from '@/components/ui/price-input';
 import { ImportFromWarehouseDialog } from './ImportFromWarehouseDialog';
+import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
 
 // Helper: build tree from flat categories
 function buildCategoryTree(categories: LandingProductCategory[]): LandingProductCategory[] {
