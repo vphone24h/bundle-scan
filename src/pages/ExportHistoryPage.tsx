@@ -759,12 +759,12 @@ export default function ExportHistoryPage() {
             )}
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => {
-        const tab = v as 'receipts' | 'items';
+        const tab = v as 'receipts' | 'items' | 'orders';
         setActiveTab(tab);
         // Tour: info nếu chưa có data, chi tiết nếu có data
         if (tab === 'receipts' && !receiptTabTourSeen && !receiptTourDone) {
