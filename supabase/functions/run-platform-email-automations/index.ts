@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
           .from("platform_users")
           .select("user_id")
           .eq("tenant_id", tenant.id)
-          .eq("platform_role", "tenant_owner")
+          .eq("platform_role", "tenant_admin")
           .limit(1)
           .single();
 
