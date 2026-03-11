@@ -26,16 +26,6 @@ export function SubdomainRouter({ landingPage, publicLandingPage, children }: Su
   const hostInfo = useMemo(() => detectTenantFromHostname(), []);
   
   const routerState = useMemo(() => {
-    console.log('[SubdomainRouter]', {
-      status: resolvedTenant.status,
-      isMainDomain: resolvedTenant.isMainDomain,
-      tenantId: resolvedTenant.tenantId,
-      subdomain: resolvedTenant.subdomain,
-      authLoading,
-      hasUser: !!user,
-      pathname: location.pathname,
-      hostIsMainDomain: hostInfo.isMainDomain,
-    });
 
     // CRITICAL: On custom domain/subdomain, ALWAYS show store landing while loading
     // Never show admin app to store visitors during loading states

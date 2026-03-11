@@ -1,14 +1,31 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { LandingPageSettings } from '@/components/admin/LandingPageSettings';
-import { LandingProductsTab } from '@/components/admin/LandingProductsTab';
-import { LandingArticlesTab } from '@/components/admin/LandingArticlesTab';
-import { LandingOrdersTab } from '@/components/admin/LandingOrdersTab';
-import { LandingZaloMailTab } from '@/components/admin/LandingZaloMailTab';
-import { EmailAutomationTab } from '@/components/admin/EmailAutomationTab';
-import { ShopCTVManagement } from '@/components/admin/ShopCTVManagement';
+import { usePermissions } from '@/hooks/usePermissions';
+import { usePendingOrderCount } from '@/hooks/useLandingOrders';
+import { useLandingGuideUrl } from '@/hooks/useAppConfig';
+import { useOnboardingTour } from '@/hooks/useOnboardingTour';
+import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { BookOpen, Pencil, Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
+
+// Lazy load heavy tab components - only loaded when the tab is active
+const LandingPageSettings = lazy(() => import('@/components/admin/LandingPageSettings').then(m => ({ default: m.LandingPageSettings })));
+const LandingProductsTab = lazy(() => import('@/components/admin/LandingProductsTab').then(m => ({ default: m.LandingProductsTab })));
+const LandingArticlesTab = lazy(() => import('@/components/admin/LandingArticlesTab').then(m => ({ default: m.LandingArticlesTab })));
+const LandingOrdersTab = lazy(() => import('@/components/admin/LandingOrdersTab').then(m => ({ default: m.LandingOrdersTab })));
+const EmailAutomationTab = lazy(() => import('@/components/admin/EmailAutomationTab').then(m => ({ default: m.EmailAutomationTab })));
+const ShopCTVManagement = lazy(() => import('@/components/admin/ShopCTVManagement').then(m => ({ default: m.ShopCTVManagement })));
+
+const TabLoader = () => (
+  <div className="flex items-center justify-center py-12">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 import { usePermissions } from '@/hooks/usePermissions';
 import { usePendingOrderCount } from '@/hooks/useLandingOrders';
 import { useLandingGuideUrl } from '@/hooks/useAppConfig';
