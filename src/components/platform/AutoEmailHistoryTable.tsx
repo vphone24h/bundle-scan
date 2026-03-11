@@ -134,8 +134,11 @@ function ScenarioDetail({ group }: { group: GroupedScenario }) {
       }
       return { sent: data?.sent || 0, failed: data?.failed || 0, skipped: invalidLogIds.length };
     },
-    onSuccess: ({ sent, failed }) => {
-      toast.success(`Gửi lại: ${sent} thành công${failed > 0 ? `, ${failed} thất bại` : ''}`);
+    onSuccess: ({ sent, failed, skipped }) => {
+      const parts = [`${sent} thành công`];
+      if (failed > 0) parts.push(`${failed} thất bại`);
+      if (skipped > 0) parts.push(`${skipped} email không tồn tại (đã bỏ qua)`);
+      toast.success(`Gửi lại: ${parts.join(', ')}`);
       queryClient.invalidateQueries({ queryKey: ['platform-email-automation-logs'] });
     },
     onError: (err: any) => toast.error('Lỗi: ' + err.message),
