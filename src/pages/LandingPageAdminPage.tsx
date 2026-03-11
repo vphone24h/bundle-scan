@@ -169,38 +169,33 @@ export default function LandingPageAdminPage() {
             </TabsList>
             {showSettings && (
               <TabsContent value="settings">
-                <LandingPageSettings />
+                <Suspense fallback={<TabLoader />}><LandingPageSettings /></Suspense>
               </TabsContent>
             )}
             {showProducts && (
               <TabsContent value="products">
-                <LandingProductsTab />
+                <Suspense fallback={<TabLoader />}><LandingProductsTab /></Suspense>
               </TabsContent>
             )}
             {showArticles && (
               <TabsContent value="articles">
-                <LandingArticlesTab />
+                <Suspense fallback={<TabLoader />}><LandingArticlesTab /></Suspense>
               </TabsContent>
             )}
             {showOrders && (
               <TabsContent value="orders">
-                <LandingOrdersTab />
+                <Suspense fallback={<TabLoader />}><LandingOrdersTab /></Suspense>
               </TabsContent>
             )}
             {/* Tạm ẩn Zalo OA */}
-            {/* {showSettings && (
-              <TabsContent value="zalo-mail">
-                <LandingZaloMailTab />
-              </TabsContent>
-            )} */}
             {showSettings && (
               <TabsContent value="email-automation">
-                <EmailAutomationTab />
+                <Suspense fallback={<TabLoader />}><EmailAutomationTab /></Suspense>
               </TabsContent>
             )}
             {showSettings && (
               <TabsContent value="ctv">
-                <ShopCTVManagement />
+                <Suspense fallback={<TabLoader />}><ShopCTVManagement /></Suspense>
               </TabsContent>
             )}
           </Tabs>
