@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,11 +30,15 @@ function PaginationControls({ page, totalPages, onPageChange }: { page: number; 
   );
 }
 
+type StatusFilter = 'all' | 'sent' | 'failed';
+
 export function AutoEmailHistoryTable() {
   const queryClient = useQueryClient();
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [bulkResending, setBulkResending] = useState(false);
   const [page, setPage] = useState(1);
   const [previewLog, setPreviewLog] = useState<PlatformEmailAutomationLog | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   const { data: logs, isLoading } = useQuery({
     queryKey: ['platform-email-automation-logs'],
@@ -48,6 +52,25 @@ export function AutoEmailHistoryTable() {
       return (data || []) as unknown as PlatformEmailAutomationLog[];
     },
   });
+
+  const stats = useMemo(() => {
+    if (!logs) return { total: 0, sent: 0, failed: 0 };
+    return {
+      total: logs.length,
+      sent: logs.filter(l => l.status === 'sent').length,
+      failed: logs.filter(l => l.status !== 'sent').length,
+    };
+  }, [logs]);
+
+  const filteredLogs = useMemo(() => {
+    if (!logs) return [];
+    if (statusFilter === 'sent') return logs.filter(l => l.status === 'sent');
+    if (statusFilter === 'failed') return logs.filter(l => l.status !== 'sent');
+    return logs;
+  }, [logs, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / PAGE_SIZE));
+  const pagedLogs = filteredLogs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const resendMutation = useMutation({
     mutationFn: async (log: PlatformEmailAutomationLog) => {
@@ -75,6 +98,65 @@ export function AutoEmailHistoryTable() {
     onSettled: () => setResendingId(null),
   });
 
+  const bulkResendMutation = useMutation({
+    mutationFn: async () => {
+      setBulkResending(true);
+      const failedLogs = (logs || []).filter(l => l.status !== 'sent');
+      if (failedLogs.length === 0) throw new Error('Không có email thất bại');
+
+      // Group by automation_id to get html_content
+      const automationIds = [...new Set(failedLogs.map(l => l.automation_id).filter(Boolean))];
+      const automationContents: Record<string, string> = {};
+      for (const aid of automationIds) {
+        const { data } = await supabase
+          .from('platform_email_automations' as any)
+          .select('html_content')
+          .eq('id', aid)
+          .single();
+        if (data) automationContents[aid as string] = (data as any).html_content;
+      }
+
+      // Group by subject + automation for batch sending
+      const grouped: Record<string, { emails: string[]; subject: string; html: string }> = {};
+      for (const log of failedLogs) {
+        const key = `${log.automation_id || 'none'}_${log.subject}`;
+        if (!grouped[key]) {
+          grouped[key] = {
+            emails: [],
+            subject: log.subject,
+            html: (log.automation_id ? automationContents[log.automation_id] : null) || '<p>Nội dung email</p>',
+          };
+        }
+        grouped[key].emails.push(log.recipient_email);
+      }
+
+      let totalSent = 0, totalFailed = 0;
+      for (const g of Object.values(grouped)) {
+        const { data, error } = await supabase.functions.invoke('send-bulk-email', {
+          body: { emails: g.emails, subject: g.subject, htmlContent: g.html },
+        });
+        if (!error && data) {
+          totalSent += data.sent || 0;
+          totalFailed += data.failed || 0;
+        } else {
+          totalFailed += g.emails.length;
+        }
+      }
+      return { totalSent, totalFailed };
+    },
+    onSuccess: ({ totalSent, totalFailed }) => {
+      toast.success(`Gửi lại: ${totalSent} thành công${totalFailed > 0 ? `, ${totalFailed} thất bại` : ''}`);
+      queryClient.invalidateQueries({ queryKey: ['platform-email-automation-logs'] });
+    },
+    onError: (err: any) => toast.error('Lỗi gửi lại: ' + err.message),
+    onSettled: () => setBulkResending(false),
+  });
+
+  const handleFilterChange = (filter: StatusFilter) => {
+    setStatusFilter(prev => prev === filter ? 'all' : filter);
+    setPage(1);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -92,11 +174,46 @@ export function AutoEmailHistoryTable() {
     );
   }
 
-  const totalPages = Math.max(1, Math.ceil(logs.length / PAGE_SIZE));
-  const pagedLogs = logs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
   return (
     <div className="space-y-4">
+      {/* Stats Bar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge
+          variant={statusFilter === 'all' ? 'default' : 'outline'}
+          className="cursor-pointer text-xs px-3 py-1"
+          onClick={() => handleFilterChange('all')}
+        >
+          Tất cả: {stats.total}
+        </Badge>
+        <Badge
+          variant={statusFilter === 'sent' ? 'default' : 'outline'}
+          className={`cursor-pointer text-xs px-3 py-1 ${statusFilter === 'sent' ? '' : 'text-green-600 border-green-300 hover:bg-green-50'}`}
+          onClick={() => handleFilterChange('sent')}
+        >
+          <CheckCircle className="h-3 w-3 mr-1" /> Thành công: {stats.sent}
+        </Badge>
+        <Badge
+          variant={statusFilter === 'failed' ? 'destructive' : 'outline'}
+          className={`cursor-pointer text-xs px-3 py-1 ${statusFilter === 'failed' ? '' : 'text-destructive border-destructive/30 hover:bg-destructive/10'}`}
+          onClick={() => handleFilterChange('failed')}
+        >
+          <XCircle className="h-3 w-3 mr-1" /> Thất bại: {stats.failed}
+        </Badge>
+
+        {statusFilter === 'failed' && stats.failed > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="ml-auto text-xs h-7"
+            onClick={() => bulkResendMutation.mutate()}
+            disabled={bulkResending}
+          >
+            <RefreshCw className={`h-3 w-3 mr-1 ${bulkResending ? 'animate-spin' : ''}`} />
+            Gửi lại tất cả ({stats.failed})
+          </Button>
+        )}
+      </div>
+
       {/* Desktop Table */}
       <div className="hidden md:block">
         <Card>
