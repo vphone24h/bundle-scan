@@ -1,0 +1,1 @@
+ALTER TABLE public.platform_email_automation_logs ADD COLUMN IF NOT EXISTS skip_resend boolean NOT NULL DEFAULT false;

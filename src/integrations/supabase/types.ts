@@ -4306,6 +4306,7 @@ export type Database = {
           recipient_email: string
           recipient_name: string | null
           sent_at: string | null
+          skip_resend: boolean
           status: string
           subject: string
           tenant_id: string | null
@@ -4319,6 +4320,7 @@ export type Database = {
           recipient_email: string
           recipient_name?: string | null
           sent_at?: string | null
+          skip_resend?: boolean
           status?: string
           subject: string
           tenant_id?: string | null
@@ -4332,6 +4334,7 @@ export type Database = {
           recipient_email?: string
           recipient_name?: string | null
           sent_at?: string | null
+          skip_resend?: boolean
           status?: string
           subject?: string
           tenant_id?: string | null
