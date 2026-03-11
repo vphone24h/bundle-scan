@@ -798,7 +798,9 @@ export default function ExportHistoryPage() {
         <p className="text-xs text-muted-foreground mt-1 mb-2 px-1">
           {activeTab === 'receipts'
             ? 'Xem tổng quan từng đơn / theo phiếu Bán Hàng.'
-            : 'Xem chi tiết từng sản phẩm trong các phiếu Bán hàng.'}
+            : activeTab === 'items'
+            ? 'Xem chi tiết từng sản phẩm trong các phiếu Bán hàng.'
+            : 'Quản lý đơn đặt hàng từ website bán hàng.'}
         </p>
 
         {/* Tab 1: By Receipt */}
