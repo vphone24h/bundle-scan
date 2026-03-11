@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
 
     // Convert plain text line breaks to HTML <br> if content doesn't already contain HTML block tags
     const hasHtmlBlocks = /<(p|div|br|ul|ol|li|h[1-6]|table)/i.test(htmlContent)
-    const renderedContent = hasHtmlBlocks ? htmlContent : htmlContent.replace(/\n/g, '<br>')
+    const renderedContent = hasHtmlBlocks ? htmlContent : htmlContent.replace(/\r\n|\r|\n/g, '<br>')
 
     const fullHtml = [
       '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:0;background:#f9fafb;border-radius:12px;overflow:hidden">',
