@@ -34,6 +34,7 @@ import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
 
 // ─── Category Tree Node ───
 function CategoryNode({
