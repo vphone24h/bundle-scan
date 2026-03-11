@@ -187,6 +187,14 @@ export function LandingOrdersTab() {
 
   const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
 
+  // Reset page when filters change
+  const filteredKey = `${statusFilter}-${deliveryFilter}-${callStatusFilter}-${sourceFilter}-${searchText}`;
+  const prevFilterKey = useRef(filteredKey);
+  if (prevFilterKey.current !== filteredKey) {
+    prevFilterKey.current = filteredKey;
+    if (orderPage !== 1) setOrderPage(1);
+  }
+
   const filtered = (orders || []).filter(o => {
     if (statusFilter !== 'all' && o.status !== statusFilter) return false;
     if (deliveryFilter !== 'all') {
