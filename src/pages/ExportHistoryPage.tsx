@@ -775,16 +775,16 @@ export default function ExportHistoryPage() {
           setTimeout(() => setActiveTour('item-tab'), 400);
         }
       }} className="space-y-4">
-        <TabsList>
-          <TabsTrigger data-tour="export-tab-receipts" value="receipts" className={cn("gap-2", debouncedSearch && activeTab !== 'receipts' && filteredReceipts && filteredReceipts.length > 0 && 'tab-flash-red')}>
+        <TabsList className="w-full justify-start overflow-x-auto scrollbar-none flex-nowrap">
+          <TabsTrigger data-tour="export-tab-receipts" value="receipts" className={cn("gap-2 shrink-0", debouncedSearch && activeTab !== 'receipts' && filteredReceipts && filteredReceipts.length > 0 && 'tab-flash-red')}>
             <FileText className="h-4 w-4" />
             Theo phiếu xuất
           </TabsTrigger>
-          <TabsTrigger data-tour="export-tab-items" value="items" className={cn("gap-2", debouncedSearch && activeTab !== 'items' && itemsTotalCount > 0 && 'tab-flash-red')}>
+          <TabsTrigger data-tour="export-tab-items" value="items" className={cn("gap-2 shrink-0", debouncedSearch && activeTab !== 'items' && itemsTotalCount > 0 && 'tab-flash-red')}>
             <Package className="h-4 w-4" />
             Theo chi tiết SP
           </TabsTrigger>
-          <TabsTrigger value="orders" className="gap-2 relative">
+          <TabsTrigger value="orders" className="gap-2 relative shrink-0">
             <ShoppingBag className="h-4 w-4" />
             Đơn đặt hàng
             {!!pendingOrderCount && pendingOrderCount > 0 && (
