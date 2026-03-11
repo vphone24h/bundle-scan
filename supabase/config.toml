@@ -63,5 +63,8 @@ verify_jwt = false
 [functions.send-landing-order-alert]
 verify_jwt = false
 
+[functions.run-email-automations]
+verify_jwt = false
+
 [functions.run-platform-email-automations]
 verify_jwt = false
