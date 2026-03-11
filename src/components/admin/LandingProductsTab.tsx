@@ -620,51 +620,62 @@ export function LandingProductsTab() {
         </CardHeader>
         <CardContent>
           {products && products.length > 0 ? (
-            <div className="space-y-2">
-              {products.map((p, idx) => (
-                <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                  {/* Move up/down */}
-                  <div className="flex flex-col gap-0.5 shrink-0">
-                    <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === 0 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'up')}>
-                      <ArrowUp className="h-3 w-3" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === products.length - 1 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'down')}>
-                      <ArrowDown className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  {p.image_url ? (
-                    <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-lg object-cover border" />
-                  ) : (
-                    <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
-                      <Package className="h-5 w-5 text-muted-foreground" />
+            <>
+              <div className="space-y-2">
+                {paginateArray(products, productPage, PRODUCT_PAGE_SIZE).map((p) => {
+                  const idx = products.indexOf(p);
+                  return (
+                  <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+                    {/* Move up/down */}
+                    <div className="flex flex-col gap-0.5 shrink-0">
+                      <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === 0 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'up')}>
+                        <ArrowUp className="h-3 w-3" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === products.length - 1 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'down')}>
+                        <ArrowDown className="h-3 w-3" />
+                      </Button>
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{p.name}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {p.sale_price ? (
-                        <>
-                          <span className="line-through">{formatNumber(p.price)}đ</span>
-                          <span className="text-destructive font-medium">{formatNumber(p.sale_price)}đ</span>
-                        </>
-                      ) : (
-                        <span>{formatNumber(p.price)}đ</span>
-                      )}
-                      {!p.is_active && <Badge variant="outline" className="text-[10px]">Ẩn</Badge>}
-                      {p.is_featured && <Badge variant="default" className="text-[10px]">Nổi bật</Badge>}
+                    {p.image_url ? (
+                      <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-lg object-cover border" />
+                    ) : (
+                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
+                        <Package className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{p.name}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {p.sale_price ? (
+                          <>
+                            <span className="line-through">{formatNumber(p.price)}đ</span>
+                            <span className="text-destructive font-medium">{formatNumber(p.sale_price)}đ</span>
+                          </>
+                        ) : (
+                          <span>{formatNumber(p.price)}đ</span>
+                        )}
+                        {!p.is_active && <Badge variant="outline" className="text-[10px]">Ẩn</Badge>}
+                        {p.is_featured && <Badge variant="default" className="text-[10px]">Nổi bật</Badge>}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditProduct(p)}>
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteProduct(p.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditProduct(p)}>
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteProduct(p.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+              <ListPagination
+                currentPage={productPage}
+                totalItems={products.length}
+                pageSize={PRODUCT_PAGE_SIZE}
+                onPageChange={setProductPage}
+              />
+            </>
           ) : (
             <p className="text-center text-sm text-muted-foreground py-8">Chưa có sản phẩm nào. Nhấn "Thêm sản phẩm" để bắt đầu.</p>
           )}
