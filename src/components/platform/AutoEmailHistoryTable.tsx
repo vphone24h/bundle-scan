@@ -88,6 +88,13 @@ export function AutoEmailHistoryTable() {
         },
       });
       if (error) throw error;
+      // Update log status to sent on success
+      if (data?.sent > 0) {
+        await supabase
+          .from('platform_email_automation_logs' as any)
+          .update({ status: 'sent', error_message: null, sent_at: new Date().toISOString() })
+          .eq('id', log.id);
+      }
       return data;
     },
     onSuccess: () => {
