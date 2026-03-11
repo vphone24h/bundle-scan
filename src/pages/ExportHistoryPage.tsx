@@ -784,6 +784,15 @@ export default function ExportHistoryPage() {
             <Package className="h-4 w-4" />
             Theo chi tiết SP
           </TabsTrigger>
+          <TabsTrigger value="orders" className="gap-2 relative">
+            <ShoppingBag className="h-4 w-4" />
+            Đơn đặt hàng
+            {!!pendingOrderCount && pendingOrderCount > 0 && (
+              <Badge variant="destructive" className="absolute -top-1.5 -right-1.5 h-5 min-w-5 flex items-center justify-center p-0 px-1 text-[10px]">
+                {pendingOrderCount > 99 ? '99+' : pendingOrderCount}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <p className="text-xs text-muted-foreground mt-1 mb-2 px-1">
