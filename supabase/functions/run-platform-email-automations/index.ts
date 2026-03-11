@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create SMTP transporter - reuse for all emails
+    // Create SMTP transporter
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 465,
@@ -62,46 +62,58 @@ Deno.serve(async (req) => {
       pool: true,
       maxConnections: 1,
       maxMessages: 10,
-      rateDelta: 2000, // 2 seconds between emails
+      rateDelta: 2000,
       rateLimit: 1,
     });
 
     let totalSent = 0;
+    const debugInfo: any[] = [];
 
     for (const automation of automations) {
       const { trigger_type, trigger_days, target_audience, subject, html_content, id: automationId } = automation;
 
-      // Build tenant query based on target_audience
-      let query = supabase
+      // Query tenants with ONLY existing columns
+      let tenantQuery = supabase
         .from("tenants")
-        .select("id, name, subdomain, status, subscription_plan, subscription_end_date, created_at, last_login_at");
+        .select("id, name, subdomain, status, subscription_plan, subscription_end_date, trial_end_date, created_at");
 
       // Filter by audience
       switch (target_audience) {
         case "active":
-          query = query.eq("status", "active");
+          tenantQuery = tenantQuery.eq("status", "active");
           break;
         case "trial":
-          query = query.eq("status", "trial");
+          tenantQuery = tenantQuery.eq("status", "trial");
           break;
         case "free":
-          query = query.eq("status", "expired");
+          tenantQuery = tenantQuery.eq("status", "expired");
           break;
         case "paid":
-          query = query.in("status", ["active", "trial"]).not("subscription_plan", "is", null);
+          tenantQuery = tenantQuery.in("status", ["active", "trial"]).not("subscription_plan", "is", null);
           break;
         default: // 'all'
-          query = query.in("status", ["active", "trial", "expired"]);
+          tenantQuery = tenantQuery.in("status", ["active", "trial", "expired"]);
           break;
       }
 
-      const { data: tenants, error: tenantErr } = await query;
-      if (tenantErr || !tenants) continue;
+      const { data: tenants, error: tenantErr } = await tenantQuery;
+      if (tenantErr) {
+        console.error(`❌ Tenant query error for automation ${automation.name}:`, tenantErr.message);
+        debugInfo.push({ automation: automation.name, error: `Tenant query: ${tenantErr.message}` });
+        continue;
+      }
+      if (!tenants || tenants.length === 0) {
+        console.log(`ℹ️ No tenants matched for automation "${automation.name}" (audience: ${target_audience})`);
+        debugInfo.push({ automation: automation.name, message: "No tenants matched", audience: target_audience });
+        continue;
+      }
+
+      console.log(`📋 Automation "${automation.name}": ${tenants.length} tenants matched`);
 
       const now = new Date();
 
       for (const tenant of tenants) {
-        // Get owner email
+        // Get owner user
         const { data: platformUser } = await supabase
           .from("platform_users")
           .select("user_id")
@@ -110,7 +122,9 @@ Deno.serve(async (req) => {
           .limit(1)
           .single();
 
-        if (!platformUser) continue;
+        if (!platformUser) {
+          continue;
+        }
 
         const { data: authUser } = await supabase.auth.admin.getUserById(platformUser.user_id);
         if (!authUser?.user?.email) continue;
@@ -120,26 +134,35 @@ Deno.serve(async (req) => {
         const createdAt = new Date(tenant.created_at);
         const daysSinceCreation = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
 
+        // Get last_sign_in_at from auth.users for inactive triggers
+        const lastSignIn = authUser.user.last_sign_in_at ? new Date(authUser.user.last_sign_in_at) : null;
+
         let shouldSend = false;
 
         switch (trigger_type) {
           case "signup_days": {
             shouldSend = daysSinceCreation === trigger_days;
+            console.log(`  📌 ${tenantName}: signup_days check - days=${daysSinceCreation}, target=${trigger_days}, match=${shouldSend}`);
             break;
           }
           case "inactive_days": {
-            const lastLogin = tenant.last_login_at ? new Date(tenant.last_login_at) : null;
-            if (lastLogin) {
-              const daysSinceLogin = Math.floor((now.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24));
+            if (lastSignIn) {
+              const daysSinceLogin = Math.floor((now.getTime() - lastSignIn.getTime()) / (1000 * 60 * 60 * 24));
               shouldSend = daysSinceLogin >= trigger_days;
+              console.log(`  📌 ${tenantName}: inactive_days check - daysSinceLogin=${daysSinceLogin}, target=${trigger_days}, match=${shouldSend}`);
+            } else {
+              // Never logged in → consider inactive since creation
+              shouldSend = daysSinceCreation >= trigger_days;
+              console.log(`  📌 ${tenantName}: inactive_days (never logged in) - daysSinceCreation=${daysSinceCreation}, target=${trigger_days}, match=${shouldSend}`);
             }
             break;
           }
           case "no_login_since": {
-            const lastLogin = tenant.last_login_at ? new Date(tenant.last_login_at) : createdAt;
-            const daysSinceLogin = Math.floor((now.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24));
+            const refDate = lastSignIn || createdAt;
+            const daysSinceLogin = Math.floor((now.getTime() - refDate.getTime()) / (1000 * 60 * 60 * 24));
             
             if (daysSinceLogin >= trigger_days) {
+              // Only send once ever
               const { data: existingLog } = await supabase
                 .from("platform_email_automation_logs")
                 .select("id")
@@ -152,10 +175,13 @@ Deno.serve(async (req) => {
             break;
           }
           case "trial_expiring": {
-            if (tenant.status === "trial" && tenant.subscription_end_date) {
-              const endDate = new Date(tenant.subscription_end_date);
+            // Use trial_end_date first, then subscription_end_date
+            const endDateStr = tenant.trial_end_date || tenant.subscription_end_date;
+            if (tenant.status === "trial" && endDateStr) {
+              const endDate = new Date(endDateStr);
               const daysUntilExpiry = Math.floor((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
               shouldSend = daysUntilExpiry <= trigger_days && daysUntilExpiry >= 0;
+              console.log(`  📌 ${tenantName}: trial_expiring check - daysUntil=${daysUntilExpiry}, target=${trigger_days}, match=${shouldSend}`);
             }
             break;
           }
@@ -222,7 +248,10 @@ Deno.serve(async (req) => {
             .gte("created_at", todayStart.toISOString())
             .limit(1);
 
-          if (todayLog && todayLog.length > 0) continue;
+          if (todayLog && todayLog.length > 0) {
+            console.log(`  ⏭️ ${tenantName}: already sent today, skipping`);
+            continue;
+          }
         }
 
         // Replace variables in content
@@ -291,7 +320,7 @@ Deno.serve(async (req) => {
     transporter.close();
 
     return new Response(
-      JSON.stringify({ success: true, sent: totalSent }),
+      JSON.stringify({ success: true, sent: totalSent, debug: debugInfo }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
