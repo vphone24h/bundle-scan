@@ -489,7 +489,7 @@ export function PlatformEmailAutomationManagement() {
           {previewHtml && (
             <div
               className="border rounded-lg p-4 bg-white text-sm prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
+              dangerouslySetInnerHTML={{ __html: formatPreviewHtml(previewHtml) }}
             />
           )}
         </DialogContent>
