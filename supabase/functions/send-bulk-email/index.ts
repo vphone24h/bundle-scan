@@ -19,7 +19,16 @@ function createTransporter(user: string, pass: string) {
     port: 465,
     secure: true,
     auth: { user, pass },
+    pool: true,
+    maxConnections: 1,
+    maxMessages: 100,
+    rateDelta: 1500,
+    rateLimit: 1,
   })
+}
+
+function shouldSwitchToBackup(errMsg: string): boolean {
+  return /(550|454|daily user sending quota|too many login attempts|rate limit|invalid login)/i.test(errMsg)
 }
 
 Deno.serve(async (req) => {
@@ -46,12 +55,12 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
-    // Rate limiting: 5 bulk email requests per IP per 60 minutes
+    // Rate limiting: 30 bulk email requests per IP per 60 minutes
     const clientIP = getClientIP(req)
     const { data: allowed } = await supabaseAdmin.rpc('check_rate_limit', {
       _function_name: 'send-bulk-email',
       _ip_address: clientIP,
-      _max_requests: 5,
+      _max_requests: 30,
       _window_minutes: 60,
     })
 
@@ -124,7 +133,7 @@ Deno.serve(async (req) => {
 
     // Convert plain text line breaks to HTML <br> if content doesn't already contain HTML block tags
     const hasHtmlBlocks = /<(p|div|br|ul|ol|li|h[1-6]|table)/i.test(htmlContent)
-    const renderedContent = hasHtmlBlocks ? htmlContent : htmlContent.replace(/\n/g, '<br>')
+    const renderedContent = hasHtmlBlocks ? htmlContent : htmlContent.replace(/\r\n|\r|\n/g, '<br>')
 
     const fullHtml = [
       '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:0;background:#f9fafb;border-radius:12px;overflow:hidden">',
@@ -182,8 +191,7 @@ Deno.serve(async (req) => {
           } catch (err: any) {
             // If quota exceeded (550 error) and backup available, switch
             const errMsg = err.message || ''
-            if (!usingBackup && smtpUser2 && smtpPassword2 && 
-                (errMsg.includes('550') || errMsg.includes('Daily user sending quota') || errMsg.includes('rate limit'))) {
+            if (!usingBackup && smtpUser2 && smtpPassword2 && shouldSwitchToBackup(errMsg)) {
               console.log(`⚠️ Primary SMTP quota exceeded, switching to backup: ${smtpUser2}`)
               currentTransporter = createTransporter(smtpUser2, smtpPassword2)
               currentSmtpUser = smtpUser2
