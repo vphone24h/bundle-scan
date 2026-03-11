@@ -81,11 +81,21 @@ function ScenarioDetail({ group }: { group: GroupedScenario }) {
           .from('platform_email_automation_logs' as any)
           .update({ status: 'sent', error_message: null, sent_at: new Date().toISOString() } as any)
           .eq('id', log.id);
+      } else if (data?.invalidEmails?.includes(log.recipient_email)) {
+        // Auto-skip invalid email addresses
+        await supabase
+          .from('platform_email_automation_logs' as any)
+          .update({ skip_resend: true } as any)
+          .eq('id', log.id);
       }
       return data;
     },
-    onSuccess: () => {
-      toast.success('Đã gửi lại email');
+    onSuccess: (data) => {
+      if (data?.invalidEmails?.length > 0) {
+        toast.info('Email không tồn tại, đã tự động bỏ qua');
+      } else {
+        toast.success('Đã gửi lại email');
+      }
       queryClient.invalidateQueries({ queryKey: ['platform-email-automation-logs'] });
     },
     onError: (err: any) => toast.error('Lỗi gửi lại: ' + err.message),
@@ -117,10 +127,22 @@ function ScenarioDetail({ group }: { group: GroupedScenario }) {
           .update({ status: 'sent', error_message: null, sent_at: new Date().toISOString() } as any)
           .in('id', successLogIds);
       }
-      return { sent: data?.sent || 0, failed: data?.failed || 0 };
+      // Auto-skip invalid email addresses
+      const invalidEmailSet = new Set(data?.invalidEmails || []);
+      const invalidLogIds = failedLogs.filter(l => invalidEmailSet.has(l.recipient_email)).map(l => l.id);
+      if (invalidLogIds.length > 0) {
+        await supabase
+          .from('platform_email_automation_logs' as any)
+          .update({ skip_resend: true } as any)
+          .in('id', invalidLogIds);
+      }
+      return { sent: data?.sent || 0, failed: data?.failed || 0, skipped: invalidLogIds.length };
     },
-    onSuccess: ({ sent, failed }) => {
-      toast.success(`Gửi lại: ${sent} thành công${failed > 0 ? `, ${failed} thất bại` : ''}`);
+    onSuccess: ({ sent, failed, skipped }) => {
+      const parts = [`${sent} thành công`];
+      if (failed > 0) parts.push(`${failed} thất bại`);
+      if (skipped > 0) parts.push(`${skipped} email không tồn tại (đã bỏ qua)`);
+      toast.success(`Gửi lại: ${parts.join(', ')}`);
       queryClient.invalidateQueries({ queryKey: ['platform-email-automation-logs'] });
     },
     onError: (err: any) => toast.error('Lỗi: ' + err.message),

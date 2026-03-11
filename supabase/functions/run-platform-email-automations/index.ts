@@ -25,6 +25,10 @@ function shouldSwitchToBackup(errMsg: string): boolean {
   return /(550|454|daily user sending quota|too many login attempts|rate limit|invalid login)/i.test(errMsg);
 }
 
+function isInvalidEmailError(errMsg: string): boolean {
+  return /(user unknown|mailbox not found|does not exist|recipient rejected|no such user|unknown user|invalid recipient|address rejected|user not found|mailbox unavailable|550[- ]5\.1\.[012])/i.test(errMsg);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -277,7 +281,7 @@ Deno.serve(async (req) => {
               console.log(`✅ ${recipientEmail} (${automation.name}) [backup]`);
               continue;
             } catch (retryErr: any) {
-              console.error(`❌ ${recipientEmail} [backup]: ${retryErr.message}`);
+              const retryErrMsg = retryErr.message || '';
               await supabase.from("platform_email_automation_logs").insert({
                 automation_id: automationId,
                 tenant_id: t.tenant_id,
@@ -285,14 +289,16 @@ Deno.serve(async (req) => {
                 recipient_name: tenantName,
                 subject: finalSubject,
                 status: "error",
-                error_message: retryErr.message,
+                error_message: retryErrMsg,
                 body_html: fullHtml,
+                skip_resend: isInvalidEmailError(retryErrMsg),
               });
               continue;
             }
           }
 
           console.error(`❌ ${recipientEmail}: ${sendError.message}`);
+          const sErrMsg = sendError.message || '';
           await supabase.from("platform_email_automation_logs").insert({
             automation_id: automationId,
             tenant_id: t.tenant_id,
@@ -300,8 +306,9 @@ Deno.serve(async (req) => {
             recipient_name: tenantName,
             subject: finalSubject,
             status: "error",
-            error_message: sendError.message,
+            error_message: sErrMsg,
             body_html: fullHtml,
+            skip_resend: isInvalidEmailError(sErrMsg),
           });
         }
       }
