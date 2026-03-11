@@ -88,6 +88,13 @@ export function AutoEmailHistoryTable() {
         },
       });
       if (error) throw error;
+      // Update log status to sent on success
+      if (data?.sent > 0) {
+        await supabase
+          .from('platform_email_automation_logs' as any)
+          .update({ status: 'sent', error_message: null, sent_at: new Date().toISOString() })
+          .eq('id', log.id);
+      }
       return data;
     },
     onSuccess: () => {
@@ -116,6 +123,13 @@ export function AutoEmailHistoryTable() {
         if (data) automationContents[aid as string] = (data as any).html_content;
       }
 
+      // Build email-to-logId mapping for status update
+      const emailToLogIds: Record<string, string[]> = {};
+      for (const log of failedLogs) {
+        if (!emailToLogIds[log.recipient_email]) emailToLogIds[log.recipient_email] = [];
+        emailToLogIds[log.recipient_email].push(log.id);
+      }
+
       // Group by subject + automation for batch sending
       const grouped: Record<string, { emails: string[]; subject: string; html: string }> = {};
       for (const log of failedLogs) {
@@ -131,6 +145,7 @@ export function AutoEmailHistoryTable() {
       }
 
       let totalSent = 0, totalFailed = 0;
+      const successEmails: string[] = [];
       for (const g of Object.values(grouped)) {
         const { data, error } = await supabase.functions.invoke('send-bulk-email', {
           body: { emails: g.emails, subject: g.subject, htmlContent: g.html },
@@ -138,10 +153,25 @@ export function AutoEmailHistoryTable() {
         if (!error && data) {
           totalSent += data.sent || 0;
           totalFailed += data.failed || 0;
+          // Track which emails succeeded
+          const failedSet = new Set(data.errors?.map((e: string) => e.split(':')[0]?.trim()) || []);
+          for (const email of g.emails) {
+            if (!failedSet.has(email)) successEmails.push(email);
+          }
         } else {
           totalFailed += g.emails.length;
         }
       }
+
+      // Update status for successfully resent logs
+      const successLogIds = successEmails.flatMap(email => emailToLogIds[email] || []);
+      if (successLogIds.length > 0) {
+        await supabase
+          .from('platform_email_automation_logs' as any)
+          .update({ status: 'sent', error_message: null, sent_at: new Date().toISOString() })
+          .in('id', successLogIds);
+      }
+
       return { totalSent, totalFailed };
     },
     onSuccess: ({ totalSent, totalFailed }) => {
