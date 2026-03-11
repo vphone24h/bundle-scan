@@ -202,8 +202,9 @@ export function useAllSystemNotifications() {
       const { data, error } = await supabase
         .from('system_notifications')
         .select('*')
-        .or('source.neq.automation,source.is.null')
-        .order('created_at', { ascending: false });
+        .neq('source', 'automation')
+        .order('created_at', { ascending: false })
+        .limit(200);
       if (error) throw error;
       return data as SystemNotification[];
     },
