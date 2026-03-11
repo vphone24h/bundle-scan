@@ -89,6 +89,7 @@ export function PlatformEmailAutomationManagement() {
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [sendingTestId, setSendingTestId] = useState<string | null>(null);
   const [runningNow, setRunningNow] = useState(false);
+  const [runningSingleId, setRunningSingleId] = useState<string | null>(null);
   // Form state
   const [name, setName] = useState('');
   const [triggerType, setTriggerType] = useState('signup_days');
@@ -189,7 +190,6 @@ export function PlatformEmailAutomationManagement() {
       const { error } = await supabase.functions.invoke('run-platform-email-automations');
       if (error) throw error;
       toast.success('Đã chạy email automation thành công!');
-      // Refresh logs
       setTimeout(() => {
         window.location.reload();
       }, 1500);
@@ -197,6 +197,21 @@ export function PlatformEmailAutomationManagement() {
       toast.error('Lỗi chạy automation: ' + err.message);
     } finally {
       setRunningNow(false);
+    }
+  };
+
+  const handleRunSingle = async (a: PlatformEmailAutomation) => {
+    setRunningSingleId(a.id);
+    try {
+      const { error } = await supabase.functions.invoke('run-platform-email-automations', {
+        body: { automation_id: a.id },
+      });
+      if (error) throw error;
+      toast.success(`Đã chạy kịch bản "${a.name}" thành công!`);
+    } catch (err: any) {
+      toast.error('Lỗi: ' + err.message);
+    } finally {
+      setRunningSingleId(null);
     }
   };
 
@@ -264,6 +279,16 @@ export function PlatformEmailAutomationManagement() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-green-600"
+                          onClick={() => handleRunSingle(a)}
+                          disabled={runningSingleId === a.id}
+                          title="Chạy kịch bản này ngay"
+                        >
+                          <Play className={`h-4 w-4 ${runningSingleId === a.id ? 'animate-spin' : ''}`} />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"

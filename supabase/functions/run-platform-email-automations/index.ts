@@ -26,11 +26,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get all enabled automations
-    const { data: automations, error: autoErr } = await supabase
+    // Parse optional automation_id filter
+    let filterAutomationId: string | null = null;
+    try {
+      const body = await req.json();
+      filterAutomationId = body?.automation_id || null;
+    } catch { /* no body or not JSON */ }
+
+    // Get automations (optionally filtered by id)
+    let query = supabase
       .from("platform_email_automations")
       .select("*")
       .eq("is_enabled", true);
+    
+    if (filterAutomationId) {
+      query = query.eq("id", filterAutomationId);
+    }
+
+    const { data: automations, error: autoErr } = await query;
 
     if (autoErr) throw autoErr;
     if (!automations || automations.length === 0) {
