@@ -141,24 +141,24 @@ export default function LandingPageAdminPage() {
         )}
         <div className="mt-4">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <SwipeGuardScroll className="overflow-x-auto scrollbar-none -mx-1 px-1 touch-pan-x">
-              <TabsList className="mb-4 h-auto p-1.5 w-max min-w-full justify-start flex-nowrap">
-                {showSettings && <TabsTrigger value="settings" className="shrink-0 py-2.5 px-4 text-sm" data-tour="landing-tab-settings">Cấu hình</TabsTrigger>}
-                {showProducts && <TabsTrigger value="products" className="shrink-0 py-2.5 px-4 text-sm" data-tour="landing-tab-products">Sản phẩm</TabsTrigger>}
-                {showArticles && <TabsTrigger value="articles" className="shrink-0 py-2.5 px-4 text-sm" data-tour="landing-tab-articles">Tin tức</TabsTrigger>}
+            <SwipeGuardScroll className="overflow-x-auto overflow-y-hidden scrollbar-none -mx-1 px-1 touch-pan-x [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <TabsList className="mb-4 h-auto p-1.5 w-max min-w-full justify-start flex-nowrap pointer-events-auto">
+                {showSettings && <TabsTrigger value="settings" className="shrink-0 py-2.5 px-4 text-sm touch-manipulation" data-tour="landing-tab-settings">Cấu hình</TabsTrigger>}
+                {showProducts && <TabsTrigger value="products" className="shrink-0 py-2.5 px-4 text-sm touch-manipulation" data-tour="landing-tab-products">Sản phẩm</TabsTrigger>}
+                {showArticles && <TabsTrigger value="articles" className="shrink-0 py-2.5 px-4 text-sm touch-manipulation" data-tour="landing-tab-articles">Tin tức</TabsTrigger>}
                 {showOrders && (
-                  <TabsTrigger value="orders" className="shrink-0 relative py-2.5 px-4 text-sm" data-tour="landing-tab-orders">
+                  <TabsTrigger value="orders" className="shrink-0 relative py-2.5 px-4 text-sm touch-manipulation" data-tour="landing-tab-orders">
                     Đơn đặt hàng
                     <PendingBadge />
                   </TabsTrigger>
                 )}
                 {showSettings && (
-                  <TabsTrigger value="email-automation" className="shrink-0 py-2.5 px-4 text-sm">
+                  <TabsTrigger value="email-automation" className="shrink-0 py-2.5 px-4 text-sm touch-manipulation">
                     <span className="flex items-center gap-1">Email Automation</span>
                   </TabsTrigger>
                 )}
                 {showSettings && (
-                  <TabsTrigger value="ctv" className="shrink-0 py-2.5 px-4 text-sm">
+                  <TabsTrigger value="ctv" className="shrink-0 py-2.5 px-4 text-sm touch-manipulation">
                     <span className="flex items-center gap-1">👥 CTV</span>
                   </TabsTrigger>
                 )}
