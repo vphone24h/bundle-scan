@@ -175,9 +175,12 @@ export function SystemNotificationBell() {
               <TabsTrigger value="pinned" className="flex-1 text-xs">
                 <Pin className="h-3 w-3 mr-1" />
                 Quan trọng {pinnedNotifications.length > 0 && `(${pinnedNotifications.length})`}
+                {unreadPinned > 0 && <div className="h-2 w-2 rounded-full bg-destructive ml-1" />}
               </TabsTrigger>
               <TabsTrigger value="other" className="flex-1 text-xs">
                 Khác {otherNotifications.length > 0 && `(${otherNotifications.length})`}
+                {unreadOther > 0 && <div className="h-2 w-2 rounded-full bg-destructive ml-1" />}
+              </TabsTrigger>
               </TabsTrigger>
             </TabsList>
 
