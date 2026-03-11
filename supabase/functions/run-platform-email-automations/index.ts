@@ -21,6 +21,10 @@ function createSmtpTransporter(user: string, pass: string) {
   });
 }
 
+function shouldSwitchToBackup(errMsg: string): boolean {
+  return /(550|454|daily user sending quota|too many login attempts|rate limit|invalid login)/i.test(errMsg);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
