@@ -323,19 +323,25 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
       }
     }
 
+    const errorMessages: string[] = [];
     for (let idx = 0; idx < selectedItems.length; idx++) {
       const item = selectedItems[idx];
       setAiProgress(`Đang thêm ${idx + 1}/${selectedItems.length}: ${item.productName}`);
 
       try {
+        // products array is empty from RPC summary, use avgImportPrice directly
         const firstProduct = item.products[0];
-        let salePrice = firstProduct ? (await getSalePrice(firstProduct.id)) : item.avgImportPrice;
+        let salePrice: number | null = null;
+        if (firstProduct) {
+          salePrice = await getSalePrice(firstProduct.id);
+        }
+        const finalPrice = salePrice || item.avgImportPrice || 0;
         const landingCategoryId = item.categoryId ? (categoryMap.get(item.categoryId) ?? null) : null;
 
         await createProduct.mutateAsync({
           name: item.productName,
           description: null,
-          price: salePrice || item.avgImportPrice,
+          price: Math.round(finalPrice),
           sale_price: null,
           category_id: landingCategoryId,
           image_url: null,
@@ -346,7 +352,9 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
         });
         successCount++;
       } catch (e: any) {
+        const msg = e?.message || String(e);
         console.error(`Error importing ${item.productName}:`, e);
+        errorMessages.push(`${item.productName}: ${msg}`);
       }
     }
 
@@ -357,7 +365,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     toast({
       title: `Đã đưa ${successCount} sản phẩm lên website`,
       description: successCount < selectedItems.length
-        ? `${selectedItems.length - successCount} sản phẩm lỗi`
+        ? `${selectedItems.length - successCount} sản phẩm lỗi${errorMessages.length ? ': ' + errorMessages.join('; ') : ''}`
         : undefined,
     });
   };
