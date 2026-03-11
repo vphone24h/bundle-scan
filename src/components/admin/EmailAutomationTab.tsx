@@ -652,6 +652,9 @@ export function EmailAutomationTab() {
   const [prefilledTemplate, setPrefilledTemplate] = useState<EmailTemplatePreset | null>(null);
   const [resendingIds, setResendingIds] = useState<Set<string>>(new Set());
   const [resendingAll, setResendingAll] = useState(false);
+  const [logPage, setLogPage] = useState(1);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewSubject, setPreviewSubject] = useState('');
   const queryClient = useQueryClient();
 
   const handleEdit = (item: EmailAutomation) => {
