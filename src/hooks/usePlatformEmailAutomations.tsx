@@ -26,6 +26,7 @@ export interface PlatformEmailAutomationLog {
   error_message: string | null;
   sent_at: string | null;
   created_at: string;
+  body_html: string | null;
 }
 
 export function usePlatformEmailAutomations() {
