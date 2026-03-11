@@ -25,6 +25,10 @@ function shouldSwitchToBackup(errMsg: string): boolean {
   return /(550|454|daily user sending quota|too many login attempts|rate limit|invalid login)/i.test(errMsg);
 }
 
+function isInvalidEmailError(errMsg: string): boolean {
+  return /(user unknown|mailbox not found|does not exist|recipient rejected|no such user|unknown user|invalid recipient|address rejected|user not found|mailbox unavailable|550[- ]5\.1\.[012])/i.test(errMsg);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
