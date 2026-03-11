@@ -190,7 +190,6 @@ export function PlatformEmailAutomationManagement() {
       const { error } = await supabase.functions.invoke('run-platform-email-automations');
       if (error) throw error;
       toast.success('Đã chạy email automation thành công!');
-      // Refresh logs
       setTimeout(() => {
         window.location.reload();
       }, 1500);
@@ -198,6 +197,21 @@ export function PlatformEmailAutomationManagement() {
       toast.error('Lỗi chạy automation: ' + err.message);
     } finally {
       setRunningNow(false);
+    }
+  };
+
+  const handleRunSingle = async (a: PlatformEmailAutomation) => {
+    setRunningSingleId(a.id);
+    try {
+      const { error } = await supabase.functions.invoke('run-platform-email-automations', {
+        body: { automation_id: a.id },
+      });
+      if (error) throw error;
+      toast.success(`Đã chạy kịch bản "${a.name}" thành công!`);
+    } catch (err: any) {
+      toast.error('Lỗi: ' + err.message);
+    } finally {
+      setRunningSingleId(null);
     }
   };
 
