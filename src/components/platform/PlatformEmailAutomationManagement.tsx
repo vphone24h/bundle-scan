@@ -282,6 +282,16 @@ export function PlatformEmailAutomationManagement() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-8 w-8 text-green-600"
+                          onClick={() => handleRunSingle(a)}
+                          disabled={runningSingleId === a.id}
+                          title="Chạy kịch bản này ngay"
+                        >
+                          <Play className={`h-4 w-4 ${runningSingleId === a.id ? 'animate-spin' : ''}`} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8 text-primary"
                           onClick={() => handleSendTest(a)}
                           disabled={sendingTestId === a.id}
