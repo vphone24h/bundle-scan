@@ -637,8 +637,8 @@ export default function ExportHistoryPage() {
         }
       />
 
-      {/* Filters */}
-      <Card className="mb-6">
+      {/* Filters - hide when on orders tab */}
+      {activeTab !== 'orders' && <Card className="mb-6">
         <CardContent className="pt-6">
           <div className="space-y-4">
             <div className="flex flex-col md:flex-row gap-4">
