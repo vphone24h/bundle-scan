@@ -92,9 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(newSession?.user ?? null);
           setLoading(false);
         } else if (event === 'SIGNED_OUT') {
-          // Only honour sign-out if user explicitly requested it.
-          // Supabase fires SIGNED_OUT on refresh-token failures too –
-          // we don't want those to log the user out.
+          // ONLY log out if user explicitly clicked the logout button.
+          // NEVER auto-logout due to token rotation, multi-device conflicts, 
+          // or any other automatic SIGNED_OUT events from Supabase.
           if (userInitiatedSignOut) {
             userInitiatedSignOut = false;
             queryClient.clear();
@@ -102,67 +102,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(null);
             setLoading(false);
           } else {
-            // Token refresh failed (e.g. multi-device token rotation conflict)
-            // Try aggressive recovery: multiple attempts with delays before accepting logout
-            console.warn('[Auth] SIGNED_OUT fired without user action – attempting recovery');
+            // Supabase fired SIGNED_OUT without user action (token rotation, multi-device, etc.)
+            // IGNORE it completely — keep the current session state.
+            // The user explicitly wants to stay logged in forever until they press logout.
+            console.warn('[Auth] SIGNED_OUT fired without user action – IGNORING (persistent session mode)');
             
-            const attemptRecovery = async (retries: number, delayMs: number): Promise<boolean> => {
-              for (let i = 0; i < retries; i++) {
-                try {
-                  // Try getSession first (cached)
-                  const { data: { session: cached } } = await supabase.auth.getSession();
-                  if (cached) {
-                    setSession(cached);
-                    setUser(cached.user);
-                    console.log(`[Auth] Recovery succeeded via getSession (attempt ${i + 1})`);
-                    return true;
-                  }
-                  // Try refreshSession (forces new token from server)
-                  const { data: { session: refreshed } } = await supabase.auth.refreshSession();
-                  if (refreshed) {
-                    setSession(refreshed);
-                    setUser(refreshed.user);
-                    console.log(`[Auth] Recovery succeeded via refreshSession (attempt ${i + 1})`);
-                    return true;
-                  }
-                } catch {
-                  // Network error – keep trying
-                }
-                if (i < retries - 1) {
-                  await new Promise(r => setTimeout(r, delayMs));
-                }
-              }
-              return false;
-            };
-
-            const recovered = await attemptRecovery(3, 1500);
-            if (!recovered) {
-              // Check localStorage directly – another tab may have refreshed
-              const storageKey = Object.keys(localStorage).find(k => k.includes('auth-token'));
-              if (storageKey && localStorage.getItem(storageKey)) {
-                // Token exists in storage — one more try after a longer delay
-                await new Promise(r => setTimeout(r, 2000));
-                try {
-                  const { data: { session: lastChance } } = await supabase.auth.getSession();
-                  if (lastChance) {
-                    setSession(lastChance);
-                    setUser(lastChance.user);
-                    console.log('[Auth] Recovery succeeded via localStorage fallback');
-                  } else {
-                    console.warn('[Auth] All recovery attempts failed – accepting logout');
-                    setSession(null);
-                    setUser(null);
-                    queryClient.clear();
-                  }
-                } catch {
-                  // Keep current state on network error
-                }
+            // Still try to recover a valid session silently in background
+            try {
+              const { data: { session: recovered } } = await supabase.auth.getSession();
+              if (recovered) {
+                setSession(recovered);
+                setUser(recovered.user);
+                console.log('[Auth] Session recovered silently');
               } else {
-                console.warn('[Auth] No auth token in storage – accepting logout');
-                setSession(null);
-                setUser(null);
-                queryClient.clear();
+                // Try refresh once
+                const { data: { session: refreshed } } = await supabase.auth.refreshSession();
+                if (refreshed) {
+                  setSession(refreshed);
+                  setUser(refreshed.user);
+                  console.log('[Auth] Session refreshed silently');
+                }
+                // If both fail, DON'T clear state — keep user logged in with stale session
+                // They will get fresh session on next successful API call or page reload
               }
+            } catch {
+              // Network error — keep current state, don't logout
             }
             setLoading(false);
           }
