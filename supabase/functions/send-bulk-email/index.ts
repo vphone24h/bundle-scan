@@ -191,8 +191,7 @@ Deno.serve(async (req) => {
           } catch (err: any) {
             // If quota exceeded (550 error) and backup available, switch
             const errMsg = err.message || ''
-            if (!usingBackup && smtpUser2 && smtpPassword2 && 
-                (errMsg.includes('550') || errMsg.includes('Daily user sending quota') || errMsg.includes('rate limit'))) {
+            if (!usingBackup && smtpUser2 && smtpPassword2 && shouldSwitchToBackup(errMsg)) {
               console.log(`⚠️ Primary SMTP quota exceeded, switching to backup: ${smtpUser2}`)
               currentTransporter = createTransporter(smtpUser2, smtpPassword2)
               currentSmtpUser = smtpUser2
