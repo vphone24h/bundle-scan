@@ -23,6 +23,7 @@ import {
   useSubscribePush,
   useGenerateVapidKeys,
 } from '@/hooks/usePushNotifications';
+import { usePlatformUser } from '@/hooks/useTenant';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -30,18 +31,20 @@ import { cn } from '@/lib/utils';
 function AutoPushSubscriber() {
   const { data: vapidKey } = useVapidPublicKey();
   const { data: isSubscribed } = usePushSubscriptionStatus();
+  const { data: platformUser } = usePlatformUser();
   const subscribePush = useSubscribePush();
   const generateKeys = useGenerateVapidKeys();
   const [attempted, setAttempted] = useState(false);
+  const canGenerateVapid = platformUser?.platform_role === 'platform_admin';
 
   useEffect(() => {
     if (attempted || isSubscribed || subscribePush.isPending || generateKeys.isPending) return;
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
     const autoSubscribe = async () => {
-      setAttempted(true);
       try {
         if (!vapidKey) {
+          if (!canGenerateVapid) return;
           const result = await generateKeys.mutateAsync();
           if (result?.public_key) {
             subscribePush.mutate(result.public_key);
@@ -49,10 +52,13 @@ function AutoPushSubscriber() {
         } else {
           subscribePush.mutate(vapidKey);
         }
-      } catch {}
+        setAttempted(true);
+      } catch {
+        setAttempted(true);
+      }
     };
     autoSubscribe();
-  }, [vapidKey, isSubscribed, attempted]);
+  }, [vapidKey, isSubscribed, attempted, subscribePush.isPending, generateKeys.isPending, canGenerateVapid]);
 
   return null;
 }

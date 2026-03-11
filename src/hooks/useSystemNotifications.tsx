@@ -43,6 +43,7 @@ export function useSystemNotifications() {
         .from('system_notifications')
         .select('*')
         .eq('is_active', true)
+        .or('source.eq.manual,source.is.null')
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(200);
@@ -51,13 +52,8 @@ export function useSystemNotifications() {
         throw error;
       }
 
-      // Filter out automation notifications (only show manual / null source)
-      const nonAutomation = (notifications || []).filter(
-        n => n.source !== 'automation'
-      );
-
       // Filter: show only notifications targeting 'all' or user's tenant
-      const filtered = nonAutomation.filter(n => {
+      const filtered = (notifications || []).filter(n => {
         if (n.is_pinned) return true;
         if (n.target_audience === 'all') return true;
         if (!n.target_tenant_ids || n.target_tenant_ids.length === 0) return true;
@@ -141,6 +137,7 @@ export function useStartupNotification() {
         .select('*')
         .eq('is_active', true)
         .eq('show_as_startup_popup', true)
+        .or('source.eq.manual,source.is.null')
         .order('created_at', { ascending: false })
         .limit(1);
       if (error) throw error;
@@ -202,7 +199,7 @@ export function useAllSystemNotifications() {
       const { data, error } = await supabase
         .from('system_notifications')
         .select('*')
-        .neq('source', 'automation')
+        .or('source.eq.manual,source.is.null')
         .order('created_at', { ascending: false })
         .limit(200);
       if (error) throw error;
