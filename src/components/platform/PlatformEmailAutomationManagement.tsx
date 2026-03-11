@@ -76,7 +76,6 @@ const DEFAULT_TEMPLATES: Record<string, { subject: string; html_content: string 
 
 export function PlatformEmailAutomationManagement() {
   const { data: automations = [], isLoading } = usePlatformEmailAutomations();
-  const { data: logs = [], isLoading: logsLoading } = usePlatformEmailAutomationLogs();
   const createMutation = useCreatePlatformEmailAutomation();
   const updateMutation = useUpdatePlatformEmailAutomation();
   const deleteMutation = useDeletePlatformEmailAutomation();
