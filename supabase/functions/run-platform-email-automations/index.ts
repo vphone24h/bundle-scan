@@ -7,6 +7,20 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+function createSmtpTransporter(user: string, pass: string) {
+  return nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: { user, pass },
+    pool: true,
+    maxConnections: 1,
+    maxMessages: 100,
+    rateDelta: 1500,
+    rateLimit: 1,
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -17,6 +31,8 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const smtpUser = Deno.env.get("SMTP_USER");
     const smtpPassword = Deno.env.get("SMTP_PASSWORD");
+    const smtpUser2 = Deno.env.get("SMTP_USER_2");
+    const smtpPassword2 = Deno.env.get("SMTP_PASSWORD_2");
     const supabase = createClient(supabaseUrl, serviceKey);
 
     if (!smtpUser || !smtpPassword) {
@@ -47,17 +63,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: { user: smtpUser, pass: smtpPassword },
-      pool: true,
-      maxConnections: 1,
-      maxMessages: 100,
-      rateDelta: 1500,
-      rateLimit: 1,
-    });
+    let transporter = createSmtpTransporter(smtpUser, smtpPassword);
+    let currentSmtpUser = smtpUser;
+    let usingBackup = false;
 
     let totalSent = 0;
     const debugInfo: string[] = [];
@@ -65,7 +73,6 @@ Deno.serve(async (req) => {
     for (const automation of automations) {
       const { trigger_type, trigger_days, target_audience, subject, html_content, id: automationId } = automation;
 
-      // Use RPC to get all eligible tenants with admin email + last_sign_in in ONE SQL query
       const { data: tenants, error: rpcErr } = await supabase.rpc('get_automation_eligible_tenants', {
         p_target_audience: target_audience || 'all',
         p_trigger_type: trigger_type,
@@ -206,7 +213,7 @@ Deno.serve(async (req) => {
 
         try {
           await transporter.sendMail({
-            from: `"VKHO" <${smtpUser}>`,
+            from: `"VKHO" <${currentSmtpUser}>`,
             to: recipientEmail,
             subject: finalSubject,
             html: fullHtml,
@@ -227,6 +234,57 @@ Deno.serve(async (req) => {
           sent++;
           console.log(`✅ ${recipientEmail} (${automation.name})`);
         } catch (sendError: any) {
+          const errMsg = sendError.message || '';
+          // If quota exceeded and backup available, switch and retry
+          if (!usingBackup && smtpUser2 && smtpPassword2 &&
+              (errMsg.includes('550') || errMsg.includes('Daily user sending quota') || errMsg.includes('rate limit'))) {
+            console.log(`⚠️ Primary SMTP quota exceeded, switching to backup: ${smtpUser2}`);
+            transporter.close();
+            transporter = createSmtpTransporter(smtpUser2, smtpPassword2);
+            currentSmtpUser = smtpUser2;
+            usingBackup = true;
+            debugInfo.push(`⚠️ Switched to backup SMTP at email #${totalSent + 1}`);
+
+            // Retry this email with backup
+            try {
+              await transporter.sendMail({
+                from: `"VKHO" <${currentSmtpUser}>`,
+                to: recipientEmail,
+                subject: finalSubject,
+                html: fullHtml,
+              });
+
+              await supabase.from("platform_email_automation_logs").insert({
+                automation_id: automationId,
+                tenant_id: t.tenant_id,
+                recipient_email: recipientEmail,
+                recipient_name: tenantName,
+                subject: finalSubject,
+                status: "sent",
+                sent_at: new Date().toISOString(),
+                body_html: fullHtml,
+              });
+
+              totalSent++;
+              sent++;
+              console.log(`✅ ${recipientEmail} (${automation.name}) [backup]`);
+              continue;
+            } catch (retryErr: any) {
+              console.error(`❌ ${recipientEmail} [backup]: ${retryErr.message}`);
+              await supabase.from("platform_email_automation_logs").insert({
+                automation_id: automationId,
+                tenant_id: t.tenant_id,
+                recipient_email: recipientEmail,
+                recipient_name: tenantName,
+                subject: finalSubject,
+                status: "error",
+                error_message: retryErr.message,
+                body_html: fullHtml,
+              });
+              continue;
+            }
+          }
+
           console.error(`❌ ${recipientEmail}: ${sendError.message}`);
           await supabase.from("platform_email_automation_logs").insert({
             automation_id: automationId,
@@ -246,7 +304,7 @@ Deno.serve(async (req) => {
     transporter.close();
 
     return new Response(
-      JSON.stringify({ success: true, sent: totalSent, debug: debugInfo }),
+      JSON.stringify({ success: true, sent: totalSent, debug: debugInfo, usingBackup }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {

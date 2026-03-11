@@ -13,6 +13,15 @@ function getClientIP(req: Request): string {
     || '0.0.0.0'
 }
 
+function createTransporter(user: string, pass: string) {
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: { user, pass },
+  })
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -96,8 +105,12 @@ Deno.serve(async (req) => {
       })
     }
 
+    // Primary SMTP
     const smtpUser = Deno.env.get('SMTP_USER')
     const smtpPassword = Deno.env.get('SMTP_PASSWORD')
+    // Backup SMTP
+    const smtpUser2 = Deno.env.get('SMTP_USER_2')
+    const smtpPassword2 = Deno.env.get('SMTP_PASSWORD_2')
 
     if (!smtpUser || !smtpPassword) {
       return new Response(JSON.stringify({ error: 'SMTP not configured' }), {
@@ -105,12 +118,9 @@ Deno.serve(async (req) => {
       })
     }
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: { user: smtpUser, pass: smtpPassword },
-    })
+    let currentTransporter = createTransporter(smtpUser, smtpPassword)
+    let currentSmtpUser = smtpUser
+    let usingBackup = false
 
     const fullHtml = [
       '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:0;background:#f9fafb;border-radius:12px;overflow:hidden">',
@@ -149,19 +159,44 @@ Deno.serve(async (req) => {
     for (let i = 0; i < emails.length; i += BATCH_SIZE) {
       const batch = emails.slice(i, i + BATCH_SIZE)
       const results = await Promise.allSettled(
-        batch.map((email: string) => {
+        batch.map(async (email: string) => {
           const trackingPixel = historyId
             ? `<img src="${trackingBaseUrl}?id=${historyId}&e=${encodeURIComponent(email)}" width="1" height="1" style="display:none" alt="" />`
             : ''
           const personalizedHtml = fullHtml + trackingPixel
 
-          return transporter.sendMail({
-            from: `"VKHO" <${smtpUser}>`,
+          const mailOptions = {
+            from: `"VKHO" <${currentSmtpUser}>`,
             to: email,
             subject,
             html: personalizedHtml,
-          }).then(() => ({ email, ok: true }))
-           .catch((err: any) => ({ email, ok: false, error: err.message }))
+          }
+
+          try {
+            await currentTransporter.sendMail(mailOptions)
+            return { email, ok: true }
+          } catch (err: any) {
+            // If quota exceeded (550 error) and backup available, switch
+            const errMsg = err.message || ''
+            if (!usingBackup && smtpUser2 && smtpPassword2 && 
+                (errMsg.includes('550') || errMsg.includes('Daily user sending quota') || errMsg.includes('rate limit'))) {
+              console.log(`⚠️ Primary SMTP quota exceeded, switching to backup: ${smtpUser2}`)
+              currentTransporter = createTransporter(smtpUser2, smtpPassword2)
+              currentSmtpUser = smtpUser2
+              usingBackup = true
+              // Retry with backup
+              try {
+                await currentTransporter.sendMail({
+                  ...mailOptions,
+                  from: `"VKHO" <${currentSmtpUser}>`,
+                })
+                return { email, ok: true }
+              } catch (retryErr: any) {
+                return { email, ok: false, error: retryErr.message }
+              }
+            }
+            return { email, ok: false, error: errMsg }
+          }
         })
       )
       for (const r of results) {
@@ -189,11 +224,11 @@ Deno.serve(async (req) => {
       user_id: user.id,
       action_type: 'BULK_EMAIL',
       table_name: 'tenants',
-      description: `Gửi email hàng loạt: ${sent} thành công, ${failed} thất bại. Tiêu đề: ${subject}`,
-      new_data: { emails, subject, sent, failed },
+      description: `Gửi email hàng loạt: ${sent} thành công, ${failed} thất bại. Tiêu đề: ${subject}${usingBackup ? ' (đã dùng email dự phòng)' : ''}`,
+      new_data: { emails, subject, sent, failed, usingBackup },
     })
 
-    return new Response(JSON.stringify({ sent, failed, errors: errors.slice(0, 5) }), {
+    return new Response(JSON.stringify({ sent, failed, errors: errors.slice(0, 5), usingBackup }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (error: any) {
