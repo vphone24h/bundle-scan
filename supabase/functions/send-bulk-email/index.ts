@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
       new_data: { emails, subject, sent, failed, usingBackup },
     })
 
-    return new Response(JSON.stringify({ sent, failed, errors: errors.slice(0, 5), usingBackup }), {
+    return new Response(JSON.stringify({ sent, failed, errors: errors.slice(0, 5), failedEmails, usingBackup }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (error: any) {
