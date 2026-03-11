@@ -3,17 +3,38 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Mail, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Loader2, Mail, CheckCircle, XCircle, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import DOMPurify from 'dompurify';
 import type { PlatformEmailAutomationLog } from '@/hooks/usePlatformEmailAutomations';
+
+const PAGE_SIZE = 20;
+
+function PaginationControls({ page, totalPages, onPageChange }: { page: number; totalPages: number; onPageChange: (p: number) => void }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 py-3">
+      <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <span className="text-sm text-muted-foreground">{page} / {totalPages}</span>
+      <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
 
 export function AutoEmailHistoryTable() {
   const queryClient = useQueryClient();
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [previewLog, setPreviewLog] = useState<PlatformEmailAutomationLog | null>(null);
 
   const { data: logs, isLoading } = useQuery({
     queryKey: ['platform-email-automation-logs'],
@@ -22,7 +43,7 @@ export function AutoEmailHistoryTable() {
         .from('platform_email_automation_logs' as any)
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(200);
+        .limit(500);
       if (error) throw error;
       return (data || []) as unknown as PlatformEmailAutomationLog[];
     },
@@ -31,13 +52,11 @@ export function AutoEmailHistoryTable() {
   const resendMutation = useMutation({
     mutationFn: async (log: PlatformEmailAutomationLog) => {
       setResendingId(log.id);
-      // Get the automation to retrieve html_content
       const { data: automation } = await supabase
         .from('platform_email_automations' as any)
         .select('html_content')
         .eq('id', log.automation_id)
         .single();
-
       const { data, error } = await supabase.functions.invoke('send-bulk-email', {
         body: {
           emails: [log.recipient_email],
@@ -52,9 +71,7 @@ export function AutoEmailHistoryTable() {
       toast.success('Đã gửi lại email');
       queryClient.invalidateQueries({ queryKey: ['platform-email-automation-logs'] });
     },
-    onError: (err: any) => {
-      toast.error('Lỗi gửi lại: ' + err.message);
-    },
+    onError: (err: any) => toast.error('Lỗi gửi lại: ' + err.message),
     onSettled: () => setResendingId(null),
   });
 
@@ -75,6 +92,9 @@ export function AutoEmailHistoryTable() {
     );
   }
 
+  const totalPages = Math.max(1, Math.ceil(logs.length / PAGE_SIZE));
+  const pagedLogs = logs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
     <div className="space-y-4">
       {/* Desktop Table */}
@@ -91,8 +111,8 @@ export function AutoEmailHistoryTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {logs.map((log) => (
-                <TableRow key={log.id}>
+              {pagedLogs.map((log) => (
+                <TableRow key={log.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setPreviewLog(log)}>
                   <TableCell className="text-xs whitespace-nowrap">
                     {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
                   </TableCell>
@@ -105,25 +125,14 @@ export function AutoEmailHistoryTable() {
                   <TableCell className="text-xs line-clamp-1">{log.subject}</TableCell>
                   <TableCell>
                     {log.status === 'sent' ? (
-                      <span className="flex items-center gap-1 text-xs text-green-600">
-                        <CheckCircle className="h-3.5 w-3.5" /> Đã gửi
-                      </span>
+                      <span className="flex items-center gap-1 text-xs text-green-600"><CheckCircle className="h-3.5 w-3.5" /> Đã gửi</span>
                     ) : (
-                      <span className="flex items-center gap-1 text-xs text-destructive">
-                        <XCircle className="h-3.5 w-3.5" /> Lỗi
-                      </span>
+                      <span className="flex items-center gap-1 text-xs text-destructive"><XCircle className="h-3.5 w-3.5" /> Lỗi</span>
                     )}
                   </TableCell>
                   <TableCell>
                     {log.status !== 'sent' && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => resendMutation.mutate(log)}
-                        disabled={resendingId === log.id}
-                        title="Gửi lại"
-                      >
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); resendMutation.mutate(log); }} disabled={resendingId === log.id} title="Gửi lại">
                         <RefreshCw className={`h-4 w-4 ${resendingId === log.id ? 'animate-spin' : ''}`} />
                       </Button>
                     )}
@@ -132,13 +141,14 @@ export function AutoEmailHistoryTable() {
               ))}
             </TableBody>
           </Table>
+          <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
         </Card>
       </div>
 
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
-        {logs.map((log) => (
-          <Card key={log.id} className="p-4">
+        {pagedLogs.map((log) => (
+          <Card key={log.id} className="p-4 cursor-pointer active:bg-muted/50" onClick={() => setPreviewLog(log)}>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium line-clamp-1">{log.subject}</p>
@@ -151,34 +161,65 @@ export function AutoEmailHistoryTable() {
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 {log.status === 'sent' ? (
-                  <Badge variant="secondary" className="text-xs gap-1">
-                    <CheckCircle className="h-3 w-3 text-green-600" /> Đã gửi
-                  </Badge>
+                  <Badge variant="secondary" className="text-xs gap-1"><CheckCircle className="h-3 w-3 text-green-600" /> Đã gửi</Badge>
                 ) : (
                   <>
-                    <Badge variant="destructive" className="text-xs gap-1">
-                      <XCircle className="h-3 w-3" /> Lỗi
-                    </Badge>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={() => resendMutation.mutate(log)}
-                      disabled={resendingId === log.id}
-                    >
-                      <RefreshCw className={`h-3 w-3 mr-1 ${resendingId === log.id ? 'animate-spin' : ''}`} />
-                      Gửi lại
+                    <Badge variant="destructive" className="text-xs gap-1"><XCircle className="h-3 w-3" /> Lỗi</Badge>
+                    <Button variant="outline" size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); resendMutation.mutate(log); }} disabled={resendingId === log.id}>
+                      <RefreshCw className={`h-3 w-3 mr-1 ${resendingId === log.id ? 'animate-spin' : ''}`} />Gửi lại
                     </Button>
                   </>
                 )}
               </div>
             </div>
-            {log.error_message && (
-              <p className="text-[10px] text-destructive mt-1">{log.error_message}</p>
-            )}
+            {log.error_message && <p className="text-[10px] text-destructive mt-1">{log.error_message}</p>}
           </Card>
         ))}
+        <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={!!previewLog} onOpenChange={(open) => !open && setPreviewLog(null)}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Chi tiết email</DialogTitle>
+          </DialogHeader>
+          {previewLog && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Người nhận</p>
+                  <p className="font-medium">{previewLog.recipient_name && `${previewLog.recipient_name} · `}{previewLog.recipient_email}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Thời gian</p>
+                  <p>{format(new Date(previewLog.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: vi })}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Tiêu đề</p>
+                <p className="text-sm font-medium">{previewLog.subject}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Trạng thái</p>
+                {previewLog.status === 'sent' ? (
+                  <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" /> Đã gửi</Badge>
+                ) : (
+                  <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" /> Lỗi: {previewLog.error_message}</Badge>
+                )}
+              </div>
+              {previewLog.body_html ? (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Nội dung</p>
+                  <div className="border rounded-lg p-4 bg-white text-black text-sm prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewLog.body_html) }} />
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">Không có nội dung HTML (email cũ chưa lưu body)</p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
