@@ -132,6 +132,11 @@ export function PlatformEmailAutomationManagement() {
     }
   };
 
+  const formatPreviewHtml = (content: string) => {
+    const hasHtmlBlocks = /<(p|div|br|ul|ol|li|h[1-6]|table)/i.test(content);
+    return hasHtmlBlocks ? content : content.replace(/\r\n|\r|\n/g, '<br>');
+  };
+
   const handleSave = async () => {
     if (!name.trim() || !subject.trim()) return;
     const payload = {
