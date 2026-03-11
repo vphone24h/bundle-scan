@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLandingOrders, useUpdateLandingOrder, LandingOrder } from '@/hooks/useLandingOrders';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -20,6 +20,7 @@ import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
 import { useQuery } from '@tanstack/react-query';
 
 
@@ -165,6 +166,8 @@ export function LandingOrdersTab() {
   const [callStatusFilter, setCallStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
+  const [orderPage, setOrderPage] = useState(1);
+  const ORDER_PAGE_SIZE = 20;
   const [cancelDialogOrder, setCancelDialogOrder] = useState<LandingOrder | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [detailOrder, setDetailOrder] = useState<LandingOrder | null>(null);
@@ -183,6 +186,14 @@ export function LandingOrdersTab() {
   const [productSearching, setProductSearching] = useState(false);
 
   const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
+
+  // Reset page when filters change
+  const filteredKey = `${statusFilter}-${deliveryFilter}-${callStatusFilter}-${sourceFilter}-${searchText}`;
+  const prevFilterKey = useRef(filteredKey);
+  if (prevFilterKey.current !== filteredKey) {
+    prevFilterKey.current = filteredKey;
+    if (orderPage !== 1) setOrderPage(1);
+  }
 
   const filtered = (orders || []).filter(o => {
     if (statusFilter !== 'all' && o.status !== statusFilter) return false;
@@ -633,7 +644,7 @@ export function LandingOrdersTab() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map(order => {
+                  {paginateArray(filtered, orderPage, ORDER_PAGE_SIZE).map(order => {
                     const st = STATUS_MAP[order.status] || STATUS_MAP.pending;
                     return (
                       <TableRow key={order.id} className="cursor-pointer" onClick={() => setDetailOrder(order)}>
@@ -781,6 +792,14 @@ export function LandingOrdersTab() {
                   })}
                 </TableBody>
               </Table>
+            </div>
+            <div className="p-3">
+              <ListPagination
+                currentPage={orderPage}
+                totalItems={filtered.length}
+                pageSize={ORDER_PAGE_SIZE}
+                onPageChange={setOrderPage}
+              />
             </div>
           </Card>
         </>

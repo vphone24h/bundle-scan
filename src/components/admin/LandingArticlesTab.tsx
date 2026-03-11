@@ -34,6 +34,7 @@ import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
 
 // ─── Category Tree Node ───
 function CategoryNode({
@@ -148,6 +149,8 @@ export function LandingArticlesTab() {
   const [editingArticle, setEditingArticle] = useState<LandingArticle | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [articlePage, setArticlePage] = useState(1);
+  const ARTICLE_PAGE_SIZE = 20;
   const [form, setForm] = useState({
     title: '', summary: '', content: '', category_id: '_none_',
     thumbnail_url: '', is_published: false, is_featured: false, is_featured_home: false,
@@ -392,36 +395,44 @@ export function LandingArticlesTab() {
         </CardHeader>
         <CardContent>
           {articles && articles.length > 0 ? (
-            <div className="space-y-2">
-              {articles.map(a => (
-                <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                  {a.thumbnail_url ? (
-                    <img src={a.thumbnail_url} alt={a.title} className="h-12 w-16 rounded-lg object-cover border shrink-0" />
-                  ) : (
-                    <div className="h-12 w-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                      <FileText className="h-5 w-5 text-muted-foreground" />
+            <>
+              <div className="space-y-2">
+                {paginateArray(articles, articlePage, ARTICLE_PAGE_SIZE).map(a => (
+                  <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+                    {a.thumbnail_url ? (
+                      <img src={a.thumbnail_url} alt={a.title} className="h-12 w-16 rounded-lg object-cover border shrink-0" />
+                    ) : (
+                      <div className="h-12 w-16 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <FileText className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{a.title}</p>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
+                        <span>{format(new Date(a.created_at), 'dd/MM/yyyy', { locale: vi })}</span>
+                        {!a.is_published && <Badge variant="outline" className="text-[10px]">Nháp</Badge>}
+                        {a.is_featured && <Badge className="text-[10px] gap-0.5"><Star className="h-2.5 w-2.5" />Nổi bật</Badge>}
+                        {a.is_featured_home && <Badge variant="secondary" className="text-[10px] gap-0.5"><Home className="h-2.5 w-2.5" />Trang chủ</Badge>}
+                      </div>
                     </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{a.title}</p>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-                      <span>{format(new Date(a.created_at), 'dd/MM/yyyy', { locale: vi })}</span>
-                      {!a.is_published && <Badge variant="outline" className="text-[10px]">Nháp</Badge>}
-                      {a.is_featured && <Badge className="text-[10px] gap-0.5"><Star className="h-2.5 w-2.5" />Nổi bật</Badge>}
-                      {a.is_featured_home && <Badge variant="secondary" className="text-[10px] gap-0.5"><Home className="h-2.5 w-2.5" />Trang chủ</Badge>}
+                    <div className="flex gap-1 shrink-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditArticle(a)}>
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteArticle(a.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditArticle(a)}>
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteArticle(a.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              <ListPagination
+                currentPage={articlePage}
+                totalItems={articles.length}
+                pageSize={ARTICLE_PAGE_SIZE}
+                onPageChange={setArticlePage}
+              />
+            </>
           ) : (
             <p className="text-center text-sm text-muted-foreground py-8">Chưa có bài viết nào. Nhấn "Thêm bài viết" để bắt đầu.</p>
           )}
