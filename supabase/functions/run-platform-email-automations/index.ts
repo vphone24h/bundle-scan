@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import nodemailer from "npm:nodemailer@6.9.10";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,7 +15,16 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const smtpUser = Deno.env.get("SMTP_USER");
+    const smtpPassword = Deno.env.get("SMTP_PASSWORD");
     const supabase = createClient(supabaseUrl, serviceKey);
+
+    if (!smtpUser || !smtpPassword) {
+      return new Response(
+        JSON.stringify({ error: "SMTP not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Get all enabled automations
     const { data: automations, error: autoErr } = await supabase
@@ -29,6 +39,19 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Create SMTP transporter - reuse for all emails
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: { user: smtpUser, pass: smtpPassword },
+      pool: true,
+      maxConnections: 1,
+      maxMessages: 10,
+      rateDelta: 2000, // 2 seconds between emails
+      rateLimit: 1,
+    });
 
     let totalSent = 0;
 
@@ -88,7 +111,6 @@ Deno.serve(async (req) => {
 
         switch (trigger_type) {
           case "signup_days": {
-            // Send on the exact day
             shouldSend = daysSinceCreation === trigger_days;
             break;
           }
@@ -101,12 +123,10 @@ Deno.serve(async (req) => {
             break;
           }
           case "no_login_since": {
-            // Only send ONCE - check if already sent
             const lastLogin = tenant.last_login_at ? new Date(tenant.last_login_at) : createdAt;
             const daysSinceLogin = Math.floor((now.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24));
             
             if (daysSinceLogin >= trigger_days) {
-              // Check if already sent for this automation + tenant
               const { data: existingLog } = await supabase
                 .from("platform_email_automation_logs")
                 .select("id")
@@ -147,7 +167,6 @@ Deno.serve(async (req) => {
             break;
           }
           case "post_purchase_days": {
-            // Check last export (sale) date, only send ONCE
             const { data: lastExport } = await supabase
               .from("export_receipts")
               .select("export_date")
@@ -162,7 +181,6 @@ Deno.serve(async (req) => {
               const daysSinceExport = Math.floor((now.getTime() - lastExportDate.getTime()) / (1000 * 60 * 60 * 24));
               
               if (daysSinceExport >= trigger_days) {
-                // Check if already sent for this automation + tenant (send only once)
                 const { data: existingLog } = await supabase
                   .from("platform_email_automation_logs")
                   .select("id")
@@ -204,30 +222,45 @@ Deno.serve(async (req) => {
           .replace(/\{\{store_name\}\}/g, tenant.subdomain || "")
           .replace(/\{\{trigger_days\}\}/g, String(trigger_days));
 
-        // Send email via send-bulk-email function
+        // Wrap in email template
+        const fullHtml = [
+          '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:0;background:#f9fafb;border-radius:12px;overflow:hidden">',
+            '<div style="background:linear-gradient(135deg,#1a56db,#2563eb);color:#fff;padding:24px;text-align:center">',
+              `<h1 style="margin:0;font-size:20px;font-weight:bold">${finalSubject}</h1>`,
+            '</div>',
+            '<div style="background:#fff;padding:24px">',
+              finalHtml,
+            '</div>',
+            '<div style="background:#f3f4f6;padding:16px 24px;text-align:center">',
+              '<p style="margin:0;font-size:12px;color:#9ca3af">© 2026 VKHO – Hệ thống quản lý kho hàng thông minh</p>',
+            '</div>',
+          '</div>',
+        ].join('');
+
+        // Send email directly via SMTP
         try {
-          const { error: sendErr } = await supabase.functions.invoke("send-bulk-email", {
-            body: {
-              emails: [recipientEmail],
-              subject: finalSubject,
-              htmlContent: finalHtml,
-            },
+          await transporter.sendMail({
+            from: `"VKHO" <${smtpUser}>`,
+            to: recipientEmail,
+            subject: finalSubject,
+            html: fullHtml,
           });
 
-          // Log result
+          // Log success
           await supabase.from("platform_email_automation_logs").insert({
             automation_id: automationId,
             tenant_id: tenant.id,
             recipient_email: recipientEmail,
             recipient_name: tenantName,
             subject: finalSubject,
-            status: sendErr ? "error" : "sent",
-            error_message: sendErr?.message || null,
-            sent_at: sendErr ? null : new Date().toISOString(),
+            status: "sent",
+            sent_at: new Date().toISOString(),
           });
 
-          if (!sendErr) totalSent++;
+          totalSent++;
+          console.log(`✅ Sent to ${recipientEmail} (automation: ${automation.name})`);
         } catch (sendError: any) {
+          console.error(`❌ Failed to send to ${recipientEmail}:`, sendError.message);
           await supabase.from("platform_email_automation_logs").insert({
             automation_id: automationId,
             tenant_id: tenant.id,
@@ -241,11 +274,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Close transporter pool
+    transporter.close();
+
     return new Response(
       JSON.stringify({ success: true, sent: totalSent }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
+    console.error("Platform email automation error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
