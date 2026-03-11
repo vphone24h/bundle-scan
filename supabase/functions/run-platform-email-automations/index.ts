@@ -220,6 +220,7 @@ Deno.serve(async (req) => {
             subject: finalSubject,
             status: "sent",
             sent_at: new Date().toISOString(),
+            body_html: fullHtml,
           });
 
           totalSent++;
