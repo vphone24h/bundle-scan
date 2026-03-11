@@ -174,11 +174,20 @@ export function PlatformEmailAutomationManagement() {
         return;
       }
 
+      // Replace template variables with sample/admin data for test
+      const replaceVars = (text: string) =>
+        text
+          .replace(/\{\{tenant_name\}\}/g, 'Cửa hàng Demo')
+          .replace(/\{\{email\}\}/g, user.email || '')
+          .replace(/\{\{phone\}\}/g, '0901234567')
+          .replace(/\{\{store_name\}\}/g, 'demo-store')
+          .replace(/\{\{trigger_days\}\}/g, String(a.trigger_days));
+
       const { data, error } = await supabase.functions.invoke('send-bulk-email', {
         body: {
           emails: [user.email],
-          subject: `[TEST] ${a.subject}`,
-          htmlContent: a.html_content,
+          subject: `[TEST] ${replaceVars(a.subject)}`,
+          htmlContent: replaceVars(a.html_content),
         },
       });
 
