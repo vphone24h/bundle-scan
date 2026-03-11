@@ -636,7 +636,7 @@ export function LandingOrdersTab() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map(order => {
+                  {paginateArray(filtered, orderPage, ORDER_PAGE_SIZE).map(order => {
                     const st = STATUS_MAP[order.status] || STATUS_MAP.pending;
                     return (
                       <TableRow key={order.id} className="cursor-pointer" onClick={() => setDetailOrder(order)}>
