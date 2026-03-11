@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
               `<h1 style="margin:0;font-size:20px;font-weight:bold">${finalSubject}</h1>`,
             '</div>',
             '<div style="background:#fff;padding:24px">',
-              finalHtml,
+              renderedHtml,
             '</div>',
             '<div style="background:#f3f4f6;padding:16px 24px;text-align:center">',
               '<p style="margin:0;font-size:12px;color:#9ca3af">© 2026 VKHO – Hệ thống quản lý kho hàng thông minh</p>',
