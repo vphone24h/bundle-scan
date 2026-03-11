@@ -1153,6 +1153,23 @@ export function EmailAutomationTab() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Email content preview dialog */}
+        <Dialog open={previewHtml !== null} onOpenChange={(open) => { if (!open) setPreviewHtml(null); }}>
+          <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-sm font-medium">{previewSubject || 'Nội dung email'}</DialogTitle>
+            </DialogHeader>
+            {previewHtml ? (
+              <div
+                className="border rounded-lg p-4 bg-white text-black"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewHtml) }}
+              />
+            ) : (
+              <p className="text-center py-8 text-muted-foreground text-sm">Không có nội dung email để hiển thị</p>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
