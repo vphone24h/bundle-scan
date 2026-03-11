@@ -137,6 +137,7 @@ export function useStartupNotification() {
         .select('*')
         .eq('is_active', true)
         .eq('show_as_startup_popup', true)
+        .or('source.eq.manual,source.is.null')
         .order('created_at', { ascending: false })
         .limit(1);
       if (error) throw error;
