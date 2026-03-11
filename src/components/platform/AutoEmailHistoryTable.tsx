@@ -90,8 +90,12 @@ function ScenarioDetail({ group }: { group: GroupedScenario }) {
       }
       return data;
     },
-    onSuccess: () => {
-      toast.success('Đã gửi lại email');
+    onSuccess: (data) => {
+      if (data?.invalidEmails?.length > 0) {
+        toast.info('Email không tồn tại, đã tự động bỏ qua');
+      } else {
+        toast.success('Đã gửi lại email');
+      }
       queryClient.invalidateQueries({ queryKey: ['platform-email-automation-logs'] });
     },
     onError: (err: any) => toast.error('Lỗi gửi lại: ' + err.message),
