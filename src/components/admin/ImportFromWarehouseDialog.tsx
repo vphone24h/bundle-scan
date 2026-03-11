@@ -218,6 +218,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
           salePrice = await getSalePrice(firstProduct.id);
         }
         const finalPrice = Math.round(salePrice || item.avgImportPrice || 0);
+        const aiContent = await generateAIDescription(item);
         const landingCategoryId = item.categoryId ? (categoryMap.get(item.categoryId) ?? null) : null;
 
         // Use verified name from AI if available
@@ -226,7 +227,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
         const created = await createProduct.mutateAsync({
           name: displayName,
           description: aiContent?.description || null,
-          price: salePrice || item.avgImportPrice,
+          price: finalPrice,
           sale_price: null,
           category_id: landingCategoryId,
           image_url: null,
