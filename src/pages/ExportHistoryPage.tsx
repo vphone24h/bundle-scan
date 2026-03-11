@@ -1307,6 +1307,12 @@ export default function ExportHistoryPage() {
           setReturnReceipt(null);
         }}
       />
+      {/* Tab 3: Landing Orders */}
+      <TabsContent value="orders">
+        <Suspense fallback={<div className="p-8 text-center text-muted-foreground text-sm">Đang tải...</div>}>
+          <LandingOrdersTab />
+        </Suspense>
+      </TabsContent>
       <OnboardingTourOverlay
         steps={(receipts?.length ?? 0) > 0 ? receiptTour : receiptTourInfo}
         isActive={activeTour === 'receipt-tab' || (manualTourActive && activeTab === 'receipts')}
