@@ -181,7 +181,6 @@ export function SystemNotificationBell() {
                 Khác {otherNotifications.length > 0 && `(${otherNotifications.length})`}
                 {unreadOther > 0 && <div className="h-2 w-2 rounded-full bg-destructive ml-1" />}
               </TabsTrigger>
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="pinned" className="mt-0">
