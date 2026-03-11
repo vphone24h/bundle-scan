@@ -281,7 +281,7 @@ Deno.serve(async (req) => {
               console.log(`✅ ${recipientEmail} (${automation.name}) [backup]`);
               continue;
             } catch (retryErr: any) {
-              console.error(`❌ ${recipientEmail} [backup]: ${retryErr.message}`);
+              const retryErrMsg = retryErr.message || '';
               await supabase.from("platform_email_automation_logs").insert({
                 automation_id: automationId,
                 tenant_id: t.tenant_id,
@@ -289,8 +289,9 @@ Deno.serve(async (req) => {
                 recipient_name: tenantName,
                 subject: finalSubject,
                 status: "error",
-                error_message: retryErr.message,
+                error_message: retryErrMsg,
                 body_html: fullHtml,
+                skip_resend: isInvalidEmailError(retryErrMsg),
               });
               continue;
             }
