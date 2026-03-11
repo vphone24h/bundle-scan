@@ -34,6 +34,7 @@ export interface EmailAutomationLog {
   created_at: string;
   error_message: string | null;
   source: string;
+  body_html: string | null;
 }
 
 export function useEmailAutomations() {
