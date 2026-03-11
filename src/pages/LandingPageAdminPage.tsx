@@ -10,6 +10,7 @@ import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/Onboard
 import { Navigate, useNavigate } from 'react-router-dom';
 import { BookOpen, Pencil, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import SwipeGuardScroll from '@/components/ui/swipe-guard-scroll';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 
@@ -140,33 +141,29 @@ export default function LandingPageAdminPage() {
         )}
         <div className="mt-4">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className="mb-4 h-auto p-1.5 w-full overflow-x-auto justify-start scrollbar-hide">
-              {showSettings && <TabsTrigger value="settings" className="py-2.5 px-4 text-sm" data-tour="landing-tab-settings">Cấu hình</TabsTrigger>}
-              {showProducts && <TabsTrigger value="products" className="py-2.5 px-4 text-sm" data-tour="landing-tab-products">Sản phẩm</TabsTrigger>}
-              {showArticles && <TabsTrigger value="articles" className="py-2.5 px-4 text-sm" data-tour="landing-tab-articles">Tin tức</TabsTrigger>}
-              {showOrders && (
-                <TabsTrigger value="orders" className="relative py-2.5 px-4 text-sm" data-tour="landing-tab-orders">
-                  Đơn đặt hàng
-                  <PendingBadge />
-                </TabsTrigger>
-              )}
-              {/* Tạm ẩn Zalo OA - đang nghiên cứu thêm */}
-              {/* {showSettings && (
-                <TabsTrigger value="zalo-mail" className="py-2.5 px-4 text-sm">
-                  <span className="flex items-center gap-1">Quản lý Zalo</span>
-                </TabsTrigger>
-              )} */}
-              {showSettings && (
-                <TabsTrigger value="email-automation" className="py-2.5 px-4 text-sm">
-                  <span className="flex items-center gap-1">Email Automation</span>
-                </TabsTrigger>
-              )}
-              {showSettings && (
-                <TabsTrigger value="ctv" className="py-2.5 px-4 text-sm">
-                  <span className="flex items-center gap-1">👥 CTV</span>
-                </TabsTrigger>
-              )}
-            </TabsList>
+            <SwipeGuardScroll className="overflow-x-auto scrollbar-none -mx-1 px-1 touch-pan-x">
+              <TabsList className="mb-4 h-auto p-1.5 w-max min-w-full justify-start flex-nowrap">
+                {showSettings && <TabsTrigger value="settings" className="shrink-0 py-2.5 px-4 text-sm" data-tour="landing-tab-settings">Cấu hình</TabsTrigger>}
+                {showProducts && <TabsTrigger value="products" className="shrink-0 py-2.5 px-4 text-sm" data-tour="landing-tab-products">Sản phẩm</TabsTrigger>}
+                {showArticles && <TabsTrigger value="articles" className="shrink-0 py-2.5 px-4 text-sm" data-tour="landing-tab-articles">Tin tức</TabsTrigger>}
+                {showOrders && (
+                  <TabsTrigger value="orders" className="shrink-0 relative py-2.5 px-4 text-sm" data-tour="landing-tab-orders">
+                    Đơn đặt hàng
+                    <PendingBadge />
+                  </TabsTrigger>
+                )}
+                {showSettings && (
+                  <TabsTrigger value="email-automation" className="shrink-0 py-2.5 px-4 text-sm">
+                    <span className="flex items-center gap-1">Email Automation</span>
+                  </TabsTrigger>
+                )}
+                {showSettings && (
+                  <TabsTrigger value="ctv" className="shrink-0 py-2.5 px-4 text-sm">
+                    <span className="flex items-center gap-1">👥 CTV</span>
+                  </TabsTrigger>
+                )}
+              </TabsList>
+            </SwipeGuardScroll>
             {showSettings && (
               <TabsContent value="settings">
                 <Suspense fallback={<TabLoader />}><LandingPageSettings /></Suspense>
