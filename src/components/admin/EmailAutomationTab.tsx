@@ -877,13 +877,13 @@ export function EmailAutomationTab() {
 
           <TabsContent value="logs" className="mt-4">
             <div className="flex gap-2 mb-3 flex-wrap">
-              <Button variant={logSubTab === 'automation' ? 'default' : 'outline'} size="sm" onClick={() => { setLogSubTab('automation'); setLogStatusFilter('all'); }}>
+              <Button variant={logSubTab === 'automation' ? 'default' : 'outline'} size="sm" onClick={() => { setLogSubTab('automation'); setLogStatusFilter('all'); setLogPage(1); }}>
                 Automation ({(logs || []).filter(l => l.source === 'automation').length})
               </Button>
-              <Button variant={logSubTab === 'care' ? 'default' : 'outline'} size="sm" onClick={() => { setLogSubTab('care'); setLogStatusFilter('all'); }}>
+              <Button variant={logSubTab === 'care' ? 'default' : 'outline'} size="sm" onClick={() => { setLogSubTab('care'); setLogStatusFilter('all'); setLogPage(1); }}>
                 Chăm sóc ({(logs || []).filter(l => l.source === 'care_bulk').length})
               </Button>
-              <Button variant={logSubTab === 'order' ? 'default' : 'outline'} size="sm" onClick={() => { setLogSubTab('order'); setLogStatusFilter('all'); }}>
+              <Button variant={logSubTab === 'order' ? 'default' : 'outline'} size="sm" onClick={() => { setLogSubTab('order'); setLogStatusFilter('all'); setLogPage(1); }}>
                 Đơn hàng ({orderEmailLogs?.length || 0})
               </Button>
             </div>
@@ -891,13 +891,13 @@ export function EmailAutomationTab() {
             {/* Status filter */}
             <div className="flex items-center gap-2 mb-3 flex-wrap">
               <span className="text-xs text-muted-foreground">Lọc:</span>
-              <Button variant={logStatusFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setLogStatusFilter('all')}>
+              <Button variant={logStatusFilter === 'all' ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => { setLogStatusFilter('all'); setLogPage(1); }}>
                 Tất cả
               </Button>
-              <Button variant={logStatusFilter === 'sent' ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setLogStatusFilter('sent')}>
+              <Button variant={logStatusFilter === 'sent' ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => { setLogStatusFilter('sent'); setLogPage(1); }}>
                 <CheckCircle className="h-3 w-3 mr-1" /> Thành công
               </Button>
-              <Button variant={logStatusFilter === 'failed' ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => setLogStatusFilter('failed')}>
+              <Button variant={logStatusFilter === 'failed' ? 'default' : 'outline'} size="sm" className="h-7 text-xs" onClick={() => { setLogStatusFilter('failed'); setLogPage(1); }}>
                 <XCircle className="h-3 w-3 mr-1" /> Thất bại
               </Button>
               {logStatusFilter === 'failed' && logSubTab !== 'order' && (() => {
@@ -920,178 +920,38 @@ export function EmailAutomationTab() {
             </div>
 
             {logSubTab === 'automation' && (
-              (() => {
-                const allLogs = (logs || []).filter(l => l.source === 'automation');
-                const filteredLogs = logStatusFilter === 'all' ? allLogs : allLogs.filter(l => l.status === logStatusFilter);
-                return !filteredLogs.length ? (
-                  <p className="text-center py-8 text-muted-foreground text-sm">
-                    {logStatusFilter === 'all' ? 'Chưa có email automation nào được gửi' : `Không có email ${logStatusFilter === 'sent' ? 'thành công' : 'thất bại'}`}
-                  </p>
-                ) : (
-                  <ScrollableTableWrapper>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Thời gian</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Khách hàng</TableHead>
-                          <TableHead>Tiêu đề</TableHead>
-                          <TableHead>Trạng thái</TableHead>
-                          <TableHead></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredLogs.map(log => (
-                          <TableRow key={log.id}>
-                            <TableCell className="whitespace-nowrap text-sm">
-                              {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
-                            </TableCell>
-                            <TableCell className="text-sm">{log.customer_email}</TableCell>
-                            <TableCell className="text-sm">{log.customer_name || '-'}</TableCell>
-                            <TableCell className="text-sm max-w-[200px] truncate">{log.subject}</TableCell>
-                            <TableCell>
-                              {log.status === 'sent' ? (
-                                <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
-                              ) : log.status === 'failed' ? (
-                                <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />Lỗi</Badge>
-                              ) : (
-                                <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Đang gửi</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {log.status === 'failed' && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 text-xs"
-                                  disabled={resendingIds.has(log.id)}
-                                  onClick={() => handleResendSingle(log.id)}
-                                >
-                                  <Send className={`h-3 w-3 mr-1 ${resendingIds.has(log.id) ? 'animate-pulse' : ''}`} />
-                                  Gửi lại
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </ScrollableTableWrapper>
-                );
-              })()
+              <PaginatedLogTable
+                logs={(logs || []).filter(l => l.source === 'automation')}
+                statusFilter={logStatusFilter}
+                page={logPage}
+                onPageChange={setLogPage}
+                resendingIds={resendingIds}
+                onResend={handleResendSingle}
+                onPreview={(log) => { setPreviewSubject(log.subject); setPreviewHtml(log.body_html || null); }}
+                columns={['time', 'email', 'customer', 'subject', 'status', 'resend']}
+              />
             )}
 
             {logSubTab === 'care' && (
-              (() => {
-                const allCareLogs = (logs || []).filter(l => l.source === 'care_bulk');
-                const careLogs = logStatusFilter === 'all' ? allCareLogs : allCareLogs.filter(l => l.status === logStatusFilter);
-                return !careLogs.length ? (
-                  <p className="text-center py-8 text-muted-foreground text-sm">
-                    {logStatusFilter === 'all' ? 'Chưa có email chăm sóc nào được gửi' : `Không có email ${logStatusFilter === 'sent' ? 'thành công' : 'thất bại'}`}
-                  </p>
-                ) : (
-                  <ScrollableTableWrapper>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Thời gian</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Khách hàng</TableHead>
-                          <TableHead>Tiêu đề</TableHead>
-                          <TableHead>Trạng thái</TableHead>
-                          <TableHead>Lỗi</TableHead>
-                          <TableHead></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {careLogs.map(log => (
-                          <TableRow key={log.id}>
-                            <TableCell className="whitespace-nowrap text-sm">
-                              {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
-                            </TableCell>
-                            <TableCell className="text-sm max-w-[180px] truncate">{log.customer_email}</TableCell>
-                            <TableCell className="text-sm">{log.customer_name || '-'}</TableCell>
-                            <TableCell className="text-sm max-w-[200px] truncate">{log.subject}</TableCell>
-                            <TableCell>
-                              {log.status === 'sent' ? (
-                                <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
-                              ) : log.status === 'failed' ? (
-                                <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />Lỗi</Badge>
-                              ) : (
-                                <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Đang gửi</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-sm text-destructive max-w-[200px] truncate">{log.error_message || '-'}</TableCell>
-                            <TableCell>
-                              {log.status === 'failed' && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 text-xs"
-                                  disabled={resendingIds.has(log.id)}
-                                  onClick={() => handleResendSingle(log.id)}
-                                >
-                                  <Send className={`h-3 w-3 mr-1 ${resendingIds.has(log.id) ? 'animate-pulse' : ''}`} />
-                                  Gửi lại
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </ScrollableTableWrapper>
-                );
-              })()
+              <PaginatedLogTable
+                logs={(logs || []).filter(l => l.source === 'care_bulk')}
+                statusFilter={logStatusFilter}
+                page={logPage}
+                onPageChange={setLogPage}
+                resendingIds={resendingIds}
+                onResend={handleResendSingle}
+                onPreview={(log) => { setPreviewSubject(log.subject); setPreviewHtml(log.body_html || null); }}
+                columns={['time', 'email', 'customer', 'subject', 'status', 'error', 'resend']}
+              />
             )}
 
             {logSubTab === 'order' && (
-              (() => {
-                const allOrderLogs = orderEmailLogs || [];
-                const filteredOrderLogs = logStatusFilter === 'all' ? allOrderLogs :
-                  logStatusFilter === 'sent' ? allOrderLogs.filter((l: any) => l.status === 'sent' || l.status === 'success') :
-                  allOrderLogs.filter((l: any) => l.status === 'failed' || l.status === 'error');
-                return !filteredOrderLogs.length ? (
-                  <p className="text-center py-8 text-muted-foreground text-sm">
-                    {logStatusFilter === 'all' ? 'Chưa có email đơn hàng nào được gửi' : `Không có email ${logStatusFilter === 'sent' ? 'thành công' : 'thất bại'}`}
-                  </p>
-                ) : (
-                  <ScrollableTableWrapper>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Thời gian</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Loại</TableHead>
-                          <TableHead>Trạng thái</TableHead>
-                          <TableHead>Lỗi</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredOrderLogs.map((log: any) => (
-                          <TableRow key={log.id}>
-                            <TableCell className="whitespace-nowrap text-sm">
-                              {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
-                            </TableCell>
-                            <TableCell className="text-sm max-w-[180px] truncate">{log.recipient_email}</TableCell>
-                            <TableCell className="text-sm">{log.email_type}</TableCell>
-                            <TableCell>
-                              {(log.status === 'sent' || log.status === 'success') ? (
-                                <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
-                              ) : (log.status === 'failed' || log.status === 'error') ? (
-                                <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />Lỗi</Badge>
-                              ) : (
-                                <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Đang gửi</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-sm text-destructive max-w-[200px] truncate">{log.error_message || '-'}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </ScrollableTableWrapper>
-                );
-              })()
+              <PaginatedOrderLogTable
+                logs={orderEmailLogs || []}
+                statusFilter={logStatusFilter}
+                page={logPage}
+                onPageChange={setLogPage}
+              />
             )}
           </TabsContent>
         </Tabs>
