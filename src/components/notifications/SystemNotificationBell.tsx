@@ -67,6 +67,10 @@ export function SystemNotificationBell() {
 
   const pinnedNotifications = notifications.filter(n => n.is_pinned);
   const otherNotifications = notifications.filter(n => !n.is_pinned);
+  const unreadPinned = pinnedNotifications.filter(n => !n.is_read).length;
+  const unreadOther = otherNotifications.filter(n => !n.is_read).length;
+  // Default to tab with unread notifications
+  const defaultTab = unreadOther > 0 && unreadPinned === 0 ? 'other' : 'pinned';
   const handleClick = (notification: SystemNotification) => {
     if (!notification.is_read) {
       markRead.mutate(notification.id);
@@ -166,14 +170,16 @@ export function SystemNotificationBell() {
           
           <AutoPushSubscriber />
 
-          <Tabs defaultValue="pinned" className="w-full">
+          <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full">
             <TabsList className="w-full rounded-none border-b h-9">
               <TabsTrigger value="pinned" className="flex-1 text-xs">
                 <Pin className="h-3 w-3 mr-1" />
                 Quan trọng {pinnedNotifications.length > 0 && `(${pinnedNotifications.length})`}
+                {unreadPinned > 0 && <div className="h-2 w-2 rounded-full bg-destructive ml-1" />}
               </TabsTrigger>
               <TabsTrigger value="other" className="flex-1 text-xs">
                 Khác {otherNotifications.length > 0 && `(${otherNotifications.length})`}
+                {unreadOther > 0 && <div className="h-2 w-2 rounded-full bg-destructive ml-1" />}
               </TabsTrigger>
             </TabsList>
 

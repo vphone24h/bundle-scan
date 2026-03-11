@@ -32,7 +32,6 @@ export function useSystemNotifications() {
       if (!user?.id) return [];
 
       // Get user's tenant_id for filtering
-      // Lấy tenant_id từ platform_users (chính xác hơn profiles)
       const { data: pu } = await supabase
         .from('platform_users')
         .select('tenant_id')
@@ -44,13 +43,21 @@ export function useSystemNotifications() {
         .from('system_notifications')
         .select('*')
         .eq('is_active', true)
-        .or('source.neq.automation,source.is.null')
         .order('is_pinned', { ascending: false })
-        .order('created_at', { ascending: false });
-      if (error) throw error;
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) {
+        console.error('[SystemNotifications] fetch error:', error);
+        throw error;
+      }
+
+      // Filter out automation notifications (only show manual / null source)
+      const nonAutomation = (notifications || []).filter(
+        n => n.source !== 'automation'
+      );
 
       // Filter: show only notifications targeting 'all' or user's tenant
-      const filtered = (notifications || []).filter(n => {
+      const filtered = nonAutomation.filter(n => {
         if (n.is_pinned) return true;
         if (n.target_audience === 'all') return true;
         if (!n.target_tenant_ids || n.target_tenant_ids.length === 0) return true;
@@ -71,7 +78,7 @@ export function useSystemNotifications() {
       })) as SystemNotification[];
     },
     enabled: !!user?.id,
-    refetchInterval: 60000,
+    refetchInterval: 30000, // Poll every 30s instead of 60s
   });
 }
 
@@ -195,8 +202,9 @@ export function useAllSystemNotifications() {
       const { data, error } = await supabase
         .from('system_notifications')
         .select('*')
-        .or('source.neq.automation,source.is.null')
-        .order('created_at', { ascending: false });
+        .neq('source', 'automation')
+        .order('created_at', { ascending: false })
+        .limit(200);
       if (error) throw error;
       return data as SystemNotification[];
     },
