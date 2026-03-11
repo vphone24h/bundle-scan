@@ -123,7 +123,16 @@ function ScenarioDetail({ group }: { group: GroupedScenario }) {
           .update({ status: 'sent', error_message: null, sent_at: new Date().toISOString() } as any)
           .in('id', successLogIds);
       }
-      return { sent: data?.sent || 0, failed: data?.failed || 0 };
+      // Auto-skip invalid email addresses
+      const invalidEmailSet = new Set(data?.invalidEmails || []);
+      const invalidLogIds = failedLogs.filter(l => invalidEmailSet.has(l.recipient_email)).map(l => l.id);
+      if (invalidLogIds.length > 0) {
+        await supabase
+          .from('platform_email_automation_logs' as any)
+          .update({ skip_resend: true } as any)
+          .in('id', invalidLogIds);
+      }
+      return { sent: data?.sent || 0, failed: data?.failed || 0, skipped: invalidLogIds.length };
     },
     onSuccess: ({ sent, failed }) => {
       toast.success(`Gửi lại: ${sent} thành công${failed > 0 ? `, ${failed} thất bại` : ''}`);
