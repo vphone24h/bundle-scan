@@ -67,6 +67,10 @@ export function SystemNotificationBell() {
 
   const pinnedNotifications = notifications.filter(n => n.is_pinned);
   const otherNotifications = notifications.filter(n => !n.is_pinned);
+  const unreadPinned = pinnedNotifications.filter(n => !n.is_read).length;
+  const unreadOther = otherNotifications.filter(n => !n.is_read).length;
+  // Default to tab with unread notifications
+  const defaultTab = unreadOther > 0 && unreadPinned === 0 ? 'other' : 'pinned';
   const handleClick = (notification: SystemNotification) => {
     if (!notification.is_read) {
       markRead.mutate(notification.id);
