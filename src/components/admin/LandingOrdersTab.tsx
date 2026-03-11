@@ -288,7 +288,7 @@ export function LandingOrdersTab() {
     } catch { toast.error('Lỗi cập nhật'); }
   };
 
-  // Bulk confirm: approve all selected pending orders using direct DB calls
+  // Bulk confirm: advance all selected orders to their next delivery step
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const handleBulkConfirm = async () => {
     const allOrders = orders || [];
@@ -299,40 +299,50 @@ export function LandingOrdersTab() {
       return;
     }
     
-    const eligibleOrders = selectedOrders.filter(o => o.status === 'pending');
+    // Find orders that have a next step available
+    const eligibleOrders = selectedOrders.filter(o => {
+      const action = getNextDeliveryAction(o.status, o.delivery_status);
+      return action !== null;
+    });
+
     if (eligibleOrders.length === 0) {
-      const alreadyApproved = selectedOrders.filter(o => o.status === 'approved').length;
-      const cancelled = selectedOrders.filter(o => o.status === 'cancelled').length;
-      toast.error(`Không có đơn chờ duyệt (${alreadyApproved} đã duyệt, ${cancelled} đã hủy)`);
+      toast.error('Không có đơn nào có thể chuyển trạng thái tiếp theo');
       return;
     }
     
     setBulkProcessing(true);
     try {
-      const ids = eligibleOrders.map(o => o.id);
-      const { error } = await supabase
-        .from('landing_orders' as any)
-        .update({
-          status: 'approved',
-          delivery_status: 'confirmed',
-          approved_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+      const results = await Promise.allSettled(
+        eligibleOrders.map(async (order) => {
+          const action = getNextDeliveryAction(order.status, order.delivery_status)!;
+          const updates: Record<string, any> = {
+            updated_at: new Date().toISOString(),
+          };
+          if (action.nextStatus) {
+            updates.status = action.nextStatus;
+            updates.approved_at = new Date().toISOString();
+          }
+          if (action.nextDelivery) {
+            updates.delivery_status = action.nextDelivery;
+          }
+          const { error } = await supabase
+            .from('landing_orders' as any)
+            .update(updates)
+            .eq('id', order.id);
+          if (error) throw error;
         })
-        .in('id', ids);
-      
-      if (error) {
-        console.error('[BulkConfirm] DB error:', error);
-        toast.error(`Lỗi xác nhận: ${error.message}`);
-      } else {
-        toast.success(`Đã xác nhận ${ids.length} đơn hàng`);
+      );
+
+      const successCount = results.filter(r => r.status === 'fulfilled').length;
+      const failCount = results.filter(r => r.status === 'rejected').length;
+
+      if (successCount > 0) {
+        toast.success(`Đã chuyển trạng thái ${successCount} đơn${failCount > 0 ? `, ${failCount} lỗi` : ''}`);
         setSelectedIds(new Set());
-        // Refetch data, wait for React to process, then switch filter
-        const { data: freshData } = await refetch();
-        // Use setTimeout to ensure state update from refetch is committed before filter change
-        setTimeout(() => {
-          setStatusFilter('approved');
-          setDeliveryFilter('all');
-        }, 100);
+        await refetch();
+      } else {
+        const firstError = results.find(r => r.status === 'rejected') as PromiseRejectedResult | undefined;
+        toast.error(`Lỗi: ${firstError?.reason?.message || 'Không rõ lỗi'}`);
       }
     } catch (err: any) {
       console.error('[BulkConfirm] Exception:', err);
