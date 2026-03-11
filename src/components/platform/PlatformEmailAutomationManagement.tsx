@@ -17,15 +17,12 @@ import {
   useCreatePlatformEmailAutomation,
   useUpdatePlatformEmailAutomation,
   useDeletePlatformEmailAutomation,
-  usePlatformEmailAutomationLogs,
   type PlatformEmailAutomation,
 } from '@/hooks/usePlatformEmailAutomations';
-import { Plus, Pencil, Trash2, Mail, Clock, Zap, Users, Eye, CheckCircle, XCircle, Send, Play } from 'lucide-react';
+import { Plus, Pencil, Trash2, Mail, Clock, Zap, Users, Eye, Send, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AutoEmailHistoryTable } from './AutoEmailHistoryTable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const TRIGGER_LABELS: Record<string, string> = {
