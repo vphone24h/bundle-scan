@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
 import { cn } from '@/lib/utils';
 import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/OnboardingTourOverlay';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
@@ -77,6 +77,10 @@ import { useCategories } from '@/hooks/useCategories';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
 import { useTranslation } from 'react-i18next';
+import { usePendingOrderCount } from '@/hooks/useLandingOrders';
+import { ShoppingBag } from 'lucide-react';
+
+const LandingOrdersTab = lazy(() => import('@/components/admin/LandingOrdersTab').then(m => ({ default: m.LandingOrdersTab })));
 
 const useExportHistoryConstants = () => {
   const { t } = useTranslation();
@@ -147,7 +151,8 @@ export default function ExportHistoryPage() {
   const { completeTour: completeHistoryTour } = useOnboardingTour('export_history');
   const { isCompleted: receiptTourDone, completeTour: completeReceiptTour } = useOnboardingTour('export_receipt_tab');
   const { isCompleted: itemTourDone, completeTour: completeItemTour } = useOnboardingTour('export_item_tab');
-  const [activeTab, setActiveTab] = useState<'receipts' | 'items'>('receipts');
+  const [activeTab, setActiveTab] = useState<'receipts' | 'items' | 'orders'>('receipts');
+  const { data: pendingOrderCount } = usePendingOrderCount();
   const [receiptTabTourSeen, setReceiptTabTourSeen] = useState(false);
   const [itemTabTourSeen, setItemTabTourSeen] = useState(false);
   const [activeTour, setActiveTour] = useState<'receipt-tab' | 'item-tab' | null>(null);
@@ -632,8 +637,8 @@ export default function ExportHistoryPage() {
         }
       />
 
-      {/* Filters */}
-      <Card className="mb-6">
+      {/* Filters - hide when on orders tab */}
+      {activeTab !== 'orders' && <Card className="mb-6">
         <CardContent className="pt-6">
           <div className="space-y-4">
             <div className="flex flex-col md:flex-row gap-4">
@@ -754,12 +759,12 @@ export default function ExportHistoryPage() {
             )}
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => {
-        const tab = v as 'receipts' | 'items';
+        const tab = v as 'receipts' | 'items' | 'orders';
         setActiveTab(tab);
         // Tour: info nếu chưa có data, chi tiết nếu có data
         if (tab === 'receipts' && !receiptTabTourSeen && !receiptTourDone) {
@@ -779,12 +784,23 @@ export default function ExportHistoryPage() {
             <Package className="h-4 w-4" />
             Theo chi tiết SP
           </TabsTrigger>
+          <TabsTrigger value="orders" className="gap-2 relative">
+            <ShoppingBag className="h-4 w-4" />
+            Đơn đặt hàng
+            {!!pendingOrderCount && pendingOrderCount > 0 && (
+              <Badge variant="destructive" className="absolute -top-1.5 -right-1.5 h-5 min-w-5 flex items-center justify-center p-0 px-1 text-[10px]">
+                {pendingOrderCount > 99 ? '99+' : pendingOrderCount}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <p className="text-xs text-muted-foreground mt-1 mb-2 px-1">
           {activeTab === 'receipts'
             ? 'Xem tổng quan từng đơn / theo phiếu Bán Hàng.'
-            : 'Xem chi tiết từng sản phẩm trong các phiếu Bán hàng.'}
+            : activeTab === 'items'
+            ? 'Xem chi tiết từng sản phẩm trong các phiếu Bán hàng.'
+            : 'Quản lý đơn đặt hàng từ website bán hàng.'}
         </p>
 
         {/* Tab 1: By Receipt */}
@@ -1093,6 +1109,13 @@ export default function ExportHistoryPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Tab 3: Landing Orders */}
+        <TabsContent value="orders">
+          <Suspense fallback={<div className="p-8 text-center text-muted-foreground text-sm">Đang tải...</div>}>
+            <LandingOrdersTab />
+          </Suspense>
         </TabsContent>
       </Tabs>
 

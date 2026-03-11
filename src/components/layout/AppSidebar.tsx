@@ -369,6 +369,7 @@ export function AppSidebar() {
         </Button>
         {!isMobileOpen && (
           <div className="bg-card shadow-lg border-2 rounded-md flex items-center">
+            <NotificationBell />
             <SystemNotificationBell />
           </div>
         )}
@@ -384,6 +385,7 @@ export function AppSidebar() {
           }}
         >
           <div className="bg-card shadow-lg border-2 rounded-md flex items-center">
+            <NotificationBell />
             <SystemNotificationBell />
           </div>
         </div>
