@@ -10,6 +10,7 @@ import { OnboardingTourOverlay, TourStep } from '@/components/onboarding/Onboard
 import { Navigate, useNavigate } from 'react-router-dom';
 import { BookOpen, Pencil, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import SwipeGuardScroll from '@/components/ui/swipe-guard-scroll';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 
