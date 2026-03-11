@@ -109,8 +109,8 @@ function ScenarioDetail({ group }: { group: GroupedScenario }) {
       });
       if (error) throw error;
 
-      const failedSet = new Set(data?.errors?.map((e: string) => e.split(':')[0]?.trim()) || []);
-      const successLogIds = failedLogs.filter(l => !failedSet.has(l.recipient_email)).map(l => l.id);
+      const failedEmailSet = new Set(data?.failedEmails || []);
+      const successLogIds = failedLogs.filter(l => !failedEmailSet.has(l.recipient_email)).map(l => l.id);
       if (successLogIds.length > 0) {
         await supabase
           .from('platform_email_automation_logs' as any)
