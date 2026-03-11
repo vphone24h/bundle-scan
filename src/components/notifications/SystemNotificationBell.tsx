@@ -23,6 +23,7 @@ import {
   useSubscribePush,
   useGenerateVapidKeys,
 } from '@/hooks/usePushNotifications';
+import { usePlatformUser } from '@/hooks/useTenant';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
