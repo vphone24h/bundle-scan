@@ -202,6 +202,8 @@ export function LandingProductsTab() {
   const variantFileRef = useRef<HTMLInputElement>(null);
   const catImageRef = useRef<HTMLInputElement>(null);
   const [pendingCatId, setPendingCatId] = useState<string | null>(null);
+  const [productPage, setProductPage] = useState(1);
+  const PRODUCT_PAGE_SIZE = 20;
   const [pendingVariantIdx, setPendingVariantIdx] = useState<number | null>(null);
 
   const categoryTree = useMemo(() => buildCategoryTree(categories || []), [categories]);
