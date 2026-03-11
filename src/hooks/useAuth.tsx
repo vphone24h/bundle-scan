@@ -171,24 +171,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!e.key || !e.key.includes('auth-token')) return;
 
       if (e.newValue === null || e.newValue === '') {
-        // Token was REMOVED → another tab logged out
-        setSession(null);
-        setUser(null);
-        queryClient.clear();
+        // Token was REMOVED → only logout if it was user-initiated
+        // (userInitiatedSignOut flag would already be handled by onAuthStateChange)
+        // For cross-tab: only clear if the current user actually signed out
+        if (userInitiatedSignOut) {
+          setSession(null);
+          setUser(null);
+          queryClient.clear();
+        }
+        // Otherwise IGNORE — don't auto-logout this tab
       } else if (e.oldValue === null && e.newValue) {
         // Token was ADDED → another tab logged in
-        // Small delay to let Supabase SDK settle
         setTimeout(() => {
           supabase.auth.getSession().then(({ data: { session: s } }) => {
             if (s) {
               setSession(s);
               setUser(s.user);
-              queryClient.clear(); // clear stale data from previous tenant
+              queryClient.clear();
             }
           });
         }, 200);
       } else if (e.oldValue && e.newValue && e.oldValue !== e.newValue) {
-        // Token was UPDATED → token refresh happened in another tab, sync it
+        // Token was UPDATED → sync it
         supabase.auth.getSession().then(({ data: { session: s } }) => {
           if (s) {
             setSession(s);
