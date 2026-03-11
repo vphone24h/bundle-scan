@@ -77,6 +77,10 @@ import { useCategories } from '@/hooks/useCategories';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 import { ScrollableTableWrapper } from '@/components/ui/scrollable-table-wrapper';
 import { useTranslation } from 'react-i18next';
+import { usePendingOrderCount } from '@/hooks/useLandingOrders';
+import { ShoppingBag } from 'lucide-react';
+
+const LandingOrdersTab = lazy(() => import('@/components/admin/LandingOrdersTab').then(m => ({ default: m.LandingOrdersTab })));
 
 const useExportHistoryConstants = () => {
   const { t } = useTranslation();
