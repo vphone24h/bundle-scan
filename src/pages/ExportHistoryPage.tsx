@@ -151,7 +151,8 @@ export default function ExportHistoryPage() {
   const { completeTour: completeHistoryTour } = useOnboardingTour('export_history');
   const { isCompleted: receiptTourDone, completeTour: completeReceiptTour } = useOnboardingTour('export_receipt_tab');
   const { isCompleted: itemTourDone, completeTour: completeItemTour } = useOnboardingTour('export_item_tab');
-  const [activeTab, setActiveTab] = useState<'receipts' | 'items'>('receipts');
+  const [activeTab, setActiveTab] = useState<'receipts' | 'items' | 'orders'>('receipts');
+  const { data: pendingOrderCount } = usePendingOrderCount();
   const [receiptTabTourSeen, setReceiptTabTourSeen] = useState(false);
   const [itemTabTourSeen, setItemTabTourSeen] = useState(false);
   const [activeTour, setActiveTour] = useState<'receipt-tab' | 'item-tab' | null>(null);
