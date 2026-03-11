@@ -4299,6 +4299,7 @@ export type Database = {
       platform_email_automation_logs: {
         Row: {
           automation_id: string | null
+          body_html: string | null
           created_at: string
           error_message: string | null
           id: string
@@ -4311,6 +4312,7 @@ export type Database = {
         }
         Insert: {
           automation_id?: string | null
+          body_html?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
@@ -4323,6 +4325,7 @@ export type Database = {
         }
         Update: {
           automation_id?: string | null
+          body_html?: string | null
           created_at?: string
           error_message?: string | null
           id?: string

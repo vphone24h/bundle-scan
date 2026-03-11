@@ -1,0 +1,1 @@
+ALTER TABLE platform_email_automation_logs ADD COLUMN IF NOT EXISTS body_html text;

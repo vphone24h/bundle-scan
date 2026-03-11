@@ -236,6 +236,7 @@ Deno.serve(async (req) => {
             subject: finalSubject,
             status: "error",
             error_message: sendError.message,
+            body_html: fullHtml,
           });
         }
       }
