@@ -211,6 +211,7 @@ Deno.serve(async (req) => {
           }
         })
       )
+      const invalidEmails: string[] = []
       for (const r of results) {
         const val = r.status === 'fulfilled' ? r.value : { email: 'unknown', ok: false, error: 'Promise rejected' }
         if (val.ok) {
@@ -220,6 +221,10 @@ Deno.serve(async (req) => {
           failedEmails.push(val.email)
           errors.push(`${val.email}: ${val.error}`)
           console.error(`Failed to send to ${val.email}:`, val.error)
+          // Detect invalid/non-existent email addresses
+          if (/(user unknown|mailbox not found|does not exist|recipient rejected|no such user|unknown user|invalid recipient|address rejected|user not found|mailbox unavailable|550[- ]5\.1\.[012])/i.test(val.error || '')) {
+            invalidEmails.push(val.email)
+          }
         }
       }
     }
