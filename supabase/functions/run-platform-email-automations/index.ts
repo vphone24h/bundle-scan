@@ -197,6 +197,10 @@ Deno.serve(async (req) => {
           .replace(/\{\{store_name\}\}/g, t.subdomain || "")
           .replace(/\{\{trigger_days\}\}/g, String(trigger_days));
 
+        // Convert plain text line breaks to HTML <br> if content doesn't already contain HTML block tags
+        const hasHtmlBlocks = /<(p|div|br|ul|ol|li|h[1-6]|table)/i.test(finalHtml);
+        const renderedHtml = hasHtmlBlocks ? finalHtml : finalHtml.replace(/\n/g, '<br>');
+
         const fullHtml = [
           '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:0;background:#f9fafb;border-radius:12px;overflow:hidden">',
             '<div style="background:linear-gradient(135deg,#1a56db,#2563eb);color:#fff;padding:24px;text-align:center">',
