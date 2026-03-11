@@ -70,32 +70,40 @@
         }
       }
       
-      /* Skeleton animation */
+      /* Preloader styles */
+      #app-preloader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: #f8fafc;
+        transition: opacity 0.15s ease-out;
+      }
+      #app-preloader.hide { opacity: 0; pointer-events: none; }
       #app-preloader div > div { animation: skpulse 1.5s ease-in-out infinite; }
       @keyframes skpulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
     </style>
   </head>
 
   <body>
-    <div id="root">
-      <!-- Skeleton placeholder before JS loads - looks like real UI -->
-      <div id="app-preloader" style="min-height:100vh;background:#f8fafc">
-        <div style="height:56px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;padding:0 16px;gap:12px;background:#f1f5f9">
-          <div style="width:32px;height:32px;border-radius:6px;background:#e2e8f0"></div>
-          <div style="width:128px;height:16px;border-radius:4px;background:#e2e8f0"></div>
-        </div>
-        <div style="height:160px;background:#f1f5f9"></div>
-        <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
-          <div style="width:192px;height:24px;border-radius:4px;background:#e2e8f0"></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div style="height:96px;border-radius:8px;background:#f1f5f9"></div>
-            <div style="height:96px;border-radius:8px;background:#f1f5f9"></div>
-            <div style="height:96px;border-radius:8px;background:#f1f5f9"></div>
-            <div style="height:96px;border-radius:8px;background:#f1f5f9"></div>
-          </div>
+    <!-- Preloader OUTSIDE #root so React doesn't destroy it -->
+    <div id="app-preloader">
+      <div style="height:56px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;padding:0 16px;gap:12px;background:#f1f5f9">
+        <div style="width:32px;height:32px;border-radius:6px;background:#e2e8f0"></div>
+        <div style="width:128px;height:16px;border-radius:4px;background:#e2e8f0"></div>
+      </div>
+      <div style="height:160px;background:#f1f5f9"></div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+        <div style="width:192px;height:24px;border-radius:4px;background:#e2e8f0"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="height:96px;border-radius:8px;background:#f1f5f9"></div>
+          <div style="height:96px;border-radius:8px;background:#f1f5f9"></div>
+          <div style="height:96px;border-radius:8px;background:#f1f5f9"></div>
+          <div style="height:96px;border-radius:8px;background:#f1f5f9"></div>
         </div>
       </div>
     </div>
+
+    <div id="root"></div>
     
     <!-- PWA store init - runs async, doesn't block render -->
     <script>

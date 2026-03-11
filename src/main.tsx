@@ -16,4 +16,19 @@ if (!prefetch?.storeId) {
   }
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Hide the HTML preloader after React paints
+function hidePreloader() {
+  const el = document.getElementById('app-preloader');
+  if (el) {
+    el.classList.add('hide');
+    setTimeout(() => el.remove(), 200);
+  }
+}
+
+const root = createRoot(document.getElementById("root")!);
+root.render(<App />);
+
+// Remove preloader after first React paint
+requestAnimationFrame(() => {
+  requestAnimationFrame(hidePreloader);
+});
