@@ -27,6 +27,7 @@ export interface PlatformEmailAutomationLog {
   sent_at: string | null;
   created_at: string;
   body_html: string | null;
+  skip_resend?: boolean;
 }
 
 export function usePlatformEmailAutomations() {
