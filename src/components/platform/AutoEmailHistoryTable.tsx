@@ -81,6 +81,12 @@ function ScenarioDetail({ group }: { group: GroupedScenario }) {
           .from('platform_email_automation_logs' as any)
           .update({ status: 'sent', error_message: null, sent_at: new Date().toISOString() } as any)
           .eq('id', log.id);
+      } else if (data?.invalidEmails?.includes(log.recipient_email)) {
+        // Auto-skip invalid email addresses
+        await supabase
+          .from('platform_email_automation_logs' as any)
+          .update({ skip_resend: true } as any)
+          .eq('id', log.id);
       }
       return data;
     },
