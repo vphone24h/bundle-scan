@@ -26,34 +26,27 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse optional automation_id filter
     let filterAutomationId: string | null = null;
     try {
       const body = await req.json();
       filterAutomationId = body?.automation_id || null;
-    } catch { /* no body or not JSON */ }
+    } catch { /* no body */ }
 
-    // Get automations (optionally filtered by id)
     let query = supabase
       .from("platform_email_automations")
       .select("*")
       .eq("is_enabled", true);
-    
-    if (filterAutomationId) {
-      query = query.eq("id", filterAutomationId);
-    }
+    if (filterAutomationId) query = query.eq("id", filterAutomationId);
 
     const { data: automations, error: autoErr } = await query;
-
     if (autoErr) throw autoErr;
-    if (!automations || automations.length === 0) {
+    if (!automations?.length) {
       return new Response(
         JSON.stringify({ message: "No active automations", sent: 0 }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create SMTP transporter - reuse for all emails
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 465,
@@ -61,101 +54,69 @@ Deno.serve(async (req) => {
       auth: { user: smtpUser, pass: smtpPassword },
       pool: true,
       maxConnections: 1,
-      maxMessages: 10,
-      rateDelta: 2000, // 2 seconds between emails
+      maxMessages: 100,
+      rateDelta: 1500,
       rateLimit: 1,
     });
 
     let totalSent = 0;
+    const debugInfo: string[] = [];
 
     for (const automation of automations) {
       const { trigger_type, trigger_days, target_audience, subject, html_content, id: automationId } = automation;
 
-      // Build tenant query based on target_audience
-      let query = supabase
-        .from("tenants")
-        .select("id, name, subdomain, status, subscription_plan, subscription_end_date, created_at, last_login_at");
+      // Use RPC to get all eligible tenants with admin email + last_sign_in in ONE SQL query
+      const { data: tenants, error: rpcErr } = await supabase.rpc('get_automation_eligible_tenants', {
+        p_target_audience: target_audience || 'all',
+        p_trigger_type: trigger_type,
+        p_trigger_days: trigger_days,
+      });
 
-      // Filter by audience
-      switch (target_audience) {
-        case "active":
-          query = query.eq("status", "active");
-          break;
-        case "trial":
-          query = query.eq("status", "trial");
-          break;
-        case "free":
-          query = query.eq("status", "expired");
-          break;
-        case "paid":
-          query = query.in("status", ["active", "trial"]).not("subscription_plan", "is", null);
-          break;
-        default: // 'all'
-          query = query.in("status", ["active", "trial", "expired"]);
-          break;
+      if (rpcErr) {
+        debugInfo.push(`${automation.name}: RPC error - ${rpcErr.message}`);
+        continue;
+      }
+      if (!tenants?.length) {
+        debugInfo.push(`${automation.name}: 0 tenants`);
+        continue;
       }
 
-      const { data: tenants, error: tenantErr } = await query;
-      if (tenantErr || !tenants) continue;
-
+      debugInfo.push(`${automation.name}: ${tenants.length} tenants`);
       const now = new Date();
+      let sent = 0;
 
-      for (const tenant of tenants) {
-        // Get owner email
-        const { data: platformUser } = await supabase
-          .from("platform_users")
-          .select("user_id")
-          .eq("tenant_id", tenant.id)
-          .eq("platform_role", "tenant_owner")
-          .limit(1)
-          .single();
-
-        if (!platformUser) continue;
-
-        const { data: authUser } = await supabase.auth.admin.getUserById(platformUser.user_id);
-        if (!authUser?.user?.email) continue;
-
-        const recipientEmail = authUser.user.email;
-        const tenantName = tenant.name || tenant.subdomain || "Bạn";
-        const createdAt = new Date(tenant.created_at);
-        const daysSinceCreation = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+      for (const t of tenants) {
+        const daysSinceCreation = t.days_since_creation || 0;
+        const daysSinceLogin = t.days_since_login || daysSinceCreation;
+        const tenantName = t.tenant_name || t.subdomain || "Bạn";
+        const recipientEmail = t.admin_email;
 
         let shouldSend = false;
 
         switch (trigger_type) {
-          case "signup_days": {
+          case "signup_days":
             shouldSend = daysSinceCreation === trigger_days;
             break;
-          }
-          case "inactive_days": {
-            const lastLogin = tenant.last_login_at ? new Date(tenant.last_login_at) : null;
-            if (lastLogin) {
-              const daysSinceLogin = Math.floor((now.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24));
-              shouldSend = daysSinceLogin >= trigger_days;
-            }
+          case "inactive_days":
+            shouldSend = daysSinceLogin >= trigger_days;
             break;
-          }
           case "no_login_since": {
-            const lastLogin = tenant.last_login_at ? new Date(tenant.last_login_at) : createdAt;
-            const daysSinceLogin = Math.floor((now.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24));
-            
             if (daysSinceLogin >= trigger_days) {
-              const { data: existingLog } = await supabase
+              const { data: existing } = await supabase
                 .from("platform_email_automation_logs")
                 .select("id")
                 .eq("automation_id", automationId)
-                .eq("tenant_id", tenant.id)
+                .eq("tenant_id", t.tenant_id)
                 .limit(1);
-
-              shouldSend = !existingLog || existingLog.length === 0;
+              shouldSend = !existing?.length;
             }
             break;
           }
           case "trial_expiring": {
-            if (tenant.status === "trial" && tenant.subscription_end_date) {
-              const endDate = new Date(tenant.subscription_end_date);
-              const daysUntilExpiry = Math.floor((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-              shouldSend = daysUntilExpiry <= trigger_days && daysUntilExpiry >= 0;
+            const endDateStr = t.trial_end_date || t.subscription_end_date;
+            if (t.status === "trial" && endDateStr) {
+              const daysUntil = Math.floor((new Date(endDateStr).getTime() - now.getTime()) / 86400000);
+              shouldSend = daysUntil <= trigger_days && daysUntil >= 0;
             }
             break;
           }
@@ -164,7 +125,7 @@ Deno.serve(async (req) => {
               const { count } = await supabase
                 .from("import_receipts")
                 .select("id", { count: "exact", head: true })
-                .eq("tenant_id", tenant.id);
+                .eq("tenant_id", t.tenant_id);
               shouldSend = (count || 0) === 0;
             }
             break;
@@ -174,7 +135,7 @@ Deno.serve(async (req) => {
               const { count } = await supabase
                 .from("export_receipts")
                 .select("id", { count: "exact", head: true })
-                .eq("tenant_id", tenant.id);
+                .eq("tenant_id", t.tenant_id);
               shouldSend = (count || 0) === 0;
             }
             break;
@@ -183,25 +144,21 @@ Deno.serve(async (req) => {
             const { data: lastExport } = await supabase
               .from("export_receipts")
               .select("export_date")
-              .eq("tenant_id", tenant.id)
+              .eq("tenant_id", t.tenant_id)
               .eq("status", "completed")
               .order("export_date", { ascending: false })
               .limit(1)
               .single();
-
             if (lastExport?.export_date) {
-              const lastExportDate = new Date(lastExport.export_date);
-              const daysSinceExport = Math.floor((now.getTime() - lastExportDate.getTime()) / (1000 * 60 * 60 * 24));
-              
-              if (daysSinceExport >= trigger_days) {
-                const { data: existingLog } = await supabase
+              const days = Math.floor((now.getTime() - new Date(lastExport.export_date).getTime()) / 86400000);
+              if (days >= trigger_days) {
+                const { data: existing } = await supabase
                   .from("platform_email_automation_logs")
                   .select("id")
                   .eq("automation_id", automationId)
-                  .eq("tenant_id", tenant.id)
+                  .eq("tenant_id", t.tenant_id)
                   .limit(1);
-
-                shouldSend = !existingLog || existingLog.length === 0;
+                shouldSend = !existing?.length;
               }
             }
             break;
@@ -210,7 +167,7 @@ Deno.serve(async (req) => {
 
         if (!shouldSend) continue;
 
-        // Check if email already sent today for this automation + tenant (except once-only types)
+        // Dedup: already sent today
         if (trigger_type !== "no_login_since" && trigger_type !== "post_purchase_days") {
           const todayStart = new Date();
           todayStart.setHours(0, 0, 0, 0);
@@ -218,24 +175,21 @@ Deno.serve(async (req) => {
             .from("platform_email_automation_logs")
             .select("id")
             .eq("automation_id", automationId)
-            .eq("tenant_id", tenant.id)
+            .eq("tenant_id", t.tenant_id)
             .gte("created_at", todayStart.toISOString())
             .limit(1);
-
-          if (todayLog && todayLog.length > 0) continue;
+          if (todayLog?.length) continue;
         }
 
-        // Replace variables in content
         const finalSubject = subject
           .replace(/\{\{tenant_name\}\}/g, tenantName)
           .replace(/\{\{trigger_days\}\}/g, String(trigger_days));
         const finalHtml = html_content
           .replace(/\{\{tenant_name\}\}/g, tenantName)
           .replace(/\{\{email\}\}/g, recipientEmail)
-          .replace(/\{\{store_name\}\}/g, tenant.subdomain || "")
+          .replace(/\{\{store_name\}\}/g, t.subdomain || "")
           .replace(/\{\{trigger_days\}\}/g, String(trigger_days));
 
-        // Wrap in email template
         const fullHtml = [
           '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:0;background:#f9fafb;border-radius:12px;overflow:hidden">',
             '<div style="background:linear-gradient(135deg,#1a56db,#2563eb);color:#fff;padding:24px;text-align:center">',
@@ -250,7 +204,6 @@ Deno.serve(async (req) => {
           '</div>',
         ].join('');
 
-        // Send email directly via SMTP
         try {
           await transporter.sendMail({
             from: `"VKHO" <${smtpUser}>`,
@@ -259,10 +212,9 @@ Deno.serve(async (req) => {
             html: fullHtml,
           });
 
-          // Log success
           await supabase.from("platform_email_automation_logs").insert({
             automation_id: automationId,
-            tenant_id: tenant.id,
+            tenant_id: t.tenant_id,
             recipient_email: recipientEmail,
             recipient_name: tenantName,
             subject: finalSubject,
@@ -271,12 +223,13 @@ Deno.serve(async (req) => {
           });
 
           totalSent++;
-          console.log(`✅ Sent to ${recipientEmail} (automation: ${automation.name})`);
+          sent++;
+          console.log(`✅ ${recipientEmail} (${automation.name})`);
         } catch (sendError: any) {
-          console.error(`❌ Failed to send to ${recipientEmail}:`, sendError.message);
+          console.error(`❌ ${recipientEmail}: ${sendError.message}`);
           await supabase.from("platform_email_automation_logs").insert({
             automation_id: automationId,
-            tenant_id: tenant.id,
+            tenant_id: t.tenant_id,
             recipient_email: recipientEmail,
             recipient_name: tenantName,
             subject: finalSubject,
@@ -285,13 +238,13 @@ Deno.serve(async (req) => {
           });
         }
       }
+      debugInfo.push(`  → sent: ${sent}`);
     }
 
-    // Close transporter pool
     transporter.close();
 
     return new Response(
-      JSON.stringify({ success: true, sent: totalSent }),
+      JSON.stringify({ success: true, sent: totalSent, debug: debugInfo }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {

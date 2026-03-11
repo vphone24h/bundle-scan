@@ -7217,6 +7217,27 @@ export type Database = {
       generate_domain_verification_token: { Args: never; Returns: string }
       generate_shop_ctv_code: { Args: { _tenant_id: string }; Returns: string }
       generate_voucher_code: { Args: never; Returns: string }
+      get_automation_eligible_tenants: {
+        Args: {
+          p_target_audience: string
+          p_trigger_days: number
+          p_trigger_type: string
+        }
+        Returns: {
+          admin_email: string
+          created_at: string
+          days_since_creation: number
+          days_since_login: number
+          last_sign_in_at: string
+          status: string
+          subdomain: string
+          subscription_end_date: string
+          subscription_plan: string
+          tenant_id: string
+          tenant_name: string
+          trial_end_date: string
+        }[]
+      }
       get_current_tenant: { Args: never; Returns: string }
       get_customer_debt_summary: {
         Args: { _branch_id?: string; _show_settled?: boolean }
