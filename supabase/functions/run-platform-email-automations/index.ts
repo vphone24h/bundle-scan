@@ -197,13 +197,17 @@ Deno.serve(async (req) => {
           .replace(/\{\{store_name\}\}/g, t.subdomain || "")
           .replace(/\{\{trigger_days\}\}/g, String(trigger_days));
 
+        // Convert plain text line breaks to HTML <br> if content doesn't already contain HTML block tags
+        const hasHtmlBlocks = /<(p|div|br|ul|ol|li|h[1-6]|table)/i.test(finalHtml);
+        const renderedHtml = hasHtmlBlocks ? finalHtml : finalHtml.replace(/\n/g, '<br>');
+
         const fullHtml = [
           '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:0;background:#f9fafb;border-radius:12px;overflow:hidden">',
             '<div style="background:linear-gradient(135deg,#1a56db,#2563eb);color:#fff;padding:24px;text-align:center">',
               `<h1 style="margin:0;font-size:20px;font-weight:bold">${finalSubject}</h1>`,
             '</div>',
             '<div style="background:#fff;padding:24px">',
-              finalHtml,
+              renderedHtml,
             '</div>',
             '<div style="background:#f3f4f6;padding:16px 24px;text-align:center">',
               '<p style="margin:0;font-size:12px;color:#9ca3af">© 2026 VKHO – Hệ thống quản lý kho hàng thông minh</p>',
