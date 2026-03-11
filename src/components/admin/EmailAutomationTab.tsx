@@ -623,6 +623,167 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
 }
 
 
+const LOG_PAGE_SIZE = 20;
+
+function PaginationControls({ page, totalPages, onPageChange }: { page: number; totalPages: number; onPageChange: (p: number) => void }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between mt-3 px-1">
+      <span className="text-xs text-muted-foreground">Trang {page}/{totalPages}</span>
+      <div className="flex gap-1">
+        <Button variant="outline" size="sm" className="h-7 w-7 p-0" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="sm" className="h-7 w-7 p-0" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function PaginatedLogTable({ logs, statusFilter, page, onPageChange, resendingIds, onResend, onPreview, columns }: {
+  logs: import('@/hooks/useEmailAutomations').EmailAutomationLog[];
+  statusFilter: 'all' | 'sent' | 'failed';
+  page: number;
+  onPageChange: (p: number) => void;
+  resendingIds: Set<string>;
+  onResend: (id: string) => void;
+  onPreview: (log: import('@/hooks/useEmailAutomations').EmailAutomationLog) => void;
+  columns: string[];
+}) {
+  const filtered = statusFilter === 'all' ? logs : logs.filter(l => l.status === statusFilter);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / LOG_PAGE_SIZE));
+  const paged = filtered.slice((page - 1) * LOG_PAGE_SIZE, page * LOG_PAGE_SIZE);
+
+  if (!filtered.length) {
+    return (
+      <p className="text-center py-8 text-muted-foreground text-sm">
+        {statusFilter === 'all' ? 'Chưa có email nào được gửi' : `Không có email ${statusFilter === 'sent' ? 'thành công' : 'thất bại'}`}
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <ScrollableTableWrapper>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Thời gian</TableHead>
+              <TableHead>Email</TableHead>
+              {columns.includes('customer') && <TableHead>Khách hàng</TableHead>}
+              <TableHead>Tiêu đề</TableHead>
+              <TableHead>Trạng thái</TableHead>
+              {columns.includes('error') && <TableHead>Lỗi</TableHead>}
+              {columns.includes('resend') && <TableHead></TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paged.map(log => (
+              <TableRow key={log.id} className="cursor-pointer hover:bg-muted/50" onClick={() => onPreview(log)}>
+                <TableCell className="whitespace-nowrap text-sm">
+                  {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
+                </TableCell>
+                <TableCell className="text-sm max-w-[180px] truncate">{log.customer_email}</TableCell>
+                {columns.includes('customer') && <TableCell className="text-sm">{log.customer_name || '-'}</TableCell>}
+                <TableCell className="text-sm max-w-[200px] truncate">{log.subject}</TableCell>
+                <TableCell>
+                  {log.status === 'sent' ? (
+                    <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
+                  ) : log.status === 'failed' ? (
+                    <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />Lỗi</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Đang gửi</Badge>
+                  )}
+                </TableCell>
+                {columns.includes('error') && <TableCell className="text-sm text-destructive max-w-[200px] truncate">{log.error_message || '-'}</TableCell>}
+                {columns.includes('resend') && (
+                  <TableCell>
+                    {log.status === 'failed' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        disabled={resendingIds.has(log.id)}
+                        onClick={(e) => { e.stopPropagation(); onResend(log.id); }}
+                      >
+                        <Send className={`h-3 w-3 mr-1 ${resendingIds.has(log.id) ? 'animate-pulse' : ''}`} />
+                        Gửi lại
+                      </Button>
+                    )}
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </ScrollableTableWrapper>
+      <PaginationControls page={page} totalPages={totalPages} onPageChange={onPageChange} />
+    </>
+  );
+}
+
+function PaginatedOrderLogTable({ logs, statusFilter, page, onPageChange }: {
+  logs: any[];
+  statusFilter: 'all' | 'sent' | 'failed';
+  page: number;
+  onPageChange: (p: number) => void;
+}) {
+  const filtered = statusFilter === 'all' ? logs :
+    statusFilter === 'sent' ? logs.filter((l: any) => l.status === 'sent' || l.status === 'success') :
+    logs.filter((l: any) => l.status === 'failed' || l.status === 'error');
+  const totalPages = Math.max(1, Math.ceil(filtered.length / LOG_PAGE_SIZE));
+  const paged = filtered.slice((page - 1) * LOG_PAGE_SIZE, page * LOG_PAGE_SIZE);
+
+  if (!filtered.length) {
+    return (
+      <p className="text-center py-8 text-muted-foreground text-sm">
+        {statusFilter === 'all' ? 'Chưa có email đơn hàng nào được gửi' : `Không có email ${statusFilter === 'sent' ? 'thành công' : 'thất bại'}`}
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <ScrollableTableWrapper>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Thời gian</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Loại</TableHead>
+              <TableHead>Trạng thái</TableHead>
+              <TableHead>Lỗi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paged.map((log: any) => (
+              <TableRow key={log.id}>
+                <TableCell className="whitespace-nowrap text-sm">
+                  {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
+                </TableCell>
+                <TableCell className="text-sm max-w-[180px] truncate">{log.recipient_email}</TableCell>
+                <TableCell className="text-sm">{log.email_type}</TableCell>
+                <TableCell>
+                  {(log.status === 'sent' || log.status === 'success') ? (
+                    <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
+                  ) : (log.status === 'failed' || log.status === 'error') ? (
+                    <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" />Lỗi</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" />Đang gửi</Badge>
+                  )}
+                </TableCell>
+                <TableCell className="text-sm text-destructive max-w-[200px] truncate">{log.error_message || '-'}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </ScrollableTableWrapper>
+      <PaginationControls page={page} totalPages={totalPages} onPageChange={onPageChange} />
+    </>
+  );
+}
 
 // === Main Tab ===
 export function EmailAutomationTab() {
