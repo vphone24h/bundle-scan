@@ -170,7 +170,7 @@ export function SystemNotificationBell() {
           
           <AutoPushSubscriber />
 
-          <Tabs defaultValue="pinned" className="w-full">
+          <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full">
             <TabsList className="w-full rounded-none border-b h-9">
               <TabsTrigger value="pinned" className="flex-1 text-xs">
                 <Pin className="h-3 w-3 mr-1" />
