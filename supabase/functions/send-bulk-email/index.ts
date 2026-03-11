@@ -55,12 +55,12 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
-    // Rate limiting: 5 bulk email requests per IP per 60 minutes
+    // Rate limiting: 30 bulk email requests per IP per 60 minutes
     const clientIP = getClientIP(req)
     const { data: allowed } = await supabaseAdmin.rpc('check_rate_limit', {
       _function_name: 'send-bulk-email',
       _ip_address: clientIP,
-      _max_requests: 5,
+      _max_requests: 30,
       _window_minutes: 60,
     })
 
