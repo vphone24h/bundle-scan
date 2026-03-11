@@ -349,56 +349,7 @@ export function PlatformEmailAutomationManagement() {
         </TabsContent>
 
         <TabsContent value="logs">
-          {logsLoading ? (
-            <div className="text-sm text-muted-foreground">Đang tải...</div>
-          ) : logs.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center text-muted-foreground">
-                <Mail className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                <p>Chưa có email nào được gửi tự động</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Thời gian</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Tiêu đề</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {logs.map(log => (
-                    <TableRow key={log.id}>
-                      <TableCell className="text-xs whitespace-nowrap">
-                        {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        <div>
-                          {log.recipient_name && <span className="font-medium">{log.recipient_name} · </span>}
-                          {log.recipient_email}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs line-clamp-1">{log.subject}</TableCell>
-                      <TableCell>
-                        {log.status === 'sent' ? (
-                          <span className="flex items-center gap-1 text-xs text-green-600">
-                            <CheckCircle className="h-3 w-3" /> Đã gửi
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-xs text-destructive">
-                            <XCircle className="h-3 w-3" /> Lỗi
-                          </span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          )}
+          <AutoEmailHistoryTable />
         </TabsContent>
       </Tabs>
 
