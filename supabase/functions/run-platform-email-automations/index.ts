@@ -36,9 +36,7 @@ Deno.serve(async (req) => {
       .from("platform_email_automations")
       .select("*")
       .eq("is_enabled", true);
-    if (filterAutomationId) {
-      query = query.eq("id", filterAutomationId);
-    }
+    if (filterAutomationId) query = query.eq("id", filterAutomationId);
 
     const { data: automations, error: autoErr } = await query;
     if (autoErr) throw autoErr;
@@ -49,53 +47,49 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Pre-fetch ALL tenant admins with their emails in ONE query
-    // Join platform_users → tenants to get tenant info + admin user_id
+    // === BATCH PRE-FETCH: all tenant admins with email ===
     const { data: allAdmins } = await supabase
       .from("platform_users")
       .select("user_id, tenant_id, email")
       .eq("platform_role", "tenant_admin");
 
-    // Build a map: tenant_id → { user_id, email }
     const adminByTenant: Record<string, { user_id: string; email: string | null }> = {};
+    const allUserIds = new Set<string>();
     for (const a of allAdmins || []) {
       if (!adminByTenant[a.tenant_id]) {
         adminByTenant[a.tenant_id] = { user_id: a.user_id, email: a.email };
+        allUserIds.add(a.user_id);
       }
     }
 
-    // Pre-fetch auth users for those who have null email in platform_users
-    const missingEmailUserIds = Object.values(adminByTenant)
-      .filter(a => !a.email)
-      .map(a => a.user_id);
-
-    const authEmailMap: Record<string, string> = {};
-    // Batch fetch auth users (max 50 at a time)
-    for (let i = 0; i < missingEmailUserIds.length; i += 50) {
-      const batch = missingEmailUserIds.slice(i, i + 50);
-      for (const uid of batch) {
-        const { data: au } = await supabase.auth.admin.getUserById(uid);
-        if (au?.user?.email) authEmailMap[uid] = au.user.email;
+    // === BATCH PRE-FETCH: auth users (email + last_sign_in_at) ===
+    // Use listUsers with pagination to get all users efficiently
+    const authUserMap: Record<string, { email: string; last_sign_in_at: string | null }> = {};
+    let page = 1;
+    const perPage = 1000;
+    while (true) {
+      const { data: { users }, error: listErr } = await supabase.auth.admin.listUsers({ page, perPage });
+      if (listErr || !users?.length) break;
+      for (const u of users) {
+        if (allUserIds.has(u.id)) {
+          authUserMap[u.id] = { email: u.email || '', last_sign_in_at: u.last_sign_in_at || null };
+        }
       }
+      if (users.length < perPage) break;
+      page++;
     }
 
-    // Helper to get email for a tenant
-    function getTenantEmail(tenantId: string): { email: string; userId: string } | null {
-      const admin = adminByTenant[tenantId];
-      if (!admin) return null;
-      const email = admin.email || authEmailMap[admin.user_id];
-      if (!email) return null;
-      return { email, userId: admin.user_id };
-    }
-
-    // Helper to get last_sign_in_at (cache)
-    const signInCache: Record<string, Date | null> = {};
-    async function getLastSignIn(userId: string): Promise<Date | null> {
-      if (userId in signInCache) return signInCache[userId];
-      const { data } = await supabase.auth.admin.getUserById(userId);
-      const d = data?.user?.last_sign_in_at ? new Date(data.user.last_sign_in_at) : null;
-      signInCache[userId] = d;
-      return d;
+    // Resolve final email + last_sign_in for each tenant
+    interface TenantAdmin { email: string; lastSignIn: Date | null; }
+    const resolvedAdmins: Record<string, TenantAdmin> = {};
+    for (const [tenantId, admin] of Object.entries(adminByTenant)) {
+      const authInfo = authUserMap[admin.user_id];
+      const email = admin.email || authInfo?.email;
+      if (!email) continue;
+      resolvedAdmins[tenantId] = {
+        email,
+        lastSignIn: authInfo?.last_sign_in_at ? new Date(authInfo.last_sign_in_at) : null,
+      };
     }
 
     const transporter = nodemailer.createTransport({
@@ -134,14 +128,16 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      debugInfo.push(`${automation.name}: ${tenants.length} tenants`);
+      debugInfo.push(`${automation.name}: ${tenants.length} tenants matched`);
       const now = new Date();
+      let automationSent = 0;
+      let automationSkipped = 0;
 
       for (const tenant of tenants) {
-        const adminInfo = getTenantEmail(tenant.id);
-        if (!adminInfo) continue;
+        const admin = resolvedAdmins[tenant.id];
+        if (!admin) continue;
 
-        const { email: recipientEmail, userId } = adminInfo;
+        const { email: recipientEmail, lastSignIn } = admin;
         const tenantName = tenant.name || tenant.subdomain || "Bạn";
         const createdAt = new Date(tenant.created_at);
         const daysSinceCreation = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
@@ -149,12 +145,10 @@ Deno.serve(async (req) => {
         let shouldSend = false;
 
         switch (trigger_type) {
-          case "signup_days": {
+          case "signup_days":
             shouldSend = daysSinceCreation === trigger_days;
             break;
-          }
           case "inactive_days": {
-            const lastSignIn = await getLastSignIn(userId);
             if (lastSignIn) {
               const days = Math.floor((now.getTime() - lastSignIn.getTime()) / (1000 * 60 * 60 * 24));
               shouldSend = days >= trigger_days;
@@ -164,7 +158,6 @@ Deno.serve(async (req) => {
             break;
           }
           case "no_login_since": {
-            const lastSignIn = await getLastSignIn(userId);
             const refDate = lastSignIn || createdAt;
             const days = Math.floor((now.getTime() - refDate.getTime()) / (1000 * 60 * 60 * 24));
             if (days >= trigger_days) {
@@ -232,9 +225,9 @@ Deno.serve(async (req) => {
           }
         }
 
-        if (!shouldSend) continue;
+        if (!shouldSend) { automationSkipped++; continue; }
 
-        // Dedup: check already sent today (except once-only types)
+        // Dedup: already sent today
         if (trigger_type !== "no_login_since" && trigger_type !== "post_purchase_days") {
           const todayStart = new Date();
           todayStart.setHours(0, 0, 0, 0);
@@ -290,7 +283,8 @@ Deno.serve(async (req) => {
           });
 
           totalSent++;
-          console.log(`✅ Sent to ${recipientEmail} (${automation.name})`);
+          automationSent++;
+          console.log(`✅ ${recipientEmail} (${automation.name})`);
         } catch (sendError: any) {
           console.error(`❌ ${recipientEmail}: ${sendError.message}`);
           await supabase.from("platform_email_automation_logs").insert({
@@ -304,6 +298,8 @@ Deno.serve(async (req) => {
           });
         }
       }
+
+      debugInfo.push(`  → sent: ${automationSent}, skipped: ${automationSkipped}`);
     }
 
     transporter.close();
