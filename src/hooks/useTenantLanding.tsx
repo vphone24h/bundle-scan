@@ -361,17 +361,20 @@ export function useWarrantyLookup(
 
 // Hook tra cứu điểm tích lũy công khai - chỉ theo SĐT
 export function useCustomerPointsPublic(phone: string, tenantId: string | null) {
-  return useQuery({
-    queryKey: ['customer-points-public', phone, tenantId],
-    queryFn: async (): Promise<CustomerPointsPublic | null> => {
-      if (!phone || !tenantId) return null;
+  const normalizedPhone = phone.replace(/\D/g, '');
+  const normalizedVietnamesePhone = normalizedPhone.startsWith('84')
+    ? `0${normalizedPhone.slice(2)}`
+    : normalizedPhone;
+  const isPhoneNumber = /^0\d{9,10}$/.test(normalizedVietnamesePhone);
 
-      const isPhoneNumber = /^0\d{9,10}$/.test(phone.replace(/\s/g, ''));
-      if (!isPhoneNumber) return null;
+  return useQuery({
+    queryKey: ['customer-points-public', normalizedVietnamesePhone, tenantId],
+    queryFn: async (): Promise<CustomerPointsPublic | null> => {
+      if (!isPhoneNumber || !tenantId) return null;
 
       const { data, error } = await supabase
         .rpc('lookup_customer_points_public', {
-          _phone: phone,
+          _phone: normalizedVietnamesePhone,
           _tenant_id: tenantId
         });
 
@@ -382,7 +385,7 @@ export function useCustomerPointsPublic(phone: string, tenantId: string | null) 
       }
       return null;
     },
-    enabled: !!phone && !!tenantId && phone.length >= 10,
+    enabled: !!tenantId && isPhoneNumber,
   });
 }
 
