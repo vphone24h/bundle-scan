@@ -275,6 +275,19 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const ogImage = settings?.store_logo_url || undefined;
   useDynamicOGMeta(ogTitle, ogDesc, ogImage);
 
+  if (isStandalone && tenant) {
+    return (
+      <StandaloneWarrantyApp
+        tenantId={tenantId}
+        storeName={storeName}
+        logoUrl={settings?.store_logo_url}
+        warrantyHotline={settings?.warranty_hotline || settings?.store_phone}
+        supportGroupUrl={settings?.support_group_url}
+        storageScopeId={storeId || tenantId}
+      />
+    );
+  }
+
 
   // Loading / error states
   if (isLoading || (!hasIdentifier && resolvedTenant.status === 'loading')) {
