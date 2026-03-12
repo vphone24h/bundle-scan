@@ -677,9 +677,12 @@ export function LandingProductsTab() {
                       >
                         {p.is_sold_out ? '✓ Hết' : 'Hết hàng'}
                       </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" title="Quản lý ngày chặn" onClick={() => setBlockedDatesProduct(p)}>
-                        <CalendarDays className="h-3.5 w-3.5" />
-                      </Button>
+                      {/* Only show blocked dates calendar for hotel store */}
+                      {landingSettings?.website_template === 'hotel_store' && (
+                        <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" title="Quản lý ngày chặn" onClick={() => setBlockedDatesProduct(p)}>
+                          <CalendarDays className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditProduct(p)}>
                         <Edit2 className="h-3.5 w-3.5" />
                       </Button>
