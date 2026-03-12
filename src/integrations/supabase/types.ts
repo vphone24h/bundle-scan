@@ -3882,6 +3882,7 @@ export type Database = {
           images: Json | null
           is_active: boolean | null
           is_featured: boolean | null
+          is_sold_out: boolean
           name: string
           price: number | null
           promotion_content: string | null
@@ -3909,6 +3910,7 @@ export type Database = {
           images?: Json | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          is_sold_out?: boolean
           name: string
           price?: number | null
           promotion_content?: string | null
@@ -3936,6 +3938,7 @@ export type Database = {
           images?: Json | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          is_sold_out?: boolean
           name?: string
           price?: number | null
           promotion_content?: string | null
