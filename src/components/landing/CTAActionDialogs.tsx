@@ -173,6 +173,7 @@ export function BookingDialog({
   const handleSubmit = async () => {
     if (!name.trim() || !phone.trim()) { toast.error('Vui lòng nhập họ tên và số điện thoại'); return; }
     if (!date) { toast.error('Vui lòng chọn ngày'); return; }
+    if (blockedDateSet.has(date)) { toast.error('Ngày này đã hết chỗ, vui lòng chọn ngày khác'); return; }
     if (requireTime && !time) { toast.error('Vui lòng chọn giờ'); return; }
     if (!branch) { toast.error('Vui lòng chọn chi nhánh'); return; }
     try {
