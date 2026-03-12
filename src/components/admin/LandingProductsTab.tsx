@@ -1061,6 +1061,10 @@ export function LandingProductsTab() {
             </div>
 
             <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-1.5">Hết hàng <Badge variant="destructive" className="text-[9px] px-1.5 py-0">Sold out</Badge></Label>
+              <Switch checked={form.is_sold_out} onCheckedChange={v => setForm(p => ({ ...p, is_sold_out: v }))} />
+            </div>
+            <div className="flex items-center justify-between">
               <Label>Sản phẩm nổi bật</Label>
               <Switch checked={form.is_featured} onCheckedChange={v => setForm(p => ({ ...p, is_featured: v }))} />
             </div>
