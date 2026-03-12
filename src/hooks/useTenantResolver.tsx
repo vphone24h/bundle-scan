@@ -254,12 +254,25 @@ export function useTenantResolver() {
     }
 
     let cancelled = false;
+    let retryCount = 0;
+    const maxRetries = 3;
     
-    resolveTenantOnce(hostname).then((result) => {
-      if (!cancelled) {
+    const attempt = () => {
+      resolveTenantOnce(hostname).then((result) => {
+        if (cancelled) return;
+        
+        // If not_found and not cached (network error), retry
+        if (result.status === 'not_found' && !cachedResult && retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(attempt, 1500 * retryCount);
+          return;
+        }
+        
         setTenant(result);
-      }
-    });
+      });
+    };
+    
+    attempt();
     
     return () => {
       cancelled = true;
