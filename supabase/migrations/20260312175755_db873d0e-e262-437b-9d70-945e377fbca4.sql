@@ -1,0 +1,1 @@
+ALTER TABLE public.tenant_landing_settings ADD COLUMN IF NOT EXISTS warranty_description text DEFAULT null;
