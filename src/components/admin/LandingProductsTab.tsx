@@ -663,7 +663,18 @@ export function LandingProductsTab() {
                         {p.is_featured && <Badge variant="default" className="text-[10px]">Nổi bật</Badge>}
                       </div>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant={p.is_sold_out ? "destructive" : "outline"}
+                        size="sm"
+                        className="h-8 text-xs px-2 shrink-0"
+                        onClick={async () => {
+                          await updateProduct.mutateAsync({ id: p.id, is_sold_out: !p.is_sold_out } as any);
+                          toast({ title: p.is_sold_out ? 'Đã bỏ hết hàng' : 'Đã đánh dấu hết hàng' });
+                        }}
+                      >
+                        {p.is_sold_out ? '✓ Hết' : 'Hết hàng'}
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditProduct(p)}>
                         <Edit2 className="h-3.5 w-3.5" />
                       </Button>
