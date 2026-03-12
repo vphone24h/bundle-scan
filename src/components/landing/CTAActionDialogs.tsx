@@ -148,7 +148,7 @@ export function ContactFormDialog({
   );
 }
 
-// ===== BOOKING DIALOG (with date/time) =====
+// ===== BOOKING DIALOG (with date/time — supports single date OR date range mode) =====
 interface BookingDialogProps extends CTADialogProps {
   title: string;
   requireTime?: boolean;
@@ -159,53 +159,123 @@ export function BookingDialog({
   productName, productId, productImageUrl, productPrice,
   title, requireTime = true,
 }: BookingDialogProps) {
+  const [mode, setMode] = useState<'single' | 'range'>('single');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  // Single mode
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  // Range mode
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [startTime, setStartTime] = useState('08:00');
+  const [endTime, setEndTime] = useState('17:00');
   const [note, setNote] = useState('');
   const [branch, setBranch] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const placeOrder = usePlaceLandingOrder();
+  const bulkBlock = useBulkAddBlockedDates();
   const { data: blockedDates = [] } = usePublicBlockedDates(tenantId, productId || null);
   const blockedDateStrings = useMemo(() => new Set(blockedDates.map(b => b.blocked_date)), [blockedDates]);
 
+  // Range: calculate days
+  const rangeDays = useMemo(() => {
+    if (!startDate || !endDate) return 0;
+    const diff = (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24);
+    return Math.max(0, Math.round(diff));
+  }, [startDate, endDate]);
+
+  // Range: check time conflicts (with 2h cleaning buffer)
+  const rangeConflictInfo = useMemo(() => {
+    if (mode !== 'range' || !startDate || !endDate || rangeDays <= 0) return { hasConflict: false, message: '' };
+    try {
+      const days = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) });
+      for (const day of days) {
+        const dateStr = format(day, 'yyyy-MM-dd');
+        const isFirst = dateStr === startDate;
+        const isLast = dateStr === endDate;
+        const dayIn = isFirst ? startTime : '00:00';
+        const dayOut = isLast ? endTime : '23:59';
+        const result = checkTimeConflict(blockedDates, dateStr, dayIn, dayOut);
+        if (result.hasConflict) {
+          return { hasConflict: true, message: `📅 Ngày ${dateStr.split('-').reverse().slice(0, 2).join('/')}: ${result.message}` };
+        }
+      }
+    } catch { return { hasConflict: false, message: '' }; }
+    return { hasConflict: false, message: '' };
+  }, [mode, startDate, endDate, startTime, endTime, rangeDays, blockedDates]);
+
   const handleSubmit = async () => {
     if (!name.trim() || !phone.trim()) { toast.error('Vui lòng nhập họ tên và số điện thoại'); return; }
-    if (!date) { toast.error('Vui lòng chọn ngày'); return; }
-    if (blockedDateStrings.has(date)) { toast.error('Ngày này đã hết chỗ, vui lòng chọn ngày khác'); return; }
-    if (requireTime && !time) { toast.error('Vui lòng chọn giờ'); return; }
     if (!branch) { toast.error('Vui lòng chọn chi nhánh'); return; }
-    try {
-      const bookingNote = `[${title}] Ngày: ${date}${time ? ` - Giờ: ${time}` : ''}${note.trim() ? ` - ${note.trim()}` : ''}`;
-      await placeOrder.mutateAsync({
-        tenant_id: tenantId,
-        branch_id: branch,
-        product_id: productId || 'booking',
-        product_name: productName || title,
-        product_image_url: productImageUrl,
-        product_price: productPrice || 0,
-        customer_name: name.trim(),
-        customer_phone: phone.trim(),
-        customer_email: email.trim() || undefined,
-        note: bookingNote,
-        action_type: 'booking',
-        action_date: date,
-        action_time: time || undefined,
-      });
-      setSubmitted(true);
-    } catch { toast.error('Đặt lịch thất bại, vui lòng thử lại'); }
+
+    if (mode === 'single') {
+      if (!date) { toast.error('Vui lòng chọn ngày'); return; }
+      if (blockedDateStrings.has(date)) { toast.error('Ngày này đã hết chỗ, vui lòng chọn ngày khác'); return; }
+      if (requireTime && !time) { toast.error('Vui lòng chọn giờ'); return; }
+      try {
+        const bookingNote = `[${title}] Ngày: ${date}${time ? ` - Giờ: ${time}` : ''}${note.trim() ? ` - ${note.trim()}` : ''}`;
+        await placeOrder.mutateAsync({
+          tenant_id: tenantId, branch_id: branch,
+          product_id: productId || 'booking', product_name: productName || title,
+          product_image_url: productImageUrl, product_price: productPrice || 0,
+          customer_name: name.trim(), customer_phone: phone.trim(),
+          customer_email: email.trim() || undefined, note: bookingNote,
+          action_type: 'booking', action_date: date, action_time: time || undefined,
+        });
+        setSubmitted(true);
+      } catch { toast.error('Đặt lịch thất bại, vui lòng thử lại'); }
+    } else {
+      if (!startDate || !endDate) { toast.error('Vui lòng chọn thời gian bắt đầu & kết thúc'); return; }
+      if (rangeDays <= 0) { toast.error('Ngày kết thúc phải sau ngày bắt đầu'); return; }
+      if (rangeConflictInfo.hasConflict) { toast.error(rangeConflictInfo.message); return; }
+      try {
+        const bookingNote = `[${title}] Từ: ${startDate} ${startTime} → Đến: ${endDate} ${endTime} | ${rangeDays} ngày${note.trim() ? ` | Ghi chú: ${note.trim()}` : ''}`;
+        await placeOrder.mutateAsync({
+          tenant_id: tenantId, branch_id: branch,
+          product_id: productId || 'booking', product_name: productName || title,
+          product_image_url: productImageUrl, product_price: productPrice || 0,
+          customer_name: name.trim(), customer_phone: phone.trim(),
+          customer_email: email.trim() || undefined, note: bookingNote,
+          action_type: 'booking', action_date: startDate, action_time: startTime,
+        });
+        // Auto-block the date range
+        if (productId) {
+          try {
+            const days = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) });
+            const dateStrings = days.map(d => format(d, 'yyyy-MM-dd'));
+            await bulkBlock.mutateAsync({
+              tenantId, productId, dates: dateStrings,
+              note: `Đặt bởi ${name.trim()} - ${phone.trim()}`,
+              checkInTime: startTime, checkOutTime: endTime,
+              customerName: name.trim(), customerPhone: phone.trim(),
+            });
+          } catch (e) { console.warn('Auto-block dates failed:', e); }
+        }
+        setSubmitted(true);
+      } catch { toast.error('Đặt lịch thất bại, vui lòng thử lại'); }
+    }
   };
 
-  const handleClose = () => { onClose(); setTimeout(() => { setName(''); setPhone(''); setEmail(''); setDate(''); setTime(''); setNote(''); setBranch(''); setSubmitted(false); }, 300); };
+  const handleClose = () => {
+    onClose();
+    setTimeout(() => {
+      setMode('single'); setName(''); setPhone(''); setEmail('');
+      setDate(''); setTime(''); setStartDate(''); setEndDate('');
+      setStartTime('08:00'); setEndTime('17:00');
+      setNote(''); setBranch(''); setSubmitted(false);
+    }, 300);
+  };
+
+  const today = new Date().toISOString().split('T')[0];
 
   return (
     <Dialog open={open} onOpenChange={v => !v && handleClose()}>
       <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base">{title}</DialogTitle>
-          <DialogDescription className="text-sm">Chọn ngày giờ phù hợp để đặt lịch</DialogDescription>
+          <DialogDescription className="text-sm">Chọn hình thức và thời gian phù hợp</DialogDescription>
         </DialogHeader>
         {submitted ? (
           <div className="text-center py-6 space-y-3">
@@ -217,6 +287,25 @@ export function BookingDialog({
         ) : (
           <div className="space-y-3">
             {productName && <div className="text-sm bg-muted/50 rounded-lg p-2.5 font-medium">{productName}</div>}
+
+            {/* Mode toggle */}
+            <div className="flex rounded-lg border border-input overflow-hidden">
+              <button
+                type="button"
+                className={`flex-1 py-2 text-sm font-medium transition-colors ${mode === 'single' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                onClick={() => setMode('single')}
+              >
+                📅 Ngày giờ cụ thể
+              </button>
+              <button
+                type="button"
+                className={`flex-1 py-2 text-sm font-medium transition-colors ${mode === 'range' ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                onClick={() => setMode('range')}
+              >
+                📆 Khoảng thời gian
+              </button>
+            </div>
+
             <div>
               <Label className="text-sm">Họ tên <span className="text-destructive">*</span></Label>
               <Input value={name} onChange={e => setName(e.target.value)} placeholder="Nhập họ tên" className="h-11 text-base" />
@@ -224,44 +313,110 @@ export function BookingDialog({
             <div>
               <Label className="text-sm">Số điện thoại <span className="text-destructive">*</span></Label>
               <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Nhập số điện thoại" inputMode="tel" className="h-11 text-base" />
-              <p className="text-xs text-muted-foreground mt-1">Nhập SĐT đã từng mua hàng để được ưu đãi</p>
+              <p className="text-xs text-muted-foreground mt-1">Nhập SĐT đã từng sử dụng dịch vụ để được ưu đãi</p>
             </div>
             <div>
               <Label className="text-sm">Email</Label>
               <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập email" type="email" className="h-11 text-base" />
-              <p className="text-xs text-muted-foreground mt-1">Nhập đúng mail để nhận thông tin đơn hàng và bảo hành</p>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-sm">Ngày <span className="text-destructive">*</span></Label>
-                <Input
-                  type="date"
-                  value={date}
-                  onChange={e => {
-                    const v = e.target.value;
-                    if (blockedDateStrings.has(v)) {
-                      toast.error('Ngày này đã hết chỗ');
-                      return;
-                    }
-                    setDate(v);
-                  }}
-                  className={`h-11 text-base ${date && blockedDateStrings.has(date) ? 'border-destructive' : ''}`}
-                  min={new Date().toISOString().split('T')[0]}
-                />
+
+            {mode === 'single' ? (
+              /* ===== SINGLE DATE/TIME MODE ===== */
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-sm">Ngày <span className="text-destructive">*</span></Label>
+                  <Input
+                    type="date" value={date}
+                    onChange={e => {
+                      const v = e.target.value;
+                      if (blockedDateStrings.has(v)) { toast.error('Ngày này đã hết chỗ'); return; }
+                      setDate(v);
+                    }}
+                    className={`h-11 text-base ${date && blockedDateStrings.has(date) ? 'border-destructive' : ''}`}
+                    min={today}
+                  />
+                  {blockedDates.length > 0 && (
+                    <p className="text-xs text-destructive mt-1">
+                      Các ngày đã hết: {blockedDates.slice(0, 5).map(d => {
+                        const parts = d.blocked_date.split('-');
+                        return `${parts[2]}/${parts[1]}`;
+                      }).join(', ')}{blockedDates.length > 5 ? '...' : ''}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-sm">Giờ {requireTime && <span className="text-destructive">*</span>}</Label>
+                  <Input type="time" value={time} onChange={e => setTime(e.target.value)} className="h-11 text-base" />
+                </div>
+              </div>
+            ) : (
+              /* ===== DATE RANGE MODE ===== */
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-sm">Thời gian bắt đầu</Label>
+                    <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="h-11 text-base" />
+                  </div>
+                  <div>
+                    <Label className="text-sm">Thời gian kết thúc</Label>
+                    <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="h-11 text-base" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-sm">Từ ngày <span className="text-destructive">*</span></Label>
+                    <Input
+                      type="date" value={startDate}
+                      onChange={e => {
+                        setStartDate(e.target.value);
+                        if (endDate && e.target.value >= endDate) setEndDate('');
+                      }}
+                      min={today} className="h-11 text-base"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm">Đến ngày <span className="text-destructive">*</span></Label>
+                    <Input
+                      type="date" value={endDate}
+                      onChange={e => setEndDate(e.target.value)}
+                      min={startDate || today} className="h-11 text-base"
+                    />
+                  </div>
+                </div>
+
+                {/* Existing bookings info */}
                 {blockedDates.length > 0 && (
-                  <p className="text-xs text-destructive mt-1">
-                    Các ngày đã hết: {blockedDates.slice(0, 5).map(d => {
+                  <div className="text-xs space-y-1 bg-muted/50 rounded-md p-2">
+                    <p className="font-medium text-muted-foreground">📅 Lịch đặt hiện tại:</p>
+                    {blockedDates.slice(0, 6).map((d, i) => {
                       const parts = d.blocked_date.split('-');
-                      return `${parts[2]}/${parts[1]}`;
-                    }).join(', ')}{blockedDates.length > 5 ? '...' : ''}
-                  </p>
+                      return (
+                        <p key={i} className="text-muted-foreground">
+                          • {parts[2]}/{parts[1]}: Đã đặt {d.check_in_time || '08:00'} - {d.check_out_time || '17:00'}
+                          {d.customer_name ? ` (${d.customer_name})` : ''}
+                        </p>
+                      );
+                    })}
+                    {blockedDates.length > 6 && <p className="text-muted-foreground">...và {blockedDates.length - 6} ngày khác</p>}
+                  </div>
                 )}
-              </div>
-              <div>
-                <Label className="text-sm">Giờ {requireTime && <span className="text-destructive">*</span>}</Label>
-                <Input type="time" value={time} onChange={e => setTime(e.target.value)} className="h-11 text-base" />
-              </div>
-            </div>
+
+                {/* Time conflict warning */}
+                {rangeConflictInfo.hasConflict && (
+                  <div className="text-xs text-destructive bg-destructive/10 rounded-md p-2.5 font-medium">
+                    ⚠️ {rangeConflictInfo.message}
+                  </div>
+                )}
+
+                {/* Duration info */}
+                {rangeDays > 0 && !rangeConflictInfo.hasConflict && (
+                  <div className="text-sm bg-muted/50 rounded-md p-2 font-medium text-center">
+                    📆 Thời gian dự kiến: {rangeDays} ngày {productPrice ? `· Tổng: ${(productPrice * rangeDays).toLocaleString('vi-VN')}₫` : ''}
+                  </div>
+                )}
+              </>
+            )}
+
             <div>
               <Label className="text-sm">Chi nhánh <span className="text-destructive">*</span></Label>
               <select value={branch} onChange={e => setBranch(e.target.value)}
@@ -274,9 +429,14 @@ export function BookingDialog({
               <Label className="text-sm">Ghi chú</Label>
               <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú thêm..." rows={2} className="text-base" />
             </div>
-            <Button className="w-full h-11 font-semibold" style={{ backgroundColor: primaryColor }} onClick={handleSubmit} disabled={placeOrder.isPending}>
+            <Button
+              className="w-full h-11 font-semibold"
+              style={{ backgroundColor: primaryColor }}
+              onClick={handleSubmit}
+              disabled={placeOrder.isPending || (mode === 'range' && rangeConflictInfo.hasConflict)}
+            >
               {placeOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Xác nhận đặt lịch
+              Xác nhận đặt lịch {mode === 'range' && rangeDays > 0 ? `(${rangeDays} ngày)` : ''}
             </Button>
           </div>
         )}
