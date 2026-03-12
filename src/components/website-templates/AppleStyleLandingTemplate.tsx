@@ -322,7 +322,7 @@ export default function AppleStyleLandingTemplate({
   const [restoredSessionKey, setRestoredSessionKey] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState('');
   const [submittedValue, setSubmittedValue] = useState('');
-  const { data: warrantyResults, isLoading: isSearching, isFetched, error: warrantyError } = useWarrantyLookup(submittedValue, tenantId);
+  const { data: warrantyResults, isLoading: isSearching, isFetched, error: warrantyError, refetch: refetchWarranty } = useWarrantyLookup(submittedValue, tenantId);
 
   useEffect(() => {
     if (!warrantyStorageKey || restoredSessionKey === warrantyStorageKey) return;
@@ -404,7 +404,16 @@ export default function AppleStyleLandingTemplate({
 
   const handlePointsAwarded = useCallback(() => { queryClient.invalidateQueries({ queryKey: ['customer-points-public'] }); }, [queryClient]);
   const handleWarrantyLogout = () => { if (warrantyStorageKey) localStorage.removeItem(warrantyStorageKey); setSearchValue(''); setSubmittedValue(''); setPageView('home'); };
-  const handleSearch = () => { if (searchValue.trim()) { setSubmittedValue(searchValue.trim()); if (pageView === 'home') setPageView('warranty'); } };
+  const handleSearch = () => {
+    const normalized = searchValue.trim();
+    if (!normalized) return;
+    if (normalized === submittedValue) {
+      void refetchWarranty();
+    } else {
+      setSubmittedValue(normalized);
+    }
+    if (pageView === 'home') setPageView('warranty');
+  };
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
   const navigateTo = (view: PageView) => {
