@@ -904,6 +904,7 @@ export function LandingPageSettings() {
         meta_description: settings.meta_description || '',
         warranty_hotline: settings.warranty_hotline || '',
         support_group_url: settings.support_group_url || '',
+        warranty_description: (settings as any).warranty_description || '',
         facebook_url: settings.facebook_url || '',
         zalo_url: settings.zalo_url || '',
         tiktok_url: settings.tiktok_url || '',
