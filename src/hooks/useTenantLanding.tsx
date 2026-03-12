@@ -335,12 +335,17 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
       return (data || []).map(mapWarrantyItem);
     },
     enabled: !!searchValue && !!tenantId && searchValue.length >= 5,
-    retry: 2,
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
+    retry: (failureCount, error) => {
+      const message = String((error as any)?.message || '');
+      if (message.includes('Rate limit exceeded')) return false;
+      return failureCount < 4;
+    },
+    retryDelay: (attempt) => Math.min(1500 * 2 ** attempt, 10000),
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMount: true,
   });
 }
 
