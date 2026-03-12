@@ -175,9 +175,6 @@ export function BookingDialog({
   const [branch, setBranch] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const placeOrder = usePlaceLandingOrder();
-  const bulkBlock = useBulkAddBlockedDates();
-  const { data: blockedDates = [] } = usePublicBlockedDates(tenantId, productId || null);
-  const blockedDateStrings = useMemo(() => new Set(blockedDates.map(b => b.blocked_date)), [blockedDates]);
 
   // Range: calculate days
   const rangeDays = useMemo(() => {
@@ -186,25 +183,6 @@ export function BookingDialog({
     return Math.max(0, Math.round(diff));
   }, [startDate, endDate]);
 
-  // Range: check time conflicts (with 2h cleaning buffer)
-  const rangeConflictInfo = useMemo(() => {
-    if (mode !== 'range' || !startDate || !endDate || rangeDays <= 0) return { hasConflict: false, message: '' };
-    try {
-      const days = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) });
-      for (const day of days) {
-        const dateStr = format(day, 'yyyy-MM-dd');
-        const isFirst = dateStr === startDate;
-        const isLast = dateStr === endDate;
-        const dayIn = isFirst ? startTime : '00:00';
-        const dayOut = isLast ? endTime : '23:59';
-        const result = checkTimeConflict(blockedDates, dateStr, dayIn, dayOut);
-        if (result.hasConflict) {
-          return { hasConflict: true, message: `📅 Ngày ${dateStr.split('-').reverse().slice(0, 2).join('/')}: ${result.message}` };
-        }
-      }
-    } catch { return { hasConflict: false, message: '' }; }
-    return { hasConflict: false, message: '' };
-  }, [mode, startDate, endDate, startTime, endTime, rangeDays, blockedDates]);
 
   const handleSubmit = async () => {
     if (!name.trim() || !phone.trim()) { toast.error('Vui lòng nhập họ tên và số điện thoại'); return; }
@@ -212,7 +190,6 @@ export function BookingDialog({
 
     if (mode === 'single') {
       if (!date) { toast.error('Vui lòng chọn ngày'); return; }
-      if (blockedDateStrings.has(date)) { toast.error('Ngày này đã hết chỗ, vui lòng chọn ngày khác'); return; }
       if (requireTime && !time) { toast.error('Vui lòng chọn giờ'); return; }
       try {
         const bookingNote = `[${title}] Ngày: ${date}${time ? ` - Giờ: ${time}` : ''}${note.trim() ? ` - ${note.trim()}` : ''}`;
@@ -229,7 +206,6 @@ export function BookingDialog({
     } else {
       if (!startDate || !endDate) { toast.error('Vui lòng chọn thời gian bắt đầu & kết thúc'); return; }
       if (rangeDays <= 0) { toast.error('Ngày kết thúc phải sau ngày bắt đầu'); return; }
-      if (rangeConflictInfo.hasConflict) { toast.error(rangeConflictInfo.message); return; }
       try {
         const bookingNote = `[${title}] Từ: ${startDate} ${startTime} → Đến: ${endDate} ${endTime} | ${rangeDays} ngày${note.trim() ? ` | Ghi chú: ${note.trim()}` : ''}`;
         await placeOrder.mutateAsync({
@@ -240,19 +216,6 @@ export function BookingDialog({
           customer_email: email.trim() || undefined, note: bookingNote,
           action_type: 'booking', action_date: startDate, action_time: startTime,
         });
-        // Auto-block the date range
-        if (productId) {
-          try {
-            const days = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) });
-            const dateStrings = days.map(d => format(d, 'yyyy-MM-dd'));
-            await bulkBlock.mutateAsync({
-              tenantId, productId, dates: dateStrings,
-              note: `Đặt bởi ${name.trim()} - ${phone.trim()}`,
-              checkInTime: startTime, checkOutTime: endTime,
-              customerName: name.trim(), customerPhone: phone.trim(),
-            });
-          } catch (e) { console.warn('Auto-block dates failed:', e); }
-        }
         setSubmitted(true);
       } catch { toast.error('Đặt lịch thất bại, vui lòng thử lại'); }
     }
@@ -327,22 +290,10 @@ export function BookingDialog({
                   <Label className="text-sm">Ngày <span className="text-destructive">*</span></Label>
                   <Input
                     type="date" value={date}
-                    onChange={e => {
-                      const v = e.target.value;
-                      if (blockedDateStrings.has(v)) { toast.error('Ngày này đã hết chỗ'); return; }
-                      setDate(v);
-                    }}
-                    className={`h-11 text-base ${date && blockedDateStrings.has(date) ? 'border-destructive' : ''}`}
+                    onChange={e => setDate(e.target.value)}
+                    className="h-11 text-base"
                     min={today}
                   />
-                  {blockedDates.length > 0 && (
-                    <p className="text-xs text-destructive mt-1">
-                      Các ngày đã hết: {blockedDates.slice(0, 5).map(d => {
-                        const parts = d.blocked_date.split('-');
-                        return `${parts[2]}/${parts[1]}`;
-                      }).join(', ')}{blockedDates.length > 5 ? '...' : ''}
-                    </p>
-                  )}
                 </div>
                 <div>
                   <Label className="text-sm">Giờ {requireTime && <span className="text-destructive">*</span>}</Label>
@@ -384,32 +335,8 @@ export function BookingDialog({
                   </div>
                 </div>
 
-                {/* Existing bookings info */}
-                {blockedDates.length > 0 && (
-                  <div className="text-xs space-y-1 bg-muted/50 rounded-md p-2">
-                    <p className="font-medium text-muted-foreground">📅 Lịch đặt hiện tại:</p>
-                    {blockedDates.slice(0, 6).map((d, i) => {
-                      const parts = d.blocked_date.split('-');
-                      return (
-                        <p key={i} className="text-muted-foreground">
-                          • {parts[2]}/{parts[1]}: Đã đặt {d.check_in_time || '08:00'} - {d.check_out_time || '17:00'}
-                          {d.customer_name ? ` (${d.customer_name})` : ''}
-                        </p>
-                      );
-                    })}
-                    {blockedDates.length > 6 && <p className="text-muted-foreground">...và {blockedDates.length - 6} ngày khác</p>}
-                  </div>
-                )}
-
-                {/* Time conflict warning */}
-                {rangeConflictInfo.hasConflict && (
-                  <div className="text-xs text-destructive bg-destructive/10 rounded-md p-2.5 font-medium">
-                    ⚠️ {rangeConflictInfo.message}
-                  </div>
-                )}
-
                 {/* Duration info */}
-                {rangeDays > 0 && !rangeConflictInfo.hasConflict && (
+                {rangeDays > 0 && (
                   <div className="text-sm bg-muted/50 rounded-md p-2 font-medium text-center">
                     📆 Thời gian dự kiến: {rangeDays} ngày {productPrice ? `· Tổng: ${(productPrice * rangeDays).toLocaleString('vi-VN')}₫` : ''}
                   </div>
@@ -433,7 +360,7 @@ export function BookingDialog({
               className="w-full h-11 font-semibold"
               style={{ backgroundColor: primaryColor }}
               onClick={handleSubmit}
-              disabled={placeOrder.isPending || (mode === 'range' && rangeConflictInfo.hasConflict)}
+              disabled={placeOrder.isPending}
             >
               {placeOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Xác nhận đặt lịch {mode === 'range' && rangeDays > 0 ? `(${rangeDays} ngày)` : ''}
