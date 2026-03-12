@@ -78,6 +78,14 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
         const tenant = Array.isArray(data) ? data[0] : data;
         
         if (error || !tenant) {
+          // Network/timeout errors should NOT be cached to allow retry
+          const isNetworkError = error && (
+            error.message?.includes('Failed to fetch') ||
+            error.message?.includes('NetworkError') ||
+            error.message?.includes('timeout') ||
+            error.message?.includes('ERR_') ||
+            error.code === 'PGRST301'
+          );
           const result: ResolvedTenant = {
             tenantId: null,
             subdomain: hostInfo.subdomain,
@@ -85,8 +93,10 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
             status: 'not_found',
             isMainDomain: false,
           };
-          cachedResult = result;
-          cacheHostname = hostname;
+          if (!isNetworkError) {
+            cachedResult = result;
+            cacheHostname = hostname;
+          }
           return result;
         }
         
@@ -102,16 +112,14 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
         return result;
       } catch (err) {
         console.error('Error resolving tenant:', err);
-        const result: ResolvedTenant = {
+        // Don't cache network errors - allow retry
+        return {
           tenantId: null,
           subdomain: hostInfo.subdomain,
           tenantName: null,
           status: 'not_found',
           isMainDomain: false,
         };
-        cachedResult = result;
-        cacheHostname = hostname;
-        return result;
       }
     }
     
