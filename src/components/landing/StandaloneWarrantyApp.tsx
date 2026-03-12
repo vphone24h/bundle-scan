@@ -299,11 +299,11 @@ function WarrantyTabContent({
 
                   {/* Note */}
                   {item.note && (
-                    <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2.5 text-xs">
+                    <div className="flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 p-2.5 text-xs">
                       <span>📝</span>
                       <div>
-                        <span className="font-medium text-amber-800">Ghi chú: </span>
-                        <span className="text-amber-700">{item.note}</span>
+                        <span className="font-medium text-foreground">Ghi chú: </span>
+                        <span className="text-muted-foreground">{item.note}</span>
                       </div>
                     </div>
                   )}
