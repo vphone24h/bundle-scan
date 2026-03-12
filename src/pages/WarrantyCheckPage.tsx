@@ -69,7 +69,7 @@ export default function WarrantyCheckPage() {
   const [persistedResults, setPersistedResults] = useState<WarrantyItem[] | null>(null);
   const [lookupEnabled, setLookupEnabled] = useState(false);
 
-  const { data: results, isLoading, error, isFetched, refetch } = useQuery({
+  const { data: results, isLoading, error, isFetched } = useQuery({
     queryKey: ['global-warranty', searchValue],
     queryFn: async (): Promise<WarrantyItem[]> => {
       if (!searchValue) return [];
@@ -89,8 +89,15 @@ export default function WarrantyCheckPage() {
     enabled: lookupEnabled && !!searchValue,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
-    retry: 2,
+    retry: (attempt: number, err: unknown) => {
+      const message = String((err as any)?.message || '');
+      if (message.includes('Rate limit exceeded')) return false;
+      return attempt < 2;
+    },
     retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 5000),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   useEffect(() => {
@@ -112,26 +119,36 @@ export default function WarrantyCheckPage() {
       searchValue,
       results,
     });
+    setLookupEnabled(false);
   }, [lookupEnabled, searchValue, isFetched, error, results]);
+
+  useEffect(() => {
+    if (!lookupEnabled || !isFetched || !error) return;
+    if (persistedResults !== null) {
+      setLookupEnabled(false);
+    }
+  }, [lookupEnabled, isFetched, error, persistedResults]);
 
   const effectiveResults = lookupEnabled && isFetched ? (results ?? []) : (persistedResults ?? []);
   const showResultBlock = !!searchValue && ((lookupEnabled && isFetched) || persistedResults !== null);
-  const showError = lookupEnabled && isFetched && !!error;
+  const showError = !!error && isFetched && (lookupEnabled || persistedResults === null);
   const hasResults = effectiveResults.length > 0;
 
   const handleSearch = () => {
     const v = input.trim();
     if (!v) return;
 
-    setLookupEnabled(true);
-
-    if (v === searchValue) {
-      void refetch();
+    if (v === searchValue && persistedResults !== null) {
+      setLookupEnabled(false);
       return;
     }
 
-    setPersistedResults(null);
-    setSearchValue(v);
+    if (v !== searchValue) {
+      setPersistedResults(null);
+      setSearchValue(v);
+    }
+
+    setLookupEnabled(true);
   };
 
   return (

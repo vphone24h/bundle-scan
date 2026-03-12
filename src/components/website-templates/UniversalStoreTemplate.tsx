@@ -194,7 +194,6 @@ export default function UniversalStoreTemplate({
     isLoading: isSearching,
     isFetched,
     error: warrantyError,
-    refetch: refetchWarranty,
   } = useWarrantyLookup(submittedValue, tenantId, { enabled: lookupEnabled });
 
   useEffect(() => {
@@ -234,7 +233,15 @@ export default function UniversalStoreTemplate({
       searchValue: submittedValue,
       results: warrantyResults,
     });
+    setLookupEnabled(false);
   }, [warrantyStorageKey, lookupEnabled, submittedValue, isFetched, warrantyError, warrantyResults]);
+
+  useEffect(() => {
+    if (!lookupEnabled || !isFetched || !warrantyError) return;
+    if (persistedResults !== null) {
+      setLookupEnabled(false);
+    }
+  }, [lookupEnabled, isFetched, warrantyError, persistedResults]);
 
   const location = useLocation();
 
@@ -296,7 +303,7 @@ export default function UniversalStoreTemplate({
   const { data: customerVouchers } = usePublicCustomerVouchers(pointsLookupPhone, tenantId);
 
   const showWarrantyResultBlock = !!submittedValue && ((lookupEnabled && isFetched) || persistedResults !== null);
-  const showWarrantyError = lookupEnabled && isFetched && !!warrantyError;
+  const showWarrantyError = !!warrantyError && isFetched && (lookupEnabled || persistedResults === null);
   const hasWarrantyResults = effectiveWarrantyResults.length > 0;
 
   const displayStoreName = settings?.store_name || tenant.name;
@@ -341,14 +348,18 @@ export default function UniversalStoreTemplate({
     const normalized = searchValue.trim();
     if (!normalized) return;
 
-    setLookupEnabled(true);
+    if (normalized === submittedValue && persistedResults !== null) {
+      setLookupEnabled(false);
+      if (pageView === 'home') setPageView('warranty');
+      return;
+    }
 
-    if (normalized === submittedValue) {
-      void refetchWarranty();
-    } else {
+    if (normalized !== submittedValue) {
       setPersistedResults(null);
       setSubmittedValue(normalized);
     }
+
+    setLookupEnabled(true);
 
     if (pageView === 'home') setPageView('warranty');
   };
