@@ -416,6 +416,7 @@ export function LandingProductsTab() {
         images: form.images,
         is_featured: form.is_featured,
         is_active: form.is_active,
+        is_sold_out: form.is_sold_out,
         variants: form.variants,
         home_tab_ids: form.home_tab_ids,
         variant_group_1_name: form.variant_group_1_name,
