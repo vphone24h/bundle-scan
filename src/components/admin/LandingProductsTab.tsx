@@ -1094,6 +1094,17 @@ export function LandingProductsTab() {
         onOpenChange={setWarehouseDialog}
         existingProducts={products || []}
       />
+
+      {/* Dialog quản lý ngày chặn */}
+      {blockedDatesProduct && tenant?.id && (
+        <BlockedDatesCalendar
+          open={!!blockedDatesProduct}
+          onClose={() => setBlockedDatesProduct(null)}
+          tenantId={tenant.id}
+          productId={blockedDatesProduct.id}
+          productName={blockedDatesProduct.name}
+        />
+      )}
     </div>
   );
 }
