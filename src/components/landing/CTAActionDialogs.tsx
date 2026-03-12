@@ -308,7 +308,6 @@ export function HotelBookingDialog({
   const placeOrder = usePlaceLandingOrder();
   const bulkBlock = useBulkAddBlockedDates();
   const { data: blockedDates = [] } = usePublicBlockedDates(tenantId, productId || null);
-  const blockedDateSet = useMemo(() => new Set(blockedDates), [blockedDates]);
 
   // Calculate nights
   const nights = useMemo(() => {
@@ -317,14 +316,26 @@ export function HotelBookingDialog({
     return Math.max(0, Math.round(diff));
   }, [checkInDate, checkOutDate]);
 
-  // Check if any date in range is blocked
-  const rangeConflict = useMemo(() => {
-    if (!checkInDate || !checkOutDate || nights <= 0) return false;
+  // Check time-based conflicts for each date in range (with 2h cleaning buffer)
+  const rangeConflictInfo = useMemo(() => {
+    if (!checkInDate || !checkOutDate || nights <= 0) return { hasConflict: false, message: '' };
     try {
       const days = eachDayOfInterval({ start: parseISO(checkInDate), end: parseISO(checkOutDate) });
-      return days.some(d => blockedDateSet.has(format(d, 'yyyy-MM-dd')));
-    } catch { return false; }
-  }, [checkInDate, checkOutDate, nights, blockedDateSet]);
+      for (const day of days) {
+        const dateStr = format(day, 'yyyy-MM-dd');
+        const isFirstDay = dateStr === checkInDate;
+        const isLastDay = dateStr === checkOutDate;
+        // On check-in day, use the check-in time; on check-out day use checkout time; middle days are full
+        const dayCheckIn = isFirstDay ? checkInTime : '00:00';
+        const dayCheckOut = isLastDay ? checkOutTime : '23:59';
+        const result = checkTimeConflict(blockedDates, dateStr, dayCheckIn, dayCheckOut);
+        if (result.hasConflict) {
+          return { hasConflict: true, message: `📅 Ngày ${dateStr.split('-').reverse().slice(0,2).join('/')}: ${result.message}` };
+        }
+      }
+    } catch { return { hasConflict: false, message: '' }; }
+    return { hasConflict: false, message: '' };
+  }, [checkInDate, checkOutDate, checkInTime, checkOutTime, nights, blockedDates]);
 
   const handleSubmit = async () => {
     if (!name.trim() || !phone.trim()) { toast.error('Vui lòng nhập họ tên và số điện thoại'); return; }
