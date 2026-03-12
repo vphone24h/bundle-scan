@@ -29,8 +29,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown, CalendarDays } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
+import { BlockedDatesCalendar } from './BlockedDatesCalendar';
 import { Separator } from '@/components/ui/separator';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { PriceInput } from '@/components/ui/price-input';
@@ -193,6 +194,7 @@ export function LandingProductsTab() {
   const [catParentId, setCatParentId] = useState<string>('_none_');
   const [catEditName, setCatEditName] = useState('');
   const [warehouseDialog, setWarehouseDialog] = useState(false);
+  const [blockedDatesProduct, setBlockedDatesProduct] = useState<LandingProduct | null>(null);
   const [productDialog, setProductDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LandingProduct | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -675,6 +677,9 @@ export function LandingProductsTab() {
                       >
                         {p.is_sold_out ? '✓ Hết' : 'Hết hàng'}
                       </Button>
+                      <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" title="Quản lý ngày chặn" onClick={() => setBlockedDatesProduct(p)}>
+                        <CalendarDays className="h-3.5 w-3.5" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditProduct(p)}>
                         <Edit2 className="h-3.5 w-3.5" />
                       </Button>
@@ -1089,6 +1094,17 @@ export function LandingProductsTab() {
         onOpenChange={setWarehouseDialog}
         existingProducts={products || []}
       />
+
+      {/* Dialog quản lý ngày chặn */}
+      {blockedDatesProduct && tenant?.id && (
+        <BlockedDatesCalendar
+          open={!!blockedDatesProduct}
+          onClose={() => setBlockedDatesProduct(null)}
+          tenantId={tenant.id}
+          productId={blockedDatesProduct.id}
+          productName={blockedDatesProduct.name}
+        />
+      )}
     </div>
   );
 }

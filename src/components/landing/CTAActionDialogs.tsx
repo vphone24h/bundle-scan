@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { useLandingCart, CartItem } from '@/hooks/useLandingCart';
 import { formatNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
+import { usePublicBlockedDates } from '@/hooks/useBlockedDates';
 
 interface BranchOption { id: string; name: string; }
 
@@ -166,10 +167,13 @@ export function BookingDialog({
   const [branch, setBranch] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const placeOrder = usePlaceLandingOrder();
+  const { data: blockedDates = [] } = usePublicBlockedDates(tenantId, productId || null);
+  const blockedDateSet = useMemo(() => new Set(blockedDates), [blockedDates]);
 
   const handleSubmit = async () => {
     if (!name.trim() || !phone.trim()) { toast.error('Vui lòng nhập họ tên và số điện thoại'); return; }
     if (!date) { toast.error('Vui lòng chọn ngày'); return; }
+    if (blockedDateSet.has(date)) { toast.error('Ngày này đã hết chỗ, vui lòng chọn ngày khác'); return; }
     if (requireTime && !time) { toast.error('Vui lòng chọn giờ'); return; }
     if (!branch) { toast.error('Vui lòng chọn chi nhánh'); return; }
     try {
@@ -229,7 +233,28 @@ export function BookingDialog({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-sm">Ngày <span className="text-destructive">*</span></Label>
-                <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-11 text-base" min={new Date().toISOString().split('T')[0]} />
+                <Input
+                  type="date"
+                  value={date}
+                  onChange={e => {
+                    const v = e.target.value;
+                    if (blockedDateSet.has(v)) {
+                      toast.error('Ngày này đã hết chỗ');
+                      return;
+                    }
+                    setDate(v);
+                  }}
+                  className={`h-11 text-base ${date && blockedDateSet.has(date) ? 'border-destructive' : ''}`}
+                  min={new Date().toISOString().split('T')[0]}
+                />
+                {blockedDates.length > 0 && (
+                  <p className="text-xs text-destructive mt-1">
+                    Các ngày đã hết: {blockedDates.slice(0, 5).map(d => {
+                      const parts = d.split('-');
+                      return `${parts[2]}/${parts[1]}`;
+                    }).join(', ')}{blockedDates.length > 5 ? '...' : ''}
+                  </p>
+                )}
               </div>
               <div>
                 <Label className="text-sm">Giờ {requireTime && <span className="text-destructive">*</span>}</Label>
