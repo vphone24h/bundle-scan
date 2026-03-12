@@ -1753,6 +1753,22 @@ export function LandingPageSettings() {
                   Link nhóm Zalo/Facebook/Telegram để khách hàng tham gia nhận hỗ trợ
                 </p>
               </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Mô tả / Quảng cáo bảo hành
+                </Label>
+                <RichTextEditor
+                  value={(formData as any).warranty_description || ''}
+                  onChange={(v) => handleChange('warranty_description' as any, v)}
+                  placeholder="VD: THU LẠI MÁY CŨ GIÁ CAO BẰNG 90% GIÁ BÁN…"
+                  minHeight="100px"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Nội dung hiển thị trên trang bảo hành, hỗ trợ in đậm, màu sắc và chèn link
+                </p>
+              </div>
             </>
           )}
         </CardContent>
