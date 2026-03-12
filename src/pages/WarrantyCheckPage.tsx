@@ -11,14 +11,22 @@ import { Shield, Search, Package, Calendar, Store, Phone, ArrowLeft, Loader2, Al
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
-function getClientIp() {
-  return fetch('https://api.ipify.org?format=json')
-    .then(r => r.json())
-    .then(d => {
-      const ip = typeof d?.ip === 'string' ? d.ip.trim() : '';
-      return ip && ip.toLowerCase() !== 'unknown' ? ip : null;
-    })
-    .catch(() => null);
+let _cachedIp: string | null = null;
+let _ipPromise: Promise<string | null> | null = null;
+function getClientIpFast(): Promise<string | null> {
+  if (_cachedIp) return Promise.resolve(_cachedIp);
+  if (_ipPromise) return _ipPromise;
+  _ipPromise = Promise.race([
+    fetch('https://api.ipify.org?format=json')
+      .then(r => r.json())
+      .then(d => {
+        const ip = typeof d?.ip === 'string' ? d.ip.trim() : '';
+        _cachedIp = ip && ip.toLowerCase() !== 'unknown' ? ip : null;
+        return _cachedIp;
+      }),
+    new Promise<null>(resolve => setTimeout(() => resolve(null), 2000)),
+  ]).catch(() => null).finally(() => { _ipPromise = null; });
+  return _ipPromise;
 }
 
 interface WarrantyItem {
@@ -61,7 +69,7 @@ export default function WarrantyCheckPage() {
     queryFn: async (): Promise<WarrantyItem[]> => {
       if (!searchValue) return [];
       const compact = searchValue.replace(/\s+/g, '');
-      const clientIp = await getClientIp();
+      const clientIp = await getClientIpFast();
       const isPhone = /^0\d{9,10}$/.test(compact);
 
       const { data, error } = await supabase.rpc(
@@ -75,7 +83,9 @@ export default function WarrantyCheckPage() {
     },
     enabled: !!searchValue,
     staleTime: 1000 * 60 * 5,
-    retry: 1,
+    gcTime: 1000 * 60 * 30,
+    retry: 2,
+    retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 5000),
   });
 
   const handleSearch = () => {
