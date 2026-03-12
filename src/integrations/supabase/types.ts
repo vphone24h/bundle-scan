@@ -6540,7 +6540,9 @@ export type Database = {
           show_store_info: boolean | null
           show_trade_in: boolean | null
           show_warranty_lookup: boolean | null
+          show_warranty_points: boolean | null
           show_warranty_section: boolean | null
+          show_warranty_vouchers: boolean | null
           store_address: string | null
           store_description: string | null
           store_email: string | null
@@ -6621,7 +6623,9 @@ export type Database = {
           show_store_info?: boolean | null
           show_trade_in?: boolean | null
           show_warranty_lookup?: boolean | null
+          show_warranty_points?: boolean | null
           show_warranty_section?: boolean | null
+          show_warranty_vouchers?: boolean | null
           store_address?: string | null
           store_description?: string | null
           store_email?: string | null
@@ -6702,7 +6706,9 @@ export type Database = {
           show_store_info?: boolean | null
           show_trade_in?: boolean | null
           show_warranty_lookup?: boolean | null
+          show_warranty_points?: boolean | null
           show_warranty_section?: boolean | null
+          show_warranty_vouchers?: boolean | null
           store_address?: string | null
           store_description?: string | null
           store_email?: string | null

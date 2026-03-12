@@ -1157,6 +1157,17 @@ export default function AppleStyleLandingTemplate({
                   <div className="text-sm leading-relaxed warranty-desc-html [&_a]:underline [&_a]:font-semibold" style={{ color: accentColor }} dangerouslySetInnerHTML={{ __html: settings.warranty_description }} />
                 </div>
               )}
+              {(settings as any)?.show_warranty_vouchers !== false && customerVouchers && customerVouchers.length > 0 && (
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-4 space-y-2">
+                  <div className="flex items-center gap-2"><Gift className="h-4 w-4 text-purple-600" /><p className="font-semibold text-sm text-purple-800">Voucher của bạn</p></div>
+                  {customerVouchers.map((v: any) => (
+                    <div key={v.id} className="flex items-center justify-between bg-white/80 rounded-xl px-3 py-2">
+                      <div><p className="text-sm font-medium text-purple-700">{v.voucher_name}</p><code className="text-xs font-mono text-[#86868b]">{v.code}</code></div>
+                      <Badge className="bg-purple-100 text-purple-700 border-0">{v.discount_type === 'percentage' ? `${v.discount_value}%` : `${formatNumber(v.discount_value)}đ`}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {showWarrantyResultBlock && (
@@ -1207,7 +1218,7 @@ export default function AppleStyleLandingTemplate({
                         </div>
                       );
                     })}
-                    {customerPoints && customerPoints.is_points_enabled && (
+                    {(settings as any)?.show_warranty_points !== false && customerPoints && customerPoints.is_points_enabled && (
                       <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 space-y-3">
                         <div className="flex items-center gap-2"><Star className="h-5 w-5 text-amber-500" /><p className="font-bold text-amber-800">Điểm tích lũy</p></div>
                         <div className="flex items-center justify-between bg-white/80 rounded-xl px-4 py-3">
@@ -1228,17 +1239,6 @@ export default function AppleStyleLandingTemplate({
                             </div>
                           );
                         })()}
-                      </div>
-                    )}
-                    {customerVouchers && customerVouchers.length > 0 && (
-                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-5 space-y-3">
-                        <div className="flex items-center gap-2"><Gift className="h-5 w-5 text-purple-600" /><p className="font-bold text-purple-800">Voucher của bạn</p></div>
-                        {customerVouchers.map((v: any) => (
-                          <div key={v.id} className="flex items-center justify-between bg-white/80 rounded-xl px-4 py-3">
-                            <div><p className="text-sm font-medium text-purple-700">{v.voucher_name}</p><code className="text-xs font-mono text-[#86868b]">{v.code}</code></div>
-                            <Badge className="bg-purple-100 text-purple-700 border-0">{v.discount_type === 'percentage' ? `${v.discount_value}%` : `${formatNumber(v.discount_value)}đ`}</Badge>
-                          </div>
-                        ))}
                       </div>
                     )}
                   </>
