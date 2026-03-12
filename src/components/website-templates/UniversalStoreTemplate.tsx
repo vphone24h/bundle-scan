@@ -186,24 +186,55 @@ export default function UniversalStoreTemplate({
   const [restoredSessionKey, setRestoredSessionKey] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState('');
   const [submittedValue, setSubmittedValue] = useState('');
+  const [persistedResults, setPersistedResults] = useState<WarrantyResult[] | null>(null);
+  const [lookupEnabled, setLookupEnabled] = useState(false);
 
-  const { data: warrantyResults, isLoading: isSearching, isFetched, error: warrantyError, refetch: refetchWarranty } = useWarrantyLookup(submittedValue, tenantId);
+  const {
+    data: warrantyResults,
+    isLoading: isSearching,
+    isFetched,
+    error: warrantyError,
+    refetch: refetchWarranty,
+  } = useWarrantyLookup(submittedValue, tenantId, { enabled: lookupEnabled });
 
   useEffect(() => {
     if (!warrantyStorageKey || restoredSessionKey === warrantyStorageKey) return;
+
     try {
-      const raw = localStorage.getItem(warrantyStorageKey);
-      const parsed = raw ? JSON.parse(raw) : null;
-      const restoredSearch = typeof parsed?.searchValue === 'string' ? parsed.searchValue.trim() : '';
-      if (restoredSearch) { setSearchValue(restoredSearch); setSubmittedValue(restoredSearch); setPageView('warranty'); }
-    } catch {} finally { setRestoredSessionKey(warrantyStorageKey); }
+      const restored = readWarrantySession<WarrantyResult>(warrantyStorageKey);
+      const restoredSearch = restored?.searchValue?.trim() || '';
+
+      if (restoredSearch) {
+        setSearchValue(restoredSearch);
+        setSubmittedValue(restoredSearch);
+        setPersistedResults(restored?.results ?? []);
+        setLookupEnabled(false);
+        setPageView('warranty');
+      } else {
+        setSearchValue('');
+        setSubmittedValue('');
+        setPersistedResults(null);
+        setLookupEnabled(false);
+      }
+    } catch {
+      setSearchValue('');
+      setSubmittedValue('');
+      setPersistedResults(null);
+      setLookupEnabled(false);
+    } finally {
+      setRestoredSessionKey(warrantyStorageKey);
+    }
   }, [warrantyStorageKey, restoredSessionKey]);
 
   useEffect(() => {
-    if (warrantyStorageKey && submittedValue && warrantyResults && warrantyResults.length > 0) {
-      localStorage.setItem(warrantyStorageKey, JSON.stringify({ searchValue: submittedValue }));
-    }
-  }, [warrantyStorageKey, submittedValue, warrantyResults]);
+    if (!warrantyStorageKey || !lookupEnabled || !submittedValue || !isFetched || warrantyError || !warrantyResults) return;
+
+    setPersistedResults(warrantyResults);
+    writeWarrantySession(warrantyStorageKey, {
+      searchValue: submittedValue,
+      results: warrantyResults,
+    });
+  }, [warrantyStorageKey, lookupEnabled, submittedValue, isFetched, warrantyError, warrantyResults]);
 
   const location = useLocation();
 
@@ -250,15 +281,23 @@ export default function UniversalStoreTemplate({
     }
   }, [searchParams, productsData, articlesData, location.pathname]);
 
+  const effectiveWarrantyResults = lookupEnabled && isFetched ? (warrantyResults ?? []) : (persistedResults ?? []);
+  const isShowingPersistedWarranty = !lookupEnabled && persistedResults !== null;
   const isPhoneSearch = /^0\d{9,10}$/.test(submittedValue.replace(/\s/g, ''));
-  const firstResult = warrantyResults?.[0];
+  const firstResult = effectiveWarrantyResults[0];
   const customerPhoneFromResult = firstResult?.customer_phone || '';
   const phoneForPoints = isPhoneSearch ? submittedValue : customerPhoneFromResult;
-  const { data: customerPoints } = useCustomerPointsPublic(phoneForPoints, tenantId);
+  const shouldFetchLoyaltyData = !isShowingPersistedWarranty;
+  const pointsLookupPhone = shouldFetchLoyaltyData ? phoneForPoints : '';
+  const { data: customerPoints } = useCustomerPointsPublic(pointsLookupPhone, tenantId);
   const customerName = firstResult?.customer_name || customerPoints?.customer_name || '';
   const customerId = firstResult?.customer_id || customerPoints?.customer_id || null;
   const reviewRewardPoints = customerPoints?.review_reward_points || 0;
-  const { data: customerVouchers } = usePublicCustomerVouchers(phoneForPoints, tenantId);
+  const { data: customerVouchers } = usePublicCustomerVouchers(pointsLookupPhone, tenantId);
+
+  const showWarrantyResultBlock = !!submittedValue && ((lookupEnabled && isFetched) || persistedResults !== null);
+  const showWarrantyError = lookupEnabled && isFetched && !!warrantyError;
+  const hasWarrantyResults = effectiveWarrantyResults.length > 0;
 
   const displayStoreName = settings?.store_name || tenant.name;
   const warrantyHotline = settings?.warranty_hotline;
@@ -290,15 +329,27 @@ export default function UniversalStoreTemplate({
   const homeArticles = articlesData?.articles?.filter((a: any) => a.is_featured_home) || [];
 
   const handlePointsAwarded = useCallback(() => { queryClient.invalidateQueries({ queryKey: ['customer-points-public'] }); }, [queryClient]);
-  const handleWarrantyLogout = () => { if (warrantyStorageKey) localStorage.removeItem(warrantyStorageKey); setSearchValue(''); setSubmittedValue(''); setPageView('home'); };
+  const handleWarrantyLogout = () => {
+    clearWarrantySession(warrantyStorageKey);
+    setSearchValue('');
+    setSubmittedValue('');
+    setPersistedResults(null);
+    setLookupEnabled(false);
+    setPageView('home');
+  };
   const handleSearch = () => {
     const normalized = searchValue.trim();
     if (!normalized) return;
+
+    setLookupEnabled(true);
+
     if (normalized === submittedValue) {
       void refetchWarranty();
     } else {
+      setPersistedResults(null);
       setSubmittedValue(normalized);
     }
+
     if (pageView === 'home') setPageView('warranty');
   };
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
