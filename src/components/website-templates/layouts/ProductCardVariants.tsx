@@ -249,7 +249,8 @@ function MinimalProductCard({ product, onClick, accentColor }: ProductCardProps)
 function ShopeeProductCard({ product, onClick, accentColor }: ProductCardProps) {
   const discount = product.sale_price ? Math.round(((product.price - product.sale_price) / product.price) * 100) : 0;
   return (
-    <button onClick={onClick} className="bg-white rounded-lg overflow-hidden text-left group transition-all hover:shadow-lg w-full border border-gray-200 relative">
+    <button onClick={onClick} className={`bg-white rounded-lg overflow-hidden text-left group transition-all hover:shadow-lg w-full border border-gray-200 relative ${product.is_sold_out ? 'opacity-80' : ''}`}>
+      {product.is_sold_out && <SoldOutOverlay />}
       {discount > 0 && (
         <div className="absolute top-0 right-0 z-10 bg-gradient-to-br from-orange-500 to-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">
           -{discount}%
