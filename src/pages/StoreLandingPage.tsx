@@ -3,9 +3,9 @@ import { useParams, useLocation, useSearchParams } from 'react-router-dom';
 import { usePublicLandingSettings, BranchInfo, preloadClientIp } from '@/hooks/useTenantLanding';
 import { usePublicLandingProducts } from '@/hooks/useLandingProducts';
 import { usePublicLandingArticles } from '@/hooks/useLandingArticles';
+import { detectPageFromPath } from '@/lib/slugify';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
-import { LandingCartProvider } from '@/hooks/useLandingCart';
 import { Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
