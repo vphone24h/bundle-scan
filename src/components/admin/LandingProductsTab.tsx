@@ -304,6 +304,7 @@ export function LandingProductsTab() {
       images: Array.isArray(p.images) ? p.images : [],
       is_featured: p.is_featured,
       is_active: p.is_active,
+      is_sold_out: p.is_sold_out || false,
       variants: Array.isArray(p.variants) ? p.variants : [],
       home_tab_ids: Array.isArray((p as any).home_tab_ids) ? (p as any).home_tab_ids : [],
       variant_group_1_name: p.variant_group_1_name || 'Màu sắc',
