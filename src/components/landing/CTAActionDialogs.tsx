@@ -175,7 +175,6 @@ export function BookingDialog({
   const [branch, setBranch] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const placeOrder = usePlaceLandingOrder();
-  const bulkBlock = useBulkAddBlockedDates();
 
   // Range: calculate days
   const rangeDays = useMemo(() => {
