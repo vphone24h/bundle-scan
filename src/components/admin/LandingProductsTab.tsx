@@ -1098,8 +1098,8 @@ export function LandingProductsTab() {
         existingProducts={products || []}
       />
 
-      {/* Dialog quản lý ngày chặn */}
-      {blockedDatesProduct && tenant?.id && (
+      {/* Dialog quản lý ngày chặn - chỉ cho khách sạn */}
+      {blockedDatesProduct && tenant?.id && landingSettings?.website_template === 'hotel_store' && (
         <BlockedDatesCalendar
           open={!!blockedDatesProduct}
           onClose={() => setBlockedDatesProduct(null)}
