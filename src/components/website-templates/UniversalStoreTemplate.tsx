@@ -94,9 +94,14 @@ export default function UniversalStoreTemplate({
     if ((settings as any)?.custom_home_sections) {
       const customSections = (settings as any).custom_home_sections as HomeSectionItem[];
       c.homeSections = customSections.filter((s: HomeSectionItem) => s.enabled).map((s: HomeSectionItem) => s.id) as HomeSection[];
-      // Store category display mode
+      // Store category display mode and hidden category IDs
       const catSection = customSections.find(s => s.id === 'categories');
-      if (catSection) (c as any)._categoryDisplayMode = catSection.displayMode || 'horizontal';
+      if (catSection) {
+        (c as any)._categoryDisplayMode = catSection.displayMode || 'horizontal';
+        if (catSection.hiddenCategoryIds?.length) {
+          (c as any)._hiddenHomeCategoryIds = catSection.hiddenCategoryIds;
+        }
+      }
       // When user explicitly enables sections via editor, force-enable corresponding features
       for (const s of customSections.filter((s: HomeSectionItem) => s.enabled)) {
         if (s.id === 'articles') c.features = { ...c.features, articles: true };
