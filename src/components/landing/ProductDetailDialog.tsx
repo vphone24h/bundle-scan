@@ -411,8 +411,11 @@ export function ProductDetailDialog({
                 </div>
               )}
 
-              {/* Stock info */}
-              {matchedVariantPrice && matchedVariantPrice.stock !== undefined && matchedVariantPrice.stock > 0 && (
+              {/* Stock / sold-out info */}
+              {matchedVariantPrice && matchedVariantPrice.is_sold_out && (
+                <p className="text-sm font-medium text-red-600">🚫 Hết hàng</p>
+              )}
+              {matchedVariantPrice && !matchedVariantPrice.is_sold_out && matchedVariantPrice.stock !== undefined && matchedVariantPrice.stock > 0 && (
                 <p className="text-xs text-muted-foreground">Còn {matchedVariantPrice.stock} sản phẩm</p>
               )}
             </div>

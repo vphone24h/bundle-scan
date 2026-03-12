@@ -481,7 +481,10 @@ export function ProductDetailPage({
                 </div>
               )}
 
-              {matchedVariantPrice && matchedVariantPrice.stock !== undefined && matchedVariantPrice.stock > 0 && (
+              {matchedVariantPrice && matchedVariantPrice.is_sold_out && (
+                <p className="text-sm font-medium text-red-600">🚫 Hết hàng</p>
+              )}
+              {matchedVariantPrice && !matchedVariantPrice.is_sold_out && matchedVariantPrice.stock !== undefined && matchedVariantPrice.stock > 0 && (
                 <p className="text-xs text-gray-500">Còn {matchedVariantPrice.stock} sản phẩm</p>
               )}
             </div>
