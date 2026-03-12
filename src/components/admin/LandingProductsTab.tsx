@@ -283,7 +283,7 @@ export function LandingProductsTab() {
     setEditingProduct(null);
     setForm({
       name: '', description: '', price: 0, sale_price: null, category_id: '_none_',
-      image_url: '', images: [], is_featured: false, is_active: true, variants: [], home_tab_ids: [],
+      image_url: '', images: [], is_featured: false, is_active: true, is_sold_out: false, variants: [], home_tab_ids: [],
       variant_group_1_name: 'Màu sắc', variant_group_2_name: 'Dung lượng',
       variant_options_1: [], variant_options_2: [], variant_prices: [],
       promotion_title: 'KHUYẾN MÃI', promotion_content: '',
