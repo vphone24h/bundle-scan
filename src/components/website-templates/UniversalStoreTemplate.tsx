@@ -1577,18 +1577,18 @@ export default function UniversalStoreTemplate({
             </div>
 
             {/* Results */}
-            {submittedValue && isFetched && (
+            {showWarrantyResultBlock && (
               <div className="space-y-4">
-                {warrantyError ? (
+                {showWarrantyError ? (
                   <div className="text-center py-12 rounded-2xl bg-red-50">
                     <XCircle className="h-12 w-12 mx-auto text-red-400 mb-3" />
                     <p className="text-sm font-medium text-red-600">Tra cứu thất bại</p>
                     <p className="text-xs text-red-400 mt-1">{(warrantyError as Error)?.message || 'Vui lòng thử lại'}</p>
                   </div>
-                ) : warrantyResults && warrantyResults.length > 0 ? (
+                ) : hasWarrantyResults ? (
                   <>
-                    <p className="text-xs text-[#86868b] flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> Tìm thấy {warrantyResults.length} sản phẩm</p>
-                    {warrantyResults.map(item => {
+                    <p className="text-xs text-[#86868b] flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> Tìm thấy {effectiveWarrantyResults.length} sản phẩm</p>
+                    {effectiveWarrantyResults.map(item => {
                       const ws = calculateWarrantyStatus(item);
                       return (
                         <div key={item.id} className="bg-white rounded-2xl p-5 space-y-4 border border-black/5">
@@ -1696,7 +1696,7 @@ export default function UniversalStoreTemplate({
               </div>
             )}
 
-            {submittedValue && warrantyResults && warrantyResults.length > 0 && (
+            {submittedValue && hasWarrantyResults && (
               <button onClick={handleWarrantyLogout} className="w-full py-3 text-xs text-[#86868b] hover:text-[#1d1d1f] border border-dashed border-black/10 rounded-xl transition-colors">
                 Đăng xuất tra cứu bảo hành
               </button>
