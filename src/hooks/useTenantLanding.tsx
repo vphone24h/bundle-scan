@@ -350,14 +350,14 @@ export function useWarrantyLookup(
     retry: (failureCount, error) => {
       const message = String((error as any)?.message || '');
       if (message.includes('Rate limit exceeded')) return false;
-      return failureCount < 4;
+      return failureCount < 2;
     },
     retryDelay: (attempt) => Math.min(1500 * 2 ** attempt, 10000),
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 }
 
