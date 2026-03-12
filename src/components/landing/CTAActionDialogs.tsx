@@ -176,8 +176,6 @@ export function BookingDialog({
   const [submitted, setSubmitted] = useState(false);
   const placeOrder = usePlaceLandingOrder();
   const bulkBlock = useBulkAddBlockedDates();
-  const { data: blockedDates = [] } = usePublicBlockedDates(tenantId, productId || null);
-  const blockedDateStrings = useMemo(() => new Set(blockedDates.map(b => b.blocked_date)), [blockedDates]);
 
   // Range: calculate days
   const rangeDays = useMemo(() => {
