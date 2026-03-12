@@ -426,6 +426,11 @@ export function ProductDetailPage({
         <div className="px-4 py-4 space-y-4">
           {/* Title */}
           <h2 className="text-xl font-bold leading-tight">{product.name}</h2>
+          {product.is_sold_out && (
+            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex items-center gap-2">
+              <span className="text-red-600 font-bold text-sm">🚫 Sản phẩm tạm hết hàng</span>
+            </div>
+          )}
 
           {/* Price */}
           <div className="flex items-baseline gap-3">
