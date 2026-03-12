@@ -23,8 +23,9 @@ interface ProductCardProps {
 // === APPLE PRODUCT CARD === (Clean, minimal, premium)
 function AppleProductCard({ product, onClick, accentColor }: ProductCardProps) {
   return (
-    <button onClick={onClick} className="bg-[#f5f5f7] rounded-2xl overflow-hidden text-left group transition-all hover:shadow-lg w-full">
+    <button onClick={onClick} className={`bg-[#f5f5f7] rounded-2xl overflow-hidden text-left group transition-all hover:shadow-lg w-full ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden">
+        {product.is_sold_out && <SoldOutOverlay />}
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
