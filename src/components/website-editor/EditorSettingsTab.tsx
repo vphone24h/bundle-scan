@@ -594,8 +594,8 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
           onChange={sections => onChange('custom_home_sections', sections)}
           customProductTabs={(formData as any).custom_product_tabs || []}
           onTabsChange={tabs => onChange('custom_product_tabs', tabs)}
+          categories={landingCategories?.map(c => ({ id: c.id, name: c.name, image_url: c.image_url })) || []}
           onManageTabProducts={(tabId, tabName) => {
-            // Navigate to landing settings products tab - for now show a toast hint
             import('@/hooks/use-toast').then(({ toast }) => {
               toast({
                 title: `📦 ${tabName}`,
