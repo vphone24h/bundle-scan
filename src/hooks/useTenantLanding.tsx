@@ -256,6 +256,47 @@ export function useUpdateTenantLandingSettings() {
   });
 }
 
+// Fast IP fetch with 2s timeout - non-blocking for warranty lookup
+let _cachedIp: string | null = null;
+let _ipFetchPromise: Promise<string | null> | null = null;
+
+function getClientIpFast(): Promise<string | null> {
+  if (_cachedIp) return Promise.resolve(_cachedIp);
+  if (_ipFetchPromise) return _ipFetchPromise;
+  _ipFetchPromise = Promise.race([
+    fetch('https://api.ipify.org?format=json')
+      .then(r => r.json())
+      .then(d => {
+        const ip = typeof d?.ip === 'string' ? d.ip.trim() : '';
+        _cachedIp = ip && ip.toLowerCase() !== 'unknown' ? ip : null;
+        return _cachedIp;
+      }),
+    new Promise<null>(resolve => setTimeout(() => resolve(null), 2000)),
+  ]).catch(() => null).finally(() => { _ipFetchPromise = null; });
+  return _ipFetchPromise;
+}
+
+function mapWarrantyItem(item: any): WarrantyResult {
+  return {
+    id: item.id,
+    imei: item.imei,
+    product_name: item.product_name,
+    sku: item.sku,
+    warranty: item.warranty,
+    sale_price: item.sale_price,
+    created_at: item.created_at,
+    branch_name: item.branch_name || null,
+    export_date: item.export_date || item.created_at,
+    customer_phone: item.customer_phone || null,
+    staff_user_id: item.staff_user_id || null,
+    staff_name: item.staff_name || null,
+    branch_id: item.branch_id || null,
+    customer_name: item.customer_name || null,
+    customer_id: item.customer_id || null,
+    note: item.note || null,
+  };
+}
+
 // Hook tra cứu bảo hành công khai - hỗ trợ IMEI hoặc SĐT
 // Sử dụng RPC functions bảo mật với rate limiting, KHÔNG trả về thông tin nhạy cảm của khách hàng
 export function useWarrantyLookup(searchValue: string, tenantId: string | null) {
@@ -264,88 +305,26 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
     queryFn: async (): Promise<WarrantyResult[] | null> => {
       if (!searchValue || !tenantId) return null;
 
-      const normalizedSearch = searchValue.trim();
-      const compactSearch = normalizedSearch.replace(/\s+/g, '');
+      const compactSearch = searchValue.trim().replace(/\s+/g, '');
 
-      // Get client IP for rate limiting (fallback null to avoid invalid value)
-      let clientIp: string | null = null;
-      try {
-        const response = await fetch('https://api.ipify.org?format=json');
-        const data = await response.json();
-        const ipCandidate = typeof data?.ip === 'string' ? data.ip.trim() : '';
-        if (ipCandidate && ipCandidate.toLowerCase() !== 'unknown') {
-          clientIp = ipCandidate;
-        }
-      } catch {
-        // Continue without IP when detection fails
-      }
+      // Non-blocking IP fetch with 2s timeout
+      const clientIp = await getClientIpFast();
 
       const isPhoneNumber = /^0\d{9,10}$/.test(compactSearch);
-      
-      if (isPhoneNumber) {
-        // Sử dụng RPC function bảo mật để tra cứu theo SĐT
-        // Rate limiting enforced server-side per IP address
-        const { data, error } = await supabase
-          .rpc('lookup_warranty_by_phone', {
-            _phone: compactSearch,
-            _tenant_id: tenantId,
-            _ip_address: clientIp
-          });
+      const rpcName = isPhoneNumber ? 'lookup_warranty_by_phone' : 'lookup_warranty_by_imei';
+      const rpcParams = isPhoneNumber
+        ? { _phone: compactSearch, _tenant_id: tenantId, _ip_address: clientIp }
+        : { _imei: compactSearch, _tenant_id: tenantId, _ip_address: clientIp };
 
-        if (error) throw error;
-        
-        // Map kết quả - KHÔNG bao gồm customer_phone
-        return (data || []).map((item: any) => ({
-          id: item.id,
-          imei: item.imei,
-          product_name: item.product_name,
-          sku: item.sku,
-          warranty: item.warranty,
-          sale_price: item.sale_price,
-          created_at: item.created_at,
-          branch_name: item.branch_name || null,
-          export_date: item.export_date || item.created_at,
-          customer_phone: item.customer_phone || null,
-          staff_user_id: item.staff_user_id || null,
-          staff_name: item.staff_name || null,
-          branch_id: item.branch_id || null,
-          customer_name: item.customer_name || null,
-          customer_id: item.customer_id || null,
-          note: item.note || null,
-        }));
-      } else {
-        // Sử dụng RPC function bảo mật để tra cứu theo IMEI
-        // Rate limiting enforced server-side per IP address
-        const { data, error } = await supabase
-          .rpc('lookup_warranty_by_imei', {
-            _imei: compactSearch,
-            _tenant_id: tenantId,
-            _ip_address: clientIp
-          });
-
-        if (error) throw error;
-        
-        return (data || []).map((item: any) => ({
-          id: item.id,
-          imei: item.imei,
-          product_name: item.product_name,
-          sku: item.sku,
-          warranty: item.warranty,
-          sale_price: item.sale_price,
-          created_at: item.created_at,
-          branch_name: item.branch_name || null,
-          export_date: item.export_date || item.created_at,
-          customer_phone: item.customer_phone || null,
-          staff_user_id: item.staff_user_id || null,
-          staff_name: item.staff_name || null,
-          branch_id: item.branch_id || null,
-          customer_name: item.customer_name || null,
-          customer_id: item.customer_id || null,
-          note: item.note || null,
-        }));
-      }
+      const { data, error } = await supabase.rpc(rpcName, rpcParams);
+      if (error) throw error;
+      return (data || []).map(mapWarrantyItem);
     },
     enabled: !!searchValue && !!tenantId && searchValue.length >= 5,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
+    staleTime: 1000 * 60 * 5,   // 5 min - avoid refetch on focus
+    gcTime: 1000 * 60 * 30,     // 30 min cache
   });
 }
 
