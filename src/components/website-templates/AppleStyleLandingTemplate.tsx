@@ -1136,17 +1136,17 @@ export default function AppleStyleLandingTemplate({
               )}
             </div>
 
-            {submittedValue && isFetched && (
+            {showWarrantyResultBlock && (
               <div className="space-y-4">
-                {warrantyError ? (
+                {showWarrantyError ? (
                   <div className="text-center py-12 rounded-2xl bg-red-50">
                     <XCircle className="h-12 w-12 mx-auto text-red-400 mb-3" />
                     <p className="text-sm font-medium text-red-600">Tra cứu thất bại</p>
                   </div>
-                ) : warrantyResults && warrantyResults.length > 0 ? (
+                ) : hasWarrantyResults ? (
                   <>
-                    <p className="text-xs text-[#86868b] flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> Tìm thấy {warrantyResults.length} sản phẩm</p>
-                    {warrantyResults.map(item => {
+                    <p className="text-xs text-[#86868b] flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> Tìm thấy {effectiveWarrantyResults.length} sản phẩm</p>
+                    {effectiveWarrantyResults.map(item => {
                       const ws = calcWarranty(item);
                       return (
                         <div key={item.id} className="bg-white rounded-2xl p-5 space-y-4 border border-[#d2d2d7]">
@@ -1213,7 +1213,7 @@ export default function AppleStyleLandingTemplate({
                 )}
               </div>
             )}
-            {submittedValue && warrantyResults && warrantyResults.length > 0 && (
+            {submittedValue && hasWarrantyResults && (
               <button onClick={handleWarrantyLogout} className="w-full py-3 text-xs text-[#86868b] hover:text-[#1d1d1f] border border-dashed border-[#d2d2d7] rounded-xl">Đăng xuất tra cứu</button>
             )}
           </div>

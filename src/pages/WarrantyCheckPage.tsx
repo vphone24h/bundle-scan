@@ -60,17 +60,21 @@ function getWarrantyStatus(exportDate: string, warrantyMonths: string | null) {
   return { status: 'active', label: `Còn ${daysLeft} ngày`, color: 'default' as const };
 }
 
+const WARRANTY_STORAGE_KEY = 'global_warranty_session';
+
 export default function WarrantyCheckPage() {
   const navigate = useNavigate();
   const [input, setInput] = useState('');
   const [searchValue, setSearchValue] = useState('');
+  const [persistedResults, setPersistedResults] = useState<WarrantyItem[] | null>(null);
+  const [lookupEnabled, setLookupEnabled] = useState(false);
 
-  const { data: results, isLoading, error, refetch } = useQuery({
+  const { data: results, isLoading, error, isFetched, refetch } = useQuery({
     queryKey: ['global-warranty', searchValue],
     queryFn: async (): Promise<WarrantyItem[]> => {
       if (!searchValue) return [];
       const compact = searchValue.replace(/\s+/g, '');
-      const clientIp = await getClientIpFast();
+      const clientIp = await getClientIpFast().catch(() => null);
       const isPhone = /^0\d{9,10}$/.test(compact);
 
       const { data, error } = await supabase.rpc(
@@ -82,20 +86,51 @@ export default function WarrantyCheckPage() {
       if (error) throw error;
       return (data || []) as WarrantyItem[];
     },
-    enabled: !!searchValue,
+    enabled: lookupEnabled && !!searchValue,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
     retry: 2,
     retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 5000),
   });
 
+  useEffect(() => {
+    const restored = readWarrantySession<WarrantyItem>(WARRANTY_STORAGE_KEY);
+    const restoredSearch = restored?.searchValue?.trim() || '';
+    if (!restoredSearch) return;
+
+    setInput(restoredSearch);
+    setSearchValue(restoredSearch);
+    setPersistedResults(restored?.results ?? []);
+    setLookupEnabled(false);
+  }, []);
+
+  useEffect(() => {
+    if (!lookupEnabled || !searchValue || !isFetched || error || !results) return;
+
+    setPersistedResults(results);
+    writeWarrantySession(WARRANTY_STORAGE_KEY, {
+      searchValue,
+      results,
+    });
+  }, [lookupEnabled, searchValue, isFetched, error, results]);
+
+  const effectiveResults = lookupEnabled && isFetched ? (results ?? []) : (persistedResults ?? []);
+  const showResultBlock = !!searchValue && ((lookupEnabled && isFetched) || persistedResults !== null);
+  const showError = lookupEnabled && isFetched && !!error;
+  const hasResults = effectiveResults.length > 0;
+
   const handleSearch = () => {
     const v = input.trim();
     if (!v) return;
+
+    setLookupEnabled(true);
+
     if (v === searchValue) {
       void refetch();
       return;
     }
+
+    setPersistedResults(null);
     setSearchValue(v);
   };
 
@@ -150,7 +185,7 @@ export default function WarrantyCheckPage() {
       {/* Results */}
       <section className="pb-20">
         <div className="container mx-auto px-4 max-w-2xl">
-          {error && (
+          {showError && (
             <Card className="border-destructive/50 bg-destructive/5">
               <CardContent className="p-4 flex items-center gap-3 text-destructive">
                 <AlertCircle className="h-5 w-5 shrink-0" />
@@ -161,7 +196,7 @@ export default function WarrantyCheckPage() {
             </Card>
           )}
 
-          {searchValue && !isLoading && !error && results?.length === 0 && (
+          {showResultBlock && !showError && !hasResults && (
             <Card>
               <CardContent className="p-8 text-center text-muted-foreground">
                 <Search className="h-10 w-10 mx-auto mb-3 opacity-30" />
@@ -171,12 +206,12 @@ export default function WarrantyCheckPage() {
             </Card>
           )}
 
-          {results && results.length > 0 && (
+          {hasResults && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground mb-4">
-                Tìm thấy <strong>{results.length}</strong> sản phẩm
+                Tìm thấy <strong>{effectiveResults.length}</strong> sản phẩm
               </p>
-              {results.map(item => {
+              {effectiveResults.map(item => {
                 const ws = getWarrantyStatus(item.export_date, item.warranty);
                 const warrantyMonths = item.warranty ? parseInt(item.warranty) : 0;
                 const expiryDate = warrantyMonths > 0 ? addMonths(new Date(item.export_date), warrantyMonths) : null;
