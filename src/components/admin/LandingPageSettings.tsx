@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useCustomDomainArticlePublic } from '@/hooks/useAppConfig';
 import { useNavigate } from 'react-router-dom';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings, TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
+import { useLandingProductCategories } from '@/hooks/useLandingProducts';
 import { useVoucherTemplates } from '@/hooks/useVouchers';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCustomDomains } from '@/hooks/useCustomDomains';
