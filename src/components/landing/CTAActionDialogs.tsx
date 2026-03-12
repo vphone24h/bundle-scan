@@ -167,6 +167,8 @@ export function BookingDialog({
   const [branch, setBranch] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const placeOrder = usePlaceLandingOrder();
+  const { data: blockedDates = [] } = usePublicBlockedDates(tenantId, productId || null);
+  const blockedDateSet = useMemo(() => new Set(blockedDates), [blockedDates]);
 
   const handleSubmit = async () => {
     if (!name.trim() || !phone.trim()) { toast.error('Vui lòng nhập họ tên và số điện thoại'); return; }
