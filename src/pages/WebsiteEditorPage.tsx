@@ -89,9 +89,22 @@ export default function WebsiteEditorPage() {
   }, [settings, tenant]);
 
   const handleChange = useCallback((field: string, value: unknown) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      // Save immediately for template changes
+      if (field === 'website_template') {
+        if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+        updateSettings.mutateAsync(updated).then(() => {
+          setHasChanges(false);
+          toast({ title: '✓ Đã lưu mẫu website' });
+        }).catch(() => {
+          toast({ title: 'Lỗi', description: 'Không thể lưu.', variant: 'destructive' });
+        });
+      }
+      return updated;
+    });
     setHasChanges(true);
-  }, []);
+  }, [updateSettings]);
 
   // Auto-save: debounce 1.5s after any change
   useEffect(() => {
