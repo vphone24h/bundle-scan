@@ -262,9 +262,8 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     });
   }, [landingBootstrapKey, landingData]);
 
-  const shouldLoadCatalog = !isStandalone;
-  const { data: productsData } = usePublicLandingProducts(shouldLoadCatalog ? tenantId : null);
-  const { data: articlesData } = usePublicLandingArticles(shouldLoadCatalog ? tenantId : null);
+  const { data: productsData } = usePublicLandingProducts(tenantId);
+  const { data: articlesData } = usePublicLandingArticles(tenantId);
 
   // PWA manifest
   useDynamicManifest(storeName, storeId || tenant?.subdomain || tenantId, settings?.store_logo_url);

@@ -387,7 +387,7 @@ function NewsTabContent({ articles }: { articles: LandingArticle[] }) {
             )}
             <div className="min-w-0 flex-1">
               <p className="line-clamp-2 text-sm font-medium text-foreground">{article.title}</p>
-              {article.excerpt && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{article.excerpt}</p>}
+              {article.summary && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{article.summary}</p>}
               <p className="mt-1 text-xs text-muted-foreground">
                 {format(new Date(article.created_at), 'dd/MM/yyyy', { locale: vi })}
               </p>
