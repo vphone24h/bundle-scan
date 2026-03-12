@@ -265,8 +265,13 @@ function AppleProductCard({ product, onClick, accentColor }: { product: LandingP
   const origPrice = (product as any).original_price;
   const hasDiscount = origPrice && origPrice > product.price;
   return (
-    <button onClick={onClick} className="group bg-white rounded-2xl overflow-hidden text-left transition-all hover:shadow-lg w-full">
-      <div className="aspect-square bg-[#fbfbfd] flex items-center justify-center p-6 overflow-hidden">
+    <button onClick={onClick} className={`group bg-white rounded-2xl overflow-hidden text-left transition-all hover:shadow-lg w-full ${product.is_sold_out ? 'opacity-80' : ''}`}>
+      <div className="relative aspect-square bg-[#fbfbfd] flex items-center justify-center p-6 overflow-hidden">
+        {product.is_sold_out && (
+          <div className="absolute inset-0 bg-black/40 z-20 flex items-center justify-center">
+            <span className="bg-white/90 text-red-600 font-bold text-xs sm:text-sm px-3 py-1.5 rounded-full shadow-md tracking-wide">HẾT HÀNG</span>
+          </div>
+        )}
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105" />
         ) : (
