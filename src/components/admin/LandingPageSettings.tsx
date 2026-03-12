@@ -1448,6 +1448,7 @@ export function LandingPageSettings() {
             onChange={(sections) => { setFormData(prev => ({ ...prev, custom_home_sections: sections as any })); setHasChanges(true); }}
             customProductTabs={(formData as any).custom_product_tabs || []}
             onTabsChange={(tabs) => { setFormData(prev => ({ ...prev, custom_product_tabs: tabs as any })); setHasChanges(true); }}
+            categories={landingCategories?.map(c => ({ id: c.id, name: c.name, image_url: c.image_url })) || []}
           />
         </CardContent>
       </Card>
