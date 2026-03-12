@@ -32,6 +32,7 @@ export interface VariantPriceEntry {
   sale_price?: number;
   stock?: number;
   image_url?: string;
+  is_sold_out?: boolean;
 }
 
 export interface LandingProduct {
