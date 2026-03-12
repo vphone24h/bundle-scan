@@ -31,6 +31,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, Package, ImagePlus, Warehouse, Info, ChevronRight, ChevronDown, Folder, FolderOpen, Pencil, Eye, EyeOff, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
+import { BlockedDatesCalendar } from './BlockedDatesCalendar';
 import { Separator } from '@/components/ui/separator';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { PriceInput } from '@/components/ui/price-input';
