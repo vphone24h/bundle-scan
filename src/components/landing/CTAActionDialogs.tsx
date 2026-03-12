@@ -341,7 +341,7 @@ export function HotelBookingDialog({
     if (!name.trim() || !phone.trim()) { toast.error('Vui lòng nhập họ tên và số điện thoại'); return; }
     if (!checkInDate || !checkOutDate) { toast.error('Vui lòng chọn ngày nhận & trả phòng'); return; }
     if (nights <= 0) { toast.error('Ngày trả phòng phải sau ngày nhận phòng'); return; }
-    if (rangeConflict) { toast.error('Khoảng thời gian này có ngày đã được đặt, vui lòng chọn ngày khác'); return; }
+    if (rangeConflictInfo.hasConflict) { toast.error(rangeConflictInfo.message); return; }
     if (!branch) { toast.error('Vui lòng chọn chi nhánh'); return; }
     try {
       const bookingNote = `[${title}] Check-in: ${checkInDate} ${checkInTime} | Check-out: ${checkOutDate} ${checkOutTime} | ${nights} đêm${note.trim() ? ` | Ghi chú: ${note.trim()}` : ''}`;
@@ -361,7 +361,7 @@ export function HotelBookingDialog({
         action_time: checkInTime,
       });
 
-      // Auto-block the date range
+      // Auto-block the date range with time info
       if (productId) {
         try {
           const days = eachDayOfInterval({ start: parseISO(checkInDate), end: parseISO(checkOutDate) });
@@ -371,6 +371,10 @@ export function HotelBookingDialog({
             productId,
             dates: dateStrings,
             note: `Đặt bởi ${name.trim()} - ${phone.trim()}`,
+            checkInTime,
+            checkOutTime,
+            customerName: name.trim(),
+            customerPhone: phone.trim(),
           });
         } catch (e) {
           console.warn('Auto-block dates failed:', e);
@@ -423,62 +427,7 @@ export function HotelBookingDialog({
               <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập email" type="email" className="h-11 text-base" />
             </div>
 
-            {/* Date range */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-sm">Ngày nhận phòng <span className="text-destructive">*</span></Label>
-                <Input
-                  type="date" value={checkInDate}
-                  onChange={e => {
-                    const v = e.target.value;
-                    if (blockedDateSet.has(v)) { toast.error('Ngày này đã có khách đặt'); return; }
-                    setCheckInDate(v);
-                    if (checkOutDate && v >= checkOutDate) setCheckOutDate('');
-                  }}
-                  min={today}
-                  className="h-11 text-base"
-                />
-              </div>
-              <div>
-                <Label className="text-sm">Ngày trả phòng <span className="text-destructive">*</span></Label>
-                <Input
-                  type="date" value={checkOutDate}
-                  onChange={e => {
-                    const v = e.target.value;
-                    if (blockedDateSet.has(v)) { toast.error('Ngày này đã có khách đặt'); return; }
-                    setCheckOutDate(v);
-                  }}
-                  min={checkInDate || today}
-                  className="h-11 text-base"
-                />
-              </div>
-            </div>
-
-            {/* Blocked dates warning */}
-            {blockedDates.length > 0 && (
-              <p className="text-xs text-destructive">
-                📅 Ngày đã có khách: {blockedDates.slice(0, 6).map(d => {
-                  const p = d.split('-');
-                  return `${p[2]}/${p[1]}`;
-                }).join(', ')}{blockedDates.length > 6 ? '...' : ''}
-              </p>
-            )}
-
-            {/* Range conflict warning */}
-            {rangeConflict && (
-              <div className="text-xs text-destructive bg-destructive/10 rounded-md p-2 font-medium">
-                ⚠️ Khoảng ngày bạn chọn có ngày đã được đặt. Vui lòng chọn ngày khác.
-              </div>
-            )}
-
-            {/* Nights info */}
-            {nights > 0 && !rangeConflict && (
-              <div className="text-sm bg-muted/50 rounded-md p-2 font-medium text-center">
-                🌙 {nights} đêm {productPrice ? `· Tổng: ${(productPrice * nights).toLocaleString('vi-VN')}₫` : ''}
-              </div>
-            )}
-
-            {/* Check-in / Check-out times */}
+            {/* Check-in / Check-out times - moved BEFORE dates for better UX */}
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-sm">Giờ nhận phòng</Label>
@@ -489,6 +438,62 @@ export function HotelBookingDialog({
                 <Input type="time" value={checkOutTime} onChange={e => setCheckOutTime(e.target.value)} className="h-11 text-base" />
               </div>
             </div>
+
+            {/* Date range */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-sm">Ngày nhận phòng <span className="text-destructive">*</span></Label>
+                <Input
+                  type="date" value={checkInDate}
+                  onChange={e => {
+                    setCheckInDate(e.target.value);
+                    if (checkOutDate && e.target.value >= checkOutDate) setCheckOutDate('');
+                  }}
+                  min={today}
+                  className="h-11 text-base"
+                />
+              </div>
+              <div>
+                <Label className="text-sm">Ngày trả phòng <span className="text-destructive">*</span></Label>
+                <Input
+                  type="date" value={checkOutDate}
+                  onChange={e => setCheckOutDate(e.target.value)}
+                  min={checkInDate || today}
+                  className="h-11 text-base"
+                />
+              </div>
+            </div>
+
+            {/* Show existing bookings on selected dates */}
+            {blockedDates.length > 0 && (
+              <div className="text-xs space-y-1 bg-muted/50 rounded-md p-2">
+                <p className="font-medium text-muted-foreground">📅 Lịch đặt phòng hiện tại:</p>
+                {blockedDates.slice(0, 6).map((d, i) => {
+                  const parts = d.blocked_date.split('-');
+                  return (
+                    <p key={i} className="text-muted-foreground">
+                      • {parts[2]}/{parts[1]}: Khách đặt {d.check_in_time || '14:00'} - {d.check_out_time || '12:00'}
+                      {d.customer_name ? ` (${d.customer_name})` : ''}
+                    </p>
+                  );
+                })}
+                {blockedDates.length > 6 && <p className="text-muted-foreground">...và {blockedDates.length - 6} ngày khác</p>}
+              </div>
+            )}
+
+            {/* Time conflict warning */}
+            {rangeConflictInfo.hasConflict && (
+              <div className="text-xs text-destructive bg-destructive/10 rounded-md p-2.5 font-medium">
+                ⚠️ {rangeConflictInfo.message}
+              </div>
+            )}
+
+            {/* Nights info */}
+            {nights > 0 && !rangeConflictInfo.hasConflict && (
+              <div className="text-sm bg-muted/50 rounded-md p-2 font-medium text-center">
+                🌙 {nights} đêm {productPrice ? `· Tổng: ${(productPrice * nights).toLocaleString('vi-VN')}₫` : ''}
+              </div>
+            )}
 
             <div>
               <Label className="text-sm">Chi nhánh <span className="text-destructive">*</span></Label>
@@ -502,7 +507,7 @@ export function HotelBookingDialog({
               <Label className="text-sm">Ghi chú</Label>
               <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Yêu cầu đặc biệt..." rows={2} className="text-base" />
             </div>
-            <Button className="w-full h-11 font-semibold" style={{ backgroundColor: primaryColor }} onClick={handleSubmit} disabled={placeOrder.isPending || rangeConflict}>
+            <Button className="w-full h-11 font-semibold" style={{ backgroundColor: primaryColor }} onClick={handleSubmit} disabled={placeOrder.isPending || rangeConflictInfo.hasConflict}>
               {placeOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Xác nhận đặt phòng {nights > 0 ? `(${nights} đêm)` : ''}
             </Button>
