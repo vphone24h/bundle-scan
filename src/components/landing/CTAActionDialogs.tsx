@@ -10,7 +10,8 @@ import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { useLandingCart, CartItem } from '@/hooks/useLandingCart';
 import { formatNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
-import { usePublicBlockedDates } from '@/hooks/useBlockedDates';
+import { usePublicBlockedDates, useBulkAddBlockedDates } from '@/hooks/useBlockedDates';
+import { format, eachDayOfInterval, parseISO } from 'date-fns';
 
 interface BranchOption { id: string; name: string; }
 
@@ -276,6 +277,223 @@ export function BookingDialog({
             <Button className="w-full h-11 font-semibold" style={{ backgroundColor: primaryColor }} onClick={handleSubmit} disabled={placeOrder.isPending}>
               {placeOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Xác nhận đặt lịch
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ===== HOTEL BOOKING DIALOG (date range + check-in/out times) =====
+interface HotelBookingDialogProps extends CTADialogProps {
+  title?: string;
+}
+
+export function HotelBookingDialog({
+  open, onClose, tenantId, primaryColor, branches,
+  productName, productId, productImageUrl, productPrice,
+  title = '🏨 Đặt phòng',
+}: HotelBookingDialogProps) {
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [checkInDate, setCheckInDate] = useState('');
+  const [checkOutDate, setCheckOutDate] = useState('');
+  const [checkInTime, setCheckInTime] = useState('14:00');
+  const [checkOutTime, setCheckOutTime] = useState('12:00');
+  const [note, setNote] = useState('');
+  const [branch, setBranch] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const placeOrder = usePlaceLandingOrder();
+  const bulkBlock = useBulkAddBlockedDates();
+  const { data: blockedDates = [] } = usePublicBlockedDates(tenantId, productId || null);
+  const blockedDateSet = useMemo(() => new Set(blockedDates), [blockedDates]);
+
+  // Calculate nights
+  const nights = useMemo(() => {
+    if (!checkInDate || !checkOutDate) return 0;
+    const diff = (new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 60 * 60 * 24);
+    return Math.max(0, Math.round(diff));
+  }, [checkInDate, checkOutDate]);
+
+  // Check if any date in range is blocked
+  const rangeConflict = useMemo(() => {
+    if (!checkInDate || !checkOutDate || nights <= 0) return false;
+    try {
+      const days = eachDayOfInterval({ start: parseISO(checkInDate), end: parseISO(checkOutDate) });
+      return days.some(d => blockedDateSet.has(format(d, 'yyyy-MM-dd')));
+    } catch { return false; }
+  }, [checkInDate, checkOutDate, nights, blockedDateSet]);
+
+  const handleSubmit = async () => {
+    if (!name.trim() || !phone.trim()) { toast.error('Vui lòng nhập họ tên và số điện thoại'); return; }
+    if (!checkInDate || !checkOutDate) { toast.error('Vui lòng chọn ngày nhận & trả phòng'); return; }
+    if (nights <= 0) { toast.error('Ngày trả phòng phải sau ngày nhận phòng'); return; }
+    if (rangeConflict) { toast.error('Khoảng thời gian này có ngày đã được đặt, vui lòng chọn ngày khác'); return; }
+    if (!branch) { toast.error('Vui lòng chọn chi nhánh'); return; }
+    try {
+      const bookingNote = `[${title}] Check-in: ${checkInDate} ${checkInTime} | Check-out: ${checkOutDate} ${checkOutTime} | ${nights} đêm${note.trim() ? ` | Ghi chú: ${note.trim()}` : ''}`;
+      await placeOrder.mutateAsync({
+        tenant_id: tenantId,
+        branch_id: branch,
+        product_id: productId || 'booking',
+        product_name: productName || title,
+        product_image_url: productImageUrl,
+        product_price: productPrice || 0,
+        customer_name: name.trim(),
+        customer_phone: phone.trim(),
+        customer_email: email.trim() || undefined,
+        note: bookingNote,
+        action_type: 'booking',
+        action_date: checkInDate,
+        action_time: checkInTime,
+      });
+
+      // Auto-block the date range
+      if (productId) {
+        try {
+          const days = eachDayOfInterval({ start: parseISO(checkInDate), end: parseISO(checkOutDate) });
+          const dateStrings = days.map(d => format(d, 'yyyy-MM-dd'));
+          await bulkBlock.mutateAsync({
+            tenantId,
+            productId,
+            dates: dateStrings,
+            note: `Đặt bởi ${name.trim()} - ${phone.trim()}`,
+          });
+        } catch (e) {
+          console.warn('Auto-block dates failed:', e);
+        }
+      }
+
+      setSubmitted(true);
+    } catch { toast.error('Đặt phòng thất bại, vui lòng thử lại'); }
+  };
+
+  const handleClose = () => {
+    onClose();
+    setTimeout(() => {
+      setName(''); setPhone(''); setEmail('');
+      setCheckInDate(''); setCheckOutDate('');
+      setCheckInTime('14:00'); setCheckOutTime('12:00');
+      setNote(''); setBranch(''); setSubmitted(false);
+    }, 300);
+  };
+
+  const today = new Date().toISOString().split('T')[0];
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && handleClose()}>
+      <DialogContent className="max-w-md mx-auto max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-base">{title}</DialogTitle>
+          <DialogDescription className="text-sm">Chọn ngày nhận phòng và trả phòng</DialogDescription>
+        </DialogHeader>
+        {submitted ? (
+          <div className="text-center py-6 space-y-3">
+            <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
+            <p className="font-semibold">Đặt phòng thành công!</p>
+            <p className="text-sm text-muted-foreground">Chúng tôi sẽ xác nhận với bạn sớm nhất.</p>
+            <Button variant="outline" onClick={handleClose} className="h-11">Đóng</Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {productName && <div className="text-sm bg-muted/50 rounded-lg p-2.5 font-medium">{productName}</div>}
+            <div>
+              <Label className="text-sm">Họ tên <span className="text-destructive">*</span></Label>
+              <Input value={name} onChange={e => setName(e.target.value)} placeholder="Nhập họ tên" className="h-11 text-base" />
+            </div>
+            <div>
+              <Label className="text-sm">Số điện thoại <span className="text-destructive">*</span></Label>
+              <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Nhập số điện thoại" inputMode="tel" className="h-11 text-base" />
+            </div>
+            <div>
+              <Label className="text-sm">Email</Label>
+              <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="Nhập email" type="email" className="h-11 text-base" />
+            </div>
+
+            {/* Date range */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-sm">Ngày nhận phòng <span className="text-destructive">*</span></Label>
+                <Input
+                  type="date" value={checkInDate}
+                  onChange={e => {
+                    const v = e.target.value;
+                    if (blockedDateSet.has(v)) { toast.error('Ngày này đã có khách đặt'); return; }
+                    setCheckInDate(v);
+                    if (checkOutDate && v >= checkOutDate) setCheckOutDate('');
+                  }}
+                  min={today}
+                  className="h-11 text-base"
+                />
+              </div>
+              <div>
+                <Label className="text-sm">Ngày trả phòng <span className="text-destructive">*</span></Label>
+                <Input
+                  type="date" value={checkOutDate}
+                  onChange={e => {
+                    const v = e.target.value;
+                    if (blockedDateSet.has(v)) { toast.error('Ngày này đã có khách đặt'); return; }
+                    setCheckOutDate(v);
+                  }}
+                  min={checkInDate || today}
+                  className="h-11 text-base"
+                />
+              </div>
+            </div>
+
+            {/* Blocked dates warning */}
+            {blockedDates.length > 0 && (
+              <p className="text-xs text-destructive">
+                📅 Ngày đã có khách: {blockedDates.slice(0, 6).map(d => {
+                  const p = d.split('-');
+                  return `${p[2]}/${p[1]}`;
+                }).join(', ')}{blockedDates.length > 6 ? '...' : ''}
+              </p>
+            )}
+
+            {/* Range conflict warning */}
+            {rangeConflict && (
+              <div className="text-xs text-destructive bg-destructive/10 rounded-md p-2 font-medium">
+                ⚠️ Khoảng ngày bạn chọn có ngày đã được đặt. Vui lòng chọn ngày khác.
+              </div>
+            )}
+
+            {/* Nights info */}
+            {nights > 0 && !rangeConflict && (
+              <div className="text-sm bg-muted/50 rounded-md p-2 font-medium text-center">
+                🌙 {nights} đêm {productPrice ? `· Tổng: ${(productPrice * nights).toLocaleString('vi-VN')}₫` : ''}
+              </div>
+            )}
+
+            {/* Check-in / Check-out times */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-sm">Giờ nhận phòng</Label>
+                <Input type="time" value={checkInTime} onChange={e => setCheckInTime(e.target.value)} className="h-11 text-base" />
+              </div>
+              <div>
+                <Label className="text-sm">Giờ trả phòng</Label>
+                <Input type="time" value={checkOutTime} onChange={e => setCheckOutTime(e.target.value)} className="h-11 text-base" />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm">Chi nhánh <span className="text-destructive">*</span></Label>
+              <select value={branch} onChange={e => setBranch(e.target.value)}
+                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base">
+                <option value="">Chọn chi nhánh</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label className="text-sm">Ghi chú</Label>
+              <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Yêu cầu đặc biệt..." rows={2} className="text-base" />
+            </div>
+            <Button className="w-full h-11 font-semibold" style={{ backgroundColor: primaryColor }} onClick={handleSubmit} disabled={placeOrder.isPending || rangeConflict}>
+              {placeOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Xác nhận đặt phòng {nights > 0 ? `(${nights} đêm)` : ''}
             </Button>
           </div>
         )}

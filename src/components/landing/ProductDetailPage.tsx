@@ -14,7 +14,7 @@ import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { usePublicCustomerVouchers } from '@/hooks/useVouchers';
 import { useCustomerPointsPublic } from '@/hooks/useTenantLanding';
 import { useLandingCart } from '@/hooks/useLandingCart';
-import { ContactFormDialog, BookingDialog, TrackOrderDialog, CheckWarrantyDialog, WriteReviewDialog, SupportDialog, CartDialog, PromotionInfoDialog, JoinMemberDialog } from '@/components/landing/CTAActionDialogs';
+import { ContactFormDialog, BookingDialog, HotelBookingDialog, TrackOrderDialog, CheckWarrantyDialog, WriteReviewDialog, SupportDialog, CartDialog, PromotionInfoDialog, JoinMemberDialog } from '@/components/landing/CTAActionDialogs';
 import { toast } from 'sonner';
 import StoreReviewsSection from '@/components/landing/StoreReviewsSection';
 
@@ -1220,9 +1220,25 @@ export function ProductDetailPage({
         actionLabel="Nhận ưu đãi" requireEmail={true} showMessage={false} notePrefix="[Nhận ưu đãi]" actionType="get_offer"
       />
 
-      {/* Booking dialogs */}
+      {/* Hotel booking dialog (date range) - for hotel_store template */}
+      {websiteTemplate === 'hotel_store' && (
+        <HotelBookingDialog
+          open={activeDialog === 'booking'}
+          onClose={() => setActiveDialog(null)}
+          tenantId={tenantId} primaryColor={primaryColor} branches={branches}
+          productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={displayPrice}
+          title="🏨 Đặt phòng"
+        />
+      )}
+
+      {/* Regular booking dialogs (single date) - for non-hotel templates */}
       <BookingDialog
-        open={['booking', 'booking_consult', 'booking_repair', 'booking_beauty', 'booking_clinic', 'booking_store'].includes(activeDialog || '')}
+        open={
+          (websiteTemplate === 'hotel_store'
+            ? ['booking_consult', 'booking_repair', 'booking_beauty', 'booking_clinic', 'booking_store'].includes(activeDialog || '')
+            : ['booking', 'booking_consult', 'booking_repair', 'booking_beauty', 'booking_clinic', 'booking_store'].includes(activeDialog || '')
+          )
+        }
         onClose={() => setActiveDialog(null)}
         tenantId={tenantId} primaryColor={primaryColor} branches={branches}
         productName={product.name} productId={product.id} productImageUrl={product.image_url} productPrice={displayPrice}
