@@ -261,6 +261,17 @@ let _cachedIp: string | null = null;
 let _ipFetchPromise: Promise<string | null> | null = null;
 
 function getClientIpFast(): Promise<string | null> {
+  // Use IP preloaded by index.html prefetch script (standalone mode)
+  if ((window as any).__WARRANTY_CACHED_IP__) {
+    _cachedIp = (window as any).__WARRANTY_CACHED_IP__;
+    return Promise.resolve(_cachedIp);
+  }
+  if ((window as any).__WARRANTY_IP_PROMISE__) {
+    return (window as any).__WARRANTY_IP_PROMISE__.then((ip: string | null) => {
+      _cachedIp = ip;
+      return ip;
+    });
+  }
   if (_cachedIp) return Promise.resolve(_cachedIp);
   if (_ipFetchPromise) return _ipFetchPromise;
   _ipFetchPromise = Promise.race([
