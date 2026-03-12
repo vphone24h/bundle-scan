@@ -168,9 +168,10 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const storeName = settings?.store_name || tenant?.name || storeId || '';
   const template = settings?.website_template || 'phone_store';
 
-  // Preload apple template if needed
+  // Preload apple template if needed + preload IP for warranty lookup
   useEffect(() => {
     if (template === 'apple_landing') appleImport();
+    preloadClientIp();
   }, [template]);
 
   const { data: productsData } = usePublicLandingProducts(tenantId);
