@@ -260,7 +260,9 @@ export function useUpdateTenantLandingSettings() {
 let _cachedIp: string | null = null;
 let _ipFetchPromise: Promise<string | null> | null = null;
 
-function getClientIpFast(): Promise<string | null> {
+// Export so StoreLandingPage can preload IP on mount
+export function preloadClientIp() { getClientIpFast(); }
+
   if (_cachedIp) return Promise.resolve(_cachedIp);
   if (_ipFetchPromise) return _ipFetchPromise;
   _ipFetchPromise = Promise.race([
