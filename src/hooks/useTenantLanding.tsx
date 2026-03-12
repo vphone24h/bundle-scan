@@ -267,10 +267,12 @@ function getClientIpFast(): Promise<string | null> {
     return Promise.resolve(_cachedIp);
   }
   if ((window as any).__WARRANTY_IP_PROMISE__) {
-    return (window as any).__WARRANTY_IP_PROMISE__.then((ip: string | null) => {
-      _cachedIp = ip;
-      return ip;
-    });
+    return (window as any).__WARRANTY_IP_PROMISE__
+      .then((ip: string | null) => {
+        _cachedIp = ip;
+        return ip;
+      })
+      .catch(() => null);
   }
   if (_cachedIp) return Promise.resolve(_cachedIp);
   if (_ipFetchPromise) return _ipFetchPromise;
@@ -322,7 +324,7 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
       const compactSearch = searchValue.trim().replace(/\s+/g, '');
 
       // Non-blocking IP fetch with 2s timeout
-      const clientIp = await getClientIpFast();
+      const clientIp = await getClientIpFast().catch(() => null);
 
       const isPhoneNumber = /^0\d{9,10}$/.test(compactSearch);
       const rpcName = isPhoneNumber ? 'lookup_warranty_by_phone' : 'lookup_warranty_by_imei';

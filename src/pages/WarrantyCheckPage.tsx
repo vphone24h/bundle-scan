@@ -64,7 +64,7 @@ export default function WarrantyCheckPage() {
   const [input, setInput] = useState('');
   const [searchValue, setSearchValue] = useState('');
 
-  const { data: results, isLoading, error } = useQuery({
+  const { data: results, isLoading, error, refetch } = useQuery({
     queryKey: ['global-warranty', searchValue],
     queryFn: async (): Promise<WarrantyItem[]> => {
       if (!searchValue) return [];
@@ -90,7 +90,12 @@ export default function WarrantyCheckPage() {
 
   const handleSearch = () => {
     const v = input.trim();
-    if (v) setSearchValue(v);
+    if (!v) return;
+    if (v === searchValue) {
+      void refetch();
+      return;
+    }
+    setSearchValue(v);
   };
 
   return (
