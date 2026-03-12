@@ -299,6 +299,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
             searchParams={searchParams}
             setSearchParams={setSearchParams}
             queryClient={queryClient}
+            onRequireCatalogData={ensureCatalogDataLoaded}
           />
         </Suspense>
       </LandingCartProvider>
@@ -321,6 +322,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
           setSearchParams={setSearchParams}
           queryClient={queryClient}
           templateId={template}
+          onRequireCatalogData={ensureCatalogDataLoaded}
         />
       </Suspense>
     </LandingCartProvider>
