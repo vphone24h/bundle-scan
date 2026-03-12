@@ -78,15 +78,17 @@ interface HomeSectionManagerProps {
   customProductTabs?: CustomProductTab[];
   onTabsChange?: (tabs: CustomProductTab[]) => void;
   onManageTabProducts?: (tabId: string, tabName: string) => void;
+  categories?: CategoryInfo[];
 }
 
-export function HomeSectionManager({ templateId, customSections, onChange, customProductTabs = [], onTabsChange, onManageTabProducts }: HomeSectionManagerProps) {
+export function HomeSectionManager({ templateId, customSections, onChange, customProductTabs = [], onTabsChange, onManageTabProducts, categories = [] }: HomeSectionManagerProps) {
   const config = getIndustryConfig(templateId);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [newTabName, setNewTabName] = useState('');
   const [showCustomCreate, setShowCustomCreate] = useState(false);
   const [addMenuTab, setAddMenuTab] = useState<'product' | 'layout'>('product');
+  const [expandedCategoryFilter, setExpandedCategoryFilter] = useState(false);
 
   // Build current items: custom or from config defaults
   const buildFromConfig = (): HomeSectionItem[] => {
