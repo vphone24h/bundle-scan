@@ -38,6 +38,7 @@ import {
   Link2, Menu, X, Smartphone, Tablet, Laptop, Zap,
 } from 'lucide-react';
 import SwipeGuardScroll from '@/components/ui/swipe-guard-scroll';
+import { clearWarrantySession, readWarrantySession, writeWarrantySession } from '@/lib/warrantySession';
 
 // ============================
 // Types

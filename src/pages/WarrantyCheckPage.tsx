@@ -10,6 +10,7 @@ import vkhoLogo from '@/assets/vkho-logo.png';
 import { Shield, Search, Package, Calendar, Store, Phone, ArrowLeft, Loader2, AlertCircle, CheckCircle2, MessageSquareText } from 'lucide-react';
 import { format, differenceInDays, addMonths } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { readWarrantySession, writeWarrantySession } from '@/lib/warrantySession';
 
 let _cachedIp: string | null = null;
 let _ipPromise: Promise<string | null> | null = null;

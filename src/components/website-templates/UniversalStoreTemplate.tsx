@@ -45,7 +45,7 @@ import { CTVDashboard } from '@/components/landing/CTVDashboard';
 import { useShopCTVSettings } from '@/hooks/useShopCTV';
 import { supabase } from '@/integrations/supabase/client';
 import { OrderLookupPage } from '@/components/landing/OrderLookupPage';
-import SwipeGuardScroll from '@/components/ui/swipe-guard-scroll';
+import { clearWarrantySession, readWarrantySession, writeWarrantySession } from '@/lib/warrantySession';
 
 
 export interface UniversalTemplateProps {
