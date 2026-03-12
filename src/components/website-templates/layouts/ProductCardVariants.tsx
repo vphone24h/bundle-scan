@@ -219,8 +219,9 @@ function LuxuryProductCard({ product, onClick, accentColor }: ProductCardProps) 
 // === MINIMAL PRODUCT CARD === (Clean, warm tones)
 function MinimalProductCard({ product, onClick, accentColor }: ProductCardProps) {
   return (
-    <button onClick={onClick} className="bg-[#faf9f6] rounded-xl overflow-hidden text-left group transition-all hover:shadow-md w-full border border-stone-200/50">
+    <button onClick={onClick} className={`bg-[#faf9f6] rounded-xl overflow-hidden text-left group transition-all hover:shadow-md w-full border border-stone-200/50 ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden">
+        {product.is_sold_out && <SoldOutOverlay />}
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
