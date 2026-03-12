@@ -26,6 +26,53 @@ if (prefetch?.storeId) {
 } else if (typeof window !== 'undefined') {
   setTimeout(() => universalImport(), 100);
 }
+
+interface LandingBootstrapCache {
+  tenant: { id: string; name: string; subdomain: string; status: string };
+  settings: TenantLandingSettings | null;
+  branches: BranchInfo[];
+  updatedAt: string;
+}
+
+const LANDING_BOOTSTRAP_PREFIX = 'store_landing_bootstrap_';
+
+function readLandingBootstrap(storageKey: string | null): LandingBootstrapCache | null {
+  if (!storageKey || typeof window === 'undefined') return null;
+
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<LandingBootstrapCache>;
+
+    if (!parsed.tenant?.id) return null;
+
+    return {
+      tenant: parsed.tenant,
+      settings: (parsed.settings as TenantLandingSettings | null) ?? null,
+      branches: Array.isArray(parsed.branches) ? (parsed.branches as BranchInfo[]) : [],
+      updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : new Date(0).toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeLandingBootstrap(storageKey: string | null, payload: Omit<LandingBootstrapCache, 'updatedAt'>) {
+  if (!storageKey || typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        ...payload,
+        updatedAt: new Date().toISOString(),
+      } satisfies LandingBootstrapCache)
+    );
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 // === PWA Manifest Hook ===
 function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?: string | null) {
   const location = useLocation();
