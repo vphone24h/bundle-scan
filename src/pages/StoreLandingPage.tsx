@@ -283,6 +283,9 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
         warrantyHotline={settings?.warranty_hotline || settings?.store_phone}
         supportGroupUrl={settings?.support_group_url}
         storageScopeId={storeId || tenantId}
+        productsData={productsData}
+        articlesData={articlesData}
+        storePhone={settings?.store_phone}
       />
     );
   }
