@@ -1770,6 +1770,30 @@ export function LandingPageSettings() {
                   Nội dung hiển thị trên trang bảo hành, hỗ trợ in đậm, màu sắc và chèn link
                 </p>
               </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Hiện điểm tích lũy</Label>
+                  <p className="text-xs text-muted-foreground">Hiện điểm và số tiền giảm lần mua tiếp theo</p>
+                </div>
+                <Switch
+                  checked={(formData as any).show_warranty_points !== false}
+                  onCheckedChange={(checked) => handleChange('show_warranty_points' as any, checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Hiện voucher</Label>
+                  <p className="text-xs text-muted-foreground">Hiện voucher của khách trên trang bảo hành</p>
+                </div>
+                <Switch
+                  checked={(formData as any).show_warranty_vouchers !== false}
+                  onCheckedChange={(checked) => handleChange('show_warranty_vouchers' as any, checked)}
+                />
+              </div>
             </>
           )}
         </CardContent>
