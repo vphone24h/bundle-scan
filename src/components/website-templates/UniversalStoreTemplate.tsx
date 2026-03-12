@@ -524,7 +524,11 @@ export default function UniversalStoreTemplate({
                 case 'categories': {
                   if (!config.features.categories || !productsData || productsData.categories.length === 0) return null;
                   const catDisplayMode = (config as any)._categoryDisplayMode || 'horizontal';
-                  
+                  const hiddenHomeCatIds: string[] = (config as any)._hiddenHomeCategoryIds || [];
+                  const homeCategories = hiddenHomeCatIds.length > 0
+                    ? productsData.categories.filter(c => !hiddenHomeCatIds.includes(c.id))
+                    : productsData.categories;
+                  if (homeCategories.length === 0) return null;
                   if (catDisplayMode === 'vertical') {
                     // Vertical: stacked cards with cover images
                     return (
