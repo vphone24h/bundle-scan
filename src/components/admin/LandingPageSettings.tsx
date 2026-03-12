@@ -832,6 +832,7 @@ export function LandingPageSettings() {
   const navigate = useNavigate();
 
   const { data: voucherTemplates } = useVoucherTemplates();
+  const { data: landingCategories } = useLandingProductCategories();
   const activeTemplates = (voucherTemplates || []).filter(t => t.is_active);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
