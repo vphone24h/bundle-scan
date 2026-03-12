@@ -1268,11 +1268,18 @@ export function LandingPageSettings() {
           <TemplateSelector
             selectedTemplate={(formData as any).website_template || 'phone_store'}
             onSelect={(id) => {
-              handleChange('website_template' as any, id);
-              // Auto-apply industry nav items when template changes
               const fullNav = getFullNavItems(id);
-              setFormData(prev => ({ ...prev, custom_nav_items: fullNav }));
+              const updatedData = { ...formData, website_template: id, custom_nav_items: fullNav };
+              setFormData(updatedData as any);
               setHasChanges(true);
+              // Save immediately when template changes (don't wait for auto-save)
+              if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+              updateSettings.mutateAsync(updatedData).then(() => {
+                setHasChanges(false);
+                toast({ title: '✓ Đã lưu mẫu website' });
+              }).catch(() => {
+                toast({ title: 'Lỗi', description: 'Không thể lưu. Vui lòng thử lại.', variant: 'destructive' });
+              });
             }}
             editableSettings={{
               custom_trust_badges: (formData as any).custom_trust_badges || null,
