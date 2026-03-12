@@ -10,7 +10,7 @@ import { usePlaceLandingOrder } from '@/hooks/useLandingOrders';
 import { useLandingCart, CartItem } from '@/hooks/useLandingCart';
 import { formatNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
-import { usePublicBlockedDates, useBulkAddBlockedDates } from '@/hooks/useBlockedDates';
+import { usePublicBlockedDates, useBulkAddBlockedDates, checkTimeConflict } from '@/hooks/useBlockedDates';
 import { format, eachDayOfInterval, parseISO } from 'date-fns';
 
 interface BranchOption { id: string; name: string; }
