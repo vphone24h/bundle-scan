@@ -155,6 +155,7 @@ function useDynamicOGMeta(title?: string, description?: string, imageUrl?: strin
 interface StoreLandingPageProps { storeIdFromSubdomain?: string | null; }
 
 export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingPageProps) {
+  const location = useLocation();
   const { storeId: storeIdFromParams } = useParams<{ storeId: string }>();
   const resolvedTenant = useTenantResolver();
   const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain;
@@ -169,14 +170,42 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const storeName = settings?.store_name || tenant?.name || storeId || '';
   const template = settings?.website_template || 'phone_store';
 
+  const isStandalone = typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true
+  );
+
+  const pathInfo = useMemo(() => detectPageFromPath(location.pathname), [location.pathname]);
+  const hasDeepLinkContent = Boolean(
+    searchParams.get('product') ||
+    searchParams.get('article') ||
+    pathInfo?.contentId
+  );
+
+  const shouldDeferCatalogLoading = isStandalone &&
+    (!pathInfo || pathInfo.pageView === 'warranty') &&
+    !hasDeepLinkContent;
+
+  const [catalogEnabled, setCatalogEnabled] = useState(() => !shouldDeferCatalogLoading);
+
+  useEffect(() => {
+    if (!catalogEnabled && !shouldDeferCatalogLoading) {
+      setCatalogEnabled(true);
+    }
+  }, [catalogEnabled, shouldDeferCatalogLoading]);
+
+  const ensureCatalogDataLoaded = useCallback(() => {
+    setCatalogEnabled(true);
+  }, []);
+
   // Preload apple template if needed + preload IP for warranty lookup
   useEffect(() => {
     if (template === 'apple_landing') appleImport();
     preloadClientIp();
   }, [template]);
 
-  const { data: productsData } = usePublicLandingProducts(tenantId);
-  const { data: articlesData } = usePublicLandingArticles(tenantId);
+  const { data: productsData } = usePublicLandingProducts(tenantId, { enabled: catalogEnabled });
+  const { data: articlesData } = usePublicLandingArticles(tenantId, { enabled: catalogEnabled });
 
   // PWA manifest
   useDynamicManifest(storeName, storeId, settings?.store_logo_url);
@@ -186,12 +215,6 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const ogDesc = settings?.store_description || undefined;
   const ogImage = settings?.store_logo_url || undefined;
   useDynamicOGMeta(ogTitle, ogDesc, ogImage);
-
-  // Detect PWA standalone mode for warranty-optimized skeleton
-  const isStandalone = typeof window !== 'undefined' && (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    (window.navigator as any).standalone === true
-  );
 
   // Loading / error states
   if (isLoading || (!hasIdentifier && resolvedTenant.status === 'loading')) {
