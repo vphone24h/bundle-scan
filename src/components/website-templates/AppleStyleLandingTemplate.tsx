@@ -1209,6 +1209,21 @@ export default function AppleStyleLandingTemplate({
                           <span className="text-sm text-amber-700">Điểm hiện tại:</span>
                           <span className="text-xl font-bold text-amber-600">{formatNumber(customerPoints.current_points)}</span>
                         </div>
+                        {customerPoints.redeem_points > 0 && customerPoints.point_value > 0 && (() => {
+                          const rawDiscount = Math.floor(customerPoints.current_points / customerPoints.redeem_points) * customerPoints.point_value;
+                          const hasMaxLimit = customerPoints.max_redemption_enabled && customerPoints.max_redemption_amount > 0;
+                          const finalDiscount = hasMaxLimit ? Math.min(rawDiscount, customerPoints.max_redemption_amount) : rawDiscount;
+                          if (finalDiscount <= 0) return null;
+                          return (
+                            <div className="flex items-center gap-2 p-3 rounded-xl bg-green-100">
+                              <Gift className="h-5 w-5 text-green-600" />
+                              <div>
+                                <p className="text-xs text-green-700">Lần mua tiếp theo được giảm:</p>
+                                <p className="text-lg font-bold text-green-600">{formatNumber(finalDiscount)}đ</p>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                     {customerVouchers && customerVouchers.length > 0 && (
