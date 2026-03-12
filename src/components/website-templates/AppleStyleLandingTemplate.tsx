@@ -269,7 +269,7 @@ function AppleProductCard({ product, onClick, accentColor }: { product: LandingP
       <div className="relative aspect-square bg-[#fbfbfd] flex items-center justify-center p-6 overflow-hidden">
         {product.is_sold_out && (
           <div className="absolute inset-0 bg-black/40 z-20 flex items-center justify-center">
-            <span className="bg-white/90 text-red-600 font-bold text-xs sm:text-sm px-3 py-1.5 rounded-full shadow-md tracking-wide">HẾT HÀNG</span>
+            <span className="bg-white/90 text-red-600 font-bold text-xs sm:text-sm px-3 py-1.5 rounded-full shadow-md tracking-wide">ĐÃ HẾT</span>
           </div>
         )}
         {product.image_url ? (
