@@ -313,9 +313,19 @@ function mapWarrantyItem(item: any): WarrantyResult {
   };
 }
 
+interface WarrantyLookupOptions {
+  enabled?: boolean;
+}
+
 // Hook tra cứu bảo hành công khai - hỗ trợ IMEI hoặc SĐT
 // Sử dụng RPC functions bảo mật với rate limiting, KHÔNG trả về thông tin nhạy cảm của khách hàng
-export function useWarrantyLookup(searchValue: string, tenantId: string | null) {
+export function useWarrantyLookup(
+  searchValue: string,
+  tenantId: string | null,
+  options: WarrantyLookupOptions = {}
+) {
+  const queryEnabled = options.enabled ?? true;
+
   return useQuery({
     queryKey: ['warranty-lookup', searchValue, tenantId],
     queryFn: async (): Promise<WarrantyResult[] | null> => {
@@ -336,7 +346,7 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
       if (error) throw error;
       return (data || []).map(mapWarrantyItem);
     },
-    enabled: !!searchValue && !!tenantId && searchValue.length >= 5,
+    enabled: queryEnabled && !!searchValue && !!tenantId && searchValue.length >= 5,
     retry: (failureCount, error) => {
       const message = String((error as any)?.message || '');
       if (message.includes('Rate limit exceeded')) return false;

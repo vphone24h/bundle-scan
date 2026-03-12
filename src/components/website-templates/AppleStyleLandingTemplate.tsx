@@ -38,6 +38,7 @@ import {
   Link2, Menu, X, Smartphone, Tablet, Laptop, Zap,
 } from 'lucide-react';
 import SwipeGuardScroll from '@/components/ui/swipe-guard-scroll';
+import { clearWarrantySession, readWarrantySession, writeWarrantySession } from '@/lib/warrantySession';
 
 // ============================
 // Types
@@ -322,23 +323,54 @@ export default function AppleStyleLandingTemplate({
   const [restoredSessionKey, setRestoredSessionKey] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState('');
   const [submittedValue, setSubmittedValue] = useState('');
-  const { data: warrantyResults, isLoading: isSearching, isFetched, error: warrantyError, refetch: refetchWarranty } = useWarrantyLookup(submittedValue, tenantId);
+  const [persistedResults, setPersistedResults] = useState<WarrantyResult[] | null>(null);
+  const [lookupEnabled, setLookupEnabled] = useState(false);
+  const {
+    data: warrantyResults,
+    isLoading: isSearching,
+    isFetched,
+    error: warrantyError,
+    refetch: refetchWarranty,
+  } = useWarrantyLookup(submittedValue, tenantId, { enabled: lookupEnabled });
 
   useEffect(() => {
     if (!warrantyStorageKey || restoredSessionKey === warrantyStorageKey) return;
+
     try {
-      const raw = localStorage.getItem(warrantyStorageKey);
-      const p = raw ? JSON.parse(raw) : null;
-      const v = typeof p?.searchValue === 'string' ? p.searchValue.trim() : '';
-      if (v) { setSearchValue(v); setSubmittedValue(v); setPageView('warranty'); }
-    } catch {} finally { setRestoredSessionKey(warrantyStorageKey); }
+      const restored = readWarrantySession<WarrantyResult>(warrantyStorageKey);
+      const restoredSearch = restored?.searchValue?.trim() || '';
+
+      if (restoredSearch) {
+        setSearchValue(restoredSearch);
+        setSubmittedValue(restoredSearch);
+        setPersistedResults(restored?.results ?? []);
+        setLookupEnabled(false);
+        setPageView('warranty');
+      } else {
+        setSearchValue('');
+        setSubmittedValue('');
+        setPersistedResults(null);
+        setLookupEnabled(false);
+      }
+    } catch {
+      setSearchValue('');
+      setSubmittedValue('');
+      setPersistedResults(null);
+      setLookupEnabled(false);
+    } finally {
+      setRestoredSessionKey(warrantyStorageKey);
+    }
   }, [warrantyStorageKey, restoredSessionKey]);
 
   useEffect(() => {
-    if (warrantyStorageKey && submittedValue && warrantyResults && warrantyResults.length > 0) {
-      localStorage.setItem(warrantyStorageKey, JSON.stringify({ searchValue: submittedValue }));
-    }
-  }, [warrantyStorageKey, submittedValue, warrantyResults]);
+    if (!warrantyStorageKey || !lookupEnabled || !submittedValue || !isFetched || warrantyError || !warrantyResults) return;
+
+    setPersistedResults(warrantyResults);
+    writeWarrantySession(warrantyStorageKey, {
+      searchValue: submittedValue,
+      results: warrantyResults,
+    });
+  }, [warrantyStorageKey, lookupEnabled, submittedValue, isFetched, warrantyError, warrantyResults]);
 
   const location = useLocation();
 
@@ -375,14 +407,22 @@ export default function AppleStyleLandingTemplate({
     if (aid && articlesData?.articles) { const a = articlesData.articles.find(x => x.id === aid); if (a) { setSelectedArticle(a); setPageView('article-detail'); } }
   }, [searchParams, productsData, articlesData, location.pathname]);
 
+  const effectiveWarrantyResults = lookupEnabled && isFetched ? (warrantyResults ?? []) : (persistedResults ?? []);
+  const isShowingPersistedWarranty = !lookupEnabled && persistedResults !== null;
   const isPhoneSearch = /^0\d{9,10}$/.test(submittedValue.replace(/\s/g, ''));
-  const firstResult = warrantyResults?.[0];
+  const firstResult = effectiveWarrantyResults[0];
   const phoneForPoints = isPhoneSearch ? submittedValue : (firstResult?.customer_phone || '');
-  const { data: customerPoints } = useCustomerPointsPublic(phoneForPoints, tenantId);
+  const shouldFetchLoyaltyData = !isShowingPersistedWarranty;
+  const pointsLookupPhone = shouldFetchLoyaltyData ? phoneForPoints : '';
+  const { data: customerPoints } = useCustomerPointsPublic(pointsLookupPhone, tenantId);
   const customerName = firstResult?.customer_name || customerPoints?.customer_name || '';
   const customerId = firstResult?.customer_id || customerPoints?.customer_id || null;
   const reviewRewardPoints = customerPoints?.review_reward_points || 0;
-  const { data: customerVouchers } = usePublicCustomerVouchers(phoneForPoints, tenantId);
+  const { data: customerVouchers } = usePublicCustomerVouchers(pointsLookupPhone, tenantId);
+
+  const showWarrantyResultBlock = !!submittedValue && ((lookupEnabled && isFetched) || persistedResults !== null);
+  const showWarrantyError = lookupEnabled && isFetched && !!warrantyError;
+  const hasWarrantyResults = effectiveWarrantyResults.length > 0;
 
   const displayStoreName = settings?.store_name || tenant.name;
   const warrantyHotline = settings?.warranty_hotline;
@@ -403,15 +443,27 @@ export default function AppleStyleLandingTemplate({
   const homeArticles = articlesData?.articles?.filter((a: any) => a.is_featured_home) || [];
 
   const handlePointsAwarded = useCallback(() => { queryClient.invalidateQueries({ queryKey: ['customer-points-public'] }); }, [queryClient]);
-  const handleWarrantyLogout = () => { if (warrantyStorageKey) localStorage.removeItem(warrantyStorageKey); setSearchValue(''); setSubmittedValue(''); setPageView('home'); };
+  const handleWarrantyLogout = () => {
+    clearWarrantySession(warrantyStorageKey);
+    setSearchValue('');
+    setSubmittedValue('');
+    setPersistedResults(null);
+    setLookupEnabled(false);
+    setPageView('home');
+  };
   const handleSearch = () => {
     const normalized = searchValue.trim();
     if (!normalized) return;
+
+    setLookupEnabled(true);
+
     if (normalized === submittedValue) {
       void refetchWarranty();
     } else {
+      setPersistedResults(null);
       setSubmittedValue(normalized);
     }
+
     if (pageView === 'home') setPageView('warranty');
   };
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
@@ -1084,17 +1136,17 @@ export default function AppleStyleLandingTemplate({
               )}
             </div>
 
-            {submittedValue && isFetched && (
+            {showWarrantyResultBlock && (
               <div className="space-y-4">
-                {warrantyError ? (
+                {showWarrantyError ? (
                   <div className="text-center py-12 rounded-2xl bg-red-50">
                     <XCircle className="h-12 w-12 mx-auto text-red-400 mb-3" />
                     <p className="text-sm font-medium text-red-600">Tra cứu thất bại</p>
                   </div>
-                ) : warrantyResults && warrantyResults.length > 0 ? (
+                ) : hasWarrantyResults ? (
                   <>
-                    <p className="text-xs text-[#86868b] flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> Tìm thấy {warrantyResults.length} sản phẩm</p>
-                    {warrantyResults.map(item => {
+                    <p className="text-xs text-[#86868b] flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> Tìm thấy {effectiveWarrantyResults.length} sản phẩm</p>
+                    {effectiveWarrantyResults.map(item => {
                       const ws = calcWarranty(item);
                       return (
                         <div key={item.id} className="bg-white rounded-2xl p-5 space-y-4 border border-[#d2d2d7]">
@@ -1161,7 +1213,7 @@ export default function AppleStyleLandingTemplate({
                 )}
               </div>
             )}
-            {submittedValue && warrantyResults && warrantyResults.length > 0 && (
+            {submittedValue && hasWarrantyResults && (
               <button onClick={handleWarrantyLogout} className="w-full py-3 text-xs text-[#86868b] hover:text-[#1d1d1f] border border-dashed border-[#d2d2d7] rounded-xl">Đăng xuất tra cứu</button>
             )}
           </div>
