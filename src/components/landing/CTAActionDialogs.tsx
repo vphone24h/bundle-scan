@@ -354,32 +354,8 @@ export function BookingDialog({
                   </div>
                 </div>
 
-                {/* Existing bookings info */}
-                {blockedDates.length > 0 && (
-                  <div className="text-xs space-y-1 bg-muted/50 rounded-md p-2">
-                    <p className="font-medium text-muted-foreground">📅 Lịch đặt hiện tại:</p>
-                    {blockedDates.slice(0, 6).map((d, i) => {
-                      const parts = d.blocked_date.split('-');
-                      return (
-                        <p key={i} className="text-muted-foreground">
-                          • {parts[2]}/{parts[1]}: Đã đặt {d.check_in_time || '08:00'} - {d.check_out_time || '17:00'}
-                          {d.customer_name ? ` (${d.customer_name})` : ''}
-                        </p>
-                      );
-                    })}
-                    {blockedDates.length > 6 && <p className="text-muted-foreground">...và {blockedDates.length - 6} ngày khác</p>}
-                  </div>
-                )}
-
-                {/* Time conflict warning */}
-                {rangeConflictInfo.hasConflict && (
-                  <div className="text-xs text-destructive bg-destructive/10 rounded-md p-2.5 font-medium">
-                    ⚠️ {rangeConflictInfo.message}
-                  </div>
-                )}
-
                 {/* Duration info */}
-                {rangeDays > 0 && !rangeConflictInfo.hasConflict && (
+                {rangeDays > 0 && (
                   <div className="text-sm bg-muted/50 rounded-md p-2 font-medium text-center">
                     📆 Thời gian dự kiến: {rangeDays} ngày {productPrice ? `· Tổng: ${(productPrice * rangeDays).toLocaleString('vi-VN')}₫` : ''}
                   </div>
