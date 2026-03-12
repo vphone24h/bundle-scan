@@ -416,11 +416,11 @@ export default function AppleStyleLandingTemplate({
   }, [searchParams, productsData, articlesData, location.pathname]);
 
   const effectiveWarrantyResults = lookupEnabled && isFetched ? (warrantyResults ?? []) : (persistedResults ?? []);
-  const isShowingPersistedWarranty = !lookupEnabled && persistedResults !== null;
   const isPhoneSearch = /^0\d{9,10}$/.test(submittedValue.replace(/\s/g, ''));
   const firstResult = effectiveWarrantyResults[0];
   const phoneForPoints = isPhoneSearch ? submittedValue : (firstResult?.customer_phone || '');
-  const shouldFetchLoyaltyData = !isShowingPersistedWarranty;
+  const normalizedPointsPhone = phoneForPoints.replace(/\D/g, '');
+  const shouldFetchLoyaltyData = effectiveWarrantyResults.length > 0 && normalizedPointsPhone.length > 0;
   const pointsLookupPhone = shouldFetchLoyaltyData ? phoneForPoints : '';
   const { data: customerPoints } = useCustomerPointsPublic(pointsLookupPhone, tenantId);
   const customerName = firstResult?.customer_name || customerPoints?.customer_name || '';
