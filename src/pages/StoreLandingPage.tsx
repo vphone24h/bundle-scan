@@ -275,11 +275,6 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const ogImage = settings?.store_logo_url || undefined;
   useDynamicOGMeta(ogTitle, ogDesc, ogImage);
 
-  // Detect PWA standalone mode for warranty-optimized skeleton
-  const isStandalone = typeof window !== 'undefined' && (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    (window.navigator as any).standalone === true
-  );
 
   // Loading / error states
   if (isLoading || (!hasIdentifier && resolvedTenant.status === 'loading')) {
