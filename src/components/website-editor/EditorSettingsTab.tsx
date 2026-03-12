@@ -97,6 +97,7 @@ const SECTION_TO_BLOCK: Record<string, string> = {
 
 export function EditorSettingsTab({ formData, onChange, focusSection, onClearFocus, tenantId, onSave, isSaving, hasChanges }: EditorSettingsTabProps) {
   const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
+  const { data: landingCategories } = useLandingProductCategories();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
