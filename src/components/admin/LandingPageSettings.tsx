@@ -14,7 +14,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon, Award, Truck, CreditCard, Clock, Star, Eye, EyeOff, Menu as MenuIcon, Sparkles, Trash2, ChevronUp, ChevronDown, Type, Layers, PanelTop, Mail, HelpCircle, MessageCircle } from 'lucide-react';
+import { Loader2, Save, ExternalLink, Globe, Image, Info, Shield, Palette, Upload, X, Phone, Users, Share2, Building2, Plus, Copy, QrCode, Layout, Bot, ImageIcon, Award, Truck, CreditCard, Clock, Star, Eye, EyeOff, Menu as MenuIcon, Sparkles, Trash2, ChevronUp, ChevronDown, Type, Layers, PanelTop, Mail, HelpCircle, MessageCircle, FileText } from 'lucide-react';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Separator } from '@/components/ui/separator';
 import { TemplateSelector } from '@/components/website-templates/TemplateSelector';
 import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, PageItemConfig, InstallmentRateConfig, DEFAULT_INSTALLMENT_RATES, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, getFullNavItems, SYSTEM_PAGES, SYSTEM_PAGE_IDS, getSystemPageById, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
@@ -863,6 +864,7 @@ export function LandingPageSettings() {
     meta_description: '',
     warranty_hotline: '',
     support_group_url: '',
+    warranty_description: '',
     facebook_url: '',
     zalo_url: '',
     tiktok_url: '',
@@ -903,6 +905,7 @@ export function LandingPageSettings() {
         meta_description: settings.meta_description || '',
         warranty_hotline: settings.warranty_hotline || '',
         support_group_url: settings.support_group_url || '',
+        warranty_description: (settings as any).warranty_description || '',
         facebook_url: settings.facebook_url || '',
         zalo_url: settings.zalo_url || '',
         tiktok_url: settings.tiktok_url || '',
@@ -1749,6 +1752,22 @@ export function LandingPageSettings() {
                 />
                 <p className="text-xs text-muted-foreground">
                   Link nhóm Zalo/Facebook/Telegram để khách hàng tham gia nhận hỗ trợ
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Mô tả / Quảng cáo bảo hành
+                </Label>
+                <RichTextEditor
+                  value={(formData as any).warranty_description || ''}
+                  onChange={(v) => handleChange('warranty_description' as any, v)}
+                  placeholder="VD: THU LẠI MÁY CŨ GIÁ CAO BẰNG 90% GIÁ BÁN…"
+                  minHeight="100px"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Nội dung hiển thị trên trang bảo hành, hỗ trợ in đậm, màu sắc và chèn link
                 </p>
               </div>
             </>

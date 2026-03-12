@@ -1581,6 +1581,11 @@ export default function UniversalStoreTemplate({
                   </div>
                 </a>
               )}
+              {settings?.warranty_description && (
+                <div className="p-3 rounded-xl bg-white border border-gray-200">
+                  <div className="text-sm leading-relaxed warranty-desc-html [&_a]:underline [&_a]:font-semibold" style={{ color: accentColor }} dangerouslySetInnerHTML={{ __html: settings.warranty_description }} />
+                </div>
+              )}
 
               {/* Add to Home Screen hint - hidden in standalone/PWA mode */}
               {typeof window !== 'undefined' && !window.matchMedia('(display-mode: standalone)').matches && !(window.navigator as any).standalone && (

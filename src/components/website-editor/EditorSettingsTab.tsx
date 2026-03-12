@@ -715,6 +715,15 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
             <Label className="text-xs">Link nhóm hỗ trợ</Label>
             <Input value={formData.support_group_url || ''} onChange={e => onChange('support_group_url', e.target.value)} placeholder="https://..." />
           </div>
+          <div className="space-y-1.5 col-span-2">
+            <Label className="text-xs">Mô tả bảo hành</Label>
+            <textarea
+              className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              value={(formData as any).warranty_description || ''}
+              onChange={e => onChange('warranty_description', e.target.value)}
+              placeholder="THU LẠI MÁY CŨ GIÁ CAO BẰNG 90% GIÁ BÁN…"
+            />
+          </div>
         </div>
       </SettingsBlock>
 

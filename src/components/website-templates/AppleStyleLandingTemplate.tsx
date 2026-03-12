@@ -1152,6 +1152,11 @@ export default function AppleStyleLandingTemplate({
                   <p className="text-sm font-semibold text-red-600">Tham gia nhóm hỗ trợ →</p>
                 </a>
               )}
+              {settings?.warranty_description && (
+                <div className="p-3 rounded-xl bg-white border border-[#d2d2d7]">
+                  <div className="text-sm leading-relaxed warranty-desc-html [&_a]:underline [&_a]:font-semibold" style={{ color: accentColor }} dangerouslySetInnerHTML={{ __html: settings.warranty_description }} />
+                </div>
+              )}
             </div>
 
             {showWarrantyResultBlock && (

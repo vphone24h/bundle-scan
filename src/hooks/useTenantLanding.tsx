@@ -31,6 +31,7 @@ export interface TenantLandingSettings {
   is_enabled: boolean;
   warranty_hotline: string | null;
   support_group_url: string | null;
+  warranty_description: string | null;
   facebook_url: string | null;
   zalo_url: string | null;
   tiktok_url: string | null;

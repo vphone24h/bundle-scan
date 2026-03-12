@@ -6553,6 +6553,7 @@ export type Database = {
           updated_at: string
           voucher_enabled: boolean
           voucher_template_id: string | null
+          warranty_description: string | null
           warranty_hotline: string | null
           website_template: string | null
           zalo_access_token: string | null
@@ -6633,6 +6634,7 @@ export type Database = {
           updated_at?: string
           voucher_enabled?: boolean
           voucher_template_id?: string | null
+          warranty_description?: string | null
           warranty_hotline?: string | null
           website_template?: string | null
           zalo_access_token?: string | null
@@ -6713,6 +6715,7 @@ export type Database = {
           updated_at?: string
           voucher_enabled?: boolean
           voucher_template_id?: string | null
+          warranty_description?: string | null
           warranty_hotline?: string | null
           website_template?: string | null
           zalo_access_token?: string | null
