@@ -216,19 +216,6 @@ export function BookingDialog({
           customer_email: email.trim() || undefined, note: bookingNote,
           action_type: 'booking', action_date: startDate, action_time: startTime,
         });
-        // Auto-block the date range
-        if (productId) {
-          try {
-            const days = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) });
-            const dateStrings = days.map(d => format(d, 'yyyy-MM-dd'));
-            await bulkBlock.mutateAsync({
-              tenantId, productId, dates: dateStrings,
-              note: `Đặt bởi ${name.trim()} - ${phone.trim()}`,
-              checkInTime: startTime, checkOutTime: endTime,
-              customerName: name.trim(), customerPhone: phone.trim(),
-            });
-          } catch (e) { console.warn('Auto-block dates failed:', e); }
-        }
         setSubmitted(true);
       } catch { toast.error('Đặt lịch thất bại, vui lòng thử lại'); }
     }
