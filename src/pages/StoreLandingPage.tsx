@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { LandingCartProvider } from '@/hooks/useLandingCart';
 import { Store } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 // Lazy load heavy templates - they import DOMPurify and many components
 const universalImport = () => import('@/components/website-templates/UniversalStoreTemplate');
