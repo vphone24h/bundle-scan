@@ -185,15 +185,36 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const ogImage = settings?.store_logo_url || undefined;
   useDynamicOGMeta(ogTitle, ogDesc, ogImage);
 
+  // Detect PWA standalone mode for warranty-optimized skeleton
+  const isStandalone = typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true
+  );
+
   // Loading / error states
   if (isLoading || (!hasIdentifier && resolvedTenant.status === 'loading')) {
-    return (
+    return isStandalone ? (
       <div className="min-h-screen bg-white">
-        {/* Skeleton header */}
         <div className="h-14 bg-gray-100 animate-pulse" />
-        {/* Skeleton hero */}
+        <div className="max-w-lg mx-auto px-4 py-8 space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse" />
+            <div className="h-7 w-32 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="bg-[#f5f5f7] rounded-2xl p-5 space-y-4">
+            <div className="flex gap-2">
+              <div className="flex-1 h-12 bg-white rounded-xl animate-pulse" />
+              <div className="h-12 w-16 bg-gray-300 rounded-xl animate-pulse" />
+            </div>
+            <div className="h-14 bg-white rounded-xl animate-pulse" />
+            <div className="h-14 bg-white rounded-xl animate-pulse" />
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div className="min-h-screen bg-white">
+        <div className="h-14 bg-gray-100 animate-pulse" />
         <div className="h-48 bg-gray-100 animate-pulse" />
-        {/* Skeleton content */}
         <div className="p-4 space-y-3">
           <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
           <div className="grid grid-cols-2 gap-3">
