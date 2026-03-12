@@ -207,7 +207,6 @@ export function BookingDialog({
     } else {
       if (!startDate || !endDate) { toast.error('Vui lòng chọn thời gian bắt đầu & kết thúc'); return; }
       if (rangeDays <= 0) { toast.error('Ngày kết thúc phải sau ngày bắt đầu'); return; }
-      if (rangeConflictInfo.hasConflict) { toast.error(rangeConflictInfo.message); return; }
       try {
         const bookingNote = `[${title}] Từ: ${startDate} ${startTime} → Đến: ${endDate} ${endTime} | ${rangeDays} ngày${note.trim() ? ` | Ghi chú: ${note.trim()}` : ''}`;
         await placeOrder.mutateAsync({
