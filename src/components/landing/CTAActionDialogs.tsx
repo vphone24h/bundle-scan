@@ -184,25 +184,6 @@ export function BookingDialog({
     return Math.max(0, Math.round(diff));
   }, [startDate, endDate]);
 
-  // Range: check time conflicts (with 2h cleaning buffer)
-  const rangeConflictInfo = useMemo(() => {
-    if (mode !== 'range' || !startDate || !endDate || rangeDays <= 0) return { hasConflict: false, message: '' };
-    try {
-      const days = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) });
-      for (const day of days) {
-        const dateStr = format(day, 'yyyy-MM-dd');
-        const isFirst = dateStr === startDate;
-        const isLast = dateStr === endDate;
-        const dayIn = isFirst ? startTime : '00:00';
-        const dayOut = isLast ? endTime : '23:59';
-        const result = checkTimeConflict(blockedDates, dateStr, dayIn, dayOut);
-        if (result.hasConflict) {
-          return { hasConflict: true, message: `📅 Ngày ${dateStr.split('-').reverse().slice(0, 2).join('/')}: ${result.message}` };
-        }
-      }
-    } catch { return { hasConflict: false, message: '' }; }
-    return { hasConflict: false, message: '' };
-  }, [mode, startDate, endDate, startTime, endTime, rangeDays, blockedDates]);
 
   const handleSubmit = async () => {
     if (!name.trim() || !phone.trim()) { toast.error('Vui lòng nhập họ tên và số điện thoại'); return; }
