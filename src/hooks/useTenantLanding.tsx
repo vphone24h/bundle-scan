@@ -267,10 +267,12 @@ function getClientIpFast(): Promise<string | null> {
     return Promise.resolve(_cachedIp);
   }
   if ((window as any).__WARRANTY_IP_PROMISE__) {
-    return (window as any).__WARRANTY_IP_PROMISE__.then((ip: string | null) => {
-      _cachedIp = ip;
-      return ip;
-    });
+    return (window as any).__WARRANTY_IP_PROMISE__
+      .then((ip: string | null) => {
+        _cachedIp = ip;
+        return ip;
+      })
+      .catch(() => null);
   }
   if (_cachedIp) return Promise.resolve(_cachedIp);
   if (_ipFetchPromise) return _ipFetchPromise;
