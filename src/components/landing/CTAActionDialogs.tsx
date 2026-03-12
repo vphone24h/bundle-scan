@@ -304,23 +304,16 @@ export function BookingDialog({
                   <Label className="text-sm">Ngày <span className="text-destructive">*</span></Label>
                   <Input
                     type="date" value={date}
-                    onChange={e => {
-                      const v = e.target.value;
-                      if (blockedDateStrings.has(v)) { toast.error('Ngày này đã hết chỗ'); return; }
-                      setDate(v);
-                    }}
-                    className={`h-11 text-base ${date && blockedDateStrings.has(date) ? 'border-destructive' : ''}`}
+                    onChange={e => setDate(e.target.value)}
+                    className="h-11 text-base"
                     min={today}
                   />
-                  {blockedDates.length > 0 && (
-                    <p className="text-xs text-destructive mt-1">
-                      Các ngày đã hết: {blockedDates.slice(0, 5).map(d => {
-                        const parts = d.blocked_date.split('-');
-                        return `${parts[2]}/${parts[1]}`;
-                      }).join(', ')}{blockedDates.length > 5 ? '...' : ''}
-                    </p>
-                  )}
                 </div>
+                <div>
+                  <Label className="text-sm">Giờ {requireTime && <span className="text-destructive">*</span>}</Label>
+                  <Input type="time" value={time} onChange={e => setTime(e.target.value)} className="h-11 text-base" />
+                </div>
+              </div>
                 <div>
                   <Label className="text-sm">Giờ {requireTime && <span className="text-destructive">*</span>}</Label>
                   <Input type="time" value={time} onChange={e => setTime(e.target.value)} className="h-11 text-base" />
