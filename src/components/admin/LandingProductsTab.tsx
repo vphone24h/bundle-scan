@@ -837,10 +837,24 @@ export function LandingProductsTab() {
                   <Label className="text-xs font-medium">Bảng giá theo biến thể</Label>
                   <div className="space-y-1.5 max-h-60 overflow-y-auto">
                     {form.variant_prices.map((vp, i) => (
-                      <div key={i} className="flex flex-col gap-1.5 p-2 rounded border bg-card text-xs">
-                        <span className="font-medium truncate">
-                          {vp.option1}{vp.option2 ? ` / ${vp.option2}` : ''}
-                        </span>
+                      <div key={i} className={`flex flex-col gap-1.5 p-2 rounded border text-xs ${vp.is_sold_out ? 'bg-muted/60 opacity-70' : 'bg-card'}`}>
+                        <div className="flex items-center gap-2">
+                          <label className="flex items-center gap-1.5 cursor-pointer flex-1 min-w-0">
+                            <Checkbox
+                              checked={vp.is_sold_out || false}
+                              onCheckedChange={(checked) => {
+                                const prices = [...form.variant_prices];
+                                prices[i] = { ...prices[i], is_sold_out: !!checked };
+                                setForm(p => ({ ...p, variant_prices: prices }));
+                              }}
+                              className="h-3.5 w-3.5"
+                            />
+                            <span className={`font-medium truncate ${vp.is_sold_out ? 'line-through text-muted-foreground' : ''}`}>
+                              {vp.option1}{vp.option2 ? ` / ${vp.option2}` : ''}
+                            </span>
+                          </label>
+                          {vp.is_sold_out && <Badge variant="destructive" className="text-[9px] px-1.5 py-0 shrink-0">Hết</Badge>}
+                        </div>
                         <div className="flex items-center gap-2">
                           <PriceInput
                             value={vp.price}
