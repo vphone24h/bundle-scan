@@ -221,6 +221,7 @@ export function LandingProductsTab() {
     images: [] as string[],
     is_featured: false,
     is_active: true,
+    is_sold_out: false,
     variants: [] as LandingProductVariant[],
     home_tab_ids: [] as string[],
     // 2-level variants
@@ -282,7 +283,7 @@ export function LandingProductsTab() {
     setEditingProduct(null);
     setForm({
       name: '', description: '', price: 0, sale_price: null, category_id: '_none_',
-      image_url: '', images: [], is_featured: false, is_active: true, variants: [], home_tab_ids: [],
+      image_url: '', images: [], is_featured: false, is_active: true, is_sold_out: false, variants: [], home_tab_ids: [],
       variant_group_1_name: 'Màu sắc', variant_group_2_name: 'Dung lượng',
       variant_options_1: [], variant_options_2: [], variant_prices: [],
       promotion_title: 'KHUYẾN MÃI', promotion_content: '',
@@ -303,6 +304,7 @@ export function LandingProductsTab() {
       images: Array.isArray(p.images) ? p.images : [],
       is_featured: p.is_featured,
       is_active: p.is_active,
+      is_sold_out: p.is_sold_out || false,
       variants: Array.isArray(p.variants) ? p.variants : [],
       home_tab_ids: Array.isArray((p as any).home_tab_ids) ? (p as any).home_tab_ids : [],
       variant_group_1_name: p.variant_group_1_name || 'Màu sắc',
@@ -414,6 +416,7 @@ export function LandingProductsTab() {
         images: form.images,
         is_featured: form.is_featured,
         is_active: form.is_active,
+        is_sold_out: form.is_sold_out,
         variants: form.variants,
         home_tab_ids: form.home_tab_ids,
         variant_group_1_name: form.variant_group_1_name,
@@ -643,7 +646,10 @@ export function LandingProductsTab() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{p.name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className={`font-medium text-sm truncate ${p.is_sold_out ? 'text-muted-foreground line-through' : ''}`}>{p.name}</p>
+                        {p.is_sold_out && <Badge variant="destructive" className="text-[9px] shrink-0 px-1.5 py-0">Hết hàng</Badge>}
+                      </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         {p.sale_price ? (
                           <>
@@ -657,7 +663,18 @@ export function LandingProductsTab() {
                         {p.is_featured && <Badge variant="default" className="text-[10px]">Nổi bật</Badge>}
                       </div>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant={p.is_sold_out ? "destructive" : "outline"}
+                        size="sm"
+                        className="h-8 text-xs px-2 shrink-0"
+                        onClick={async () => {
+                          await updateProduct.mutateAsync({ id: p.id, is_sold_out: !p.is_sold_out } as any);
+                          toast({ title: p.is_sold_out ? 'Đã bỏ hết hàng' : 'Đã đánh dấu hết hàng' });
+                        }}
+                      >
+                        {p.is_sold_out ? '✓ Hết' : 'Hết hàng'}
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditProduct(p)}>
                         <Edit2 className="h-3.5 w-3.5" />
                       </Button>
@@ -820,10 +837,24 @@ export function LandingProductsTab() {
                   <Label className="text-xs font-medium">Bảng giá theo biến thể</Label>
                   <div className="space-y-1.5 max-h-60 overflow-y-auto">
                     {form.variant_prices.map((vp, i) => (
-                      <div key={i} className="flex flex-col gap-1.5 p-2 rounded border bg-card text-xs">
-                        <span className="font-medium truncate">
-                          {vp.option1}{vp.option2 ? ` / ${vp.option2}` : ''}
-                        </span>
+                      <div key={i} className={`flex flex-col gap-1.5 p-2 rounded border text-xs ${vp.is_sold_out ? 'bg-muted/60 opacity-70' : 'bg-card'}`}>
+                        <div className="flex items-center gap-2">
+                          <label className="flex items-center gap-1.5 cursor-pointer flex-1 min-w-0">
+                            <Checkbox
+                              checked={vp.is_sold_out || false}
+                              onCheckedChange={(checked) => {
+                                const prices = [...form.variant_prices];
+                                prices[i] = { ...prices[i], is_sold_out: !!checked };
+                                setForm(p => ({ ...p, variant_prices: prices }));
+                              }}
+                              className="h-3.5 w-3.5"
+                            />
+                            <span className={`font-medium truncate ${vp.is_sold_out ? 'line-through text-muted-foreground' : ''}`}>
+                              {vp.option1}{vp.option2 ? ` / ${vp.option2}` : ''}
+                            </span>
+                          </label>
+                          {vp.is_sold_out && <Badge variant="destructive" className="text-[9px] px-1.5 py-0 shrink-0">Hết</Badge>}
+                        </div>
                         <div className="flex items-center gap-2">
                           <PriceInput
                             value={vp.price}
@@ -1029,6 +1060,10 @@ export function LandingProductsTab() {
               </div>
             </div>
 
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-1.5">Hết hàng <Badge variant="destructive" className="text-[9px] px-1.5 py-0">Sold out</Badge></Label>
+              <Switch checked={form.is_sold_out} onCheckedChange={v => setForm(p => ({ ...p, is_sold_out: v }))} />
+            </div>
             <div className="flex items-center justify-between">
               <Label>Sản phẩm nổi bật</Label>
               <Switch checked={form.is_featured} onCheckedChange={v => setForm(p => ({ ...p, is_featured: v }))} />
