@@ -290,12 +290,12 @@ export default function UniversalStoreTemplate({
   }, [searchParams, productsData, articlesData, location.pathname]);
 
   const effectiveWarrantyResults = lookupEnabled && isFetched ? (warrantyResults ?? []) : (persistedResults ?? []);
-  const isShowingPersistedWarranty = !lookupEnabled && persistedResults !== null;
   const isPhoneSearch = /^0\d{9,10}$/.test(submittedValue.replace(/\s/g, ''));
   const firstResult = effectiveWarrantyResults[0];
   const customerPhoneFromResult = firstResult?.customer_phone || '';
   const phoneForPoints = isPhoneSearch ? submittedValue : customerPhoneFromResult;
-  const shouldFetchLoyaltyData = !isShowingPersistedWarranty;
+  const normalizedPointsPhone = phoneForPoints.replace(/\D/g, '');
+  const shouldFetchLoyaltyData = effectiveWarrantyResults.length > 0 && normalizedPointsPhone.length > 0;
   const pointsLookupPhone = shouldFetchLoyaltyData ? phoneForPoints : '';
   const { data: customerPoints } = useCustomerPointsPublic(pointsLookupPhone, tenantId);
   const customerName = firstResult?.customer_name || customerPoints?.customer_name || '';
@@ -1661,7 +1661,7 @@ export default function UniversalStoreTemplate({
                     })}
 
                     {/* Points */}
-                    {customerPoints && customerPoints.is_points_enabled && customerPoints.current_points > 0 && (
+                    {customerPoints && customerPoints.is_points_enabled && (
                       <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 space-y-3">
                         <div className="flex items-center gap-2">
                           <Star className="h-5 w-5 text-amber-500" />

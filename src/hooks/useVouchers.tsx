@@ -228,17 +228,23 @@ export function useClaimWebsiteVoucher() {
 }
 
 export function usePublicCustomerVouchers(phone: string, tenantId: string | null) {
+  const normalizedPhone = phone.replace(/\D/g, '');
+  const normalizedVietnamesePhone = normalizedPhone.startsWith('84')
+    ? `0${normalizedPhone.slice(2)}`
+    : normalizedPhone;
+  const isPhoneNumber = /^0\d{9,10}$/.test(normalizedVietnamesePhone);
+
   return useQuery({
-    queryKey: ['public-customer-vouchers', phone, tenantId],
+    queryKey: ['public-customer-vouchers', normalizedVietnamesePhone, tenantId],
     queryFn: async () => {
-      if (!phone || !tenantId) return [];
+      if (!isPhoneNumber || !tenantId) return [];
       const { data, error } = await supabase.rpc('lookup_customer_vouchers_public', {
-        _phone: phone,
+        _phone: normalizedVietnamesePhone,
         _tenant_id: tenantId,
       });
       if (error) return [];
       return (data || []) as { id: string; code: string; voucher_name: string; discount_type: string; discount_value: number; status: string; source: string; created_at: string }[];
     },
-    enabled: !!phone && !!tenantId && phone.length >= 10,
+    enabled: !!tenantId && isPhoneNumber,
   });
 }

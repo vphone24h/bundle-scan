@@ -416,11 +416,11 @@ export default function AppleStyleLandingTemplate({
   }, [searchParams, productsData, articlesData, location.pathname]);
 
   const effectiveWarrantyResults = lookupEnabled && isFetched ? (warrantyResults ?? []) : (persistedResults ?? []);
-  const isShowingPersistedWarranty = !lookupEnabled && persistedResults !== null;
   const isPhoneSearch = /^0\d{9,10}$/.test(submittedValue.replace(/\s/g, ''));
   const firstResult = effectiveWarrantyResults[0];
   const phoneForPoints = isPhoneSearch ? submittedValue : (firstResult?.customer_phone || '');
-  const shouldFetchLoyaltyData = !isShowingPersistedWarranty;
+  const normalizedPointsPhone = phoneForPoints.replace(/\D/g, '');
+  const shouldFetchLoyaltyData = effectiveWarrantyResults.length > 0 && normalizedPointsPhone.length > 0;
   const pointsLookupPhone = shouldFetchLoyaltyData ? phoneForPoints : '';
   const { data: customerPoints } = useCustomerPointsPublic(pointsLookupPhone, tenantId);
   const customerName = firstResult?.customer_name || customerPoints?.customer_name || '';
@@ -1207,7 +1207,7 @@ export default function AppleStyleLandingTemplate({
                         </div>
                       );
                     })}
-                    {customerPoints && customerPoints.is_points_enabled && customerPoints.current_points > 0 && (
+                    {customerPoints && customerPoints.is_points_enabled && (
                       <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 space-y-3">
                         <div className="flex items-center gap-2"><Star className="h-5 w-5 text-amber-500" /><p className="font-bold text-amber-800">Điểm tích lũy</p></div>
                         <div className="flex items-center justify-between bg-white/80 rounded-xl px-4 py-3">
