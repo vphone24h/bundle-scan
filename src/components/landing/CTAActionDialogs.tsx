@@ -314,11 +314,6 @@ export function BookingDialog({
                   <Input type="time" value={time} onChange={e => setTime(e.target.value)} className="h-11 text-base" />
                 </div>
               </div>
-                <div>
-                  <Label className="text-sm">Giờ {requireTime && <span className="text-destructive">*</span>}</Label>
-                  <Input type="time" value={time} onChange={e => setTime(e.target.value)} className="h-11 text-base" />
-                </div>
-              </div>
             ) : (
               /* ===== DATE RANGE MODE ===== */
               <>
