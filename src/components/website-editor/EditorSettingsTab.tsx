@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLandingProductCategories } from '@/hooks/useLandingProducts';
 import { TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
 import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, getFullNavItems, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, SYSTEM_PAGES, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
 import { HomeSectionManager, HomeSectionItem } from '@/components/admin/HomeSectionManager';
