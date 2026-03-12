@@ -261,6 +261,17 @@ let _cachedIp: string | null = null;
 let _ipFetchPromise: Promise<string | null> | null = null;
 
 function getClientIpFast(): Promise<string | null> {
+  // Use IP preloaded by index.html prefetch script (standalone mode)
+  if ((window as any).__WARRANTY_CACHED_IP__) {
+    _cachedIp = (window as any).__WARRANTY_CACHED_IP__;
+    return Promise.resolve(_cachedIp);
+  }
+  if ((window as any).__WARRANTY_IP_PROMISE__) {
+    return (window as any).__WARRANTY_IP_PROMISE__.then((ip: string | null) => {
+      _cachedIp = ip;
+      return ip;
+    });
+  }
   if (_cachedIp) return Promise.resolve(_cachedIp);
   if (_ipFetchPromise) return _ipFetchPromise;
   _ipFetchPromise = Promise.race([
@@ -326,8 +337,10 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
     enabled: !!searchValue && !!tenantId && searchValue.length >= 5,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
-    staleTime: 1000 * 60 * 5,   // 5 min - avoid refetch on focus
-    gcTime: 1000 * 60 * 30,     // 30 min cache
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
 
