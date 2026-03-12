@@ -94,9 +94,14 @@ export default function UniversalStoreTemplate({
     if ((settings as any)?.custom_home_sections) {
       const customSections = (settings as any).custom_home_sections as HomeSectionItem[];
       c.homeSections = customSections.filter((s: HomeSectionItem) => s.enabled).map((s: HomeSectionItem) => s.id) as HomeSection[];
-      // Store category display mode
+      // Store category display mode and hidden category IDs
       const catSection = customSections.find(s => s.id === 'categories');
-      if (catSection) (c as any)._categoryDisplayMode = catSection.displayMode || 'horizontal';
+      if (catSection) {
+        (c as any)._categoryDisplayMode = catSection.displayMode || 'horizontal';
+        if (catSection.hiddenCategoryIds?.length) {
+          (c as any)._hiddenHomeCategoryIds = catSection.hiddenCategoryIds;
+        }
+      }
       // When user explicitly enables sections via editor, force-enable corresponding features
       for (const s of customSections.filter((s: HomeSectionItem) => s.enabled)) {
         if (s.id === 'articles') c.features = { ...c.features, articles: true };
@@ -519,7 +524,11 @@ export default function UniversalStoreTemplate({
                 case 'categories': {
                   if (!config.features.categories || !productsData || productsData.categories.length === 0) return null;
                   const catDisplayMode = (config as any)._categoryDisplayMode || 'horizontal';
-                  
+                  const hiddenHomeCatIds: string[] = (config as any)._hiddenHomeCategoryIds || [];
+                  const homeCategories = hiddenHomeCatIds.length > 0
+                    ? productsData.categories.filter(c => !hiddenHomeCatIds.includes(c.id))
+                    : productsData.categories;
+                  if (homeCategories.length === 0) return null;
                   if (catDisplayMode === 'vertical') {
                     // Vertical: stacked cards with cover images
                     return (
@@ -530,7 +539,7 @@ export default function UniversalStoreTemplate({
                           </ScrollReveal>
                         </div>
                         <div className="flex flex-col gap-0">
-                          {productsData.categories.map((cat, idx) => (
+                          {homeCategories.map((cat, idx) => (
                             <ScrollReveal key={cat.id} animation="fade-up" delay={idx * 80}>
                               <button
                                 onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products', { keepCategory: true }); }}
@@ -568,7 +577,7 @@ export default function UniversalStoreTemplate({
                       <section className="bg-[#f5f5f7] py-8">
                         <div className="max-w-[1200px] mx-auto px-4">
                           <SwipeGuardScroll className="flex items-center overflow-x-auto gap-4 py-2 scrollbar-hide">
-                            {productsData.categories.map(cat => (
+                            {homeCategories.map(cat => (
                               <button key={cat.id} onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products', { keepCategory: true }); }} className="flex flex-col items-center gap-2 min-w-[90px] group">
                                 {cat.image_url ? (
                                   <img src={cat.image_url} alt={cat.name} className="h-16 w-16 rounded-2xl object-cover border border-black/5 group-hover:scale-105 transition-transform" />

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useCustomDomainArticlePublic } from '@/hooks/useAppConfig';
 import { useNavigate } from 'react-router-dom';
 import { useTenantLandingSettings, useUpdateTenantLandingSettings, TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
+import { useLandingProductCategories } from '@/hooks/useLandingProducts';
 import { useVoucherTemplates } from '@/hooks/useVouchers';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCustomDomains } from '@/hooks/useCustomDomains';
@@ -831,6 +832,7 @@ export function LandingPageSettings() {
   const navigate = useNavigate();
 
   const { data: voucherTemplates } = useVoucherTemplates();
+  const { data: landingCategories } = useLandingProductCategories();
   const activeTemplates = (voucherTemplates || []).filter(t => t.is_active);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -1446,6 +1448,7 @@ export function LandingPageSettings() {
             onChange={(sections) => { setFormData(prev => ({ ...prev, custom_home_sections: sections as any })); setHasChanges(true); }}
             customProductTabs={(formData as any).custom_product_tabs || []}
             onTabsChange={(tabs) => { setFormData(prev => ({ ...prev, custom_product_tabs: tabs as any })); setHasChanges(true); }}
+            categories={landingCategories?.map(c => ({ id: c.id, name: c.name, image_url: c.image_url })) || []}
           />
         </CardContent>
       </Card>

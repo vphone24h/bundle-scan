@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLandingProductCategories } from '@/hooks/useLandingProducts';
 import { TenantLandingSettings, uploadLandingAsset } from '@/hooks/useTenantLanding';
 import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, getFullNavItems, getDefaultNavItems, INDUSTRY_SUGGESTED_NAV, SYSTEM_PAGES, DEFAULT_PAGE_ITEMS, LayoutStyle, GOOGLE_FONTS } from '@/lib/industryConfig';
 import { HomeSectionManager, HomeSectionItem } from '@/components/admin/HomeSectionManager';
@@ -96,6 +97,7 @@ const SECTION_TO_BLOCK: Record<string, string> = {
 
 export function EditorSettingsTab({ formData, onChange, focusSection, onClearFocus, tenantId, onSave, isSaving, hasChanges }: EditorSettingsTabProps) {
   const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
+  const { data: landingCategories } = useLandingProductCategories();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -592,8 +594,8 @@ export function EditorSettingsTab({ formData, onChange, focusSection, onClearFoc
           onChange={sections => onChange('custom_home_sections', sections)}
           customProductTabs={(formData as any).custom_product_tabs || []}
           onTabsChange={tabs => onChange('custom_product_tabs', tabs)}
+          categories={landingCategories?.map(c => ({ id: c.id, name: c.name, image_url: c.image_url })) || []}
           onManageTabProducts={(tabId, tabName) => {
-            // Navigate to landing settings products tab - for now show a toast hint
             import('@/hooks/use-toast').then(({ toast }) => {
               toast({
                 title: `📦 ${tabName}`,

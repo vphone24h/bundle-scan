@@ -11,6 +11,13 @@ export interface HomeSectionItem {
   id: HomeSection | string; // string for custom tab IDs like "productTab_xxx"
   enabled: boolean;
   displayMode?: 'horizontal' | 'vertical'; // for categories section
+  hiddenCategoryIds?: string[]; // categories hidden on homepage only
+}
+
+export interface CategoryInfo {
+  id: string;
+  name: string;
+  image_url?: string | null;
 }
 
 export interface CustomProductTab {
@@ -71,15 +78,17 @@ interface HomeSectionManagerProps {
   customProductTabs?: CustomProductTab[];
   onTabsChange?: (tabs: CustomProductTab[]) => void;
   onManageTabProducts?: (tabId: string, tabName: string) => void;
+  categories?: CategoryInfo[];
 }
 
-export function HomeSectionManager({ templateId, customSections, onChange, customProductTabs = [], onTabsChange, onManageTabProducts }: HomeSectionManagerProps) {
+export function HomeSectionManager({ templateId, customSections, onChange, customProductTabs = [], onTabsChange, onManageTabProducts, categories = [] }: HomeSectionManagerProps) {
   const config = getIndustryConfig(templateId);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [newTabName, setNewTabName] = useState('');
   const [showCustomCreate, setShowCustomCreate] = useState(false);
   const [addMenuTab, setAddMenuTab] = useState<'product' | 'layout'>('product');
+  const [expandedCategoryFilter, setExpandedCategoryFilter] = useState(false);
 
   // Build current items: custom or from config defaults
   const buildFromConfig = (): HomeSectionItem[] => {
@@ -196,113 +205,159 @@ export function HomeSectionManager({ templateId, customSections, onChange, custo
           const isEditing = editingTabId === item.id;
 
           return (
-            <div
-              key={item.id}
-              className={`flex items-center gap-2 rounded-lg border p-2.5 transition-all ${
-                item.enabled ? 'bg-background' : 'bg-muted/40 opacity-60'
-              }`}
-            >
-              {/* Move buttons */}
-              <div className="flex flex-col gap-0.5 shrink-0">
-                <button type="button" onClick={() => handleMoveUp(i)} disabled={i === 0}
-                  className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
-                  <ChevronUp className="h-3 w-3" />
-                </button>
-                <button type="button" onClick={() => handleMoveDown(i)} disabled={i === currentItems.length - 1}
-                  className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
-                  <ChevronDown className="h-3 w-3" />
-                </button>
-              </div>
-
-              {/* Icon */}
-              <span className="text-lg shrink-0">{meta.icon}</span>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                {isEditing ? (
-                  <div className="flex items-center gap-1.5">
-                    <Input
-                      value={customProductTabs.find(t => t.id === item.id)?.name || ''}
-                      onChange={e => updateTabName(item.id, e.target.value)}
-                      className="h-7 text-xs"
-                      autoFocus
-                    />
-                    <Select
-                      value={customProductTabs.find(t => t.id === item.id)?.displayStyle || 'grid'}
-                      onValueChange={v => updateTabDisplayStyle(item.id, v as any)}
-                    >
-                      <SelectTrigger className="h-7 text-xs w-20"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="grid">Lưới</SelectItem>
-                        <SelectItem value="slide">Trượt</SelectItem>
-                        <SelectItem value="list">DS</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <button type="button" onClick={() => setEditingTabId(null)} className="h-6 w-6 shrink-0 flex items-center justify-center rounded hover:bg-muted">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-sm font-medium leading-tight">{meta.label}</p>
-                    <p className="text-[10px] text-muted-foreground leading-tight">{meta.description}</p>
-                  </>
-                )}
-              </div>
-
-              {/* Display mode toggle for categories */}
-              {item.id === 'categories' && item.enabled && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const updated = [...currentItems];
-                    const currentMode = updated[i].displayMode || 'horizontal';
-                    updated[i] = { ...updated[i], displayMode: currentMode === 'horizontal' ? 'vertical' : 'horizontal' };
-                    onChange(updated);
-                  }}
-                  className="h-6 px-1.5 flex items-center justify-center gap-0.5 rounded hover:bg-primary/10 text-primary text-[10px] font-medium shrink-0"
-                  title={item.displayMode === 'vertical' ? 'Xếp dọc (kéo xuống)' : 'Xếp ngang (trượt ngang)'}
-                >
-                  {item.displayMode === 'vertical' ? <ArrowDownUp className="h-3 w-3" /> : <ArrowLeftRight className="h-3 w-3" />}
-                  {item.displayMode === 'vertical' ? 'Dọc' : 'Ngang'}
-                </button>
-              )}
-
-              {/* Actions for custom tabs */}
-              {isCustom && !isEditing && (
-                <div className="flex items-center gap-0.5 shrink-0">
-                  {onManageTabProducts && (
-                    <button type="button" onClick={() => onManageTabProducts(item.id, meta.label)}
-                      className="h-6 px-1.5 flex items-center justify-center gap-0.5 rounded hover:bg-primary/10 text-primary text-[10px] font-medium">
-                      <Package className="h-3 w-3" />
-                      SP
-                    </button>
-                  )}
-                  <button type="button" onClick={() => setEditingTabId(item.id)}
-                    className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted text-muted-foreground">
-                    <Pencil className="h-3 w-3" />
+            <div key={item.id} className="space-y-0">
+              <div
+                className={`flex items-center gap-2 rounded-lg border p-2.5 transition-all ${
+                  item.enabled ? 'bg-background' : 'bg-muted/40 opacity-60'
+                }`}
+              >
+                {/* Move buttons */}
+                <div className="flex flex-col gap-0.5 shrink-0">
+                  <button type="button" onClick={() => handleMoveUp(i)} disabled={i === 0}
+                    className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
+                    <ChevronUp className="h-3 w-3" />
                   </button>
-                  <button type="button" onClick={() => removeProductTab(item.id)}
-                    className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
-                    <Trash2 className="h-3 w-3" />
+                  <button type="button" onClick={() => handleMoveDown(i)} disabled={i === currentItems.length - 1}
+                    className="h-4 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground disabled:opacity-30">
+                    <ChevronDown className="h-3 w-3" />
                   </button>
                 </div>
-              )}
 
-              {/* Actions for layout sections */}
-              {isLayout && (
-                <button type="button" onClick={() => removeLayoutSection(item.id)}
-                  className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive shrink-0">
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              )}
+                {/* Icon */}
+                <span className="text-lg shrink-0">{meta.icon}</span>
 
-              {/* Toggle */}
-              <Switch
-                checked={item.enabled}
-                onCheckedChange={() => handleToggle(i)}
-                className="shrink-0"
-              />
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  {isEditing ? (
+                    <div className="flex items-center gap-1.5">
+                      <Input
+                        value={customProductTabs.find(t => t.id === item.id)?.name || ''}
+                        onChange={e => updateTabName(item.id, e.target.value)}
+                        className="h-7 text-xs"
+                        autoFocus
+                      />
+                      <Select
+                        value={customProductTabs.find(t => t.id === item.id)?.displayStyle || 'grid'}
+                        onValueChange={v => updateTabDisplayStyle(item.id, v as any)}
+                      >
+                        <SelectTrigger className="h-7 text-xs w-20"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="grid">Lưới</SelectItem>
+                          <SelectItem value="slide">Trượt</SelectItem>
+                          <SelectItem value="list">DS</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <button type="button" onClick={() => setEditingTabId(null)} className="h-6 w-6 shrink-0 flex items-center justify-center rounded hover:bg-muted">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm font-medium leading-tight">{meta.label}</p>
+                      <p className="text-[10px] text-muted-foreground leading-tight">{meta.description}</p>
+                    </>
+                  )}
+                </div>
+
+                {/* Display mode toggle for categories */}
+                {item.id === 'categories' && item.enabled && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = [...currentItems];
+                        const currentMode = updated[i].displayMode || 'horizontal';
+                        updated[i] = { ...updated[i], displayMode: currentMode === 'horizontal' ? 'vertical' : 'horizontal' };
+                        onChange(updated);
+                      }}
+                      className="h-6 px-1.5 flex items-center justify-center gap-0.5 rounded hover:bg-primary/10 text-primary text-[10px] font-medium shrink-0"
+                      title={item.displayMode === 'vertical' ? 'Xếp dọc (kéo xuống)' : 'Xếp ngang (trượt ngang)'}
+                    >
+                      {item.displayMode === 'vertical' ? <ArrowDownUp className="h-3 w-3" /> : <ArrowLeftRight className="h-3 w-3" />}
+                      {item.displayMode === 'vertical' ? 'Dọc' : 'Ngang'}
+                    </button>
+                    {categories.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedCategoryFilter(!expandedCategoryFilter)}
+                        className="h-6 px-1.5 flex items-center justify-center gap-0.5 rounded hover:bg-muted text-muted-foreground text-[10px] font-medium shrink-0"
+                      >
+                        <ChevronDown className={`h-3 w-3 transition-transform ${expandedCategoryFilter ? 'rotate-180' : ''}`} />
+                      </button>
+                    )}
+                  </>
+                )}
+
+                {/* Actions for custom tabs */}
+                {isCustom && !isEditing && (
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    {onManageTabProducts && (
+                      <button type="button" onClick={() => onManageTabProducts(item.id, meta.label)}
+                        className="h-6 px-1.5 flex items-center justify-center gap-0.5 rounded hover:bg-primary/10 text-primary text-[10px] font-medium">
+                        <Package className="h-3 w-3" />
+                        SP
+                      </button>
+                    )}
+                    <button type="button" onClick={() => setEditingTabId(item.id)}
+                      className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted text-muted-foreground">
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                    <button type="button" onClick={() => removeProductTab(item.id)}
+                      className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Actions for layout sections */}
+                {isLayout && (
+                  <button type="button" onClick={() => removeLayoutSection(item.id)}
+                    className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive shrink-0">
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                )}
+
+                {/* Toggle */}
+                <Switch
+                  checked={item.enabled}
+                  onCheckedChange={() => handleToggle(i)}
+                  className="shrink-0"
+                />
+              </div>
+
+              {/* Expandable category visibility filter */}
+              {item.id === 'categories' && item.enabled && expandedCategoryFilter && categories.length > 0 && (
+                <div className="ml-8 mr-2 mt-1 mb-1 p-2.5 rounded-lg border border-dashed bg-muted/30 space-y-1.5">
+                  <p className="text-[10px] text-muted-foreground font-medium">Ẩn/hiện danh mục trên trang chủ:</p>
+                  {categories.map(cat => {
+                    const hiddenIds = item.hiddenCategoryIds || [];
+                    const isVisible = !hiddenIds.includes(cat.id);
+                    return (
+                      <div key={cat.id} className="flex items-center gap-2">
+                        <Switch
+                          checked={isVisible}
+                          onCheckedChange={(checked) => {
+                            const updated = [...currentItems];
+                            const currentHidden = updated[i].hiddenCategoryIds || [];
+                            if (checked) {
+                              updated[i] = { ...updated[i], hiddenCategoryIds: currentHidden.filter(id => id !== cat.id) };
+                            } else {
+                              updated[i] = { ...updated[i], hiddenCategoryIds: [...currentHidden, cat.id] };
+                            }
+                            // Clean up empty array
+                            if (updated[i].hiddenCategoryIds?.length === 0) {
+                              delete updated[i].hiddenCategoryIds;
+                            }
+                            onChange(updated);
+                          }}
+                          className="shrink-0 scale-75"
+                        />
+                        <span className="text-xs truncate">{cat.name}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}

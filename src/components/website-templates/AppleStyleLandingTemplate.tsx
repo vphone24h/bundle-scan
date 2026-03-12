@@ -475,8 +475,16 @@ export default function AppleStyleLandingTemplate({
     return false;
   };
 
-  // Categories for section banners
-  const categories = productsData?.categories || [];
+  // Categories for section banners (filter hidden ones on homepage)
+  const allCategories = productsData?.categories || [];
+  const hiddenHomeCatIds: string[] = (() => {
+    const customSections = (settings as any)?.custom_home_sections as HomeSectionItem[] | undefined;
+    const catSection = customSections?.find(s => s.id === 'categories');
+    return catSection?.hiddenCategoryIds || [];
+  })();
+  const categories = hiddenHomeCatIds.length > 0
+    ? allCategories.filter(c => !hiddenHomeCatIds.includes(c.id))
+    : allCategories;
 
   // Alternating background palettes for category banners (Apple-style)
   const categoryPalettes = [
