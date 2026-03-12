@@ -54,6 +54,7 @@ export interface AppleStyleLandingProps {
   searchParams: URLSearchParams;
   setSearchParams: SetURLSearchParams;
   queryClient: QueryClient;
+  onRequireCatalogData?: () => void;
 }
 
 type PageView = 'home' | 'products' | 'news' | 'warranty' | 'article-detail' | 'repair' | 'tradein' | 'installment' | 'accessories' | 'compare' | 'pricelist' | 'booking' | 'branches' | 'contact' | 'services' | 'rooms' | 'courses' | 'doctors' | 'collection' | 'promotion' | 'reviews' | 'system-page';
@@ -295,7 +296,7 @@ function AppleProductCard({ product, onClick, accentColor }: { product: LandingP
 // ============================
 export default function AppleStyleLandingTemplate({
   settings, tenant, tenantId, storeId, branches,
-  productsData, articlesData, searchParams, setSearchParams, queryClient,
+  productsData, articlesData, searchParams, setSearchParams, queryClient, onRequireCatalogData,
 }: AppleStyleLandingProps) {
   const config = getIndustryConfig('apple_landing');
   const accentColor = settings?.primary_color || config.accentColor;
@@ -456,6 +457,7 @@ export default function AppleStyleLandingTemplate({
     setSubmittedValue('');
     setPersistedResults(null);
     setLookupEnabled(false);
+    onRequireCatalogData?.();
     setPageView('home');
   };
   const handleSearch = () => {
@@ -480,6 +482,9 @@ export default function AppleStyleLandingTemplate({
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
   const navigateTo = (view: PageView) => {
+    if (view !== 'warranty') {
+      onRequireCatalogData?.();
+    }
     setPageView(view); setSelectedArticle(null); setSelectedCategoryId(null); setSelectedProduct(null);
     const pagePath = buildPagePath(view);
     window.history.replaceState(null, '', pagePath === '/' ? '/' : pagePath);
@@ -487,6 +492,7 @@ export default function AppleStyleLandingTemplate({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const openArticle = (a: LandingArticle) => {
+    onRequireCatalogData?.();
     setSelectedArticle(a); setPageView('article-detail');
     const articlePath = buildArticlePath(a.title, a.id);
     window.history.replaceState(null, '', articlePath);
@@ -494,6 +500,7 @@ export default function AppleStyleLandingTemplate({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const openProduct = (p: LandingProduct) => {
+    onRequireCatalogData?.();
     setSelectedProduct(p);
     const categories = productsData?.categories || [];
     const category = categories.find(c => c.id === p.category_id);

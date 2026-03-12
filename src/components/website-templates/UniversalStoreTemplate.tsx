@@ -61,6 +61,7 @@ export interface UniversalTemplateProps {
   setSearchParams: SetURLSearchParams;
   queryClient: QueryClient;
   templateId?: string;
+  onRequireCatalogData?: () => void;
 }
 
 // Warranty calculation
@@ -80,7 +81,7 @@ type PageView = 'home' | 'products' | 'news' | 'warranty' | 'article-detail' | '
 export default function UniversalStoreTemplate({
   settings, tenant, tenantId, storeId, branches,
   productsData, articlesData, searchParams, setSearchParams, queryClient,
-  templateId,
+  templateId, onRequireCatalogData,
 }: UniversalTemplateProps) {
   const baseConfig = getIndustryConfig(templateId || settings?.website_template || 'phone_store');
   
@@ -342,6 +343,7 @@ export default function UniversalStoreTemplate({
     setSubmittedValue('');
     setPersistedResults(null);
     setLookupEnabled(false);
+    onRequireCatalogData?.();
     setPageView('home');
   };
   const handleSearch = () => {
@@ -366,6 +368,9 @@ export default function UniversalStoreTemplate({
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
   const navigateTo = (view: PageView, opts?: { keepCategory?: boolean; filterTag?: string | null }) => {
+    if (view !== 'warranty') {
+      onRequireCatalogData?.();
+    }
     setPageView(view); setSelectedArticle(null); setSelectedProduct(null); setSelectedArticleCategoryId(null);
     if (!opts?.keepCategory) setSelectedCategoryId(null);
     setProductFilterTag(opts?.filterTag ?? null);
@@ -378,6 +383,7 @@ export default function UniversalStoreTemplate({
   };
 
   const openArticle = (article: LandingArticle) => {
+    onRequireCatalogData?.();
     setSelectedArticle(article); setPageView('article-detail');
     const articlePath = buildArticlePath(article.title, article.id);
     window.history.replaceState(null, '', articlePath);
@@ -386,6 +392,7 @@ export default function UniversalStoreTemplate({
   };
 
   const openProduct = (p: LandingProduct) => {
+    onRequireCatalogData?.();
     setSelectedProduct(p);
     const categories = productsData?.categories || [];
     const category = categories.find(c => c.id === p.category_id);
