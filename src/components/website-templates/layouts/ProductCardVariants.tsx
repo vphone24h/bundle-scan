@@ -185,8 +185,9 @@ function NikeProductCard({ product, onClick, accentColor }: ProductCardProps) {
 // === LUXURY PRODUCT CARD ===
 function LuxuryProductCard({ product, onClick, accentColor }: ProductCardProps) {
   return (
-    <button onClick={onClick} className="text-left group w-full">
+    <button onClick={onClick} className={`text-left group w-full ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden bg-[#faf8f5] border border-amber-100/50">
+        {product.is_sold_out && <SoldOutOverlay />}
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-700" />
         ) : (
