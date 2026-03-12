@@ -11,6 +11,13 @@ export interface HomeSectionItem {
   id: HomeSection | string; // string for custom tab IDs like "productTab_xxx"
   enabled: boolean;
   displayMode?: 'horizontal' | 'vertical'; // for categories section
+  hiddenCategoryIds?: string[]; // categories hidden on homepage only
+}
+
+export interface CategoryInfo {
+  id: string;
+  name: string;
+  image_url?: string | null;
 }
 
 export interface CustomProductTab {
