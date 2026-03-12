@@ -54,6 +54,7 @@ export interface AppleStyleLandingProps {
   searchParams: URLSearchParams;
   setSearchParams: SetURLSearchParams;
   queryClient: QueryClient;
+  onRequireCatalogData?: () => void;
 }
 
 type PageView = 'home' | 'products' | 'news' | 'warranty' | 'article-detail' | 'repair' | 'tradein' | 'installment' | 'accessories' | 'compare' | 'pricelist' | 'booking' | 'branches' | 'contact' | 'services' | 'rooms' | 'courses' | 'doctors' | 'collection' | 'promotion' | 'reviews' | 'system-page';
