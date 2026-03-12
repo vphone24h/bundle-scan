@@ -61,6 +61,7 @@ export interface UniversalTemplateProps {
   setSearchParams: SetURLSearchParams;
   queryClient: QueryClient;
   templateId?: string;
+  onRequireCatalogData?: () => void;
 }
 
 // Warranty calculation
@@ -80,7 +81,7 @@ type PageView = 'home' | 'products' | 'news' | 'warranty' | 'article-detail' | '
 export default function UniversalStoreTemplate({
   settings, tenant, tenantId, storeId, branches,
   productsData, articlesData, searchParams, setSearchParams, queryClient,
-  templateId,
+  templateId, onRequireCatalogData,
 }: UniversalTemplateProps) {
   const baseConfig = getIndustryConfig(templateId || settings?.website_template || 'phone_store');
   

@@ -296,7 +296,7 @@ function AppleProductCard({ product, onClick, accentColor }: { product: LandingP
 // ============================
 export default function AppleStyleLandingTemplate({
   settings, tenant, tenantId, storeId, branches,
-  productsData, articlesData, searchParams, setSearchParams, queryClient,
+  productsData, articlesData, searchParams, setSearchParams, queryClient, onRequireCatalogData,
 }: AppleStyleLandingProps) {
   const config = getIndustryConfig('apple_landing');
   const accentColor = settings?.primary_color || config.accentColor;
