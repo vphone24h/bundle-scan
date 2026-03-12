@@ -260,9 +260,7 @@ export function useUpdateTenantLandingSettings() {
 let _cachedIp: string | null = null;
 let _ipFetchPromise: Promise<string | null> | null = null;
 
-// Export so StoreLandingPage can preload IP on mount
-export function preloadClientIp() { getClientIpFast(); }
-
+function getClientIpFast(): Promise<string | null> {
   if (_cachedIp) return Promise.resolve(_cachedIp);
   if (_ipFetchPromise) return _ipFetchPromise;
   _ipFetchPromise = Promise.race([
@@ -277,6 +275,9 @@ export function preloadClientIp() { getClientIpFast(); }
   ]).catch(() => null).finally(() => { _ipFetchPromise = null; });
   return _ipFetchPromise;
 }
+
+// Export so StoreLandingPage can preload IP on mount
+export function preloadClientIp() { getClientIpFast(); }
 
 function mapWarrantyItem(item: any): WarrantyResult {
   return {
