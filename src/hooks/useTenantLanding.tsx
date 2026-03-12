@@ -337,8 +337,10 @@ export function useWarrantyLookup(searchValue: string, tenantId: string | null) 
     enabled: !!searchValue && !!tenantId && searchValue.length >= 5,
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
-    staleTime: 1000 * 60 * 5,   // 5 min - avoid refetch on focus
-    gcTime: 1000 * 60 * 30,     // 30 min cache
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
 
