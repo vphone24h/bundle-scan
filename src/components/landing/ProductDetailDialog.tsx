@@ -357,7 +357,7 @@ export function ProductDetailDialog({
 
           {product.is_sold_out && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              <span className="text-red-600 font-bold text-sm">🚫 Sản phẩm tạm hết hàng</span>
+              <span className="text-red-600 font-bold text-sm">🚫 Tạm hết</span>
             </div>
           )}
 

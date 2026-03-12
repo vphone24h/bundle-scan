@@ -8,7 +8,7 @@ function SoldOutOverlay() {
   return (
     <div className="absolute inset-0 bg-black/40 z-20 flex items-center justify-center">
       <span className="bg-white/90 text-red-600 font-bold text-xs sm:text-sm px-3 py-1.5 rounded-full shadow-md tracking-wide">
-        HẾT HÀNG
+        ĐÃ HẾT
       </span>
     </div>
   );
