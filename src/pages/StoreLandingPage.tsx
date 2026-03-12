@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useParams, useLocation, useSearchParams } from 'react-router-dom';
-import { usePublicLandingSettings, BranchInfo } from '@/hooks/useTenantLanding';
+import { usePublicLandingSettings, BranchInfo, preloadClientIp } from '@/hooks/useTenantLanding';
 import { usePublicLandingProducts } from '@/hooks/useLandingProducts';
 import { usePublicLandingArticles } from '@/hooks/useLandingArticles';
 import { useQueryClient } from '@tanstack/react-query';
