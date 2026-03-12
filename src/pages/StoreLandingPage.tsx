@@ -1,6 +1,6 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useParams, useLocation, useSearchParams } from 'react-router-dom';
-import { usePublicLandingSettings, BranchInfo, preloadClientIp, TenantLandingSettings } from '@/hooks/useTenantLanding';
+import { usePublicLandingSettings, BranchInfo, preloadClientIp } from '@/hooks/useTenantLanding';
 import { usePublicLandingProducts } from '@/hooks/useLandingProducts';
 import { usePublicLandingArticles } from '@/hooks/useLandingArticles';
 import { useQueryClient } from '@tanstack/react-query';
@@ -8,7 +8,6 @@ import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { LandingCartProvider } from '@/hooks/useLandingCart';
 import { Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { StandaloneWarrantyApp } from '@/components/landing/StandaloneWarrantyApp';
 
 // Lazy load heavy templates - they import DOMPurify and many components
 const universalImport = () => import('@/components/website-templates/UniversalStoreTemplate');
@@ -26,53 +25,6 @@ if (prefetch?.storeId) {
 } else if (typeof window !== 'undefined') {
   setTimeout(() => universalImport(), 100);
 }
-
-interface LandingBootstrapCache {
-  tenant: { id: string; name: string; subdomain: string; status: string };
-  settings: TenantLandingSettings | null;
-  branches: BranchInfo[];
-  updatedAt: string;
-}
-
-const LANDING_BOOTSTRAP_PREFIX = 'store_landing_bootstrap_';
-
-function readLandingBootstrap(storageKey: string | null): LandingBootstrapCache | null {
-  if (!storageKey || typeof window === 'undefined') return null;
-
-  try {
-    const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<LandingBootstrapCache>;
-
-    if (!parsed.tenant?.id) return null;
-
-    return {
-      tenant: parsed.tenant,
-      settings: (parsed.settings as TenantLandingSettings | null) ?? null,
-      branches: Array.isArray(parsed.branches) ? (parsed.branches as BranchInfo[]) : [],
-      updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : new Date(0).toISOString(),
-    };
-  } catch {
-    return null;
-  }
-}
-
-function writeLandingBootstrap(storageKey: string | null, payload: Omit<LandingBootstrapCache, 'updatedAt'>) {
-  if (!storageKey || typeof window === 'undefined') return;
-
-  try {
-    window.localStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        ...payload,
-        updatedAt: new Date().toISOString(),
-      } satisfies LandingBootstrapCache)
-    );
-  } catch {
-    // Ignore storage errors
-  }
-}
-
 // === PWA Manifest Hook ===
 function useDynamicManifest(storeName: string, storeId: string | null, logoUrl?: string | null) {
   const location = useLocation();
@@ -205,39 +157,16 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const { storeId: storeIdFromParams } = useParams<{ storeId: string }>();
   const resolvedTenant = useTenantResolver();
   const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain;
-  const cacheScope = storeId || resolvedTenant.tenantId || (typeof window !== 'undefined' ? window.location.hostname : null);
-  const landingBootstrapKey = cacheScope ? `${LANDING_BOOTSTRAP_PREFIX}${cacheScope}` : null;
-  const [cachedLandingData, setCachedLandingData] = useState<LandingBootstrapCache | null>(() => readLandingBootstrap(landingBootstrapKey));
-
-  useEffect(() => {
-    setCachedLandingData(readLandingBootstrap(landingBootstrapKey));
-  }, [landingBootstrapKey]);
-
+  const hasIdentifier = !!storeId || !!resolvedTenant.tenantId;
   const { data: landingData, isLoading } = usePublicLandingSettings(storeId, resolvedTenant.tenantId);
-  const effectiveLandingData = landingData ?? (cachedLandingData
-    ? {
-        tenant: cachedLandingData.tenant,
-        settings: cachedLandingData.settings,
-        branches: cachedLandingData.branches,
-      }
-    : null);
-
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const settings = effectiveLandingData?.settings;
-  const tenant = effectiveLandingData?.tenant;
-  const tenantId = tenant?.id || resolvedTenant.tenantId || null;
+  const settings = landingData?.settings;
+  const tenant = landingData?.tenant;
+  const tenantId = tenant?.id || null;
   const storeName = settings?.store_name || tenant?.name || storeId || '';
   const template = settings?.website_template || 'phone_store';
-
-  const hasIdentifier = !!storeId || !!tenantId;
-
-  // Detect PWA standalone mode for warranty-optimized startup
-  const isStandalone = typeof window !== 'undefined' && (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    (window.navigator as any).standalone === true
-  );
 
   // Preload apple template if needed + preload IP for warranty lookup
   useEffect(() => {
@@ -245,28 +174,11 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     preloadClientIp();
   }, [template]);
 
-  useEffect(() => {
-    if (!landingBootstrapKey || !landingData?.tenant) return;
-
-    writeLandingBootstrap(landingBootstrapKey, {
-      tenant: landingData.tenant,
-      settings: landingData.settings,
-      branches: landingData.branches || [],
-    });
-
-    setCachedLandingData({
-      tenant: landingData.tenant,
-      settings: landingData.settings,
-      branches: landingData.branches || [],
-      updatedAt: new Date().toISOString(),
-    });
-  }, [landingBootstrapKey, landingData]);
-
   const { data: productsData } = usePublicLandingProducts(tenantId);
   const { data: articlesData } = usePublicLandingArticles(tenantId);
 
   // PWA manifest
-  useDynamicManifest(storeName, storeId || tenant?.subdomain || tenantId, settings?.store_logo_url);
+  useDynamicManifest(storeName, storeId, settings?.store_logo_url);
 
   // OG meta
   const ogTitle = storeName ? `${storeName}` : undefined;
@@ -274,22 +186,11 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const ogImage = settings?.store_logo_url || undefined;
   useDynamicOGMeta(ogTitle, ogDesc, ogImage);
 
-  if (isStandalone && tenant) {
-    return (
-      <StandaloneWarrantyApp
-        tenantId={tenantId}
-        storeName={storeName}
-        logoUrl={settings?.store_logo_url}
-        warrantyHotline={settings?.warranty_hotline || settings?.store_phone}
-        supportGroupUrl={settings?.support_group_url}
-        storageScopeId={storeId || tenantId}
-        productsData={productsData}
-        articlesData={articlesData}
-        storePhone={settings?.store_phone}
-      />
-    );
-  }
-
+  // Detect PWA standalone mode for warranty-optimized skeleton
+  const isStandalone = typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true
+  );
 
   // Loading / error states
   if (isLoading || (!hasIdentifier && resolvedTenant.status === 'loading')) {
@@ -339,7 +240,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     );
   }
 
-  const branches: BranchInfo[] = effectiveLandingData?.branches || [];
+  const branches: BranchInfo[] = landingData?.branches || [];
 
   // Skeleton for lazy template loading
   const templateFallback = (
