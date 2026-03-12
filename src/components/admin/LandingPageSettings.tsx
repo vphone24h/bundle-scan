@@ -863,6 +863,7 @@ export function LandingPageSettings() {
     meta_description: '',
     warranty_hotline: '',
     support_group_url: '',
+    warranty_description: '',
     facebook_url: '',
     zalo_url: '',
     tiktok_url: '',
