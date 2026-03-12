@@ -539,7 +539,7 @@ export default function UniversalStoreTemplate({
                           </ScrollReveal>
                         </div>
                         <div className="flex flex-col gap-0">
-                          {productsData.categories.map((cat, idx) => (
+                          {homeCategories.map((cat, idx) => (
                             <ScrollReveal key={cat.id} animation="fade-up" delay={idx * 80}>
                               <button
                                 onClick={() => { setSelectedCategoryId(cat.id); navigateTo('products', { keepCategory: true }); }}
