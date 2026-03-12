@@ -194,6 +194,7 @@ export function LandingProductsTab() {
   const [catParentId, setCatParentId] = useState<string>('_none_');
   const [catEditName, setCatEditName] = useState('');
   const [warehouseDialog, setWarehouseDialog] = useState(false);
+  const [blockedDatesProduct, setBlockedDatesProduct] = useState<LandingProduct | null>(null);
   const [productDialog, setProductDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LandingProduct | null>(null);
   const [uploading, setUploading] = useState(false);
