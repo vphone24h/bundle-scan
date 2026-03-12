@@ -47,6 +47,7 @@ export interface LandingProduct {
   images: string[];
   is_featured: boolean;
   is_active: boolean;
+  is_sold_out: boolean;
   display_order: number;
   variants: LandingProductVariant[];
   // 2-level variant system
