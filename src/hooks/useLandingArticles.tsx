@@ -174,7 +174,16 @@ export function useDeleteLandingArticle() {
 }
 
 // Public hooks
-export function usePublicLandingArticles(tenantId: string | null) {
+interface PublicLandingArticlesOptions {
+  enabled?: boolean;
+}
+
+export function usePublicLandingArticles(
+  tenantId: string | null,
+  options: PublicLandingArticlesOptions = {}
+) {
+  const queryEnabled = options.enabled ?? true;
+
   return useQuery({
     queryKey: ['public-landing-articles', tenantId],
     queryFn: async () => {
@@ -196,7 +205,7 @@ export function usePublicLandingArticles(tenantId: string | null) {
         articles: (artRes.data || []) as unknown as LandingArticle[],
       };
     },
-    enabled: !!tenantId,
+    enabled: queryEnabled && !!tenantId,
     staleTime: 1000 * 60 * 5,
   });
 }

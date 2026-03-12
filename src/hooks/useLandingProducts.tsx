@@ -236,7 +236,16 @@ export function useDeleteLandingProduct() {
 }
 
 // Public hooks
-export function usePublicLandingProducts(tenantId: string | null) {
+interface PublicLandingProductsOptions {
+  enabled?: boolean;
+}
+
+export function usePublicLandingProducts(
+  tenantId: string | null,
+  options: PublicLandingProductsOptions = {}
+) {
+  const queryEnabled = options.enabled ?? true;
+
   return useQuery({
     queryKey: ['public-landing-products', tenantId],
     queryFn: async () => {
@@ -258,7 +267,7 @@ export function usePublicLandingProducts(tenantId: string | null) {
         products: (prodRes.data || []) as unknown as LandingProduct[],
       };
     },
-    enabled: !!tenantId,
+    enabled: queryEnabled && !!tenantId,
     staleTime: 1000 * 60 * 5,
   });
 }

@@ -145,20 +145,17 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
   return useQuery({
     queryKey: ['public-landing-settings', subdomain, tenantIdFromDomain],
     queryFn: async () => {
-      // Check if inline script already prefetched the data
+      // Only use completed prefetch data; do not wait for full catalog prefetch
+      // so warranty-first app can render immediately.
       const prefetch = (window as any).__STORE_PREFETCH__;
-      if (prefetch?.dataPromise) {
-        try {
-          const data = prefetch.data || await prefetch.dataPromise;
-          if (data?.settings && (prefetch.tenant || prefetch.tenantId)) {
-            const tenantInfo = prefetch.tenant || { id: prefetch.tenantId, name: data.settings.store_name || '', subdomain: prefetch.storeId || '', status: 'active' };
-            return {
-              tenant: tenantInfo,
-              settings: data.settings as unknown as TenantLandingSettings,
-              branches: (data.branches || []) as BranchInfo[],
-            };
-          }
-        } catch {}
+      const prefetchedData = prefetch?.data;
+      if (prefetchedData?.settings && (prefetch.tenant || prefetch.tenantId)) {
+        const tenantInfo = prefetch.tenant || { id: prefetch.tenantId, name: prefetchedData.settings.store_name || '', subdomain: prefetch.storeId || '', status: 'active' };
+        return {
+          tenant: tenantInfo,
+          settings: prefetchedData.settings as unknown as TenantLandingSettings,
+          branches: (prefetchedData.branches || []) as BranchInfo[],
+        };
       }
 
       let tenantInfo: { id: string; name: string; subdomain: string; status: string } | null = null;
