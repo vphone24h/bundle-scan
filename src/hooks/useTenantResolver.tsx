@@ -129,6 +129,12 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
         .rpc('resolve_tenant_by_domain', { _domain: hostInfo.hostname });
       
       if (error || !tenantId) {
+        // Don't cache network errors
+        const isNetworkError = error && (
+          error.message?.includes('Failed to fetch') ||
+          error.message?.includes('NetworkError') ||
+          error.message?.includes('timeout')
+        );
         const result: ResolvedTenant = {
           tenantId: null,
           subdomain: null,
@@ -136,8 +142,10 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
           status: 'not_found',
           isMainDomain: false,
         };
-        cachedResult = result;
-        cacheHostname = hostname;
+        if (!isNetworkError) {
+          cachedResult = result;
+          cacheHostname = hostname;
+        }
         return result;
       }
       
@@ -153,16 +161,14 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
       return result;
     } catch (err) {
       console.error('Error resolving custom domain:', err);
-      const result: ResolvedTenant = {
+      // Don't cache network errors
+      return {
         tenantId: null,
         subdomain: null,
         tenantName: null,
         status: 'not_found',
         isMainDomain: false,
       };
-      cachedResult = result;
-      cacheHostname = hostname;
-      return result;
     }
   })();
   
