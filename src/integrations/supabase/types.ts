@@ -3822,8 +3822,12 @@ export type Database = {
       landing_product_blocked_dates: {
         Row: {
           blocked_date: string
+          check_in_time: string | null
+          check_out_time: string | null
           created_at: string
           created_by: string | null
+          customer_name: string | null
+          customer_phone: string | null
           id: string
           note: string | null
           product_id: string
@@ -3832,8 +3836,12 @@ export type Database = {
         }
         Insert: {
           blocked_date: string
+          check_in_time?: string | null
+          check_out_time?: string | null
           created_at?: string
           created_by?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           id?: string
           note?: string | null
           product_id: string
@@ -3842,8 +3850,12 @@ export type Database = {
         }
         Update: {
           blocked_date?: string
+          check_in_time?: string | null
+          check_out_time?: string | null
           created_at?: string
           created_by?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           id?: string
           note?: string | null
           product_id?: string
