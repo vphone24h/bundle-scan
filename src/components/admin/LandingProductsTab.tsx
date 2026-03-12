@@ -646,7 +646,10 @@ export function LandingProductsTab() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{p.name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className={`font-medium text-sm truncate ${p.is_sold_out ? 'text-muted-foreground line-through' : ''}`}>{p.name}</p>
+                        {p.is_sold_out && <Badge variant="destructive" className="text-[9px] shrink-0 px-1.5 py-0">Hết hàng</Badge>}
+                      </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         {p.sale_price ? (
                           <>
