@@ -379,7 +379,7 @@ export function BookingDialog({
               className="w-full h-11 font-semibold"
               style={{ backgroundColor: primaryColor }}
               onClick={handleSubmit}
-              disabled={placeOrder.isPending || (mode === 'range' && rangeConflictInfo.hasConflict)}
+              disabled={placeOrder.isPending}
             >
               {placeOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Xác nhận đặt lịch {mode === 'range' && rangeDays > 0 ? `(${rangeDays} ngày)` : ''}
