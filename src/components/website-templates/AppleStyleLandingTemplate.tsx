@@ -457,6 +457,7 @@ export default function AppleStyleLandingTemplate({
     setSubmittedValue('');
     setPersistedResults(null);
     setLookupEnabled(false);
+    onRequireCatalogData?.();
     setPageView('home');
   };
   const handleSearch = () => {
@@ -481,6 +482,9 @@ export default function AppleStyleLandingTemplate({
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
   const navigateTo = (view: PageView) => {
+    if (view !== 'warranty') {
+      onRequireCatalogData?.();
+    }
     setPageView(view); setSelectedArticle(null); setSelectedCategoryId(null); setSelectedProduct(null);
     const pagePath = buildPagePath(view);
     window.history.replaceState(null, '', pagePath === '/' ? '/' : pagePath);
@@ -488,6 +492,7 @@ export default function AppleStyleLandingTemplate({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const openArticle = (a: LandingArticle) => {
+    onRequireCatalogData?.();
     setSelectedArticle(a); setPageView('article-detail');
     const articlePath = buildArticlePath(a.title, a.id);
     window.history.replaceState(null, '', articlePath);
@@ -495,6 +500,7 @@ export default function AppleStyleLandingTemplate({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const openProduct = (p: LandingProduct) => {
+    onRequireCatalogData?.();
     setSelectedProduct(p);
     const categories = productsData?.categories || [];
     const category = categories.find(c => c.id === p.category_id);

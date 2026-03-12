@@ -392,6 +392,7 @@ export default function UniversalStoreTemplate({
   };
 
   const openProduct = (p: LandingProduct) => {
+    onRequireCatalogData?.();
     setSelectedProduct(p);
     const categories = productsData?.categories || [];
     const category = categories.find(c => c.id === p.category_id);
