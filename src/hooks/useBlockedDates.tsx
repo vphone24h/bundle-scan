@@ -6,6 +6,10 @@ export interface BlockedDate {
   tenant_id: string;
   product_id: string;
   blocked_date: string;
+  check_in_time: string;
+  check_out_time: string;
+  customer_name: string | null;
+  customer_phone: string | null;
   status: string;
   note: string | null;
   created_by: string | null;
@@ -30,7 +34,7 @@ export function useBlockedDates(productId: string | null) {
   });
 }
 
-// Public: get blocked dates for a product (for customer booking)
+// Public: get blocked dates with time info for a product (for customer booking)
 export function usePublicBlockedDates(tenantId: string | null, productId: string | null) {
   return useQuery({
     queryKey: ['public-blocked-dates', tenantId, productId],
@@ -38,16 +42,57 @@ export function usePublicBlockedDates(tenantId: string | null, productId: string
       if (!tenantId || !productId) return [];
       const { data, error } = await supabase
         .from('landing_product_blocked_dates' as any)
-        .select('blocked_date')
+        .select('blocked_date, check_in_time, check_out_time, customer_name')
         .eq('tenant_id', tenantId)
         .eq('product_id', productId)
         .gte('blocked_date', new Date().toISOString().split('T')[0]);
       if (error) throw error;
-      return (data as unknown as { blocked_date: string }[]).map(d => d.blocked_date);
+      return data as unknown as { blocked_date: string; check_in_time: string; check_out_time: string; customer_name: string | null }[];
     },
     enabled: !!tenantId && !!productId,
     staleTime: 1000 * 60 * 2,
   });
+}
+
+/** 
+ * Check if a new booking time range conflicts with existing bookings on a given date.
+ * Includes a 2-hour cleaning buffer after each checkout.
+ */
+export function checkTimeConflict(
+  existingBookings: { blocked_date: string; check_in_time: string; check_out_time: string }[],
+  date: string,
+  newCheckInTime: string,
+  newCheckOutTime: string,
+  cleaningBufferHours: number = 2
+): { hasConflict: boolean; message: string } {
+  const bookingsOnDate = existingBookings.filter(b => b.blocked_date === date);
+  if (bookingsOnDate.length === 0) return { hasConflict: false, message: '' };
+
+  const toMinutes = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + (m || 0);
+  };
+
+  const newIn = toMinutes(newCheckInTime);
+  const newOut = toMinutes(newCheckOutTime);
+
+  for (const booking of bookingsOnDate) {
+    const existIn = toMinutes(booking.check_in_time || '14:00');
+    const existOut = toMinutes(booking.check_out_time || '12:00');
+    const existOutWithBuffer = existOut + cleaningBufferHours * 60;
+
+    // Conflict: new check-in is before existing checkout + buffer
+    // AND new checkout is after existing check-in
+    if (newIn < existOutWithBuffer && newOut > existIn) {
+      const bufferTime = `${String(Math.floor(existOutWithBuffer / 60)).padStart(2, '0')}:${String(existOutWithBuffer % 60).padStart(2, '0')}`;
+      return {
+        hasConflict: true,
+        message: `Phòng có khách đặt ${booking.check_in_time || '14:00'}-${booking.check_out_time || '12:00'}, cần dọn dẹp 2 tiếng. Có thể đặt từ ${bufferTime} trở đi.`,
+      };
+    }
+  }
+
+  return { hasConflict: false, message: '' };
 }
 
 // Admin: toggle a date (add or remove)
@@ -55,7 +100,6 @@ export function useToggleBlockedDate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ tenantId, productId, date, note }: { tenantId: string; productId: string; date: string; note?: string }) => {
-      // Check if exists
       const { data: existing } = await supabase
         .from('landing_product_blocked_dates' as any)
         .select('id')
@@ -65,7 +109,6 @@ export function useToggleBlockedDate() {
         .maybeSingle();
 
       if (existing) {
-        // Remove
         const { error } = await supabase
           .from('landing_product_blocked_dates' as any)
           .delete()
@@ -73,7 +116,6 @@ export function useToggleBlockedDate() {
         if (error) throw error;
         return { action: 'removed' as const };
       } else {
-        // Add
         const { error } = await supabase
           .from('landing_product_blocked_dates' as any)
           .insert([{ tenant_id: tenantId, product_id: productId, blocked_date: date, note }]);
@@ -88,15 +130,27 @@ export function useToggleBlockedDate() {
   });
 }
 
-// Admin: bulk add blocked dates
+// Admin: bulk add blocked dates with time info
 export function useBulkAddBlockedDates() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ tenantId, productId, dates, note }: { tenantId: string; productId: string; dates: string[]; note?: string }) => {
-      const rows = dates.map(d => ({ tenant_id: tenantId, product_id: productId, blocked_date: d, note }));
+    mutationFn: async ({ tenantId, productId, dates, note, checkInTime, checkOutTime, customerName, customerPhone }: {
+      tenantId: string; productId: string; dates: string[]; note?: string;
+      checkInTime?: string; checkOutTime?: string; customerName?: string; customerPhone?: string;
+    }) => {
+      const rows = dates.map(d => ({
+        tenant_id: tenantId,
+        product_id: productId,
+        blocked_date: d,
+        note,
+        check_in_time: checkInTime || '14:00',
+        check_out_time: checkOutTime || '12:00',
+        customer_name: customerName,
+        customer_phone: customerPhone,
+      }));
       const { error } = await supabase
         .from('landing_product_blocked_dates' as any)
-        .upsert(rows, { onConflict: 'tenant_id,product_id,blocked_date' });
+        .insert(rows);
       if (error) throw error;
     },
     onSuccess: (_, vars) => {
