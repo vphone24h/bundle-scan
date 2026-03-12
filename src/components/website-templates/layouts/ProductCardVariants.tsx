@@ -106,8 +106,9 @@ function TGDDProductCard({ product, onClick, accentColor }: ProductCardProps) {
 function HasakiProductCard({ product, onClick, accentColor }: ProductCardProps) {
   const discount = product.sale_price ? Math.round(((product.price - product.sale_price) / product.price) * 100) : 0;
   return (
-    <button onClick={onClick} className="bg-white rounded-2xl overflow-hidden text-left group transition-all hover:shadow-lg w-full border border-pink-100/50">
+    <button onClick={onClick} className={`bg-white rounded-2xl overflow-hidden text-left group transition-all hover:shadow-lg w-full border border-pink-100/50 ${product.is_sold_out ? 'opacity-80' : ''}`}>
       <div className="relative overflow-hidden">
+        {product.is_sold_out && <SoldOutOverlay />}
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
