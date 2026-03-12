@@ -157,6 +157,20 @@
         var hdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' };
         var getHdrs = { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey };
         
+        var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        
+        // Preload IP immediately in standalone mode for faster warranty lookup
+        if (isStandalone) {
+          window.__WARRANTY_IP_PROMISE__ = Promise.race([
+            fetch('https://api.ipify.org?format=json').then(function(r){return r.json()}).then(function(d){
+              var ip = typeof d.ip === 'string' ? d.ip.trim() : '';
+              window.__WARRANTY_CACHED_IP__ = (ip && ip !== 'unknown') ? ip : null;
+              return window.__WARRANTY_CACHED_IP__;
+            }),
+            new Promise(function(r){setTimeout(function(){r(null)},2000)})
+          ]).catch(function(){return null});
+        }
+        
         var storeId = isStore ? p.split('/')[2] : (h.endsWith('.vkho.vn') ? h.replace('.vkho.vn','') : h.split('.').slice(0,-1).join('.') || h);
         var titleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
         if (titleMeta && storeId) titleMeta.setAttribute('content', storeId);
