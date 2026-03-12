@@ -83,7 +83,9 @@ export default function WarrantyCheckPage() {
     },
     enabled: !!searchValue,
     staleTime: 1000 * 60 * 5,
-    retry: 1,
+    gcTime: 1000 * 60 * 30,
+    retry: 2,
+    retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 5000),
   });
 
   const handleSearch = () => {
