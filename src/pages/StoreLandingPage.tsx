@@ -337,7 +337,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     );
   }
 
-  const branches: BranchInfo[] = landingData?.branches || [];
+  const branches: BranchInfo[] = effectiveLandingData?.branches || [];
 
   // Skeleton for lazy template loading
   const templateFallback = (
