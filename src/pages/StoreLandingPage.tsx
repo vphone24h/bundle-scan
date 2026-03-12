@@ -205,16 +205,39 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const { storeId: storeIdFromParams } = useParams<{ storeId: string }>();
   const resolvedTenant = useTenantResolver();
   const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain;
-  const hasIdentifier = !!storeId || !!resolvedTenant.tenantId;
+  const cacheScope = storeId || resolvedTenant.tenantId || (typeof window !== 'undefined' ? window.location.hostname : null);
+  const landingBootstrapKey = cacheScope ? `${LANDING_BOOTSTRAP_PREFIX}${cacheScope}` : null;
+  const [cachedLandingData, setCachedLandingData] = useState<LandingBootstrapCache | null>(() => readLandingBootstrap(landingBootstrapKey));
+
+  useEffect(() => {
+    setCachedLandingData(readLandingBootstrap(landingBootstrapKey));
+  }, [landingBootstrapKey]);
+
   const { data: landingData, isLoading } = usePublicLandingSettings(storeId, resolvedTenant.tenantId);
+  const effectiveLandingData = landingData ?? (cachedLandingData
+    ? {
+        tenant: cachedLandingData.tenant,
+        settings: cachedLandingData.settings,
+        branches: cachedLandingData.branches,
+      }
+    : null);
+
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const settings = landingData?.settings;
-  const tenant = landingData?.tenant;
-  const tenantId = tenant?.id || null;
+  const settings = effectiveLandingData?.settings;
+  const tenant = effectiveLandingData?.tenant;
+  const tenantId = tenant?.id || resolvedTenant.tenantId || null;
   const storeName = settings?.store_name || tenant?.name || storeId || '';
   const template = settings?.website_template || 'phone_store';
+
+  const hasIdentifier = !!storeId || !!tenantId;
+
+  // Detect PWA standalone mode for warranty-optimized startup
+  const isStandalone = typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true
+  );
 
   // Preload apple template if needed + preload IP for warranty lookup
   useEffect(() => {
@@ -222,11 +245,29 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     preloadClientIp();
   }, [template]);
 
-  const { data: productsData } = usePublicLandingProducts(tenantId);
-  const { data: articlesData } = usePublicLandingArticles(tenantId);
+  useEffect(() => {
+    if (!landingBootstrapKey || !landingData?.tenant) return;
+
+    writeLandingBootstrap(landingBootstrapKey, {
+      tenant: landingData.tenant,
+      settings: landingData.settings,
+      branches: landingData.branches || [],
+    });
+
+    setCachedLandingData({
+      tenant: landingData.tenant,
+      settings: landingData.settings,
+      branches: landingData.branches || [],
+      updatedAt: new Date().toISOString(),
+    });
+  }, [landingBootstrapKey, landingData]);
+
+  const shouldLoadCatalog = !isStandalone;
+  const { data: productsData } = usePublicLandingProducts(shouldLoadCatalog ? tenantId : null);
+  const { data: articlesData } = usePublicLandingArticles(shouldLoadCatalog ? tenantId : null);
 
   // PWA manifest
-  useDynamicManifest(storeName, storeId, settings?.store_logo_url);
+  useDynamicManifest(storeName, storeId || tenant?.subdomain || tenantId, settings?.store_logo_url);
 
   // OG meta
   const ogTitle = storeName ? `${storeName}` : undefined;
