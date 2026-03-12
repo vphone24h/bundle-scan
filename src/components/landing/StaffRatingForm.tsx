@@ -182,26 +182,9 @@ export function StaffRatingForm({
     );
   }
 
-  // Compact submitted state
+  // Compact submitted state - hide completely
   if (isSubmitted && !showThankYou) {
-    return (
-      <div className="mt-3 p-3 rounded-xl bg-green-50 border border-green-200 text-center space-y-1">
-        <div className="flex items-center justify-center gap-2">
-          <CheckCircle className="h-4 w-4 text-green-500" />
-          <span className="text-xs font-medium text-green-800">Đã đánh giá {staffName}</span>
-          <div className="flex gap-0.5">
-            {[1, 2, 3, 4, 5].map(i => (
-              <Star
-                key={i}
-                className="h-3 w-3"
-                fill={i <= rating ? '#f59e0b' : 'none'}
-                stroke={i <= rating ? '#f59e0b' : '#d1d5db'}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
