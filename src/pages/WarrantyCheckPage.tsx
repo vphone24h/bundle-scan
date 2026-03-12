@@ -69,7 +69,7 @@ export default function WarrantyCheckPage() {
     queryFn: async (): Promise<WarrantyItem[]> => {
       if (!searchValue) return [];
       const compact = searchValue.replace(/\s+/g, '');
-      const clientIp = await getClientIp();
+      const clientIp = await getClientIpFast();
       const isPhone = /^0\d{9,10}$/.test(compact);
 
       const { data, error } = await supabase.rpc(
