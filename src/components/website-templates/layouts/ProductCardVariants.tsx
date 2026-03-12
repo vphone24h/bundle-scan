@@ -60,7 +60,8 @@ function AppleProductCard({ product, onClick, accentColor }: ProductCardProps) {
 function TGDDProductCard({ product, onClick, accentColor }: ProductCardProps) {
   const discount = product.sale_price ? Math.round(((product.price - product.sale_price) / product.price) * 100) : 0;
   return (
-    <button onClick={onClick} className="bg-white rounded-xl border border-gray-200 overflow-hidden text-left group transition-all hover:shadow-xl hover:border-blue-300 w-full relative">
+    <button onClick={onClick} className={`bg-white rounded-xl border border-gray-200 overflow-hidden text-left group transition-all hover:shadow-xl hover:border-blue-300 w-full relative ${product.is_sold_out ? 'opacity-80' : ''}`}>
+      {product.is_sold_out && <SoldOutOverlay />}
       {discount > 0 && (
         <div className="absolute top-0 right-0 z-10 bg-red-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-bl-xl">
           -{discount}%
