@@ -820,41 +820,43 @@ export function LandingProductsTab() {
                   <Label className="text-xs font-medium">Bảng giá theo biến thể</Label>
                   <div className="space-y-1.5 max-h-60 overflow-y-auto">
                     {form.variant_prices.map((vp, i) => (
-                      <div key={i} className="flex items-center gap-2 p-2 rounded border bg-card text-xs">
-                        <span className="font-medium shrink-0 w-28 truncate">
+                      <div key={i} className="flex flex-col gap-1.5 p-2 rounded border bg-card text-xs">
+                        <span className="font-medium truncate">
                           {vp.option1}{vp.option2 ? ` / ${vp.option2}` : ''}
                         </span>
-                        <PriceInput
-                          value={vp.price}
-                          onChange={val => {
-                            const prices = [...form.variant_prices];
-                            prices[i] = { ...prices[i], price: val };
-                            setForm(p => ({ ...p, variant_prices: prices }));
-                          }}
-                          className="h-7 text-xs flex-1"
-                          placeholder="Giá"
-                        />
-                        <PriceInput
-                          value={vp.sale_price || 0}
-                          onChange={val => {
-                            const prices = [...form.variant_prices];
-                            prices[i] = { ...prices[i], sale_price: val || undefined };
-                            setForm(p => ({ ...p, variant_prices: prices }));
-                          }}
-                          className="h-7 text-xs flex-1"
-                          placeholder="Giá KM"
-                        />
-                        <Input
-                          type="number"
-                          value={vp.stock || ''}
-                          onChange={e => {
-                            const prices = [...form.variant_prices];
-                            prices[i] = { ...prices[i], stock: parseInt(e.target.value) || 0 };
-                            setForm(p => ({ ...p, variant_prices: prices }));
-                          }}
-                          className="h-7 text-xs w-16"
-                          placeholder="SL"
-                        />
+                        <div className="flex items-center gap-2">
+                          <PriceInput
+                            value={vp.price}
+                            onChange={val => {
+                              const prices = [...form.variant_prices];
+                              prices[i] = { ...prices[i], price: val };
+                              setForm(p => ({ ...p, variant_prices: prices }));
+                            }}
+                            className="h-7 text-xs flex-1 min-w-0"
+                            placeholder="Giá"
+                          />
+                          <PriceInput
+                            value={vp.sale_price || 0}
+                            onChange={val => {
+                              const prices = [...form.variant_prices];
+                              prices[i] = { ...prices[i], sale_price: val || undefined };
+                              setForm(p => ({ ...p, variant_prices: prices }));
+                            }}
+                            className="h-7 text-xs flex-1 min-w-0"
+                            placeholder="Giá KM"
+                          />
+                          <Input
+                            type="number"
+                            value={vp.stock || ''}
+                            onChange={e => {
+                              const prices = [...form.variant_prices];
+                              prices[i] = { ...prices[i], stock: parseInt(e.target.value) || 0 };
+                              setForm(p => ({ ...p, variant_prices: prices }));
+                            }}
+                            className="h-7 text-xs w-16 shrink-0"
+                            placeholder="SL"
+                          />
+                        </div>
                       </div>
                     ))}
                   </div>
