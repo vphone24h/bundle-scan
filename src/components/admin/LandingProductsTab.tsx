@@ -221,6 +221,7 @@ export function LandingProductsTab() {
     images: [] as string[],
     is_featured: false,
     is_active: true,
+    is_sold_out: false,
     variants: [] as LandingProductVariant[],
     home_tab_ids: [] as string[],
     // 2-level variants
