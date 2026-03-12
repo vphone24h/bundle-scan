@@ -239,19 +239,19 @@ export function BookingDialog({
                   value={date}
                   onChange={e => {
                     const v = e.target.value;
-                    if (blockedDateSet.has(v)) {
+                    if (blockedDateStrings.has(v)) {
                       toast.error('Ngày này đã hết chỗ');
                       return;
                     }
                     setDate(v);
                   }}
-                  className={`h-11 text-base ${date && blockedDateSet.has(date) ? 'border-destructive' : ''}`}
+                  className={`h-11 text-base ${date && blockedDateStrings.has(date) ? 'border-destructive' : ''}`}
                   min={new Date().toISOString().split('T')[0]}
                 />
                 {blockedDates.length > 0 && (
                   <p className="text-xs text-destructive mt-1">
                     Các ngày đã hết: {blockedDates.slice(0, 5).map(d => {
-                      const parts = d.split('-');
+                      const parts = d.blocked_date.split('-');
                       return `${parts[2]}/${parts[1]}`;
                     }).join(', ')}{blockedDates.length > 5 ? '...' : ''}
                   </p>
