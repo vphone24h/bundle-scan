@@ -191,7 +191,6 @@ export function BookingDialog({
 
     if (mode === 'single') {
       if (!date) { toast.error('Vui lòng chọn ngày'); return; }
-      if (blockedDateStrings.has(date)) { toast.error('Ngày này đã hết chỗ, vui lòng chọn ngày khác'); return; }
       if (requireTime && !time) { toast.error('Vui lòng chọn giờ'); return; }
       try {
         const bookingNote = `[${title}] Ngày: ${date}${time ? ` - Giờ: ${time}` : ''}${note.trim() ? ` - ${note.trim()}` : ''}`;
