@@ -343,6 +343,7 @@ export default function UniversalStoreTemplate({
     setSubmittedValue('');
     setPersistedResults(null);
     setLookupEnabled(false);
+    onRequireCatalogData?.();
     setPageView('home');
   };
   const handleSearch = () => {
@@ -367,6 +368,9 @@ export default function UniversalStoreTemplate({
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
 
   const navigateTo = (view: PageView, opts?: { keepCategory?: boolean; filterTag?: string | null }) => {
+    if (view !== 'warranty') {
+      onRequireCatalogData?.();
+    }
     setPageView(view); setSelectedArticle(null); setSelectedProduct(null); setSelectedArticleCategoryId(null);
     if (!opts?.keepCategory) setSelectedCategoryId(null);
     setProductFilterTag(opts?.filterTag ?? null);
@@ -379,6 +383,7 @@ export default function UniversalStoreTemplate({
   };
 
   const openArticle = (article: LandingArticle) => {
+    onRequireCatalogData?.();
     setSelectedArticle(article); setPageView('article-detail');
     const articlePath = buildArticlePath(article.title, article.id);
     window.history.replaceState(null, '', articlePath);
