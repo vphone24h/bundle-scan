@@ -91,10 +91,23 @@ export function useDashboardStats() {
         todayImportsQuery = todayImportsQuery.eq('branch_id', branchId);
       }
 
-      const [{ data: todayExports }, { data: todayReturns }, { count: todayImportsCount }] = await Promise.all([
+      // Cash book: expenses + other income for today (to calculate net profit like Reports)
+      let cashBookQuery = supabase
+        .from('cash_book')
+        .select('type, amount')
+        .eq('is_business_accounting', true)
+        .gte('transaction_date', todayStartUTC)
+        .lte('transaction_date', todayEndUTC);
+
+      if (shouldFilter && branchId) {
+        cashBookQuery = cashBookQuery.eq('branch_id', branchId);
+      }
+
+      const [{ data: todayExports }, { data: todayReturns }, { count: todayImportsCount }, { data: cashBookEntries }] = await Promise.all([
         exportQuery,
         returnQuery,
         todayImportsQuery,
+        cashBookQuery,
       ]);
 
       // Calculate revenue, profit, sold count — same logic as useReportStats
@@ -173,6 +186,20 @@ export function useDashboardStats() {
           : (ret.imei ? (dashImeiPriceMap[ret.imei] || 0) : 0);
         todayProfit -= (salePrice - importPrice);
       });
+
+      // Add other income and subtract expenses from cash_book
+      // to match "Lợi nhuận thuần" = LN kinh doanh + Thu nhập khác - Chi phí
+      let todayExpenses = 0;
+      let todayOtherIncome = 0;
+      cashBookEntries?.forEach((entry: any) => {
+        const amount = Number(entry.amount || 0);
+        if (entry.type === 'expense') {
+          todayExpenses += amount;
+        } else if (entry.type === 'income') {
+          todayOtherIncome += amount;
+        }
+      });
+      todayProfit = todayProfit + todayOtherIncome - todayExpenses;
 
       const todayImports = todayImportsCount || 0;
 
