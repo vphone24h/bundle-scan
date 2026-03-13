@@ -73,8 +73,8 @@ export function InterBranchTransferTab({
     }
 
     const validLines = lines.filter(l => {
-      const amt = parseFloat(l.amount);
-      return !isNaN(amt) && amt > 0;
+      const amt = parseFormattedNumber(l.amount);
+      return amt > 0;
     });
 
     if (validLines.length === 0) {
