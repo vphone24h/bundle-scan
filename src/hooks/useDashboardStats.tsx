@@ -186,6 +186,20 @@ export function useDashboardStats() {
         todayProfit -= (salePrice - importPrice);
       });
 
+      // Add other income and subtract expenses from cash_book
+      // to match "Lợi nhuận thuần" = LN kinh doanh + Thu nhập khác - Chi phí
+      let todayExpenses = 0;
+      let todayOtherIncome = 0;
+      cashBookEntries?.forEach((entry: any) => {
+        const amount = Number(entry.amount || 0);
+        if (entry.type === 'expense' && entry.is_business_accounting !== false) {
+          todayExpenses += amount;
+        } else if (entry.type === 'income' && entry.is_business_accounting !== false) {
+          todayOtherIncome += amount;
+        }
+      });
+      todayProfit = todayProfit + todayOtherIncome - todayExpenses;
+
       const todayImports = todayImportsCount || 0;
 
       return {
