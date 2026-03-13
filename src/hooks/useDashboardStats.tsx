@@ -193,9 +193,9 @@ export function useDashboardStats() {
       let todayOtherIncome = 0;
       cashBookEntries?.forEach((entry: any) => {
         const amount = Number(entry.amount || 0);
-        if (entry.type === 'expense' && entry.is_business_accounting !== false) {
+        if (entry.type === 'expense') {
           todayExpenses += amount;
-        } else if (entry.type === 'income' && entry.is_business_accounting !== false) {
+        } else if (entry.type === 'income') {
           todayOtherIncome += amount;
         }
       });
