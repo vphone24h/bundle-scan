@@ -60,7 +60,7 @@ export function InterBranchTransferTab({
     setLines(updated);
   };
 
-  const totalAmount = lines.reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0);
+  const totalAmount = lines.reduce((sum, l) => sum + parseFormattedNumber(l.amount), 0);
 
   const handleTransfer = async () => {
     if (!fromBranchId || !toBranchId) {
