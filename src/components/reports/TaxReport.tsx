@@ -51,8 +51,8 @@ const INDUSTRIES = [
 const REVENUE_TIERS = [
   { value: 'under_500m', label: 'Dưới 500 triệu', exempt: true, note: '' },
   { value: '500m_3b', label: 'Từ 500tr đến dưới 3 tỷ', exempt: false, note: 'TNCN 15%' },
-  { value: '3b_50b', label: 'Từ 3 tỷ đến dưới 50 tỷ', exempt: false, note: 'TNCN 15%' },
-  { value: 'over_50b', label: 'Trên 50 tỷ', exempt: false, note: 'TNCN 17%' },
+  { value: '3b_50b', label: 'Từ 3 tỷ đến dưới 50 tỷ', exempt: false, note: 'TNCN 17%' },
+  { value: 'over_50b', label: 'Trên 50 tỷ', exempt: false, note: 'TNCN 20%' },
 ];
 
 const TAX_METHODS = [
@@ -147,7 +147,7 @@ export function TaxReport() {
     const gtgt = revenue * (selectedIndustry.gtgt / 100);
 
     let tncn = 0;
-    const profitTncnRate = revenueTier === 'over_50b' ? 0.17 : 0.15;
+    const profitTncnRate = revenueTier === 'over_50b' ? 0.20 : (revenueTier === '3b_50b' ? 0.17 : 0.15);
     if (effectiveTaxMethod === 'revenue') {
       // Theo doanh số: luôn trừ 500 triệu miễn thuế
       const taxableRevenue = Math.max(0, revenue - 500_000_000);
@@ -449,9 +449,9 @@ export function TaxReport() {
                 </div>
               )}
               <div className="mt-2 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
-                <p>• <strong>Theo doanh số:</strong> TNCN = (Doanh thu − 500.000.000) × Thuế suất TNCN</p>
-                <p>• <strong>Theo lợi nhuận:</strong> TNCN = Lợi nhuận thuần × % mức thuế theo mốc doanh thu ở B2 ({revenueTier === 'over_50b' ? '17%' : '15%'}) <em>(phải có hóa đơn đầu vào)</em></p>
-                <p className="italic pt-1 font-medium text-amber-600 dark:text-amber-400">Lưu ý: Doanh thu từ 3-50 tỷ và trên 50 tỷ bắt buộc đóng thuế TNCN theo lợi nhuận.</p>
+                <p>• <strong>Theo doanh số:</strong> TNCN = (Doanh thu − 500.000.000) × Thuế suất TNCN theo ngành</p>
+                <p>• <strong>Theo lợi nhuận:</strong> TNCN = Lợi nhuận thuần × Thuế suất TNCN ({revenueTier === 'over_50b' ? '20%' : revenueTier === '3b_50b' ? '17%' : '15%'}) <em>(phải có hóa đơn đầu vào)</em></p>
+                <p className="italic pt-1 font-medium text-amber-600 dark:text-amber-400">Lưu ý: Doanh thu từ 3-50 tỷ bắt buộc đóng thuế TNCN 17%, trên 50 tỷ bắt buộc 20% theo lợi nhuận.</p>
                 {!mustUseProfit && <p className="italic">Doanh thu dưới 3 tỷ: cả 2 cách đều hợp lệ, hãy chọn cách nào cho số thuế thấp hơn.</p>}
               </div>
             </div>
