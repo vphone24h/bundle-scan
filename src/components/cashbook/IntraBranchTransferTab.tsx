@@ -8,6 +8,7 @@ import { ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useTransferFunds } from '@/hooks/useCashBook';
 import { formatCurrency } from '@/lib/mockData';
+import { formatInputNumber, parseFormattedNumber } from '@/lib/formatNumber';
 
 interface IntraBranchTransferTabProps {
   paymentSources: { id: string; name: string }[];
