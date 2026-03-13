@@ -171,11 +171,12 @@ export function InterBranchTransferTab({
               </div>
               <div className="flex-1">
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   placeholder="Số tiền"
                   className="h-9"
-                  value={line.amount}
-                  onChange={(e) => updateLine(index, 'amount', e.target.value)}
+                  value={formatInputNumber(line.amount)}
+                  onChange={(e) => updateLine(index, 'amount', e.target.value.replace(/\D/g, ''))}
                 />
               </div>
               {lines.length > 1 && (
