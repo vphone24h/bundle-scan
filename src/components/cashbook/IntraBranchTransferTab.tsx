@@ -82,7 +82,7 @@ export function IntraBranchTransferTab({
 
   const fromBalance = balanceBySource[formData.fromSource] || 0;
   const toBalance = balanceBySource[formData.toSource] || 0;
-  const transferAmount = parseFloat(formData.amount) || 0;
+  const transferAmount = parseFormattedNumber(formData.amount);
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
