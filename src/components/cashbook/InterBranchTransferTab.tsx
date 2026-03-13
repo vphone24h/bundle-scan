@@ -85,6 +85,7 @@ export function InterBranchTransferTab({
     try {
       // Execute all transfer lines
       for (const line of validLines) {
+        const lineAmount = parseFormattedNumber(line.amount);
         await transferFunds.mutateAsync({
           fromBranchId,
           toBranchId,
@@ -92,12 +93,12 @@ export function InterBranchTransferTab({
           toBranchName: getBranchName(toBranchId),
           paymentSource: line.paymentSource,
           paymentSourceName: getSourceName(line.paymentSource),
-          amount: parseFloat(line.amount),
+          amount: lineAmount,
           note: note || undefined,
         });
       }
 
-      const summary = validLines.map(l => `${getSourceName(l.paymentSource)}: ${formatCurrency(parseFloat(l.amount))}`).join(', ');
+      const summary = validLines.map(l => `${getSourceName(l.paymentSource)}: ${formatCurrency(parseFormattedNumber(l.amount))}`).join(', ');
       toast({
         title: 'Chuyển tiền liên chi nhánh thành công',
         description: `${getBranchName(fromBranchId)} → ${getBranchName(toBranchId)} | ${summary}`,
