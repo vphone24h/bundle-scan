@@ -8,6 +8,7 @@ import { ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useTransferFunds } from '@/hooks/useCashBook';
 import { formatCurrency } from '@/lib/mockData';
+import { formatInputNumber, parseFormattedNumber } from '@/lib/formatNumber';
 
 interface IntraBranchTransferTabProps {
   paymentSources: { id: string; name: string }[];
@@ -41,8 +42,8 @@ export function IntraBranchTransferTab({
     paymentSources.find(s => s.id === sourceId)?.name || sourceId;
 
   const handleTransfer = async () => {
-    const amount = parseFloat(formData.amount);
-    if (isNaN(amount) || amount <= 0) {
+    const amount = parseFormattedNumber(formData.amount);
+    if (amount <= 0) {
       toast({ title: 'Số tiền không hợp lệ', description: 'Vui lòng nhập số tiền lớn hơn 0', variant: 'destructive' });
       return;
     }
@@ -81,7 +82,7 @@ export function IntraBranchTransferTab({
 
   const fromBalance = balanceBySource[formData.fromSource] || 0;
   const toBalance = balanceBySource[formData.toSource] || 0;
-  const transferAmount = parseFloat(formData.amount) || 0;
+  const transferAmount = parseFormattedNumber(formData.amount);
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -114,7 +115,13 @@ export function IntraBranchTransferTab({
 
         <div className="space-y-2">
           <Label>Số tiền chuyển</Label>
-          <Input type="number" placeholder="0" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} />
+          <Input
+            type="text"
+            inputMode="numeric"
+            placeholder="0"
+            value={formatInputNumber(formData.amount)}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value.replace(/\D/g, '') })}
+          />
           {transferAmount > 0 && (
             <div className="text-xs space-y-1 p-2 rounded bg-muted">
               <p><span className="text-muted-foreground">{getSourceName(formData.fromSource)}:</span>{' '}<span className="text-destructive">{formatCurrency(fromBalance)} → {formatCurrency(fromBalance - transferAmount)}</span></p>

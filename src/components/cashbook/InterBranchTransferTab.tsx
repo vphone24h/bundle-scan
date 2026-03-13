@@ -8,6 +8,7 @@ import { ArrowRight, Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useTransferFundsBetweenBranches } from '@/hooks/useCashBook';
 import { formatCurrency } from '@/lib/mockData';
+import { formatInputNumber, parseFormattedNumber } from '@/lib/formatNumber';
 
 interface InterBranchTransferTabProps {
   paymentSources: { id: string; name: string }[];
@@ -59,7 +60,7 @@ export function InterBranchTransferTab({
     setLines(updated);
   };
 
-  const totalAmount = lines.reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0);
+  const totalAmount = lines.reduce((sum, l) => sum + parseFormattedNumber(l.amount), 0);
 
   const handleTransfer = async () => {
     if (!fromBranchId || !toBranchId) {
@@ -72,8 +73,8 @@ export function InterBranchTransferTab({
     }
 
     const validLines = lines.filter(l => {
-      const amt = parseFloat(l.amount);
-      return !isNaN(amt) && amt > 0;
+      const amt = parseFormattedNumber(l.amount);
+      return amt > 0;
     });
 
     if (validLines.length === 0) {
@@ -84,6 +85,7 @@ export function InterBranchTransferTab({
     try {
       // Execute all transfer lines
       for (const line of validLines) {
+        const lineAmount = parseFormattedNumber(line.amount);
         await transferFunds.mutateAsync({
           fromBranchId,
           toBranchId,
@@ -91,12 +93,12 @@ export function InterBranchTransferTab({
           toBranchName: getBranchName(toBranchId),
           paymentSource: line.paymentSource,
           paymentSourceName: getSourceName(line.paymentSource),
-          amount: parseFloat(line.amount),
+          amount: lineAmount,
           note: note || undefined,
         });
       }
 
-      const summary = validLines.map(l => `${getSourceName(l.paymentSource)}: ${formatCurrency(parseFloat(l.amount))}`).join(', ');
+      const summary = validLines.map(l => `${getSourceName(l.paymentSource)}: ${formatCurrency(parseFormattedNumber(l.amount))}`).join(', ');
       toast({
         title: 'Chuyển tiền liên chi nhánh thành công',
         description: `${getBranchName(fromBranchId)} → ${getBranchName(toBranchId)} | ${summary}`,
@@ -169,11 +171,12 @@ export function InterBranchTransferTab({
               </div>
               <div className="flex-1">
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   placeholder="Số tiền"
                   className="h-9"
-                  value={line.amount}
-                  onChange={(e) => updateLine(index, 'amount', e.target.value)}
+                  value={formatInputNumber(line.amount)}
+                  onChange={(e) => updateLine(index, 'amount', e.target.value.replace(/\D/g, ''))}
                 />
               </div>
               {lines.length > 1 && (
