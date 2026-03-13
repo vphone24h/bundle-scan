@@ -115,7 +115,13 @@ export function IntraBranchTransferTab({
 
         <div className="space-y-2">
           <Label>Số tiền chuyển</Label>
-          <Input type="number" placeholder="0" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} />
+          <Input
+            type="text"
+            inputMode="numeric"
+            placeholder="0"
+            value={formatInputNumber(formData.amount)}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value.replace(/\D/g, '') })}
+          />
           {transferAmount > 0 && (
             <div className="text-xs space-y-1 p-2 rounded bg-muted">
               <p><span className="text-muted-foreground">{getSourceName(formData.fromSource)}:</span>{' '}<span className="text-destructive">{formatCurrency(fromBalance)} → {formatCurrency(fromBalance - transferAmount)}</span></p>
