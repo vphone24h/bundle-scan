@@ -42,8 +42,8 @@ export function IntraBranchTransferTab({
     paymentSources.find(s => s.id === sourceId)?.name || sourceId;
 
   const handleTransfer = async () => {
-    const amount = parseFloat(formData.amount);
-    if (isNaN(amount) || amount <= 0) {
+    const amount = parseFormattedNumber(formData.amount);
+    if (amount <= 0) {
       toast({ title: 'Số tiền không hợp lệ', description: 'Vui lòng nhập số tiền lớn hơn 0', variant: 'destructive' });
       return;
     }
