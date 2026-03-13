@@ -94,7 +94,8 @@ export function useDashboardStats() {
       // Cash book: expenses + other income for today (to calculate net profit like Reports)
       let cashBookQuery = supabase
         .from('cash_book')
-        .select('type, amount, is_business_accounting')
+        .select('type, amount')
+        .eq('is_business_accounting', true)
         .gte('transaction_date', todayStartUTC)
         .lte('transaction_date', todayEndUTC);
 
