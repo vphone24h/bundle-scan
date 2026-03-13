@@ -147,7 +147,7 @@ export function TaxReport() {
     const gtgt = revenue * (selectedIndustry.gtgt / 100);
 
     let tncn = 0;
-    const profitTncnRate = revenueTier === 'over_50b' ? 0.17 : 0.15;
+    const profitTncnRate = revenueTier === 'over_50b' ? 0.20 : (revenueTier === '3b_50b' ? 0.17 : 0.15);
     if (effectiveTaxMethod === 'revenue') {
       // Theo doanh số: luôn trừ 500 triệu miễn thuế
       const taxableRevenue = Math.max(0, revenue - 500_000_000);
