@@ -91,10 +91,22 @@ export function useDashboardStats() {
         todayImportsQuery = todayImportsQuery.eq('branch_id', branchId);
       }
 
-      const [{ data: todayExports }, { data: todayReturns }, { count: todayImportsCount }] = await Promise.all([
+      // Cash book: expenses + other income for today (to calculate net profit like Reports)
+      let cashBookQuery = supabase
+        .from('cash_book')
+        .select('type, amount, is_business_accounting')
+        .gte('transaction_date', todayStartUTC)
+        .lte('transaction_date', todayEndUTC);
+
+      if (shouldFilter && branchId) {
+        cashBookQuery = cashBookQuery.eq('branch_id', branchId);
+      }
+
+      const [{ data: todayExports }, { data: todayReturns }, { count: todayImportsCount }, { data: cashBookEntries }] = await Promise.all([
         exportQuery,
         returnQuery,
         todayImportsQuery,
+        cashBookQuery,
       ]);
 
       // Calculate revenue, profit, sold count — same logic as useReportStats
