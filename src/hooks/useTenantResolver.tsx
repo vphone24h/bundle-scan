@@ -102,8 +102,8 @@ function persistResolvedTenant(hostname: string, result: ResolvedTenant) {
  * Resolve tenant - shared function that caches and deduplicates requests
  */
 async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
-  // Return cached result immediately
-  if (cachedResult && cacheHostname === hostname) {
+  // Return cached result immediately (except stale not_found)
+  if (cachedResult && cacheHostname === hostname && cachedResult.status !== 'not_found') {
     return cachedResult;
   }
 
