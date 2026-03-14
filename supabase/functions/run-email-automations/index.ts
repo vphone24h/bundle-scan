@@ -457,7 +457,8 @@ Deno.serve(async (req) => {
             .select('id, name, phone, email')
             .eq('tenant_id', automation.tenant_id)
             .not('email', 'is', null)
-            .lt('updated_at', cutoffDate)
+            .not('last_purchase_date', 'is', null)
+            .lt('last_purchase_date', cutoffDate)
             .limit(500)
 
           eligibleReceipts = (customers || []).map((c: any) => ({
