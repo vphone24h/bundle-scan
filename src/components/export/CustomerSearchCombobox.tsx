@@ -88,18 +88,18 @@ export function CustomerSearchCombobox({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Unified search by phone or name
+  // Unified search by phone or name - optimized
   useEffect(() => {
     if (searchQuery.length >= 2 && !selectedCustomer) {
       setIsSearching(true);
       const timer = setTimeout(async () => {
-        // Check if query looks like a phone number
         const isPhoneSearch = /^\d+$/.test(searchQuery);
         
-        let query = supabase.from('customers').select('*');
+        let query = supabase
+          .from('customers')
+          .select('id, name, phone, address, email, source, current_points, pending_points, total_spent, membership_tier, status, birthday');
         
         if (isPhoneSearch) {
-          // Use prefix match for phone (much faster with index)
           query = query.ilike('phone', `${searchQuery}%`);
         } else {
           query = query.ilike('name', `%${searchQuery}%`);
@@ -121,7 +121,7 @@ export function CustomerSearchCombobox({
         setSuggestions(customers);
         setShowDropdown(customers.length > 0);
         setIsSearching(false);
-      }, 300);
+      }, 150);
       return () => clearTimeout(timer);
     } else {
       setSuggestions([]);
