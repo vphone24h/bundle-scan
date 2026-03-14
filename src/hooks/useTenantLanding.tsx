@@ -208,6 +208,13 @@ function persistPublicLandingData(
 
 // Hook để lấy landing settings công khai từ subdomain hoặc tenantId (custom domain)
 export function usePublicLandingSettings(subdomain: string | null, tenantIdFromDomain?: string | null) {
+  // CRITICAL FIX: Use cached data as placeholderData so the query never starts in "loading" state
+  // when we already have cached data. This prevents infinite skeleton in PWA.
+  const cachedPlaceholder = useMemo(
+    () => getCachedPublicLandingData(subdomain, tenantIdFromDomain),
+    [subdomain, tenantIdFromDomain]
+  );
+
   return useQuery({
     queryKey: ['public-landing-settings', subdomain, tenantIdFromDomain],
     queryFn: async (): Promise<PublicLandingResolvedData | null> => {
