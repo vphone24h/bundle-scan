@@ -7721,6 +7721,23 @@ export type Database = {
         Returns: Json
       }
       resolve_tenant_by_domain: { Args: { _domain: string }; Returns: string }
+      search_customers_for_sale: {
+        Args: { _limit?: number; _query: string }
+        Returns: {
+          address: string
+          birthday: string
+          current_points: number
+          email: string
+          id: string
+          membership_tier: Database["public"]["Enums"]["membership_tier"]
+          name: string
+          pending_points: number
+          phone: string
+          source: string
+          status: Database["public"]["Enums"]["customer_status"]
+          total_spent: number
+        }[]
+      }
       search_product_suggestions: {
         Args: { p_limit?: number; p_search: string }
         Returns: {
