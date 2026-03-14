@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { NavItemConfig, HomeSection } from '@/lib/industryConfig';
+import {
+  getPublicLandingCacheKeys,
+  readPublicLandingCache,
+  writePublicLandingCache,
+} from '@/lib/publicLandingCache';
 
 export interface HomeSectionItem {
   id: HomeSection | string; // string for custom tab IDs like "productTab_xxx"
