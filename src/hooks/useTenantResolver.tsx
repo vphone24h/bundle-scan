@@ -271,9 +271,11 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
     }
   })();
 
-  const result = await resolutionPromise;
-  resolutionPromise = null;
-  return result;
+  try {
+    return await resolutionPromise;
+  } finally {
+    resolutionPromise = null;
+  }
 }
 
 /**
