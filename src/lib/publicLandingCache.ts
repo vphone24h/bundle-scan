@@ -1,5 +1,6 @@
 const PUBLIC_LANDING_CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 const PUBLIC_LANDING_CACHE_PREFIX = 'public_landing_cache_v1';
+const PUBLIC_LANDING_LAST_SUCCESS_KEY = `${PUBLIC_LANDING_CACHE_PREFIX}:last_success`;
 
 export interface PublicLandingCachePayload {
   tenant: { id: string; name: string; subdomain: string; status: string };
@@ -85,5 +86,39 @@ export function writePublicLandingCache(keys: string[], payload: PublicLandingCa
     } catch {
       // Ignore storage errors
     }
+  }
+
+  // Emergency fallback snapshot for PWA cold starts when key-based lookup misses.
+  try {
+    window.localStorage.setItem(PUBLIC_LANDING_LAST_SUCCESS_KEY, JSON.stringify(record));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+export function readLastSuccessfulPublicLandingCache(): PublicLandingCachePayload | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = window.localStorage.getItem(PUBLIC_LANDING_LAST_SUCCESS_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Partial<PublicLandingCacheRecord>;
+    if (!parsed || typeof parsed.savedAt !== 'number') return null;
+
+    if (Date.now() - parsed.savedAt > PUBLIC_LANDING_CACHE_TTL_MS) {
+      window.localStorage.removeItem(PUBLIC_LANDING_LAST_SUCCESS_KEY);
+      return null;
+    }
+
+    if (!parsed.tenant || !('settings' in parsed)) return null;
+
+    return {
+      tenant: parsed.tenant as PublicLandingCachePayload['tenant'],
+      settings: parsed.settings,
+      branches: Array.isArray(parsed.branches) ? parsed.branches : [],
+    };
+  } catch {
+    return null;
   }
 }

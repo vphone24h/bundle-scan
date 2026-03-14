@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { NavItemConfig, HomeSection } from '@/lib/industryConfig';
 import {
   getPublicLandingCacheKeys,
+  readLastSuccessfulPublicLandingCache,
   readPublicLandingCache,
   writePublicLandingCache,
 } from '@/lib/publicLandingCache';
@@ -183,7 +184,7 @@ function getCachedPublicLandingData(
     hostname: typeof window !== 'undefined' ? window.location.hostname : null,
   });
 
-  const cached = readPublicLandingCache(cacheKeys);
+  const cached = readPublicLandingCache(cacheKeys) || readLastSuccessfulPublicLandingCache();
   if (!cached?.tenant || !('settings' in cached)) return null;
 
   return {

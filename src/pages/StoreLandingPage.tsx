@@ -201,6 +201,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     || null;
   const resolvedTenantId = resolvedTenant.tenantId || persistedIdentity?.tenantId || null;
   const hasIdentifier = !!storeId || !!resolvedTenantId;
+  const hasRecoverySignal = hasIdentifier || !!storeIdFromHint || !!persistedIdentity?.shopId || !!persistedIdentity?.tenantId;
 
   const {
     data: landingData,
@@ -279,7 +280,8 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   }, [isStandalone, location.pathname, location.search, navigate]);
 
   useEffect(() => {
-    if (!isError || !hasIdentifier) return;
+    // Keep retrying while we have recovery signal but tenant is still missing.
+    if (!hasRecoverySignal || tenant) return;
 
     const retry = () => {
       refetchLandingData();
@@ -291,16 +293,19 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       }
     };
 
+    const intervalId = window.setInterval(retry, 4000);
+
     window.addEventListener('online', retry);
     window.addEventListener('focus', retry);
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
+      window.clearInterval(intervalId);
       window.removeEventListener('online', retry);
       window.removeEventListener('focus', retry);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [isError, hasIdentifier, refetchLandingData]);
+  }, [hasRecoverySignal, tenant, refetchLandingData]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -454,6 +459,20 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     );
   }
   if (!tenant) {
+    // If there are recovery signals (cached identity/store hint), avoid false "not found"
+    // and keep app in recover mode instead.
+    if (isStandalone && hasRecoverySignal) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <Card className="max-w-sm w-full"><CardContent className="pt-6 text-center space-y-2">
+            <Store className="h-14 w-14 mx-auto text-muted-foreground mb-2" />
+            <h2 className="text-lg font-semibold">Đang khôi phục cửa hàng…</h2>
+            <p className="text-sm text-muted-foreground">Mạng đang yếu, ứng dụng sẽ tự tải lại dữ liệu khi có kết nối.</p>
+          </CardContent></Card>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="max-w-sm w-full"><CardContent className="pt-6 text-center">
