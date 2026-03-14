@@ -625,6 +625,25 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
 
 const LOG_PAGE_SIZE = 20;
 
+const ORDER_EMAIL_TYPE_LABELS: Record<string, string> = {
+  order_confirmation: 'Xác nhận đơn hàng',
+  order_confirmed: 'Đơn đã xác nhận',
+  order_shipping: 'Đang giao hàng',
+  order_warranty: 'Gửi bảo hành',
+  booking_confirmation: 'Xác nhận đặt lịch',
+  booking_consult: 'Xác nhận tư vấn',
+  booking_beauty: 'Xác nhận dịch vụ làm đẹp',
+  food_order: 'Xác nhận đặt món',
+  table_booking: 'Xác nhận đặt bàn',
+  delivery: 'Xác nhận giao tận nơi',
+  quote_request: 'Xác nhận yêu cầu báo giá',
+};
+
+function getOrderEmailTypeLabel(emailType?: string): string {
+  const normalized = emailType || 'order_confirmation';
+  return ORDER_EMAIL_TYPE_LABELS[normalized] || normalized;
+}
+
 function PaginationControls({ page, totalPages, onPageChange }: { page: number; totalPages: number; onPageChange: (p: number) => void }) {
   if (totalPages <= 1) return null;
   return (
