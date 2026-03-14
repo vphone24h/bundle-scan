@@ -730,6 +730,7 @@ function PaginatedOrderLogTable({ logs, statusFilter, page, onPageChange }: {
   page: number;
   onPageChange: (p: number) => void;
 }) {
+  const [viewHtml, setViewHtml] = useState<{ subject: string; html: string } | null>(null);
   const filtered = statusFilter === 'all' ? logs :
     statusFilter === 'sent' ? logs.filter((l: any) => l.status === 'sent' || l.status === 'success') :
     logs.filter((l: any) => l.status === 'failed' || l.status === 'error');
@@ -759,12 +760,20 @@ function PaginatedOrderLogTable({ logs, statusFilter, page, onPageChange }: {
           </TableHeader>
           <TableBody>
             {paged.map((log: any) => (
-              <TableRow key={log.id}>
+              <TableRow
+                key={log.id}
+                className={log.body_html ? 'cursor-pointer hover:bg-accent/50' : ''}
+                onClick={() => {
+                  if (log.body_html) {
+                    setViewHtml({ subject: log.subject || 'Email đơn hàng', html: log.body_html });
+                  }
+                }}
+              >
                 <TableCell className="whitespace-nowrap text-sm">
                   {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
                 </TableCell>
                 <TableCell className="text-sm max-w-[180px] truncate">{log.recipient_email}</TableCell>
-                <TableCell className="text-sm">{log.email_type}</TableCell>
+                <TableCell className="text-sm">{log.email_type || 'order_confirmation'}</TableCell>
                 <TableCell>
                   {(log.status === 'sent' || log.status === 'success') ? (
                     <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
@@ -781,6 +790,20 @@ function PaginatedOrderLogTable({ logs, statusFilter, page, onPageChange }: {
         </Table>
       </ScrollableTableWrapper>
       <PaginationControls page={page} totalPages={totalPages} onPageChange={onPageChange} />
+
+      <Dialog open={!!viewHtml} onOpenChange={() => setViewHtml(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base">{viewHtml?.subject}</DialogTitle>
+          </DialogHeader>
+          {viewHtml?.html && (
+            <div
+              className="border rounded-lg p-2 bg-white"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(viewHtml.html) }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -791,16 +814,31 @@ export function EmailAutomationTab() {
   const { data: automations, isLoading } = useEmailAutomations();
   const { data: logs } = useEmailAutomationLogs();
   const { data: orderEmailLogs } = useQuery({
-    queryKey: ['landing-email-logs'],
+    queryKey: ['landing-email-logs', tenant?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Try landing_order_email_logs first, fallback to platform logs for order confirmations
+      const { data: legacyData } = await supabase
         .from('landing_order_email_logs' as any)
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
-      if (error) throw error;
-      return data as any[];
+
+      const { data: platformData } = await supabase
+        .from('platform_email_automation_logs' as any)
+        .select('*')
+        .is('automation_id', null)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      // Merge both sources
+      const all = [
+        ...(legacyData || []).map((l: any) => ({ ...l, _src: 'legacy' })),
+        ...(platformData || []).map((l: any) => ({ ...l, email_type: 'order_confirmation', _src: 'platform' })),
+      ].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      return all.slice(0, 100) as any[];
     },
+    enabled: !!tenant?.id,
   });
   const updateMut = useUpdateAutomation();
   const deleteMut = useDeleteAutomation();
