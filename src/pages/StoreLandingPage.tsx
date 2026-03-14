@@ -169,7 +169,17 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     [currentHostname]
   );
 
-  const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain || persistedIdentity?.shopId || null;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const storeIdFromQuery = searchParams.get('store')?.trim().toLowerCase() || null;
+
+  // IMPORTANT: include `store` query param fallback restored from PWA hint
+  // so app can recover store context immediately after standalone relaunch.
+  const storeId = storeIdFromSubdomain
+    || storeIdFromParams
+    || resolvedTenant.subdomain
+    || storeIdFromQuery
+    || persistedIdentity?.shopId
+    || null;
   const resolvedTenantId = resolvedTenant.tenantId || persistedIdentity?.tenantId || null;
   const hasIdentifier = !!storeId || !!resolvedTenantId;
 
@@ -180,7 +190,6 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     refetch: refetchLandingData,
   } = usePublicLandingSettings(storeId, resolvedTenantId);
   const queryClient = useQueryClient();
-  const [searchParams, setSearchParams] = useSearchParams();
   const attemptedRouteRestoreRef = useRef(false);
 
   const settings = landingData?.settings;
