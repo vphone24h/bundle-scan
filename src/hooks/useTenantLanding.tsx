@@ -183,7 +183,7 @@ function getCachedPublicLandingData(
   });
 
   const cached = readPublicLandingCache(cacheKeys);
-  if (!cached?.tenant || !cached?.settings) return null;
+  if (!cached?.tenant || !('settings' in cached)) return null;
 
   return {
     tenant: cached.tenant,

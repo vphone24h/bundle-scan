@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
-import { useParams, useLocation, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
+import { useParams, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { usePublicLandingSettings, BranchInfo, preloadClientIp } from '@/hooks/useTenantLanding';
 import { usePublicLandingProducts } from '@/hooks/useLandingProducts';
 import { usePublicLandingArticles } from '@/hooks/useLandingArticles';
@@ -7,6 +7,7 @@ import { detectPageFromPath } from '@/lib/slugify';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { LandingCartProvider } from '@/hooks/useLandingCart';
+import { readPwaLastRoute, readPwaStoreIdentity, writePwaLastRoute, writePwaStoreIdentity } from '@/lib/pwaStoreSession';
 import { Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -158,22 +159,33 @@ const LAST_STORE_HINT_KEY = 'pwa_last_store_hint_v1';
 
 export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingPageProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { storeId: storeIdFromParams } = useParams<{ storeId: string }>();
   const resolvedTenant = useTenantResolver();
-  const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain;
-  const hasIdentifier = !!storeId || !!resolvedTenant.tenantId;
+  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : null;
+
+  const persistedIdentity = useMemo(
+    () => readPwaStoreIdentity(currentHostname),
+    [currentHostname]
+  );
+
+  const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain || persistedIdentity?.shopId || null;
+  const resolvedTenantId = resolvedTenant.tenantId || persistedIdentity?.tenantId || null;
+  const hasIdentifier = !!storeId || !!resolvedTenantId;
+
   const {
     data: landingData,
     isLoading,
     isError,
     refetch: refetchLandingData,
-  } = usePublicLandingSettings(storeId, resolvedTenant.tenantId);
+  } = usePublicLandingSettings(storeId, resolvedTenantId);
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const attemptedRouteRestoreRef = useRef(false);
 
   const settings = landingData?.settings;
   const tenant = landingData?.tenant;
-  const tenantId = tenant?.id || null;
+  const tenantId = tenant?.id || resolvedTenantId || null;
   const storeName = settings?.store_name || tenant?.name || storeId || '';
   const template = settings?.website_template || 'phone_store';
 
@@ -221,6 +233,24 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   }, [isStandalone, hasIdentifier, resolvedTenant.status, restoreStoreHintForStandalone]);
 
   useEffect(() => {
+    if (!isStandalone || typeof window === 'undefined') return;
+    if (attemptedRouteRestoreRef.current) return;
+
+    attemptedRouteRestoreRef.current = true;
+
+    const route = readPwaLastRoute(window.location.hostname);
+    if (!route) return;
+
+    const isRootLike = location.pathname === '/' || location.pathname === '/index';
+    const targetUrl = `${route.pathname}${route.search || ''}`;
+    const currentUrl = `${location.pathname}${location.search}`;
+
+    if (!isRootLike || targetUrl === currentUrl) return;
+
+    navigate(targetUrl, { replace: true });
+  }, [isStandalone, location.pathname, location.search, navigate]);
+
+  useEffect(() => {
     if (!isError || !hasIdentifier) return;
 
     const retry = () => {
@@ -247,21 +277,44 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const hintStoreId = (storeId || tenant?.subdomain || '').trim().toLowerCase();
-    if (!hintStoreId) return;
+    const hintStoreId = (storeId || tenant?.subdomain || persistedIdentity?.shopId || '').trim().toLowerCase();
+    if (!hintStoreId && !tenantId) return;
 
-    try {
-      window.localStorage.setItem(
-        LAST_STORE_HINT_KEY,
-        JSON.stringify({
-          storeId: hintStoreId,
-          savedAt: Date.now(),
-        })
-      );
-    } catch {
-      // Ignore storage errors
+    if (hintStoreId) {
+      try {
+        window.localStorage.setItem(
+          LAST_STORE_HINT_KEY,
+          JSON.stringify({
+            storeId: hintStoreId,
+            savedAt: Date.now(),
+          })
+        );
+      } catch {
+        // Ignore storage errors
+      }
     }
-  }, [storeId, tenant?.subdomain]);
+
+    writePwaStoreIdentity({
+      shopId: hintStoreId || null,
+      shopDomain: window.location.hostname,
+      tenantId: tenantId || null,
+    });
+  }, [storeId, tenant?.subdomain, tenantId, persistedIdentity?.shopId]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!tenantId) return;
+
+    const params = new URLSearchParams(location.search);
+    params.delete('__lovable_token');
+    const normalizedSearch = params.toString();
+
+    writePwaLastRoute({
+      shopDomain: window.location.hostname,
+      pathname: location.pathname,
+      search: normalizedSearch ? `?${normalizedSearch}` : '',
+    });
+  }, [tenantId, location.pathname, location.search]);
 
   const pathInfo = useMemo(() => detectPageFromPath(location.pathname), [location.pathname]);
   const hasDeepLinkContent = Boolean(
@@ -304,8 +357,10 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const ogImage = settings?.store_logo_url || undefined;
   useDynamicOGMeta(ogTitle, ogDesc, ogImage);
 
+  const shouldKeepRecovering = isStandalone && (!hasIdentifier || !tenant);
+
   // Loading / error states
-  if (isLoading || (isError && hasIdentifier) || (!hasIdentifier && resolvedTenant.status === 'loading')) {
+  if (isLoading || (isError && hasIdentifier) || (!hasIdentifier && resolvedTenant.status === 'loading') || shouldKeepRecovering) {
     return isStandalone ? (
       <div className="min-h-screen bg-white">
         <div className="h-14 bg-gray-100 animate-pulse" />
