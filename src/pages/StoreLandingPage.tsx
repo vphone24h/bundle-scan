@@ -159,16 +159,26 @@ const LAST_STORE_HINT_KEY = 'pwa_last_store_hint_v1';
 
 export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingPageProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { storeId: storeIdFromParams } = useParams<{ storeId: string }>();
   const resolvedTenant = useTenantResolver();
-  const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain;
-  const hasIdentifier = !!storeId || !!resolvedTenant.tenantId;
+  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : null;
+
+  const persistedIdentity = useMemo(
+    () => readPwaStoreIdentity(currentHostname),
+    [currentHostname]
+  );
+
+  const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain || persistedIdentity?.shopId || null;
+  const resolvedTenantId = resolvedTenant.tenantId || persistedIdentity?.tenantId || null;
+  const hasIdentifier = !!storeId || !!resolvedTenantId;
+
   const {
     data: landingData,
     isLoading,
     isError,
     refetch: refetchLandingData,
-  } = usePublicLandingSettings(storeId, resolvedTenant.tenantId);
+  } = usePublicLandingSettings(storeId, resolvedTenantId);
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
