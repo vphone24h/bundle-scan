@@ -158,6 +158,9 @@ function isRetryableLandingError(error: unknown): boolean {
     message.includes('timeout') ||
     message.includes('err_') ||
     message.includes('connection') ||
+    message.includes('network request failed') ||
+    message.includes('load failed') ||
+    message.includes('offline') ||
     code === 'PGRST301' ||
     code.startsWith('08')
   );
