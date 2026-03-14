@@ -165,17 +165,28 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const resolvedTenant = useTenantResolver();
   const currentHostname = typeof window !== 'undefined' ? window.location.hostname : null;
 
+  const tenantHostInfo = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return { subdomain: null, isMainDomain: true, hostname: '' };
+    }
+    return detectTenantFromHostname();
+  }, []);
+  const isCustomDomainHost = !tenantHostInfo.isMainDomain && !tenantHostInfo.subdomain;
+
   const persistedIdentity = useMemo(
     () => readPwaStoreIdentity(currentHostname),
     [currentHostname]
   );
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const storeIdFromQuery = searchParams.get('store')?.trim().toLowerCase() || null;
+  const storeIdFromQueryRaw = searchParams.get('store')?.trim().toLowerCase() || null;
+  const storeIdFromQuery = isCustomDomainHost ? null : storeIdFromQueryRaw;
 
   // Read PWA store hint immediately on startup (before effects run)
   const storeIdFromHint = useMemo(() => {
+    if (isCustomDomainHost) return null;
     if (typeof window === 'undefined') return null;
+
     try {
       const raw = window.localStorage.getItem(LAST_STORE_HINT_KEY);
       if (!raw) return null;
@@ -190,9 +201,9 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     } catch {
       return null;
     }
-  }, []);
+  }, [isCustomDomainHost]);
 
-  // IMPORTANT: include query + local hint fallback so standalone relaunch can recover store instantly.
+  // IMPORTANT: on custom domains, never let store hint/query override tenant-id resolution.
   const storeId = storeIdFromSubdomain
     || storeIdFromParams
     || resolvedTenant.subdomain
@@ -225,6 +236,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   );
 
   const restoreStoreHintForStandalone = useCallback(() => {
+    if (isCustomDomainHost) return false;
     if (typeof window === 'undefined') return false;
 
     try {
@@ -252,10 +264,11 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     } catch {
       return false;
     }
-  }, [searchParams, setSearchParams]);
+  }, [isCustomDomainHost, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!isStandalone) return;
+    if (isCustomDomainHost) return;
     if (hasIdentifier) return;
     if (resolvedTenant.status === 'loading') return;
 
