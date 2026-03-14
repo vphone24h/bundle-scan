@@ -201,6 +201,32 @@ function buildCustomHtml(blocks: any[], storeName: string, vars: Record<string, 
 </html>`
 }
 
+async function resolveLandingOrderId(
+  sb: any,
+  params: { orderId?: string; orderCode?: string; tenantId?: string; customerEmail?: string }
+): Promise<string | null> {
+  if (params.orderId) return params.orderId
+  if (!params.orderCode || !params.tenantId) return null
+
+  const { data, error } = await sb
+    .from('landing_orders')
+    .select('id, customer_email')
+    .eq('tenant_id', params.tenantId)
+    .eq('order_code', params.orderCode)
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  if (error || !data?.length) return null
+
+  if (params.customerEmail) {
+    const normalizedEmail = params.customerEmail.trim().toLowerCase()
+    const exactMatch = data.find((row: any) => (row.customer_email || '').toLowerCase() === normalizedEmail)
+    if (exactMatch) return exactMatch.id
+  }
+
+  return data[0].id
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
