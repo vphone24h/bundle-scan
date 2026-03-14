@@ -385,25 +385,36 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const ogImage = settings?.store_logo_url || undefined;
   useDynamicOGMeta(ogTitle, ogDesc, ogImage);
 
-  const shouldKeepRecovering = isStandalone && (!hasIdentifier || !tenant);
+  // Only keep recovering when BOTH identifier and tenant data are missing.
+  // This allows rendering cached tenant data instantly even if identifier is temporarily unavailable.
+  const shouldKeepRecovering = isStandalone && !hasIdentifier && !tenant;
 
   // CRITICAL FIX: Loading timeout to prevent infinite skeleton
   // After 5 seconds, stop showing skeleton regardless of API state
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   useEffect(() => {
     // Only start timeout if we're actually in a loading/recovering state
-    const shouldShowSkeleton = isLoading || (isError && hasIdentifier) || (!hasIdentifier && resolvedTenant.status === 'loading') || shouldKeepRecovering;
+    const shouldShowSkeleton =
+      (isLoading && !tenant)
+      || (isError && hasIdentifier && !tenant)
+      || (!hasIdentifier && !tenant && resolvedTenant.status === 'loading')
+      || shouldKeepRecovering;
+
     if (!shouldShowSkeleton) {
       setLoadingTimedOut(false);
       return;
     }
+
     const timer = setTimeout(() => setLoadingTimedOut(true), 5000);
     return () => clearTimeout(timer);
-  }, [isLoading, isError, hasIdentifier, resolvedTenant.status, shouldKeepRecovering]);
+  }, [isLoading, isError, hasIdentifier, tenant, resolvedTenant.status, shouldKeepRecovering]);
 
-  // If timed out, try to use cached data and stop showing skeleton
+  // If timed out, stop skeleton and allow cached UI/error UI to render
   const showSkeleton = !loadingTimedOut && (
-    isLoading || (isError && hasIdentifier) || (!hasIdentifier && resolvedTenant.status === 'loading') || shouldKeepRecovering
+    (isLoading && !tenant)
+    || (isError && hasIdentifier && !tenant)
+    || (!hasIdentifier && !tenant && resolvedTenant.status === 'loading')
+    || shouldKeepRecovering
   );
 
   // Loading / error states
