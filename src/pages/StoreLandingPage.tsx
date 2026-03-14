@@ -280,7 +280,8 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   }, [isStandalone, location.pathname, location.search, navigate]);
 
   useEffect(() => {
-    if (!isError || !hasIdentifier) return;
+    // Keep retrying while we have recovery signal but tenant is still missing.
+    if (!hasRecoverySignal || tenant) return;
 
     const retry = () => {
       refetchLandingData();
@@ -292,16 +293,19 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       }
     };
 
+    const intervalId = window.setInterval(retry, 4000);
+
     window.addEventListener('online', retry);
     window.addEventListener('focus', retry);
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
+      window.clearInterval(intervalId);
       window.removeEventListener('online', retry);
       window.removeEventListener('focus', retry);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [isError, hasIdentifier, refetchLandingData]);
+  }, [hasRecoverySignal, tenant, refetchLandingData]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
