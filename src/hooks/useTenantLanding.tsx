@@ -166,6 +166,46 @@ function isRetryableLandingError(error: unknown): boolean {
   );
 }
 
+interface PublicLandingResolvedData {
+  tenant: { id: string; name: string; subdomain: string; status: string };
+  settings: TenantLandingSettings;
+  branches: BranchInfo[];
+}
+
+function getCachedPublicLandingData(
+  subdomain: string | null,
+  tenantIdFromDomain?: string | null
+): PublicLandingResolvedData | null {
+  const cacheKeys = getPublicLandingCacheKeys({
+    subdomain,
+    tenantId: tenantIdFromDomain ?? null,
+    hostname: typeof window !== 'undefined' ? window.location.hostname : null,
+  });
+
+  const cached = readPublicLandingCache(cacheKeys);
+  if (!cached?.tenant || !cached?.settings) return null;
+
+  return {
+    tenant: cached.tenant,
+    settings: cached.settings as TenantLandingSettings,
+    branches: (cached.branches || []) as BranchInfo[],
+  };
+}
+
+function persistPublicLandingData(
+  subdomain: string | null,
+  tenantIdFromDomain: string | null | undefined,
+  payload: PublicLandingResolvedData
+) {
+  const cacheKeys = getPublicLandingCacheKeys({
+    subdomain: subdomain || payload.tenant?.subdomain || null,
+    tenantId: tenantIdFromDomain ?? payload.tenant?.id ?? null,
+    hostname: typeof window !== 'undefined' ? window.location.hostname : null,
+  });
+
+  writePublicLandingCache(cacheKeys, payload);
+}
+
 // Hook để lấy landing settings công khai từ subdomain hoặc tenantId (custom domain)
 export function usePublicLandingSettings(subdomain: string | null, tenantIdFromDomain?: string | null) {
   return useQuery({
