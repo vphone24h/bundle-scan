@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { NavItemConfig, HomeSection } from '@/lib/industryConfig';
@@ -208,6 +209,13 @@ function persistPublicLandingData(
 
 // Hook để lấy landing settings công khai từ subdomain hoặc tenantId (custom domain)
 export function usePublicLandingSettings(subdomain: string | null, tenantIdFromDomain?: string | null) {
+  // CRITICAL FIX: Use cached data as placeholderData so the query never starts in "loading" state
+  // when we already have cached data. This prevents infinite skeleton in PWA.
+  const cachedPlaceholder = useMemo(
+    () => getCachedPublicLandingData(subdomain, tenantIdFromDomain),
+    [subdomain, tenantIdFromDomain]
+  );
+
   return useQuery({
     queryKey: ['public-landing-settings', subdomain, tenantIdFromDomain],
     queryFn: async (): Promise<PublicLandingResolvedData | null> => {
@@ -338,10 +346,12 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
       return result;
     },
     enabled: !!subdomain || !!tenantIdFromDomain,
+    // Use cached data as placeholder so isLoading is false when cache exists
+    placeholderData: cachedPlaceholder ?? undefined,
     retry: (failureCount, error) => isRetryableLandingError(error) && failureCount < 5,
     retryDelay: (attempt) => Math.min(800 * 2 ** attempt, 6000),
-    staleTime: 1000 * 60 * 5, // 5 phút - tránh refetch không cần thiết
-    gcTime: 1000 * 60 * 15, // 15 phút cache
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 15,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
   });

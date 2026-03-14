@@ -334,6 +334,15 @@ export function useTenantResolver() {
     if (syncResult) {
       return syncResult;
     }
+    // CRITICAL FIX: Use persisted tenant from localStorage as immediate initial state
+    // This prevents the "loading" state from causing infinite skeleton in PWA
+    const persisted = readPersistedTenant(hostname);
+    if (persisted) {
+      // Also populate the in-memory cache so subsequent reads are instant
+      cachedResult = persisted;
+      cacheHostname = hostname;
+      return persisted;
+    }
     return {
       tenantId: null,
       subdomain: null,
