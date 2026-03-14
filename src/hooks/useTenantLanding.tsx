@@ -168,7 +168,7 @@ function isRetryableLandingError(error: unknown): boolean {
 
 interface PublicLandingResolvedData {
   tenant: { id: string; name: string; subdomain: string; status: string };
-  settings: TenantLandingSettings;
+  settings: TenantLandingSettings | null;
   branches: BranchInfo[];
 }
 
