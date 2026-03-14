@@ -117,6 +117,75 @@ function buildCustomerConfirmationEmail(data: {
 </html>`
 }
 
+// Map action_type to email automation trigger_type for custom templates
+const ACTION_TO_TRIGGER: Record<string, string> = {
+  booking: 'on_booking_confirmation',
+  book_appointment: 'on_booking_confirmation',
+  consult: 'on_booking_consult',
+  book_service: 'on_booking_beauty',
+  order_food: 'on_food_order',
+  book_table: 'on_table_booking',
+  delivery: 'on_delivery',
+  get_quote: 'on_quote_request',
+}
+
+function renderBlockSimple(block: any, vars: Record<string, string>): string {
+  const replaceVars = (text: string) => {
+    let result = text
+    for (const [key, value] of Object.entries(vars)) {
+      result = result.replace(new RegExp(key.replace(/[{}]/g, '\\$&'), 'g'), value || '')
+    }
+    return result
+  }
+  const { block_type } = block
+  const content = JSON.parse(replaceVars(JSON.stringify(block.content)))
+  switch (block_type) {
+    case 'heading': {
+      const tag = content.level || 'h2'
+      const size = tag === 'h1' ? '24px' : tag === 'h2' ? '20px' : '16px'
+      return `<${tag} style="margin:12px 0 8px;font-size:${size};font-weight:700;color:#1f2937">${content.text || ''}</${tag}>`
+    }
+    case 'text':
+      return `<p style="margin:8px 0;font-size:15px;line-height:1.7;color:#374151">${(content.text || '').replace(/\n/g, '<br>')}</p>`
+    case 'image':
+      return content.url ? `<div style="margin:12px 0;text-align:center"><img src="${content.url}" alt="${content.alt || ''}" style="max-width:100%;border-radius:8px" /></div>` : ''
+    case 'button': {
+      const btnUrl = content.url || '#'
+      return `<div style="text-align:center;margin:16px 0"><a href="${btnUrl}" style="display:inline-block;padding:12px 32px;background:${content.color || '#1a56db'};color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">${content.text || 'Nhấn vào đây'}</a></div>`
+    }
+    case 'link':
+      return `<p style="margin:8px 0;font-size:15px;line-height:1.7;color:#374151">${content.text || ''} <a href="${content.url || '#'}" style="color:#1a56db;text-decoration:underline">${content.linkText || content.url || 'Link'}</a></p>`
+    case 'divider':
+      return `<hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0" />`
+    case 'spacer':
+      return `<div style="height:${content.height || 20}px"></div>`
+    default:
+      return ''
+  }
+}
+
+function buildCustomHtml(blocks: any[], storeName: string, vars: Record<string, string>): string {
+  const bodyContent = blocks.sort((a: any, b: any) => a.display_order - b.display_order).map(b => renderBlockSimple(b, vars)).join('\n')
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f0f4ff;font-family:Arial,Helvetica,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4ff;padding:32px 16px">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)">
+        <tr><td style="padding:32px 32px 24px">
+          ${bodyContent}
+        </td></tr>
+        <tr><td style="background:#1e3a8a;padding:16px 32px;text-align:center">
+          <p style="margin:0;font-size:12px;color:#93c5fd">© ${new Date().getFullYear()} ${storeName}</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -164,25 +233,78 @@ Deno.serve(async (req) => {
     }
 
     const actionLabel = ACTION_TYPE_LABELS[action_type] || 'Đặt hàng'
+    let subject = ''
+    let html = ''
+    let usedCustomTemplate = false
+    let usedAutomationId: string | null = null
 
-    const html = buildCustomerConfirmationEmail({
-      orderCode: order_code || 'N/A',
-      actionType: action_type || 'buy_now',
-      productName: product_name || 'Sản phẩm',
-      productPrice: product_price || 0,
-      variant,
-      quantity: quantity || 1,
-      customerName: customer_name || 'Quý khách',
-      customerAddress: customer_address,
-      branchName: branch_name,
-      note,
-      shopName: shop_name || 'Cửa hàng',
-      shopPhone: shop_phone,
-      actionDate: action_date,
-      actionTime: action_time,
-    })
+    // Check for custom automation template based on action_type
+    const triggerType = ACTION_TO_TRIGGER[action_type]
+    if (triggerType && tenant_id) {
+      const { data: automation } = await sb
+        .from('email_automations')
+        .select('*')
+        .eq('tenant_id', tenant_id)
+        .eq('trigger_type', triggerType)
+        .eq('is_active', true)
+        .maybeSingle()
 
-    const subject = `✅ ${actionLabel} thành công – ${product_name || 'Sản phẩm'} | ${shop_name || 'Cửa hàng'}`
+      if (automation) {
+        const { data: blocks } = await sb
+          .from('email_automation_blocks')
+          .select('*')
+          .eq('automation_id', automation.id)
+          .order('display_order')
+
+        if (blocks?.length) {
+          const vars: Record<string, string> = {
+            '{{customer_name}}': customer_name || 'Quý khách',
+            '{{product_name}}': product_name || '',
+            '{{product_price}}': formatMoney(product_price || 0),
+            '{{order_code}}': order_code || '',
+            '{{store_name}}': shop_name || 'Cửa hàng',
+            '{{phone}}': shop_phone || '',
+            '{{action_date}}': action_date || '',
+            '{{action_time}}': action_time || '',
+            '{{branch_name}}': branch_name || '',
+          }
+
+          const replaceVars = (text: string) => {
+            let result = text
+            for (const [key, value] of Object.entries(vars)) {
+              result = result.replace(new RegExp(key.replace(/[{}]/g, '\\$&'), 'g'), value || '')
+            }
+            return result
+          }
+
+          subject = replaceVars(automation.subject)
+          html = buildCustomHtml(blocks, shop_name || 'Cửa hàng', vars)
+          usedCustomTemplate = true
+          usedAutomationId = automation.id
+        }
+      }
+    }
+
+    // Fallback to default template
+    if (!usedCustomTemplate) {
+      html = buildCustomerConfirmationEmail({
+        orderCode: order_code || 'N/A',
+        actionType: action_type || 'buy_now',
+        productName: product_name || 'Sản phẩm',
+        productPrice: product_price || 0,
+        variant,
+        quantity: quantity || 1,
+        customerName: customer_name || 'Quý khách',
+        customerAddress: customer_address,
+        branchName: branch_name,
+        note,
+        shopName: shop_name || 'Cửa hàng',
+        shopPhone: shop_phone,
+        actionDate: action_date,
+        actionTime: action_time,
+      })
+      subject = `✅ ${actionLabel} thành công – ${product_name || 'Sản phẩm'} | ${shop_name || 'Cửa hàng'}`
+    }
 
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
@@ -209,10 +331,28 @@ Deno.serve(async (req) => {
       sent_at: new Date().toISOString(),
       body_html: html,
       tenant_id: tenant_id || null,
-      automation_id: null,
+      automation_id: usedAutomationId,
     }).then(({ error: logErr }) => {
       if (logErr) console.warn('Failed to log email:', logErr.message)
     })
+
+    // Also log to email_automation_logs if using custom template
+    if (usedAutomationId && tenant_id) {
+      await sb.from('email_automation_logs').insert({
+        tenant_id,
+        automation_id: usedAutomationId,
+        customer_id: null,
+        customer_email,
+        customer_name: customer_name || null,
+        export_receipt_id: null,
+        subject,
+        body_html: html,
+        status: 'sent',
+        sent_at: new Date().toISOString(),
+      }).then(({ error: logErr }) => {
+        if (logErr) console.warn('Failed to log automation email:', logErr.message)
+      })
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,

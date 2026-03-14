@@ -402,16 +402,53 @@ Deno.serve(async (req) => {
 
           eligibleReceipts = data || []
         } else if (automation.trigger_type === 'days_before_warranty_expires') {
-          const targetDate = new Date(today.getTime() + automation.trigger_days * 86400000)
+          // Find receipts whose warranty expires in exactly X days
+          const triggerDays = automation.trigger_days
 
           const { data } = await supabase
-            .from('export_receipts')
-            .select('id, customer_id, export_date, sales_staff_id, customers(id, name, phone, email)')
-            .eq('tenant_id', automation.tenant_id)
-            .eq('status', 'completed')
+            .from('export_receipt_items')
+            .select('id, receipt_id, warranty, export_receipts!inner(id, customer_id, export_date, sales_staff_id, tenant_id, status, customers(id, name, phone, email))')
+            .eq('export_receipts.tenant_id', automation.tenant_id)
+            .eq('export_receipts.status', 'completed')
+            .eq('status', 'sold')
+            .not('warranty', 'is', null)
             .limit(500)
 
-          eligibleReceipts = data || []
+          // Filter items whose warranty expires in exactly triggerDays days
+          for (const item of data || []) {
+            const receipt = item.export_receipts as any
+            if (!receipt?.export_date || !item.warranty) continue
+            
+            // Parse warranty: e.g. "12 tháng", "6 thang", "1 năm", "365 ngày"
+            const warrantyStr = (item.warranty || '').toLowerCase()
+            let warrantyDays = 0
+            const numMatch = warrantyStr.match(/(\d+)/)
+            if (numMatch) {
+              const num = parseInt(numMatch[1])
+              if (warrantyStr.includes('năm') || warrantyStr.includes('nam') || warrantyStr.includes('year')) {
+                warrantyDays = num * 365
+              } else if (warrantyStr.includes('tháng') || warrantyStr.includes('thang') || warrantyStr.includes('month')) {
+                warrantyDays = num * 30
+              } else {
+                warrantyDays = num // assume days
+              }
+            }
+            if (warrantyDays <= 0) continue
+            
+            const exportDate = new Date(receipt.export_date)
+            const warrantyEndDate = new Date(exportDate.getTime() + warrantyDays * 86400000)
+            const daysUntilExpiry = Math.round((warrantyEndDate.getTime() - today.getTime()) / 86400000)
+            
+            if (daysUntilExpiry === triggerDays) {
+              eligibleReceipts.push({
+                id: receipt.id,
+                customer_id: receipt.customer_id,
+                export_date: receipt.export_date,
+                sales_staff_id: receipt.sales_staff_id,
+                customers: receipt.customers,
+              })
+            }
+          }
         } else if (automation.trigger_type === 'days_inactive') {
           const cutoffDate = new Date(today.getTime() - automation.trigger_days * 86400000).toISOString()
 
@@ -420,7 +457,8 @@ Deno.serve(async (req) => {
             .select('id, name, phone, email')
             .eq('tenant_id', automation.tenant_id)
             .not('email', 'is', null)
-            .lt('updated_at', cutoffDate)
+            .not('last_purchase_date', 'is', null)
+            .lt('last_purchase_date', cutoffDate)
             .limit(500)
 
           eligibleReceipts = (customers || []).map((c: any) => ({

@@ -154,6 +154,13 @@ Deno.serve(async (req) => {
       'order_confirmed': 'on_order_confirmed',
       'order_shipping': 'on_order_shipping',
       'order_warranty': 'on_order_warranty',
+      'booking_confirmation': 'on_booking_confirmation',
+      'booking_consult': 'on_booking_consult',
+      'booking_beauty': 'on_booking_beauty',
+      'food_order': 'on_food_order',
+      'table_booking': 'on_table_booking',
+      'delivery': 'on_delivery',
+      'quote_request': 'on_quote_request',
     }
 
     const triggerType = triggerTypeMap[email_type]
