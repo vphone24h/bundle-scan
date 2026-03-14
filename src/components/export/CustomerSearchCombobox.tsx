@@ -95,7 +95,10 @@ export function CustomerSearchCombobox({
   // Unified search by phone or name using optimized RPC + cache + stale-request guard
   useEffect(() => {
     const raw = searchQuery.trim();
-    if (raw.length < 2 || selectedCustomer) {
+    const isPhoneSearch = /^\d+$/.test(raw);
+    const minChars = isPhoneSearch ? 4 : 2;
+
+    if (raw.length < minChars || selectedCustomer) {
       latestSearchTokenRef.current += 1;
       setSuggestions([]);
       setShowDropdown(false);
@@ -112,7 +115,6 @@ export function CustomerSearchCombobox({
       return;
     }
 
-    const isPhoneSearch = /^\d+$/.test(raw);
     const rawNormalized = normalizePhone(raw);
     const debounceMs = isPhoneSearch ? 90 : 180;
 
