@@ -351,8 +351,10 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const ogImage = settings?.store_logo_url || undefined;
   useDynamicOGMeta(ogTitle, ogDesc, ogImage);
 
+  const shouldKeepRecovering = isStandalone && (!hasIdentifier || !tenant);
+
   // Loading / error states
-  if (isLoading || (isError && hasIdentifier) || (!hasIdentifier && resolvedTenant.status === 'loading')) {
+  if (isLoading || (isError && hasIdentifier) || (!hasIdentifier && resolvedTenant.status === 'loading') || shouldKeepRecovering) {
     return isStandalone ? (
       <div className="min-h-screen bg-white">
         <div className="h-14 bg-gray-100 animate-pulse" />
