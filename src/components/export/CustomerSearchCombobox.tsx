@@ -74,8 +74,12 @@ export function CustomerSearchCombobox({
   const [showDropdown, setShowDropdown] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
-  
+
   const searchRef = useRef<HTMLDivElement>(null);
+  const searchCacheRef = useRef<Map<string, Customer[]>>(new Map());
+  const latestSearchTokenRef = useRef(0);
+
+  const normalizePhone = (value: string) => value.replace(/\D/g, '');
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -88,45 +92,73 @@ export function CustomerSearchCombobox({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Unified search by phone or name - optimized
+  // Unified search by phone or name using optimized RPC + cache + stale-request guard
   useEffect(() => {
-    if (searchQuery.length >= 2 && !selectedCustomer) {
-      setIsSearching(true);
-      const timer = setTimeout(async () => {
-        const isPhoneSearch = /^\d+$/.test(searchQuery);
-        
-        let query = supabase
-          .from('customers')
-          .select('id, name, phone, address, email, source, current_points, pending_points, total_spent, membership_tier, status, birthday');
-        
-        if (isPhoneSearch) {
-          query = query.ilike('phone', `${searchQuery}%`);
-        } else {
-          query = query.ilike('name', `%${searchQuery}%`);
-        }
-        
-        const { data } = await query.limit(5);
-        const customers = (data as Customer[]) || [];
-        
-        // Auto-select if exact phone match
-        if (isPhoneSearch) {
-          const exactMatch = customers.find(c => c.phone === searchQuery);
-          if (exactMatch) {
-            handleSelectCustomer(exactMatch);
-            setIsSearching(false);
-            return;
-          }
-        }
-        
-        setSuggestions(customers);
-        setShowDropdown(customers.length > 0);
-        setIsSearching(false);
-      }, 150);
-      return () => clearTimeout(timer);
-    } else {
+    const raw = searchQuery.trim();
+    if (raw.length < 2 || selectedCustomer) {
+      latestSearchTokenRef.current += 1;
       setSuggestions([]);
       setShowDropdown(false);
+      setIsSearching(false);
+      return;
     }
+
+    const cacheKey = raw.toLowerCase();
+    const cached = searchCacheRef.current.get(cacheKey);
+    if (cached) {
+      setSuggestions(cached);
+      setShowDropdown(cached.length > 0);
+      setIsSearching(false);
+      return;
+    }
+
+    const isPhoneSearch = /^\d+$/.test(raw);
+    const rawNormalized = normalizePhone(raw);
+    const debounceMs = isPhoneSearch ? 90 : 180;
+
+    setIsSearching(true);
+    const requestToken = ++latestSearchTokenRef.current;
+
+    const timer = setTimeout(async () => {
+      const { data, error } = await supabase.rpc('get_customers_paginated', {
+        _search: raw,
+        _branch_id: null,
+        _tier: null,
+        _crm_status: null,
+        _staff_id: null,
+        _tag_id: null,
+        _page: 1,
+        _page_size: 5,
+      });
+
+      if (requestToken !== latestSearchTokenRef.current) return;
+
+      if (error) {
+        setSuggestions([]);
+        setShowDropdown(false);
+        setIsSearching(false);
+        return;
+      }
+
+      const payload = (data as { items?: Customer[] } | null) ?? null;
+      const customers = (payload?.items || []).slice(0, 5);
+      searchCacheRef.current.set(cacheKey, customers);
+
+      if (isPhoneSearch) {
+        const exactMatch = customers.find(c => normalizePhone(c.phone) === rawNormalized);
+        if (exactMatch) {
+          handleSelectCustomer(exactMatch);
+          setIsSearching(false);
+          return;
+        }
+      }
+
+      setSuggestions(customers);
+      setShowDropdown(customers.length > 0);
+      setIsSearching(false);
+    }, debounceMs);
+
+    return () => clearTimeout(timer);
   }, [searchQuery, selectedCustomer]);
 
   const handleSelectCustomer = (customer: Customer) => {
