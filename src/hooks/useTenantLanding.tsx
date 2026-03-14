@@ -184,7 +184,7 @@ function getCachedPublicLandingData(
     hostname: typeof window !== 'undefined' ? window.location.hostname : null,
   });
 
-  const cached = readPublicLandingCache(cacheKeys);
+  const cached = readPublicLandingCache(cacheKeys) || readLastSuccessfulPublicLandingCache();
   if (!cached?.tenant || !('settings' in cached)) return null;
 
   return {
