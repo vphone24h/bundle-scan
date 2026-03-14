@@ -177,11 +177,6 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
             isMainDomain: false,
           };
 
-          if (!isNetworkError) {
-            cachedResult = result;
-            cacheHostname = hostname;
-          }
-
           return result;
         }
 
