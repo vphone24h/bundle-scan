@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
-import { useParams, useLocation, useSearchParams } from 'react-router-dom';
+import { useParams, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { usePublicLandingSettings, BranchInfo, preloadClientIp } from '@/hooks/useTenantLanding';
 import { usePublicLandingProducts } from '@/hooks/useLandingProducts';
 import { usePublicLandingArticles } from '@/hooks/useLandingArticles';
@@ -7,6 +7,7 @@ import { detectPageFromPath } from '@/lib/slugify';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTenantResolver } from '@/hooks/useTenantResolver';
 import { LandingCartProvider } from '@/hooks/useLandingCart';
+import { readPwaLastRoute, readPwaStoreIdentity, writePwaLastRoute, writePwaStoreIdentity } from '@/lib/pwaStoreSession';
 import { Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
