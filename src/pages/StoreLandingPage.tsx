@@ -280,16 +280,18 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     const hintStoreId = (storeId || tenant?.subdomain || persistedIdentity?.shopId || '').trim().toLowerCase();
     if (!hintStoreId && !tenantId) return;
 
-    try {
-      window.localStorage.setItem(
-        LAST_STORE_HINT_KEY,
-        JSON.stringify({
-          storeId: hintStoreId,
-          savedAt: Date.now(),
-        })
-      );
-    } catch {
-      // Ignore storage errors
+    if (hintStoreId) {
+      try {
+        window.localStorage.setItem(
+          LAST_STORE_HINT_KEY,
+          JSON.stringify({
+            storeId: hintStoreId,
+            savedAt: Date.now(),
+          })
+        );
+      } catch {
+        // Ignore storage errors
+      }
     }
 
     writePwaStoreIdentity({
