@@ -139,8 +139,7 @@ export function CustomerSearchCombobox({
         return;
       }
 
-      const payload = (data as { items?: Customer[] } | null) ?? null;
-      const customers = (payload?.items || []).slice(0, 5);
+      const customers = ((data as Customer[] | null) || []).slice(0, 5);
       searchCacheRef.current.set(cacheKey, customers);
 
       if (isPhoneSearch) {
