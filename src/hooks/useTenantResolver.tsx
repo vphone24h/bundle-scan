@@ -363,8 +363,8 @@ export function useTenantResolver() {
       resolveTenantOnce(hostname).then((result) => {
         if (cancelled) return;
 
-        // If not_found and not cached (network error), retry
-        if (result.status === 'not_found' && !cachedResult && retryCount < maxRetries) {
+        // Retry not_found several times to survive weak/unstable networks
+        if (result.status === 'not_found' && retryCount < maxRetries) {
           retryCount++;
           setTimeout(attempt, 1500 * retryCount);
           return;
