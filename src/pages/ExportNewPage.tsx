@@ -908,6 +908,7 @@ export default function ExportNewPage() {
         supabase.functions.invoke('send-export-email', {
           body: {
             tenant_id: landingSettings?.tenant_id,
+            order_id: receipt.id,
             customer_name: savedCustomerName,
             customer_email: savedCustomerEmail,
             customer_phone: savedCustomerPhone,

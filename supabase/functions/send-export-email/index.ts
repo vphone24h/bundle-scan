@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
       branch_id,
       export_date,
       sales_staff_id,
+      order_id,
     } = await req.json()
 
     if (!tenant_id || !customer_email) {
@@ -123,6 +124,12 @@ Deno.serve(async (req) => {
         return dateStr
       }
     }
+
+    const isUuid = (value: string | undefined | null) =>
+      !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+
+    // landing_order_email_logs requires order_id UUID (for export flow, use receipt/order UUID)
+    const resolvedOrderId = isUuid(order_id) ? order_id! : crypto.randomUUID()
 
     // Build warranty check URL for rating - use first IMEI if available
     const firstImei = (items || []).find((item: any) => item.imei)?.imei || ''
@@ -319,6 +326,17 @@ Deno.serve(async (req) => {
       automation_id: null,
     }).then(({ error: logErr }) => {
       if (logErr) console.warn('Failed to log export email:', logErr.message)
+    })
+
+    // Log to tenant-visible order email history (Email Automation > Đơn hàng)
+    await supabaseAdmin.from('landing_order_email_logs').insert({
+      tenant_id,
+      order_id: resolvedOrderId,
+      email_type: 'order_confirmation',
+      recipient_email: customer_email,
+      status: 'sent',
+    }).then(({ error: orderLogErr }) => {
+      if (orderLogErr) console.warn('Failed to log export email to landing_order_email_logs:', orderLogErr.message)
     })
 
     return new Response(
