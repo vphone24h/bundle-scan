@@ -184,7 +184,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
 
   const settings = landingData?.settings;
   const tenant = landingData?.tenant;
-  const tenantId = tenant?.id || null;
+  const tenantId = tenant?.id || resolvedTenantId || null;
   const storeName = settings?.store_name || tenant?.name || storeId || '';
   const template = settings?.website_template || 'phone_store';
 
