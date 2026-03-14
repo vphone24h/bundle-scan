@@ -125,6 +125,12 @@ Deno.serve(async (req) => {
       }
     }
 
+    const isUuid = (value: string | undefined | null) =>
+      !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+
+    // landing_order_email_logs requires order_id UUID (for export flow, use receipt/order UUID)
+    const resolvedOrderId = isUuid(order_id) ? order_id! : crypto.randomUUID()
+
     // Build warranty check URL for rating - use first IMEI if available
     const firstImei = (items || []).find((item: any) => item.imei)?.imei || ''
     const warrantyCheckUrl = websiteUrl && firstImei
