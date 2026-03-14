@@ -565,7 +565,7 @@ Deno.serve(async (req) => {
 
           // Triggers that send ONCE per customer (regardless of how many records match)
           const oncePerCustomerTriggers = [
-            'days_after_purchase', 'days_after_purchase_onwards', 'days_inactive',
+            'days_after_purchase_onwards', 'days_inactive',
             'customer_birthday', 'customer_registration_anniversary',
             'after_customer_review', 'after_voucher_received',
           ]
