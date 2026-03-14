@@ -345,7 +345,8 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
       persistPublicLandingData(subdomain, tenantIdFromDomain, result);
       return result;
     },
-    enabled: !!subdomain || !!tenantIdFromDomain,
+    // IMPORTANT: allow query to bootstrap from hostname cache even when subdomain/tenantId are temporarily missing
+    enabled: !!subdomain || !!tenantIdFromDomain || !!cachedPlaceholder,
     // Use cached data as placeholder so isLoading is false when cache exists
     placeholderData: cachedPlaceholder ?? undefined,
     retry: (failureCount, error) => isRetryableLandingError(error) && failureCount < 5,
