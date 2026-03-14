@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
       branch_id,
       export_date,
       sales_staff_id,
+      order_id,
     } = await req.json()
 
     if (!tenant_id || !customer_email) {
