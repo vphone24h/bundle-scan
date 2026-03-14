@@ -120,18 +120,21 @@ export function CustomerSearchCombobox({
 
     setIsSearching(true);
     const requestToken = ++latestSearchTokenRef.current;
+    const controller = new AbortController();
 
     const timer = setTimeout(async () => {
-      const { data, error } = await supabase.rpc('get_customers_paginated', {
-        _search: raw,
-        _branch_id: null,
-        _tier: null,
-        _crm_status: null,
-        _staff_id: null,
-        _tag_id: null,
-        _page: 1,
-        _page_size: 5,
-      });
+      const { data, error } = await supabase
+        .rpc('get_customers_paginated', {
+          _search: raw,
+          _branch_id: null,
+          _tier: null,
+          _crm_status: null,
+          _staff_id: null,
+          _tag_id: null,
+          _page: 1,
+          _page_size: 5,
+        })
+        .abortSignal(controller.signal);
 
       if (requestToken !== latestSearchTokenRef.current) return;
 
@@ -160,7 +163,10 @@ export function CustomerSearchCombobox({
       setIsSearching(false);
     }, debounceMs);
 
-    return () => clearTimeout(timer);
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
   }, [searchQuery, selectedCustomer]);
 
   const handleSelectCustomer = (customer: Customer) => {
