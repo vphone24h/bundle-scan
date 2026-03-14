@@ -359,8 +359,27 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
 
   const shouldKeepRecovering = isStandalone && (!hasIdentifier || !tenant);
 
+  // CRITICAL FIX: Loading timeout to prevent infinite skeleton
+  // After 5 seconds, stop showing skeleton regardless of API state
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
+  useEffect(() => {
+    // Only start timeout if we're actually in a loading/recovering state
+    const shouldShowSkeleton = isLoading || (isError && hasIdentifier) || (!hasIdentifier && resolvedTenant.status === 'loading') || shouldKeepRecovering;
+    if (!shouldShowSkeleton) {
+      setLoadingTimedOut(false);
+      return;
+    }
+    const timer = setTimeout(() => setLoadingTimedOut(true), 5000);
+    return () => clearTimeout(timer);
+  }, [isLoading, isError, hasIdentifier, resolvedTenant.status, shouldKeepRecovering]);
+
+  // If timed out, try to use cached data and stop showing skeleton
+  const showSkeleton = !loadingTimedOut && (
+    isLoading || (isError && hasIdentifier) || (!hasIdentifier && resolvedTenant.status === 'loading') || shouldKeepRecovering
+  );
+
   // Loading / error states
-  if (isLoading || (isError && hasIdentifier) || (!hasIdentifier && resolvedTenant.status === 'loading') || shouldKeepRecovering) {
+  if (showSkeleton) {
     return isStandalone ? (
       <div className="min-h-screen bg-white">
         <div className="h-14 bg-gray-100 animate-pulse" />
