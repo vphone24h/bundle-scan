@@ -162,7 +162,12 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const resolvedTenant = useTenantResolver();
   const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain;
   const hasIdentifier = !!storeId || !!resolvedTenant.tenantId;
-  const { data: landingData, isLoading } = usePublicLandingSettings(storeId, resolvedTenant.tenantId);
+  const {
+    data: landingData,
+    isLoading,
+    isError,
+    refetch: refetchLandingData,
+  } = usePublicLandingSettings(storeId, resolvedTenant.tenantId);
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -214,6 +219,30 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
 
     restoreStoreHintForStandalone();
   }, [isStandalone, hasIdentifier, resolvedTenant.status, restoreStoreHintForStandalone]);
+
+  useEffect(() => {
+    if (!isError || !hasIdentifier) return;
+
+    const retry = () => {
+      refetchLandingData();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        retry();
+      }
+    };
+
+    window.addEventListener('online', retry);
+    window.addEventListener('focus', retry);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.removeEventListener('online', retry);
+      window.removeEventListener('focus', retry);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [isError, hasIdentifier, refetchLandingData]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -276,7 +305,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   useDynamicOGMeta(ogTitle, ogDesc, ogImage);
 
   // Loading / error states
-  if (isLoading || (!hasIdentifier && resolvedTenant.status === 'loading')) {
+  if (isLoading || (isError && hasIdentifier) || (!hasIdentifier && resolvedTenant.status === 'loading')) {
     return isStandalone ? (
       <div className="min-h-screen bg-white">
         <div className="h-14 bg-gray-100 animate-pulse" />

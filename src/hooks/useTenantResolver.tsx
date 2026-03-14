@@ -36,6 +36,9 @@ function isNetworkLikeError(error: any): boolean {
     message.includes('timeout') ||
     message.includes('err_') ||
     message.includes('connection') ||
+    message.includes('network request failed') ||
+    message.includes('load failed') ||
+    message.includes('offline') ||
     code === 'PGRST301' ||
     code.startsWith('08')
   );
@@ -99,8 +102,8 @@ function persistResolvedTenant(hostname: string, result: ResolvedTenant) {
  * Resolve tenant - shared function that caches and deduplicates requests
  */
 async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
-  // Return cached result immediately
-  if (cachedResult && cacheHostname === hostname) {
+  // Return cached result immediately (except stale not_found)
+  if (cachedResult && cacheHostname === hostname && cachedResult.status !== 'not_found') {
     return cachedResult;
   }
 
@@ -174,11 +177,6 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
             isMainDomain: false,
           };
 
-          if (!isNetworkError) {
-            cachedResult = result;
-            cacheHostname = hostname;
-          }
-
           return result;
         }
 
@@ -238,11 +236,6 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
           isMainDomain: false,
         };
 
-        if (!isNetworkError) {
-          cachedResult = result;
-          cacheHostname = hostname;
-        }
-
         return result;
       }
 
@@ -278,9 +271,11 @@ async function resolveTenantOnce(hostname: string): Promise<ResolvedTenant> {
     }
   })();
 
-  const result = await resolutionPromise;
-  resolutionPromise = null;
-  return result;
+  try {
+    return await resolutionPromise;
+  } finally {
+    resolutionPromise = null;
+  }
 }
 
 /**
@@ -292,8 +287,8 @@ export function useTenantResolver() {
   
   // OPTIMIZATION: Compute sync result immediately without useState setter
   const syncResult = useMemo((): ResolvedTenant | null => {
-    // Return cached result immediately
-    if (cachedResult && cacheHostname === hostname) {
+    // Return cached result immediately (except stale not_found)
+    if (cachedResult && cacheHostname === hostname && cachedResult.status !== 'not_found') {
       return cachedResult;
     }
     
@@ -368,8 +363,8 @@ export function useTenantResolver() {
       resolveTenantOnce(hostname).then((result) => {
         if (cancelled) return;
 
-        // If not_found and not cached (network error), retry
-        if (result.status === 'not_found' && !cachedResult && retryCount < maxRetries) {
+        // Retry not_found several times to survive weak/unstable networks
+        if (result.status === 'not_found' && retryCount < maxRetries) {
           retryCount++;
           setTimeout(attempt, 1500 * retryCount);
           return;
@@ -392,6 +387,10 @@ export function useTenantResolver() {
     let cancelled = false;
 
     const retryResolve = () => {
+      if (cacheHostname === hostname && cachedResult?.status === 'not_found') {
+        cachedResult = null;
+      }
+
       resolveTenantOnce(hostname).then((result) => {
         if (cancelled) return;
         if (result.status === 'resolved') {

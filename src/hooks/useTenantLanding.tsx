@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { NavItemConfig, HomeSection } from '@/lib/industryConfig';
+import {
+  getPublicLandingCacheKeys,
+  readPublicLandingCache,
+  writePublicLandingCache,
+} from '@/lib/publicLandingCache';
 
 export interface HomeSectionItem {
   id: HomeSection | string; // string for custom tab IDs like "productTab_xxx"
@@ -153,16 +158,61 @@ function isRetryableLandingError(error: unknown): boolean {
     message.includes('timeout') ||
     message.includes('err_') ||
     message.includes('connection') ||
+    message.includes('network request failed') ||
+    message.includes('load failed') ||
+    message.includes('offline') ||
     code === 'PGRST301' ||
     code.startsWith('08')
   );
+}
+
+interface PublicLandingResolvedData {
+  tenant: { id: string; name: string; subdomain: string; status: string };
+  settings: TenantLandingSettings | null;
+  branches: BranchInfo[];
+}
+
+function getCachedPublicLandingData(
+  subdomain: string | null,
+  tenantIdFromDomain?: string | null
+): PublicLandingResolvedData | null {
+  const cacheKeys = getPublicLandingCacheKeys({
+    subdomain,
+    tenantId: tenantIdFromDomain ?? null,
+    hostname: typeof window !== 'undefined' ? window.location.hostname : null,
+  });
+
+  const cached = readPublicLandingCache(cacheKeys);
+  if (!cached?.tenant || !cached?.settings) return null;
+
+  return {
+    tenant: cached.tenant,
+    settings: cached.settings as TenantLandingSettings,
+    branches: (cached.branches || []) as BranchInfo[],
+  };
+}
+
+function persistPublicLandingData(
+  subdomain: string | null,
+  tenantIdFromDomain: string | null | undefined,
+  payload: PublicLandingResolvedData
+) {
+  const cacheKeys = getPublicLandingCacheKeys({
+    subdomain: subdomain || payload.tenant?.subdomain || null,
+    tenantId: tenantIdFromDomain ?? payload.tenant?.id ?? null,
+    hostname: typeof window !== 'undefined' ? window.location.hostname : null,
+  });
+
+  writePublicLandingCache(cacheKeys, payload);
 }
 
 // Hook để lấy landing settings công khai từ subdomain hoặc tenantId (custom domain)
 export function usePublicLandingSettings(subdomain: string | null, tenantIdFromDomain?: string | null) {
   return useQuery({
     queryKey: ['public-landing-settings', subdomain, tenantIdFromDomain],
-    queryFn: async () => {
+    queryFn: async (): Promise<PublicLandingResolvedData | null> => {
+      const cachedLanding = getCachedPublicLandingData(subdomain, tenantIdFromDomain);
+
       // Only use completed prefetch data; do not wait for full catalog prefetch
       // so warranty-first app can render immediately.
       const prefetch = (window as any).__STORE_PREFETCH__;
@@ -175,11 +225,14 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
           status: 'active',
         };
 
-        return {
+        const prefetchedResult: PublicLandingResolvedData = {
           tenant: tenantInfo,
           settings: prefetchedData.settings as unknown as TenantLandingSettings,
           branches: (prefetchedData.branches || []) as BranchInfo[],
         };
+
+        persistPublicLandingData(subdomain, tenantIdFromDomain, prefetchedResult);
+        return prefetchedResult;
       }
 
       let tenantInfo: { id: string; name: string; subdomain: string; status: string } | null = null;
@@ -202,7 +255,9 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
             return null;
           }
 
-          if (!isRetryableLandingError(tenantError) || attempt === 2) {
+          const retryable = isRetryableLandingError(tenantError);
+          if (!retryable || attempt === 2) {
+            if (retryable && cachedLanding) return cachedLanding;
             throw tenantError;
           }
 
@@ -225,7 +280,9 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
             return null;
           }
 
-          if (!isRetryableLandingError(tenantError) || attempt === 2) {
+          const retryable = isRetryableLandingError(tenantError);
+          if (!retryable || attempt === 2) {
+            if (retryable && cachedLanding) return cachedLanding;
             throw tenantError;
           }
 
@@ -233,7 +290,9 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
         }
       }
 
-      if (!tenantInfo) return null;
+      if (!tenantInfo) {
+        return cachedLanding ?? null;
+      }
 
       // Fetch settings + branches IN PARALLEL và retry khi lỗi mạng
       let fetched = false;
@@ -258,22 +317,29 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
           break;
         }
 
-        if (!isRetryableLandingError(settingsResult.error) || attempt === 2) {
+        const retryable = isRetryableLandingError(settingsResult.error);
+        if (!retryable || attempt === 2) {
+          if (retryable && cachedLanding) return cachedLanding;
           throw settingsResult.error;
         }
 
         await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
       }
 
-      if (!fetched) return null;
+      if (!fetched) return cachedLanding ?? null;
 
-      return {
+      const result: PublicLandingResolvedData = {
         tenant: tenantInfo,
         settings,
         branches,
       };
+
+      persistPublicLandingData(subdomain, tenantIdFromDomain, result);
+      return result;
     },
     enabled: !!subdomain || !!tenantIdFromDomain,
+    retry: (failureCount, error) => isRetryableLandingError(error) && failureCount < 5,
+    retryDelay: (attempt) => Math.min(800 * 2 ** attempt, 6000),
     staleTime: 1000 * 60 * 5, // 5 phút - tránh refetch không cần thiết
     gcTime: 1000 * 60 * 15, // 15 phút cache
     refetchOnReconnect: true,
