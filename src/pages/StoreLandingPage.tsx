@@ -453,7 +453,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       </div>
     );
   }
-  if (!hasIdentifier && !tenant) {
+  if (!tenant) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="max-w-sm w-full"><CardContent className="pt-6 text-center">
