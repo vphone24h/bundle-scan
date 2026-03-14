@@ -172,12 +172,31 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const [searchParams, setSearchParams] = useSearchParams();
   const storeIdFromQuery = searchParams.get('store')?.trim().toLowerCase() || null;
 
-  // IMPORTANT: include `store` query param fallback restored from PWA hint
-  // so app can recover store context immediately after standalone relaunch.
+  // Read PWA store hint immediately on startup (before effects run)
+  const storeIdFromHint = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.localStorage.getItem(LAST_STORE_HINT_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { storeId?: string; savedAt?: number };
+      const hintedStoreId = typeof parsed?.storeId === 'string' ? parsed.storeId.trim().toLowerCase() : '';
+      if (!hintedStoreId) return null;
+      if (typeof parsed.savedAt === 'number' && Date.now() - parsed.savedAt > 1000 * 60 * 60 * 24 * 7) {
+        window.localStorage.removeItem(LAST_STORE_HINT_KEY);
+        return null;
+      }
+      return hintedStoreId;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // IMPORTANT: include query + local hint fallback so standalone relaunch can recover store instantly.
   const storeId = storeIdFromSubdomain
     || storeIdFromParams
     || resolvedTenant.subdomain
     || storeIdFromQuery
+    || storeIdFromHint
     || persistedIdentity?.shopId
     || null;
   const resolvedTenantId = resolvedTenant.tenantId || persistedIdentity?.tenantId || null;
