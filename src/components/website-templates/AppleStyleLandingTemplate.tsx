@@ -333,34 +333,62 @@ export default function AppleStyleLandingTemplate({
     error: warrantyError,
   } = useWarrantyLookup(submittedValue, tenantId, { enabled: lookupEnabled });
 
+  const hydrateWarrantySession = useCallback(() => {
+    if (!warrantyStorageKey) return false;
+
+    const restored = readWarrantySession<WarrantyResult>(warrantyStorageKey);
+    const restoredSearch = restored?.searchValue?.trim() || '';
+
+    if (!restoredSearch) {
+      return false;
+    }
+
+    setSearchValue(restoredSearch);
+    setSubmittedValue(restoredSearch);
+    setPersistedResults(Array.isArray(restored?.results) ? restored.results : []);
+    setLookupEnabled(false);
+    setPageView('warranty');
+
+    return true;
+  }, [warrantyStorageKey]);
+
   useEffect(() => {
     if (!warrantyStorageKey || restoredSessionKey === warrantyStorageKey) return;
 
-    try {
-      const restored = readWarrantySession<WarrantyResult>(warrantyStorageKey);
-      const restoredSearch = restored?.searchValue?.trim() || '';
+    const restored = hydrateWarrantySession();
 
-      if (restoredSearch) {
-        setSearchValue(restoredSearch);
-        setSubmittedValue(restoredSearch);
-        setPersistedResults(restored?.results ?? []);
-        setLookupEnabled(false);
-        setPageView('warranty');
-      } else {
-        setSearchValue('');
-        setSubmittedValue('');
-        setPersistedResults(null);
-        setLookupEnabled(false);
-      }
-    } catch {
+    if (!restored) {
       setSearchValue('');
       setSubmittedValue('');
       setPersistedResults(null);
       setLookupEnabled(false);
-    } finally {
-      setRestoredSessionKey(warrantyStorageKey);
     }
-  }, [warrantyStorageKey, restoredSessionKey]);
+
+    setRestoredSessionKey(warrantyStorageKey);
+  }, [warrantyStorageKey, restoredSessionKey, hydrateWarrantySession]);
+
+  useEffect(() => {
+    if (!warrantyStorageKey) return;
+
+    const handleResume = () => {
+      if (document.visibilityState !== 'visible') return;
+      hydrateWarrantySession();
+    };
+
+    const handlePageShow = () => {
+      hydrateWarrantySession();
+    };
+
+    document.addEventListener('visibilitychange', handleResume);
+    window.addEventListener('focus', handleResume);
+    window.addEventListener('pageshow', handlePageShow);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleResume);
+      window.removeEventListener('focus', handleResume);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, [warrantyStorageKey, hydrateWarrantySession]);
 
   useEffect(() => {
     if (!warrantyStorageKey || !lookupEnabled || !submittedValue || !isFetched || warrantyError || !warrantyResults) return;

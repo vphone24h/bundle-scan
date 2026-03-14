@@ -143,6 +143,21 @@ export function useTenantLandingSettings() {
   });
 }
 
+function isRetryableLandingError(error: unknown): boolean {
+  const message = String((error as any)?.message || '').toLowerCase();
+  const code = String((error as any)?.code || '').toUpperCase();
+
+  return (
+    message.includes('failed to fetch') ||
+    message.includes('networkerror') ||
+    message.includes('timeout') ||
+    message.includes('err_') ||
+    message.includes('connection') ||
+    code === 'PGRST301' ||
+    code.startsWith('08')
+  );
+}
+
 // Hook để lấy landing settings công khai từ subdomain hoặc tenantId (custom domain)
 export function usePublicLandingSettings(subdomain: string | null, tenantIdFromDomain?: string | null) {
   return useQuery({
@@ -153,7 +168,13 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
       const prefetch = (window as any).__STORE_PREFETCH__;
       const prefetchedData = prefetch?.data;
       if (prefetchedData?.settings && (prefetch.tenant || prefetch.tenantId)) {
-        const tenantInfo = prefetch.tenant || { id: prefetch.tenantId, name: prefetchedData.settings.store_name || '', subdomain: prefetch.storeId || '', status: 'active' };
+        const tenantInfo = prefetch.tenant || {
+          id: prefetch.tenantId,
+          name: prefetchedData.settings.store_name || '',
+          subdomain: prefetch.storeId || '',
+          status: 'active',
+        };
+
         return {
           tenant: tenantInfo,
           settings: prefetchedData.settings as unknown as TenantLandingSettings,
@@ -163,42 +184,89 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
 
       let tenantInfo: { id: string; name: string; subdomain: string; status: string } | null = null;
 
-      // Nếu có subdomain, tra cứu theo subdomain
+      // Nếu có subdomain, tra cứu theo subdomain (retry cho lỗi mạng)
       if (subdomain) {
-        const { data: tenantData, error: tenantError } = await supabase
-          .rpc('lookup_tenant_by_subdomain', { _subdomain: subdomain });
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const { data: tenantData, error: tenantError } = await supabase
+            .rpc('lookup_tenant_by_subdomain', { _subdomain: subdomain });
 
-        const tenant = Array.isArray(tenantData) ? tenantData[0] : tenantData;
-        if (tenantError || !tenant) return null;
-        tenantInfo = tenant;
+          const tenant = Array.isArray(tenantData) ? tenantData[0] : tenantData;
+
+          if (!tenantError && tenant) {
+            tenantInfo = tenant;
+            break;
+          }
+
+          // Không tồn tại tenant thật sự thì dừng luôn
+          if (!tenantError && !tenant) {
+            return null;
+          }
+
+          if (!isRetryableLandingError(tenantError) || attempt === 2) {
+            throw tenantError;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+        }
       } else if (tenantIdFromDomain) {
         // Custom domain → dùng RPC lookup_tenant_by_id (SECURITY DEFINER, anon-safe)
-        const { data: tenantData, error: tenantError } = await supabase
-          .rpc('lookup_tenant_by_id', { _tenant_id: tenantIdFromDomain });
-        const tenant = Array.isArray(tenantData) ? tenantData[0] : tenantData;
-        if (tenantError || !tenant) return null;
-        tenantInfo = tenant;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const { data: tenantData, error: tenantError } = await supabase
+            .rpc('lookup_tenant_by_id', { _tenant_id: tenantIdFromDomain });
+
+          const tenant = Array.isArray(tenantData) ? tenantData[0] : tenantData;
+
+          if (!tenantError && tenant) {
+            tenantInfo = tenant;
+            break;
+          }
+
+          if (!tenantError && !tenant) {
+            return null;
+          }
+
+          if (!isRetryableLandingError(tenantError) || attempt === 2) {
+            throw tenantError;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+        }
       }
 
       if (!tenantInfo) return null;
 
-      // Fetch settings + branches IN PARALLEL (thay vì tuần tự)
-      const [settingsResult, branchesResult] = await Promise.all([
-        supabase
-          .from('tenant_landing_settings' as any)
-          .select('*')
-          .eq('tenant_id', tenantInfo.id)
-          .eq('is_enabled', true)
-          .maybeSingle(),
-        supabase
-          .rpc('get_tenant_branches', { _tenant_id: tenantInfo.id }),
-      ]);
+      // Fetch settings + branches IN PARALLEL và retry khi lỗi mạng
+      let fetched = false;
+      let settings: TenantLandingSettings | null = null;
+      let branches: BranchInfo[] = [];
 
-      if (settingsResult.error) return null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const [settingsResult, branchesResult] = await Promise.all([
+          supabase
+            .from('tenant_landing_settings' as any)
+            .select('*')
+            .eq('tenant_id', tenantInfo.id)
+            .eq('is_enabled', true)
+            .maybeSingle(),
+          supabase.rpc('get_tenant_branches', { _tenant_id: tenantInfo.id }),
+        ]);
 
-      const branches: BranchInfo[] = (branchesResult.data || []) as BranchInfo[];
-      const settings = settingsResult.data as unknown as TenantLandingSettings | null;
-      
+        if (!settingsResult.error) {
+          fetched = true;
+          settings = settingsResult.data as unknown as TenantLandingSettings | null;
+          branches = (branchesResult.error ? [] : (branchesResult.data || [])) as BranchInfo[];
+          break;
+        }
+
+        if (!isRetryableLandingError(settingsResult.error) || attempt === 2) {
+          throw settingsResult.error;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+      }
+
+      if (!fetched) return null;
+
       return {
         tenant: tenantInfo,
         settings,
@@ -208,6 +276,8 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
     enabled: !!subdomain || !!tenantIdFromDomain,
     staleTime: 1000 * 60 * 5, // 5 phút - tránh refetch không cần thiết
     gcTime: 1000 * 60 * 15, // 15 phút cache
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
   });
 }
 
