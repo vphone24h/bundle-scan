@@ -221,6 +221,30 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   }, [isStandalone, hasIdentifier, resolvedTenant.status, restoreStoreHintForStandalone]);
 
   useEffect(() => {
+    if (!isError || !hasIdentifier) return;
+
+    const retry = () => {
+      refetchLandingData();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        retry();
+      }
+    };
+
+    window.addEventListener('online', retry);
+    window.addEventListener('focus', retry);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.removeEventListener('online', retry);
+      window.removeEventListener('focus', retry);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [isError, hasIdentifier, refetchLandingData]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const hintStoreId = (storeId || tenant?.subdomain || '').trim().toLowerCase();
