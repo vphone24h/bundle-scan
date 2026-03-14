@@ -154,6 +154,8 @@ function useDynamicOGMeta(title?: string, description?: string, imageUrl?: strin
 
 interface StoreLandingPageProps { storeIdFromSubdomain?: string | null; }
 
+const LAST_STORE_HINT_KEY = 'pwa_last_store_hint_v1';
+
 export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingPageProps) {
   const location = useLocation();
   const { storeId: storeIdFromParams } = useParams<{ storeId: string }>();
