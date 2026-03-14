@@ -1,4 +1,5 @@
 import nodemailer from 'npm:nodemailer@6.9.10'
+import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
