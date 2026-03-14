@@ -781,18 +781,20 @@ function PaginatedOrderLogTable({ logs, statusFilter, page, onPageChange }: {
             {paged.map((log: any) => (
               <TableRow
                 key={log.id}
-                className={log.body_html ? 'cursor-pointer hover:bg-accent/50' : ''}
+                className="cursor-pointer hover:bg-accent/50"
                 onClick={() => {
                   if (log.body_html) {
                     setViewHtml({ subject: log.subject || 'Email đơn hàng', html: log.body_html });
+                    return;
                   }
+                  toast.message('Email này chưa có nội dung HTML để xem lại');
                 }}
               >
                 <TableCell className="whitespace-nowrap text-sm">
                   {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
                 </TableCell>
                 <TableCell className="text-sm max-w-[180px] truncate">{log.recipient_email}</TableCell>
-                <TableCell className="text-sm">{log.email_type || 'order_confirmation'}</TableCell>
+                <TableCell className="text-sm">{getOrderEmailTypeLabel(log.email_type)}</TableCell>
                 <TableCell>
                   {(log.status === 'sent' || log.status === 'success') ? (
                     <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
