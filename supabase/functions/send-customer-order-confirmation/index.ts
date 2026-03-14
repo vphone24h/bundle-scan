@@ -129,6 +129,21 @@ const ACTION_TO_TRIGGER: Record<string, string> = {
   get_quote: 'on_quote_request',
 }
 
+const ACTION_TO_ORDER_EMAIL_TYPE: Record<string, string> = {
+  buy_now: 'order_confirmation',
+  add_to_cart: 'order_confirmation',
+  pre_order: 'order_confirmation',
+  notify_stock: 'order_confirmation',
+  booking: 'booking_confirmation',
+  book_appointment: 'booking_confirmation',
+  consult: 'booking_consult',
+  book_service: 'booking_beauty',
+  order_food: 'food_order',
+  book_table: 'table_booking',
+  delivery: 'delivery',
+  get_quote: 'quote_request',
+}
+
 function renderBlockSimple(block: any, vars: Record<string, string>): string {
   const replaceVars = (text: string) => {
     let result = text
