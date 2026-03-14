@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import { useParams, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { usePublicLandingSettings, BranchInfo, preloadClientIp } from '@/hooks/useTenantLanding';
 import { usePublicLandingProducts } from '@/hooks/useLandingProducts';
