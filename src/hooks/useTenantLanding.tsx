@@ -210,7 +210,9 @@ function persistPublicLandingData(
 export function usePublicLandingSettings(subdomain: string | null, tenantIdFromDomain?: string | null) {
   return useQuery({
     queryKey: ['public-landing-settings', subdomain, tenantIdFromDomain],
-    queryFn: async () => {
+    queryFn: async (): Promise<PublicLandingResolvedData | null> => {
+      const cachedLanding = getCachedPublicLandingData(subdomain, tenantIdFromDomain);
+
       // Only use completed prefetch data; do not wait for full catalog prefetch
       // so warranty-first app can render immediately.
       const prefetch = (window as any).__STORE_PREFETCH__;
@@ -223,11 +225,14 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
           status: 'active',
         };
 
-        return {
+        const prefetchedResult: PublicLandingResolvedData = {
           tenant: tenantInfo,
           settings: prefetchedData.settings as unknown as TenantLandingSettings,
           branches: (prefetchedData.branches || []) as BranchInfo[],
         };
+
+        persistPublicLandingData(subdomain, tenantIdFromDomain, prefetchedResult);
+        return prefetchedResult;
       }
 
       let tenantInfo: { id: string; name: string; subdomain: string; status: string } | null = null;
@@ -250,7 +255,9 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
             return null;
           }
 
-          if (!isRetryableLandingError(tenantError) || attempt === 2) {
+          const retryable = isRetryableLandingError(tenantError);
+          if (!retryable || attempt === 2) {
+            if (retryable && cachedLanding) return cachedLanding;
             throw tenantError;
           }
 
@@ -273,7 +280,9 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
             return null;
           }
 
-          if (!isRetryableLandingError(tenantError) || attempt === 2) {
+          const retryable = isRetryableLandingError(tenantError);
+          if (!retryable || attempt === 2) {
+            if (retryable && cachedLanding) return cachedLanding;
             throw tenantError;
           }
 
@@ -281,7 +290,9 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
         }
       }
 
-      if (!tenantInfo) return null;
+      if (!tenantInfo) {
+        return cachedLanding ?? null;
+      }
 
       // Fetch settings + branches IN PARALLEL và retry khi lỗi mạng
       let fetched = false;
@@ -306,20 +317,25 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
           break;
         }
 
-        if (!isRetryableLandingError(settingsResult.error) || attempt === 2) {
+        const retryable = isRetryableLandingError(settingsResult.error);
+        if (!retryable || attempt === 2) {
+          if (retryable && cachedLanding) return cachedLanding;
           throw settingsResult.error;
         }
 
         await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
       }
 
-      if (!fetched) return null;
+      if (!fetched) return cachedLanding ?? null;
 
-      return {
+      const result: PublicLandingResolvedData = {
         tenant: tenantInfo,
         settings,
         branches,
       };
+
+      persistPublicLandingData(subdomain, tenantIdFromDomain, result);
+      return result;
     },
     enabled: !!subdomain || !!tenantIdFromDomain,
     staleTime: 1000 * 60 * 5, // 5 phút - tránh refetch không cần thiết
