@@ -246,11 +246,13 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
 
       let tenantInfo: { id: string; name: string; subdomain: string; status: string } | null = null;
 
-      // Nếu có subdomain, tra cứu theo subdomain (retry cho lỗi mạng)
-      if (subdomain) {
+      // IMPORTANT: prioritize tenantIdFromDomain over subdomain.
+      // This prevents stale query/hint subdomain from overriding valid custom-domain tenant resolution.
+      if (tenantIdFromDomain) {
+        // Custom domain → dùng RPC lookup_tenant_by_id (SECURITY DEFINER, anon-safe)
         for (let attempt = 0; attempt < 3; attempt++) {
           const { data: tenantData, error: tenantError } = await supabase
-            .rpc('lookup_tenant_by_subdomain', { _subdomain: subdomain });
+            .rpc('lookup_tenant_by_id', { _tenant_id: tenantIdFromDomain });
 
           const tenant = Array.isArray(tenantData) ? tenantData[0] : tenantData;
 
@@ -259,7 +261,6 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
             break;
           }
 
-          // Không tồn tại tenant thật sự thì dừng luôn
           if (!tenantError && !tenant) {
             return null;
           }
@@ -272,8 +273,8 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
 
           await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
         }
-      } else if (tenantIdFromDomain) {
-        // Custom domain → dùng RPC lookup_tenant_by_id (SECURITY DEFINER, anon-safe)
+      } else if (subdomain) {
+        // Nếu có subdomain, tra cứu theo subdomain (retry cho lỗi mạng)
         for (let attempt = 0; attempt < 3; attempt++) {
           const { data: tenantData, error: tenantError } = await supabase
             .rpc('lookup_tenant_by_id', { _tenant_id: tenantIdFromDomain });
