@@ -816,19 +816,25 @@ export function EmailAutomationTab() {
   const { data: orderEmailLogs } = useQuery({
     queryKey: ['landing-email-logs', tenant?.id],
     queryFn: async () => {
-      // Try landing_order_email_logs first, fallback to platform logs for order confirmations
+      const tenantId = tenant?.id;
+      if (!tenantId) return [] as any[];
+
+      // Source chính cho tenant users
       const { data: legacyData } = await supabase
         .from('landing_order_email_logs' as any)
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(200);
 
+      // Fallback cho tài khoản platform admin
       const { data: platformData } = await supabase
         .from('platform_email_automation_logs' as any)
         .select('*')
+        .eq('tenant_id', tenantId)
         .is('automation_id', null)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(200);
 
       // Merge both sources
       const all = [

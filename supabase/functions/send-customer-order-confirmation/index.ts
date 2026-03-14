@@ -129,6 +129,21 @@ const ACTION_TO_TRIGGER: Record<string, string> = {
   get_quote: 'on_quote_request',
 }
 
+const ACTION_TO_ORDER_EMAIL_TYPE: Record<string, string> = {
+  buy_now: 'order_confirmation',
+  add_to_cart: 'order_confirmation',
+  pre_order: 'order_confirmation',
+  notify_stock: 'order_confirmation',
+  booking: 'booking_confirmation',
+  book_appointment: 'booking_confirmation',
+  consult: 'booking_consult',
+  book_service: 'booking_beauty',
+  order_food: 'food_order',
+  book_table: 'table_booking',
+  delivery: 'delivery',
+  get_quote: 'quote_request',
+}
+
 function renderBlockSimple(block: any, vars: Record<string, string>): string {
   const replaceVars = (text: string) => {
     let result = text
@@ -186,6 +201,32 @@ function buildCustomHtml(blocks: any[], storeName: string, vars: Record<string, 
 </html>`
 }
 
+async function resolveLandingOrderId(
+  sb: any,
+  params: { orderId?: string; orderCode?: string; tenantId?: string; customerEmail?: string }
+): Promise<string | null> {
+  if (params.orderId) return params.orderId
+  if (!params.orderCode || !params.tenantId) return null
+
+  const { data, error } = await sb
+    .from('landing_orders')
+    .select('id, customer_email')
+    .eq('tenant_id', params.tenantId)
+    .eq('order_code', params.orderCode)
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  if (error || !data?.length) return null
+
+  if (params.customerEmail) {
+    const normalizedEmail = params.customerEmail.trim().toLowerCase()
+    const exactMatch = data.find((row: any) => (row.customer_email || '').toLowerCase() === normalizedEmail)
+    if (exactMatch) return exactMatch.id
+  }
+
+  return data[0].id
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -207,6 +248,7 @@ Deno.serve(async (req) => {
     }
 
     const {
+      order_id,
       customer_email,
       customer_name,
       customer_address,
@@ -322,6 +364,14 @@ Deno.serve(async (req) => {
 
     console.log(`Customer confirmation sent to ${customer_email} for order ${order_code}`)
 
+    const resolvedOrderId = await resolveLandingOrderId(sb, {
+      orderId: order_id,
+      orderCode: order_code,
+      tenantId: tenant_id,
+      customerEmail: customer_email,
+    })
+    const orderEmailType = ACTION_TO_ORDER_EMAIL_TYPE[action_type] || 'order_confirmation'
+
     // Log to platform_email_automation_logs
     await sb.from('platform_email_automation_logs').insert({
       recipient_email: customer_email,
@@ -335,6 +385,21 @@ Deno.serve(async (req) => {
     }).then(({ error: logErr }) => {
       if (logErr) console.warn('Failed to log email:', logErr.message)
     })
+
+    // Log to tenant-visible order email history
+    if (resolvedOrderId && tenant_id) {
+      await sb.from('landing_order_email_logs').insert({
+        tenant_id,
+        order_id: resolvedOrderId,
+        email_type: orderEmailType,
+        recipient_email: customer_email,
+        status: 'sent',
+      }).then(({ error: legacyErr }) => {
+        if (legacyErr) console.warn('Failed to log landing order email:', legacyErr.message)
+      })
+    } else {
+      console.warn(`Skipped landing_order_email_logs insert: missing order_id or tenant_id (order_code=${order_code})`)
+    }
 
     // Also log to email_automation_logs if using custom template
     if (usedAutomationId && tenant_id) {
@@ -364,6 +429,14 @@ Deno.serve(async (req) => {
     // Log failure
     try {
       const body = await req.clone().json().catch(() => ({}))
+      const failedOrderId = await resolveLandingOrderId(sb, {
+        orderId: body.order_id,
+        orderCode: body.order_code,
+        tenantId: body.tenant_id,
+        customerEmail: body.customer_email,
+      })
+      const failedOrderEmailType = ACTION_TO_ORDER_EMAIL_TYPE[body.action_type] || 'order_confirmation'
+
       await sb.from('platform_email_automation_logs').insert({
         recipient_email: body.customer_email || 'unknown',
         recipient_name: body.customer_name || null,
@@ -374,6 +447,19 @@ Deno.serve(async (req) => {
         tenant_id: body.tenant_id || null,
         automation_id: null,
       })
+
+      if (failedOrderId && body.tenant_id && body.customer_email) {
+        await sb.from('landing_order_email_logs').insert({
+          tenant_id: body.tenant_id,
+          order_id: failedOrderId,
+          email_type: failedOrderEmailType,
+          recipient_email: body.customer_email,
+          status: 'failed',
+          error_message: error.message,
+        }).then(({ error: legacyErr }) => {
+          if (legacyErr) console.warn('Failed to log landing order email failure:', legacyErr.message)
+        })
+      }
     } catch {}
 
     return new Response(JSON.stringify({ ok: false, error: error.message }), {
