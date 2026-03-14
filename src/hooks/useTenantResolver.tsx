@@ -327,9 +327,10 @@ export function useTenantResolver() {
       };
       cachedResult = result;
       cacheHostname = hostname;
+      persistResolvedTenant(hostname, result);
       return result;
     }
-    
+
     return null;
   }, [hostname]);
 
@@ -352,7 +353,7 @@ export function useTenantResolver() {
     if (syncResult && tenant.status !== 'loading') {
       return;
     }
-    
+
     // Sync result available but state not updated yet
     if (syncResult) {
       setTenant(syncResult);
@@ -362,28 +363,60 @@ export function useTenantResolver() {
     let cancelled = false;
     let retryCount = 0;
     const maxRetries = 3;
-    
+
     const attempt = () => {
       resolveTenantOnce(hostname).then((result) => {
         if (cancelled) return;
-        
+
         // If not_found and not cached (network error), retry
         if (result.status === 'not_found' && !cachedResult && retryCount < maxRetries) {
           retryCount++;
           setTimeout(attempt, 1500 * retryCount);
           return;
         }
-        
+
         setTenant(result);
       });
     };
-    
+
     attempt();
-    
+
     return () => {
       cancelled = true;
     };
   }, [hostname, syncResult]);
+
+  useEffect(() => {
+    if (tenant.status !== 'not_found' || tenant.isMainDomain) return;
+
+    let cancelled = false;
+
+    const retryResolve = () => {
+      resolveTenantOnce(hostname).then((result) => {
+        if (cancelled) return;
+        if (result.status === 'resolved') {
+          setTenant(result);
+        }
+      });
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        retryResolve();
+      }
+    };
+
+    window.addEventListener('online', retryResolve);
+    window.addEventListener('focus', retryResolve);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('online', retryResolve);
+      window.removeEventListener('focus', retryResolve);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [tenant.status, tenant.isMainDomain, hostname]);
   
   return tenant;
 }
