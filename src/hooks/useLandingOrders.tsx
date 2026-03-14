@@ -104,6 +104,7 @@ async function sendCustomerConfirmation(order: LandingOrder) {
 
     supabase.functions.invoke('send-customer-order-confirmation', {
       body: {
+        order_id: order.id,
         customer_email: order.customer_email,
         customer_name: order.customer_name,
         customer_address: order.customer_address,
