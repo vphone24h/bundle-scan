@@ -348,5 +348,6 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ success: false, error: 'Email sending failed' }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
   }
 })
