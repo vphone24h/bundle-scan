@@ -307,12 +307,44 @@ Deno.serve(async (req) => {
 
     console.log(`Export email sent to ${customer_email} for receipt ${receipt_code}`)
 
+    // Log to platform_email_automation_logs
+    await supabaseAdmin.from('platform_email_automation_logs').insert({
+      recipient_email: customer_email,
+      recipient_name: customer_name || null,
+      subject,
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+      body_html: htmlContent,
+      tenant_id: tenant_id || null,
+      automation_id: null,
+    }).then(({ error: logErr }) => {
+      if (logErr) console.warn('Failed to log export email:', logErr.message)
+    })
+
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending export email:', error)
+
+    // Log failure
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      const sb = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      })
+      await sb.from('platform_email_automation_logs').insert({
+        recipient_email: 'unknown',
+        subject: 'export_email',
+        status: 'failed',
+        error_message: error.message,
+        body_html: null,
+        automation_id: null,
+      })
+    } catch {}
+
     return new Response(
       JSON.stringify({ success: false, error: 'Email sending failed' }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
