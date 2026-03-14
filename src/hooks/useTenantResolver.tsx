@@ -287,8 +287,8 @@ export function useTenantResolver() {
   
   // OPTIMIZATION: Compute sync result immediately without useState setter
   const syncResult = useMemo((): ResolvedTenant | null => {
-    // Return cached result immediately
-    if (cachedResult && cacheHostname === hostname) {
+    // Return cached result immediately (except stale not_found)
+    if (cachedResult && cacheHostname === hostname && cachedResult.status !== 'not_found') {
       return cachedResult;
     }
     
