@@ -305,7 +305,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   useDynamicOGMeta(ogTitle, ogDesc, ogImage);
 
   // Loading / error states
-  if (isLoading || (!hasIdentifier && resolvedTenant.status === 'loading')) {
+  if (isLoading || (isError && hasIdentifier) || (!hasIdentifier && resolvedTenant.status === 'loading')) {
     return isStandalone ? (
       <div className="min-h-screen bg-white">
         <div className="h-14 bg-gray-100 animate-pulse" />
