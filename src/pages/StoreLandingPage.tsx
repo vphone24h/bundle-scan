@@ -234,6 +234,9 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
 
   useEffect(() => {
     if (!isStandalone || typeof window === 'undefined') return;
+    if (attemptedRouteRestoreRef.current) return;
+
+    attemptedRouteRestoreRef.current = true;
 
     const route = readPwaLastRoute(window.location.hostname);
     if (!route) return;
