@@ -181,6 +181,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   } = usePublicLandingSettings(storeId, resolvedTenantId);
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const attemptedRouteRestoreRef = useRef(false);
 
   const settings = landingData?.settings;
   const tenant = landingData?.tenant;
