@@ -201,6 +201,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     || null;
   const resolvedTenantId = resolvedTenant.tenantId || persistedIdentity?.tenantId || null;
   const hasIdentifier = !!storeId || !!resolvedTenantId;
+  const hasRecoverySignal = hasIdentifier || !!storeIdFromHint || !!persistedIdentity?.shopId || !!persistedIdentity?.tenantId;
 
   const {
     data: landingData,
