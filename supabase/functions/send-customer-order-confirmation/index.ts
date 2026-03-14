@@ -364,6 +364,14 @@ Deno.serve(async (req) => {
 
     console.log(`Customer confirmation sent to ${customer_email} for order ${order_code}`)
 
+    const resolvedOrderId = await resolveLandingOrderId(sb, {
+      orderId: order_id,
+      orderCode: order_code,
+      tenantId: tenant_id,
+      customerEmail: customer_email,
+    })
+    const orderEmailType = ACTION_TO_ORDER_EMAIL_TYPE[action_type] || 'order_confirmation'
+
     // Log to platform_email_automation_logs
     await sb.from('platform_email_automation_logs').insert({
       recipient_email: customer_email,
@@ -377,6 +385,21 @@ Deno.serve(async (req) => {
     }).then(({ error: logErr }) => {
       if (logErr) console.warn('Failed to log email:', logErr.message)
     })
+
+    // Log to tenant-visible order email history
+    if (resolvedOrderId && tenant_id) {
+      await sb.from('landing_order_email_logs').insert({
+        tenant_id,
+        order_id: resolvedOrderId,
+        email_type: orderEmailType,
+        recipient_email: customer_email,
+        status: 'sent',
+      }).then(({ error: legacyErr }) => {
+        if (legacyErr) console.warn('Failed to log landing order email:', legacyErr.message)
+      })
+    } else {
+      console.warn(`Skipped landing_order_email_logs insert: missing order_id or tenant_id (order_code=${order_code})`)
+    }
 
     // Also log to email_automation_logs if using custom template
     if (usedAutomationId && tenant_id) {
