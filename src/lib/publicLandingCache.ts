@@ -1,5 +1,6 @@
 const PUBLIC_LANDING_CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 const PUBLIC_LANDING_CACHE_PREFIX = 'public_landing_cache_v1';
+const PUBLIC_LANDING_LAST_SUCCESS_KEY = `${PUBLIC_LANDING_CACHE_PREFIX}:last_success`;
 
 export interface PublicLandingCachePayload {
   tenant: { id: string; name: string; subdomain: string; status: string };
