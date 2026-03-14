@@ -1,4 +1,5 @@
 import nodemailer from 'npm:nodemailer@6.9.10'
+import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -121,6 +122,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const sb = createClient(supabaseUrl, supabaseKey)
+
   try {
     const smtpUser = Deno.env.get('SMTP_USER')
     const smtpPassword = Deno.env.get('SMTP_PASSWORD')
@@ -148,6 +153,7 @@ Deno.serve(async (req) => {
       shop_phone,
       action_date,
       action_time,
+      tenant_id,
     } = await req.json()
 
     if (!customer_email) {
@@ -194,12 +200,42 @@ Deno.serve(async (req) => {
 
     console.log(`Customer confirmation sent to ${customer_email} for order ${order_code}`)
 
+    // Log to platform_email_automation_logs
+    await sb.from('platform_email_automation_logs').insert({
+      recipient_email: customer_email,
+      recipient_name: customer_name || null,
+      subject,
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+      body_html: html,
+      tenant_id: tenant_id || null,
+      automation_id: null,
+    }).then(({ error: logErr }) => {
+      if (logErr) console.warn('Failed to log email:', logErr.message)
+    })
+
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error: any) {
     console.error('Error in send-customer-order-confirmation:', error)
+
+    // Log failure
+    try {
+      const body = await req.clone().json().catch(() => ({}))
+      await sb.from('platform_email_automation_logs').insert({
+        recipient_email: body.customer_email || 'unknown',
+        recipient_name: body.customer_name || null,
+        subject: `order_confirmation`,
+        status: 'failed',
+        error_message: error.message,
+        body_html: null,
+        tenant_id: body.tenant_id || null,
+        automation_id: null,
+      })
+    } catch {}
+
     return new Response(JSON.stringify({ ok: false, error: error.message }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
