@@ -730,6 +730,7 @@ function PaginatedOrderLogTable({ logs, statusFilter, page, onPageChange }: {
   page: number;
   onPageChange: (p: number) => void;
 }) {
+  const [viewHtml, setViewHtml] = useState<{ subject: string; html: string } | null>(null);
   const filtered = statusFilter === 'all' ? logs :
     statusFilter === 'sent' ? logs.filter((l: any) => l.status === 'sent' || l.status === 'success') :
     logs.filter((l: any) => l.status === 'failed' || l.status === 'error');
@@ -759,12 +760,20 @@ function PaginatedOrderLogTable({ logs, statusFilter, page, onPageChange }: {
           </TableHeader>
           <TableBody>
             {paged.map((log: any) => (
-              <TableRow key={log.id}>
+              <TableRow
+                key={log.id}
+                className={log.body_html ? 'cursor-pointer hover:bg-accent/50' : ''}
+                onClick={() => {
+                  if (log.body_html) {
+                    setViewHtml({ subject: log.subject || 'Email đơn hàng', html: log.body_html });
+                  }
+                }}
+              >
                 <TableCell className="whitespace-nowrap text-sm">
                   {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
                 </TableCell>
                 <TableCell className="text-sm max-w-[180px] truncate">{log.recipient_email}</TableCell>
-                <TableCell className="text-sm">{log.email_type}</TableCell>
+                <TableCell className="text-sm">{log.email_type || 'order_confirmation'}</TableCell>
                 <TableCell>
                   {(log.status === 'sent' || log.status === 'success') ? (
                     <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
@@ -781,6 +790,20 @@ function PaginatedOrderLogTable({ logs, statusFilter, page, onPageChange }: {
         </Table>
       </ScrollableTableWrapper>
       <PaginationControls page={page} totalPages={totalPages} onPageChange={onPageChange} />
+
+      <Dialog open={!!viewHtml} onOpenChange={() => setViewHtml(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base">{viewHtml?.subject}</DialogTitle>
+          </DialogHeader>
+          {viewHtml?.html && (
+            <div
+              className="border rounded-lg p-2 bg-white"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(viewHtml.html) }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
