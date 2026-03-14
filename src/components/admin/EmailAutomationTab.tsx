@@ -625,6 +625,25 @@ function OrderEmailSection({ automations, tenantId, onEdit, onToggle, onSendTest
 
 const LOG_PAGE_SIZE = 20;
 
+const ORDER_EMAIL_TYPE_LABELS: Record<string, string> = {
+  order_confirmation: 'Xác nhận đơn hàng',
+  order_confirmed: 'Đơn đã xác nhận',
+  order_shipping: 'Đang giao hàng',
+  order_warranty: 'Gửi bảo hành',
+  booking_confirmation: 'Xác nhận đặt lịch',
+  booking_consult: 'Xác nhận tư vấn',
+  booking_beauty: 'Xác nhận dịch vụ làm đẹp',
+  food_order: 'Xác nhận đặt món',
+  table_booking: 'Xác nhận đặt bàn',
+  delivery: 'Xác nhận giao tận nơi',
+  quote_request: 'Xác nhận yêu cầu báo giá',
+};
+
+function getOrderEmailTypeLabel(emailType?: string): string {
+  const normalized = emailType || 'order_confirmation';
+  return ORDER_EMAIL_TYPE_LABELS[normalized] || normalized;
+}
+
 function PaginationControls({ page, totalPages, onPageChange }: { page: number; totalPages: number; onPageChange: (p: number) => void }) {
   if (totalPages <= 1) return null;
   return (
@@ -762,18 +781,20 @@ function PaginatedOrderLogTable({ logs, statusFilter, page, onPageChange }: {
             {paged.map((log: any) => (
               <TableRow
                 key={log.id}
-                className={log.body_html ? 'cursor-pointer hover:bg-accent/50' : ''}
+                className="cursor-pointer hover:bg-accent/50"
                 onClick={() => {
                   if (log.body_html) {
                     setViewHtml({ subject: log.subject || 'Email đơn hàng', html: log.body_html });
+                    return;
                   }
+                  toast.message('Email này chưa có nội dung HTML để xem lại');
                 }}
               >
                 <TableCell className="whitespace-nowrap text-sm">
                   {format(new Date(log.created_at), 'dd/MM HH:mm', { locale: vi })}
                 </TableCell>
                 <TableCell className="text-sm max-w-[180px] truncate">{log.recipient_email}</TableCell>
-                <TableCell className="text-sm">{log.email_type || 'order_confirmation'}</TableCell>
+                <TableCell className="text-sm">{getOrderEmailTypeLabel(log.email_type)}</TableCell>
                 <TableCell>
                   {(log.status === 'sent' || log.status === 'success') ? (
                     <Badge variant="default" className="gap-1"><CheckCircle className="h-3 w-3" />Đã gửi</Badge>
@@ -836,13 +857,28 @@ export function EmailAutomationTab() {
         .order('created_at', { ascending: false })
         .limit(200);
 
-      // Merge both sources
-      const all = [
-        ...(legacyData || []).map((l: any) => ({ ...l, _src: 'legacy' })),
+      // Merge both sources + ưu tiên bản ghi có body_html để click xem nội dung
+      const merged = [
         ...(platformData || []).map((l: any) => ({ ...l, email_type: 'order_confirmation', _src: 'platform' })),
+        ...(legacyData || []).map((l: any) => ({ ...l, _src: 'legacy' })),
       ].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-      return all.slice(0, 100) as any[];
+      const dedupedMap = new Map<string, any>();
+      for (const row of merged) {
+        const dedupeKey = `${row.recipient_email || 'unknown'}|${new Date(row.created_at).getTime()}|${row.status || 'unknown'}|${row.email_type || 'order_confirmation'}`;
+        const existed = dedupedMap.get(dedupeKey);
+
+        if (!existed) {
+          dedupedMap.set(dedupeKey, row);
+          continue;
+        }
+
+        if (!existed.body_html && row.body_html) {
+          dedupedMap.set(dedupeKey, { ...existed, ...row });
+        }
+      }
+
+      return Array.from(dedupedMap.values()).slice(0, 100) as any[];
     },
     enabled: !!tenant?.id,
   });
