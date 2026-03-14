@@ -177,6 +177,63 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     (window.navigator as any).standalone === true
   );
 
+  const restoreStoreHintForStandalone = useCallback(() => {
+    if (typeof window === 'undefined') return false;
+
+    try {
+      const raw = window.localStorage.getItem(LAST_STORE_HINT_KEY);
+      if (!raw) return false;
+
+      const parsed = JSON.parse(raw) as { storeId?: string; savedAt?: number };
+      const hintedStoreId = typeof parsed?.storeId === 'string' ? parsed.storeId.trim().toLowerCase() : '';
+
+      if (!hintedStoreId) return false;
+
+      if (typeof parsed.savedAt === 'number' && Date.now() - parsed.savedAt > 1000 * 60 * 60 * 24 * 7) {
+        window.localStorage.removeItem(LAST_STORE_HINT_KEY);
+        return false;
+      }
+
+      if (searchParams.get('store') === hintedStoreId) {
+        return false;
+      }
+
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('store', hintedStoreId);
+      setSearchParams(nextParams, { replace: true });
+      return true;
+    } catch {
+      return false;
+    }
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!isStandalone) return;
+    if (hasIdentifier) return;
+    if (resolvedTenant.status === 'loading') return;
+
+    restoreStoreHintForStandalone();
+  }, [isStandalone, hasIdentifier, resolvedTenant.status, restoreStoreHintForStandalone]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const hintStoreId = (storeId || tenant?.subdomain || '').trim().toLowerCase();
+    if (!hintStoreId) return;
+
+    try {
+      window.localStorage.setItem(
+        LAST_STORE_HINT_KEY,
+        JSON.stringify({
+          storeId: hintStoreId,
+          savedAt: Date.now(),
+        })
+      );
+    } catch {
+      // Ignore storage errors
+    }
+  }, [storeId, tenant?.subdomain]);
+
   const pathInfo = useMemo(() => detectPageFromPath(location.pathname), [location.pathname]);
   const hasDeepLinkContent = Boolean(
     searchParams.get('product') ||
