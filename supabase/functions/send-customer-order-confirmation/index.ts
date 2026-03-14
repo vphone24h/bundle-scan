@@ -429,6 +429,14 @@ Deno.serve(async (req) => {
     // Log failure
     try {
       const body = await req.clone().json().catch(() => ({}))
+      const failedOrderId = await resolveLandingOrderId(sb, {
+        orderId: body.order_id,
+        orderCode: body.order_code,
+        tenantId: body.tenant_id,
+        customerEmail: body.customer_email,
+      })
+      const failedOrderEmailType = ACTION_TO_ORDER_EMAIL_TYPE[body.action_type] || 'order_confirmation'
+
       await sb.from('platform_email_automation_logs').insert({
         recipient_email: body.customer_email || 'unknown',
         recipient_name: body.customer_name || null,
@@ -439,6 +447,19 @@ Deno.serve(async (req) => {
         tenant_id: body.tenant_id || null,
         automation_id: null,
       })
+
+      if (failedOrderId && body.tenant_id && body.customer_email) {
+        await sb.from('landing_order_email_logs').insert({
+          tenant_id: body.tenant_id,
+          order_id: failedOrderId,
+          email_type: failedOrderEmailType,
+          recipient_email: body.customer_email,
+          status: 'failed',
+          error_message: error.message,
+        }).then(({ error: legacyErr }) => {
+          if (legacyErr) console.warn('Failed to log landing order email failure:', legacyErr.message)
+        })
+      }
     } catch {}
 
     return new Response(JSON.stringify({ ok: false, error: error.message }), {
