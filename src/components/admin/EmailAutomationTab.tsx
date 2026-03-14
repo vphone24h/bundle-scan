@@ -857,13 +857,28 @@ export function EmailAutomationTab() {
         .order('created_at', { ascending: false })
         .limit(200);
 
-      // Merge both sources
-      const all = [
-        ...(legacyData || []).map((l: any) => ({ ...l, _src: 'legacy' })),
+      // Merge both sources + ưu tiên bản ghi có body_html để click xem nội dung
+      const merged = [
         ...(platformData || []).map((l: any) => ({ ...l, email_type: 'order_confirmation', _src: 'platform' })),
+        ...(legacyData || []).map((l: any) => ({ ...l, _src: 'legacy' })),
       ].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-      return all.slice(0, 100) as any[];
+      const dedupedMap = new Map<string, any>();
+      for (const row of merged) {
+        const dedupeKey = `${row.recipient_email || 'unknown'}|${new Date(row.created_at).getTime()}|${row.status || 'unknown'}|${row.email_type || 'order_confirmation'}`;
+        const existed = dedupedMap.get(dedupeKey);
+
+        if (!existed) {
+          dedupedMap.set(dedupeKey, row);
+          continue;
+        }
+
+        if (!existed.body_html && row.body_html) {
+          dedupedMap.set(dedupeKey, { ...existed, ...row });
+        }
+      }
+
+      return Array.from(dedupedMap.values()).slice(0, 100) as any[];
     },
     enabled: !!tenant?.id,
   });
