@@ -248,6 +248,7 @@ Deno.serve(async (req) => {
     }
 
     const {
+      order_id,
       customer_email,
       customer_name,
       customer_address,
