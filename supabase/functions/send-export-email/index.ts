@@ -328,6 +328,17 @@ Deno.serve(async (req) => {
       if (logErr) console.warn('Failed to log export email:', logErr.message)
     })
 
+    // Log to tenant-visible order email history (Email Automation > Đơn hàng)
+    await supabaseAdmin.from('landing_order_email_logs').insert({
+      tenant_id,
+      order_id: resolvedOrderId,
+      email_type: 'order_confirmation',
+      recipient_email: customer_email,
+      status: 'sent',
+    }).then(({ error: orderLogErr }) => {
+      if (orderLogErr) console.warn('Failed to log export email to landing_order_email_logs:', orderLogErr.message)
+    })
+
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
