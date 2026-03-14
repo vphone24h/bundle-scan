@@ -118,6 +118,7 @@ async function sendCustomerConfirmation(order: LandingOrder) {
         shop_name: tenant?.name || 'Cửa hàng',
         action_date: order.action_date,
         action_time: order.action_time,
+        tenant_id: order.tenant_id,
       },
     }).then(({ error }) => {
       if (error) console.warn('Customer confirmation failed:', error.message);
