@@ -338,6 +338,8 @@ export function usePublicLandingSettings(subdomain: string | null, tenantIdFromD
       return result;
     },
     enabled: !!subdomain || !!tenantIdFromDomain,
+    retry: (failureCount, error) => isRetryableLandingError(error) && failureCount < 5,
+    retryDelay: (attempt) => Math.min(800 * 2 ** attempt, 6000),
     staleTime: 1000 * 60 * 5, // 5 phút - tránh refetch không cần thiết
     gcTime: 1000 * 60 * 15, // 15 phút cache
     refetchOnReconnect: true,
