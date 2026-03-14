@@ -418,7 +418,7 @@ export function CustomerSearchCombobox({
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          Nếu là khách cũ, nhập SĐT sẽ tự hiện thông tin. Nếu là khách mới, bấm "Thêm mới".
+          Nhập từ 4 số điện thoại hoặc từ 2 ký tự tên để tìm nhanh. Nếu là khách mới, bấm "Thêm mới".
         </p>
       </div>
 
