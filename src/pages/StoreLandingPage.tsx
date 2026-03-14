@@ -162,7 +162,12 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   const resolvedTenant = useTenantResolver();
   const storeId = storeIdFromSubdomain || storeIdFromParams || resolvedTenant.subdomain;
   const hasIdentifier = !!storeId || !!resolvedTenant.tenantId;
-  const { data: landingData, isLoading } = usePublicLandingSettings(storeId, resolvedTenant.tenantId);
+  const {
+    data: landingData,
+    isLoading,
+    isError,
+    refetch: refetchLandingData,
+  } = usePublicLandingSettings(storeId, resolvedTenant.tenantId);
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
