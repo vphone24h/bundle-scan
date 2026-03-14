@@ -232,6 +232,21 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   }, [isStandalone, hasIdentifier, resolvedTenant.status, restoreStoreHintForStandalone]);
 
   useEffect(() => {
+    if (!isStandalone || typeof window === 'undefined') return;
+
+    const route = readPwaLastRoute(window.location.hostname);
+    if (!route) return;
+
+    const isRootLike = location.pathname === '/' || location.pathname === '/index';
+    const targetUrl = `${route.pathname}${route.search || ''}`;
+    const currentUrl = `${location.pathname}${location.search}`;
+
+    if (!isRootLike || targetUrl === currentUrl) return;
+
+    navigate(targetUrl, { replace: true });
+  }, [isStandalone, location.pathname, location.search, navigate]);
+
+  useEffect(() => {
     if (!isError || !hasIdentifier) return;
 
     const retry = () => {
@@ -258,8 +273,8 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const hintStoreId = (storeId || tenant?.subdomain || '').trim().toLowerCase();
-    if (!hintStoreId) return;
+    const hintStoreId = (storeId || tenant?.subdomain || persistedIdentity?.shopId || '').trim().toLowerCase();
+    if (!hintStoreId && !tenantId) return;
 
     try {
       window.localStorage.setItem(
@@ -272,7 +287,28 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     } catch {
       // Ignore storage errors
     }
-  }, [storeId, tenant?.subdomain]);
+
+    writePwaStoreIdentity({
+      shopId: hintStoreId || null,
+      shopDomain: window.location.hostname,
+      tenantId: tenantId || null,
+    });
+  }, [storeId, tenant?.subdomain, tenantId, persistedIdentity?.shopId]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!tenantId) return;
+
+    const params = new URLSearchParams(location.search);
+    params.delete('__lovable_token');
+    const normalizedSearch = params.toString();
+
+    writePwaLastRoute({
+      shopDomain: window.location.hostname,
+      pathname: location.pathname,
+      search: normalizedSearch ? `?${normalizedSearch}` : '',
+    });
+  }, [tenantId, location.pathname, location.search]);
 
   const pathInfo = useMemo(() => detectPageFromPath(location.pathname), [location.pathname]);
   const hasDeepLinkContent = Boolean(
