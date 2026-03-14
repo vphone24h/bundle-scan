@@ -387,6 +387,10 @@ export function useTenantResolver() {
     let cancelled = false;
 
     const retryResolve = () => {
+      if (cacheHostname === hostname && cachedResult?.status === 'not_found') {
+        cachedResult = null;
+      }
+
       resolveTenantOnce(hostname).then((result) => {
         if (cancelled) return;
         if (result.status === 'resolved') {
