@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { NavItemConfig, HomeSection } from '@/lib/industryConfig';
 import {
   getPublicLandingCacheKeys,
+  readLastSuccessfulPublicLandingCache,
   readPublicLandingCache,
   writePublicLandingCache,
 } from '@/lib/publicLandingCache';
