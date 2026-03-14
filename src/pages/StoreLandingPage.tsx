@@ -459,6 +459,20 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     );
   }
   if (!tenant) {
+    // If there are recovery signals (cached identity/store hint), avoid false "not found"
+    // and keep app in recover mode instead.
+    if (isStandalone && hasRecoverySignal) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <Card className="max-w-sm w-full"><CardContent className="pt-6 text-center space-y-2">
+            <Store className="h-14 w-14 mx-auto text-muted-foreground mb-2" />
+            <h2 className="text-lg font-semibold">Đang khôi phục cửa hàng…</h2>
+            <p className="text-sm text-muted-foreground">Mạng đang yếu, ứng dụng sẽ tự tải lại dữ liệu khi có kết nối.</p>
+          </CardContent></Card>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="max-w-sm w-full"><CardContent className="pt-6 text-center">
