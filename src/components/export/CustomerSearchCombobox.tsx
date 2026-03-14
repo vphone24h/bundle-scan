@@ -124,15 +124,9 @@ export function CustomerSearchCombobox({
 
     const timer = setTimeout(async () => {
       const { data, error } = await supabase
-        .rpc('get_customers_paginated', {
-          _search: raw,
-          _branch_id: null,
-          _tier: null,
-          _crm_status: null,
-          _staff_id: null,
-          _tag_id: null,
-          _page: 1,
-          _page_size: 5,
+        .rpc('search_customers_for_sale', {
+          _query: raw,
+          _limit: 5,
         })
         .abortSignal(controller.signal);
 
