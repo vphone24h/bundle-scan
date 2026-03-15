@@ -497,6 +497,12 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
       </div>
     );
   }
+  // Content is ready — hide the HTML preloader
+  useEffect(() => {
+    if (tenant) {
+      (window as any).__hideAppPreloader?.();
+    }
+  }, [tenant]);
 
   const branches: BranchInfo[] = landingData?.branches || [];
 
