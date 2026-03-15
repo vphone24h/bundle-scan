@@ -473,7 +473,8 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     );
   }
   if (!tenant) {
-    // If there are recovery signals (cached identity/store hint), avoid false "not found"
+    // Hide preloader on terminal states
+    (window as any).__hideAppPreloader?.();
     // and keep app in recover mode instead.
     if (isStandalone && hasRecoverySignal) {
       return (
