@@ -16,7 +16,9 @@ if (!prefetch?.storeId) {
   }
 }
 
-// Hide the HTML preloader after React paints
+// Hide the HTML preloader
+// For store pages: StoreLandingPage will call hideAppPreloader() when content is ready
+// For admin pages: hide immediately after React paints
 function hidePreloader() {
   const el = document.getElementById('app-preloader');
   if (el) {
@@ -25,10 +27,19 @@ function hidePreloader() {
   }
 }
 
+// Expose globally so StoreLandingPage can call it
+(window as any).__hideAppPreloader = hidePreloader;
+
 const root = createRoot(document.getElementById("root")!);
 root.render(<App />);
 
-// Remove preloader after first React paint
-requestAnimationFrame(() => {
-  requestAnimationFrame(hidePreloader);
-});
+// For non-store pages, hide preloader after first React paint
+// For store pages, delay — let StoreLandingPage control it
+if (!prefetch?.storeId) {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(hidePreloader);
+  });
+} else {
+  // Safety net: hide preloader after 4s max even if store page hasn't signaled
+  setTimeout(hidePreloader, 4000);
+}

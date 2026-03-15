@@ -436,7 +436,14 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     || shouldKeepRecovering
   );
 
-  // Loading / error states
+  // Hide HTML preloader when store content is ready (not skeleton)
+  useEffect(() => {
+    if (tenant && !showSkeleton) {
+      (window as any).__hideAppPreloader?.();
+    }
+  }, [tenant, showSkeleton]);
+
+  // Loading / error states — keep preloader visible during skeleton
   if (showSkeleton) {
     return isStandalone ? (
       <div className="min-h-screen bg-white">
@@ -473,7 +480,8 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     );
   }
   if (!tenant) {
-    // If there are recovery signals (cached identity/store hint), avoid false "not found"
+    // Hide preloader on terminal states
+    (window as any).__hideAppPreloader?.();
     // and keep app in recover mode instead.
     if (isStandalone && hasRecoverySignal) {
       return (
