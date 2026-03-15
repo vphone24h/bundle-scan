@@ -722,7 +722,7 @@ export default function ImportNewPage() {
               </Button>
             )}
             <Button variant="outline" size="sm" asChild>
-              <a href="/templates/Bang_ke_thu_mua_iPhone_cu.xlsx" download="Bang_ke_thu_mua_iPhone_cu.xlsx">
+              <a href="/templates/Bang_ke_thu_mua_khong_hoa_don.xlsx" download="Bang_ke_thu_mua_khong_hoa_don.xlsx">
                 <Download className="mr-1.5 h-4 w-4" />
                 <span className="hidden sm:inline">{t('tours.importNew.purchaseTemplate')}</span>
                 <span className="sm:hidden">{t('tours.importNew.purchaseTemplateShort')}</span>
