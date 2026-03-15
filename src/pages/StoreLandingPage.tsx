@@ -436,6 +436,13 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     || shouldKeepRecovering
   );
 
+  // Hide HTML preloader when store content is ready (not skeleton)
+  useEffect(() => {
+    if (tenant && !showSkeleton) {
+      (window as any).__hideAppPreloader?.();
+    }
+  }, [tenant, showSkeleton]);
+
   // Loading / error states — keep preloader visible during skeleton
   if (showSkeleton) {
     return isStandalone ? (
