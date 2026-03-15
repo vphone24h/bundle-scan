@@ -436,7 +436,7 @@ export default function StoreLandingPage({ storeIdFromSubdomain }: StoreLandingP
     || shouldKeepRecovering
   );
 
-  // Loading / error states
+  // Loading / error states — keep preloader visible during skeleton
   if (showSkeleton) {
     return isStandalone ? (
       <div className="min-h-screen bg-white">
