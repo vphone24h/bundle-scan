@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { DetailedProfitTable } from '@/components/reports/DetailedProfitTable';
 import { ReportStatDetailDialog, type DetailType } from '@/components/reports/ReportStatDetailDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -139,11 +139,26 @@ export function RevenueProfitReport() {
     categoryId: categoryId !== '_all_' ? categoryId : undefined,
   };
 
-  const { data: stats, isLoading: statsLoading } = useReportStats(filters);
+  const { data: rawStats, isLoading: statsLoading } = useReportStats(filters);
   const { data: chartData, isLoading: chartLoading } = useReportChartData({
     ...filters,
     groupBy: chartGroupBy,
   });
+
+  // Recalculate businessProfit from detail items (TỔNG CỘNG in detail table)
+  // to ensure consistency between summary cards and detail table totals
+  const stats = useMemo(() => {
+    if (!rawStats) return rawStats;
+    const soldProfit = rawStats.salesDetails?.reduce((s, i) => s + i.profit, 0) ?? 0;
+    const returnProfitLoss = rawStats.returnDetails?.reduce((s, i) => s + i.profit, 0) ?? 0;
+    const correctedBusinessProfit = soldProfit - returnProfitLoss;
+    const correctedNetProfit = correctedBusinessProfit + rawStats.otherIncome - rawStats.totalExpenses;
+    return {
+      ...rawStats,
+      businessProfit: correctedBusinessProfit,
+      netProfit: correctedNetProfit,
+    };
+  }, [rawStats]);
 
   const handleTimePreset = (preset: string) => {
     const now = new Date();
