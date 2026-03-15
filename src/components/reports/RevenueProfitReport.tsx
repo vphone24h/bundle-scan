@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { DetailedProfitTable } from '@/components/reports/DetailedProfitTable';
 import { ReportStatDetailDialog, type DetailType } from '@/components/reports/ReportStatDetailDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
