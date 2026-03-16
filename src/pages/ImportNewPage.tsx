@@ -285,18 +285,15 @@ export default function ImportNewPage() {
       // Look up existing product with this exact name
       const { data: existing } = await supabase
         .from('products')
-        .select('sku, import_price, sale_price')
+        .select('sku')
         .ilike('name', fullName)
         .limit(1);
 
       if (existing && existing.length > 0) {
         const p = existing[0] as any;
-        setForm(prev => ({
-          ...prev,
-          sku: p.sku || prev.sku,
-          importPrice: p.import_price ? String(p.import_price) : prev.importPrice,
-          salePrice: p.sale_price ? String(p.sale_price) : prev.salePrice,
-        }));
+        if (p.sku) {
+          setForm(prev => ({ ...prev, sku: p.sku }));
+        }
       }
     } catch (err) {
       console.error('Error auto-filling variant data:', err);
