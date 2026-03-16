@@ -50,6 +50,11 @@ export interface ImportReceiptItem {
   supplierId: string;
   supplierName?: string;
   note?: string;
+  // Variant fields
+  groupId?: string;
+  variant1?: string;
+  variant2?: string;
+  variant3?: string;
 }
 
 export interface PaymentSource {

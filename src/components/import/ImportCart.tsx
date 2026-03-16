@@ -2,7 +2,8 @@ import { ImportReceiptItem } from '@/types/warehouse';
 import { formatCurrency } from '@/lib/mockData';
 import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
 import { Button } from '@/components/ui/button';
-import { Trash2, ShoppingCart } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Trash2, ShoppingCart, Layers } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface ImportCartProps {
@@ -40,9 +41,17 @@ export function ImportCart({ items, onRemove, onCheckout }: ImportCartProps) {
               >
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{item.productName}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                   <p className="text-xs text-muted-foreground mt-0.5">
                     SKU: {item.sku}
                   </p>
+                  {(item.variant1 || item.variant2 || item.variant3) && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Layers className="h-3 w-3 text-primary" />
+                      <span className="text-xs text-primary">
+                        {[item.variant1, item.variant2, item.variant3].filter(Boolean).join(' • ')}
+                      </span>
+                    </div>
+                  )}
                   {item.imei && (
                     <p className="text-xs text-muted-foreground font-mono">
                       IMEI: {item.imei}

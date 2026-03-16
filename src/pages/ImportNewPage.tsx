@@ -314,6 +314,9 @@ export default function ImportNewPage() {
       supplierId: '', // Will use receipt-level supplier
       supplierName: '',
       note: form.note || undefined,
+      variant1: variantConfig.enabled ? selectedVariants.variant_1 : undefined,
+      variant2: variantConfig.enabled ? selectedVariants.variant_2 : undefined,
+      variant3: variantConfig.enabled ? selectedVariants.variant_3 : undefined,
     };
 
     setCart([...cart, newItem]);
@@ -417,6 +420,9 @@ export default function ImportNewPage() {
         quantity: item.quantity,
         supplier_id: selectedSupplierId || null,
         note: item.note || null,
+        variant_1: item.variant1 || null,
+        variant_2: item.variant2 || null,
+        variant_3: item.variant3 || null,
       })),
       payments: payments.map(p => ({
         type: p.type as 'cash' | 'bank_card' | 'e_wallet' | 'debt',

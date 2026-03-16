@@ -20,6 +20,10 @@ export interface InventoryItem {
   totalImportCost: number;
   products: ProductDetail[];
   oldestImportDate: string | null;
+  groupId: string | null;
+  variant1: string | null;
+  variant2: string | null;
+  variant3: string | null;
 }
 
 export interface ProductDetail {
@@ -153,6 +157,10 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
           totalImportCost: isInStock ? Number(product.import_price) : 0,
           products: [productDetail],
           oldestImportDate: isInStock ? product.import_date : null,
+          groupId: product.group_id || null,
+          variant1: product.variant_1 || null,
+          variant2: product.variant_2 || null,
+          variant3: product.variant_3 || null,
         });
       } else {
         const quantity = product.quantity || 1;
@@ -177,6 +185,10 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
           totalImportCost: isInStock ? totalCost : 0,
           products: isInStock ? [productDetail] : [],
           oldestImportDate: isInStock ? product.import_date : null,
+          groupId: product.group_id || null,
+          variant1: product.variant_1 || null,
+          variant2: product.variant_2 || null,
+          variant3: product.variant_3 || null,
         });
       }
     }
@@ -226,6 +238,10 @@ export function useInventory() {
         totalImportCost: Number(row.total_import_cost),
         products: [], // Products loaded on-demand via detail dialogs
         oldestImportDate: row.oldest_import_date || null,
+        groupId: row.group_id || null,
+        variant1: row.variant_1 || null,
+        variant2: row.variant_2 || null,
+        variant3: row.variant_3 || null,
       })) as InventoryItem[];
     },
     staleTime: 2 * 60 * 1000,

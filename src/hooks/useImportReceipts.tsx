@@ -224,6 +224,10 @@ export function useCreateImportReceipt() {
         quantity: number;
         supplier_id?: string | null;
         note?: string | null;
+        group_id?: string | null;
+        variant_1?: string | null;
+        variant_2?: string | null;
+        variant_3?: string | null;
       }[];
       payments: { type: PaymentType; amount: number }[];
       supplierId: string | null;
@@ -353,6 +357,10 @@ export function useCreateImportReceipt() {
           branch_id: branchId || null,
           tenant_id: tenantId,
           note: p.note,
+          group_id: p.group_id || null,
+          variant_1: p.variant_1 || null,
+          variant_2: p.variant_2 || null,
+          variant_3: p.variant_3 || null,
         });
       }
 
@@ -402,6 +410,10 @@ export function useCreateImportReceipt() {
             branch_id: branchId || null,
             tenant_id: tenantId,
             note: p.note,
+            group_id: p.group_id || null,
+            variant_1: p.variant_1 || null,
+            variant_2: p.variant_2 || null,
+            variant_3: p.variant_3 || null,
           });
           
           // Mark as processed to avoid creating duplicates

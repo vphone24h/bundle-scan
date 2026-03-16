@@ -7484,6 +7484,7 @@ export type Database = {
           branch_name: string
           category_id: string
           category_name: string
+          group_id: string
           has_imei: boolean
           oldest_import_date: string
           product_id: string
@@ -7493,6 +7494,9 @@ export type Database = {
           total_import_cost: number
           total_imported: number
           total_sold: number
+          variant_1: string
+          variant_2: string
+          variant_3: string
         }[]
       }
       get_my_referred_ctvs: { Args: { _ctv_id: string }; Returns: Json }
