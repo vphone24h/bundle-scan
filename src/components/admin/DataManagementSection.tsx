@@ -159,11 +159,7 @@ export function DataManagementSection() {
       await refetchTenant();
       queryClient.invalidateQueries();
       
-      toast.success(
-        restoreOption === 'restore' 
-          ? 'Đã khôi phục dữ liệu gốc thành công' 
-          : 'Đã xoá toàn bộ dữ liệu kho thành công'
-      );
+      toast.success('Đã xoá toàn bộ dữ liệu thành công. Không thể khôi phục.');
     } catch (error) {
       console.error('Stop test error:', error);
       toast.error('Không thể thực hiện: ' + (error as Error).message);
