@@ -420,6 +420,9 @@ export default function ImportNewPage() {
         quantity: item.quantity,
         supplier_id: selectedSupplierId || null,
         note: item.note || null,
+        variant_1: item.variant1 || null,
+        variant_2: item.variant2 || null,
+        variant_3: item.variant3 || null,
       })),
       payments: payments.map(p => ({
         type: p.type as 'cash' | 'bank_card' | 'e_wallet' | 'debt',
