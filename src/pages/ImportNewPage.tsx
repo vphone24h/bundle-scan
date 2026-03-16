@@ -207,7 +207,7 @@ export default function ImportNewPage() {
     }, 300);
   };
 
-  const handleSelectSuggestion = (product: any) => {
+  const handleSelectSuggestion = async (product: any) => {
     // Only fill base product name - don't pre-fill price/sku for variant products
     // so users can configure variants and per-variant pricing
     const hasVariantData = !product.import_price && !product.sale_price;
@@ -221,6 +221,40 @@ export default function ImportNewPage() {
     });
     setSuggestions([]);
     setProductFormMode('form');
+
+    // Auto-load variant config from product_groups if exists
+    try {
+      const { data: groups } = await supabase
+        .from('product_groups')
+        .select('*')
+        .ilike('name', product.name)
+        .limit(1);
+
+      if (groups && groups.length > 0) {
+        const group = groups[0] as any;
+        const levels: VariantLevel[] = [];
+        if (group.variant_1_label && group.variant_1_values?.length > 0) {
+          levels.push({ label: group.variant_1_label, values: group.variant_1_values });
+        }
+        if (group.variant_2_label && group.variant_2_values?.length > 0) {
+          levels.push({ label: group.variant_2_label, values: group.variant_2_values });
+        }
+        if (group.variant_3_label && group.variant_3_values?.length > 0) {
+          levels.push({ label: group.variant_3_label, values: group.variant_3_values });
+        }
+
+        if (levels.length > 0) {
+          setVariantConfig({ enabled: true, levels });
+          setSelectedVariants({});
+          toast({
+            title: 'Đã tải biến thể',
+            description: `${levels.length} cấp biến thể được tải từ nhóm "${group.name}"`,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error loading product group variants:', err);
+    }
   };
 
   const handleAddNewProduct = () => {
