@@ -6,6 +6,9 @@ import { SupplierSearchCombobox } from '@/components/import/SupplierSearchCombob
 import { PaymentDialog } from '@/components/import/PaymentDialog';
 import { ExcelImportDialog } from '@/components/import/ExcelImportDialog';
 import { ProductNamingTip } from '@/components/import/ProductNamingTip';
+import { VariantConfigPanel, VariantConfig } from '@/components/import/VariantConfig';
+import { VariantSelector, SelectedVariants, buildVariantProductName } from '@/components/import/VariantSelector';
+import { useCreateProductGroup } from '@/hooks/useProductGroups';
 import { useCategories, useCreateCategory } from '@/hooks/useCategories';
 import { useSuppliersByBranch, useCreateSupplier } from '@/hooks/useSuppliers';
 import { useProducts, useCheckIMEI, useBatchCheckIMEI } from '@/hooks/useProducts';
