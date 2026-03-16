@@ -39,8 +39,18 @@ export function StockCountList({ onCreateNew, onView, onEdit }: StockCountListPr
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3">
         <Button onClick={onCreateNew} className="gap-2"><Plus className="h-4 w-4" />{t('stockCount.createBtn')}</Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => window.open('https://youtube.com/shorts/9-XVNoXRBxc?si=LLorTEvNDTRVD2xv', '_blank')}
+        >
+          <PlayCircle className="h-4 w-4" />
+          {t('stockCount.guideBtn', 'Hướng dẫn kiểm kho')}
+          <ExternalLink className="h-3 w-3 ml-1" />
+        </Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 p-4 bg-card rounded-lg border">
