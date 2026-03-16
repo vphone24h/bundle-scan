@@ -98,6 +98,7 @@ export default function ImportNewPage() {
   const createCategory = useCreateCategory();
   const createSupplier = useCreateSupplier();
   const createImportReceipt = useCreateImportReceipt();
+  const createProductGroup = useCreateProductGroup();
   const checkIMEI = useCheckIMEI();
   const batchCheckIMEI = useBatchCheckIMEI();
 
