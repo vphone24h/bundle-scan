@@ -230,6 +230,10 @@ export function useInventory() {
         totalImportCost: Number(row.total_import_cost),
         products: [], // Products loaded on-demand via detail dialogs
         oldestImportDate: row.oldest_import_date || null,
+        groupId: row.group_id || null,
+        variant1: row.variant_1 || null,
+        variant2: row.variant_2 || null,
+        variant3: row.variant_3 || null,
       })) as InventoryItem[];
     },
     staleTime: 2 * 60 * 1000,
