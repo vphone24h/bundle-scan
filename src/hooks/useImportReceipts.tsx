@@ -357,6 +357,10 @@ export function useCreateImportReceipt() {
           branch_id: branchId || null,
           tenant_id: tenantId,
           note: p.note,
+          group_id: p.group_id || null,
+          variant_1: p.variant_1 || null,
+          variant_2: p.variant_2 || null,
+          variant_3: p.variant_3 || null,
         });
       }
 
