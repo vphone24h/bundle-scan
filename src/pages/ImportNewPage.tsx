@@ -263,6 +263,46 @@ export default function ImportNewPage() {
     setSuggestions([]);
   };
 
+  // Auto-fill SKU + prices when variant selection completes
+  const handleVariantSelectionChange = useCallback(async (newSelected: SelectedVariants) => {
+    setSelectedVariants(newSelected);
+
+    if (!variantConfig.enabled || !form.productName.trim()) return;
+
+    // Check if all active levels are selected
+    const activeLevels = variantConfig.levels.filter(l => l.values.length > 0);
+    const allSelected = activeLevels.every((_, idx) => {
+      const key = `variant_${idx + 1}` as keyof SelectedVariants;
+      return !!newSelected[key];
+    });
+
+    if (!allSelected) return;
+
+    // Build the full variant product name
+    const fullName = buildVariantProductName(form.productName, newSelected);
+
+    try {
+      // Look up existing product with this exact name
+      const { data: existing } = await supabase
+        .from('products')
+        .select('sku, import_price, sale_price')
+        .ilike('name', fullName)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        const p = existing[0] as any;
+        setForm(prev => ({
+          ...prev,
+          sku: p.sku || prev.sku,
+          importPrice: p.import_price ? String(p.import_price) : prev.importPrice,
+          salePrice: p.sale_price ? String(p.sale_price) : prev.salePrice,
+        }));
+      }
+    } catch (err) {
+      console.error('Error auto-filling variant data:', err);
+    }
+  }, [variantConfig, form.productName]);
+
   const [isCheckingIMEI, setIsCheckingIMEI] = useState(false);
 
   const handleAddToCart = async () => {
@@ -1078,10 +1118,10 @@ export default function ImportNewPage() {
               {/* Variant Selector - when variants are configured */}
               {productFormMode === 'form' && variantConfig.enabled && variantConfig.levels.some(l => l.values.length > 0) && (
                 <div className="mb-4">
-                  <VariantSelector
+               <VariantSelector
                     levels={variantConfig.levels}
                     selected={selectedVariants}
-                    onChange={setSelectedVariants}
+                    onChange={handleVariantSelectionChange}
                     baseProductName={form.productName}
                   />
                 </div>
