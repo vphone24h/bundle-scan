@@ -380,6 +380,8 @@ export default function ImportNewPage() {
     // Close payment dialog & clear cart
     setPaymentOpen(false);
     setCart([]);
+    setVariantConfig({ enabled: false, levels: [] });
+    setSelectedVariants({});
 
     // Save cart items for QR print prompt
     const qrProducts = cartSnapshot.map((item, idx) => ({
