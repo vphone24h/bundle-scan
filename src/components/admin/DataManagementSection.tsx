@@ -115,7 +115,6 @@ export function DataManagementSection() {
 
   const handleStopTestRequest = () => {
     setConfirmText('');
-    setRestoreOption(hasBackup ? 'restore' : 'delete');
     setShowStopTestDialog(true);
   };
 
