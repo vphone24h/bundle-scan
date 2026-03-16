@@ -6,7 +6,7 @@ import { SupplierSearchCombobox } from '@/components/import/SupplierSearchCombob
 import { PaymentDialog } from '@/components/import/PaymentDialog';
 import { ExcelImportDialog } from '@/components/import/ExcelImportDialog';
 import { ProductNamingTip } from '@/components/import/ProductNamingTip';
-import { VariantConfigPanel, VariantConfig } from '@/components/import/VariantConfig';
+import { VariantConfigPanel, VariantConfig, VariantLevel } from '@/components/import/VariantConfig';
 import { VariantSelector, SelectedVariants, buildVariantProductName } from '@/components/import/VariantSelector';
 import { useCreateProductGroup } from '@/hooks/useProductGroups';
 import { useCategories, useCreateCategory } from '@/hooks/useCategories';
@@ -207,7 +207,7 @@ export default function ImportNewPage() {
     }, 300);
   };
 
-  const handleSelectSuggestion = (product: any) => {
+  const handleSelectSuggestion = async (product: any) => {
     // Only fill base product name - don't pre-fill price/sku for variant products
     // so users can configure variants and per-variant pricing
     const hasVariantData = !product.import_price && !product.sale_price;
@@ -221,6 +221,40 @@ export default function ImportNewPage() {
     });
     setSuggestions([]);
     setProductFormMode('form');
+
+    // Auto-load variant config from product_groups if exists
+    try {
+      const { data: groups } = await supabase
+        .from('product_groups')
+        .select('*')
+        .ilike('name', product.name)
+        .limit(1);
+
+      if (groups && groups.length > 0) {
+        const group = groups[0] as any;
+        const levels: VariantLevel[] = [];
+        if (group.variant_1_label && group.variant_1_values?.length > 0) {
+          levels.push({ label: group.variant_1_label, values: group.variant_1_values });
+        }
+        if (group.variant_2_label && group.variant_2_values?.length > 0) {
+          levels.push({ label: group.variant_2_label, values: group.variant_2_values });
+        }
+        if (group.variant_3_label && group.variant_3_values?.length > 0) {
+          levels.push({ label: group.variant_3_label, values: group.variant_3_values });
+        }
+
+        if (levels.length > 0) {
+          setVariantConfig({ enabled: true, levels });
+          setSelectedVariants({});
+          toast({
+            title: 'Đã tải biến thể',
+            description: `${levels.length} cấp biến thể được tải từ nhóm "${group.name}"`,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error loading product group variants:', err);
+    }
   };
 
   const handleAddNewProduct = () => {
@@ -323,6 +357,50 @@ export default function ImportNewPage() {
     };
 
     setCart([...cart, newItem]);
+
+    // Save/update variant config to product_groups for future lookups
+    if (variantConfig.enabled && variantConfig.levels.some(l => l.values.length > 0)) {
+      try {
+        const baseName = form.productName.trim();
+        const { data: existingGroups } = await supabase
+          .from('product_groups')
+          .select('id, variant_1_values, variant_2_values, variant_3_values')
+          .ilike('name', baseName)
+          .limit(1);
+
+        const groupPayload: any = {
+          name: baseName,
+          variant_1_label: variantConfig.levels[0]?.label || null,
+          variant_1_values: variantConfig.levels[0]?.values || [],
+          variant_2_label: variantConfig.levels[1]?.label || null,
+          variant_2_values: variantConfig.levels[1]?.values || [],
+          variant_3_label: variantConfig.levels[2]?.label || null,
+          variant_3_values: variantConfig.levels[2]?.values || [],
+          category_id: form.categoryId || null,
+        };
+
+        if (existingGroups && existingGroups.length > 0) {
+          // Merge new variant values with existing ones (deduplicate)
+          const existing = existingGroups[0] as any;
+          const mergeValues = (existingVals: string[] | null, newVals: string[]) => {
+            const set = new Set([...(existingVals || []), ...newVals]);
+            return Array.from(set);
+          };
+          groupPayload.variant_1_values = mergeValues(existing.variant_1_values, groupPayload.variant_1_values);
+          groupPayload.variant_2_values = mergeValues(existing.variant_2_values, groupPayload.variant_2_values);
+          groupPayload.variant_3_values = mergeValues(existing.variant_3_values, groupPayload.variant_3_values);
+
+          await supabase
+            .from('product_groups')
+            .update(groupPayload)
+            .eq('id', existing.id);
+        } else {
+          await createProductGroup.mutateAsync(groupPayload);
+        }
+      } catch (err) {
+        console.error('Error saving product group:', err);
+      }
+    }
 
     if (variantConfig.enabled) {
       // Keep base product name, SKU, category — only reset variant selection, price, IMEI
