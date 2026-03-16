@@ -47,7 +47,6 @@ export function DataManagementSection() {
   // Stop test dialog states
   const [showStopTestDialog, setShowStopTestDialog] = useState(false);
   const [confirmText, setConfirmText] = useState('');
-  const [restoreOption, setRestoreOption] = useState<'restore' | 'delete'>('restore');
   
   // Password confirmation dialog
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
