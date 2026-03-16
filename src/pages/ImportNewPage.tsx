@@ -853,6 +853,8 @@ export default function ImportNewPage() {
                       setForm({ productName: '', sku: '', imei: '', categoryId: '', importPrice: '', salePrice: '', quantity: '1', note: '' });
                       setSuggestions([]);
                       setFieldErrors({});
+                      setVariantConfig({ enabled: false, levels: [] });
+                      setSelectedVariants({});
                     }}
                   >
                     <ArrowLeft className="mr-1.5 h-4 w-4" />
