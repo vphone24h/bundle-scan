@@ -145,6 +145,13 @@ export default function ImportNewPage() {
     note: '',
   });
 
+  // Variant state
+  const [variantConfig, setVariantConfig] = useState<VariantConfig>({
+    enabled: false,
+    levels: [],
+  });
+  const [selectedVariants, setSelectedVariants] = useState<SelectedVariants>({});
+
   // New supplier/category form
   const [newSupplierForm, setNewSupplierForm] = useState({ name: '', phone: '', address: '' });
   const [newCategoryName, setNewCategoryName] = useState('');
