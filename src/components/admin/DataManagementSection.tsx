@@ -235,7 +235,7 @@ export function DataManagementSection() {
               <div>
                 <Label className="text-base font-medium text-destructive">Nút Ngưng Test</Label>
                 <p className="text-sm text-muted-foreground">
-                  Kết thúc chế độ test: xoá dữ liệu hoặc khôi phục bản gốc
+                  Xoá toàn bộ dữ liệu (sản phẩm, khách hàng, NCC, đơn hàng, báo cáo...). Không thể khôi phục.
                 </p>
               </div>
             </div>
@@ -260,7 +260,7 @@ export function DataManagementSection() {
                   <div className="space-y-4">
                     <p>
                       {pendingToggleValue 
-                        ? 'Dữ liệu hiện tại sẽ được backup tự động. Toàn bộ module sẽ hiển thị trống.'
+                        ? 'Dữ liệu hiện tại sẽ được ẩn tạm thời. Khi tắt Test sẽ hiển thị lại bình thường, không mất dữ liệu.'
                         : 'Dữ liệu sẽ được hiển thị lại bình thường.'}
                     </p>
                     <div className="space-y-2">
@@ -295,56 +295,20 @@ export function DataManagementSection() {
               <AlertDialogHeader>
                 <AlertDialogTitle className="flex items-center gap-2 text-destructive">
                   <AlertTriangle className="h-5 w-5" />
-                  Ngưng chế độ Test
+                  Xoá toàn bộ dữ liệu
                 </AlertDialogTitle>
                 <AlertDialogDescription asChild>
                   <div className="space-y-4">
-                    <p>Chọn hành động sau khi ngưng test:</p>
-                    
-                    <RadioGroup 
-                      value={restoreOption} 
-                      onValueChange={(v) => setRestoreOption(v as 'restore' | 'delete')}
-                      className="space-y-3"
-                    >
-                      <div className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors ${
-                        restoreOption === 'restore' ? 'border-primary bg-primary/5' : ''
-                      } ${!hasBackup ? 'opacity-50' : 'hover:bg-muted/50 cursor-pointer'}`}>
-                        <RadioGroupItem 
-                          value="restore" 
-                          id="restore" 
-                          className="mt-1" 
-                          disabled={!hasBackup} 
-                        />
-                        <div className="flex-1">
-                          <Label 
-                            htmlFor="restore" 
-                            className={`font-medium flex items-center gap-2 cursor-pointer ${!hasBackup ? 'text-muted-foreground' : ''}`}
-                          >
-                            <RotateCcw className="h-4 w-4" />
-                            Khôi phục dữ liệu gốc
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            {hasBackup 
-                              ? 'Xoá dữ liệu test và khôi phục lại dữ liệu đã backup'
-                              : 'Không có bản backup'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors ${
-                        restoreOption === 'delete' ? 'border-destructive bg-destructive/5' : ''
-                      } hover:bg-muted/50 cursor-pointer`}>
-                        <RadioGroupItem value="delete" id="delete" className="mt-1" />
-                        <div className="flex-1">
-                          <Label htmlFor="delete" className="font-medium flex items-center gap-2 cursor-pointer">
-                            <Trash2 className="h-4 w-4" />
-                            Xoá toàn bộ dữ liệu
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            Xoá sạch tất cả dữ liệu, bắt đầu lại từ đầu
-                          </p>
-                        </div>
-                      </div>
-                    </RadioGroup>
+                    <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 text-sm space-y-1">
+                      <p className="font-medium text-destructive">⚠️ Hành động này KHÔNG THỂ hoàn tác!</p>
+                      <p className="text-muted-foreground">Toàn bộ dữ liệu sẽ bị xoá vĩnh viễn:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-0.5 ml-1">
+                        <li>Sản phẩm, tồn kho, IMEI</li>
+                        <li>Phiếu nhập, đơn bán hàng</li>
+                        <li>Khách hàng, nhà cung cấp</li>
+                        <li>Sổ quỹ, báo cáo</li>
+                      </ul>
+                    </div>
 
                     <div className="space-y-2 pt-2">
                       <Label>
@@ -381,9 +345,7 @@ export function DataManagementSection() {
                   Xác nhận mật khẩu Admin
                 </DialogTitle>
                 <DialogDescription>
-                  {restoreOption === 'restore' 
-                    ? 'Dữ liệu test sẽ bị xoá và dữ liệu gốc sẽ được khôi phục.'
-                    : 'Toàn bộ dữ liệu kho sẽ bị xoá vĩnh viễn. Hành động này không thể hoàn tác.'}
+                  Toàn bộ dữ liệu sẽ bị xoá vĩnh viễn. Hành động này không thể hoàn tác.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -408,7 +370,7 @@ export function DataManagementSection() {
                   disabled={isStopping || !password}
                 >
                   {isStopping && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  {restoreOption === 'restore' ? 'Khôi phục' : 'Xoá dữ liệu'}
+                  Xoá vĩnh viễn
                 </Button>
               </DialogFooter>
             </DialogContent>
