@@ -157,6 +157,10 @@ function processProductsToInventory(products: any[]): InventoryItem[] {
           totalImportCost: isInStock ? Number(product.import_price) : 0,
           products: [productDetail],
           oldestImportDate: isInStock ? product.import_date : null,
+          groupId: product.group_id || null,
+          variant1: product.variant_1 || null,
+          variant2: product.variant_2 || null,
+          variant3: product.variant_3 || null,
         });
       } else {
         const quantity = product.quantity || 1;
