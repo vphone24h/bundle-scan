@@ -358,6 +358,50 @@ export default function ImportNewPage() {
 
     setCart([...cart, newItem]);
 
+    // Save/update variant config to product_groups for future lookups
+    if (variantConfig.enabled && variantConfig.levels.some(l => l.values.length > 0)) {
+      try {
+        const baseName = form.productName.trim();
+        const { data: existingGroups } = await supabase
+          .from('product_groups')
+          .select('id, variant_1_values, variant_2_values, variant_3_values')
+          .ilike('name', baseName)
+          .limit(1);
+
+        const groupPayload: any = {
+          name: baseName,
+          variant_1_label: variantConfig.levels[0]?.label || null,
+          variant_1_values: variantConfig.levels[0]?.values || [],
+          variant_2_label: variantConfig.levels[1]?.label || null,
+          variant_2_values: variantConfig.levels[1]?.values || [],
+          variant_3_label: variantConfig.levels[2]?.label || null,
+          variant_3_values: variantConfig.levels[2]?.values || [],
+          category_id: form.categoryId || null,
+        };
+
+        if (existingGroups && existingGroups.length > 0) {
+          // Merge new variant values with existing ones (deduplicate)
+          const existing = existingGroups[0] as any;
+          const mergeValues = (existingVals: string[] | null, newVals: string[]) => {
+            const set = new Set([...(existingVals || []), ...newVals]);
+            return Array.from(set);
+          };
+          groupPayload.variant_1_values = mergeValues(existing.variant_1_values, groupPayload.variant_1_values);
+          groupPayload.variant_2_values = mergeValues(existing.variant_2_values, groupPayload.variant_2_values);
+          groupPayload.variant_3_values = mergeValues(existing.variant_3_values, groupPayload.variant_3_values);
+
+          await supabase
+            .from('product_groups')
+            .update(groupPayload)
+            .eq('id', existing.id);
+        } else {
+          await createProductGroup.mutateAsync(groupPayload);
+        }
+      } catch (err) {
+        console.error('Error saving product group:', err);
+      }
+    }
+
     if (variantConfig.enabled) {
       // Keep base product name, SKU, category — only reset variant selection, price, IMEI
       setForm(prev => ({
