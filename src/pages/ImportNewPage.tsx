@@ -314,6 +314,9 @@ export default function ImportNewPage() {
       supplierId: '', // Will use receipt-level supplier
       supplierName: '',
       note: form.note || undefined,
+      variant1: variantConfig.enabled ? selectedVariants.variant_1 : undefined,
+      variant2: variantConfig.enabled ? selectedVariants.variant_2 : undefined,
+      variant3: variantConfig.enabled ? selectedVariants.variant_3 : undefined,
     };
 
     setCart([...cart, newItem]);
