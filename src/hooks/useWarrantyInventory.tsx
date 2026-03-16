@@ -102,6 +102,10 @@ function processProductsToWarrantyInventory(products: any[]): InventoryItem[] {
           totalImportCost: totalCost,
           products: [productDetail],
           oldestImportDate: product.import_date || null,
+          groupId: null,
+          variant1: null,
+          variant2: null,
+          variant3: null,
         });
       }
     }
