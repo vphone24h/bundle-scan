@@ -973,6 +973,29 @@ export default function ImportNewPage() {
               {/* Naming Tips - only in form mode */}
               {productFormMode === 'form' && <ProductNamingTip />}
 
+              {/* Variant Configuration - only in form mode */}
+              {productFormMode === 'form' && (
+                <div className="my-3">
+                  <VariantConfigPanel
+                    config={variantConfig}
+                    onChange={setVariantConfig}
+                    baseProductName={form.productName}
+                  />
+                </div>
+              )}
+
+              {/* Variant Selector - when variants are configured */}
+              {productFormMode === 'form' && variantConfig.enabled && variantConfig.levels.some(l => l.values.length > 0) && (
+                <div className="mb-4">
+                  <VariantSelector
+                    levels={variantConfig.levels}
+                    selected={selectedVariants}
+                    onChange={setSelectedVariants}
+                    baseProductName={form.productName}
+                  />
+                </div>
+              )}
+
               {/* Full form fields - only visible in form mode */}
               {productFormMode === 'form' && (
                 <>
