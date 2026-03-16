@@ -6,6 +6,9 @@ import { SupplierSearchCombobox } from '@/components/import/SupplierSearchCombob
 import { PaymentDialog } from '@/components/import/PaymentDialog';
 import { ExcelImportDialog } from '@/components/import/ExcelImportDialog';
 import { ProductNamingTip } from '@/components/import/ProductNamingTip';
+import { VariantConfigPanel, VariantConfig } from '@/components/import/VariantConfig';
+import { VariantSelector, SelectedVariants, buildVariantProductName } from '@/components/import/VariantSelector';
+import { useCreateProductGroup } from '@/hooks/useProductGroups';
 import { useCategories, useCreateCategory } from '@/hooks/useCategories';
 import { useSuppliersByBranch, useCreateSupplier } from '@/hooks/useSuppliers';
 import { useProducts, useCheckIMEI, useBatchCheckIMEI } from '@/hooks/useProducts';
@@ -95,6 +98,7 @@ export default function ImportNewPage() {
   const createCategory = useCreateCategory();
   const createSupplier = useCreateSupplier();
   const createImportReceipt = useCreateImportReceipt();
+  const createProductGroup = useCreateProductGroup();
   const checkIMEI = useCheckIMEI();
   const batchCheckIMEI = useBatchCheckIMEI();
 
@@ -140,6 +144,13 @@ export default function ImportNewPage() {
     quantity: '1',
     note: '',
   });
+
+  // Variant state
+  const [variantConfig, setVariantConfig] = useState<VariantConfig>({
+    enabled: false,
+    levels: [],
+  });
+  const [selectedVariants, setSelectedVariants] = useState<SelectedVariants>({});
 
   // New supplier/category form
   const [newSupplierForm, setNewSupplierForm] = useState({ name: '', phone: '', address: '' });
@@ -285,9 +296,14 @@ export default function ImportNewPage() {
       salePrice = form.imei ? importPrice + 2000000 : importPrice * 2;
     }
 
+    // Build product name with variants
+    const finalProductName = variantConfig.enabled
+      ? buildVariantProductName(form.productName, selectedVariants)
+      : form.productName;
+
     const newItem: ImportReceiptItem = {
       id: String(Date.now()),
-      productName: form.productName,
+      productName: finalProductName,
       sku: form.sku,
       imei: form.imei || undefined,
       categoryId: form.categoryId,
@@ -301,20 +317,34 @@ export default function ImportNewPage() {
     };
 
     setCart([...cart, newItem]);
-    setForm({
-      productName: '',
-      sku: '',
-      imei: '',
-      categoryId: '',
-      importPrice: '',
-      salePrice: '',
-      quantity: '1',
-      note: '',
-    });
-    setProductFormMode('search');
+
+    if (variantConfig.enabled) {
+      // Keep base product name, SKU, category — only reset variant selection, price, IMEI
+      setForm(prev => ({
+        ...prev,
+        imei: '',
+        importPrice: '',
+        salePrice: '',
+        quantity: '1',
+        note: '',
+      }));
+      setSelectedVariants({});
+    } else {
+      setForm({
+        productName: '',
+        sku: '',
+        imei: '',
+        categoryId: '',
+        importPrice: '',
+        salePrice: '',
+        quantity: '1',
+        note: '',
+      });
+      setProductFormMode('search');
+    }
     toast({
       title: t('tours.importNew.addedToCart'),
-      description: t('tours.importNew.addedToCartDesc', { name: newItem.productName, qty: quantity }),
+      description: t('tours.importNew.addedToCartDesc', { name: finalProductName, qty: quantity }),
     });
   };
 
@@ -350,6 +380,8 @@ export default function ImportNewPage() {
     // Close payment dialog & clear cart
     setPaymentOpen(false);
     setCart([]);
+    setVariantConfig({ enabled: false, levels: [] });
+    setSelectedVariants({});
 
     // Save cart items for QR print prompt
     const qrProducts = cartSnapshot.map((item, idx) => ({
@@ -823,6 +855,8 @@ export default function ImportNewPage() {
                       setForm({ productName: '', sku: '', imei: '', categoryId: '', importPrice: '', salePrice: '', quantity: '1', note: '' });
                       setSuggestions([]);
                       setFieldErrors({});
+                      setVariantConfig({ enabled: false, levels: [] });
+                      setSelectedVariants({});
                     }}
                   >
                     <ArrowLeft className="mr-1.5 h-4 w-4" />
@@ -942,6 +976,29 @@ export default function ImportNewPage() {
 
               {/* Naming Tips - only in form mode */}
               {productFormMode === 'form' && <ProductNamingTip />}
+
+              {/* Variant Configuration - only in form mode */}
+              {productFormMode === 'form' && (
+                <div className="my-3">
+                  <VariantConfigPanel
+                    config={variantConfig}
+                    onChange={setVariantConfig}
+                    baseProductName={form.productName}
+                  />
+                </div>
+              )}
+
+              {/* Variant Selector - when variants are configured */}
+              {productFormMode === 'form' && variantConfig.enabled && variantConfig.levels.some(l => l.values.length > 0) && (
+                <div className="mb-4">
+                  <VariantSelector
+                    levels={variantConfig.levels}
+                    selected={selectedVariants}
+                    onChange={setSelectedVariants}
+                    baseProductName={form.productName}
+                  />
+                </div>
+              )}
 
               {/* Full form fields - only visible in form mode */}
               {productFormMode === 'form' && (

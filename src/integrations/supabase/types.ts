@@ -4662,6 +4662,69 @@ export type Database = {
           },
         ]
       }
+      product_groups: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          id: string
+          name: string
+          sku_prefix: string | null
+          tenant_id: string
+          updated_at: string | null
+          variant_1_label: string | null
+          variant_1_values: string[] | null
+          variant_2_label: string | null
+          variant_2_values: string[] | null
+          variant_3_label: string | null
+          variant_3_values: string[] | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          sku_prefix?: string | null
+          tenant_id: string
+          updated_at?: string | null
+          variant_1_label?: string | null
+          variant_1_values?: string[] | null
+          variant_2_label?: string | null
+          variant_2_values?: string[] | null
+          variant_3_label?: string | null
+          variant_3_values?: string[] | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          sku_prefix?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+          variant_1_label?: string | null
+          variant_1_values?: string[] | null
+          variant_2_label?: string | null
+          variant_2_values?: string[] | null
+          variant_3_label?: string | null
+          variant_3_values?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_groups_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_groups_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_imports: {
         Row: {
           created_at: string
@@ -4728,6 +4791,7 @@ export type Database = {
           branch_id: string | null
           category_id: string | null
           created_at: string
+          group_id: string | null
           home_tab_ids: string[] | null
           id: string
           imei: string | null
@@ -4745,12 +4809,16 @@ export type Database = {
           tenant_id: string | null
           total_import_cost: number
           updated_at: string
+          variant_1: string | null
+          variant_2: string | null
+          variant_3: string | null
           warranty_note: string | null
         }
         Insert: {
           branch_id?: string | null
           category_id?: string | null
           created_at?: string
+          group_id?: string | null
           home_tab_ids?: string[] | null
           id?: string
           imei?: string | null
@@ -4768,12 +4836,16 @@ export type Database = {
           tenant_id?: string | null
           total_import_cost?: number
           updated_at?: string
+          variant_1?: string | null
+          variant_2?: string | null
+          variant_3?: string | null
           warranty_note?: string | null
         }
         Update: {
           branch_id?: string | null
           category_id?: string | null
           created_at?: string
+          group_id?: string | null
           home_tab_ids?: string[] | null
           id?: string
           imei?: string | null
@@ -4791,6 +4863,9 @@ export type Database = {
           tenant_id?: string | null
           total_import_cost?: number
           updated_at?: string
+          variant_1?: string | null
+          variant_2?: string | null
+          variant_3?: string | null
           warranty_note?: string | null
         }
         Relationships: [
@@ -4806,6 +4881,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "product_groups"
             referencedColumns: ["id"]
           },
           {
