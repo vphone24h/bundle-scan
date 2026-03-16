@@ -78,6 +78,10 @@ function processProductsToWarrantyInventory(products: any[]): InventoryItem[] {
           totalImportCost: Number(product.import_price),
           products: [productDetail],
           oldestImportDate: product.import_date || null,
+          groupId: null,
+          variant1: null,
+          variant2: null,
+          variant3: null,
         });
       } else {
         const quantity = product.quantity || 1;
