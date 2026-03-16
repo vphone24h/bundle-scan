@@ -296,9 +296,14 @@ export default function ImportNewPage() {
       salePrice = form.imei ? importPrice + 2000000 : importPrice * 2;
     }
 
+    // Build product name with variants
+    const finalProductName = variantConfig.enabled
+      ? buildVariantProductName(form.productName, selectedVariants)
+      : form.productName;
+
     const newItem: ImportReceiptItem = {
       id: String(Date.now()),
-      productName: form.productName,
+      productName: finalProductName,
       sku: form.sku,
       imei: form.imei || undefined,
       categoryId: form.categoryId,
@@ -312,20 +317,34 @@ export default function ImportNewPage() {
     };
 
     setCart([...cart, newItem]);
-    setForm({
-      productName: '',
-      sku: '',
-      imei: '',
-      categoryId: '',
-      importPrice: '',
-      salePrice: '',
-      quantity: '1',
-      note: '',
-    });
-    setProductFormMode('search');
+
+    if (variantConfig.enabled) {
+      // Keep base product name, SKU, category — only reset variant selection, price, IMEI
+      setForm(prev => ({
+        ...prev,
+        imei: '',
+        importPrice: '',
+        salePrice: '',
+        quantity: '1',
+        note: '',
+      }));
+      setSelectedVariants({});
+    } else {
+      setForm({
+        productName: '',
+        sku: '',
+        imei: '',
+        categoryId: '',
+        importPrice: '',
+        salePrice: '',
+        quantity: '1',
+        note: '',
+      });
+      setProductFormMode('search');
+    }
     toast({
       title: t('tours.importNew.addedToCart'),
-      description: t('tours.importNew.addedToCartDesc', { name: newItem.productName, qty: quantity }),
+      description: t('tours.importNew.addedToCartDesc', { name: finalProductName, qty: quantity }),
     });
   };
 
