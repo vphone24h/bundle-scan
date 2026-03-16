@@ -224,6 +224,10 @@ export function useCreateImportReceipt() {
         quantity: number;
         supplier_id?: string | null;
         note?: string | null;
+        group_id?: string | null;
+        variant_1?: string | null;
+        variant_2?: string | null;
+        variant_3?: string | null;
       }[];
       payments: { type: PaymentType; amount: number }[];
       supplierId: string | null;
