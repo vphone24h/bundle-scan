@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Plus, Eye, Edit, X } from 'lucide-react';
+import { Plus, Eye, Edit, X, PlayCircle, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { Badge } from '@/components/ui/badge';
