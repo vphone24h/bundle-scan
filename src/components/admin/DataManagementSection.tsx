@@ -141,7 +141,7 @@ export function DataManagementSection() {
           action: 'stop_test_mode',
           confirmText: confirmText.toLowerCase(),
           password,
-          restoreOption,
+          restoreOption: 'delete',
         },
       });
 
