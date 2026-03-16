@@ -208,10 +208,13 @@ export default function ImportNewPage() {
   };
 
   const handleSelectSuggestion = (product: any) => {
+    // Only fill base product name - don't pre-fill price/sku for variant products
+    // so users can configure variants and per-variant pricing
+    const hasVariantData = !product.import_price && !product.sale_price;
     setForm({
       ...form,
       productName: product.name,
-      sku: product.sku,
+      sku: hasVariantData ? '' : (product.sku || ''),
       categoryId: '', // Always require re-selecting category
       importPrice: product.import_price ? String(product.import_price) : '',
       salePrice: product.sale_price ? String(product.sale_price) : '',
