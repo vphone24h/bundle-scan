@@ -20,6 +20,10 @@ export interface InventoryItem {
   totalImportCost: number;
   products: ProductDetail[];
   oldestImportDate: string | null;
+  groupId: string | null;
+  variant1: string | null;
+  variant2: string | null;
+  variant3: string | null;
 }
 
 export interface ProductDetail {
