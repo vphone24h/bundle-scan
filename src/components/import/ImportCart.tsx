@@ -2,7 +2,8 @@ import { ImportReceiptItem } from '@/types/warehouse';
 import { formatCurrency } from '@/lib/mockData';
 import { formatCurrencyWithSpaces } from '@/lib/formatNumber';
 import { Button } from '@/components/ui/button';
-import { Trash2, ShoppingCart } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Trash2, ShoppingCart, Layers } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface ImportCartProps {
