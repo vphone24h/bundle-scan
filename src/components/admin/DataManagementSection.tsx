@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { EyeOff, Eye, Trash2, Loader2, AlertTriangle, ShieldAlert, RotateCcw, Database } from 'lucide-react';
+import { EyeOff, Eye, Trash2, Loader2, AlertTriangle, ShieldAlert, Database } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from '@/hooks/useTenant';
 import { useQueryClient } from '@tanstack/react-query';
