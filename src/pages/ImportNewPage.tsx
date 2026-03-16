@@ -1078,10 +1078,10 @@ export default function ImportNewPage() {
               {/* Variant Selector - when variants are configured */}
               {productFormMode === 'form' && variantConfig.enabled && variantConfig.levels.some(l => l.values.length > 0) && (
                 <div className="mb-4">
-                  <VariantSelector
+               <VariantSelector
                     levels={variantConfig.levels}
                     selected={selectedVariants}
-                    onChange={setSelectedVariants}
+                    onChange={handleVariantSelectionChange}
                     baseProductName={form.productName}
                   />
                 </div>
