@@ -336,6 +336,81 @@ export function useCreateImportReceipt() {
         }
       }
 
+      // =========== PHASE 2.5: Auto-create product_groups for variant products ===========
+      const variantGroupMap = new Map<string, string>(); // baseName -> group_id
+      const variantProducts = products.filter(p => p.variant_1 || p.variant_2 || p.variant_3);
+      
+      if (variantProducts.length > 0) {
+        // Group by base name (product name without variant parts)
+        const baseNames = new Set<string>();
+        for (const p of variantProducts) {
+          let baseName = p.name;
+          if (p.variant_1) baseName = baseName.replace(p.variant_1, '').trim();
+          if (p.variant_2) baseName = baseName.replace(p.variant_2, '').trim();
+          if (p.variant_3) baseName = baseName.replace(p.variant_3, '').trim();
+          baseNames.add(baseName);
+        }
+
+        for (const baseName of baseNames) {
+          // Check if product_group already exists
+          const { data: existingGroup } = await supabase
+            .from('product_groups')
+            .select('id')
+            .eq('tenant_id', tenantId)
+            .eq('name', baseName)
+            .maybeSingle();
+
+          if (existingGroup) {
+            variantGroupMap.set(baseName, existingGroup.id);
+          } else {
+            // Collect all variant values for this base name
+            const relatedProducts = variantProducts.filter(p => {
+              let bn = p.name;
+              if (p.variant_1) bn = bn.replace(p.variant_1, '').trim();
+              if (p.variant_2) bn = bn.replace(p.variant_2, '').trim();
+              if (p.variant_3) bn = bn.replace(p.variant_3, '').trim();
+              return bn === baseName;
+            });
+
+            const v1Values = [...new Set(relatedProducts.map(p => p.variant_1).filter(Boolean))] as string[];
+            const v2Values = [...new Set(relatedProducts.map(p => p.variant_2).filter(Boolean))] as string[];
+            const v3Values = [...new Set(relatedProducts.map(p => p.variant_3).filter(Boolean))] as string[];
+
+            const { data: newGroup, error: groupError } = await supabase
+              .from('product_groups')
+              .insert([{
+                tenant_id: tenantId,
+                name: baseName,
+                variant_1_values: v1Values,
+                variant_2_values: v2Values,
+                variant_3_values: v3Values,
+              } as any])
+              .select('id')
+              .single();
+
+            if (groupError) {
+              console.error('Failed to create product group:', groupError);
+            } else if (newGroup) {
+              variantGroupMap.set(baseName, newGroup.id);
+            }
+          }
+        }
+
+        // Assign group_id to variant products
+        for (const p of products) {
+          if (p.variant_1 || p.variant_2 || p.variant_3) {
+            let baseName = p.name;
+            if (p.variant_1) baseName = baseName.replace(p.variant_1, '').trim();
+            if (p.variant_2) baseName = baseName.replace(p.variant_2, '').trim();
+            if (p.variant_3) baseName = baseName.replace(p.variant_3, '').trim();
+            const groupId = variantGroupMap.get(baseName);
+            if (groupId) {
+              (p as any).group_id = groupId;
+            }
+          }
+        }
+      }
+
       // =========== PHASE 3: Prepare batch data ===========
       const newProducts: any[] = [];
       const updateOperations: { id: string; updates: any }[] = [];
