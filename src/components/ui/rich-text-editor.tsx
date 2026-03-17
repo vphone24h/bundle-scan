@@ -224,19 +224,50 @@ export function RichTextEditor({
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > MAX_UPLOAD_SIZE) {
+      toast({
+        title: 'Ảnh quá lớn',
+        description: 'Vui lòng chọn ảnh tối đa 15MB.',
+        variant: 'destructive',
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    if (file.type && !ALLOWED_UPLOAD_MIME_TYPES.has(file.type.toLowerCase())) {
+      toast({
+        title: 'Định dạng ảnh chưa hỗ trợ',
+        description: 'Vui lòng chọn JPG, PNG, GIF, WEBP, HEIC hoặc AVIF.',
+        variant: 'destructive',
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     // Save selection BEFORE async operation
     saveSelection();
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
+      const ext = file.name.split('.').pop() || 'jpg';
       const path = `editor/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from('tenant-assets').upload(path, file);
+      const { error } = await supabase.storage
+        .from('tenant-assets')
+        .upload(path, file, { contentType: file.type || 'image/jpeg', upsert: false });
       if (error) throw error;
+
       const { data: urlData } = supabase.storage.from('tenant-assets').getPublicUrl(path);
+      if (!urlData?.publicUrl) throw new Error('Không lấy được URL ảnh');
+
       insertImageHtml(urlData.publicUrl);
       setImageOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Upload failed:', err);
+      toast({
+        title: 'Upload ảnh thất bại',
+        description: err?.message || 'Vui lòng thử lại.',
+        variant: 'destructive',
+      });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
