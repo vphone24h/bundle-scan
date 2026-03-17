@@ -318,7 +318,17 @@ export function ProductTable({
                     aria-label={`Chọn ${product.name}`}
                   />
                 </td>
-                <td className="font-medium max-w-[200px] truncate">{product.name}</td>
+                <td className="font-medium max-w-[200px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate">{product.name}</span>
+                    {product.isTemplateGroup && (
+                      <Badge variant="secondary" className="text-[10px] gap-0.5 shrink-0">
+                        <Layers className="h-2.5 w-2.5" />
+                        {product.variantCount} biến thể
+                      </Badge>
+                    )}
+                  </div>
+                </td>
                 <td className="text-muted-foreground text-xs sm:text-sm">{product.sku}</td>
                 <td className="font-mono text-xs sm:text-sm hidden lg:table-cell">{product.imei || '-'}</td>
                 <td className="hidden sm:table-cell">{product.categoryName}</td>
