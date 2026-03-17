@@ -360,21 +360,38 @@ export function LandingProductsTab() {
 
   const handleVariantImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || pendingVariantIdx === null) return;
-    const idx = pendingVariantIdx;
-    setUploadingVariantIdx(idx);
+    const legacyIdx = pendingVariantIdx;
+    const matrixIdx = pendingVariantPriceIdx;
+
+    if (!file || (legacyIdx === null && matrixIdx === null)) return;
+
+    if (legacyIdx !== null) setUploadingVariantIdx(legacyIdx);
+    if (matrixIdx !== null) setUploadingVariantPriceIdx(matrixIdx);
+
     try {
       const url = await handleUploadImage(file);
       if (url) {
         setForm(prev => {
-          const variants = [...prev.variants];
-          variants[idx] = { ...variants[idx], image_url: url };
-          return { ...prev, variants };
+          if (legacyIdx !== null) {
+            const variants = [...prev.variants];
+            variants[legacyIdx] = { ...variants[legacyIdx], image_url: url };
+            return { ...prev, variants };
+          }
+
+          if (matrixIdx !== null) {
+            const variant_prices = [...prev.variant_prices];
+            variant_prices[matrixIdx] = { ...variant_prices[matrixIdx], image_url: url };
+            return { ...prev, variant_prices };
+          }
+
+          return prev;
         });
       }
     } finally {
       setUploadingVariantIdx(null);
+      setUploadingVariantPriceIdx(null);
       setPendingVariantIdx(null);
+      setPendingVariantPriceIdx(null);
       if (variantFileRef.current) variantFileRef.current.value = '';
     }
   };
