@@ -180,7 +180,7 @@ export default function ProductsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: categories } = useCategories();
-  const { data: suppliers } = useSuppliers();
+  const { data: suppliers } = useSupplierOptions();
   const { data: branches } = useBranches();
   
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
