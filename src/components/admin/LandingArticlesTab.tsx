@@ -545,7 +545,7 @@ export function LandingArticlesTab() {
                 <SelectTrigger><SelectValue placeholder="Chọn danh mục" /></SelectTrigger>
                 <SelectContent className="bg-popover">
                   <SelectItem value="_none_">Không phân loại</SelectItem>
-                  {flatCategoriesForSelect().map(c => (
+                  {flatCategoriesForSelect.map(c => (
                     <SelectItem key={c.id} value={c.id}>{'—'.repeat(c.level)} {c.name}</SelectItem>
                   ))}
                 </SelectContent>
