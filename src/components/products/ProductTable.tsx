@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer } from 'lucide-react';
+import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -25,6 +25,7 @@ interface ProductTableProps {
   onSelectionChange: (ids: string[]) => void;
   onEdit: (product: Product) => void;
   onPrintBarcode: (products: Product[]) => void;
+  onDuplicate?: (product: Product) => void;
 }
 
 export function ProductTable({
