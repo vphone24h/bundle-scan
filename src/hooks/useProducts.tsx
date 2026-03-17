@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
 import { useBranchFilter } from './useBranchFilter';
+import { usePermissions } from './usePermissions';
 import { useState, useCallback } from 'react';
 
 type ProductStatus = Database['public']['Enums']['product_status'];

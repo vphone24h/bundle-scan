@@ -208,13 +208,10 @@ export default function ProductsPage() {
   // Server-side pagination
   const serverPagination = useServerPagination(50);
 
-  // Reset to page 1 when filters change
-  const filterKey = `${debouncedSearch}|${dateFrom}|${dateTo}|${categoryFilter}|${supplierFilter}|${statusFilter}|${branchFilter}|${printedFilter}`;
-  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
-  if (filterKey !== prevFilterKey) {
-    setPrevFilterKey(filterKey);
+  // Reset to page 1 when filters change (tránh setState trong render gây re-render loop)
+  useEffect(() => {
     serverPagination.setPage(1);
-  }
+  }, [debouncedSearch, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter, printedFilter, serverPagination]);
 
   // Build server-side filters
   const serverFilters = useMemo(() => ({
