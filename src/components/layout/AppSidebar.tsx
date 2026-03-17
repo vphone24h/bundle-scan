@@ -216,7 +216,6 @@ export function AppSidebar() {
         </div>
         <div className="ml-auto hidden lg:flex items-center gap-0 shrink-0 [&_button]:text-sidebar-foreground [&_button]:hover:bg-sidebar-accent [&_button]:opacity-100 [&_button]:h-8 [&_button]:w-8 [&_.h-5]:h-4 [&_.w-5]:w-4">
           <SystemNotificationBell />
-          <NotificationBell />
         </div>
       </div>
 
