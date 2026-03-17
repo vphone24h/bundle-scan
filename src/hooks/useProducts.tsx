@@ -140,6 +140,7 @@ export function useProducts(filters?: ProductFilters) {
     staleTime: 3 * 60 * 1000, // 3 min cache
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
     placeholderData: (previous) => previous,
   });
 
