@@ -265,10 +265,18 @@ export function useLandingOrders(filters: LandingOrdersFilters = {}) {
       if (filters.source && filters.source !== 'all') {
         query = query.eq('order_source', filters.source);
       }
-      if (filters.search) {
-        const s = filters.search.trim();
-        if (s) {
-          query = query.or(`customer_name.ilike.%${s}%,customer_phone.ilike.%${s}%,product_name.ilike.%${s}%,ctv_name.ilike.%${s}%`);
+
+      const rawSearch = filters.search?.trim();
+      if (rawSearch) {
+        const isPhoneSearch = /^\d+$/.test(rawSearch);
+
+        if (isPhoneSearch) {
+          // Prefix-only phone search for performance on large datasets
+          if (rawSearch.length >= 4) {
+            query = query.like('customer_phone', `${rawSearch}%`);
+          }
+        } else if (rawSearch.length >= 2) {
+          query = query.or(`customer_name.ilike.%${rawSearch}%,product_name.ilike.%${rawSearch}%,ctv_name.ilike.%${rawSearch}%`);
         }
       }
 
@@ -300,9 +308,9 @@ export function useLandingOrders(filters: LandingOrdersFilters = {}) {
         ? (page * pageSize) + 1
         : ((page - 1) * pageSize) + items.length;
 
-      return { items, totalCount };
+      return { items, hasMore, totalCount };
     },
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
