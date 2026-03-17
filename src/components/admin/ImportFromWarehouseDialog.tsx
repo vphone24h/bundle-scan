@@ -25,6 +25,17 @@ interface Props {
 
 type AIStep = 'select' | 'step1_desc' | 'step2_images' | 'done';
 
+interface GroupedDisplayItem {
+  key: string;
+  baseName: string;
+  items: InventoryItem[];
+  totalStock: number;
+  variantCount: number;
+  categoryName: string | null;
+  price: number;
+  sku: string;
+}
+
 interface ProductAIResult {
   productId: string;
   productName: string;
