@@ -275,15 +275,73 @@ export default function ProductsPage() {
     handlePrintBarcode(selected);
   };
 
-  const handleDuplicate = (product: any) => {
-    setTemplateInitialData({
-      productName: product.name + ' (bản sao)',
+  const handleDuplicate = async (product: any) => {
+    // Extract base name
+    let baseName = product.name;
+    if (product.variant1 || product.variant2 || product.variant3) {
+      baseName = extractBaseName(product.name, product.variant1, product.variant2, product.variant3);
+    }
+
+    const initialData: any = {
+      productName: baseName + ' (bản sao)',
       sku: product.sku ? product.sku + '-copy' : '',
       categoryId: product.categoryId || '',
       importPrice: product.importPrice ? String(product.importPrice) : '',
       salePrice: product.salePrice ? String(product.salePrice) : '',
       note: product.note || '',
-    });
+    };
+
+    // Load variant config from product_groups or existing products
+    try {
+      const { data: groups } = await supabase
+        .from('product_groups')
+        .select('*')
+        .ilike('name', baseName)
+        .limit(1);
+
+      if (groups && groups.length > 0) {
+        const group = groups[0] as any;
+        const levels: any[] = [];
+        if (group.variant_1_label && group.variant_1_values?.length > 0) {
+          levels.push({ label: group.variant_1_label, values: group.variant_1_values });
+        }
+        if (group.variant_2_label && group.variant_2_values?.length > 0) {
+          levels.push({ label: group.variant_2_label, values: group.variant_2_values });
+        }
+        if (group.variant_3_label && group.variant_3_values?.length > 0) {
+          levels.push({ label: group.variant_3_label, values: group.variant_3_values });
+        }
+        if (levels.length > 0) initialData.variantLevels = levels;
+      } else {
+        // Fallback: extract from existing products
+        const { data: products } = await supabase
+          .from('products')
+          .select('variant_1, variant_2, variant_3')
+          .ilike('name', `${baseName}%`)
+          .not('variant_1', 'is', null)
+          .limit(100);
+
+        if (products && products.length > 0) {
+          const v1Set = new Set<string>();
+          const v2Set = new Set<string>();
+          const v3Set = new Set<string>();
+          for (const p of products) {
+            if (p.variant_1) v1Set.add(p.variant_1);
+            if (p.variant_2) v2Set.add(p.variant_2);
+            if (p.variant_3) v3Set.add(p.variant_3);
+          }
+          const levels: any[] = [];
+          if (v1Set.size > 0) levels.push({ label: 'Cấp 1', values: Array.from(v1Set) });
+          if (v2Set.size > 0) levels.push({ label: 'Cấp 2', values: Array.from(v2Set) });
+          if (v3Set.size > 0) levels.push({ label: 'Cấp 3', values: Array.from(v3Set) });
+          if (levels.length > 0) initialData.variantLevels = levels;
+        }
+      }
+    } catch (err) {
+      console.error('Error loading variants for duplicate:', err);
+    }
+
+    setTemplateInitialData(initialData);
     setTemplateDialogOpen(true);
   };
 
