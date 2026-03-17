@@ -807,12 +807,19 @@ export function LandingOrdersTab() {
               </Table>
             </div>
             <div className="p-3">
-              <ListPagination
+              <TablePagination
                 currentPage={serverPage}
+                totalPages={Math.max(1, Math.ceil(totalCount / orderPageSize))}
+                pageSize={orderPageSize}
                 totalItems={totalCount}
-                pageSize={ORDER_PAGE_SIZE}
+                startIndex={(serverPage - 1) * orderPageSize + 1}
+                endIndex={Math.min(serverPage * orderPageSize, totalCount)}
                 onPageChange={setServerPage}
-                hasMore={hasMore}
+                onPageSizeChange={(size) => {
+                  setOrderPageSize(size);
+                  setServerPage(1);
+                }}
+                className="py-1"
               />
             </div>
           </Card>
