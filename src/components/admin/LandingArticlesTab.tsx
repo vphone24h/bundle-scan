@@ -162,7 +162,7 @@ export function LandingArticlesTab() {
     thumbnail_url: '', is_published: false, is_featured: false, is_featured_home: false,
   });
 
-  const tree = buildArticleCategoryTree(categories);
+  const tree = useMemo(() => buildArticleCategoryTree(categories), [categories]);
 
   // Flatten for ordering
   const flattenTree = useCallback((nodes: LandingArticleCategory[], parentId: string | null = null): { id: string; parent_id: string | null; display_order: number }[] => {
