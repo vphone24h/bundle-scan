@@ -17,13 +17,39 @@ import { useCurrentTenant } from '@/hooks/useTenant';
 import { useLandingProductCategories, useLandingProducts } from '@/hooks/useLandingProducts';
 import { useLandingArticleCategories, useLandingArticles } from '@/hooks/useLandingArticles';
 
-// Lazy load heavy tab components - only loaded when the tab is active
-const LandingPageSettings = lazy(() => import('@/components/admin/LandingPageSettings').then(m => ({ default: m.LandingPageSettings })));
-const LandingProductsTab = lazy(() => import('@/components/admin/LandingProductsTab').then(m => ({ default: m.LandingProductsTab })));
-const LandingArticlesTab = lazy(() => import('@/components/admin/LandingArticlesTab').then(m => ({ default: m.LandingArticlesTab })));
-const LandingOrdersTab = lazy(() => import('@/components/admin/LandingOrdersTab').then(m => ({ default: m.LandingOrdersTab })));
-const EmailAutomationTab = lazy(() => import('@/components/admin/EmailAutomationTab').then(m => ({ default: m.EmailAutomationTab })));
-const ShopCTVManagement = lazy(() => import('@/components/admin/ShopCTVManagement').then(m => ({ default: m.ShopCTVManagement })));
+// Lazy load tab components with eager preloading to avoid delay on tab switch
+const importSettings = () => import('@/components/admin/LandingPageSettings').then(m => ({ default: m.LandingPageSettings }));
+const importProducts = () => import('@/components/admin/LandingProductsTab').then(m => ({ default: m.LandingProductsTab }));
+const importArticles = () => import('@/components/admin/LandingArticlesTab').then(m => ({ default: m.LandingArticlesTab }));
+const importOrders = () => import('@/components/admin/LandingOrdersTab').then(m => ({ default: m.LandingOrdersTab }));
+const importEmail = () => import('@/components/admin/EmailAutomationTab').then(m => ({ default: m.EmailAutomationTab }));
+const importCTV = () => import('@/components/admin/ShopCTVManagement').then(m => ({ default: m.ShopCTVManagement }));
+
+const LandingPageSettings = lazy(importSettings);
+const LandingProductsTab = lazy(importProducts);
+const LandingArticlesTab = lazy(importArticles);
+const LandingOrdersTab = lazy(importOrders);
+const EmailAutomationTab = lazy(importEmail);
+const ShopCTVManagement = lazy(importCTV);
+
+// Preload all chunks immediately so tab switching is instant
+if (typeof window !== 'undefined') {
+  requestIdleCallback?.(() => {
+    importSettings();
+    importProducts();
+    importArticles();
+    importOrders();
+    importEmail();
+    importCTV();
+  }) ?? setTimeout(() => {
+    importSettings();
+    importProducts();
+    importArticles();
+    importOrders();
+    importEmail();
+    importCTV();
+  }, 100);
+}
 
 const TabLoader = () => (
   <div className="flex items-center justify-center py-12">
