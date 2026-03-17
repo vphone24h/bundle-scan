@@ -538,6 +538,8 @@ export default function ProductsPage() {
           onEdit={handleEdit}
           onPrintBarcode={handlePrintBarcode}
           onDuplicate={handleDuplicate}
+          onImportFromTemplate={handleImportFromTemplate}
+          onDeleteTemplate={handleDeleteTemplate}
         />
         
         {totalCount > 0 && (
