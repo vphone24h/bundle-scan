@@ -200,6 +200,18 @@ export default function ImportNewPage() {
     }
   }, []);
 
+  // Auto-fill from template product navigation
+  useEffect(() => {
+    const state = location.state as { templateProductName?: string } | null;
+    if (state?.templateProductName) {
+      const name = state.templateProductName;
+      setForm(prev => ({ ...prev, productName: name }));
+      setProductFormMode('form');
+      searchProductsFromDB(name);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, searchProductsFromDB]);
+
   const handleProductNameChange = (value: string) => {
     setForm({ ...form, productName: value });
     // Debounce the DB search
