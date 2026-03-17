@@ -181,13 +181,19 @@ export function LandingOrdersTab() {
   const [productResults, setProductResults] = useState<any[]>([]);
   const [productSearching, setProductSearching] = useState(false);
 
-  const { data: ordersData, isLoading, refetch } = useLandingOrders({
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchText), 300);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  const { data: ordersData, isLoading, isFetching, refetch } = useLandingOrders({
     branchId: filterBranchId,
     status: statusFilter,
     delivery: deliveryFilter,
     callStatus: callStatusFilter,
     source: sourceFilter,
-    search: searchText,
+    search: debouncedSearch,
     page: serverPage,
     pageSize: ORDER_PAGE_SIZE,
   });
