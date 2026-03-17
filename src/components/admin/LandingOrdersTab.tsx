@@ -192,6 +192,8 @@ export function LandingOrdersTab() {
   });
   const orders: LandingOrder[] = ordersData?.items || [];
   const totalCount = ordersData?.totalCount || 0;
+  const { data: statusCountsData } = useLandingOrderStatusCounts(filterBranchId);
+  const statusCounts = statusCountsData || { pending: 0, approved: 0, cancelled: 0 };
   const updateOrder = useUpdateLandingOrder();
   const searchProducts = useSearchProductsByName();
   const checkProduct = useCheckProductForSale();
