@@ -75,7 +75,7 @@ export function useProducts(filters?: ProductFilters) {
           suppliers(name),
           branches(name)
         `, { count: 'exact' })
-        .in('status', ['in_stock', 'sold', 'returned'])
+        .in('status', ['in_stock', 'sold', 'returned', 'template'])
         .order('import_date', { ascending: false });
 
       if (shouldFilter && branchId) {
