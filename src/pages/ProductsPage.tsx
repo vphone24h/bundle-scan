@@ -229,7 +229,10 @@ export default function ProductsPage() {
 
   const { data: products, isLoading, totalCount } = useProducts(serverFilters);
 
-  const mappedProducts = products?.map(mapProductForTable) || [];
+  const mappedProducts = useMemo(() => {
+    const mapped = products?.map(mapProductForTable) || [];
+    return groupTemplateProducts(mapped);
+  }, [products]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / serverPagination.pageSize));
 
