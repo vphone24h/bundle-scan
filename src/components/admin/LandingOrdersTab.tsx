@@ -570,10 +570,10 @@ export function LandingOrdersTab() {
         </Select>
       </div>
 
-      {/* Stats */}
+      {/* Stats - use dedicated counts hook */}
       <div className="grid grid-cols-3 gap-3">
         {(['pending', 'approved', 'cancelled'] as const).map(s => {
-          const count = (orders || []).filter(o => o.status === s).length;
+          const count = s === 'pending' ? statusCounts.pending : s === 'approved' ? statusCounts.approved : statusCounts.cancelled;
           const info = STATUS_MAP[s];
           const Icon = info.icon;
           return (
