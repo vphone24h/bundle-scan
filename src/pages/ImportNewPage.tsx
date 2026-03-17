@@ -163,19 +163,6 @@ export default function ImportNewPage() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Auto-fill from template product navigation
-  useEffect(() => {
-    const state = location.state as { templateProductName?: string } | null;
-    if (state?.templateProductName) {
-      const name = state.templateProductName;
-      setForm(prev => ({ ...prev, productName: name }));
-      setProductFormMode('form');
-      // Trigger search to load variant config
-      searchProductsFromDB(name);
-      // Clear the state to prevent re-triggering
-      window.history.replaceState({}, document.title);
-    }
-  }, [location.state]);
 
   const totalAmount = useMemo(
     () => cart.reduce((sum, item) => sum + item.importPrice * item.quantity, 0),
