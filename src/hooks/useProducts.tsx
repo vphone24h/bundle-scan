@@ -135,10 +135,10 @@ export function useProducts(filters?: ProductFilters) {
         query = query.eq('is_printed', false);
       }
 
-      // Server-side pagination
+      // Server-side pagination (N+1 để tránh count exact chậm)
       if (hasServerFilters) {
         const from = (page - 1) * pageSize;
-        const to = from + pageSize - 1;
+        const to = from + pageSize; // fetch pageSize + 1
         query = query.range(from, to);
       } else {
         // Default: limit to 500 for backward compat (non-paginated consumers)
