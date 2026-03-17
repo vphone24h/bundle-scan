@@ -34,6 +34,7 @@ export function ProductTable({
   onSelectionChange,
   onEdit,
   onPrintBarcode,
+  onDuplicate,
 }: ProductTableProps) {
   const isMobile = useIsMobile();
   const { data: permissions } = usePermissions();
