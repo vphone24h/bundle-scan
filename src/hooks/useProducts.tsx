@@ -74,7 +74,10 @@ export function useProducts(filters?: ProductFilters) {
       let query = supabase
         .from('products')
         .select(`
-          *,
+          id, name, sku, imei, category_id, sale_price, import_price,
+          import_date, supplier_id, branch_id, import_receipt_id, status,
+          note, quantity, total_import_cost, is_printed, created_at, updated_at,
+          group_id, variant_1, variant_2, variant_3,
           categories(name),
           suppliers(name),
           branches(name)
@@ -82,8 +85,9 @@ export function useProducts(filters?: ProductFilters) {
         .in('status', ['in_stock', 'sold', 'returned', 'template'])
         .order('import_date', { ascending: false });
 
+      // Branch filter: include template products (no branch) alongside branch-specific products
       if (shouldFilter && branchId) {
-        query = query.eq('branch_id', branchId);
+        query = query.or(`branch_id.eq.${branchId},branch_id.is.null`);
       }
 
       if (filters?.search) {
