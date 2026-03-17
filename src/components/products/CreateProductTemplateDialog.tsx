@@ -86,6 +86,11 @@ export function CreateProductTemplateDialog({ open, onOpenChange, initialData }:
       salePrice: initialData.salePrice,
       note: initialData.note,
     });
+    // Also apply variant config if provided
+    if (initialData.variantLevels && initialData.variantLevels.length > 0) {
+      setVariantConfig({ enabled: true, levels: initialData.variantLevels });
+      setSelectedVariants({});
+    }
   }
   if (!open && lastInitial !== undefined && lastInitial !== null) {
     setLastInitial(undefined);
