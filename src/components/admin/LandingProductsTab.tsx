@@ -200,6 +200,7 @@ export function LandingProductsTab() {
   const [uploading, setUploading] = useState(false);
   const [uploadingCatId, setUploadingCatId] = useState<string | null>(null);
   const [uploadingVariantIdx, setUploadingVariantIdx] = useState<number | null>(null);
+  const [uploadingVariantPriceIdx, setUploadingVariantPriceIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const variantFileRef = useRef<HTMLInputElement>(null);
   const catImageRef = useRef<HTMLInputElement>(null);
@@ -207,6 +208,7 @@ export function LandingProductsTab() {
   const [productPage, setProductPage] = useState(1);
   const PRODUCT_PAGE_SIZE = 20;
   const [pendingVariantIdx, setPendingVariantIdx] = useState<number | null>(null);
+  const [pendingVariantPriceIdx, setPendingVariantPriceIdx] = useState<number | null>(null);
 
   const categoryTree = useMemo(() => buildCategoryTree(categories || []), [categories]);
   const flatCategories = useMemo(() => flattenCategoriesForSelect(categoryTree), [categoryTree]);
@@ -358,21 +360,38 @@ export function LandingProductsTab() {
 
   const handleVariantImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || pendingVariantIdx === null) return;
-    const idx = pendingVariantIdx;
-    setUploadingVariantIdx(idx);
+    const legacyIdx = pendingVariantIdx;
+    const matrixIdx = pendingVariantPriceIdx;
+
+    if (!file || (legacyIdx === null && matrixIdx === null)) return;
+
+    if (legacyIdx !== null) setUploadingVariantIdx(legacyIdx);
+    if (matrixIdx !== null) setUploadingVariantPriceIdx(matrixIdx);
+
     try {
       const url = await handleUploadImage(file);
       if (url) {
         setForm(prev => {
-          const variants = [...prev.variants];
-          variants[idx] = { ...variants[idx], image_url: url };
-          return { ...prev, variants };
+          if (legacyIdx !== null) {
+            const variants = [...prev.variants];
+            variants[legacyIdx] = { ...variants[legacyIdx], image_url: url };
+            return { ...prev, variants };
+          }
+
+          if (matrixIdx !== null) {
+            const variant_prices = [...prev.variant_prices];
+            variant_prices[matrixIdx] = { ...variant_prices[matrixIdx], image_url: url };
+            return { ...prev, variant_prices };
+          }
+
+          return prev;
         });
       }
     } finally {
       setUploadingVariantIdx(null);
+      setUploadingVariantPriceIdx(null);
       setPendingVariantIdx(null);
+      setPendingVariantPriceIdx(null);
       if (variantFileRef.current) variantFileRef.current.value = '';
     }
   };
@@ -894,6 +913,37 @@ export function LandingProductsTab() {
                             className="h-7 text-xs w-16 shrink-0"
                             placeholder="SL"
                           />
+                          {vp.image_url ? (
+                            <div className="relative shrink-0">
+                              <img src={vp.image_url} alt="" className="h-8 w-8 rounded object-cover border" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const prices = [...form.variant_prices];
+                                  prices[i] = { ...prices[i], image_url: undefined };
+                                  setForm(p => ({ ...p, variant_prices: prices }));
+                                }}
+                                className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+                              >
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-[11px] px-2 shrink-0"
+                              disabled={uploadingVariantPriceIdx === i}
+                              onClick={() => {
+                                setPendingVariantIdx(null);
+                                setPendingVariantPriceIdx(i);
+                                variantFileRef.current?.click();
+                              }}
+                            >
+                              {uploadingVariantPriceIdx === i ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Ảnh'}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -935,7 +985,11 @@ export function LandingProductsTab() {
                             </div>
                           ) : (
                             <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" disabled={uploadingVariantIdx === i}
-                              onClick={() => { setPendingVariantIdx(i); variantFileRef.current?.click(); }}>
+                              onClick={() => {
+                                setPendingVariantPriceIdx(null);
+                                setPendingVariantIdx(i);
+                                variantFileRef.current?.click();
+                              }}>
                               {uploadingVariantIdx === i ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImagePlus className="h-3 w-3" />}
                               Ảnh biến thể
                             </Button>
