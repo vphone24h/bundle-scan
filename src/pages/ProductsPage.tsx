@@ -250,6 +250,11 @@ export default function ProductsPage() {
               <span className="hidden sm:inline">{manualTourActive ? t('pages.products.turnOffGuide') : t('pages.products.viewGuide')}</span>
               <span className="sm:hidden">HD</span>
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setTemplateDialogOpen(true)}>
+              <Package className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">SP mẫu</span>
+              <span className="sm:hidden">Mẫu</span>
+            </Button>
             <Button onClick={() => navigate('/import/new')} size="sm">
               <Plus className="mr-1.5 h-4 w-4" />
               {t('pages.products.addProduct')}
