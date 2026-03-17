@@ -117,6 +117,7 @@ export default function ProductsPage() {
   const [productsForBarcode, setProductsForBarcode] = useState<any[]>([]);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [templateInitialData, setTemplateInitialData] = useState<ProductTemplateInitialData | null>(null);
   
   // Server-side filter state
   const [searchTerm, setSearchTerm] = useState('');
