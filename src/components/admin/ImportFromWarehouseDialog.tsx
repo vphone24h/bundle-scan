@@ -158,6 +158,68 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     }
   };
 
+  // Build variant data from grouped inventory items
+  const buildVariantData = async (items: InventoryItem[], groupId: string) => {
+    // Fetch product_group config for labels
+    const { data: groupData } = await supabase
+      .from('product_groups')
+      .select('*')
+      .eq('id', groupId)
+      .single();
+
+    const group = groupData as any;
+    const label1 = group?.variant_1_label || '';
+    const label2 = group?.variant_2_label || '';
+
+    // Collect unique variant options from inventory items
+    const options1Set = new Set<string>();
+    const options2Set = new Set<string>();
+    for (const item of items) {
+      if (item.variant1) options1Set.add(item.variant1);
+      if (item.variant2) options2Set.add(item.variant2);
+    }
+
+    const variant_options_1 = Array.from(options1Set).map(name => ({ name }));
+    const variant_options_2 = Array.from(options2Set).map(name => ({ name }));
+
+    // Build variant_prices by fetching sale_price per product
+    const variant_prices = [];
+    for (const item of items) {
+      if (!item.variant1) continue;
+      const salePrice = item.products[0] ? await getSalePrice(item.products[0].id) : null;
+      const price = Math.round(salePrice || item.avgImportPrice || 0);
+      variant_prices.push({
+        option1: item.variant1,
+        option2: item.variant2 || undefined,
+        price,
+        stock: item.stock,
+        is_sold_out: item.stock <= 0,
+      });
+    }
+
+    return {
+      variant_group_1_name: label1,
+      variant_group_2_name: label2,
+      variant_options_1,
+      variant_options_2,
+      variant_prices,
+    };
+  };
+
+  // Extract base name from a product name by stripping variant suffixes
+  const getBaseName = (items: InventoryItem[]): string => {
+    if (items.length <= 1) return items[0]?.productName || '';
+    // Find common prefix among all product names
+    const names = items.map(i => i.productName);
+    let prefix = names[0];
+    for (const name of names) {
+      while (!name.startsWith(prefix)) {
+        prefix = prefix.substring(0, prefix.length - 1);
+      }
+    }
+    return prefix.replace(/\s+$/, '') || names[0];
+  };
+
   const resolveLandingCategoryId = async (categoryId: string | null, categoryName: string | null): Promise<string | null> => {
     if (!categoryId || !categoryName) return null;
     try {
