@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer } from 'lucide-react';
+import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -25,6 +25,7 @@ interface ProductTableProps {
   onSelectionChange: (ids: string[]) => void;
   onEdit: (product: Product) => void;
   onPrintBarcode: (products: Product[]) => void;
+  onDuplicate?: (product: Product) => void;
 }
 
 export function ProductTable({
@@ -33,6 +34,7 @@ export function ProductTable({
   onSelectionChange,
   onEdit,
   onPrintBarcode,
+  onDuplicate,
 }: ProductTableProps) {
   const isMobile = useIsMobile();
   const { data: permissions } = usePermissions();
@@ -167,6 +169,12 @@ export function ProductTable({
                             <Barcode className="mr-2 h-4 w-4" />
                             In mã vạch
                           </DropdownMenuItem>
+                          {product.status === 'template' && onDuplicate && (
+                            <DropdownMenuItem onClick={() => onDuplicate(product)}>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Sao chép sản phẩm mẫu
+                            </DropdownMenuItem>
+                          )}
                           
                           {/* Super Admin only actions */}
                           {permissions?.canAdjustProductQuantity && !isIMEIProduct(product) && (
@@ -326,6 +334,12 @@ export function ProductTable({
                         <Barcode className="mr-2 h-4 w-4" />
                         In mã vạch
                       </DropdownMenuItem>
+                      {product.status === 'template' && onDuplicate && (
+                        <DropdownMenuItem onClick={() => onDuplicate(product)}>
+                          <Copy className="mr-2 h-4 w-4" />
+                          Sao chép sản phẩm mẫu
+                        </DropdownMenuItem>
+                      )}
                       
                       {/* Super Admin only actions */}
                       {permissions?.canAdjustProductQuantity && !isIMEIProduct(product) && (

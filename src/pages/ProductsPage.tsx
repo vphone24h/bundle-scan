@@ -8,7 +8,7 @@ import { useProducts, useServerPagination, Product } from '@/hooks/useProducts';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { EditProductDialog } from '@/components/import/EditProductDialog';
-import { CreateProductTemplateDialog } from '@/components/products/CreateProductTemplateDialog';
+import { CreateProductTemplateDialog, ProductTemplateInitialData } from '@/components/products/CreateProductTemplateDialog';
 import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useBranches } from '@/hooks/useBranches';
@@ -117,6 +117,7 @@ export default function ProductsPage() {
   const [productsForBarcode, setProductsForBarcode] = useState<any[]>([]);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [templateInitialData, setTemplateInitialData] = useState<ProductTemplateInitialData | null>(null);
   
   // Server-side filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -191,6 +192,18 @@ export default function ProductsPage() {
   const handlePrintSelected = () => {
     const selected = mappedProducts.filter((p) => selectedProducts.includes(p.id));
     handlePrintBarcode(selected);
+  };
+
+  const handleDuplicate = (product: any) => {
+    setTemplateInitialData({
+      productName: product.name + ' (bản sao)',
+      sku: product.sku ? product.sku + '-copy' : '',
+      categoryId: product.categoryId || '',
+      importPrice: product.importPrice ? String(product.importPrice) : '',
+      salePrice: product.salePrice ? String(product.salePrice) : '',
+      note: product.note || '',
+    });
+    setTemplateDialogOpen(true);
   };
 
   const handleExportProducts = () => {
@@ -417,6 +430,7 @@ export default function ProductsPage() {
           onSelectionChange={setSelectedProducts}
           onEdit={handleEdit}
           onPrintBarcode={handlePrintBarcode}
+          onDuplicate={handleDuplicate}
         />
         
         {totalCount > 0 && (
@@ -458,7 +472,11 @@ export default function ProductsPage() {
 
       <CreateProductTemplateDialog
         open={templateDialogOpen}
-        onOpenChange={setTemplateDialogOpen}
+        onOpenChange={(open) => {
+          setTemplateDialogOpen(open);
+          if (!open) setTemplateInitialData(null);
+        }}
+        initialData={templateInitialData}
       />
 
       <OnboardingTourOverlay

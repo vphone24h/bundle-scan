@@ -28,9 +28,19 @@ import {
 import { Loader2, Package, Plus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
+export interface ProductTemplateInitialData {
+  productName: string;
+  sku: string;
+  categoryId: string;
+  importPrice: string;
+  salePrice: string;
+  note: string;
+}
+
 interface CreateProductTemplateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialData?: ProductTemplateInitialData | null;
 }
 
 async function getCurrentTenantId(): Promise<string | null> {
@@ -38,27 +48,47 @@ async function getCurrentTenantId(): Promise<string | null> {
   return data;
 }
 
-export function CreateProductTemplateDialog({ open, onOpenChange }: CreateProductTemplateDialogProps) {
+export function CreateProductTemplateDialog({ open, onOpenChange, initialData }: CreateProductTemplateDialogProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { data: categories } = useCategories();
   const createProductGroup = useCreateProductGroup();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [form, setForm] = useState({
+  const defaultForm = {
     productName: '',
     sku: '',
     categoryId: '',
     importPrice: '',
     salePrice: '',
     note: '',
-  });
+  };
+  const [form, setForm] = useState(defaultForm);
 
   const [variantConfig, setVariantConfig] = useState<VariantConfig>({
     enabled: false,
     levels: [],
   });
   const [selectedVariants, setSelectedVariants] = useState<SelectedVariants>({});
+
+  // Pre-fill form when initialData changes
+  useState(() => {});
+  // Use effect-like pattern via key
+  const [lastInitial, setLastInitial] = useState<ProductTemplateInitialData | null | undefined>(undefined);
+  if (open && initialData && initialData !== lastInitial) {
+    setLastInitial(initialData);
+    setForm({
+      productName: initialData.productName,
+      sku: initialData.sku,
+      categoryId: initialData.categoryId,
+      importPrice: initialData.importPrice,
+      salePrice: initialData.salePrice,
+      note: initialData.note,
+    });
+  }
+  if (!open && lastInitial !== undefined && lastInitial !== null) {
+    setLastInitial(undefined);
+  }
 
   // Auto-fill SKU when variant selected
   const handleVariantSelectionChange = useCallback(async (newSelected: SelectedVariants) => {
