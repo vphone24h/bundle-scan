@@ -31,22 +31,28 @@ export interface LandingArticle {
   updated_at: string;
 }
 
-// Admin hooks
-export function useLandingArticleCategories() {
+// Admin hooks - accept tenantId to avoid redundant RPC calls
+export function useLandingArticleCategories(tenantId?: string | null) {
   return useQuery({
-    queryKey: ['landing-article-categories'],
+    queryKey: ['landing-article-categories', tenantId],
     queryFn: async () => {
-      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
-      if (!tenantId) return [];
+      // Use passed tenantId or fallback to RPC
+      let tid = tenantId;
+      if (!tid) {
+        const { data } = await supabase.rpc('get_user_tenant_id_secure');
+        tid = data;
+      }
+      if (!tid) return [];
       const { data, error } = await supabase
         .from('landing_article_categories' as any)
         .select('*')
-        .eq('tenant_id', tenantId)
+        .eq('tenant_id', tid)
         .order('display_order')
         .order('name');
       if (error) throw error;
       return data as unknown as LandingArticleCategory[];
     },
+    enabled: tenantId !== null,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
