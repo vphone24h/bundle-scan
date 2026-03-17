@@ -15,7 +15,7 @@ interface ImportInventorySummaryProps {
   /** When filtered, pass products to calculate from client-side */
   filteredProducts?: Array<{
     status: string;
-    total_import_cost: number;
+    total_import_cost?: number;
     import_price: number;
     quantity: number;
   }>;

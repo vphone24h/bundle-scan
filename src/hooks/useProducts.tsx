@@ -28,10 +28,10 @@ export interface Product {
   status: ProductStatus;
   note: string | null;
   quantity: number;
-  total_import_cost: number;
+  total_import_cost?: number;
   is_printed: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   group_id: string | null;
   variant_1: string | null;
   variant_2: string | null;
@@ -69,14 +69,14 @@ export function useProducts(filters?: ProductFilters) {
   const hasServerFilters = !!filters;
 
   const result = useQuery({
-    queryKey: ['products', user?.id, branchId, filters],
+    queryKey: ['products', user?.id, branchId, shouldFilter, filters],
     queryFn: async () => {
       let query = supabase
         .from('products')
         .select(`
           id, name, sku, imei, category_id, sale_price, import_price,
           import_date, supplier_id, branch_id, import_receipt_id, status,
-          note, quantity, total_import_cost, is_printed, created_at, updated_at,
+          note, quantity, is_printed,
           group_id, variant_1, variant_2, variant_3
         `, { count: 'exact' })
         .in('status', ['in_stock', 'sold', 'returned', 'template'])
