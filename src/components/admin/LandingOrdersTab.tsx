@@ -639,7 +639,7 @@ export function LandingOrdersTab() {
                   <TableRow>
                     <TableHead className="w-10">
                       <Checkbox
-                        checked={filtered.filter(o => o.status !== 'cancelled').length > 0 && filtered.filter(o => o.status !== 'cancelled').every(o => selectedIds.has(o.id))}
+                        checked={selectableOrders.length > 0 && selectableOrders.every(o => selectedIds.has(o.id))}
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>
