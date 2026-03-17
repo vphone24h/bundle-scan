@@ -8,6 +8,7 @@ import { useProducts, useServerPagination, Product } from '@/hooks/useProducts';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { EditProductDialog } from '@/components/import/EditProductDialog';
+import { CreateProductTemplateDialog } from '@/components/products/CreateProductTemplateDialog';
 import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useBranches } from '@/hooks/useBranches';
@@ -23,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle, AlertCircle } from 'lucide-react';
+import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle, AlertCircle, Package } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -82,7 +83,7 @@ function mapProductForTable(product: Product) {
     supplierName: product.suppliers?.name,
     branchId: product.branch_id || '',
     branchName: product.branches?.name,
-    status: product.status as 'in_stock' | 'sold' | 'returned',
+    status: product.status as 'in_stock' | 'sold' | 'returned' | 'template',
     note: product.note || undefined,
     importReceiptId: product.import_receipt_id || undefined,
     quantity: product.quantity || 1,
@@ -115,6 +116,7 @@ export default function ProductsPage() {
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [productsForBarcode, setProductsForBarcode] = useState<any[]>([]);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   
   // Server-side filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -248,6 +250,11 @@ export default function ProductsPage() {
               <span className="hidden sm:inline">{manualTourActive ? t('pages.products.turnOffGuide') : t('pages.products.viewGuide')}</span>
               <span className="sm:hidden">HD</span>
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setTemplateDialogOpen(true)}>
+              <Package className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">SP mẫu</span>
+              <span className="sm:hidden">Mẫu</span>
+            </Button>
             <Button onClick={() => navigate('/import/new')} size="sm">
               <Plus className="mr-1.5 h-4 w-4" />
               {t('pages.products.addProduct')}
@@ -366,6 +373,7 @@ export default function ProductsPage() {
                         <SelectItem value="in_stock">{t('pages.products.inStock')}</SelectItem>
                         <SelectItem value="sold">{t('pages.products.sold')}</SelectItem>
                         <SelectItem value="returned">{t('pages.products.returned')}</SelectItem>
+                        <SelectItem value="template">Sản phẩm mẫu</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -446,6 +454,11 @@ export default function ProductsPage() {
         product={editProduct}
         open={!!editProduct}
         onOpenChange={(open) => !open && setEditProduct(null)}
+      />
+
+      <CreateProductTemplateDialog
+        open={templateDialogOpen}
+        onOpenChange={setTemplateDialogOpen}
       />
 
       <OnboardingTourOverlay

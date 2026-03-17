@@ -82,6 +82,8 @@ export function ProductTable({
         return <Badge className="status-sold text-[10px] sm:text-xs">Đã bán</Badge>;
       case 'returned':
         return <Badge className="status-pending text-[10px] sm:text-xs">Đã trả</Badge>;
+      case 'template':
+        return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 text-[10px] sm:text-xs">SP mẫu</Badge>;
     }
   };
 
