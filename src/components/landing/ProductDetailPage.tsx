@@ -247,6 +247,12 @@ export function ProductDetailPage({
     }
   };
 
+  useEffect(() => {
+    if (!uses2LevelVariants || !matchedVariantPrice?.image_url) return;
+    const imgIdx = allImages.indexOf(matchedVariantPrice.image_url);
+    if (imgIdx >= 0) setCurrentImageIndex(imgIdx);
+  }, [uses2LevelVariants, matchedVariantPrice?.image_url, allImages]);
+
   const getVariantLabel = () => {
     if (uses2LevelVariants) {
       const parts = [selectedOption1, selectedOption2].filter(Boolean);
