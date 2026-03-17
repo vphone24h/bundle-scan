@@ -194,6 +194,18 @@ export default function ProductsPage() {
     handlePrintBarcode(selected);
   };
 
+  const handleDuplicate = (product: any) => {
+    setTemplateInitialData({
+      productName: product.name + ' (bản sao)',
+      sku: product.sku ? product.sku + '-copy' : '',
+      categoryId: product.categoryId || '',
+      importPrice: product.importPrice ? String(product.importPrice) : '',
+      salePrice: product.salePrice ? String(product.salePrice) : '',
+      note: product.note || '',
+    });
+    setTemplateDialogOpen(true);
+  };
+
   const handleExportProducts = () => {
     if (mappedProducts.length === 0) {
       toast({ title: t('pages.products.noData'), description: t('pages.products.noProductsToExport'), variant: 'destructive' });
