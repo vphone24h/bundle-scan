@@ -630,42 +630,42 @@ export function LandingProductsTab() {
                 {paginateArray(products, productPage, PRODUCT_PAGE_SIZE).map((p) => {
                   const idx = products.indexOf(p);
                   return (
-                  <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                    {/* Move up/down */}
-                    <div className="flex flex-col gap-0.5 shrink-0">
-                      <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === 0 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'up')}>
-                        <ArrowUp className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === products.length - 1 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'down')}>
-                        <ArrowDown className="h-3 w-3" />
-                      </Button>
+                  <div key={p.id} className="flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-2">
+                      {/* Move up/down */}
+                      <div className="flex flex-col gap-0.5 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === 0 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'up')}>
+                          <ArrowUp className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === products.length - 1 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'down')}>
+                          <ArrowDown className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      {p.image_url ? (
+                        <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-lg object-cover border shrink-0" />
+                      ) : (
+                        <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                          <Package className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-medium text-sm line-clamp-2 ${p.is_sold_out ? 'text-muted-foreground line-through' : ''}`}>{p.name}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                          {p.sale_price ? (
+                            <>
+                              <span className="line-through">{formatNumber(p.price)}đ</span>
+                              <span className="text-destructive font-medium">{formatNumber(p.sale_price)}đ</span>
+                            </>
+                          ) : (
+                            <span>{formatNumber(p.price)}đ</span>
+                          )}
+                          {p.is_sold_out && <Badge variant="destructive" className="text-[9px] px-1.5 py-0">Hết hàng</Badge>}
+                          {!p.is_active && <Badge variant="outline" className="text-[10px]">Ẩn</Badge>}
+                          {p.is_featured && <Badge variant="default" className="text-[10px]">Nổi bật</Badge>}
+                        </div>
+                      </div>
                     </div>
-                    {p.image_url ? (
-                      <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-lg object-cover border" />
-                    ) : (
-                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
-                        <Package className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className={`font-medium text-sm truncate ${p.is_sold_out ? 'text-muted-foreground line-through' : ''}`}>{p.name}</p>
-                        {p.is_sold_out && <Badge variant="destructive" className="text-[9px] shrink-0 px-1.5 py-0">Hết hàng</Badge>}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        {p.sale_price ? (
-                          <>
-                            <span className="line-through">{formatNumber(p.price)}đ</span>
-                            <span className="text-destructive font-medium">{formatNumber(p.sale_price)}đ</span>
-                          </>
-                        ) : (
-                          <span>{formatNumber(p.price)}đ</span>
-                        )}
-                        {!p.is_active && <Badge variant="outline" className="text-[10px]">Ẩn</Badge>}
-                        {p.is_featured && <Badge variant="default" className="text-[10px]">Nổi bật</Badge>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 justify-end">
                       <Button
                         variant={p.is_sold_out ? "destructive" : "outline"}
                         size="sm"
@@ -677,7 +677,6 @@ export function LandingProductsTab() {
                       >
                         {p.is_sold_out ? '✓ Hết' : 'Hết hàng'}
                       </Button>
-                      {/* Only show blocked dates calendar for hotel store */}
                       {landingSettings?.website_template === 'hotel_store' && (
                         <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" title="Quản lý ngày chặn" onClick={() => setBlockedDatesProduct(p)}>
                           <CalendarDays className="h-3.5 w-3.5" />
