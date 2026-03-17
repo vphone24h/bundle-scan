@@ -288,8 +288,11 @@ export default function ProductsPage() {
   };
 
   const handleImportFromTemplate = (product: any) => {
-    // Navigate to import page with template product name prefilled
-    const baseName = product.isTemplateGroup ? product.name : product.name;
+    // Extract base name: remove variant suffixes to get the original product name
+    let baseName = product.name;
+    if (product.variant1 || product.variant2 || product.variant3) {
+      baseName = extractBaseName(product.name, product.variant1, product.variant2, product.variant3);
+    }
     navigate('/import/new', { state: { templateProductName: baseName } });
   };
 
