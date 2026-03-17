@@ -36,7 +36,7 @@ export interface Product {
   variant_1: string | null;
   variant_2: string | null;
   variant_3: string | null;
-  // Joined fields
+  // Joined fields (optional - not all queries include joins)
   categories?: { name: string } | null;
   suppliers?: { name: string } | null;
   branches?: { name: string } | null;
@@ -77,10 +77,7 @@ export function useProducts(filters?: ProductFilters) {
           id, name, sku, imei, category_id, sale_price, import_price,
           import_date, supplier_id, branch_id, import_receipt_id, status,
           note, quantity, total_import_cost, is_printed, created_at, updated_at,
-          group_id, variant_1, variant_2, variant_3,
-          categories(name),
-          suppliers(name),
-          branches(name)
+          group_id, variant_1, variant_2, variant_3
         `, { count: 'exact' })
         .in('status', ['in_stock', 'sold', 'returned', 'template'])
         .order('import_date', { ascending: false });

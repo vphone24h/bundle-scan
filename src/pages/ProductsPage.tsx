@@ -70,21 +70,21 @@ const PRODUCTS_TOUR_STEPS: TourStep[] = [
   },
 ];
 
-function mapProductForTable(product: Product) {
+function mapProductForTable(product: Product, categoryMap: Map<string, string>, supplierMap: Map<string, string>, branchMap: Map<string, string>) {
   return {
     id: product.id,
     name: product.name,
     sku: product.sku,
     imei: product.imei || undefined,
     categoryId: product.category_id || '',
-    categoryName: product.categories?.name,
+    categoryName: product.categories?.name || (product.category_id ? categoryMap.get(product.category_id) : undefined),
     importPrice: Number(product.import_price),
     salePrice: product.sale_price ? Number(product.sale_price) : undefined,
     importDate: new Date(product.import_date),
     supplierId: product.supplier_id || '',
-    supplierName: product.suppliers?.name,
+    supplierName: product.suppliers?.name || (product.supplier_id ? supplierMap.get(product.supplier_id) : undefined),
     branchId: product.branch_id || '',
-    branchName: product.branches?.name,
+    branchName: product.branches?.name || (product.branch_id ? branchMap.get(product.branch_id) : undefined),
     status: product.status as 'in_stock' | 'sold' | 'returned' | 'template',
     note: product.note || undefined,
     importReceiptId: product.import_receipt_id || undefined,
@@ -233,10 +233,14 @@ export default function ProductsPage() {
   const { data: products, isLoading, isFetching, totalCount } = useProducts(serverFilters);
   const isFirstLoad = isLoading && !products?.length;
 
+  const categoryMap = useMemo(() => new Map((categories || []).map(c => [c.id, c.name])), [categories]);
+  const supplierMap = useMemo(() => new Map((suppliers || []).map(s => [s.id, s.name])), [suppliers]);
+  const branchMap = useMemo(() => new Map((branches || []).map(b => [b.id, b.name])), [branches]);
+
   const mappedProducts = useMemo(() => {
-    const mapped = products?.map(mapProductForTable) || [];
+    const mapped = products?.map(p => mapProductForTable(p, categoryMap, supplierMap, branchMap)) || [];
     return groupTemplateProducts(mapped);
-  }, [products]);
+  }, [products, categoryMap, supplierMap, branchMap]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / serverPagination.pageSize));
 
