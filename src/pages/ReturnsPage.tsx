@@ -325,6 +325,11 @@ export default function ReturnsPage() {
   const groupedExportReturns = useMemo(() => groupedReturns.filter(g => g.returnType === 'export'), [groupedReturns]);
   const groupedImportReturns = useMemo(() => groupedReturns.filter(g => g.returnType === 'import'), [groupedReturns]);
 
+  // Pagination for each tab
+  const allPagination = usePagination(groupedReturns, { defaultPageSize: 15, storageKey: 'returns-all' });
+  const exportPagination = usePagination(groupedExportReturns, { defaultPageSize: 15, storageKey: 'returns-export' });
+  const importPagination = usePagination(groupedImportReturns, { defaultPageSize: 15, storageKey: 'returns-import' });
+
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const toggleGroup = (key: string) => {
     setExpandedGroups(prev => {
