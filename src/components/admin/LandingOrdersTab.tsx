@@ -198,6 +198,7 @@ export function LandingOrdersTab() {
     pageSize: ORDER_PAGE_SIZE,
   });
   const orders: LandingOrder[] = ordersData?.items || [];
+  const hasMore = ordersData?.hasMore || false;
   const totalCount = ordersData?.totalCount || 0;
   const { data: statusCountsData } = useLandingOrderStatusCounts(filterBranchId);
   const statusCounts = statusCountsData || { pending: 0, approved: 0, cancelled: 0 };
@@ -205,18 +206,19 @@ export function LandingOrdersTab() {
   const searchProducts = useSearchProductsByName();
   const checkProduct = useCheckProductForSale();
 
-  const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
+  const branchMap = useMemo(() => new Map((branches || []).map(b => [b.id, b.name])), [branches]);
 
   // Reset page when filters change
-  const filteredKey = `${statusFilter}-${deliveryFilter}-${callStatusFilter}-${sourceFilter}-${debouncedSearch}`;
-  const prevFilterKey = useRef(filteredKey);
-  if (prevFilterKey.current !== filteredKey) {
-    prevFilterKey.current = filteredKey;
+  useEffect(() => {
     if (serverPage !== 1) setServerPage(1);
-  }
+  }, [statusFilter, deliveryFilter, callStatusFilter, sourceFilter, debouncedSearch]);
 
   // Orders are already server-filtered, just use them directly
   const filtered: LandingOrder[] = orders;
+  const selectableOrders = useMemo(
+    () => filtered.filter(o => o.status !== 'cancelled'),
+    [filtered]
+  );
 
   const handleApprove = async (order: LandingOrder) => {
     try {
