@@ -34,7 +34,7 @@ export interface LandingArticle {
 // Admin hooks - accept tenantId to avoid redundant RPC calls
 export function useLandingArticleCategories(tenantId?: string | null) {
   return useQuery({
-    queryKey: ['landing-article-categories', tenantId],
+    queryKey: ['landing-article-categories', tenantId ?? '_auto_'],
     queryFn: async () => {
       // Use passed tenantId or fallback to RPC
       let tid = tenantId;
@@ -52,7 +52,6 @@ export function useLandingArticleCategories(tenantId?: string | null) {
       if (error) throw error;
       return data as unknown as LandingArticleCategory[];
     },
-    enabled: tenantId !== null,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
@@ -127,7 +126,7 @@ const LANDING_ARTICLE_LIST_SELECT = `
 
 export function useLandingArticles(tenantId?: string | null) {
   return useQuery({
-    queryKey: ['landing-articles', tenantId],
+    queryKey: ['landing-articles', tenantId ?? '_auto_'],
     queryFn: async () => {
       // Use passed tenantId or fallback to RPC
       let tid = tenantId;
@@ -145,7 +144,6 @@ export function useLandingArticles(tenantId?: string | null) {
       if (error) throw error;
       return data as unknown as LandingArticle[];
     },
-    enabled: tenantId !== null,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,

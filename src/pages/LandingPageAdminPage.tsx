@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from 'react';
+import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -13,6 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SwipeGuardScroll from '@/components/ui/swipe-guard-scroll';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
+import { useCurrentTenant } from '@/hooks/useTenant';
+import { useLandingProductCategories, useLandingProducts } from '@/hooks/useLandingProducts';
+import { useLandingArticleCategories, useLandingArticles } from '@/hooks/useLandingArticles';
 
 // Lazy load heavy tab components - only loaded when the tab is active
 const LandingPageSettings = lazy(() => import('@/components/admin/LandingPageSettings').then(m => ({ default: m.LandingPageSettings })));
@@ -86,9 +89,17 @@ export default function LandingPageAdminPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: permissions, isLoading } = usePermissions();
+  const { data: tenant } = useCurrentTenant();
+  const tenantId = tenant?.id;
   const landingGuideUrl = useLandingGuideUrl();
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('landing-page-admin-v3');
   const [tourDismissed, setTourDismissed] = useState(false);
+
+  // Prefetch all tab data in parallel on page mount (uses cache, no extra fetches when tabs open)
+  useLandingProductCategories(tenantId);
+  useLandingProducts(tenantId);
+  useLandingArticleCategories(tenantId);
+  useLandingArticles(tenantId);
 
   const role = permissions?.role;
   const isSuperAdmin = role === 'super_admin';

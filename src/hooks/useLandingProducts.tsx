@@ -65,17 +65,21 @@ export interface LandingProduct {
   updated_at: string;
 }
 
-// Admin hooks
-export function useLandingProductCategories() {
+// Admin hooks - accept tenantId to avoid redundant RPC calls
+export function useLandingProductCategories(tenantId?: string | null) {
   return useQuery({
-    queryKey: ['landing-product-categories'],
+    queryKey: ['landing-product-categories', tenantId ?? '_auto_'],
     queryFn: async () => {
-      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
-      if (!tenantId) return [];
+      let tid = tenantId;
+      if (!tid) {
+        const { data } = await supabase.rpc('get_user_tenant_id_secure');
+        tid = data;
+      }
+      if (!tid) return [];
       const { data, error } = await supabase
         .from('landing_product_categories' as any)
         .select('*')
-        .eq('tenant_id', tenantId)
+        .eq('tenant_id', tid)
         .order('display_order', { ascending: true })
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -181,16 +185,20 @@ const LANDING_PRODUCT_LIST_SELECT = `
   display_order, created_at, updated_at
 `;
 
-export function useLandingProducts() {
+export function useLandingProducts(tenantId?: string | null) {
   return useQuery({
-    queryKey: ['landing-products'],
+    queryKey: ['landing-products', tenantId ?? '_auto_'],
     queryFn: async () => {
-      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
-      if (!tenantId) return [];
+      let tid = tenantId;
+      if (!tid) {
+        const { data } = await supabase.rpc('get_user_tenant_id_secure');
+        tid = data;
+      }
+      if (!tid) return [];
       const { data, error } = await supabase
         .from('landing_products' as any)
         .select(LANDING_PRODUCT_LIST_SELECT)
-        .eq('tenant_id', tenantId)
+        .eq('tenant_id', tid)
         .order('display_order', { ascending: true })
         .order('created_at', { ascending: false });
       if (error) throw error;
