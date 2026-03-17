@@ -391,6 +391,24 @@ export function ProductTable({
                           Sao chép sản phẩm mẫu
                         </DropdownMenuItem>
                       )}
+                      {product.status === 'template' && onImportFromTemplate && (
+                        <DropdownMenuItem onClick={() => onImportFromTemplate(product)}>
+                          <ArrowDownToLine className="mr-2 h-4 w-4" />
+                          Nhập hàng từ mẫu
+                        </DropdownMenuItem>
+                      )}
+                      {product.status === 'template' && onDeleteTemplate && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => onDeleteTemplate(product)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Xóa sản phẩm mẫu
+                          </DropdownMenuItem>
+                        </>
+                      )}
                       
                       {/* Super Admin only actions */}
                       {permissions?.canAdjustProductQuantity && !isIMEIProduct(product) && (
