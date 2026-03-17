@@ -913,6 +913,37 @@ export function LandingProductsTab() {
                             className="h-7 text-xs w-16 shrink-0"
                             placeholder="SL"
                           />
+                          {vp.image_url ? (
+                            <div className="relative shrink-0">
+                              <img src={vp.image_url} alt="" className="h-8 w-8 rounded object-cover border" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const prices = [...form.variant_prices];
+                                  prices[i] = { ...prices[i], image_url: undefined };
+                                  setForm(p => ({ ...p, variant_prices: prices }));
+                                }}
+                                className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+                              >
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-[11px] px-2 shrink-0"
+                              disabled={uploadingVariantPriceIdx === i}
+                              onClick={() => {
+                                setPendingVariantIdx(null);
+                                setPendingVariantPriceIdx(i);
+                                variantFileRef.current?.click();
+                              }}
+                            >
+                              {uploadingVariantPriceIdx === i ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Ảnh'}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}
