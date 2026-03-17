@@ -211,6 +211,7 @@ export function CreateProductTemplateDialog({ open, onOpenChange }: CreateProduc
           <VariantConfigPanel
             config={variantConfig}
             onChange={setVariantConfig}
+            baseProductName={form.productName}
           />
 
           {/* Variant selector (if configured) */}
