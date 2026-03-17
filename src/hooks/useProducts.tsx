@@ -163,7 +163,7 @@ export function useProducts(filters?: ProductFilters) {
       return { items: rows, totalCount: rows.length };
     },
     enabled: !!user?.id && !permissionsLoading,
-    staleTime: 3 * 60 * 1000, // 3 min cache
+    staleTime: 5 * 60 * 1000, // 5 min cache
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
