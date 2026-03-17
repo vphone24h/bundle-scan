@@ -815,7 +815,7 @@ export function LandingOrdersTab() {
               />
             </div>
           </Card>
-        </>
+        </div>
       )}
 
       {/* Cancel dialog */}
