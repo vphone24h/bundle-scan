@@ -656,7 +656,9 @@ export function LandingProductsTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {products && products.length > 0 ? (
+          {prodLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : products && products.length > 0 ? (
             <>
               <div className="space-y-2">
                 {paginateArray(products, productPage, PRODUCT_PAGE_SIZE).map((p) => {
