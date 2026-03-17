@@ -87,33 +87,101 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     if (!inventory) return [];
     return inventory.filter(item => {
       if (item.stock <= 0) return false;
-      // Hide products already added to landing page (match by name or SKU)
-      if (existingMatchers.names.has(item.productName.toLowerCase().trim())) return false;
-      if (item.sku && existingMatchers.skus.has(item.sku.toLowerCase().trim())) return false;
       const matchSearch = !search ||
         item.productName.toLowerCase().includes(search.toLowerCase()) ||
         item.sku.toLowerCase().includes(search.toLowerCase());
       const matchCat = categoryFilter === '_all_' || item.categoryId === categoryFilter;
       return matchSearch && matchCat;
     });
-  }, [inventory, search, categoryFilter, existingMatchers]);
+  }, [inventory, search, categoryFilter]);
 
-  const toggleSelect = (id: string) => {
+  // Group filtered items by groupId for display
+  interface GroupedDisplayItem {
+    key: string; // groupId or productId for standalone
+    baseName: string;
+    items: InventoryItem[];
+    totalStock: number;
+    variantCount: number;
+    categoryName: string | null;
+    price: number;
+    sku: string;
+  }
+
+  const groupedDisplayItems = useMemo(() => {
+    const groupMap = new Map<string, InventoryItem[]>();
+    const standalone: InventoryItem[] = [];
+
+    for (const item of filteredItems) {
+      if (item.groupId) {
+        const arr = groupMap.get(item.groupId) || [];
+        arr.push(item);
+        groupMap.set(item.groupId, arr);
+      } else {
+        standalone.push(item);
+      }
+    }
+
+    const result: GroupedDisplayItem[] = [];
+
+    for (const [groupId, items] of groupMap) {
+      const baseName = getBaseName(items);
+      // Check if already exists on landing page (match base name)
+      if (existingMatchers.names.has(baseName.toLowerCase().trim())) continue;
+      result.push({
+        key: groupId,
+        baseName,
+        items,
+        totalStock: items.reduce((s, i) => s + i.stock, 0),
+        variantCount: items.length,
+        categoryName: items[0]?.categoryName || null,
+        price: items[0]?.avgImportPrice || 0,
+        sku: items[0]?.sku || '',
+      });
+    }
+
+    for (const item of standalone) {
+      if (existingMatchers.names.has(item.productName.toLowerCase().trim())) continue;
+      if (item.sku && existingMatchers.skus.has(item.sku.toLowerCase().trim())) continue;
+      result.push({
+        key: item.productId,
+        baseName: item.productName,
+        items: [item],
+        totalStock: item.stock,
+        variantCount: 0,
+        categoryName: item.categoryName,
+        price: item.avgImportPrice,
+        sku: item.sku,
+      });
+    }
+
+    return result;
+  }, [filteredItems, existingMatchers]);
+
+  const toggleSelect = (groupKey: string, items: InventoryItem[]) => {
     setSelected(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      const allSelected = items.every(i => next.has(i.productId));
+      if (allSelected) {
+        items.forEach(i => next.delete(i.productId));
+      } else {
+        items.forEach(i => next.add(i.productId));
+      }
       return next;
     });
   };
 
   const toggleAll = () => {
-    if (selected.size === filteredItems.length) {
+    const allProductIds = groupedDisplayItems.flatMap(g => g.items.map(i => i.productId));
+    if (selected.size === allProductIds.length && allProductIds.length > 0) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(filteredItems.map(i => i.productId)));
+      setSelected(new Set(allProductIds));
     }
   };
+
+  const selectedGroupCount = groupedDisplayItems.filter(g => 
+    g.items.every(i => selected.has(i.productId))
+  ).length;
 
   const generateAIDescription = async (item: InventoryItem): Promise<{ description: string; seo_title: string; seo_description: string; verified_name?: string; design_features?: string; product_type?: string; brand?: string } | null> => {
     try {
