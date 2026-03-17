@@ -96,17 +96,6 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
   }, [inventory, search, categoryFilter]);
 
   // Group filtered items by groupId for display
-  interface GroupedDisplayItem {
-    key: string; // groupId or productId for standalone
-    baseName: string;
-    items: InventoryItem[];
-    totalStock: number;
-    variantCount: number;
-    categoryName: string | null;
-    price: number;
-    sku: string;
-  }
-
   const groupedDisplayItems = useMemo(() => {
     const groupMap = new Map<string, InventoryItem[]>();
     const standalone: InventoryItem[] = [];
