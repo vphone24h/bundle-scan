@@ -63,7 +63,9 @@ export interface ProductFilters {
  */
 export function useProducts(filters?: ProductFilters) {
   const { user } = useAuth();
-  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+  const { data: permissions, isLoading: permissionsLoading } = usePermissions();
+  const branchId = permissions?.branchId ?? null;
+  const shouldFilter = !permissions?.canViewAllBranches;
 
   const page = filters?.page ?? 1;
   const pageSize = filters?.pageSize ?? 50;
