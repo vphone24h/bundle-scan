@@ -1069,8 +1069,27 @@ export function LandingPageSettings() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div className="space-y-6 animate-pulse">
+        <Card data-tour="landing-link-card">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="h-5 w-5 rounded bg-muted" />
+              <div className="h-5 w-48 rounded bg-muted" />
+            </div>
+            <div className="h-4 w-72 rounded bg-muted mt-1" />
+          </CardHeader>
+          <CardContent>
+            <div className="h-10 w-full rounded bg-muted" />
+          </CardContent>
+        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i}>
+              <CardHeader><div className="h-5 w-32 rounded bg-muted" /></CardHeader>
+              <CardContent><div className="space-y-2"><div className="h-9 w-full rounded bg-muted" /><div className="h-9 w-full rounded bg-muted" /></div></CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
