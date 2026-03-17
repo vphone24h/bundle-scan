@@ -34,21 +34,19 @@ const ShopCTVManagement = lazy(importCTV);
 
 // Preload all chunks immediately so tab switching is instant
 if (typeof window !== 'undefined') {
-  requestIdleCallback?.(() => {
+  const preloadAll = () => {
     importSettings();
     importProducts();
     importArticles();
     importOrders();
     importEmail();
     importCTV();
-  }) ?? setTimeout(() => {
-    importSettings();
-    importProducts();
-    importArticles();
-    importOrders();
-    importEmail();
-    importCTV();
-  }, 100);
+  };
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(preloadAll);
+  } else {
+    setTimeout(preloadAll, 100);
+  }
 }
 
 const TabLoader = () => (
