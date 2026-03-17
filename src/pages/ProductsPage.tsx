@@ -162,7 +162,7 @@ function extractBaseName(name: string, v1?: string, v2?: string, v3?: string): s
 }
 
 // Debounce hook for search
-function useDebouncedValue(value: string, delay = 400) {
+function useDebouncedValue(value: string, delay = 250) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(value), delay);
