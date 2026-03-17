@@ -31,7 +31,7 @@ export interface Product {
   supplierName?: string;
   branchId?: string;
   branchName?: string;
-  status: 'in_stock' | 'sold' | 'returned';
+  status: 'in_stock' | 'sold' | 'returned' | 'template';
   note?: string;
   importReceiptId?: string;
   quantity?: number; // For non-IMEI products
