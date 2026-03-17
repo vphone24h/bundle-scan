@@ -472,7 +472,11 @@ export default function ProductsPage() {
 
       <CreateProductTemplateDialog
         open={templateDialogOpen}
-        onOpenChange={setTemplateDialogOpen}
+        onOpenChange={(open) => {
+          setTemplateDialogOpen(open);
+          if (!open) setTemplateInitialData(null);
+        }}
+        initialData={templateInitialData}
       />
 
       <OnboardingTourOverlay
