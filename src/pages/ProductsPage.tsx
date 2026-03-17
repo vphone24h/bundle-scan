@@ -12,7 +12,7 @@ import { EditProductDialog } from '@/components/import/EditProductDialog';
 import { EditTemplateProductDialog } from '@/components/products/EditTemplateProductDialog';
 import { CreateProductTemplateDialog, ProductTemplateInitialData } from '@/components/products/CreateProductTemplateDialog';
 import { useCategories } from '@/hooks/useCategories';
-import { useSuppliers } from '@/hooks/useSuppliers';
+import { useSupplierOptions } from '@/hooks/useSuppliers';
 import { useBranches } from '@/hooks/useBranches';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
