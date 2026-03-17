@@ -158,6 +158,68 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     }
   };
 
+  // Build variant data from grouped inventory items
+  const buildVariantData = async (items: InventoryItem[], groupId: string) => {
+    // Fetch product_group config for labels
+    const { data: groupData } = await supabase
+      .from('product_groups')
+      .select('*')
+      .eq('id', groupId)
+      .single();
+
+    const group = groupData as any;
+    const label1 = group?.variant_1_label || '';
+    const label2 = group?.variant_2_label || '';
+
+    // Collect unique variant options from inventory items
+    const options1Set = new Set<string>();
+    const options2Set = new Set<string>();
+    for (const item of items) {
+      if (item.variant1) options1Set.add(item.variant1);
+      if (item.variant2) options2Set.add(item.variant2);
+    }
+
+    const variant_options_1 = Array.from(options1Set).map(name => ({ name }));
+    const variant_options_2 = Array.from(options2Set).map(name => ({ name }));
+
+    // Build variant_prices by fetching sale_price per product
+    const variant_prices = [];
+    for (const item of items) {
+      if (!item.variant1) continue;
+      const salePrice = item.products[0] ? await getSalePrice(item.products[0].id) : null;
+      const price = Math.round(salePrice || item.avgImportPrice || 0);
+      variant_prices.push({
+        option1: item.variant1,
+        option2: item.variant2 || undefined,
+        price,
+        stock: item.stock,
+        is_sold_out: item.stock <= 0,
+      });
+    }
+
+    return {
+      variant_group_1_name: label1,
+      variant_group_2_name: label2,
+      variant_options_1,
+      variant_options_2,
+      variant_prices,
+    };
+  };
+
+  // Extract base name from a product name by stripping variant suffixes
+  const getBaseName = (items: InventoryItem[]): string => {
+    if (items.length <= 1) return items[0]?.productName || '';
+    // Find common prefix among all product names
+    const names = items.map(i => i.productName);
+    let prefix = names[0];
+    for (const name of names) {
+      while (!name.startsWith(prefix)) {
+        prefix = prefix.substring(0, prefix.length - 1);
+      }
+    }
+    return prefix.replace(/\s+$/, '') || names[0];
+  };
+
   const resolveLandingCategoryId = async (categoryId: string | null, categoryName: string | null): Promise<string | null> => {
     if (!categoryId || !categoryName) return null;
     try {
@@ -193,8 +255,30 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     setAiStep('step1_desc');
 
     const selectedItems = (inventory || []).filter(i => selected.has(i.productId));
-    setTotalSteps(selectedItems.length);
     const results: ProductAIResult[] = [];
+
+    // Group items by groupId
+    const groupedMap = new Map<string, InventoryItem[]>();
+    const standaloneItems: InventoryItem[] = [];
+    for (const item of selectedItems) {
+      if (item.groupId) {
+        const arr = groupedMap.get(item.groupId) || [];
+        arr.push(item);
+        groupedMap.set(item.groupId, arr);
+      } else {
+        standaloneItems.push(item);
+      }
+    }
+
+    const tasks: { name: string; items: InventoryItem[]; groupId: string | null }[] = [];
+    for (const [groupId, items] of groupedMap) {
+      tasks.push({ name: getBaseName(items), items, groupId });
+    }
+    for (const item of standaloneItems) {
+      tasks.push({ name: item.productName, items: [item], groupId: null });
+    }
+
+    setTotalSteps(tasks.length);
 
     // Pre-resolve categories
     const categoryMap = new Map<string, string | null>();
@@ -205,24 +289,29 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
       }
     }
 
-    for (let idx = 0; idx < selectedItems.length; idx++) {
-      const item = selectedItems[idx];
+    for (let idx = 0; idx < tasks.length; idx++) {
+      const task = tasks[idx];
+      const firstItem = task.items[0];
       setCurrentStepIdx(idx + 1);
-      setAiProgress(`Bước 1: AI đang xác minh & viết mô tả ${idx + 1}/${selectedItems.length}: ${item.productName}`);
+      setAiProgress(`Bước 1: AI đang xác minh & viết mô tả ${idx + 1}/${tasks.length}: ${task.name}`);
 
       try {
-        // products array is empty from RPC summary, use avgImportPrice directly  
-        const firstProduct = item.products[0];
+        const firstProduct = firstItem.products[0];
         let salePrice: number | null = null;
         if (firstProduct) {
           salePrice = await getSalePrice(firstProduct.id);
         }
-        const finalPrice = Math.round(salePrice || item.avgImportPrice || 0);
-        const aiContent = await generateAIDescription(item);
-        const landingCategoryId = item.categoryId ? (categoryMap.get(item.categoryId) ?? null) : null;
+        const finalPrice = Math.round(salePrice || firstItem.avgImportPrice || 0);
+        const aiContent = await generateAIDescription(firstItem);
+        const landingCategoryId = firstItem.categoryId ? (categoryMap.get(firstItem.categoryId) ?? null) : null;
 
-        // Use verified name from AI if available
-        const displayName = aiContent?.verified_name || item.productName;
+        const displayName = aiContent?.verified_name || task.name;
+
+        // Build variant data if grouped
+        let variantData = {};
+        if (task.groupId && task.items.length > 1) {
+          variantData = await buildVariantData(task.items, task.groupId);
+        }
 
         const created = await createProduct.mutateAsync({
           name: displayName,
@@ -235,10 +324,11 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
           is_featured: false,
           is_active: true,
           variants: [],
+          ...variantData,
         });
 
         results.push({
-          productId: item.productId,
+          productId: firstItem.productId,
           productName: displayName,
           description: aiContent?.description || null,
           images: [],
@@ -249,10 +339,10 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
           brand: aiContent?.brand,
         });
       } catch (e: any) {
-        console.error(`Error step1 ${item.productName}:`, e);
+        console.error(`Error step1 ${task.name}:`, e);
         results.push({
-          productId: item.productId,
-          productName: item.productName,
+          productId: firstItem.productId,
+          productName: task.name,
           description: null,
           images: [],
         });
@@ -320,6 +410,29 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     const selectedItems = (inventory || []).filter(i => selected.has(i.productId));
     let successCount = 0;
 
+    // Group items by groupId to merge variants into one landing product
+    const groupedMap = new Map<string, InventoryItem[]>();
+    const standaloneItems: InventoryItem[] = [];
+    for (const item of selectedItems) {
+      if (item.groupId) {
+        const arr = groupedMap.get(item.groupId) || [];
+        arr.push(item);
+        groupedMap.set(item.groupId, arr);
+      } else {
+        standaloneItems.push(item);
+      }
+    }
+
+    // Build tasks: each group becomes one product, standalone items are individual
+    const tasks: { name: string; items: InventoryItem[]; groupId: string | null }[] = [];
+    for (const [groupId, items] of groupedMap) {
+      const baseName = getBaseName(items);
+      tasks.push({ name: baseName, items, groupId });
+    }
+    for (const item of standaloneItems) {
+      tasks.push({ name: item.productName, items: [item], groupId: null });
+    }
+
     const categoryMap = new Map<string, string | null>();
     for (const item of selectedItems) {
       if (item.categoryId && !categoryMap.has(item.categoryId)) {
@@ -329,22 +442,28 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     }
 
     const errorMessages: string[] = [];
-    for (let idx = 0; idx < selectedItems.length; idx++) {
-      const item = selectedItems[idx];
-      setAiProgress(`Đang thêm ${idx + 1}/${selectedItems.length}: ${item.productName}`);
+    for (let idx = 0; idx < tasks.length; idx++) {
+      const task = tasks[idx];
+      setAiProgress(`Đang thêm ${idx + 1}/${tasks.length}: ${task.name}`);
 
       try {
-        // products array is empty from RPC summary, use avgImportPrice directly
-        const firstProduct = item.products[0];
+        const firstItem = task.items[0];
+        const firstProduct = firstItem.products[0];
         let salePrice: number | null = null;
         if (firstProduct) {
           salePrice = await getSalePrice(firstProduct.id);
         }
-        const finalPrice = salePrice || item.avgImportPrice || 0;
-        const landingCategoryId = item.categoryId ? (categoryMap.get(item.categoryId) ?? null) : null;
+        const finalPrice = salePrice || firstItem.avgImportPrice || 0;
+        const landingCategoryId = firstItem.categoryId ? (categoryMap.get(firstItem.categoryId) ?? null) : null;
+
+        // Build variant data if grouped
+        let variantData = {};
+        if (task.groupId && task.items.length > 1) {
+          variantData = await buildVariantData(task.items, task.groupId);
+        }
 
         await createProduct.mutateAsync({
-          name: item.productName,
+          name: task.name,
           description: null,
           price: Math.round(finalPrice),
           sale_price: null,
@@ -354,12 +473,13 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
           is_featured: false,
           is_active: true,
           variants: [],
+          ...variantData,
         });
         successCount++;
       } catch (e: any) {
         const msg = e?.message || String(e);
-        console.error(`Error importing ${item.productName}:`, e);
-        errorMessages.push(`${item.productName}: ${msg}`);
+        console.error(`Error importing ${task.name}:`, e);
+        errorMessages.push(`${task.name}: ${msg}`);
       }
     }
 
@@ -369,8 +489,8 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     onOpenChange(false);
     toast({
       title: `Đã đưa ${successCount} sản phẩm lên website`,
-      description: successCount < selectedItems.length
-        ? `${selectedItems.length - successCount} sản phẩm lỗi${errorMessages.length ? ': ' + errorMessages.join('; ') : ''}`
+      description: successCount < tasks.length
+        ? `${tasks.length - successCount} sản phẩm lỗi${errorMessages.length ? ': ' + errorMessages.join('; ') : ''}`
         : undefined,
     });
   };
