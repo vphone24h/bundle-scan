@@ -25,6 +25,17 @@ interface Props {
 
 type AIStep = 'select' | 'step1_desc' | 'step2_images' | 'done';
 
+interface GroupedDisplayItem {
+  key: string;
+  baseName: string;
+  items: InventoryItem[];
+  totalStock: number;
+  variantCount: number;
+  categoryName: string | null;
+  price: number;
+  sku: string;
+}
+
 interface ProductAIResult {
   productId: string;
   productName: string;
@@ -87,33 +98,90 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     if (!inventory) return [];
     return inventory.filter(item => {
       if (item.stock <= 0) return false;
-      // Hide products already added to landing page (match by name or SKU)
-      if (existingMatchers.names.has(item.productName.toLowerCase().trim())) return false;
-      if (item.sku && existingMatchers.skus.has(item.sku.toLowerCase().trim())) return false;
       const matchSearch = !search ||
         item.productName.toLowerCase().includes(search.toLowerCase()) ||
         item.sku.toLowerCase().includes(search.toLowerCase());
       const matchCat = categoryFilter === '_all_' || item.categoryId === categoryFilter;
       return matchSearch && matchCat;
     });
-  }, [inventory, search, categoryFilter, existingMatchers]);
+  }, [inventory, search, categoryFilter]);
 
-  const toggleSelect = (id: string) => {
+  // Group filtered items by groupId for display
+  const groupedDisplayItems = useMemo(() => {
+    const groupMap = new Map<string, InventoryItem[]>();
+    const standalone: InventoryItem[] = [];
+
+    for (const item of filteredItems) {
+      if (item.groupId) {
+        const arr = groupMap.get(item.groupId) || [];
+        arr.push(item);
+        groupMap.set(item.groupId, arr);
+      } else {
+        standalone.push(item);
+      }
+    }
+
+    const result: GroupedDisplayItem[] = [];
+
+    for (const [groupId, items] of groupMap) {
+      const baseName = getBaseName(items);
+      // Check if already exists on landing page (match base name)
+      if (existingMatchers.names.has(baseName.toLowerCase().trim())) continue;
+      result.push({
+        key: groupId,
+        baseName,
+        items,
+        totalStock: items.reduce((s, i) => s + i.stock, 0),
+        variantCount: items.length,
+        categoryName: items[0]?.categoryName || null,
+        price: items[0]?.avgImportPrice || 0,
+        sku: items[0]?.sku || '',
+      });
+    }
+
+    for (const item of standalone) {
+      if (existingMatchers.names.has(item.productName.toLowerCase().trim())) continue;
+      if (item.sku && existingMatchers.skus.has(item.sku.toLowerCase().trim())) continue;
+      result.push({
+        key: item.productId,
+        baseName: item.productName,
+        items: [item],
+        totalStock: item.stock,
+        variantCount: 0,
+        categoryName: item.categoryName,
+        price: item.avgImportPrice,
+        sku: item.sku,
+      });
+    }
+
+    return result;
+  }, [filteredItems, existingMatchers]);
+
+  const toggleSelect = (groupKey: string, items: InventoryItem[]) => {
     setSelected(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      const allSelected = items.every(i => next.has(i.productId));
+      if (allSelected) {
+        items.forEach(i => next.delete(i.productId));
+      } else {
+        items.forEach(i => next.add(i.productId));
+      }
       return next;
     });
   };
 
   const toggleAll = () => {
-    if (selected.size === filteredItems.length) {
+    const allProductIds = groupedDisplayItems.flatMap(g => g.items.map(i => i.productId));
+    if (selected.size === allProductIds.length && allProductIds.length > 0) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(filteredItems.map(i => i.productId)));
+      setSelected(new Set(allProductIds));
     }
   };
+
+  const selectedGroupCount = groupedDisplayItems.filter(g => 
+    g.items.every(i => selected.has(i.productId))
+  ).length;
 
   const generateAIDescription = async (item: InventoryItem): Promise<{ description: string; seo_title: string; seo_description: string; verified_name?: string; design_features?: string; product_type?: string; brand?: string } | null> => {
     try {
@@ -621,7 +689,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
-              ) : filteredItems.length === 0 ? (
+              ) : groupedDisplayItems.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground py-8">
                   {search ? 'Không tìm thấy sản phẩm phù hợp' : 'Kho hàng trống'}
                 </p>
@@ -629,43 +697,51 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
                 <>
                   <div className="flex items-center gap-2 px-2 py-1.5 border-b mb-1">
                     <Checkbox
-                      checked={selected.size === filteredItems.length && filteredItems.length > 0}
+                      checked={selectedGroupCount === groupedDisplayItems.length && groupedDisplayItems.length > 0}
                       onCheckedChange={toggleAll}
                     />
                     <span className="text-xs text-muted-foreground">
-                      Chọn tất cả ({filteredItems.length} sản phẩm)
+                      Chọn tất cả ({groupedDisplayItems.length} sản phẩm)
                     </span>
                   </div>
-                  {filteredItems.map(item => (
-                    <label
-                      key={item.productId}
-                      className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
-                        selected.has(item.productId) ? 'bg-primary/5 border border-primary/20' : 'border border-transparent'
-                      }`}
-                    >
-                      <Checkbox
-                        checked={selected.has(item.productId)}
-                        onCheckedChange={() => toggleSelect(item.productId)}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{item.productName}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{item.sku}</span>
-                          {item.categoryName && (
-                            <Badge variant="outline" className="text-[10px] h-4">
-                              {item.categoryName}
-                            </Badge>
-                          )}
+                  {groupedDisplayItems.map(group => {
+                    const isSelected = group.items.every(i => selected.has(i.productId));
+                    return (
+                      <label
+                        key={group.key}
+                        className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
+                          isSelected ? 'bg-primary/5 border border-primary/20' : 'border border-transparent'
+                        }`}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleSelect(group.key, group.items)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-medium text-sm truncate">{group.baseName}</p>
+                            {group.variantCount > 1 && (
+                              <Badge variant="secondary" className="text-[10px] h-4 shrink-0">
+                                {group.variantCount} biến thể
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{group.sku}</span>
+                            {group.categoryName && (
+                              <Badge variant="outline" className="text-[10px] h-4">
+                                {group.categoryName}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-medium">
-                          {item.products[0] ? formatNumber(item.products[0].importPrice) : formatNumber(item.avgImportPrice)}đ
-                        </p>
-                        <p className="text-xs text-muted-foreground">Tồn: {item.stock}</p>
-                      </div>
-                    </label>
-                  ))}
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-medium">{formatNumber(group.price)}đ</p>
+                          <p className="text-xs text-muted-foreground">Tồn: {group.totalStock}</p>
+                        </div>
+                      </label>
+                    );
+                  })}
                 </>
               )}
             </div>
@@ -714,7 +790,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
             <div className="flex flex-col w-full gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">
-                  Đã chọn: {selected.size} sản phẩm
+                  Đã chọn: {selectedGroupCount} sản phẩm
                 </span>
                 <Button variant="outline" onClick={handleClose} disabled={importing} size="sm">
                   Huỷ
