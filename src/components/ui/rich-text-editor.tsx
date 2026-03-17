@@ -50,6 +50,18 @@ const FONT_SIZES = [
   { label: 'Rất lớn', value: '5' },
 ];
 
+const MAX_UPLOAD_SIZE = 15 * 1024 * 1024;
+const ALLOWED_UPLOAD_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'image/avif',
+]);
+
 function ToolbarButton({
   onClick,
   active,
