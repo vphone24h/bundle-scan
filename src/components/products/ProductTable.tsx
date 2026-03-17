@@ -48,6 +48,8 @@ export function ProductTable({
   onEdit,
   onPrintBarcode,
   onDuplicate,
+  onImportFromTemplate,
+  onDeleteTemplate,
 }: ProductTableProps) {
   const isMobile = useIsMobile();
   const { data: permissions } = usePermissions();
