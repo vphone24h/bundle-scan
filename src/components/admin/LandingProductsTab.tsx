@@ -200,6 +200,7 @@ export function LandingProductsTab() {
   const [uploading, setUploading] = useState(false);
   const [uploadingCatId, setUploadingCatId] = useState<string | null>(null);
   const [uploadingVariantIdx, setUploadingVariantIdx] = useState<number | null>(null);
+  const [uploadingVariantPriceIdx, setUploadingVariantPriceIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const variantFileRef = useRef<HTMLInputElement>(null);
   const catImageRef = useRef<HTMLInputElement>(null);
@@ -207,6 +208,7 @@ export function LandingProductsTab() {
   const [productPage, setProductPage] = useState(1);
   const PRODUCT_PAGE_SIZE = 20;
   const [pendingVariantIdx, setPendingVariantIdx] = useState<number | null>(null);
+  const [pendingVariantPriceIdx, setPendingVariantPriceIdx] = useState<number | null>(null);
 
   const categoryTree = useMemo(() => buildCategoryTree(categories || []), [categories]);
   const flatCategories = useMemo(() => flattenCategoriesForSelect(categoryTree), [categoryTree]);
