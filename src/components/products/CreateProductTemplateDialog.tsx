@@ -35,6 +35,7 @@ export interface ProductTemplateInitialData {
   importPrice: string;
   salePrice: string;
   note: string;
+  variantLevels?: VariantLevel[];
 }
 
 interface CreateProductTemplateDialogProps {
