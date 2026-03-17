@@ -456,6 +456,11 @@ export default function ProductsPage() {
         onOpenChange={(open) => !open && setEditProduct(null)}
       />
 
+      <CreateProductTemplateDialog
+        open={templateDialogOpen}
+        onOpenChange={setTemplateDialogOpen}
+      />
+
       <OnboardingTourOverlay
         steps={PRODUCTS_TOUR_STEPS}
         isActive={manualTourActive || (!tourCompleted && !tourDismissed)}
