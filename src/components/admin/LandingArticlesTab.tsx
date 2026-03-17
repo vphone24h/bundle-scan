@@ -571,10 +571,12 @@ export function LandingArticlesTab() {
                 Upload ảnh
               </Button>
             </div>
-            <div className="space-y-2">
-              <Label>Nội dung</Label>
-              <RichTextEditor value={form.content} onChange={v => setForm(p => ({ ...p, content: v }))} />
-            </div>
+              <div className="space-y-2">
+                <Label>Nội dung</Label>
+                <Suspense fallback={<div className="rounded-md border p-4 text-sm text-muted-foreground">Đang tải trình soạn thảo...</div>}>
+                  <LazyRichTextEditor value={form.content} onChange={v => setForm(p => ({ ...p, content: v }))} />
+                </Suspense>
+              </div>
             <Separator />
             <div className="flex items-center justify-between">
               <Label>Xuất bản</Label>
