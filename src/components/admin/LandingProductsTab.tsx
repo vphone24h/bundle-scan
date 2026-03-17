@@ -985,7 +985,11 @@ export function LandingProductsTab() {
                             </div>
                           ) : (
                             <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" disabled={uploadingVariantIdx === i}
-                              onClick={() => { setPendingVariantIdx(i); variantFileRef.current?.click(); }}>
+                              onClick={() => {
+                                setPendingVariantPriceIdx(null);
+                                setPendingVariantIdx(i);
+                                variantFileRef.current?.click();
+                              }}>
                               {uploadingVariantIdx === i ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImagePlus className="h-3 w-3" />}
                               Ảnh biến thể
                             </Button>
