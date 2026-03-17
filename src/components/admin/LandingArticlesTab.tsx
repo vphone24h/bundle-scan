@@ -372,7 +372,9 @@ export function LandingArticlesTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {tree.length > 0 ? (
+          {catLoading ? (
+            <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : tree.length > 0 ? (
             <div className="space-y-0.5">
               {tree.map((cat, idx) => (
                 <CategoryNode
