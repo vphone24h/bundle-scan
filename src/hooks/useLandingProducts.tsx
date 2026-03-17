@@ -215,7 +215,7 @@ export async function getLandingProductById(id: string): Promise<LandingProduct 
     .maybeSingle();
 
   if (error) throw error;
-  return (data as LandingProduct | null) ?? null;
+  return (data as unknown as LandingProduct | null) ?? null;
 }
 
 export function useCreateLandingProduct() {
