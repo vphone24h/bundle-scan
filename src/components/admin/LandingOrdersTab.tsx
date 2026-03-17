@@ -204,10 +204,11 @@ export function LandingOrdersTab() {
   const prevFilterKey = useRef(filteredKey);
   if (prevFilterKey.current !== filteredKey) {
     prevFilterKey.current = filteredKey;
-    if (orderPage !== 1) setOrderPage(1);
+    if (serverPage !== 1) setServerPage(1);
   }
 
-  const filtered = (orders || []).filter(o => {
+  // Orders are already server-filtered, just use them directly
+  const filtered: LandingOrder[] = orders;
     if (statusFilter !== 'all' && o.status !== statusFilter) return false;
     if (deliveryFilter !== 'all') {
       if (deliveryFilter === 'not_approved') {
