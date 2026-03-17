@@ -796,10 +796,10 @@ export function LandingOrdersTab() {
             </div>
             <div className="p-3">
               <ListPagination
-                currentPage={orderPage}
-                totalItems={filtered.length}
+                currentPage={serverPage}
+                totalItems={totalCount}
                 pageSize={ORDER_PAGE_SIZE}
-                onPageChange={setOrderPage}
+                onPageChange={setServerPage}
               />
             </div>
           </Card>
