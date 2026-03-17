@@ -208,6 +208,7 @@ export function LandingProductsTab() {
   const [pendingCatId, setPendingCatId] = useState<string | null>(null);
   const [productPage, setProductPage] = useState(1);
   const PRODUCT_PAGE_SIZE = 20;
+  const [loadingEditProductId, setLoadingEditProductId] = useState<string | null>(null);
   const [pendingVariantIdx, setPendingVariantIdx] = useState<number | null>(null);
   const [pendingVariantPriceIdx, setPendingVariantPriceIdx] = useState<number | null>(null);
 
