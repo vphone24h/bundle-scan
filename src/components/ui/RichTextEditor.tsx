@@ -64,12 +64,25 @@ export function RichTextEditor({
   }, []);
 
   const exec = useCallback((command: string, value?: string) => {
-    editorRef.current?.focus();
-    restoreSelection();
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    // Try to restore selection; if it fails, place cursor at end
+    const sel = window.getSelection();
+    if (savedSelectionRef.current && editor.contains(savedSelectionRef.current.commonAncestorContainer)) {
+      sel?.removeAllRanges();
+      sel?.addRange(savedSelectionRef.current);
+    } else {
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
     document.execCommand(command, false, value);
     isInternalUpdate.current = true;
-    onChange(editorRef.current?.innerHTML || '');
-  }, [onChange, restoreSelection]);
+    onChange(editor.innerHTML || '');
+  }, [onChange]);
 
   const handleInput = useCallback(() => {
     isInternalUpdate.current = true;
