@@ -136,7 +136,7 @@ export function useProducts(filters?: ProductFilters) {
       const items = (data || []) as Product[];
       return { items, totalCount: count || 0 };
     },
-    enabled: !!user?.id && !branchLoading,
+    enabled: !!user?.id && !permissionsLoading,
     staleTime: 3 * 60 * 1000, // 3 min cache
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
