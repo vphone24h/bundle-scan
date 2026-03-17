@@ -28,10 +28,10 @@ export interface Product {
   status: ProductStatus;
   note: string | null;
   quantity: number;
-  total_import_cost: number;
+  total_import_cost?: number;
   is_printed: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
   group_id: string | null;
   variant_1: string | null;
   variant_2: string | null;
