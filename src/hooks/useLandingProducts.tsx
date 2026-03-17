@@ -68,7 +68,7 @@ export interface LandingProduct {
 // Admin hooks - accept tenantId to avoid redundant RPC calls
 export function useLandingProductCategories(tenantId?: string | null) {
   return useQuery({
-    queryKey: ['landing-product-categories', tenantId],
+    queryKey: ['landing-product-categories', tenantId ?? '_auto_'],
     queryFn: async () => {
       let tid = tenantId;
       if (!tid) {
@@ -85,7 +85,6 @@ export function useLandingProductCategories(tenantId?: string | null) {
       if (error) throw error;
       return data as unknown as LandingProductCategory[];
     },
-    enabled: tenantId !== null,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
