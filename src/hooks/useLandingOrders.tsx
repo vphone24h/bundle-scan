@@ -351,6 +351,7 @@ export function useLandingOrderStatusCounts(branchId?: string | null) {
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
+}
 
 // Admin: count pending orders
 export function usePendingOrderCount() {
