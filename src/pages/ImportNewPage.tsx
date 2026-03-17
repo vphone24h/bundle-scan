@@ -89,6 +89,7 @@ export default function ImportNewPage() {
   const [tourDismissed, setTourDismissed] = useState(false);
   const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: categories } = useCategories();
   const { data: products } = useProducts();
   const { data: branches } = useBranches();
