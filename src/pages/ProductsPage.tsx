@@ -430,6 +430,7 @@ export default function ProductsPage() {
           onSelectionChange={setSelectedProducts}
           onEdit={handleEdit}
           onPrintBarcode={handlePrintBarcode}
+          onDuplicate={handleDuplicate}
         />
         
         {totalCount > 0 && (
