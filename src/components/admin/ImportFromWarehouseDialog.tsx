@@ -689,7 +689,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
-              ) : filteredItems.length === 0 ? (
+              ) : groupedDisplayItems.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground py-8">
                   {search ? 'Không tìm thấy sản phẩm phù hợp' : 'Kho hàng trống'}
                 </p>
@@ -697,43 +697,51 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
                 <>
                   <div className="flex items-center gap-2 px-2 py-1.5 border-b mb-1">
                     <Checkbox
-                      checked={selected.size === filteredItems.length && filteredItems.length > 0}
+                      checked={selectedGroupCount === groupedDisplayItems.length && groupedDisplayItems.length > 0}
                       onCheckedChange={toggleAll}
                     />
                     <span className="text-xs text-muted-foreground">
-                      Chọn tất cả ({filteredItems.length} sản phẩm)
+                      Chọn tất cả ({groupedDisplayItems.length} sản phẩm)
                     </span>
                   </div>
-                  {filteredItems.map(item => (
-                    <label
-                      key={item.productId}
-                      className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
-                        selected.has(item.productId) ? 'bg-primary/5 border border-primary/20' : 'border border-transparent'
-                      }`}
-                    >
-                      <Checkbox
-                        checked={selected.has(item.productId)}
-                        onCheckedChange={() => toggleSelect(item.productId)}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{item.productName}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{item.sku}</span>
-                          {item.categoryName && (
-                            <Badge variant="outline" className="text-[10px] h-4">
-                              {item.categoryName}
-                            </Badge>
-                          )}
+                  {groupedDisplayItems.map(group => {
+                    const isSelected = group.items.every(i => selected.has(i.productId));
+                    return (
+                      <label
+                        key={group.key}
+                        className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
+                          isSelected ? 'bg-primary/5 border border-primary/20' : 'border border-transparent'
+                        }`}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleSelect(group.key, group.items)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-medium text-sm truncate">{group.baseName}</p>
+                            {group.variantCount > 1 && (
+                              <Badge variant="secondary" className="text-[10px] h-4 shrink-0">
+                                {group.variantCount} biến thể
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{group.sku}</span>
+                            {group.categoryName && (
+                              <Badge variant="outline" className="text-[10px] h-4">
+                                {group.categoryName}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-medium">
-                          {item.products[0] ? formatNumber(item.products[0].importPrice) : formatNumber(item.avgImportPrice)}đ
-                        </p>
-                        <p className="text-xs text-muted-foreground">Tồn: {item.stock}</p>
-                      </div>
-                    </label>
-                  ))}
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-medium">{formatNumber(group.price)}đ</p>
+                          <p className="text-xs text-muted-foreground">Tồn: {group.totalStock}</p>
+                        </div>
+                      </label>
+                    );
+                  })}
                 </>
               )}
             </div>
