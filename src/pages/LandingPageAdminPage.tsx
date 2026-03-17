@@ -89,9 +89,17 @@ export default function LandingPageAdminPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: permissions, isLoading } = usePermissions();
+  const { data: tenant } = useCurrentTenant();
+  const tenantId = tenant?.id;
   const landingGuideUrl = useLandingGuideUrl();
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('landing-page-admin-v3');
   const [tourDismissed, setTourDismissed] = useState(false);
+
+  // Prefetch all tab data in parallel on page mount (uses cache, no extra fetches when tabs open)
+  useLandingProductCategories(tenantId);
+  useLandingProducts(tenantId);
+  useLandingArticleCategories(tenantId);
+  useLandingArticles(tenantId);
 
   const role = permissions?.role;
   const isSuperAdmin = role === 'super_admin';
