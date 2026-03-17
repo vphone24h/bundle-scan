@@ -145,11 +145,22 @@ export function useProducts(filters?: ProductFilters) {
         query = query.limit(500);
       }
 
-      const { data, error, count } = await query;
+      const { data, error } = await query;
       if (error) throw error;
-      // Return array with totalCount attached
-      const items = (data || []) as Product[];
-      return { items, totalCount: count || 0 };
+
+      const rows = (data || []) as Product[];
+
+      if (hasServerFilters) {
+        const hasMore = rows.length > pageSize;
+        const items = hasMore ? rows.slice(0, pageSize) : rows;
+        const totalCount = hasMore
+          ? (page * pageSize) + 1
+          : ((page - 1) * pageSize) + items.length;
+
+        return { items, totalCount };
+      }
+
+      return { items: rows, totalCount: rows.length };
     },
     enabled: !!user?.id && !permissionsLoading,
     staleTime: 3 * 60 * 1000, // 3 min cache
