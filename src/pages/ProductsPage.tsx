@@ -287,6 +287,32 @@ export default function ProductsPage() {
     setTemplateDialogOpen(true);
   };
 
+  const handleImportFromTemplate = (product: any) => {
+    // Navigate to import page with template product name prefilled
+    const baseName = product.isTemplateGroup ? product.name : product.name;
+    navigate('/import/new', { state: { templateProductName: baseName } });
+  };
+
+  const handleDeleteTemplate = async (product: any) => {
+    if (!confirm(`Bạn có chắc muốn xóa sản phẩm mẫu "${product.name}"${product.isTemplateGroup ? ` và ${product.variantCount} biến thể` : ''}?`)) return;
+    
+    try {
+      if (product.isTemplateGroup && product.childProducts?.length > 0) {
+        // Delete all child variant products
+        const ids = product.childProducts.map((c: any) => c.id);
+        const { error } = await supabase.from('products').delete().in('id', ids);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('products').delete().eq('id', product.id);
+        if (error) throw error;
+      }
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast({ title: 'Đã xóa sản phẩm mẫu' });
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+    }
+  };
+
   const handleExportProducts = () => {
     if (mappedProducts.length === 0) {
       toast({ title: t('pages.products.noData'), description: t('pages.products.noProductsToExport'), variant: 'destructive' });
@@ -512,6 +538,8 @@ export default function ProductsPage() {
           onEdit={handleEdit}
           onPrintBarcode={handlePrintBarcode}
           onDuplicate={handleDuplicate}
+          onImportFromTemplate={handleImportFromTemplate}
+          onDeleteTemplate={handleDeleteTemplate}
         />
         
         {totalCount > 0 && (

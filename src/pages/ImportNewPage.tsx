@@ -40,7 +40,7 @@ import {
 import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen, PlayCircle, Search, Package, ArrowLeft, QrCode, X } from 'lucide-react';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { ImportQRScanner, parseVKHOQR, type VKHOQRData } from '@/components/import/ImportQRScanner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { downloadImportTemplate } from '@/lib/excelTemplates';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
@@ -89,6 +89,7 @@ export default function ImportNewPage() {
   const [tourDismissed, setTourDismissed] = useState(false);
   const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: categories } = useCategories();
   const { data: products } = useProducts();
   const { data: branches } = useBranches();
@@ -162,6 +163,7 @@ export default function ImportNewPage() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+
   const totalAmount = useMemo(
     () => cart.reduce((sum, item) => sum + item.importPrice * item.quantity, 0),
     [cart]
@@ -197,6 +199,18 @@ export default function ImportNewPage() {
       setIsSearching(false);
     }
   }, []);
+
+  // Auto-fill from template product navigation
+  useEffect(() => {
+    const state = location.state as { templateProductName?: string } | null;
+    if (state?.templateProductName) {
+      const name = state.templateProductName;
+      setForm(prev => ({ ...prev, productName: name }));
+      setProductFormMode('form');
+      searchProductsFromDB(name);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, searchProductsFromDB]);
 
   const handleProductNameChange = (value: string) => {
     setForm({ ...form, productName: value });

@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer, Copy, Layers } from 'lucide-react';
+import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer, Copy, Layers, ArrowDownToLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -37,6 +37,8 @@ interface ProductTableProps {
   onEdit: (product: ExtendedProduct) => void;
   onPrintBarcode: (products: ExtendedProduct[]) => void;
   onDuplicate?: (product: ExtendedProduct) => void;
+  onImportFromTemplate?: (product: ExtendedProduct) => void;
+  onDeleteTemplate?: (product: ExtendedProduct) => void;
 }
 
 export function ProductTable({
@@ -46,6 +48,8 @@ export function ProductTable({
   onEdit,
   onPrintBarcode,
   onDuplicate,
+  onImportFromTemplate,
+  onDeleteTemplate,
 }: ProductTableProps) {
   const isMobile = useIsMobile();
   const { data: permissions } = usePermissions();
@@ -193,6 +197,24 @@ export function ProductTable({
                               <Copy className="mr-2 h-4 w-4" />
                               Sao chép sản phẩm mẫu
                             </DropdownMenuItem>
+                          )}
+                          {product.status === 'template' && onImportFromTemplate && (
+                            <DropdownMenuItem onClick={() => onImportFromTemplate(product)}>
+                              <ArrowDownToLine className="mr-2 h-4 w-4" />
+                              Nhập hàng từ mẫu
+                            </DropdownMenuItem>
+                          )}
+                          {product.status === 'template' && onDeleteTemplate && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => onDeleteTemplate(product)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Xóa sản phẩm mẫu
+                              </DropdownMenuItem>
+                            </>
                           )}
                           
                           {/* Super Admin only actions */}
@@ -368,6 +390,24 @@ export function ProductTable({
                           <Copy className="mr-2 h-4 w-4" />
                           Sao chép sản phẩm mẫu
                         </DropdownMenuItem>
+                      )}
+                      {product.status === 'template' && onImportFromTemplate && (
+                        <DropdownMenuItem onClick={() => onImportFromTemplate(product)}>
+                          <ArrowDownToLine className="mr-2 h-4 w-4" />
+                          Nhập hàng từ mẫu
+                        </DropdownMenuItem>
+                      )}
+                      {product.status === 'template' && onDeleteTemplate && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => onDeleteTemplate(product)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Xóa sản phẩm mẫu
+                          </DropdownMenuItem>
+                        </>
                       )}
                       
                       {/* Super Admin only actions */}
