@@ -436,8 +436,14 @@ export function LandingArticlesTab() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditArticle(a)}>
-                        <Edit2 className="h-3.5 w-3.5" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openEditArticle(a)}
+                        disabled={loadingEditArticleId === a.id}
+                      >
+                        {loadingEditArticleId === a.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Edit2 className="h-3.5 w-3.5" />}
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteArticle(a.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
