@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLandingOrders, useLandingOrderStatusCounts, useUpdateLandingOrder, LandingOrder } from '@/hooks/useLandingOrders';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -156,18 +156,14 @@ export function LandingOrdersTab() {
   const { data: staffList } = useStaffList(userBranchId, isSuperAdmin);
 
   const filterBranchId = isSuperAdmin ? null : userBranchId;
-  const { data: orders, isLoading, refetch } = useLandingOrders(filterBranchId);
-  const updateOrder = useUpdateLandingOrder();
-  const searchProducts = useSearchProductsByName();
-  const checkProduct = useCheckProductForSale();
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [deliveryFilter, setDeliveryFilter] = useState<string>('all');
   const [callStatusFilter, setCallStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
-  const [orderPage, setOrderPage] = useState(1);
   const ORDER_PAGE_SIZE = 20;
+  const [serverPage, setServerPage] = useState(1);
   const [cancelDialogOrder, setCancelDialogOrder] = useState<LandingOrder | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [detailOrder, setDetailOrder] = useState<LandingOrder | null>(null);
@@ -176,7 +172,6 @@ export function LandingOrdersTab() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [bulkAssignStaffId, setBulkAssignStaffId] = useState<string>('');
-  
 
   // Product search for "Xác nhận" flow
   const [productSearchOrder, setProductSearchOrder] = useState<LandingOrder | null>(null);
@@ -185,6 +180,24 @@ export function LandingOrdersTab() {
   const [productResults, setProductResults] = useState<any[]>([]);
   const [productSearching, setProductSearching] = useState(false);
 
+  const { data: ordersData, isLoading, refetch } = useLandingOrders({
+    branchId: filterBranchId,
+    status: statusFilter,
+    delivery: deliveryFilter,
+    callStatus: callStatusFilter,
+    source: sourceFilter,
+    search: searchText,
+    page: serverPage,
+    pageSize: ORDER_PAGE_SIZE,
+  });
+  const orders: LandingOrder[] = ordersData?.items || [];
+  const totalCount = ordersData?.totalCount || 0;
+  const { data: statusCountsData } = useLandingOrderStatusCounts(filterBranchId);
+  const statusCounts = statusCountsData || { pending: 0, approved: 0, cancelled: 0 };
+  const updateOrder = useUpdateLandingOrder();
+  const searchProducts = useSearchProductsByName();
+  const checkProduct = useCheckProductForSale();
+
   const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
 
   // Reset page when filters change
@@ -192,31 +205,11 @@ export function LandingOrdersTab() {
   const prevFilterKey = useRef(filteredKey);
   if (prevFilterKey.current !== filteredKey) {
     prevFilterKey.current = filteredKey;
-    if (orderPage !== 1) setOrderPage(1);
+    if (serverPage !== 1) setServerPage(1);
   }
 
-  const filtered = (orders || []).filter(o => {
-    if (statusFilter !== 'all' && o.status !== statusFilter) return false;
-    if (deliveryFilter !== 'all') {
-      if (deliveryFilter === 'not_approved') {
-        if (o.status !== 'pending') return false;
-      } else if (deliveryFilter === 'approved_only') {
-        if (o.status !== 'approved') return false;
-      } else {
-        if (o.delivery_status !== deliveryFilter) return false;
-      }
-    }
-    if (callStatusFilter !== 'all' && o.call_status !== callStatusFilter) return false;
-    if (sourceFilter !== 'all' && (o as any).order_source !== sourceFilter) return false;
-    if (searchText) {
-      const s = searchText.toLowerCase();
-      return o.customer_name.toLowerCase().includes(s) ||
-        o.customer_phone.includes(s) ||
-        o.product_name.toLowerCase().includes(s) ||
-        ((o as any).ctv_name || '').toLowerCase().includes(s);
-    }
-    return true;
-  });
+  // Orders are already server-filtered, just use them directly
+  const filtered: LandingOrder[] = orders;
 
   const handleApprove = async (order: LandingOrder) => {
     try {
@@ -579,10 +572,10 @@ export function LandingOrdersTab() {
         </Select>
       </div>
 
-      {/* Stats */}
+      {/* Stats - use dedicated counts hook */}
       <div className="grid grid-cols-3 gap-3">
         {(['pending', 'approved', 'cancelled'] as const).map(s => {
-          const count = (orders || []).filter(o => o.status === s).length;
+          const count = s === 'pending' ? statusCounts.pending : s === 'approved' ? statusCounts.approved : statusCounts.cancelled;
           const info = STATUS_MAP[s];
           const Icon = info.icon;
           return (
@@ -654,7 +647,7 @@ export function LandingOrdersTab() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginateArray(filtered, orderPage, ORDER_PAGE_SIZE).map(order => {
+                  {filtered.map((order: LandingOrder) => {
                     const st = STATUS_MAP[order.status] || STATUS_MAP.pending;
                     return (
                       <TableRow key={order.id} className="cursor-pointer" onClick={() => setDetailOrder(order)}>
@@ -805,10 +798,10 @@ export function LandingOrdersTab() {
             </div>
             <div className="p-3">
               <ListPagination
-                currentPage={orderPage}
-                totalItems={filtered.length}
+                currentPage={serverPage}
+                totalItems={totalCount}
                 pageSize={ORDER_PAGE_SIZE}
-                onPageChange={setOrderPage}
+                onPageChange={setServerPage}
               />
             </div>
           </Card>
