@@ -347,9 +347,9 @@ export function useLandingOrderStatusCounts(branchId?: string | null) {
         cancelled: cancelledRes.count || 0,
       };
     },
-    staleTime: 30 * 1000,
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
-  });
+    refetchOnMount: false,
 }
 
 // Admin: count pending orders
