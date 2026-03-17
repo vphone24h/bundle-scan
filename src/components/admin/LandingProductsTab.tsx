@@ -716,8 +716,14 @@ export function LandingProductsTab() {
                           <CalendarDays className="h-3.5 w-3.5" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditProduct(p)}>
-                        <Edit2 className="h-3.5 w-3.5" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openEditProduct(p)}
+                        disabled={loadingEditProductId === p.id}
+                      >
+                        {loadingEditProductId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Edit2 className="h-3.5 w-3.5" />}
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteProduct(p.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
