@@ -800,48 +800,90 @@ export default function ReturnsPage() {
           <Card>
             <CardContent className="pt-6">
               {(importLoading || exportLoading) ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {t('pages.returns.loading')}
-                </div>
-              ) : renderGroupedTable(groupedReturns)}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                 <div className="text-center py-8 text-muted-foreground">
+                   {t('pages.returns.loading')}
+                 </div>
+               ) : (
+                 <>
+                   {renderGroupedTable(allPagination.paginatedData)}
+                   <TablePagination
+                     currentPage={allPagination.currentPage}
+                     totalPages={allPagination.totalPages}
+                     pageSize={allPagination.pageSize}
+                     totalItems={allPagination.totalItems}
+                     startIndex={allPagination.startIndex}
+                     endIndex={allPagination.endIndex}
+                     onPageChange={allPagination.setPage}
+                     onPageSizeChange={allPagination.setPageSize}
+                   />
+                 </>
+               )}
+             </CardContent>
+           </Card>
+         </TabsContent>
 
-        {/* Tab: Export Returns */}
-        <TabsContent value="export">
-          <Card>
-            <CardContent className="pt-6">
-              {exportLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {t('pages.returns.loading')}
-                </div>
-              ) : renderGroupedTable(groupedExportReturns)}
-            </CardContent>
-          </Card>
-        </TabsContent>
+         {/* Tab: Export Returns */}
+         <TabsContent value="export">
+           <Card>
+             <CardContent className="pt-6">
+               {exportLoading ? (
+                 <div className="text-center py-8 text-muted-foreground">
+                   {t('pages.returns.loading')}
+                 </div>
+               ) : (
+                 <>
+                   {renderGroupedTable(exportPagination.paginatedData)}
+                   <TablePagination
+                     currentPage={exportPagination.currentPage}
+                     totalPages={exportPagination.totalPages}
+                     pageSize={exportPagination.pageSize}
+                     totalItems={exportPagination.totalItems}
+                     startIndex={exportPagination.startIndex}
+                     endIndex={exportPagination.endIndex}
+                     onPageChange={exportPagination.setPage}
+                     onPageSizeChange={exportPagination.setPageSize}
+                   />
+                 </>
+               )}
+             </CardContent>
+           </Card>
+         </TabsContent>
 
-        {/* Tab: Import Returns */}
-        <TabsContent value="import">
-          <Card>
-            <CardContent className="pt-6">
-              {importLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {t('pages.returns.loading')}
-                </div>
-              ) : renderGroupedTable(groupedImportReturns)}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+         {/* Tab: Import Returns */}
+         <TabsContent value="import">
+           <Card>
+             <CardContent className="pt-6">
+               {importLoading ? (
+                 <div className="text-center py-8 text-muted-foreground">
+                   {t('pages.returns.loading')}
+                 </div>
+               ) : (
+                 <>
+                   {renderGroupedTable(importPagination.paginatedData)}
+                   <TablePagination
+                     currentPage={importPagination.currentPage}
+                     totalPages={importPagination.totalPages}
+                     pageSize={importPagination.pageSize}
+                     totalItems={importPagination.totalItems}
+                     startIndex={importPagination.startIndex}
+                     endIndex={importPagination.endIndex}
+                     onPageChange={importPagination.setPage}
+                     onPageSizeChange={importPagination.setPageSize}
+                   />
+                 </>
+               )}
+             </CardContent>
+           </Card>
+         </TabsContent>
+       </Tabs>
 
-      {/* Detail Dialog */}
-      <ReturnDetailDialog
-        returnItem={selectedReturnItem ? { ...selectedReturnItem, type: selectedReturnItem.returnType } as any : null}
-        open={detailDialogOpen}
-        onOpenChange={setDetailDialogOpen}
-        profiles={profiles}
-      />
+       {/* Detail Dialog */}
+       <ReturnDetailDialog
+         returnItem={selectedReturnItem ? { ...selectedReturnItem, type: selectedReturnItem.returnType } as any : null}
+         open={detailDialogOpen}
+         onOpenChange={setDetailDialogOpen}
+         profiles={profiles}
+       />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
