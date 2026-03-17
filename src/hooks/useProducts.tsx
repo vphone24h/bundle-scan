@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
 import { useBranchFilter } from './useBranchFilter';
+import { usePermissions } from './usePermissions';
 import { useState, useCallback } from 'react';
 
 type ProductStatus = Database['public']['Enums']['product_status'];
@@ -62,14 +63,31 @@ export interface ProductFilters {
  */
 export function useProducts(filters?: ProductFilters) {
   const { user } = useAuth();
-  const { branchId, shouldFilter, isLoading: branchLoading } = useBranchFilter();
+  const { data: permissions, isLoading: permissionsLoading } = usePermissions();
+  const branchId = permissions?.branchId ?? null;
+  const shouldFilter = !permissions?.canViewAllBranches;
 
   const page = filters?.page ?? 1;
   const pageSize = filters?.pageSize ?? 50;
   const hasServerFilters = !!filters;
 
   const result = useQuery({
-    queryKey: ['products', user?.id, branchId, shouldFilter, filters],
+    queryKey: [
+      'products',
+      user?.id,
+      branchId,
+      shouldFilter,
+      filters?.search ?? '',
+      filters?.categoryId ?? '',
+      filters?.supplierId ?? '',
+      filters?.status ?? '',
+      filters?.branchId ?? '',
+      filters?.dateFrom ?? '',
+      filters?.dateTo ?? '',
+      filters?.printedFilter ?? '',
+      page,
+      pageSize,
+    ],
     queryFn: async () => {
       let query = supabase
         .from('products')
@@ -78,7 +96,7 @@ export function useProducts(filters?: ProductFilters) {
           import_date, supplier_id, branch_id, import_receipt_id, status,
           note, quantity, is_printed,
           group_id, variant_1, variant_2, variant_3
-        `, { count: 'exact' })
+        `)
         .in('status', ['in_stock', 'sold', 'returned', 'template'])
         .order('import_date', { ascending: false });
 
@@ -117,24 +135,35 @@ export function useProducts(filters?: ProductFilters) {
         query = query.eq('is_printed', false);
       }
 
-      // Server-side pagination
+      // Server-side pagination (N+1 để tránh count exact chậm)
       if (hasServerFilters) {
         const from = (page - 1) * pageSize;
-        const to = from + pageSize - 1;
+        const to = from + pageSize; // fetch pageSize + 1
         query = query.range(from, to);
       } else {
         // Default: limit to 500 for backward compat (non-paginated consumers)
         query = query.limit(500);
       }
 
-      const { data, error, count } = await query;
+      const { data, error } = await query;
       if (error) throw error;
-      // Return array with totalCount attached
-      const items = (data || []) as Product[];
-      return { items, totalCount: count || 0 };
+
+      const rows = (data || []) as Product[];
+
+      if (hasServerFilters) {
+        const hasMore = rows.length > pageSize;
+        const items = hasMore ? rows.slice(0, pageSize) : rows;
+        const totalCount = hasMore
+          ? (page * pageSize) + 1
+          : ((page - 1) * pageSize) + items.length;
+
+        return { items, totalCount };
+      }
+
+      return { items: rows, totalCount: rows.length };
     },
-    enabled: !!user?.id && !branchLoading,
-    staleTime: 3 * 60 * 1000, // 3 min cache
+    enabled: !!user?.id && !permissionsLoading,
+    staleTime: 5 * 60 * 1000, // 5 min cache
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,

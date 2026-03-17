@@ -39,6 +39,29 @@ export function useSuppliers() {
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
+}
+
+export function useSupplierOptions() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['supplier-options', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('suppliers')
+        .select('id, name')
+        .order('name')
+        .limit(5000);
+
+      if (error) throw error;
+      return (data || []) as Pick<Supplier, 'id' | 'name'>[];
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 

@@ -12,7 +12,7 @@ import { EditProductDialog } from '@/components/import/EditProductDialog';
 import { EditTemplateProductDialog } from '@/components/products/EditTemplateProductDialog';
 import { CreateProductTemplateDialog, ProductTemplateInitialData } from '@/components/products/CreateProductTemplateDialog';
 import { useCategories } from '@/hooks/useCategories';
-import { useSuppliers } from '@/hooks/useSuppliers';
+import { useSupplierOptions } from '@/hooks/useSuppliers';
 import { useBranches } from '@/hooks/useBranches';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -180,7 +180,7 @@ export default function ProductsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: categories } = useCategories();
-  const { data: suppliers } = useSuppliers();
+  const { data: suppliers } = useSupplierOptions();
   const { data: branches } = useBranches();
   
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -208,13 +208,10 @@ export default function ProductsPage() {
   // Server-side pagination
   const serverPagination = useServerPagination(50);
 
-  // Reset to page 1 when filters change
-  const filterKey = `${debouncedSearch}|${dateFrom}|${dateTo}|${categoryFilter}|${supplierFilter}|${statusFilter}|${branchFilter}|${printedFilter}`;
-  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
-  if (filterKey !== prevFilterKey) {
-    setPrevFilterKey(filterKey);
+  // Reset to page 1 when filters change (tránh setState trong render gây re-render loop)
+  useEffect(() => {
     serverPagination.setPage(1);
-  }
+  }, [debouncedSearch, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter, printedFilter, serverPagination.setPage]);
 
   // Build server-side filters
   const serverFilters = useMemo(() => ({
@@ -233,9 +230,9 @@ export default function ProductsPage() {
   const { data: products, isLoading, isFetching, totalCount } = useProducts(serverFilters);
   const isFirstLoad = isLoading && !products?.length;
 
-  const categoryMap = useMemo(() => new Map((categories || []).map(c => [c.id, c.name])), [categories]);
-  const supplierMap = useMemo(() => new Map((suppliers || []).map(s => [s.id, s.name])), [suppliers]);
-  const branchMap = useMemo(() => new Map((branches || []).map(b => [b.id, b.name])), [branches]);
+  const categoryMap = useMemo(() => new Map<string, string>((categories || []).map(c => [c.id, c.name])), [categories]);
+  const supplierMap = useMemo(() => new Map<string, string>((suppliers || []).map(s => [s.id, s.name])), [suppliers]);
+  const branchMap = useMemo(() => new Map<string, string>((branches || []).map(b => [b.id, b.name])), [branches]);
 
   const mappedProducts = useMemo(() => {
     const mapped = products?.map(p => mapProductForTable(p, categoryMap, supplierMap, branchMap)) || [];
