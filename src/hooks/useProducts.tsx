@@ -69,7 +69,7 @@ export function useProducts(filters?: ProductFilters) {
   const hasServerFilters = !!filters;
 
   const result = useQuery({
-    queryKey: ['products', user?.id, branchId, filters],
+    queryKey: ['products', user?.id, branchId, shouldFilter, filters],
     queryFn: async () => {
       let query = supabase
         .from('products')
