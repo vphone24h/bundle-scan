@@ -350,7 +350,7 @@ export function useLandingOrderStatusCounts(branchId?: string | null) {
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
-}
+  });
 
 // Admin: count pending orders
 export function usePendingOrderCount() {
