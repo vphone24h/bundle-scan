@@ -156,7 +156,30 @@ export function LandingOrdersTab() {
   const { data: staffList } = useStaffList(userBranchId, isSuperAdmin);
 
   const filterBranchId = isSuperAdmin ? null : userBranchId;
+
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [deliveryFilter, setDeliveryFilter] = useState<string>('all');
+  const [callStatusFilter, setCallStatusFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [searchText, setSearchText] = useState('');
+  const ORDER_PAGE_SIZE = 20;
   const [serverPage, setServerPage] = useState(1);
+  const [cancelDialogOrder, setCancelDialogOrder] = useState<LandingOrder | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [detailOrder, setDetailOrder] = useState<LandingOrder | null>(null);
+  const [assignDialogOrder, setAssignDialogOrder] = useState<LandingOrder | null>(null);
+  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [bulkAssignStaffId, setBulkAssignStaffId] = useState<string>('');
+
+  // Product search for "Xác nhận" flow
+  const [productSearchOrder, setProductSearchOrder] = useState<LandingOrder | null>(null);
+  const [productSearchText, setProductSearchText] = useState('');
+  const [productImeiSearch, setProductImeiSearch] = useState('');
+  const [productResults, setProductResults] = useState<any[]>([]);
+  const [productSearching, setProductSearching] = useState(false);
+
   const { data: ordersData, isLoading, refetch } = useLandingOrders({
     branchId: filterBranchId,
     status: statusFilter,
@@ -172,30 +195,6 @@ export function LandingOrdersTab() {
   const updateOrder = useUpdateLandingOrder();
   const searchProducts = useSearchProductsByName();
   const checkProduct = useCheckProductForSale();
-
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [deliveryFilter, setDeliveryFilter] = useState<string>('all');
-  const [callStatusFilter, setCallStatusFilter] = useState<string>('all');
-  const [sourceFilter, setSourceFilter] = useState<string>('all');
-  const [searchText, setSearchText] = useState('');
-  const [orderPage, setOrderPage] = useState(1);
-  const ORDER_PAGE_SIZE = 20;
-  const [cancelDialogOrder, setCancelDialogOrder] = useState<LandingOrder | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
-  const [detailOrder, setDetailOrder] = useState<LandingOrder | null>(null);
-  const [assignDialogOrder, setAssignDialogOrder] = useState<LandingOrder | null>(null);
-  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
-  const [bulkAssignStaffId, setBulkAssignStaffId] = useState<string>('');
-  
-
-  // Product search for "Xác nhận" flow
-  const [productSearchOrder, setProductSearchOrder] = useState<LandingOrder | null>(null);
-  const [productSearchText, setProductSearchText] = useState('');
-  const [productImeiSearch, setProductImeiSearch] = useState('');
-  const [productResults, setProductResults] = useState<any[]>([]);
-  const [productSearching, setProductSearching] = useState(false);
 
   const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
 
