@@ -186,6 +186,7 @@ export default function ProductsPage() {
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [productsForBarcode, setProductsForBarcode] = useState<any[]>([]);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [editTemplateProduct, setEditTemplateProduct] = useState<any>(null);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [templateInitialData, setTemplateInitialData] = useState<ProductTemplateInitialData | null>(null);
   
