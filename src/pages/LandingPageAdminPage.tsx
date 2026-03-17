@@ -135,12 +135,13 @@ export default function LandingPageAdminPage() {
     return <Navigate to="/" replace />;
   }
 
-  const showSettings = isSuperAdmin;
-  const showProducts = isSuperAdmin || isBranchAdmin || isStaff;
+  // Show all tabs immediately while permissions load to avoid blank page flash
+  const showSettings = isLoading || isSuperAdmin;
+  const showProducts = isLoading || isSuperAdmin || isBranchAdmin || isStaff;
   const showArticles = true;
   const showOrders = true;
 
-  const defaultTab = isSuperAdmin ? 'settings' : (isStaff ? 'products' : 'articles');
+  const defaultTab = (isLoading || isSuperAdmin) ? 'settings' : (isStaff ? 'products' : 'articles');
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || defaultTab;
 
