@@ -491,7 +491,7 @@ export function LandingArticlesTab() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-popover">
                   <SelectItem value="_none_">— Không (danh mục gốc) —</SelectItem>
-                  {flatCategoriesForSelect()
+                  {flatCategoriesForSelect
                     .filter(c => c.id !== editingCat?.id)
                     .map(c => (
                       <SelectItem key={c.id} value={c.id}>
