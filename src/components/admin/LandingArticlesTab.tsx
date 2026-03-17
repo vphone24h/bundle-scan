@@ -267,14 +267,32 @@ export function LandingArticlesTab() {
     setArticleDialog(true);
   };
 
-  const openEditArticle = (a: LandingArticle) => {
-    setEditingArticle(a);
-    setForm({
-      title: a.title, summary: a.summary || '', content: a.content || '',
-      category_id: a.category_id || '_none_', thumbnail_url: a.thumbnail_url || '',
-      is_published: a.is_published, is_featured: a.is_featured, is_featured_home: a.is_featured_home,
-    });
-    setArticleDialog(true);
+  const openEditArticle = async (a: LandingArticle) => {
+    try {
+      setLoadingEditArticleId(a.id);
+      const detail = await getLandingArticleById(a.id);
+      if (!detail) {
+        toast({ title: 'Không tìm thấy bài viết', variant: 'destructive' });
+        return;
+      }
+
+      setEditingArticle(detail);
+      setForm({
+        title: detail.title,
+        summary: detail.summary || '',
+        content: detail.content || '',
+        category_id: detail.category_id || '_none_',
+        thumbnail_url: detail.thumbnail_url || '',
+        is_published: detail.is_published,
+        is_featured: detail.is_featured,
+        is_featured_home: detail.is_featured_home,
+      });
+      setArticleDialog(true);
+    } catch (e: any) {
+      toast({ title: 'Lỗi tải bài viết', description: e.message, variant: 'destructive' });
+    } finally {
+      setLoadingEditArticleId(null);
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
