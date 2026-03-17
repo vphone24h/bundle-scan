@@ -255,8 +255,30 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     setAiStep('step1_desc');
 
     const selectedItems = (inventory || []).filter(i => selected.has(i.productId));
-    setTotalSteps(selectedItems.length);
     const results: ProductAIResult[] = [];
+
+    // Group items by groupId
+    const groupedMap = new Map<string, InventoryItem[]>();
+    const standaloneItems: InventoryItem[] = [];
+    for (const item of selectedItems) {
+      if (item.groupId) {
+        const arr = groupedMap.get(item.groupId) || [];
+        arr.push(item);
+        groupedMap.set(item.groupId, arr);
+      } else {
+        standaloneItems.push(item);
+      }
+    }
+
+    const tasks: { name: string; items: InventoryItem[]; groupId: string | null }[] = [];
+    for (const [groupId, items] of groupedMap) {
+      tasks.push({ name: getBaseName(items), items, groupId });
+    }
+    for (const item of standaloneItems) {
+      tasks.push({ name: item.productName, items: [item], groupId: null });
+    }
+
+    setTotalSteps(tasks.length);
 
     // Pre-resolve categories
     const categoryMap = new Map<string, string | null>();
@@ -267,24 +289,29 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
       }
     }
 
-    for (let idx = 0; idx < selectedItems.length; idx++) {
-      const item = selectedItems[idx];
+    for (let idx = 0; idx < tasks.length; idx++) {
+      const task = tasks[idx];
+      const firstItem = task.items[0];
       setCurrentStepIdx(idx + 1);
-      setAiProgress(`Bước 1: AI đang xác minh & viết mô tả ${idx + 1}/${selectedItems.length}: ${item.productName}`);
+      setAiProgress(`Bước 1: AI đang xác minh & viết mô tả ${idx + 1}/${tasks.length}: ${task.name}`);
 
       try {
-        // products array is empty from RPC summary, use avgImportPrice directly  
-        const firstProduct = item.products[0];
+        const firstProduct = firstItem.products[0];
         let salePrice: number | null = null;
         if (firstProduct) {
           salePrice = await getSalePrice(firstProduct.id);
         }
-        const finalPrice = Math.round(salePrice || item.avgImportPrice || 0);
-        const aiContent = await generateAIDescription(item);
-        const landingCategoryId = item.categoryId ? (categoryMap.get(item.categoryId) ?? null) : null;
+        const finalPrice = Math.round(salePrice || firstItem.avgImportPrice || 0);
+        const aiContent = await generateAIDescription(firstItem);
+        const landingCategoryId = firstItem.categoryId ? (categoryMap.get(firstItem.categoryId) ?? null) : null;
 
-        // Use verified name from AI if available
-        const displayName = aiContent?.verified_name || item.productName;
+        const displayName = aiContent?.verified_name || task.name;
+
+        // Build variant data if grouped
+        let variantData = {};
+        if (task.groupId && task.items.length > 1) {
+          variantData = await buildVariantData(task.items, task.groupId);
+        }
 
         const created = await createProduct.mutateAsync({
           name: displayName,
@@ -297,10 +324,11 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
           is_featured: false,
           is_active: true,
           variants: [],
+          ...variantData,
         });
 
         results.push({
-          productId: item.productId,
+          productId: firstItem.productId,
           productName: displayName,
           description: aiContent?.description || null,
           images: [],
@@ -311,10 +339,10 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
           brand: aiContent?.brand,
         });
       } catch (e: any) {
-        console.error(`Error step1 ${item.productName}:`, e);
+        console.error(`Error step1 ${task.name}:`, e);
         results.push({
-          productId: item.productId,
-          productName: item.productName,
+          productId: firstItem.productId,
+          productName: task.name,
           description: null,
           images: [],
         });
