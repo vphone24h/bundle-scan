@@ -37,6 +37,8 @@ interface ProductTableProps {
   onEdit: (product: ExtendedProduct) => void;
   onPrintBarcode: (products: ExtendedProduct[]) => void;
   onDuplicate?: (product: ExtendedProduct) => void;
+  onImportFromTemplate?: (product: ExtendedProduct) => void;
+  onDeleteTemplate?: (product: ExtendedProduct) => void;
 }
 
 export function ProductTable({
