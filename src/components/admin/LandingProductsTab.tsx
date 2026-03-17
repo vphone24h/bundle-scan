@@ -519,10 +519,6 @@ export function LandingProductsTab() {
     await reorderProds.mutateAsync(updates);
   };
 
-  if (catLoading || prodLoading) {
-    return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  }
-
   return (
     <div className="space-y-6">
       {/* Hidden input for category cover image */}
