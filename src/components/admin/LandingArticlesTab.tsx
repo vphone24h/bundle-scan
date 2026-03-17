@@ -348,7 +348,7 @@ export function LandingArticlesTab() {
   };
 
   // Get all categories flat for selects (with indentation)
-  const flatCategoriesForSelect = useCallback((): { id: string; name: string; level: number }[] => {
+  const flatCategoriesForSelect = useMemo((): { id: string; name: string; level: number }[] => {
     const result: { id: string; name: string; level: number }[] = [];
     const traverse = (nodes: LandingArticleCategory[], level: number) => {
       nodes.forEach(n => {
@@ -359,6 +359,11 @@ export function LandingArticlesTab() {
     traverse(tree, 0);
     return result;
   }, [tree]);
+
+  const pagedArticles = useMemo(
+    () => paginateArray(articles || [], articlePage, ARTICLE_PAGE_SIZE),
+    [articles, articlePage]
+  );
 
   return (
     <div className="space-y-6">
