@@ -373,6 +373,7 @@ export default function ProductsPage() {
                         <SelectItem value="in_stock">{t('pages.products.inStock')}</SelectItem>
                         <SelectItem value="sold">{t('pages.products.sold')}</SelectItem>
                         <SelectItem value="returned">{t('pages.products.returned')}</SelectItem>
+                        <SelectItem value="template">Sản phẩm mẫu</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
