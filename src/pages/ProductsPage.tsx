@@ -8,6 +8,7 @@ import { useProducts, useServerPagination, Product } from '@/hooks/useProducts';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { EditProductDialog } from '@/components/import/EditProductDialog';
+import { EditTemplateProductDialog } from '@/components/products/EditTemplateProductDialog';
 import { CreateProductTemplateDialog, ProductTemplateInitialData } from '@/components/products/CreateProductTemplateDialog';
 import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
