@@ -187,7 +187,7 @@ const LANDING_PRODUCT_LIST_SELECT = `
 
 export function useLandingProducts(tenantId?: string | null) {
   return useQuery({
-    queryKey: ['landing-products', tenantId],
+    queryKey: ['landing-products', tenantId ?? '_auto_'],
     queryFn: async () => {
       let tid = tenantId;
       if (!tid) {
@@ -204,7 +204,6 @@ export function useLandingProducts(tenantId?: string | null) {
       if (error) throw error;
       return data as unknown as LandingProduct[];
     },
-    enabled: tenantId !== null,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
