@@ -76,7 +76,7 @@ export function useProducts(filters?: ProductFilters) {
         .select(`
           id, name, sku, imei, category_id, sale_price, import_price,
           import_date, supplier_id, branch_id, import_receipt_id, status,
-          note, quantity, total_import_cost, is_printed, created_at, updated_at,
+          note, quantity, is_printed,
           group_id, variant_1, variant_2, variant_3
         `, { count: 'exact' })
         .in('status', ['in_stock', 'sold', 'returned', 'template'])
