@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLandingOrders, useLandingOrderStatusCounts, useUpdateLandingOrder, LandingOrder } from '@/hooks/useLandingOrders';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -20,7 +20,7 @@ import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
+import { ListPagination } from '@/components/ui/list-pagination';
 import { useQuery } from '@tanstack/react-query';
 
 
@@ -198,6 +198,7 @@ export function LandingOrdersTab() {
     pageSize: ORDER_PAGE_SIZE,
   });
   const orders: LandingOrder[] = ordersData?.items || [];
+  const hasMore = ordersData?.hasMore || false;
   const totalCount = ordersData?.totalCount || 0;
   const { data: statusCountsData } = useLandingOrderStatusCounts(filterBranchId);
   const statusCounts = statusCountsData || { pending: 0, approved: 0, cancelled: 0 };
@@ -205,18 +206,19 @@ export function LandingOrdersTab() {
   const searchProducts = useSearchProductsByName();
   const checkProduct = useCheckProductForSale();
 
-  const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
+  const branchMap = useMemo(() => new Map((branches || []).map(b => [b.id, b.name])), [branches]);
 
   // Reset page when filters change
-  const filteredKey = `${statusFilter}-${deliveryFilter}-${callStatusFilter}-${sourceFilter}-${debouncedSearch}`;
-  const prevFilterKey = useRef(filteredKey);
-  if (prevFilterKey.current !== filteredKey) {
-    prevFilterKey.current = filteredKey;
+  useEffect(() => {
     if (serverPage !== 1) setServerPage(1);
-  }
+  }, [statusFilter, deliveryFilter, callStatusFilter, sourceFilter, debouncedSearch]);
 
   // Orders are already server-filtered, just use them directly
   const filtered: LandingOrder[] = orders;
+  const selectableOrders = useMemo(
+    () => filtered.filter(o => o.status !== 'cancelled'),
+    [filtered]
+  );
 
   const handleApprove = async (order: LandingOrder) => {
     try {
@@ -379,9 +381,7 @@ export function LandingOrdersTab() {
   };
 
   const toggleSelectAll = () => {
-    const eligibleIds = filtered
-      .filter(o => o.status !== 'cancelled')
-      .map(o => o.id);
+    const eligibleIds = selectableOrders.map(o => o.id);
     if (selectedIds.size === eligibleIds.length && eligibleIds.every(id => selectedIds.has(id))) {
       setSelectedIds(new Set());
     } else {
@@ -639,7 +639,7 @@ export function LandingOrdersTab() {
                   <TableRow>
                     <TableHead className="w-10">
                       <Checkbox
-                        checked={filtered.filter(o => o.status !== 'cancelled').length > 0 && filtered.filter(o => o.status !== 'cancelled').every(o => selectedIds.has(o.id))}
+                        checked={selectableOrders.length > 0 && selectableOrders.every(o => selectedIds.has(o.id))}
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>
@@ -812,6 +812,7 @@ export function LandingOrdersTab() {
                 totalItems={totalCount}
                 pageSize={ORDER_PAGE_SIZE}
                 onPageChange={setServerPage}
+                hasMore={hasMore}
               />
             </div>
           </Card>
