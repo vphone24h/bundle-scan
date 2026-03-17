@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import {
   useLandingArticleCategories,
   useCreateLandingArticleCategory,
@@ -27,15 +27,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from '@/hooks/use-toast';
 import {
   Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, FileText,
-  ChevronDown, ChevronRight, Eye, EyeOff, GripVertical, FolderOpen, Folder,
+  ChevronDown, ChevronRight, Eye, EyeOff, FolderOpen, Folder,
   Image as ImageIcon, Home, Star,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
+
+const LazyRichTextEditor = lazy(() =>
+  import('@/components/ui/rich-text-editor').then((m) => ({ default: m.RichTextEditor }))
+);
 
 // ─── Category Tree Node ───
 function CategoryNode({
