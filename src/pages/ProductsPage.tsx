@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle, AlertCircle } from 'lucide-react';
+import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle, AlertCircle, Package } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
