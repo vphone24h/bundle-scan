@@ -175,6 +175,12 @@ export function useReorderLandingProducts() {
   });
 }
 
+const LANDING_PRODUCT_LIST_SELECT = `
+  id, tenant_id, category_id, name, price, sale_price,
+  image_url, images, is_featured, is_active, is_sold_out,
+  display_order, created_at, updated_at
+`;
+
 export function useLandingProducts() {
   return useQuery({
     queryKey: ['landing-products'],
@@ -183,14 +189,33 @@ export function useLandingProducts() {
       if (!tenantId) return [];
       const { data, error } = await supabase
         .from('landing_products' as any)
-        .select('*')
+        .select(LANDING_PRODUCT_LIST_SELECT)
         .eq('tenant_id', tenantId)
         .order('display_order', { ascending: true })
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as unknown as LandingProduct[];
     },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
+}
+
+export async function getLandingProductById(id: string): Promise<LandingProduct | null> {
+  const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+  if (!tenantId) return null;
+
+  const { data, error } = await supabase
+    .from('landing_products' as any)
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as LandingProduct | null) ?? null;
 }
 
 export function useCreateLandingProduct() {
