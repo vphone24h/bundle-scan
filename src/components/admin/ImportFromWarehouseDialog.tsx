@@ -382,6 +382,29 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     const selectedItems = (inventory || []).filter(i => selected.has(i.productId));
     let successCount = 0;
 
+    // Group items by groupId to merge variants into one landing product
+    const groupedMap = new Map<string, InventoryItem[]>();
+    const standaloneItems: InventoryItem[] = [];
+    for (const item of selectedItems) {
+      if (item.groupId) {
+        const arr = groupedMap.get(item.groupId) || [];
+        arr.push(item);
+        groupedMap.set(item.groupId, arr);
+      } else {
+        standaloneItems.push(item);
+      }
+    }
+
+    // Build tasks: each group becomes one product, standalone items are individual
+    const tasks: { name: string; items: InventoryItem[]; groupId: string | null }[] = [];
+    for (const [groupId, items] of groupedMap) {
+      const baseName = getBaseName(items);
+      tasks.push({ name: baseName, items, groupId });
+    }
+    for (const item of standaloneItems) {
+      tasks.push({ name: item.productName, items: [item], groupId: null });
+    }
+
     const categoryMap = new Map<string, string | null>();
     for (const item of selectedItems) {
       if (item.categoryId && !categoryMap.has(item.categoryId)) {
@@ -391,22 +414,28 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     }
 
     const errorMessages: string[] = [];
-    for (let idx = 0; idx < selectedItems.length; idx++) {
-      const item = selectedItems[idx];
-      setAiProgress(`Đang thêm ${idx + 1}/${selectedItems.length}: ${item.productName}`);
+    for (let idx = 0; idx < tasks.length; idx++) {
+      const task = tasks[idx];
+      setAiProgress(`Đang thêm ${idx + 1}/${tasks.length}: ${task.name}`);
 
       try {
-        // products array is empty from RPC summary, use avgImportPrice directly
-        const firstProduct = item.products[0];
+        const firstItem = task.items[0];
+        const firstProduct = firstItem.products[0];
         let salePrice: number | null = null;
         if (firstProduct) {
           salePrice = await getSalePrice(firstProduct.id);
         }
-        const finalPrice = salePrice || item.avgImportPrice || 0;
-        const landingCategoryId = item.categoryId ? (categoryMap.get(item.categoryId) ?? null) : null;
+        const finalPrice = salePrice || firstItem.avgImportPrice || 0;
+        const landingCategoryId = firstItem.categoryId ? (categoryMap.get(firstItem.categoryId) ?? null) : null;
+
+        // Build variant data if grouped
+        let variantData = {};
+        if (task.groupId && task.items.length > 1) {
+          variantData = await buildVariantData(task.items, task.groupId);
+        }
 
         await createProduct.mutateAsync({
-          name: item.productName,
+          name: task.name,
           description: null,
           price: Math.round(finalPrice),
           sale_price: null,
@@ -416,12 +445,13 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
           is_featured: false,
           is_active: true,
           variants: [],
+          ...variantData,
         });
         successCount++;
       } catch (e: any) {
         const msg = e?.message || String(e);
-        console.error(`Error importing ${item.productName}:`, e);
-        errorMessages.push(`${item.productName}: ${msg}`);
+        console.error(`Error importing ${task.name}:`, e);
+        errorMessages.push(`${task.name}: ${msg}`);
       }
     }
 
@@ -431,8 +461,8 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     onOpenChange(false);
     toast({
       title: `Đã đưa ${successCount} sản phẩm lên website`,
-      description: successCount < selectedItems.length
-        ? `${selectedItems.length - successCount} sản phẩm lỗi${errorMessages.length ? ': ' + errorMessages.join('; ') : ''}`
+      description: successCount < tasks.length
+        ? `${tasks.length - successCount} sản phẩm lỗi${errorMessages.length ? ': ' + errorMessages.join('; ') : ''}`
         : undefined,
     });
   };
