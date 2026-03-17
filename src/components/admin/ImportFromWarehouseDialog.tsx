@@ -790,7 +790,7 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
             <div className="flex flex-col w-full gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">
-                  Đã chọn: {selected.size} sản phẩm
+                  Đã chọn: {selectedGroupCount} sản phẩm
                 </span>
                 <Button variant="outline" onClick={handleClose} disabled={importing} size="sm">
                   Huỷ
