@@ -34,7 +34,7 @@ export interface LandingArticle {
 // Admin hooks - accept tenantId to avoid redundant RPC calls
 export function useLandingArticleCategories(tenantId?: string | null) {
   return useQuery({
-    queryKey: ['landing-article-categories', tenantId],
+    queryKey: ['landing-article-categories', tenantId ?? '_auto_'],
     queryFn: async () => {
       // Use passed tenantId or fallback to RPC
       let tid = tenantId;
