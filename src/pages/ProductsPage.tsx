@@ -83,7 +83,7 @@ function mapProductForTable(product: Product) {
     supplierName: product.suppliers?.name,
     branchId: product.branch_id || '',
     branchName: product.branches?.name,
-    status: product.status as 'in_stock' | 'sold' | 'returned',
+    status: product.status as 'in_stock' | 'sold' | 'returned' | 'template',
     note: product.note || undefined,
     importReceiptId: product.import_receipt_id || undefined,
     quantity: product.quantity || 1,
