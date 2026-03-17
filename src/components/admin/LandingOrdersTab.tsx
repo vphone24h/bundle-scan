@@ -162,6 +162,7 @@ export function LandingOrdersTab() {
   const [callStatusFilter, setCallStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const ORDER_PAGE_SIZE = 20;
   const [serverPage, setServerPage] = useState(1);
   const [cancelDialogOrder, setCancelDialogOrder] = useState<LandingOrder | null>(null);
@@ -180,13 +181,19 @@ export function LandingOrdersTab() {
   const [productResults, setProductResults] = useState<any[]>([]);
   const [productSearching, setProductSearching] = useState(false);
 
-  const { data: ordersData, isLoading, refetch } = useLandingOrders({
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchText), 300);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  const { data: ordersData, isLoading, isFetching, refetch } = useLandingOrders({
     branchId: filterBranchId,
     status: statusFilter,
     delivery: deliveryFilter,
     callStatus: callStatusFilter,
     source: sourceFilter,
-    search: searchText,
+    search: debouncedSearch,
     page: serverPage,
     pageSize: ORDER_PAGE_SIZE,
   });
@@ -201,7 +208,7 @@ export function LandingOrdersTab() {
   const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
 
   // Reset page when filters change
-  const filteredKey = `${statusFilter}-${deliveryFilter}-${callStatusFilter}-${sourceFilter}-${searchText}`;
+  const filteredKey = `${statusFilter}-${deliveryFilter}-${callStatusFilter}-${sourceFilter}-${debouncedSearch}`;
   const prevFilterKey = useRef(filteredKey);
   if (prevFilterKey.current !== filteredKey) {
     prevFilterKey.current = filteredKey;
@@ -515,9 +522,12 @@ export function LandingOrdersTab() {
     }
   };
 
-  if (isLoading) {
+  const isFirstLoad = isLoading && !ordersData;
+  if (isFirstLoad) {
     return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
+
+  const isTransitioning = isFetching && !isLoading;
 
   return (
     <div className="space-y-4">
@@ -593,13 +603,13 @@ export function LandingOrdersTab() {
       </div>
 
       {/* Orders table */}
-      {filtered.length === 0 ? (
+      {filtered.length === 0 && !isFetching ? (
         <div className="text-center py-12 text-muted-foreground">
           <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
           <p>Chưa có đơn đặt hàng nào</p>
         </div>
       ) : (
-        <>
+        <div className={isTransitioning ? 'opacity-50 pointer-events-none transition-opacity' : 'transition-opacity'}>
           {/* Bulk action bar */}
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-lg flex-wrap">
@@ -805,7 +815,7 @@ export function LandingOrdersTab() {
               />
             </div>
           </Card>
-        </>
+        </div>
       )}
 
       {/* Cancel dialog */}
