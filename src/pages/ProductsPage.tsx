@@ -593,16 +593,24 @@ export default function ProductsPage() {
           )}
         </div>
 
-        <ProductTable
-          products={mappedProducts}
-          selectedProducts={selectedProducts}
-          onSelectionChange={setSelectedProducts}
-          onEdit={handleEdit}
-          onPrintBarcode={handlePrintBarcode}
-          onDuplicate={handleDuplicate}
-          onImportFromTemplate={handleImportFromTemplate}
-          onDeleteTemplate={handleDeleteTemplate}
-        />
+        {isFirstLoad ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className={cn(isFetching && !isFirstLoad && 'opacity-60 pointer-events-none transition-opacity')}>
+            <ProductTable
+              products={mappedProducts}
+              selectedProducts={selectedProducts}
+              onSelectionChange={setSelectedProducts}
+              onEdit={handleEdit}
+              onPrintBarcode={handlePrintBarcode}
+              onDuplicate={handleDuplicate}
+              onImportFromTemplate={handleImportFromTemplate}
+              onDeleteTemplate={handleDeleteTemplate}
+            />
+          </div>
+        )}
         
         {totalCount > 0 && (
           <TablePagination
