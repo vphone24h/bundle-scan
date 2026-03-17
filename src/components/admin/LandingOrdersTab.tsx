@@ -381,9 +381,7 @@ export function LandingOrdersTab() {
   };
 
   const toggleSelectAll = () => {
-    const eligibleIds = filtered
-      .filter(o => o.status !== 'cancelled')
-      .map(o => o.id);
+    const eligibleIds = selectableOrders.map(o => o.id);
     if (selectedIds.size === eligibleIds.length && eligibleIds.every(id => selectedIds.has(id))) {
       setSelectedIds(new Set());
     } else {
