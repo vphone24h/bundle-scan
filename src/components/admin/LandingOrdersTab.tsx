@@ -812,6 +812,7 @@ export function LandingOrdersTab() {
                 totalItems={totalCount}
                 pageSize={ORDER_PAGE_SIZE}
                 onPageChange={setServerPage}
+                hasMore={hasMore}
               />
             </div>
           </Card>
