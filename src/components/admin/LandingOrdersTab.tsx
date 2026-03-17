@@ -156,7 +156,19 @@ export function LandingOrdersTab() {
   const { data: staffList } = useStaffList(userBranchId, isSuperAdmin);
 
   const filterBranchId = isSuperAdmin ? null : userBranchId;
-  const { data: orders, isLoading, refetch } = useLandingOrders(filterBranchId);
+  const [serverPage, setServerPage] = useState(1);
+  const { data: ordersData, isLoading, refetch } = useLandingOrders({
+    branchId: filterBranchId,
+    status: statusFilter,
+    delivery: deliveryFilter,
+    callStatus: callStatusFilter,
+    source: sourceFilter,
+    search: searchText,
+    page: serverPage,
+    pageSize: ORDER_PAGE_SIZE,
+  });
+  const orders: LandingOrder[] = ordersData?.items || [];
+  const totalCount = ordersData?.totalCount || 0;
   const updateOrder = useUpdateLandingOrder();
   const searchProducts = useSearchProductsByName();
   const checkProduct = useCheckProductForSale();
