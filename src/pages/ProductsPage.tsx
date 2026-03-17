@@ -229,7 +229,8 @@ export default function ProductsPage() {
     pageSize: serverPagination.pageSize,
   }), [debouncedSearch, categoryFilter, supplierFilter, statusFilter, branchFilter, dateFrom, dateTo, printedFilter, serverPagination.page, serverPagination.pageSize]);
 
-  const { data: products, isLoading, totalCount } = useProducts(serverFilters);
+  const { data: products, isLoading, isFetching, totalCount } = useProducts(serverFilters);
+  const isFirstLoad = isLoading && !products?.length;
 
   const mappedProducts = useMemo(() => {
     const mapped = products?.map(mapProductForTable) || [];
