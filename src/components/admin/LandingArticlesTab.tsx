@@ -11,6 +11,7 @@ import {
   useDeleteLandingArticle,
   uploadLandingArticleImage,
   buildArticleCategoryTree,
+  getLandingArticleById,
   LandingArticle,
   LandingArticleCategory,
 } from '@/hooks/useLandingArticles';
@@ -151,6 +152,7 @@ export function LandingArticlesTab() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [articlePage, setArticlePage] = useState(1);
   const ARTICLE_PAGE_SIZE = 20;
+  const [loadingEditArticleId, setLoadingEditArticleId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: '', summary: '', content: '', category_id: '_none_',
     thumbnail_url: '', is_published: false, is_featured: false, is_featured_home: false,
@@ -265,14 +267,32 @@ export function LandingArticlesTab() {
     setArticleDialog(true);
   };
 
-  const openEditArticle = (a: LandingArticle) => {
-    setEditingArticle(a);
-    setForm({
-      title: a.title, summary: a.summary || '', content: a.content || '',
-      category_id: a.category_id || '_none_', thumbnail_url: a.thumbnail_url || '',
-      is_published: a.is_published, is_featured: a.is_featured, is_featured_home: a.is_featured_home,
-    });
-    setArticleDialog(true);
+  const openEditArticle = async (a: LandingArticle) => {
+    try {
+      setLoadingEditArticleId(a.id);
+      const detail = await getLandingArticleById(a.id);
+      if (!detail) {
+        toast({ title: 'Không tìm thấy bài viết', variant: 'destructive' });
+        return;
+      }
+
+      setEditingArticle(detail);
+      setForm({
+        title: detail.title,
+        summary: detail.summary || '',
+        content: detail.content || '',
+        category_id: detail.category_id || '_none_',
+        thumbnail_url: detail.thumbnail_url || '',
+        is_published: detail.is_published,
+        is_featured: detail.is_featured,
+        is_featured_home: detail.is_featured_home,
+      });
+      setArticleDialog(true);
+    } catch (e: any) {
+      toast({ title: 'Lỗi tải bài viết', description: e.message, variant: 'destructive' });
+    } finally {
+      setLoadingEditArticleId(null);
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -336,10 +356,6 @@ export function LandingArticlesTab() {
     return result;
   }, [tree]);
 
-  if (catLoading || artLoading) {
-    return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  }
-
   return (
     <div className="space-y-6">
       {/* Danh mục bài viết */}
@@ -356,7 +372,9 @@ export function LandingArticlesTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {tree.length > 0 ? (
+          {catLoading ? (
+            <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : tree.length > 0 ? (
             <div className="space-y-0.5">
               {tree.map((cat, idx) => (
                 <CategoryNode
@@ -394,7 +412,9 @@ export function LandingArticlesTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {articles && articles.length > 0 ? (
+          {artLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : articles && articles.length > 0 ? (
             <>
               <div className="space-y-2">
                 {paginateArray(articles, articlePage, ARTICLE_PAGE_SIZE).map(a => (
@@ -416,8 +436,14 @@ export function LandingArticlesTab() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditArticle(a)}>
-                        <Edit2 className="h-3.5 w-3.5" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openEditArticle(a)}
+                        disabled={loadingEditArticleId === a.id}
+                      >
+                        {loadingEditArticleId === a.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Edit2 className="h-3.5 w-3.5" />}
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteArticle(a.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
