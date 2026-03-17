@@ -113,6 +113,12 @@ export function useBatchUpdateCategoryOrder() {
   });
 }
 
+const LANDING_ARTICLE_LIST_SELECT = `
+  id, tenant_id, category_id, title, slug, summary,
+  thumbnail_url, is_published, is_featured, is_featured_home,
+  display_order, created_at, updated_at
+`;
+
 export function useLandingArticles() {
   return useQuery({
     queryKey: ['landing-articles'],
@@ -121,14 +127,33 @@ export function useLandingArticles() {
       if (!tenantId) return [];
       const { data, error } = await supabase
         .from('landing_articles' as any)
-        .select('*')
+        .select(LANDING_ARTICLE_LIST_SELECT)
         .eq('tenant_id', tenantId)
         .order('display_order')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as unknown as LandingArticle[];
     },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
+}
+
+export async function getLandingArticleById(id: string): Promise<LandingArticle | null> {
+  const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+  if (!tenantId) return null;
+
+  const { data, error } = await supabase
+    .from('landing_articles' as any)
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as unknown as LandingArticle | null) ?? null;
 }
 
 export function useCreateLandingArticle() {
