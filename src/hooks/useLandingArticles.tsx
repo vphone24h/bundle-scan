@@ -52,7 +52,7 @@ export function useLandingArticleCategories(tenantId?: string | null) {
       if (error) throw error;
       return data as unknown as LandingArticleCategory[];
     },
-    enabled: tenantId !== null,
+    staleTime: 1000 * 60 * 5,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
