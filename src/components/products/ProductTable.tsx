@@ -391,10 +391,10 @@ export function ProductTable({
                           Sao chép sản phẩm mẫu
                         </DropdownMenuItem>
                       )}
-                      {product.status === 'template' && onImportFromTemplate && (
+                      {onImportFromTemplate && (
                         <DropdownMenuItem onClick={() => onImportFromTemplate(product)}>
                           <ArrowDownToLine className="mr-2 h-4 w-4" />
-                          Nhập hàng từ mẫu
+                          Nhập hàng từ SP
                         </DropdownMenuItem>
                       )}
                       {product.status === 'template' && onDeleteTemplate && (
