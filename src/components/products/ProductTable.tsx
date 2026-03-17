@@ -334,6 +334,12 @@ export function ProductTable({
                         <Barcode className="mr-2 h-4 w-4" />
                         In mã vạch
                       </DropdownMenuItem>
+                      {product.status === 'template' && onDuplicate && (
+                        <DropdownMenuItem onClick={() => onDuplicate(product)}>
+                          <Copy className="mr-2 h-4 w-4" />
+                          Sao chép sản phẩm mẫu
+                        </DropdownMenuItem>
+                      )}
                       
                       {/* Super Admin only actions */}
                       {permissions?.canAdjustProductQuantity && !isIMEIProduct(product) && (
