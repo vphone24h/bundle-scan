@@ -168,18 +168,25 @@ export function ProductDetailPage({
 
   const allImages = useMemo(() => {
     const imgs: string[] = [];
+
     if (Array.isArray(product.images) && product.images.length > 0) {
       imgs.push(...product.images);
     } else if (product.image_url) {
       imgs.push(product.image_url);
     }
-    if (!uses2LevelVariants) {
+
+    if (uses2LevelVariants) {
+      variantPrices.forEach(vp => {
+        if (vp.image_url && !imgs.includes(vp.image_url)) imgs.push(vp.image_url);
+      });
+    } else {
       legacyVariants.forEach(v => {
         if (v.image_url && !imgs.includes(v.image_url)) imgs.push(v.image_url);
       });
     }
+
     return imgs;
-  }, [product, legacyVariants, uses2LevelVariants]);
+  }, [product, legacyVariants, uses2LevelVariants, variantPrices]);
 
   const selectedLegacyVariant = selectedVariantIndex !== null ? legacyVariants[selectedVariantIndex] : null;
 
