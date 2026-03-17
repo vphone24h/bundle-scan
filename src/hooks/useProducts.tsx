@@ -36,10 +36,6 @@ export interface Product {
   variant_1: string | null;
   variant_2: string | null;
   variant_3: string | null;
-  // Joined fields
-  categories?: { name: string } | null;
-  suppliers?: { name: string } | null;
-  branches?: { name: string } | null;
 }
 
 export interface ProductFilters {
