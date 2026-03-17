@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer, Copy, Layers } from 'lucide-react';
+import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer, Copy, Layers, ArrowDownToLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePermissions } from '@/hooks/usePermissions';
