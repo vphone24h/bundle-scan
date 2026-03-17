@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import {
   useLandingArticleCategories,
   useCreateLandingArticleCategory,
@@ -27,15 +27,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from '@/hooks/use-toast';
 import {
   Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, FileText,
-  ChevronDown, ChevronRight, Eye, EyeOff, GripVertical, FolderOpen, Folder,
+  ChevronDown, ChevronRight, Eye, EyeOff, FolderOpen, Folder,
   Image as ImageIcon, Home, Star,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
+
+const LazyRichTextEditor = lazy(() =>
+  import('@/components/ui/rich-text-editor').then((m) => ({ default: m.RichTextEditor }))
+);
 
 // ─── Category Tree Node ───
 function CategoryNode({
@@ -159,7 +162,7 @@ export function LandingArticlesTab() {
     thumbnail_url: '', is_published: false, is_featured: false, is_featured_home: false,
   });
 
-  const tree = buildArticleCategoryTree(categories);
+  const tree = useMemo(() => buildArticleCategoryTree(categories), [categories]);
 
   // Flatten for ordering
   const flattenTree = useCallback((nodes: LandingArticleCategory[], parentId: string | null = null): { id: string; parent_id: string | null; display_order: number }[] => {
@@ -345,7 +348,7 @@ export function LandingArticlesTab() {
   };
 
   // Get all categories flat for selects (with indentation)
-  const flatCategoriesForSelect = useCallback((): { id: string; name: string; level: number }[] => {
+  const flatCategoriesForSelect = useMemo((): { id: string; name: string; level: number }[] => {
     const result: { id: string; name: string; level: number }[] = [];
     const traverse = (nodes: LandingArticleCategory[], level: number) => {
       nodes.forEach(n => {
@@ -356,6 +359,11 @@ export function LandingArticlesTab() {
     traverse(tree, 0);
     return result;
   }, [tree]);
+
+  const pagedArticles = useMemo(
+    () => paginateArray(articles || [], articlePage, ARTICLE_PAGE_SIZE),
+    [articles, articlePage]
+  );
 
   return (
     <div className="space-y-6">
@@ -418,7 +426,7 @@ export function LandingArticlesTab() {
           ) : articles && articles.length > 0 ? (
             <>
               <div className="space-y-2">
-                {paginateArray(articles, articlePage, ARTICLE_PAGE_SIZE).map(a => (
+                {pagedArticles.map(a => (
                   <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                     {a.thumbnail_url ? (
                       <img src={a.thumbnail_url} alt={a.title} className="h-12 w-16 rounded-lg object-cover border shrink-0" />
@@ -483,7 +491,7 @@ export function LandingArticlesTab() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-popover">
                   <SelectItem value="_none_">— Không (danh mục gốc) —</SelectItem>
-                  {flatCategoriesForSelect()
+                  {flatCategoriesForSelect
                     .filter(c => c.id !== editingCat?.id)
                     .map(c => (
                       <SelectItem key={c.id} value={c.id}>
@@ -537,7 +545,7 @@ export function LandingArticlesTab() {
                 <SelectTrigger><SelectValue placeholder="Chọn danh mục" /></SelectTrigger>
                 <SelectContent className="bg-popover">
                   <SelectItem value="_none_">Không phân loại</SelectItem>
-                  {flatCategoriesForSelect().map(c => (
+                  {flatCategoriesForSelect.map(c => (
                     <SelectItem key={c.id} value={c.id}>{'—'.repeat(c.level)} {c.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -563,10 +571,12 @@ export function LandingArticlesTab() {
                 Upload ảnh
               </Button>
             </div>
-            <div className="space-y-2">
-              <Label>Nội dung</Label>
-              <RichTextEditor value={form.content} onChange={v => setForm(p => ({ ...p, content: v }))} />
-            </div>
+              <div className="space-y-2">
+                <Label>Nội dung</Label>
+                <Suspense fallback={<div className="rounded-md border p-4 text-sm text-muted-foreground">Đang tải trình soạn thảo...</div>}>
+                  <LazyRichTextEditor value={form.content} onChange={v => setForm(p => ({ ...p, content: v }))} />
+                </Suspense>
+              </div>
             <Separator />
             <div className="flex items-center justify-between">
               <Label>Xuất bản</Label>
