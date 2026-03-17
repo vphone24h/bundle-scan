@@ -28,9 +28,19 @@ import {
 import { Loader2, Package, Plus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
+export interface ProductTemplateInitialData {
+  productName: string;
+  sku: string;
+  categoryId: string;
+  importPrice: string;
+  salePrice: string;
+  note: string;
+}
+
 interface CreateProductTemplateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialData?: ProductTemplateInitialData | null;
 }
 
 async function getCurrentTenantId(): Promise<string | null> {
