@@ -551,6 +551,12 @@ export default function ProductsPage() {
         onOpenChange={(open) => !open && setEditProduct(null)}
       />
 
+      <EditTemplateProductDialog
+        product={editTemplateProduct}
+        open={!!editTemplateProduct}
+        onOpenChange={(open) => !open && setEditTemplateProduct(null)}
+      />
+
       <CreateProductTemplateDialog
         open={templateDialogOpen}
         onOpenChange={(open) => {
