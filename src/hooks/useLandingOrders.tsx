@@ -279,7 +279,7 @@ export function useLandingOrders(filters: LandingOrdersFilters = {}) {
       const { data, error } = await query;
       if (error) throw error;
 
-      const rows = (data || []) as LandingOrder[];
+      const rows = (data || []) as unknown as LandingOrder[];
 
       // Fire-and-forget auto-transition on fetched rows
       autoTransitionShippedOrders(rows).catch(() => {});
