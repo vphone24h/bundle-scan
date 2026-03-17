@@ -208,7 +208,7 @@ export function LandingOrdersTab() {
   const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
 
   // Reset page when filters change
-  const filteredKey = `${statusFilter}-${deliveryFilter}-${callStatusFilter}-${sourceFilter}-${searchText}`;
+  const filteredKey = `${statusFilter}-${deliveryFilter}-${callStatusFilter}-${sourceFilter}-${debouncedSearch}`;
   const prevFilterKey = useRef(filteredKey);
   if (prevFilterKey.current !== filteredKey) {
     prevFilterKey.current = filteredKey;
