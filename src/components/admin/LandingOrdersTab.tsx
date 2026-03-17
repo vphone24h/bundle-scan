@@ -603,13 +603,13 @@ export function LandingOrdersTab() {
       </div>
 
       {/* Orders table */}
-      {filtered.length === 0 ? (
+      {filtered.length === 0 && !isFetching ? (
         <div className="text-center py-12 text-muted-foreground">
           <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
           <p>Chưa có đơn đặt hàng nào</p>
         </div>
       ) : (
-        <>
+        <div className={isTransitioning ? 'opacity-50 pointer-events-none transition-opacity' : 'transition-opacity'}>
           {/* Bulk action bar */}
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-lg flex-wrap">
