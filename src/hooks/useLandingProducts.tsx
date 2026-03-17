@@ -186,21 +186,26 @@ const LANDING_PRODUCT_LIST_SELECT = `
   display_order, created_at, updated_at
 `;
 
-export function useLandingProducts() {
+export function useLandingProducts(tenantId?: string | null) {
   return useQuery({
-    queryKey: ['landing-products'],
+    queryKey: ['landing-products', tenantId],
     queryFn: async () => {
-      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
-      if (!tenantId) return [];
+      let tid = tenantId;
+      if (!tid) {
+        const { data } = await supabase.rpc('get_user_tenant_id_secure');
+        tid = data;
+      }
+      if (!tid) return [];
       const { data, error } = await supabase
         .from('landing_products' as any)
         .select(LANDING_PRODUCT_LIST_SELECT)
-        .eq('tenant_id', tenantId)
+        .eq('tenant_id', tid)
         .order('display_order', { ascending: true })
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as unknown as LandingProduct[];
     },
+    enabled: tenantId !== null,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
