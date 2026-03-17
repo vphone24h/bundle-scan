@@ -8,6 +8,7 @@ import { useProducts, useServerPagination, Product } from '@/hooks/useProducts';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { EditProductDialog } from '@/components/import/EditProductDialog';
+import { EditTemplateProductDialog } from '@/components/products/EditTemplateProductDialog';
 import { CreateProductTemplateDialog, ProductTemplateInitialData } from '@/components/products/CreateProductTemplateDialog';
 import { useCategories } from '@/hooks/useCategories';
 import { useSuppliers } from '@/hooks/useSuppliers';
@@ -185,6 +186,7 @@ export default function ProductsPage() {
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [productsForBarcode, setProductsForBarcode] = useState<any[]>([]);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [editTemplateProduct, setEditTemplateProduct] = useState<any>(null);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [templateInitialData, setTemplateInitialData] = useState<ProductTemplateInitialData | null>(null);
   
@@ -250,9 +252,16 @@ export default function ProductsPage() {
   const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_' || printedFilter !== '_all_';
 
   const handleEdit = (product: any) => {
-    const originalProduct = products?.find(p => p.id === product.id);
-    if (originalProduct) {
-      setEditProduct(originalProduct);
+    // Template products → open template editor with variant management
+    if (product.status === 'template' || product.isTemplateGroup) {
+      const originalProduct = products?.find(p => p.id === product.id);
+      setEditTemplateProduct(originalProduct ? { ...originalProduct, isTemplateGroup: product.isTemplateGroup, childProducts: product.childProducts } : product);
+    } else {
+      // Regular products → existing edit dialog
+      const originalProduct = products?.find(p => p.id === product.id);
+      if (originalProduct) {
+        setEditProduct(originalProduct);
+      }
     }
   };
 
@@ -540,6 +549,12 @@ export default function ProductsPage() {
         product={editProduct}
         open={!!editProduct}
         onOpenChange={(open) => !open && setEditProduct(null)}
+      />
+
+      <EditTemplateProductDialog
+        product={editTemplateProduct}
+        open={!!editTemplateProduct}
+        onOpenChange={(open) => !open && setEditTemplateProduct(null)}
       />
 
       <CreateProductTemplateDialog
