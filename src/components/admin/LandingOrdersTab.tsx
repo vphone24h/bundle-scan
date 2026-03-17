@@ -20,7 +20,7 @@ import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { ListPagination } from '@/components/ui/list-pagination';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { useQuery } from '@tanstack/react-query';
 
 
@@ -163,7 +163,7 @@ export function LandingOrdersTab() {
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const ORDER_PAGE_SIZE = 20;
+  const [orderPageSize, setOrderPageSize] = useState(15);
   const [serverPage, setServerPage] = useState(1);
   const [cancelDialogOrder, setCancelDialogOrder] = useState<LandingOrder | null>(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -195,7 +195,7 @@ export function LandingOrdersTab() {
     source: sourceFilter,
     search: debouncedSearch,
     page: serverPage,
-    pageSize: ORDER_PAGE_SIZE,
+    pageSize: orderPageSize,
   });
   const orders: LandingOrder[] = ordersData?.items || [];
   const hasMore = ordersData?.hasMore || false;
@@ -807,12 +807,19 @@ export function LandingOrdersTab() {
               </Table>
             </div>
             <div className="p-3">
-              <ListPagination
+              <TablePagination
                 currentPage={serverPage}
+                totalPages={Math.max(1, Math.ceil(totalCount / orderPageSize))}
+                pageSize={orderPageSize}
                 totalItems={totalCount}
-                pageSize={ORDER_PAGE_SIZE}
+                startIndex={(serverPage - 1) * orderPageSize + 1}
+                endIndex={Math.min(serverPage * orderPageSize, totalCount)}
                 onPageChange={setServerPage}
-                hasMore={hasMore}
+                onPageSizeChange={(size) => {
+                  setOrderPageSize(size);
+                  setServerPage(1);
+                }}
+                className="py-1"
               />
             </div>
           </Card>
