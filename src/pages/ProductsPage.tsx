@@ -211,7 +211,7 @@ export default function ProductsPage() {
   // Reset to page 1 when filters change (tránh setState trong render gây re-render loop)
   useEffect(() => {
     serverPagination.setPage(1);
-  }, [debouncedSearch, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter, printedFilter, serverPagination]);
+  }, [debouncedSearch, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter, printedFilter, serverPagination.setPage]);
 
   // Build server-side filters
   const serverFilters = useMemo(() => ({
