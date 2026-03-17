@@ -72,7 +72,22 @@ export function useProducts(filters?: ProductFilters) {
   const hasServerFilters = !!filters;
 
   const result = useQuery({
-    queryKey: ['products', user?.id, branchId, shouldFilter, filters],
+    queryKey: [
+      'products',
+      user?.id,
+      branchId,
+      shouldFilter,
+      filters?.search ?? '',
+      filters?.categoryId ?? '',
+      filters?.supplierId ?? '',
+      filters?.status ?? '',
+      filters?.branchId ?? '',
+      filters?.dateFrom ?? '',
+      filters?.dateTo ?? '',
+      filters?.printedFilter ?? '',
+      page,
+      pageSize,
+    ],
     queryFn: async () => {
       let query = supabase
         .from('products')
