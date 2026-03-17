@@ -128,12 +128,13 @@ function CategoryNode({
 
 export function LandingArticlesTab() {
   const { data: tenant } = useCurrentTenant();
-  const { data: categories = [], isLoading: catLoading } = useLandingArticleCategories();
+  const tenantId = tenant?.id;
+  const { data: categories = [], isLoading: catLoading } = useLandingArticleCategories(tenantId);
   const createCat = useCreateLandingArticleCategory();
   const updateCat = useUpdateLandingArticleCategory();
   const deleteCat = useDeleteLandingArticleCategory();
   const batchOrder = useBatchUpdateCategoryOrder();
-  const { data: articles, isLoading: artLoading } = useLandingArticles();
+  const { data: articles, isLoading: artLoading } = useLandingArticles(tenantId);
   const createArticle = useCreateLandingArticle();
   const updateArticle = useUpdateLandingArticle();
   const deleteArticle = useDeleteLandingArticle();

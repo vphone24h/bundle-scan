@@ -125,21 +125,27 @@ const LANDING_ARTICLE_LIST_SELECT = `
   display_order, created_at, updated_at
 `;
 
-export function useLandingArticles() {
+export function useLandingArticles(tenantId?: string | null) {
   return useQuery({
-    queryKey: ['landing-articles'],
+    queryKey: ['landing-articles', tenantId],
     queryFn: async () => {
-      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
-      if (!tenantId) return [];
+      // Use passed tenantId or fallback to RPC
+      let tid = tenantId;
+      if (!tid) {
+        const { data } = await supabase.rpc('get_user_tenant_id_secure');
+        tid = data;
+      }
+      if (!tid) return [];
       const { data, error } = await supabase
         .from('landing_articles' as any)
         .select(LANDING_ARTICLE_LIST_SELECT)
-        .eq('tenant_id', tenantId)
+        .eq('tenant_id', tid)
         .order('display_order')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as unknown as LandingArticle[];
     },
+    enabled: tenantId !== null,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
