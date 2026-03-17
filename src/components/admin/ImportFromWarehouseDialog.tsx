@@ -106,6 +106,19 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     });
   }, [inventory, search, categoryFilter]);
 
+  // Extract base name from a product name by stripping variant suffixes
+  const getBaseName = (items: InventoryItem[]): string => {
+    if (items.length <= 1) return items[0]?.productName || '';
+    const names = items.map(i => i.productName);
+    let prefix = names[0];
+    for (const name of names) {
+      while (!name.startsWith(prefix)) {
+        prefix = prefix.substring(0, prefix.length - 1);
+      }
+    }
+    return prefix.replace(/\s+$/, '') || names[0];
+  };
+
   // Group filtered items by groupId for display
   const groupedDisplayItems = useMemo(() => {
     const groupMap = new Map<string, InventoryItem[]>();
@@ -274,19 +287,6 @@ export function ImportFromWarehouseDialog({ open, onOpenChange, existingProducts
     };
   };
 
-  // Extract base name from a product name by stripping variant suffixes
-  const getBaseName = (items: InventoryItem[]): string => {
-    if (items.length <= 1) return items[0]?.productName || '';
-    // Find common prefix among all product names
-    const names = items.map(i => i.productName);
-    let prefix = names[0];
-    for (const name of names) {
-      while (!name.startsWith(prefix)) {
-        prefix = prefix.substring(0, prefix.length - 1);
-      }
-    }
-    return prefix.replace(/\s+$/, '') || names[0];
-  };
 
   const resolveLandingCategoryId = async (categoryId: string | null, categoryName: string | null): Promise<string | null> => {
     if (!categoryId || !categoryName) return null;
