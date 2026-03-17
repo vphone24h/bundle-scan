@@ -96,7 +96,7 @@ export function useProducts(filters?: ProductFilters) {
           import_date, supplier_id, branch_id, import_receipt_id, status,
           note, quantity, is_printed,
           group_id, variant_1, variant_2, variant_3
-        `, { count: 'exact' })
+        `)
         .in('status', ['in_stock', 'sold', 'returned', 'template'])
         .order('import_date', { ascending: false });
 
