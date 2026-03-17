@@ -47,6 +47,10 @@ export function useLandingArticleCategories() {
       if (error) throw error;
       return data as unknown as LandingArticleCategory[];
     },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 
