@@ -230,9 +230,9 @@ export default function ProductsPage() {
   const { data: products, isLoading, isFetching, totalCount } = useProducts(serverFilters);
   const isFirstLoad = isLoading && !products?.length;
 
-  const categoryMap = useMemo(() => new Map((categories || []).map(c => [c.id, c.name])), [categories]);
-  const supplierMap = useMemo(() => new Map((suppliers || []).map(s => [s.id, s.name])), [suppliers]);
-  const branchMap = useMemo(() => new Map((branches || []).map(b => [b.id, b.name])), [branches]);
+  const categoryMap = useMemo(() => new Map<string, string>((categories || []).map(c => [c.id, c.name])), [categories]);
+  const supplierMap = useMemo(() => new Map<string, string>((suppliers || []).map(s => [s.id, s.name])), [suppliers]);
+  const branchMap = useMemo(() => new Map<string, string>((branches || []).map(b => [b.id, b.name])), [branches]);
 
   const mappedProducts = useMemo(() => {
     const mapped = products?.map(p => mapProductForTable(p, categoryMap, supplierMap, branchMap)) || [];
