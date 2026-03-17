@@ -426,7 +426,7 @@ export function LandingArticlesTab() {
           ) : articles && articles.length > 0 ? (
             <>
               <div className="space-y-2">
-                {paginateArray(articles, articlePage, ARTICLE_PAGE_SIZE).map(a => (
+                {pagedArticles.map(a => (
                   <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                     {a.thumbnail_url ? (
                       <img src={a.thumbnail_url} alt={a.title} className="h-12 w-16 rounded-lg object-cover border shrink-0" />
