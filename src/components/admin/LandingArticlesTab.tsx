@@ -412,7 +412,9 @@ export function LandingArticlesTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {articles && articles.length > 0 ? (
+          {artLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : articles && articles.length > 0 ? (
             <>
               <div className="space-y-2">
                 {paginateArray(articles, articlePage, ARTICLE_PAGE_SIZE).map(a => (
