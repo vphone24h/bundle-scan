@@ -252,9 +252,16 @@ export default function ProductsPage() {
   const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_' || printedFilter !== '_all_';
 
   const handleEdit = (product: any) => {
-    const originalProduct = products?.find(p => p.id === product.id);
-    if (originalProduct) {
-      setEditProduct(originalProduct);
+    // Template products → open template editor with variant management
+    if (product.status === 'template' || product.isTemplateGroup) {
+      const originalProduct = products?.find(p => p.id === product.id);
+      setEditTemplateProduct(originalProduct ? { ...originalProduct, isTemplateGroup: product.isTemplateGroup, childProducts: product.childProducts } : product);
+    } else {
+      // Regular products → existing edit dialog
+      const originalProduct = products?.find(p => p.id === product.id);
+      if (originalProduct) {
+        setEditProduct(originalProduct);
+      }
     }
   };
 
