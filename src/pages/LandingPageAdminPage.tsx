@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from 'react';
+import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -13,6 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SwipeGuardScroll from '@/components/ui/swipe-guard-scroll';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
+import { useCurrentTenant } from '@/hooks/useTenant';
+import { useLandingProductCategories, useLandingProducts } from '@/hooks/useLandingProducts';
+import { useLandingArticleCategories, useLandingArticles } from '@/hooks/useLandingArticles';
 
 // Lazy load heavy tab components - only loaded when the tab is active
 const LandingPageSettings = lazy(() => import('@/components/admin/LandingPageSettings').then(m => ({ default: m.LandingPageSettings })));
