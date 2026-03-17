@@ -12,20 +12,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer, Copy } from 'lucide-react';
+import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer, Copy, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePermissions } from '@/hooks/usePermissions';
 import { AdjustQuantityDialog } from './AdjustQuantityDialog';
 import { DeleteProductDialog } from './DeleteProductDialog';
 
+interface ExtendedProduct extends Product {
+  isPrinted?: boolean;
+  isTemplateGroup?: boolean;
+  variantCount?: number;
+  childProducts?: ExtendedProduct[];
+  variant1?: string;
+  variant2?: string;
+  variant3?: string;
+  groupId?: string;
+}
+
 interface ProductTableProps {
-  products: Product[];
+  products: ExtendedProduct[];
   selectedProducts: string[];
   onSelectionChange: (ids: string[]) => void;
-  onEdit: (product: Product) => void;
-  onPrintBarcode: (products: Product[]) => void;
-  onDuplicate?: (product: Product) => void;
+  onEdit: (product: ExtendedProduct) => void;
+  onPrintBarcode: (products: ExtendedProduct[]) => void;
+  onDuplicate?: (product: ExtendedProduct) => void;
 }
 
 export function ProductTable({
@@ -151,7 +162,15 @@ export function ProductTable({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm truncate">{product.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-medium text-sm truncate">{product.name}</p>
+                          {product.isTemplateGroup && (
+                            <Badge variant="secondary" className="text-[10px] gap-0.5 shrink-0">
+                              <Layers className="h-2.5 w-2.5" />
+                              {product.variantCount} biến thể
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground font-mono">{product.sku}</p>
                       </div>
                       <DropdownMenu>
@@ -299,7 +318,17 @@ export function ProductTable({
                     aria-label={`Chọn ${product.name}`}
                   />
                 </td>
-                <td className="font-medium max-w-[200px] truncate">{product.name}</td>
+                <td className="font-medium max-w-[200px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate">{product.name}</span>
+                    {product.isTemplateGroup && (
+                      <Badge variant="secondary" className="text-[10px] gap-0.5 shrink-0">
+                        <Layers className="h-2.5 w-2.5" />
+                        {product.variantCount} biến thể
+                      </Badge>
+                    )}
+                  </div>
+                </td>
                 <td className="text-muted-foreground text-xs sm:text-sm">{product.sku}</td>
                 <td className="font-mono text-xs sm:text-sm hidden lg:table-cell">{product.imei || '-'}</td>
                 <td className="hidden sm:table-cell">{product.categoryName}</td>

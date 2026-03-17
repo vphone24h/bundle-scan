@@ -88,7 +88,76 @@ function mapProductForTable(product: Product) {
     importReceiptId: product.import_receipt_id || undefined,
     quantity: product.quantity || 1,
     isPrinted: product.is_printed || false,
+    variant1: product.variant_1 || undefined,
+    variant2: product.variant_2 || undefined,
+    variant3: product.variant_3 || undefined,
+    groupId: product.group_id || undefined,
   };
+}
+
+/**
+ * Group template products by base name.
+ * Templates with variants (variant_1 set) are grouped into a single row
+ * showing the base name + variant count badge.
+ * Non-variant templates and non-template products remain as individual rows.
+ */
+function groupTemplateProducts(products: ReturnType<typeof mapProductForTable>[]) {
+  const result: Array<ReturnType<typeof mapProductForTable> & {
+    isTemplateGroup?: boolean;
+    variantCount?: number;
+    childProducts?: ReturnType<typeof mapProductForTable>[];
+  }> = [];
+  
+  const templateGroups = new Map<string, ReturnType<typeof mapProductForTable>[]>();
+  
+  for (const p of products) {
+    // Only group template products that have variants
+    if (p.status === 'template' && p.variant1) {
+      // Extract base name by removing variant suffixes
+      const baseName = extractBaseName(p.name, p.variant1, p.variant2, p.variant3);
+      const key = `${baseName}__${p.categoryId || ''}`;
+      if (!templateGroups.has(key)) {
+        templateGroups.set(key, []);
+      }
+      templateGroups.get(key)!.push(p);
+    } else {
+      result.push(p);
+    }
+  }
+  
+  // Add grouped templates
+  for (const [, group] of templateGroups) {
+    if (group.length === 1) {
+      // Single variant, show as-is
+      result.push(group[0]);
+    } else {
+      // Create a summary row from the first product
+      const first = group[0];
+      const baseName = extractBaseName(first.name, first.variant1, first.variant2, first.variant3);
+      result.push({
+        ...first,
+        name: baseName,
+        sku: first.sku.split('-').slice(0, -1).join('-') || first.sku, // Remove variant suffix from SKU
+        isTemplateGroup: true,
+        variantCount: group.length,
+        childProducts: group,
+      });
+    }
+  }
+  
+  return result;
+}
+
+function extractBaseName(name: string, v1?: string, v2?: string, v3?: string): string {
+  let base = name;
+  // Remove variant values from end of name
+  const parts = [v3, v2, v1].filter(Boolean);
+  for (const part of parts) {
+    if (part && base.endsWith(part)) {
+      base = base.slice(0, -part.length).trimEnd();
+    }
+  }
+  return base || name;
 }
 
 // Debounce hook for search
@@ -160,7 +229,10 @@ export default function ProductsPage() {
 
   const { data: products, isLoading, totalCount } = useProducts(serverFilters);
 
-  const mappedProducts = products?.map(mapProductForTable) || [];
+  const mappedProducts = useMemo(() => {
+    const mapped = products?.map(mapProductForTable) || [];
+    return groupTemplateProducts(mapped);
+  }, [products]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / serverPagination.pageSize));
 
