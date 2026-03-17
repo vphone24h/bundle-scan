@@ -298,32 +298,45 @@ export function LandingProductsTab() {
     setProductDialog(true);
   };
 
-  const openEditProduct = (p: LandingProduct) => {
-    setEditingProduct(p);
-    setForm({
-      name: p.name,
-      description: p.description || '',
-      price: p.price,
-      sale_price: p.sale_price,
-      category_id: p.category_id || '_none_',
-      image_url: p.image_url || '',
-      images: Array.isArray(p.images) ? p.images : [],
-      is_featured: p.is_featured,
-      is_active: p.is_active,
-      is_sold_out: p.is_sold_out || false,
-      variants: Array.isArray(p.variants) ? p.variants : [],
-      home_tab_ids: Array.isArray((p as any).home_tab_ids) ? (p as any).home_tab_ids : [],
-      variant_group_1_name: p.variant_group_1_name || 'Màu sắc',
-      variant_group_2_name: p.variant_group_2_name || 'Dung lượng',
-      variant_options_1: Array.isArray(p.variant_options_1) ? p.variant_options_1 : [],
-      variant_options_2: Array.isArray(p.variant_options_2) ? p.variant_options_2 : [],
-      variant_prices: Array.isArray(p.variant_prices) ? p.variant_prices : [],
-      promotion_title: p.promotion_title || 'KHUYẾN MÃI',
-      promotion_content: p.promotion_content || '',
-      warranty_title: p.warranty_title || 'BẢO HÀNH',
-      warranty_content: p.warranty_content || '',
-    });
-    setProductDialog(true);
+  const openEditProduct = async (p: LandingProduct) => {
+    try {
+      setLoadingEditProductId(p.id);
+      const detail = await getLandingProductById(p.id);
+      if (!detail) {
+        toast({ title: 'Không tìm thấy sản phẩm', variant: 'destructive' });
+        return;
+      }
+
+      setEditingProduct(detail);
+      setForm({
+        name: detail.name,
+        description: detail.description || '',
+        price: detail.price,
+        sale_price: detail.sale_price,
+        category_id: detail.category_id || '_none_',
+        image_url: detail.image_url || '',
+        images: Array.isArray(detail.images) ? detail.images : [],
+        is_featured: detail.is_featured,
+        is_active: detail.is_active,
+        is_sold_out: detail.is_sold_out || false,
+        variants: Array.isArray(detail.variants) ? detail.variants : [],
+        home_tab_ids: Array.isArray((detail as any).home_tab_ids) ? (detail as any).home_tab_ids : [],
+        variant_group_1_name: detail.variant_group_1_name || 'Màu sắc',
+        variant_group_2_name: detail.variant_group_2_name || 'Dung lượng',
+        variant_options_1: Array.isArray(detail.variant_options_1) ? detail.variant_options_1 : [],
+        variant_options_2: Array.isArray(detail.variant_options_2) ? detail.variant_options_2 : [],
+        variant_prices: Array.isArray(detail.variant_prices) ? detail.variant_prices : [],
+        promotion_title: detail.promotion_title || 'KHUYẾN MÃI',
+        promotion_content: detail.promotion_content || '',
+        warranty_title: detail.warranty_title || 'BẢO HÀNH',
+        warranty_content: detail.warranty_content || '',
+      });
+      setProductDialog(true);
+    } catch (e: any) {
+      toast({ title: 'Lỗi tải sản phẩm', description: e.message, variant: 'destructive' });
+    } finally {
+      setLoadingEditProductId(null);
+    }
   };
 
   const handleUploadImage = async (file: File): Promise<string | null> => {
