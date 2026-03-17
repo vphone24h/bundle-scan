@@ -127,7 +127,7 @@ const LANDING_ARTICLE_LIST_SELECT = `
 
 export function useLandingArticles(tenantId?: string | null) {
   return useQuery({
-    queryKey: ['landing-articles', tenantId],
+    queryKey: ['landing-articles', tenantId ?? '_auto_'],
     queryFn: async () => {
       // Use passed tenantId or fallback to RPC
       let tid = tenantId;
