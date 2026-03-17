@@ -256,7 +256,7 @@ export function CreateProductTemplateDialog({ open, onOpenChange }: CreateProduc
               <Label className="text-sm">Giá nhập (tham khảo)</Label>
               <PriceInput
                 value={form.importPrice}
-                onChange={(v) => setForm({ ...form, importPrice: v })}
+                onChange={(v) => setForm({ ...form, importPrice: String(v) })}
                 placeholder="0"
               />
             </div>
