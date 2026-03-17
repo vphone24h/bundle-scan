@@ -162,6 +162,7 @@ export function LandingOrdersTab() {
   const [callStatusFilter, setCallStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const ORDER_PAGE_SIZE = 20;
   const [serverPage, setServerPage] = useState(1);
   const [cancelDialogOrder, setCancelDialogOrder] = useState<LandingOrder | null>(null);
