@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { SearchInput } from '@/components/ui/search-input';
 import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -162,7 +163,7 @@ function extractBaseName(name: string, v1?: string, v2?: string, v3?: string): s
 }
 
 // Debounce hook for search
-function useDebouncedValue(value: string, delay = 400) {
+function useDebouncedValue(value: string, delay = 250) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(value), delay);
@@ -229,7 +230,8 @@ export default function ProductsPage() {
     pageSize: serverPagination.pageSize,
   }), [debouncedSearch, categoryFilter, supplierFilter, statusFilter, branchFilter, dateFrom, dateTo, printedFilter, serverPagination.page, serverPagination.pageSize]);
 
-  const { data: products, isLoading, totalCount } = useProducts(serverFilters);
+  const { data: products, isLoading, isFetching, totalCount } = useProducts(serverFilters);
+  const isFirstLoad = isLoading && !products?.length;
 
   const mappedProducts = useMemo(() => {
     const mapped = products?.map(mapProductForTable) || [];
@@ -592,16 +594,24 @@ export default function ProductsPage() {
           )}
         </div>
 
-        <ProductTable
-          products={mappedProducts}
-          selectedProducts={selectedProducts}
-          onSelectionChange={setSelectedProducts}
-          onEdit={handleEdit}
-          onPrintBarcode={handlePrintBarcode}
-          onDuplicate={handleDuplicate}
-          onImportFromTemplate={handleImportFromTemplate}
-          onDeleteTemplate={handleDeleteTemplate}
-        />
+        {isFirstLoad ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className={cn(isFetching && !isFirstLoad && 'opacity-60 pointer-events-none transition-opacity')}>
+            <ProductTable
+              products={mappedProducts}
+              selectedProducts={selectedProducts}
+              onSelectionChange={setSelectedProducts}
+              onEdit={handleEdit}
+              onPrintBarcode={handlePrintBarcode}
+              onDuplicate={handleDuplicate}
+              onImportFromTemplate={handleImportFromTemplate}
+              onDeleteTemplate={handleDeleteTemplate}
+            />
+          </div>
+        )}
         
         {totalCount > 0 && (
           <TablePagination

@@ -137,8 +137,10 @@ export function useProducts(filters?: ProductFilters) {
       return { items, totalCount: count || 0 };
     },
     enabled: !!user?.id && !branchLoading,
-    staleTime: 2 * 60 * 1000, // 2 min cache
+    staleTime: 3 * 60 * 1000, // 3 min cache
+    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
     placeholderData: (previous) => previous,
   });
 
