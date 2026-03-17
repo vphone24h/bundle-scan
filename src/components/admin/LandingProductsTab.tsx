@@ -176,12 +176,13 @@ function CategoryTreeNode({
 
 export function LandingProductsTab() {
   const { data: tenant } = useCurrentTenant();
+  const tenantId = tenant?.id;
   const { data: landingSettings } = useTenantLandingSettings();
-  const { data: categories, isLoading: catLoading } = useLandingProductCategories();
+  const { data: categories, isLoading: catLoading } = useLandingProductCategories(tenantId);
   const createCat = useCreateLandingProductCategory();
   const deleteCat = useDeleteLandingProductCategory();
   const updateCat = useUpdateLandingProductCategory();
-  const { data: products, isLoading: prodLoading } = useLandingProducts();
+  const { data: products, isLoading: prodLoading } = useLandingProducts(tenantId);
   const createProduct = useCreateLandingProduct();
   const updateProduct = useUpdateLandingProduct();
   const deleteProduct = useDeleteLandingProduct();
