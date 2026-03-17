@@ -163,7 +163,7 @@ export function LandingOrdersTab() {
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const ORDER_PAGE_SIZE = 20;
+  const [orderPageSize, setOrderPageSize] = useState(15);
   const [serverPage, setServerPage] = useState(1);
   const [cancelDialogOrder, setCancelDialogOrder] = useState<LandingOrder | null>(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -195,7 +195,7 @@ export function LandingOrdersTab() {
     source: sourceFilter,
     search: debouncedSearch,
     page: serverPage,
-    pageSize: ORDER_PAGE_SIZE,
+    pageSize: orderPageSize,
   });
   const orders: LandingOrder[] = ordersData?.items || [];
   const hasMore = ordersData?.hasMore || false;
