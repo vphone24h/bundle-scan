@@ -314,7 +314,7 @@ export function ReceiptReturnDialog({
       const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
       const { data: { user } } = await supabase.auth.getUser();
 
-      if (user && tenantId) {
+      if (recordToCashBook && user && tenantId) {
         for (const payment of validPayments) {
           if (payment.source !== 'debt') {
             // Build product details for the note
@@ -338,8 +338,6 @@ export function ReceiptReturnDialog({
             }]);
           }
         }
-
-        // Phí trả hàng không ghi vào sổ quỹ - số tiền này đã được tính vào lợi nhuận lúc bán
       }
 
       toast({
