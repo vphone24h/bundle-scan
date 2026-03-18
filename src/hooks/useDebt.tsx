@@ -252,7 +252,8 @@ export function useCreateDebtPayment() {
             .from('export_receipts')
             .select('id, export_date, debt_amount, paid_amount')
             .eq('customer_id', payment.entity_id)
-            .eq('status', 'completed')
+            // Include returned receipts that still carry debt (e.g. return fee cases)
+            .in('status', ['completed', 'partial_return', 'full_return'])
             .gt('debt_amount', 0)
             .order('export_date', { ascending: true });
           
