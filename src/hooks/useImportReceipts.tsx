@@ -860,6 +860,9 @@ export function useReturnImportReceipt() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
       // Lấy thông tin phiếu nhập và sản phẩm
       const { data: receipt, error: receiptError } = await supabase
         .from('import_receipts')
