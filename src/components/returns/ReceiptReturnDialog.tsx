@@ -56,6 +56,7 @@ export function ReceiptReturnDialog({
   const [feeDisplayAmount, setFeeDisplayAmount] = useState<string>('');
   const [note, setNote] = useState('');
   const [isBusinessAccounting, setIsBusinessAccounting] = useState(true);
+  const [recordToCashBook, setRecordToCashBook] = useState(true);
   const [payments, setPayments] = useState<PaymentLine[]>([]);
   const [paymentsTouched, setPaymentsTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
