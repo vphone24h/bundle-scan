@@ -63,7 +63,7 @@ export function OverdueDaysDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm" onCloseAutoFocus={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Cài đặt thời gian trả nợ - {customerName}</DialogTitle>
         </DialogHeader>
