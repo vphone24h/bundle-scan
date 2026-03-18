@@ -979,6 +979,7 @@ export function useReturnImportReceipt() {
               reference_type: 'import_return',
               created_by: user.id,
               note: productDetails,
+              tenant_id: tenantId,
             }]);
         }
       }
