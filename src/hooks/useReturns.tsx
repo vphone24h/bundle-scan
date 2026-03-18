@@ -527,6 +527,17 @@ export function useCreateExportReturn() {
         const importCode = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
         const newImportPrice = item.sale_price - storeKeepAmount;
 
+        // Lấy thông tin sản phẩm gốc để lấy supplier_id
+        let originalSupplierIdForReceipt: string | null = null;
+        if (item.product_id) {
+          const { data: origProduct } = await supabase
+            .from('products')
+            .select('supplier_id')
+            .eq('id', item.product_id)
+            .single();
+          originalSupplierIdForReceipt = origProduct?.supplier_id || null;
+        }
+
         // Tạo phiếu nhập mới
         const { data: newReceipt, error: receiptError } = await supabase
           .from('import_receipts')
@@ -539,6 +550,7 @@ export function useCreateExportReturn() {
             note: `Tự động tạo từ phiếu trả hàng ${code}`,
             tenant_id: tenantId,
             branch_id: item.branch_id,
+            supplier_id: originalSupplierIdForReceipt,
           }])
           .select()
           .single();
@@ -733,113 +745,113 @@ export function useCreateExportReturn() {
         }
       }
 
-      // Ghi nhận tiền hoàn trả cho khách
-      if (recordToCashBook) {
-        for (const payment of payments) {
-          if (payment.source === 'debt') {
-            // Reduce customer debt
-            if (item.customer_id) {
-              // Get current customer debt
-              const { data: debtReceipts } = await supabase
-                .from('export_receipts')
-                .select('debt_amount')
-                .eq('customer_id', item.customer_id)
-                .gt('debt_amount', 0);
-              
-              const { data: debtAdditions } = await supabase
-                .from('debt_payments')
-                .select('amount, allocated_amount')
-                .eq('entity_type', 'customer')
-                .eq('entity_id', item.customer_id)
-                .eq('payment_type', 'addition');
-              
-              const totalReceiptDebt = (debtReceipts || []).reduce((s, r) => s + Number(r.debt_amount), 0);
-              const totalAdditionDebt = (debtAdditions || []).reduce((s, a) => s + Number(a.amount) - (Number(a.allocated_amount) || 0), 0);
-              const currentDebt = totalReceiptDebt + totalAdditionDebt;
-              const newDebt = Math.max(0, currentDebt - payment.amount);
+      // Xử lý tiền hoàn trả:
+      // - debt: luôn giảm công nợ (không phụ thuộc ghi sổ quỹ)
+      // - nguồn khác debt: chỉ ghi sổ quỹ khi bật recordToCashBook
+      for (const payment of payments) {
+        if (payment.source === 'debt') {
+          // Reduce customer debt
+          if (item.customer_id) {
+            // Get current customer debt
+            const { data: debtReceipts } = await supabase
+              .from('export_receipts')
+              .select('debt_amount')
+              .eq('customer_id', item.customer_id)
+              .gt('debt_amount', 0);
+            
+            const { data: debtAdditions } = await supabase
+              .from('debt_payments')
+              .select('amount, allocated_amount')
+              .eq('entity_type', 'customer')
+              .eq('entity_id', item.customer_id)
+              .eq('payment_type', 'addition');
+            
+            const totalReceiptDebt = (debtReceipts || []).reduce((s, r) => s + Number(r.debt_amount), 0);
+            const totalAdditionDebt = (debtAdditions || []).reduce((s, a) => s + Number(a.amount) - (Number(a.allocated_amount) || 0), 0);
+            const currentDebt = totalReceiptDebt + totalAdditionDebt;
+            const newDebt = Math.max(0, currentDebt - payment.amount);
 
-              const { error: debtPaymentError } = await supabase
-                .from('debt_payments')
-                .insert([{
-                  entity_type: 'customer',
-                  entity_id: item.customer_id,
-                  payment_type: 'payment',
-                  amount: payment.amount,
-                  payment_source: 'debt',
-                  description: `Giảm công nợ - Trả hàng xuất: ${item.product_name} (${code})`,
-                  branch_id: item.branch_id,
-                  created_by: user.id,
-                  tenant_id: tenantId,
-                  balance_after: newDebt,
-                }]);
-
-              if (debtPaymentError) throw debtPaymentError;
-
-              // FIFO allocation on customer debt
-              let remainingPayment = payment.amount;
-              
-              const { data: unpaidReceipts } = await supabase
-                .from('export_receipts')
-                .select('id, export_date, debt_amount, paid_amount')
-                .eq('customer_id', item.customer_id)
-                .gt('debt_amount', 0)
-                .order('export_date', { ascending: true });
-              
-              const { data: unpaidAdditions } = await supabase
-                .from('debt_payments')
-                .select('id, amount, allocated_amount, created_at')
-                .eq('entity_type', 'customer')
-                .eq('entity_id', item.customer_id)
-                .eq('payment_type', 'addition')
-                .order('created_at', { ascending: true });
-
-              type DebtItem = { kind: 'order'; id: string; date: number; unpaid: number; paidAmount: number } 
-                | { kind: 'addition'; id: string; date: number; unpaid: number; currentAllocated: number };
-              const timeline: DebtItem[] = [];
-              
-              for (const o of (unpaidReceipts || [])) {
-                timeline.push({ kind: 'order', id: o.id, date: new Date(o.export_date).getTime(), unpaid: Number(o.debt_amount), paidAmount: Number(o.paid_amount) });
-              }
-              for (const a of (unpaidAdditions || [])) {
-                const total = Number(a.amount);
-                const allocated = Number(a.allocated_amount) || 0;
-                const unpaid = total - allocated;
-                if (unpaid > 0) {
-                  timeline.push({ kind: 'addition', id: a.id, date: new Date(a.created_at).getTime(), unpaid, currentAllocated: allocated });
-                }
-              }
-              timeline.sort((a, b) => a.date - b.date);
-              
-              for (const dItem of timeline) {
-                if (remainingPayment <= 0) break;
-                const payAmount = Math.min(remainingPayment, dItem.unpaid);
-                if (dItem.kind === 'order') {
-                  await supabase.from('export_receipts').update({ paid_amount: dItem.paidAmount + payAmount, debt_amount: dItem.unpaid - payAmount }).eq('id', dItem.id);
-                } else {
-                  await supabase.from('debt_payments').update({ allocated_amount: dItem.currentAllocated + payAmount }).eq('id', dItem.id);
-                }
-                remainingPayment -= payAmount;
-              }
-            }
-          } else {
-            const { error: cashBookError } = await supabase
-              .from('cash_book')
+            const { error: debtPaymentError } = await supabase
+              .from('debt_payments')
               .insert([{
-                type: 'expense' as const,
-                category: 'Hoan tien khach hang',
-                description: `Hoan tien tra hang: ${item.product_name} (${code})`,
+                entity_type: 'customer',
+                entity_id: item.customer_id,
+                payment_type: 'payment',
                 amount: payment.amount,
-                payment_source: payment.source,
-                is_business_accounting: false,
+                payment_source: 'debt',
+                description: `Giảm công nợ - Trả hàng xuất: ${item.product_name} (${code})`,
                 branch_id: item.branch_id,
-                reference_id: returnData.id,
-                reference_type: 'export_return',
                 created_by: user.id,
                 tenant_id: tenantId,
+                balance_after: newDebt,
               }]);
 
-            if (cashBookError) throw cashBookError;
+            if (debtPaymentError) throw debtPaymentError;
+
+            // FIFO allocation on customer debt
+            let remainingPayment = payment.amount;
+            
+            const { data: unpaidReceipts } = await supabase
+              .from('export_receipts')
+              .select('id, export_date, debt_amount, paid_amount')
+              .eq('customer_id', item.customer_id)
+              .gt('debt_amount', 0)
+              .order('export_date', { ascending: true });
+            
+            const { data: unpaidAdditions } = await supabase
+              .from('debt_payments')
+              .select('id, amount, allocated_amount, created_at')
+              .eq('entity_type', 'customer')
+              .eq('entity_id', item.customer_id)
+              .eq('payment_type', 'addition')
+              .order('created_at', { ascending: true });
+
+            type DebtItem = { kind: 'order'; id: string; date: number; unpaid: number; paidAmount: number } 
+              | { kind: 'addition'; id: string; date: number; unpaid: number; currentAllocated: number };
+            const timeline: DebtItem[] = [];
+            
+            for (const o of (unpaidReceipts || [])) {
+              timeline.push({ kind: 'order', id: o.id, date: new Date(o.export_date).getTime(), unpaid: Number(o.debt_amount), paidAmount: Number(o.paid_amount) });
+            }
+            for (const a of (unpaidAdditions || [])) {
+              const total = Number(a.amount);
+              const allocated = Number(a.allocated_amount) || 0;
+              const unpaid = total - allocated;
+              if (unpaid > 0) {
+                timeline.push({ kind: 'addition', id: a.id, date: new Date(a.created_at).getTime(), unpaid, currentAllocated: allocated });
+              }
+            }
+            timeline.sort((a, b) => a.date - b.date);
+            
+            for (const dItem of timeline) {
+              if (remainingPayment <= 0) break;
+              const payAmount = Math.min(remainingPayment, dItem.unpaid);
+              if (dItem.kind === 'order') {
+                await supabase.from('export_receipts').update({ paid_amount: dItem.paidAmount + payAmount, debt_amount: dItem.unpaid - payAmount }).eq('id', dItem.id);
+              } else {
+                await supabase.from('debt_payments').update({ allocated_amount: dItem.currentAllocated + payAmount }).eq('id', dItem.id);
+              }
+              remainingPayment -= payAmount;
+            }
           }
+        } else if (recordToCashBook) {
+          const { error: cashBookError } = await supabase
+            .from('cash_book')
+            .insert([{
+              type: 'expense' as const,
+              category: 'Hoan tien khach hang',
+              description: `Hoan tien tra hang: ${item.product_name} (${code})`,
+              amount: payment.amount,
+              payment_source: payment.source,
+              is_business_accounting: false,
+              branch_id: item.branch_id,
+              reference_id: returnData.id,
+              reference_type: 'export_return',
+              created_by: user.id,
+              tenant_id: tenantId,
+            }]);
+
+          if (cashBookError) throw cashBookError;
         }
       }
 

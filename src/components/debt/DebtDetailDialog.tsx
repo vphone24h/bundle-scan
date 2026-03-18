@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, History, Phone, Building2, Filter, Pencil, ChevronDown, ChevronRight, Package, Wallet, Plus } from 'lucide-react';
+import { FileText, History, Phone, Building2, Filter, Pencil, ChevronDown, ChevronRight, Package, Wallet, Plus, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { EditCustomerDebtDialog } from './EditCustomerDebtDialog';
@@ -416,28 +416,28 @@ export function DebtDetailDialog({
                             className={`border rounded-lg p-3 cursor-pointer hover:bg-accent/50 transition-colors ${r.isFullyPaid ? 'bg-muted/30 opacity-80' : 'bg-card'}`}
                             onClick={() => setSelectedReceipt(r.receipt)}
                           >
-                            <div className="flex items-center gap-2 mb-1">
-                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800">
+                            <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                              <Badge variant="outline" className="text-xs shrink-0 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800">
                                 Đơn hàng
                               </Badge>
                               {r.isFullyPaid && (
-                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800">
+                                <Badge variant="outline" className="text-xs shrink-0 bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800">
                                   Đã trả hết
                                 </Badge>
                               )}
                               <span className="text-xs text-muted-foreground">
                                 {format(new Date(r.date), 'dd/MM/yyyy', { locale: vi })}
                               </span>
-                              <span className="text-xs font-mono text-muted-foreground ml-auto">{r.code}</span>
+                              <span className="text-xs font-mono text-muted-foreground ml-auto truncate max-w-[140px]">{r.code}</span>
                             </div>
-                            <div className="flex justify-between items-center text-sm">
-                              <div className="text-muted-foreground">
-                                Tổng: {formatNumber(r.totalAmount)}
+                            <div className="flex justify-between items-start gap-2 text-sm">
+                              <div className="text-muted-foreground min-w-0">
+                                <div>Tổng: {formatNumber(r.totalAmount)}</div>
                                 {r.totalAmount - r.originalDebt > 0 && (
-                                  <span className="ml-2">· Trả tại quầy: {formatNumber(r.totalAmount - r.originalDebt)}</span>
+                                  <div>Trả tại quầy: {formatNumber(r.totalAmount - r.originalDebt)}</div>
                                 )}
                               </div>
-                              <span className={`font-semibold ${r.isFullyPaid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                              <span className={`font-semibold shrink-0 ${r.isFullyPaid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
                                 {formatNumber(r.originalDebt)}
                                 {r.isFullyPaid && <span className="text-xs ml-1">✓</span>}
                               </span>
@@ -462,9 +462,9 @@ export function DebtDetailDialog({
                                 {format(new Date(p.date), 'dd/MM/yyyy HH:mm', { locale: vi })}
                               </span>
                             </div>
-                            <div className="flex justify-between items-center text-sm">
-                              <div>
-                                <p className="truncate text-muted-foreground">{p.description}</p>
+                            <div className="flex justify-between items-start gap-2 text-sm">
+                              <div className="min-w-0 flex-1">
+                                <p className="break-words line-clamp-2 text-muted-foreground">{p.description}</p>
                                 {p.createdBy && (
                                   <p className="text-xs text-muted-foreground">Người thu: {p.createdBy}</p>
                                 )}
@@ -503,9 +503,9 @@ export function DebtDetailDialog({
                                 {format(new Date(a.date), 'dd/MM/yyyy HH:mm', { locale: vi })}
                               </span>
                             </div>
-                            <div className="flex justify-between items-center text-sm">
-                              <div>
-                                <p className="truncate">{a.description}</p>
+                            <div className="flex justify-between items-start gap-2 text-sm">
+                              <div className="min-w-0 flex-1">
+                                <p className="break-words line-clamp-2">{a.description}</p>
                                 {a.createdBy && (
                                   <p className="text-xs text-muted-foreground">Người tạo: {a.createdBy}</p>
                                 )}
@@ -579,9 +579,9 @@ export function DebtDetailDialog({
                             : 'border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/30'
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-2">
+                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex flex-wrap items-center gap-1.5 mb-1">
                               <Badge
                                 variant="outline"
                                 className={`text-xs shrink-0 ${
@@ -597,7 +597,7 @@ export function DebtDetailDialog({
                               </span>
                             </div>
 
-                            <p className="text-sm truncate">{payment.description}</p>
+                            <p className="text-sm break-words line-clamp-2">{payment.description}</p>
 
                             {payment.profiles?.display_name && (
                               <p className="text-xs text-muted-foreground mt-1">
@@ -648,6 +648,56 @@ export function DebtDetailDialog({
         </div>
   );
 
+  const receiptDetailContent = selectedReceipt ? (
+    <>
+      <div className="text-sm text-muted-foreground mb-2">
+        {format(
+          new Date(entityType === 'customer' ? selectedReceipt.export_date : selectedReceipt.import_date),
+          'dd/MM/yyyy HH:mm',
+          { locale: vi }
+        )}
+        {' · '}Tổng: <span className="font-semibold text-foreground">{formatNumber(selectedReceipt?.total_amount || 0)}</span>
+        {selectedReceipt?.debt_amount > 0 && (
+          <span> · Nợ: <span className="font-semibold text-destructive">{formatNumber(selectedReceipt.debt_amount)}</span></span>
+        )}
+      </div>
+      <div className="space-y-2">
+        {(() => {
+          const items = entityType === 'customer'
+            ? selectedReceipt?.export_receipt_items || []
+            : selectedReceipt?.products || [];
+          if (items.length === 0) {
+            return <div className="text-center py-6 text-muted-foreground">Không có sản phẩm</div>;
+          }
+          return items.map((item: any, idx: number) => {
+            const name = entityType === 'customer' ? item.product_name : item.name;
+            const price = entityType === 'customer' ? item.sale_price : item.import_price;
+            return (
+              <div key={item.id || idx} className="border rounded-lg p-3 bg-card">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm break-words">{name}</p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                      {item.sku && <span className="text-xs text-muted-foreground">SKU: {item.sku}</span>}
+                      {item.imei && <Badge variant="outline" className="text-xs font-mono">IMEI: {item.imei}</Badge>}
+                    </div>
+                    {item.note && <p className="text-xs text-muted-foreground mt-1 italic">{item.note}</p>}
+                  </div>
+                  <p className="font-semibold text-sm shrink-0">{formatNumber(price || 0)}</p>
+                </div>
+              </div>
+            );
+          });
+        })()}
+      </div>
+      {selectedReceipt?.note && (
+        <div className="mt-2 p-2 bg-muted/50 rounded text-sm text-muted-foreground">
+          <span className="font-medium">Ghi chú:</span> {selectedReceipt.note}
+        </div>
+      )}
+    </>
+  ) : null;
+
   const subDialogs = (
     <>
       {entityType === 'customer' && (
@@ -682,82 +732,33 @@ export function DebtDetailDialog({
       />
 
       {/* Receipt Detail Popup */}
-      <Dialog open={!!selectedReceipt} onOpenChange={(open) => !open && setSelectedReceipt(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Chi tiết phiếu {selectedReceipt?.code}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="text-sm text-muted-foreground mb-2">
-            {selectedReceipt && format(
-              new Date(entityType === 'customer' ? selectedReceipt.export_date : selectedReceipt.import_date),
-              'dd/MM/yyyy HH:mm',
-              { locale: vi }
-            )}
-            {' · '}Tổng: <span className="font-semibold text-foreground">{formatNumber(selectedReceipt?.total_amount || 0)}</span>
-            {selectedReceipt?.debt_amount > 0 && (
-              <span> · Nợ: <span className="font-semibold text-destructive">{formatNumber(selectedReceipt.debt_amount)}</span></span>
-            )}
-          </div>
-
-          <div>
-            <div className="space-y-2 pr-2">
-              {(() => {
-                const items = entityType === 'customer'
-                  ? selectedReceipt?.export_receipt_items || []
-                  : selectedReceipt?.products || [];
-
-                if (items.length === 0) {
-                  return (
-                    <div className="text-center py-6 text-muted-foreground">
-                      Không có sản phẩm
-                    </div>
-                  );
-                }
-
-                return items.map((item: any, idx: number) => {
-                  const name = entityType === 'customer' ? item.product_name : item.name;
-                  const price = entityType === 'customer' ? item.sale_price : item.import_price;
-                  return (
-                    <div key={item.id || idx} className="border rounded-lg p-3 bg-card">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{name}</p>
-                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
-                            {item.sku && (
-                              <span className="text-xs text-muted-foreground">SKU: {item.sku}</span>
-                            )}
-                            {item.imei && (
-                              <Badge variant="outline" className="text-xs font-mono">
-                                IMEI: {item.imei}
-                              </Badge>
-                            )}
-                          </div>
-                          {item.note && (
-                            <p className="text-xs text-muted-foreground mt-1 italic">{item.note}</p>
-                          )}
-                        </div>
-                        <p className="font-semibold text-sm shrink-0">
-                          {formatNumber(price || 0)}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
+      {isMobile ? (
+        <Drawer open={!!selectedReceipt} onOpenChange={(open) => !open && setSelectedReceipt(null)}>
+          <DrawerContent className="max-h-[85vh] flex flex-col">
+            <DrawerHeader className="shrink-0">
+              <DrawerTitle className="flex items-center gap-2 text-base">
+                <Package className="h-5 w-5" />
+                Chi tiết phiếu {selectedReceipt?.code}
+              </DrawerTitle>
+            </DrawerHeader>
+            <div className="flex-1 overflow-y-auto px-4 pb-6">
+              {receiptDetailContent}
             </div>
-          </div>
-
-          {selectedReceipt?.note && (
-            <div className="mt-2 p-2 bg-muted/50 rounded text-sm text-muted-foreground">
-              <span className="font-medium">Ghi chú:</span> {selectedReceipt.note}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={!!selectedReceipt} onOpenChange={(open) => !open && setSelectedReceipt(null)}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Chi tiết phiếu {selectedReceipt?.code}
+              </DialogTitle>
+            </DialogHeader>
+            {receiptDetailContent}
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 
@@ -766,8 +767,15 @@ export function DebtDetailDialog({
       <>
         <Drawer open={open} onOpenChange={onOpenChange}>
           <DrawerContent className="max-h-[90vh] flex flex-col">
-            <DrawerHeader className="shrink-0">
+            <DrawerHeader className="shrink-0 relative">
               <DrawerTitle className="text-base">Chi tiết công nợ</DrawerTitle>
+              <button
+                onClick={() => onOpenChange(false)}
+                className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Đóng</span>
+              </button>
             </DrawerHeader>
             <div className="flex-1 overflow-y-auto px-4 pb-6">
               {mainContent}

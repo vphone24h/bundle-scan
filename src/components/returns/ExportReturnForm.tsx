@@ -123,7 +123,9 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
       return;
     }
     
-    if (recordToCashBook && Math.abs(totalPayment - refundAmount) > 1) {
+    // Validate: nếu ghi sổ quỹ hoặc có payment nguồn debt thì cần kiểm tra tổng
+    const hasDebtPayment = payments.some(p => p.source === 'debt' && p.amount > 0);
+    if ((recordToCashBook || hasDebtPayment) && Math.abs(totalPayment - refundAmount) > 1) {
       toast({
         title: 'Số tiền không khớp',
         description: `Tổng tiền hoàn cho khách phải bằng ${formatCurrencyWithSpaces(refundAmount)}`,
@@ -135,13 +137,19 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
     isSubmittingRef.current = true;
 
     try {
+      // Luôn truyền debt payments (để giảm công nợ), các nguồn khác chỉ truyền khi ghi sổ quỹ
+      const filteredPayments = payments
+        .filter(p => p.amount > 0)
+        .filter(p => p.source === 'debt' || recordToCashBook)
+        .map(p => ({ source: p.source, amount: p.amount }));
+
       await createExportReturn.mutateAsync({
         item: {
           id: item.id,
           product_id: item.product_id,
           export_receipt_id: item.receipt_id,
           export_receipt_item_id: item.id,
-          customer_id: null,
+          customer_id: item.export_receipts?.customer_id || null,
           branch_id: item.export_receipts?.branch_id || null,
           product_name: item.product_name,
           sku: item.sku,
@@ -153,10 +161,7 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
         feeType,
         feePercentage,
         feeAmount,
-        payments: recordToCashBook ? payments.filter(p => p.amount > 0).map(p => ({
-          source: p.source,
-          amount: p.amount,
-        })) : [],
+        payments: filteredPayments,
         isBusinessAccounting,
         recordToCashBook,
         note: note || null,

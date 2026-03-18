@@ -124,11 +124,11 @@ export function useDebtDetail(entityType: 'customer' | 'supplier', entityId: str
         const { data: receipts, error } = await supabase
           .from('export_receipts')
           .select(`
-            id, code, export_date, total_amount, paid_amount, debt_amount, original_debt_amount, note,
+            id, code, export_date, total_amount, paid_amount, debt_amount, original_debt_amount, note, status,
             export_receipt_items(id, product_name, sku, imei, sale_price, note, status)
           `)
           .eq('customer_id', entityId)
-          .eq('status', 'completed')
+          .in('status', ['completed', 'partial_return', 'full_return'])
           .gte('debt_amount', 0)
           .order('export_date', { ascending: false });
         if (error) throw error;
