@@ -218,11 +218,17 @@ export default function ReturnsPage() {
     setPaymentSourceFilters([]);
   };
 
-  const handleReturnSuccess = () => {
+  const handleReturnSuccess = (type?: 'import' | 'export') => {
     setViewMode('history');
     setSelectedImportProduct(null);
     setSelectedExportItem(null);
     setSearchParams({});
+    // Switch to the relevant tab to show the newly created return
+    if (type === 'import') {
+      setHistoryTab('import');
+    } else if (type === 'export') {
+      setHistoryTab('export');
+    }
   };
 
   const handleCancel = () => {
@@ -393,7 +399,7 @@ export default function ReturnsPage() {
         <div className="p-6 max-w-4xl mx-auto">
           <ImportReturnForm 
             product={selectedImportProduct} 
-            onSuccess={handleReturnSuccess}
+            onSuccess={() => handleReturnSuccess('import')}
             onCancel={handleCancel}
           />
         </div>
@@ -418,7 +424,7 @@ export default function ReturnsPage() {
         <div className="p-6 max-w-4xl mx-auto">
           <ExportReturnForm 
             item={selectedExportItem} 
-            onSuccess={handleReturnSuccess}
+            onSuccess={() => handleReturnSuccess('export')}
             onCancel={handleCancel}
           />
         </div>
