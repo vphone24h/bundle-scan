@@ -251,7 +251,7 @@ export function ReceiptReturnDialog({
       return;
     }
 
-    if (Math.abs(totalPayment - refundAmount) > 1) {
+    if (recordToCashBook && Math.abs(totalPayment - refundAmount) > 1) {
       toast({
         title: 'Số tiền không khớp',
         description: `Tổng tiền hoàn cho khách phải bằng ${formatCurrencyWithSpaces(refundAmount)}`,
