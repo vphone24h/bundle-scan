@@ -927,6 +927,7 @@ export function useReturnImportReceipt() {
             fee_amount: productFeeAmount,
             note: note || `Trả toàn bộ phiếu ${receipt.code}`,
             created_by: user.id,
+            tenant_id: tenantId,
           }])
           .select()
           .single();
