@@ -399,7 +399,7 @@ export default function ReturnsPage() {
         <div className="p-6 max-w-4xl mx-auto">
           <ImportReturnForm 
             product={selectedImportProduct} 
-            onSuccess={handleReturnSuccess}
+            onSuccess={() => handleReturnSuccess('import')}
             onCancel={handleCancel}
           />
         </div>
