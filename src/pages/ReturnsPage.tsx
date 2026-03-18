@@ -243,25 +243,27 @@ export default function ReturnsPage() {
   // Filter and combine returns
   const filteredImportReturns = useMemo(() => {
     return importReturns?.filter((r) => {
+      const q = searchTerm.toLowerCase();
       const matchesSearch =
-        r.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.imei?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.suppliers?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+        (r.product_name || '').toLowerCase().includes(q) ||
+        (r.sku || '').toLowerCase().includes(q) ||
+        (r.imei || '').toLowerCase().includes(q) ||
+        (r.code || '').toLowerCase().includes(q) ||
+        (r.suppliers?.name || '').toLowerCase().includes(q);
       return matchesSearch;
     }) || [];
   }, [importReturns, searchTerm]);
 
   const filteredExportReturns = useMemo(() => {
     return exportReturns?.filter((r) => {
+      const q = searchTerm.toLowerCase();
       const matchesSearch =
-        r.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.imei?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.customers?.phone?.includes(searchTerm);
+        (r.product_name || '').toLowerCase().includes(q) ||
+        (r.sku || '').toLowerCase().includes(q) ||
+        (r.imei || '').toLowerCase().includes(q) ||
+        (r.code || '').toLowerCase().includes(q) ||
+        (r.customers?.name || '').toLowerCase().includes(q) ||
+        (r.customers?.phone || '').includes(searchTerm);
       return matchesSearch;
     }) || [];
   }, [exportReturns, searchTerm]);
