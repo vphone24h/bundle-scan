@@ -429,9 +429,8 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={createExportReturn.isPending || (recordToCashBook && Math.abs(remaining) > 1)}
+          disabled={recordToCashBook && Math.abs(remaining) > 1}
         >
-          {createExportReturn.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Xác nhận trả hàng
         </Button>
       </div>
