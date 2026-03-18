@@ -521,12 +521,93 @@ export function useCreateExportReturn() {
       let newImportReceiptId: string | null = null;
       let newProductId: string | null = null;
 
+      if (feeType !== 'none' && storeKeepAmount > 0) {
+        // TRẢ HÀNG CÓ PHÍ: Tạo phiếu nhập MỚI + sản phẩm MỚI
+        // KHÔNG update sản phẩm cũ - sản phẩm cũ vẫn ở trạng thái 'sold'
+        const importCode = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+        const newImportPrice = item.sale_price - storeKeepAmount;
+
+        // Lấy thông tin sản phẩm gốc để lấy supplier_id
+        let originalSupplierIdForReceipt: string | null = null;
+        if (item.product_id) {
+          const { data: origProduct } = await supabase
+            .from('products')
+            .select('supplier_id')
+            .eq('id', item.product_id)
+            .single();
+          originalSupplierIdForReceipt = origProduct?.supplier_id || null;
+        }
+
+        // Tạo phiếu nhập mới
+        const { data: newReceipt, error: receiptError } = await supabase
+          .from('import_receipts')
+          .insert([{
+            code: importCode,
+            total_amount: newImportPrice,
+            paid_amount: newImportPrice,
+            debt_amount: 0,
+            created_by: user.id,
+            note: `Tự động tạo từ phiếu trả hàng ${code}`,
+            tenant_id: tenantId,
+            branch_id: item.branch_id,
+            supplier_id: originalSupplierIdForReceipt,
+          }])
+          .select()
+          .single();
+
+        if (receiptError) throw receiptError;
+        newImportReceiptId = newReceipt.id;
+
+        // Lấy thông tin sản phẩm gốc để copy
+        let originalProduct = null;
+        if (item.product_id) {
+          const { data: productData } = await supabase
+            .from('products')
+            .select('name, sku, imei, category_id, supplier_id')
+            .eq('id', item.product_id)
+            .single();
+          originalProduct = productData;
+        }
+
+        // Tạo SẢN PHẨM MỚI với cùng IMEI, giá nhập = giá bán - phí
+        const { data: newProduct, error: productError } = await supabase
+          .from('products')
+          .insert([{
+            name: originalProduct?.name || item.product_name,
+            sku: originalProduct?.sku || item.sku,
+            imei: originalProduct?.imei || item.imei,
+            import_price: newImportPrice,
+            quantity: 1,
+            status: 'in_stock',
+            category_id: originalProduct?.category_id || null,
+            supplier_id: originalProduct?.supplier_id || null,
+            branch_id: item.branch_id,
+            import_receipt_id: newImportReceiptId,
+            import_date: now.toISOString(),
+            tenant_id: tenantId,
+          }])
+          .select()
+          .single();
+
+        if (productError) throw productError;
+        newProductId = newProduct.id;
+
+        // Ghi lịch sử IMEI nếu có
+        if (item.imei) {
+          await supabase.from('imei_histories').insert([{
+            product_id: newProduct.id,
+            imei: item.imei,
+            action_type: 'return_with_fee',
+            price: newImportPrice,
+            note: `Trả hàng có phí từ phiếu ${code}. Sản phẩm mới được tạo với giá nhập = ${newImportPrice.toLocaleString('vi-VN')}đ`,
+            created_by: user.id,
+          }]);
+        }
+
         // Only record fee to cash book if NOT using debt as payment source
         const hasNonDebtPayment = payments.some(p => p.source !== 'debt');
         if (recordToCashBook && hasNonDebtPayment) {
-          // Find a non-debt payment source for the fee entry
           const nonDebtSource = payments.find(p => p.source !== 'debt')?.source || 'cash';
-          // Phí trả hàng
           const { error: incomeError } = await supabase
             .from('cash_book')
             .insert([{
