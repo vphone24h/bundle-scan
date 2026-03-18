@@ -648,6 +648,56 @@ export function DebtDetailDialog({
         </div>
   );
 
+  const receiptDetailContent = selectedReceipt ? (
+    <>
+      <div className="text-sm text-muted-foreground mb-2">
+        {format(
+          new Date(entityType === 'customer' ? selectedReceipt.export_date : selectedReceipt.import_date),
+          'dd/MM/yyyy HH:mm',
+          { locale: vi }
+        )}
+        {' · '}Tổng: <span className="font-semibold text-foreground">{formatNumber(selectedReceipt?.total_amount || 0)}</span>
+        {selectedReceipt?.debt_amount > 0 && (
+          <span> · Nợ: <span className="font-semibold text-destructive">{formatNumber(selectedReceipt.debt_amount)}</span></span>
+        )}
+      </div>
+      <div className="space-y-2">
+        {(() => {
+          const items = entityType === 'customer'
+            ? selectedReceipt?.export_receipt_items || []
+            : selectedReceipt?.products || [];
+          if (items.length === 0) {
+            return <div className="text-center py-6 text-muted-foreground">Không có sản phẩm</div>;
+          }
+          return items.map((item: any, idx: number) => {
+            const name = entityType === 'customer' ? item.product_name : item.name;
+            const price = entityType === 'customer' ? item.sale_price : item.import_price;
+            return (
+              <div key={item.id || idx} className="border rounded-lg p-3 bg-card">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm break-words">{name}</p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                      {item.sku && <span className="text-xs text-muted-foreground">SKU: {item.sku}</span>}
+                      {item.imei && <Badge variant="outline" className="text-xs font-mono">IMEI: {item.imei}</Badge>}
+                    </div>
+                    {item.note && <p className="text-xs text-muted-foreground mt-1 italic">{item.note}</p>}
+                  </div>
+                  <p className="font-semibold text-sm shrink-0">{formatNumber(price || 0)}</p>
+                </div>
+              </div>
+            );
+          });
+        })()}
+      </div>
+      {selectedReceipt?.note && (
+        <div className="mt-2 p-2 bg-muted/50 rounded text-sm text-muted-foreground">
+          <span className="font-medium">Ghi chú:</span> {selectedReceipt.note}
+        </div>
+      )}
+    </>
+  ) : null;
+
   const subDialogs = (
     <>
       {entityType === 'customer' && (
