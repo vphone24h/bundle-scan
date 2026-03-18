@@ -162,16 +162,10 @@ export function DebtDetailDialog({
   const additionCount = paymentHistory?.filter(p => p.payment_type === 'addition').length || 0;
   const paymentCount = paymentHistory?.filter(p => p.payment_type === 'payment').length || 0;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
-        <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
-          <DialogTitle className="flex flex-col gap-1">
-            <span>Chi tiết công nợ</span>
-          </DialogTitle>
-        </DialogHeader>
+  const isMobile = useIsMobile();
 
-        <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-4">
+  const mainContent = (
+    <div className="space-y-4">
         {/* Header Summary */}
         <Card className="bg-muted/50 relative shrink-0">
           <Button
