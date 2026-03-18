@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useCreateDebtPayment } from '@/hooks/useDebt';
 import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
@@ -40,6 +40,7 @@ interface DebtPaymentDialogProps {
   remainingAmount: number;
   branchId: string | null;
   mergedEntityIds?: string[];
+  nested?: boolean;
 }
 
 const BUILT_IN_PAYMENT_SOURCES = [
@@ -57,11 +58,12 @@ export function DebtPaymentDialog({
   remainingAmount,
   branchId,
   mergedEntityIds,
+  nested = false,
 }: DebtPaymentDialogProps) {
   const { data: customPaymentSources = [] } = useCustomPaymentSources();
 
   const allPaymentSources = useMemo(() => {
-    const custom = customPaymentSources.map(s => ({
+    const custom = customPaymentSources.map((s) => ({
       value: s.id,
       label: s.name,
     }));
@@ -73,6 +75,33 @@ export function DebtPaymentDialog({
   ]);
   const [description, setDescription] = useState('');
   const createPayment = useCreateDebtPayment();
+
+  const forceReleaseStuckInteraction = () => {
+    requestAnimationFrame(() => {
+      if (document.body.style.pointerEvents === 'none') {
+        document.body.style.pointerEvents = '';
+      }
+    });
+  };
+
+  const resetForm = () => {
+    setPaymentSources([{ id: '1', source: 'cash', amount: '' }]);
+    setDescription('');
+  };
+
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      resetForm();
+      forceReleaseStuckInteraction();
+    }
+    onOpenChange(nextOpen);
+  };
+
+  useEffect(() => {
+    if (!open) {
+      forceReleaseStuckInteraction();
+    }
+  }, [open]);
 
   const totalPayment = paymentSources.reduce(
     (sum, ps) => sum + parseFormattedNumber(ps.amount),
@@ -150,23 +179,14 @@ export function DebtPaymentDialog({
           ? 'Thu nợ thành công'
           : 'Trả nợ thành công'
       );
-      onOpenChange(false);
-      resetForm();
+      handleDialogOpenChange(false);
     } catch (error) {
       toast.error('Có lỗi xảy ra');
     }
   };
 
-  const resetForm = () => {
-    setPaymentSources([{ id: '1', source: 'cash', amount: '' }]);
-    setDescription('');
-  };
-
   return (
-    <Dialog open={open} onOpenChange={(open) => {
-      if (!open) resetForm();
-      onOpenChange(open);
-    }}>
+    <Dialog modal={!nested} open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="max-w-md" onCloseAutoFocus={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -192,7 +212,7 @@ export function DebtPaymentDialog({
           {/* Payment sources */}
           <div className="space-y-3">
             <Label>Nguồn tiền</Label>
-            {paymentSources.map((ps, index) => (
+            {paymentSources.map((ps) => (
               <Card key={ps.id}>
                 <CardContent className="p-3">
                   <div className="flex gap-2 items-start">
@@ -263,7 +283,7 @@ export function DebtPaymentDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => handleDialogOpenChange(false)}>
             Hủy
           </Button>
           <Button
