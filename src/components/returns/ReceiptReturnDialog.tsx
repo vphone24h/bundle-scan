@@ -514,7 +514,32 @@ export function ReceiptReturnDialog({
                 </CardContent>
               </Card>
 
+              {/* Cash Book Toggle */}
+              <Card>
+                <CardContent className="py-3 space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="receipt_record_to_cashbook"
+                      checked={recordToCashBook}
+                      onCheckedChange={(checked) => setRecordToCashBook(checked === true)}
+                    />
+                    <Label htmlFor="receipt_record_to_cashbook" className="cursor-pointer text-sm">
+                      <span className="font-medium">Ghi dòng tiền vào sổ quỹ</span>
+                      <p className="text-xs text-muted-foreground">
+                        Bỏ tích nếu không muốn ảnh hưởng sổ quỹ (ví dụ: bảo hành)
+                      </p>
+                    </Label>
+                  </div>
+                  {!recordToCashBook && (
+                    <div className="p-2 rounded-lg bg-warning/10 border border-warning/30 text-xs text-warning">
+                      ⚠️ Giao dịch này sẽ KHÔNG được ghi vào sổ quỹ
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Payment Lines */}
+              {recordToCashBook && (
               <Card>
                 <CardHeader className="py-3 flex flex-row items-center justify-between">
                   <CardTitle className="text-sm">Dòng tiền hoàn trả</CardTitle>
@@ -566,23 +591,6 @@ export function ReceiptReturnDialog({
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Business Accounting */}
-              {feeType !== 'none' && (
-                <Card>
-                  <CardContent className="py-3">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="receipt_business_accounting"
-                        checked={isBusinessAccounting}
-                        onCheckedChange={(checked) => setIsBusinessAccounting(checked === true)}
-                      />
-                      <Label htmlFor="receipt_business_accounting" className="cursor-pointer text-sm">
-                        Hạch toán kinh doanh (phí vào Thu nhập khác)
-                      </Label>
-                    </div>
-                  </CardContent>
-                </Card>
               )}
 
               {/* Note */}
