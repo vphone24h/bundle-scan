@@ -332,21 +332,6 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
               ⚠️ Giao dịch này sẽ KHÔNG được ghi vào sổ quỹ
             </div>
           )}
-          {feeType !== 'none' && recordToCashBook && (
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="business_accounting"
-                checked={isBusinessAccounting}
-                onCheckedChange={(checked) => setIsBusinessAccounting(checked === true)}
-              />
-              <Label htmlFor="business_accounting" className="cursor-pointer">
-                <span className="font-medium">Hạch toán kinh doanh</span>
-                <p className="text-sm text-muted-foreground">
-                  Phí trả hàng sẽ được tính vào Thu nhập khác trong báo cáo
-                </p>
-              </Label>
-            </div>
-          )}
         </CardContent>
       </Card>
 

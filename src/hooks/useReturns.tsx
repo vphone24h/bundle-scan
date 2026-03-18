@@ -604,28 +604,7 @@ export function useCreateExportReturn() {
           }]);
         }
 
-        // Only record fee to cash book if NOT using debt as payment source
-        const hasNonDebtPayment = payments.some(p => p.source !== 'debt');
-        if (recordToCashBook && hasNonDebtPayment) {
-          const nonDebtSource = payments.find(p => p.source !== 'debt')?.source || 'cash';
-          const { error: incomeError } = await supabase
-            .from('cash_book')
-            .insert([{
-              type: 'income' as const,
-              category: 'Thu nhap khac',
-              description: `Phí trả hàng: ${item.product_name} (${code})`,
-              amount: storeKeepAmount,
-              payment_source: nonDebtSource,
-              is_business_accounting: false,
-              branch_id: item.branch_id,
-              reference_id: null,
-              reference_type: 'export_return_fee',
-              created_by: user.id,
-              tenant_id: tenantId,
-            }]);
-
-          if (incomeError) throw incomeError;
-        }
+        // Phí trả hàng không ghi vào sổ quỹ - số tiền này đã được tính vào lợi nhuận lúc bán
       } else {
         // Trả hàng không có phí - hoàn lại kho với giá nhập TB hiện tại
         if (item.product_id) {
