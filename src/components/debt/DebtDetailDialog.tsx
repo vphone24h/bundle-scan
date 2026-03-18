@@ -416,28 +416,28 @@ export function DebtDetailDialog({
                             className={`border rounded-lg p-3 cursor-pointer hover:bg-accent/50 transition-colors ${r.isFullyPaid ? 'bg-muted/30 opacity-80' : 'bg-card'}`}
                             onClick={() => setSelectedReceipt(r.receipt)}
                           >
-                            <div className="flex items-center gap-2 mb-1">
-                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800">
+                            <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                              <Badge variant="outline" className="text-xs shrink-0 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800">
                                 Đơn hàng
                               </Badge>
                               {r.isFullyPaid && (
-                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800">
+                                <Badge variant="outline" className="text-xs shrink-0 bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800">
                                   Đã trả hết
                                 </Badge>
                               )}
                               <span className="text-xs text-muted-foreground">
                                 {format(new Date(r.date), 'dd/MM/yyyy', { locale: vi })}
                               </span>
-                              <span className="text-xs font-mono text-muted-foreground ml-auto">{r.code}</span>
+                              <span className="text-xs font-mono text-muted-foreground ml-auto truncate max-w-[140px]">{r.code}</span>
                             </div>
-                            <div className="flex justify-between items-center text-sm">
-                              <div className="text-muted-foreground">
-                                Tổng: {formatNumber(r.totalAmount)}
+                            <div className="flex justify-between items-start gap-2 text-sm">
+                              <div className="text-muted-foreground min-w-0">
+                                <div>Tổng: {formatNumber(r.totalAmount)}</div>
                                 {r.totalAmount - r.originalDebt > 0 && (
-                                  <span className="ml-2">· Trả tại quầy: {formatNumber(r.totalAmount - r.originalDebt)}</span>
+                                  <div>Trả tại quầy: {formatNumber(r.totalAmount - r.originalDebt)}</div>
                                 )}
                               </div>
-                              <span className={`font-semibold ${r.isFullyPaid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                              <span className={`font-semibold shrink-0 ${r.isFullyPaid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
                                 {formatNumber(r.originalDebt)}
                                 {r.isFullyPaid && <span className="text-xs ml-1">✓</span>}
                               </span>
