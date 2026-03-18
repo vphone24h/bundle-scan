@@ -338,14 +338,16 @@ export function ReceiptReturnDialog({
           }
         }
 
-        // Consolidated fee income entry if applicable
-        if (storeKeepAmount > 0) {
+        // Consolidated fee income entry - only if there's a non-debt payment source
+        // When all payments are via debt, fee stays as remaining debt (no cash book entry)
+        const nonDebtPayments = validPayments.filter(p => p.source !== 'debt');
+        if (storeKeepAmount > 0 && nonDebtPayments.length > 0) {
           await supabase.from('cash_book').insert([{
             type: 'income' as const,
             category: 'Thu nhap khac',
             description: `Phí trả hàng phiếu ${receipt.code} (${returnableItems.length} SP)`,
             amount: storeKeepAmount,
-            payment_source: validPayments[0]?.source || 'cash',
+            payment_source: nonDebtPayments[0]?.source || 'cash',
             is_business_accounting: false,
             branch_id: receipt.branch_id,
             reference_id: receipt.id,
