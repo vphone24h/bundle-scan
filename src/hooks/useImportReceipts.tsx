@@ -991,6 +991,7 @@ export function useReturnImportReceipt() {
         table_name: 'import_returns',
         record_id: returnIds[0] || null,
         branch_id: receipt.branch_id,
+        tenant_id: tenantId,
         new_data: {
           receipt_code: receipt.code,
           products_returned: products.length,
