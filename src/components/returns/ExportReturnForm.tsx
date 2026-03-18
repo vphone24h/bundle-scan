@@ -141,7 +141,7 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
           product_id: item.product_id,
           export_receipt_id: item.receipt_id,
           export_receipt_item_id: item.id,
-          customer_id: null,
+          customer_id: item.export_receipts?.customer_id || null,
           branch_id: item.export_receipts?.branch_id || null,
           product_name: item.product_name,
           sku: item.sku,
