@@ -542,8 +542,8 @@ export function ReceiptReturnDialog({
                 </CardContent>
               </Card>
 
-              {/* Payment Lines */}
-              {recordToCashBook && (
+              {/* Payment Lines - always show so debt payments work even without cash book */}
+              {(recordToCashBook || payments.some(p => p.source === 'debt')) && (
               <Card>
                 <CardHeader className="py-3 flex flex-row items-center justify-between">
                   <CardTitle className="text-sm">Dòng tiền hoàn trả</CardTitle>
