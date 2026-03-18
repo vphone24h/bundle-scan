@@ -597,7 +597,7 @@ export function DebtDetailDialog({
                               </span>
                             </div>
 
-                            <p className="text-sm truncate">{payment.description}</p>
+                            <p className="text-sm break-words line-clamp-2">{payment.description}</p>
 
                             {payment.profiles?.display_name && (
                               <p className="text-xs text-muted-foreground mt-1">
