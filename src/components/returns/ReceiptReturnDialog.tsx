@@ -56,6 +56,7 @@ export function ReceiptReturnDialog({
   const [feeDisplayAmount, setFeeDisplayAmount] = useState<string>('');
   const [note, setNote] = useState('');
   const [isBusinessAccounting, setIsBusinessAccounting] = useState(true);
+  const [recordToCashBook, setRecordToCashBook] = useState(true);
   const [payments, setPayments] = useState<PaymentLine[]>([]);
   const [paymentsTouched, setPaymentsTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -250,7 +251,7 @@ export function ReceiptReturnDialog({
       return;
     }
 
-    if (Math.abs(totalPayment - refundAmount) > 1) {
+    if (recordToCashBook && Math.abs(totalPayment - refundAmount) > 1) {
       toast({
         title: 'Số tiền không khớp',
         description: `Tổng tiền hoàn cho khách phải bằng ${formatCurrencyWithSpaces(refundAmount)}`,
@@ -313,7 +314,7 @@ export function ReceiptReturnDialog({
       const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
       const { data: { user } } = await supabase.auth.getUser();
 
-      if (user && tenantId) {
+      if (recordToCashBook && user && tenantId) {
         for (const payment of validPayments) {
           if (payment.source !== 'debt') {
             // Build product details for the note
@@ -337,8 +338,6 @@ export function ReceiptReturnDialog({
             }]);
           }
         }
-
-        // Phí trả hàng không ghi vào sổ quỹ - số tiền này đã được tính vào lợi nhuận lúc bán
       }
 
       toast({
@@ -513,7 +512,32 @@ export function ReceiptReturnDialog({
                 </CardContent>
               </Card>
 
+              {/* Cash Book Toggle */}
+              <Card>
+                <CardContent className="py-3 space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="receipt_record_to_cashbook"
+                      checked={recordToCashBook}
+                      onCheckedChange={(checked) => setRecordToCashBook(checked === true)}
+                    />
+                    <Label htmlFor="receipt_record_to_cashbook" className="cursor-pointer text-sm">
+                      <span className="font-medium">Ghi dòng tiền vào sổ quỹ</span>
+                      <p className="text-xs text-muted-foreground">
+                        Bỏ tích nếu không muốn ảnh hưởng sổ quỹ (ví dụ: bảo hành)
+                      </p>
+                    </Label>
+                  </div>
+                  {!recordToCashBook && (
+                    <div className="p-2 rounded-lg bg-warning/10 border border-warning/30 text-xs text-warning">
+                      ⚠️ Giao dịch này sẽ KHÔNG được ghi vào sổ quỹ
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Payment Lines */}
+              {recordToCashBook && (
               <Card>
                 <CardHeader className="py-3 flex flex-row items-center justify-between">
                   <CardTitle className="text-sm">Dòng tiền hoàn trả</CardTitle>
@@ -565,23 +589,6 @@ export function ReceiptReturnDialog({
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Business Accounting */}
-              {feeType !== 'none' && (
-                <Card>
-                  <CardContent className="py-3">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="receipt_business_accounting"
-                        checked={isBusinessAccounting}
-                        onCheckedChange={(checked) => setIsBusinessAccounting(checked === true)}
-                      />
-                      <Label htmlFor="receipt_business_accounting" className="cursor-pointer text-sm">
-                        Hạch toán kinh doanh (phí vào Thu nhập khác)
-                      </Label>
-                    </div>
-                  </CardContent>
-                </Card>
               )}
 
               {/* Note */}
@@ -610,8 +617,8 @@ export function ReceiptReturnDialog({
               disabled={
                 isSubmitting ||
                 feeType === '' ||
-                Math.abs(remaining) > 1 ||
-                payments.filter(p => p.amount > 0 && !!p.source).length === 0
+                (recordToCashBook && Math.abs(remaining) > 1) ||
+                (recordToCashBook && payments.filter(p => p.amount > 0 && !!p.source).length === 0)
               }
             >
               {isSubmitting ? (
