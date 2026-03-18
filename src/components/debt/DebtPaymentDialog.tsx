@@ -186,15 +186,10 @@ export function DebtPaymentDialog({
   };
 
   return (
-    <Dialog modal={!nested} open={open} onOpenChange={handleDialogOpenChange}>
+    <Dialog modal open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent
-        className="max-w-md"
+        className="max-w-md z-[60]"
         onCloseAutoFocus={(e) => { e.preventDefault(); forceReleaseStuckInteraction(); }}
-        onPointerDownOutside={(e) => { if (nested) e.preventDefault(); }}
-        onInteractOutside={(e) => { if (nested) e.preventDefault(); }}
-        onEscapeKeyDown={(e) => {
-          // Allow escape to close this dialog, not parent
-        }}
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
