@@ -124,11 +124,12 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
 
   const totalPayment = payments.reduce((sum, p) => sum + p.amount, 0);
   const remaining = totalRefundAmount - totalPayment;
+  const hasDebtPayment = payments.some((p) => p.source === 'debt' && p.amount > 0);
 
   const handleSubmit = async () => {
     if (!receipt) return;
 
-    if (recordToCashBook && totalPayment !== totalRefundAmount) {
+    if ((recordToCashBook || hasDebtPayment) && totalPayment !== totalRefundAmount) {
       toast({
         title: 'Số tiền không khớp',
         description: `Tổng tiền hoàn trả phải bằng ${formatCurrencyWithSpaces(totalRefundAmount)}`,
@@ -143,10 +144,13 @@ export function ReturnImportReceiptDialog({ receipt, open, onOpenChange }: Retur
         feeType,
         feePercentage,
         feeAmount: feeType === 'fixed_amount' ? feeAmount : (feeType === 'percentage' ? supplierKeepAmount : 0),
-        payments: recordToCashBook ? payments.filter(p => p.amount > 0).map(p => ({
-          source: p.source,
-          amount: p.amount,
-        })) : [],
+        payments: payments
+          .filter(p => p.amount > 0)
+          .filter(p => p.source === 'debt' || recordToCashBook)
+          .map(p => ({
+            source: p.source,
+            amount: p.amount,
+          })),
         recordToCashBook,
         note: note || null,
       });

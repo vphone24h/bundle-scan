@@ -85,6 +85,7 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
 
   const totalPayment = payments.reduce((sum, p) => sum + p.amount, 0);
   const remaining = refundAmount - totalPayment;
+  const hasDebtPayment = payments.some((p) => p.source === 'debt' && p.amount > 0);
 
   const handleAddPayment = () => {
     setPayments([
@@ -112,7 +113,7 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
   };
 
   const handleSubmit = async () => {
-    if (recordToCashBook && totalPayment !== refundAmount) {
+    if ((recordToCashBook || hasDebtPayment) && totalPayment !== refundAmount) {
       toast({
         title: 'Số tiền không khớp',
         description: `Tổng tiền hoàn trả phải bằng ${formatCurrencyWithSpaces(refundAmount)}`,
@@ -137,10 +138,13 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
         feeType,
         feePercentage,
         feeAmount: feeType === 'fixed_amount' ? feeAmount : (feeType === 'percentage' ? supplierKeepAmount : 0),
-        payments: recordToCashBook ? payments.filter(p => p.amount > 0).map(p => ({
-          source: p.source,
-          amount: p.amount,
-        })) : [],
+        payments: payments
+          .filter(p => p.amount > 0)
+          .filter(p => p.source === 'debt' || recordToCashBook)
+          .map(p => ({
+            source: p.source,
+            amount: p.amount,
+          })),
         recordToCashBook,
         note: note || null,
       });
