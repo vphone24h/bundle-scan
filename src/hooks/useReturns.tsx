@@ -527,6 +527,17 @@ export function useCreateExportReturn() {
         const importCode = `PN${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
         const newImportPrice = item.sale_price - storeKeepAmount;
 
+        // Lấy thông tin sản phẩm gốc để lấy supplier_id
+        let originalSupplierIdForReceipt: string | null = null;
+        if (item.product_id) {
+          const { data: origProduct } = await supabase
+            .from('products')
+            .select('supplier_id')
+            .eq('id', item.product_id)
+            .single();
+          originalSupplierIdForReceipt = origProduct?.supplier_id || null;
+        }
+
         // Tạo phiếu nhập mới
         const { data: newReceipt, error: receiptError } = await supabase
           .from('import_receipts')
@@ -539,6 +550,7 @@ export function useCreateExportReturn() {
             note: `Tự động tạo từ phiếu trả hàng ${code}`,
             tenant_id: tenantId,
             branch_id: item.branch_id,
+            supplier_id: originalSupplierIdForReceipt,
           }])
           .select()
           .single();
