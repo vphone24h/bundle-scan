@@ -617,8 +617,8 @@ export function ReceiptReturnDialog({
               disabled={
                 isSubmitting ||
                 feeType === '' ||
-                Math.abs(remaining) > 1 ||
-                payments.filter(p => p.amount > 0 && !!p.source).length === 0
+                (recordToCashBook && Math.abs(remaining) > 1) ||
+                (recordToCashBook && payments.filter(p => p.amount > 0 && !!p.source).length === 0)
               }
             >
               {isSubmitting ? (
