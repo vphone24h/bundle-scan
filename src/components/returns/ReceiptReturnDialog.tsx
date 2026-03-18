@@ -272,7 +272,9 @@ export function ReceiptReturnDialog({
     setIsSubmitting(true);
 
     try {
-      // Process each item sequentially - WITHOUT recording to cash book individually
+      // Process each item sequentially
+      // Pass debt payments through so useCreateExportReturn handles FIFO
+      // Pass non-debt with recordToCashBook=false to consolidate cash book below
       const returnCodes: string[] = [];
       for (let i = 0; i < returnableItems.length; i++) {
         setCurrentIndex(i);
@@ -281,6 +283,10 @@ export function ReceiptReturnDialog({
         const itemPayments = calculateItemPayments(item.sale_price, itemFee)
           .filter(p => p.amount > 0)
           .filter(p => !!p.source);
+
+        // Split: debt payments always go through hook for FIFO; non-debt skip cash book
+        const debtPayments = itemPayments.filter(p => p.source === 'debt');
+        const nonDebtPayments = itemPayments.filter(p => p.source !== 'debt');
 
         const result = await createExportReturn.mutateAsync({
           item: {
@@ -300,15 +306,16 @@ export function ReceiptReturnDialog({
           feeType: itemFee.feeType,
           feePercentage: itemFee.feePercentage,
           feeAmount: itemFee.feeAmount,
+          // Pass ALL payments (debt + non-debt) so hook handles debt FIFO correctly
           payments: itemPayments,
           isBusinessAccounting,
-          recordToCashBook: false, // Don't record individually - we'll consolidate below
+          recordToCashBook: false, // Don't record non-debt individually - we'll consolidate below
           note: i === 0 ? (note || `Trả toàn bộ phiếu ${receipt.code}`) : null,
         });
         returnCodes.push(result.code);
       }
 
-      // Consolidated cash book entry - ONE entry per payment source for the whole receipt
+      // Consolidated cash book entry - ONE entry per non-debt payment source for the whole receipt
       const validPayments = payments.filter(p => p.amount > 0 && !!p.source);
       const { supabase } = await import('@/integrations/supabase/client');
       const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
@@ -317,7 +324,6 @@ export function ReceiptReturnDialog({
       if (recordToCashBook && user && tenantId) {
         for (const payment of validPayments) {
           if (payment.source !== 'debt') {
-            // Build product details for the note
             const productDetails = returnableItems.map(item => 
               `${item.product_name}${item.imei ? ` (IMEI: ${item.imei})` : ''}: ${formatCurrencyWithSpaces(item.sale_price)}`
             ).join('\n');
@@ -536,8 +542,8 @@ export function ReceiptReturnDialog({
                 </CardContent>
               </Card>
 
-              {/* Payment Lines */}
-              {recordToCashBook && (
+              {/* Payment Lines - always show so debt payments work even without cash book */}
+              {(recordToCashBook || payments.some(p => p.source === 'debt')) && (
               <Card>
                 <CardHeader className="py-3 flex flex-row items-center justify-between">
                   <CardTitle className="text-sm">Dòng tiền hoàn trả</CardTitle>
