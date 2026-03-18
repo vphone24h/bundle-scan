@@ -424,7 +424,7 @@ export default function ReturnsPage() {
         <div className="p-6 max-w-4xl mx-auto">
           <ExportReturnForm 
             item={selectedExportItem} 
-            onSuccess={handleReturnSuccess}
+            onSuccess={() => handleReturnSuccess('export')}
             onCancel={handleCancel}
           />
         </div>
