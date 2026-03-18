@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, History, Phone, Building2, Filter, Pencil, ChevronDown, ChevronRight, Package, Wallet, Plus } from 'lucide-react';
+import { FileText, History, Phone, Building2, Filter, Pencil, ChevronDown, ChevronRight, Package, Wallet, Plus, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { EditCustomerDebtDialog } from './EditCustomerDebtDialog';
