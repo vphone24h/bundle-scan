@@ -462,9 +462,9 @@ export function DebtDetailDialog({
                                 {format(new Date(p.date), 'dd/MM/yyyy HH:mm', { locale: vi })}
                               </span>
                             </div>
-                            <div className="flex justify-between items-center text-sm">
-                              <div>
-                                <p className="truncate text-muted-foreground">{p.description}</p>
+                            <div className="flex justify-between items-start gap-2 text-sm">
+                              <div className="min-w-0 flex-1">
+                                <p className="break-words line-clamp-2 text-muted-foreground">{p.description}</p>
                                 {p.createdBy && (
                                   <p className="text-xs text-muted-foreground">Người thu: {p.createdBy}</p>
                                 )}
