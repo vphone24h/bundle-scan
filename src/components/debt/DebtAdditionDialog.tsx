@@ -104,7 +104,12 @@ export function DebtAdditionDialog({
 
   return (
     <Dialog modal={!nested} open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="max-w-md" onCloseAutoFocus={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
+      <DialogContent
+        className="max-w-md"
+        onCloseAutoFocus={(e) => { e.preventDefault(); forceReleaseStuckInteraction(); }}
+        onPointerDownOutside={(e) => { if (nested) e.preventDefault(); }}
+        onInteractOutside={(e) => { if (nested) e.preventDefault(); }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
