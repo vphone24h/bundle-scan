@@ -187,7 +187,15 @@ export function DebtPaymentDialog({
 
   return (
     <Dialog modal={!nested} open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="max-w-md" onCloseAutoFocus={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
+      <DialogContent
+        className="max-w-md"
+        onCloseAutoFocus={(e) => { e.preventDefault(); forceReleaseStuckInteraction(); }}
+        onPointerDownOutside={(e) => { if (nested) e.preventDefault(); }}
+        onInteractOutside={(e) => { if (nested) e.preventDefault(); }}
+        onEscapeKeyDown={(e) => {
+          // Allow escape to close this dialog, not parent
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wallet className="h-5 w-5" />
@@ -223,7 +231,7 @@ export function DebtPaymentDialog({
                       <SelectTrigger className="w-[140px]">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-popover">
+                      <SelectContent className="bg-popover z-[9999]" position="popper" sideOffset={4}>
                         {allPaymentSources.map((source) => (
                           <SelectItem key={source.value} value={source.value}>
                             {source.label}

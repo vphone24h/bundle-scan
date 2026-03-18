@@ -718,7 +718,8 @@ export function DebtDetailDialog({
         entityId={entityId}
         entityName={entityName}
         remainingAmount={liveRemaining}
-        branchId={branchId || undefined}
+        branchId={branchId ?? null}
+        mergedEntityIds={mergedEntityIds}
         nested
       />
 
@@ -729,7 +730,8 @@ export function DebtDetailDialog({
         entityId={entityId}
         entityName={entityName}
         remainingAmount={liveRemaining}
-        branchId={branchId || undefined}
+        branchId={branchId ?? null}
+        mergedEntityIds={mergedEntityIds}
         nested
       />
 
