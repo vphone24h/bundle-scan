@@ -218,11 +218,17 @@ export default function ReturnsPage() {
     setPaymentSourceFilters([]);
   };
 
-  const handleReturnSuccess = () => {
+  const handleReturnSuccess = (type?: 'import' | 'export') => {
     setViewMode('history');
     setSelectedImportProduct(null);
     setSelectedExportItem(null);
     setSearchParams({});
+    // Switch to the relevant tab to show the newly created return
+    if (type === 'import') {
+      setHistoryTab('import');
+    } else if (type === 'export') {
+      setHistoryTab('export');
+    }
   };
 
   const handleCancel = () => {
