@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useCreateDebtPayment } from '@/hooks/useDebt';
 import { formatNumber, parseFormattedNumber, formatInputNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
@@ -25,6 +25,7 @@ interface DebtAdditionDialogProps {
   remainingAmount: number;
   branchId: string | null;
   mergedEntityIds?: string[];
+  nested?: boolean;
 }
 
 export function DebtAdditionDialog({
@@ -36,14 +37,42 @@ export function DebtAdditionDialog({
   remainingAmount,
   branchId,
   mergedEntityIds,
+  nested = false,
 }: DebtAdditionDialogProps) {
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
   const createPayment = useCreateDebtPayment();
 
+  const forceReleaseStuckInteraction = () => {
+    requestAnimationFrame(() => {
+      if (document.body.style.pointerEvents === 'none') {
+        document.body.style.pointerEvents = '';
+      }
+    });
+  };
+
+  const resetForm = () => {
+    setAmount('');
+    setReason('');
+  };
+
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      resetForm();
+      forceReleaseStuckInteraction();
+    }
+    onOpenChange(nextOpen);
+  };
+
+  useEffect(() => {
+    if (!open) {
+      forceReleaseStuckInteraction();
+    }
+  }, [open]);
+
   const handleSubmit = async () => {
     const numAmount = parseFormattedNumber(amount);
-    
+
     if (numAmount <= 0) {
       toast.error('Vui lòng nhập số tiền');
       return;
@@ -67,23 +96,14 @@ export function DebtAdditionDialog({
       });
 
       toast.success('Đã cộng thêm nợ');
-      onOpenChange(false);
-      resetForm();
+      handleDialogOpenChange(false);
     } catch (error) {
       toast.error('Có lỗi xảy ra');
     }
   };
 
-  const resetForm = () => {
-    setAmount('');
-    setReason('');
-  };
-
   return (
-    <Dialog open={open} onOpenChange={(open) => {
-      if (!open) resetForm();
-      onOpenChange(open);
-    }}>
+    <Dialog modal={!nested} open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="max-w-md" onCloseAutoFocus={(e) => e.preventDefault()} onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -130,7 +150,7 @@ export function DebtAdditionDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => handleDialogOpenChange(false)}>
             Hủy
           </Button>
           <Button

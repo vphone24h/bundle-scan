@@ -719,6 +719,7 @@ export function DebtDetailDialog({
         entityName={entityName}
         remainingAmount={liveRemaining}
         branchId={branchId || undefined}
+        nested
       />
 
       <DebtAdditionDialog
@@ -729,6 +730,7 @@ export function DebtDetailDialog({
         entityName={entityName}
         remainingAmount={liveRemaining}
         branchId={branchId || undefined}
+        nested
       />
 
       {/* Receipt Detail Popup */}
