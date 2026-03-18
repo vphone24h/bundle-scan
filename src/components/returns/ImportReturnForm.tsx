@@ -112,7 +112,7 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
     }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if ((recordToCashBook || hasDebtPayment) && totalPayment !== refundAmount) {
       toast({
         title: 'Số tiền không khớp',
@@ -122,46 +122,51 @@ export function ImportReturnForm({ product, onSuccess, onCancel }: ImportReturnF
       return;
     }
 
-    try {
-      await createImportReturn.mutateAsync({
-        product: {
-          id: product.id,
-          name: product.name,
-          sku: product.sku,
-          imei: product.imei,
-          import_price: product.import_price,
-          import_receipt_id: product.import_receipt_id,
-          supplier_id: product.supplier_id,
-          branch_id: product.branch_id,
-          import_date: product.import_date,
-        },
-        feeType,
-        feePercentage,
-        feeAmount: feeType === 'fixed_amount' ? feeAmount : (feeType === 'percentage' ? supplierKeepAmount : 0),
-        payments: payments
-          .filter(p => p.amount > 0)
-          .filter(p => p.source === 'debt' || recordToCashBook)
-          .map(p => ({
-            source: p.source,
-            amount: p.amount,
-          })),
-        recordToCashBook,
-        note: note || null,
-      });
+    const mutationData = {
+      product: {
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        imei: product.imei,
+        import_price: product.import_price,
+        import_receipt_id: product.import_receipt_id,
+        supplier_id: product.supplier_id,
+        branch_id: product.branch_id,
+        import_date: product.import_date,
+      },
+      feeType,
+      feePercentage,
+      feeAmount: feeType === 'fixed_amount' ? feeAmount : (feeType === 'percentage' ? supplierKeepAmount : 0),
+      payments: payments
+        .filter(p => p.amount > 0)
+        .filter(p => p.source === 'debt' || recordToCashBook)
+        .map(p => ({
+          source: p.source,
+          amount: p.amount,
+        })),
+      recordToCashBook,
+      note: note || null,
+    };
 
+    // Close immediately, process in background
+    toast({
+      title: 'Đang xử lý trả hàng...',
+      description: `${product.name}`,
+    });
+    onSuccess();
+
+    createImportReturn.mutateAsync(mutationData).then(() => {
       toast({
         title: 'Trả hàng thành công',
         description: `Đã trả ${product.name} cho nhà cung cấp`,
       });
-
-      onSuccess();
-    } catch (error: any) {
+    }).catch((error: any) => {
       toast({
-        title: 'Lỗi',
+        title: 'Lỗi trả hàng',
         description: error.message || 'Không thể hoàn tất trả hàng',
         variant: 'destructive',
       });
-    }
+    });
   };
 
   return (

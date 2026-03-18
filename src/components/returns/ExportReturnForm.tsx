@@ -117,7 +117,7 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
     setFeeDisplayAmount(formatNumberWithSpaces(numValue));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     // Prevent double submit
     if (isSubmittingRef.current || createExportReturn.isPending) {
       return;
@@ -136,52 +136,56 @@ export function ExportReturnForm({ item, onSuccess, onCancel }: ExportReturnForm
 
     isSubmittingRef.current = true;
 
-    try {
-      // Luôn truyền debt payments (để giảm công nợ), các nguồn khác chỉ truyền khi ghi sổ quỹ
-      const filteredPayments = payments
-        .filter(p => p.amount > 0)
-        .filter(p => p.source === 'debt' || recordToCashBook)
-        .map(p => ({ source: p.source, amount: p.amount }));
+    const filteredPayments = payments
+      .filter(p => p.amount > 0)
+      .filter(p => p.source === 'debt' || recordToCashBook)
+      .map(p => ({ source: p.source, amount: p.amount }));
 
-      await createExportReturn.mutateAsync({
-        item: {
-          id: item.id,
-          product_id: item.product_id,
-          export_receipt_id: item.receipt_id,
-          export_receipt_item_id: item.id,
-          customer_id: item.export_receipts?.customer_id || null,
-          branch_id: item.export_receipts?.branch_id || null,
-          product_name: item.product_name,
-          sku: item.sku,
-          imei: item.imei,
-          import_price: 0, // Will be fetched from product
-          sale_price: item.sale_price,
-          sale_date: item.export_receipts?.export_date || null,
-        },
-        feeType,
-        feePercentage,
-        feeAmount,
-        payments: filteredPayments,
-        isBusinessAccounting,
-        recordToCashBook,
-        note: note || null,
-      });
+    const mutationData = {
+      item: {
+        id: item.id,
+        product_id: item.product_id,
+        export_receipt_id: item.receipt_id,
+        export_receipt_item_id: item.id,
+        customer_id: item.export_receipts?.customer_id || null,
+        branch_id: item.export_receipts?.branch_id || null,
+        product_name: item.product_name,
+        sku: item.sku,
+        imei: item.imei,
+        import_price: 0,
+        sale_price: item.sale_price,
+        sale_date: item.export_receipts?.export_date || null,
+      },
+      feeType,
+      feePercentage,
+      feeAmount,
+      payments: filteredPayments,
+      isBusinessAccounting,
+      recordToCashBook,
+      note: note || null,
+    };
 
+    // Close immediately, process in background
+    toast({
+      title: 'Đang xử lý trả hàng...',
+      description: `${item.product_name}`,
+    });
+    onSuccess();
+
+    createExportReturn.mutateAsync(mutationData).then(() => {
       toast({
         title: 'Trả hàng thành công',
         description: `Đã hoàn ${formatCurrencyWithSpaces(refundAmount)} cho khách hàng`,
       });
-
-      onSuccess();
-    } catch (error: any) {
+    }).catch((error: any) => {
       toast({
-        title: 'Lỗi',
+        title: 'Lỗi trả hàng',
         description: error.message || 'Không thể hoàn tất trả hàng',
         variant: 'destructive',
       });
-    } finally {
+    }).finally(() => {
       isSubmittingRef.current = false;
-    }
+    });
   };
 
   return (
