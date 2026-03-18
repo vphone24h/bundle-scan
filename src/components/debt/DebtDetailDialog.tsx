@@ -646,8 +646,10 @@ export function DebtDetailDialog({
           </TabsContent>
         </Tabs>
         </div>
-      </DialogContent>
+  );
 
+  const subDialogs = (
+    <>
       {entityType === 'customer' && (
         <EditCustomerDebtDialog
           open={showEditCustomer}
@@ -756,6 +758,42 @@ export function DebtDetailDialog({
           )}
         </DialogContent>
       </Dialog>
-    </Dialog>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <Drawer open={open} onOpenChange={onOpenChange}>
+          <DrawerContent className="max-h-[90vh] flex flex-col">
+            <DrawerHeader className="shrink-0">
+              <DrawerTitle className="text-base">Chi tiết công nợ</DrawerTitle>
+            </DrawerHeader>
+            <div className="flex-1 overflow-y-auto px-4 pb-6">
+              {mainContent}
+            </div>
+          </DrawerContent>
+        </Drawer>
+        {subDialogs}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
+            <DialogTitle className="flex flex-col gap-1">
+              <span>Chi tiết công nợ</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-6 pb-6">
+            {mainContent}
+          </div>
+        </DialogContent>
+      </Dialog>
+      {subDialogs}
+    </>
   );
 }
