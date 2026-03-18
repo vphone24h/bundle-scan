@@ -65,22 +65,30 @@ export interface LandingProduct {
   updated_at: string;
 }
 
-// Admin hooks
-export function useLandingProductCategories() {
+// Admin hooks - accept tenantId to avoid redundant RPC calls
+export function useLandingProductCategories(tenantId?: string | null) {
   return useQuery({
-    queryKey: ['landing-product-categories'],
+    queryKey: ['landing-product-categories', tenantId ?? '_auto_'],
     queryFn: async () => {
-      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
-      if (!tenantId) return [];
+      let tid = tenantId;
+      if (!tid) {
+        const { data } = await supabase.rpc('get_user_tenant_id_secure');
+        tid = data;
+      }
+      if (!tid) return [];
       const { data, error } = await supabase
         .from('landing_product_categories' as any)
         .select('*')
-        .eq('tenant_id', tenantId)
+        .eq('tenant_id', tid)
         .order('display_order', { ascending: true })
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as unknown as LandingProductCategory[];
     },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 
@@ -171,22 +179,51 @@ export function useReorderLandingProducts() {
   });
 }
 
-export function useLandingProducts() {
+const LANDING_PRODUCT_LIST_SELECT = `
+  id, tenant_id, category_id, name, price, sale_price,
+  image_url, images, is_featured, is_active, is_sold_out,
+  display_order, created_at, updated_at
+`;
+
+export function useLandingProducts(tenantId?: string | null) {
   return useQuery({
-    queryKey: ['landing-products'],
+    queryKey: ['landing-products', tenantId ?? '_auto_'],
     queryFn: async () => {
-      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
-      if (!tenantId) return [];
+      let tid = tenantId;
+      if (!tid) {
+        const { data } = await supabase.rpc('get_user_tenant_id_secure');
+        tid = data;
+      }
+      if (!tid) return [];
       const { data, error } = await supabase
         .from('landing_products' as any)
-        .select('*')
-        .eq('tenant_id', tenantId)
+        .select(LANDING_PRODUCT_LIST_SELECT)
+        .eq('tenant_id', tid)
         .order('display_order', { ascending: true })
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as unknown as LandingProduct[];
     },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
+}
+
+export async function getLandingProductById(id: string): Promise<LandingProduct | null> {
+  const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+  if (!tenantId) return null;
+
+  const { data, error } = await supabase
+    .from('landing_products' as any)
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as unknown as LandingProduct | null) ?? null;
 }
 
 export function useCreateLandingProduct() {

@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -36,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DebtDetailDialogProps {
   open: boolean;
@@ -160,16 +162,10 @@ export function DebtDetailDialog({
   const additionCount = paymentHistory?.filter(p => p.payment_type === 'addition').length || 0;
   const paymentCount = paymentHistory?.filter(p => p.payment_type === 'payment').length || 0;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
-        <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
-          <DialogTitle className="flex flex-col gap-1">
-            <span>Chi tiết công nợ</span>
-          </DialogTitle>
-        </DialogHeader>
+  const isMobile = useIsMobile();
 
-        <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-4">
+  const mainContent = (
+    <div className="space-y-4">
         {/* Header Summary */}
         <Card className="bg-muted/50 relative shrink-0">
           <Button
@@ -650,8 +646,10 @@ export function DebtDetailDialog({
           </TabsContent>
         </Tabs>
         </div>
-      </DialogContent>
+  );
 
+  const subDialogs = (
+    <>
       {entityType === 'customer' && (
         <EditCustomerDebtDialog
           open={showEditCustomer}
@@ -760,6 +758,42 @@ export function DebtDetailDialog({
           )}
         </DialogContent>
       </Dialog>
-    </Dialog>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <Drawer open={open} onOpenChange={onOpenChange}>
+          <DrawerContent className="max-h-[90vh] flex flex-col">
+            <DrawerHeader className="shrink-0">
+              <DrawerTitle className="text-base">Chi tiết công nợ</DrawerTitle>
+            </DrawerHeader>
+            <div className="flex-1 overflow-y-auto px-4 pb-6">
+              {mainContent}
+            </div>
+          </DrawerContent>
+        </Drawer>
+        {subDialogs}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
+            <DialogTitle className="flex flex-col gap-1">
+              <span>Chi tiết công nợ</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-6 pb-6">
+            {mainContent}
+          </div>
+        </DialogContent>
+      </Dialog>
+      {subDialogs}
+    </>
   );
 }

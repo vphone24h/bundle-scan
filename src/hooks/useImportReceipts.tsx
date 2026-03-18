@@ -860,6 +860,9 @@ export function useReturnImportReceipt() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const { data: tenantId } = await supabase.rpc('get_user_tenant_id_secure');
+      if (!tenantId) throw new Error('Không tìm thấy tenant');
+
       // Lấy thông tin phiếu nhập và sản phẩm
       const { data: receipt, error: receiptError } = await supabase
         .from('import_receipts')
@@ -924,6 +927,7 @@ export function useReturnImportReceipt() {
             fee_amount: productFeeAmount,
             note: note || `Trả toàn bộ phiếu ${receipt.code}`,
             created_by: user.id,
+            tenant_id: tenantId,
           }])
           .select()
           .single();
@@ -951,6 +955,7 @@ export function useReturnImportReceipt() {
               return_type: 'import_return',
               payment_source: payment.source,
               amount: payment.amount,
+              tenant_id: tenantId,
             }]);
         }
 
@@ -974,6 +979,7 @@ export function useReturnImportReceipt() {
               reference_type: 'import_return',
               created_by: user.id,
               note: productDetails,
+              tenant_id: tenantId,
             }]);
         }
       }
@@ -985,6 +991,7 @@ export function useReturnImportReceipt() {
         table_name: 'import_returns',
         record_id: returnIds[0] || null,
         branch_id: receipt.branch_id,
+        tenant_id: tenantId,
         new_data: {
           receipt_code: receipt.code,
           products_returned: products.length,

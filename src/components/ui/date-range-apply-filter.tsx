@@ -55,30 +55,32 @@ export function DateRangeApplyFilter({
 
   if (layout === 'stacked') {
     return (
-      <div className={`grid grid-cols-[1fr_1fr_auto] gap-3 items-end ${className}`}>
-        <div className="space-y-1">
-          <Label className={labelClassName || 'text-xs'}>Từ ngày</Label>
-          <Input
-            type="date"
-            value={draftStart}
-            onChange={(e) => handleStartChange(e.target.value)}
-            className={inputClassName}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className={labelClassName || 'text-xs'}>Đến ngày</Label>
-          <Input
-            type="date"
-            value={draftEnd}
-            onChange={(e) => handleEndChange(e.target.value)}
-            className={inputClassName}
-          />
+      <div className={`flex flex-col gap-2 ${className}`}>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1 min-w-0">
+            <Label className={labelClassName || 'text-xs'}>Từ ngày</Label>
+            <Input
+              type="date"
+              value={draftStart}
+              onChange={(e) => handleStartChange(e.target.value)}
+              className={`${inputClassName} w-full`}
+            />
+          </div>
+          <div className="space-y-1 min-w-0">
+            <Label className={labelClassName || 'text-xs'}>Đến ngày</Label>
+            <Input
+              type="date"
+              value={draftEnd}
+              onChange={(e) => handleEndChange(e.target.value)}
+              className={`${inputClassName} w-full`}
+            />
+          </div>
         </div>
         <Button
           size="sm"
           onClick={handleApply}
           disabled={isLoading || (!hasChanges && !isLoading)}
-          className="h-9 px-3 gap-1.5"
+          className="h-9 px-3 gap-1.5 self-end"
           variant={hasChanges ? 'default' : 'outline'}
         >
           {isLoading ? (

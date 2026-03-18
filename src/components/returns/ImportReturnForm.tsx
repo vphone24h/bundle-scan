@@ -21,7 +21,7 @@ interface PaymentLine {
 }
 
 const BUILT_IN_PAYMENT_SOURCES = [
-  { value: 'debt', label: 'Công nợ' },
+  { value: 'debt', label: 'Giảm công nợ' },
   { value: 'cash', label: 'Tiền mặt' },
   { value: 'bank_card', label: 'Thẻ ngân hàng' },
   { value: 'e_wallet', label: 'Ví điện tử' },

@@ -40,7 +40,7 @@ import {
 import { FileSpreadsheet, Download, Plus, ShoppingCart, Loader2, Building2, BookOpen, PlayCircle, Search, Package, ArrowLeft, QrCode, X } from 'lucide-react';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { ImportQRScanner, parseVKHOQR, type VKHOQRData } from '@/components/import/ImportQRScanner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { downloadImportTemplate } from '@/lib/excelTemplates';
 import { useOnboardingTour } from '@/hooks/useOnboardingTour';
@@ -89,6 +89,7 @@ export default function ImportNewPage() {
   const [tourDismissed, setTourDismissed] = useState(false);
   const [manualTourActive, setManualTourActive] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: categories } = useCategories();
   const { data: products } = useProducts();
   const { data: branches } = useBranches();
@@ -162,6 +163,7 @@ export default function ImportNewPage() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+
   const totalAmount = useMemo(
     () => cart.reduce((sum, item) => sum + item.importPrice * item.quantity, 0),
     [cart]
@@ -197,6 +199,86 @@ export default function ImportNewPage() {
       setIsSearching(false);
     }
   }, []);
+
+  // Auto-fill from template product navigation
+  useEffect(() => {
+    const state = location.state as { templateProductName?: string } | null;
+    if (state?.templateProductName) {
+      const name = state.templateProductName;
+      setForm(prev => ({ ...prev, productName: name }));
+      setProductFormMode('form');
+      searchProductsFromDB(name);
+      window.history.replaceState({}, document.title);
+
+      // Auto-load variant config from product_groups
+      (async () => {
+        try {
+          const { data: groups } = await supabase
+            .from('product_groups')
+            .select('*')
+            .ilike('name', name)
+            .limit(1);
+
+          if (groups && groups.length > 0) {
+            const group = groups[0] as any;
+            const levels: VariantLevel[] = [];
+            if (group.variant_1_label && group.variant_1_values?.length > 0) {
+              levels.push({ label: group.variant_1_label, values: group.variant_1_values });
+            }
+            if (group.variant_2_label && group.variant_2_values?.length > 0) {
+              levels.push({ label: group.variant_2_label, values: group.variant_2_values });
+            }
+            if (group.variant_3_label && group.variant_3_values?.length > 0) {
+              levels.push({ label: group.variant_3_label, values: group.variant_3_values });
+            }
+
+            if (levels.length > 0) {
+              setVariantConfig({ enabled: true, levels });
+              setSelectedVariants({});
+              toast({
+                title: 'Đã tải biến thể',
+                description: `${levels.length} cấp biến thể được tải từ "${group.name}"`,
+              });
+            }
+          } else {
+            // Fallback: extract variants from existing products in DB
+            const { data: products } = await supabase
+              .from('products')
+              .select('variant_1, variant_2, variant_3')
+              .ilike('name', `${name}%`)
+              .not('variant_1', 'is', null)
+              .limit(100);
+
+            if (products && products.length > 0) {
+              const v1Set = new Set<string>();
+              const v2Set = new Set<string>();
+              const v3Set = new Set<string>();
+              for (const p of products) {
+                if (p.variant_1) v1Set.add(p.variant_1);
+                if (p.variant_2) v2Set.add(p.variant_2);
+                if (p.variant_3) v3Set.add(p.variant_3);
+              }
+              const levels: VariantLevel[] = [];
+              if (v1Set.size > 0) levels.push({ label: 'Cấp 1', values: Array.from(v1Set) });
+              if (v2Set.size > 0) levels.push({ label: 'Cấp 2', values: Array.from(v2Set) });
+              if (v3Set.size > 0) levels.push({ label: 'Cấp 3', values: Array.from(v3Set) });
+
+              if (levels.length > 0) {
+                setVariantConfig({ enabled: true, levels });
+                setSelectedVariants({});
+                toast({
+                  title: 'Đã tải biến thể',
+                  description: `${levels.length} cấp biến thể từ sản phẩm hiện có`,
+                });
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Error loading variant config:', err);
+        }
+      })();
+    }
+  }, [location.state, searchProductsFromDB]);
 
   const handleProductNameChange = (value: string) => {
     setForm({ ...form, productName: value });

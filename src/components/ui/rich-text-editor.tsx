@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useState, useEffect } from 'react';
 import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface RichTextEditorProps {
   value: string;
@@ -48,6 +49,18 @@ const FONT_SIZES = [
   { label: 'Lớn', value: '4' },
   { label: 'Rất lớn', value: '5' },
 ];
+
+const MAX_UPLOAD_SIZE = 15 * 1024 * 1024;
+const ALLOWED_UPLOAD_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'image/avif',
+]);
 
 function ToolbarButton({
   onClick,
@@ -90,26 +103,59 @@ export function RichTextEditor({
   const [imageOpen, setImageOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [resizingImg, setResizingImg] = useState<HTMLImageElement | null>(null);
+  const resizeStartRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
 
   const saveSelection = useCallback(() => {
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0) {
-      savedSelectionRef.current = sel.getRangeAt(0).cloneRange();
+      const range = sel.getRangeAt(0);
+      // Only save if selection is inside the editor
+      if (editorRef.current?.contains(range.commonAncestorContainer)) {
+        savedSelectionRef.current = range.cloneRange();
+      }
     }
   }, []);
 
   const restoreSelection = useCallback(() => {
     const sel = window.getSelection();
-    if (sel && savedSelectionRef.current) {
-      sel.removeAllRanges();
-      sel.addRange(savedSelectionRef.current);
+    if (sel && savedSelectionRef.current && editorRef.current) {
+      // Verify the saved range is still valid within the editor
+      if (editorRef.current.contains(savedSelectionRef.current.commonAncestorContainer)) {
+        sel.removeAllRanges();
+        sel.addRange(savedSelectionRef.current);
+        return true;
+      }
     }
+    return false;
   }, []);
+
+  const insertAtCursorOrEnd = useCallback((html: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    editor.focus();
+    const restored = restoreSelection();
+
+    if (!restored) {
+      // Place cursor at end of editor
+      const sel = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+
+    document.execCommand('insertHTML', false, DOMPurify.sanitize(html));
+    onChange(editor.innerHTML);
+    // Save the new cursor position
+    saveSelection();
+  }, [onChange, restoreSelection, saveSelection]);
 
   const execCommand = useCallback((command: string, value?: string) => {
     document.execCommand(command, false, value);
     editorRef.current?.focus();
-    // Trigger change
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
     }
@@ -138,12 +184,8 @@ export function RichTextEditor({
       const sanitizedUrl = linkUrl.trim();
       try {
         const url = new URL(sanitizedUrl);
-        if (!['http:', 'https:', 'mailto:'].includes(url.protocol)) {
-          return;
-        }
-      } catch {
-        return;
-      }
+        if (!['http:', 'https:', 'mailto:'].includes(url.protocol)) return;
+      } catch { return; }
       restoreSelection();
       execCommand('createLink', sanitizedUrl);
       const selection = window.getSelection();
@@ -161,14 +203,10 @@ export function RichTextEditor({
     }
   }, [linkUrl, execCommand, onChange, restoreSelection]);
 
-  const insertImageFromUrl = useCallback((url: string) => {
-    const img = document.createElement('img');
-    img.src = url;
-    img.alt = 'image';
-    img.style.cssText = 'max-width:100%;height:auto;border-radius:8px;margin:8px 0;';
-    restoreSelection();
-    execCommand('insertHTML', DOMPurify.sanitize(img.outerHTML));
-  }, [execCommand, restoreSelection]);
+  const insertImageHtml = useCallback((url: string) => {
+    const html = `<img src="${url}" alt="image" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;cursor:pointer;" />`;
+    insertAtCursorOrEnd(html);
+  }, [insertAtCursorOrEnd]);
 
   const insertImage = useCallback(() => {
     if (imageUrl) {
@@ -177,31 +215,151 @@ export function RichTextEditor({
         const url = new URL(sanitizedUrl);
         if (!['http:', 'https:'].includes(url.protocol)) return;
       } catch { return; }
-      insertImageFromUrl(sanitizedUrl);
+      insertImageHtml(sanitizedUrl);
       setImageUrl('');
       setImageOpen(false);
     }
-  }, [imageUrl, insertImageFromUrl]);
+  }, [imageUrl, insertImageHtml]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > MAX_UPLOAD_SIZE) {
+      toast({
+        title: 'Ảnh quá lớn',
+        description: 'Vui lòng chọn ảnh tối đa 15MB.',
+        variant: 'destructive',
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    if (file.type && !ALLOWED_UPLOAD_MIME_TYPES.has(file.type.toLowerCase())) {
+      toast({
+        title: 'Định dạng ảnh chưa hỗ trợ',
+        description: 'Vui lòng chọn JPG, PNG, GIF, WEBP, HEIC hoặc AVIF.',
+        variant: 'destructive',
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    // Save selection BEFORE async operation
+    saveSelection();
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
+      const ext = file.name.split('.').pop() || 'jpg';
       const path = `editor/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from('tenant-assets').upload(path, file);
+      const { error } = await supabase.storage
+        .from('tenant-assets')
+        .upload(path, file, { contentType: file.type || 'image/jpeg', upsert: false });
       if (error) throw error;
+
       const { data: urlData } = supabase.storage.from('tenant-assets').getPublicUrl(path);
-      insertImageFromUrl(urlData.publicUrl);
+      if (!urlData?.publicUrl) throw new Error('Không lấy được URL ảnh');
+
+      insertImageHtml(urlData.publicUrl);
       setImageOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Upload failed:', err);
+      toast({
+        title: 'Upload ảnh thất bại',
+        description: err?.message || 'Vui lòng thử lại.',
+        variant: 'destructive',
+      });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
-  }, [insertImageFromUrl]);
+  }, [insertImageHtml, saveSelection]);
+
+  // Image resize: click to select, drag corner to resize
+  const handleEditorClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'IMG') {
+      e.preventDefault();
+      setResizingImg(target as HTMLImageElement);
+    } else {
+      setResizingImg(null);
+    }
+  }, []);
+
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!resizingImg) return;
+    resizeStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      w: resizingImg.offsetWidth,
+      h: resizingImg.offsetHeight,
+    };
+
+    const onMove = (ev: MouseEvent) => {
+      if (!resizeStartRef.current || !resizingImg) return;
+      const dx = ev.clientX - resizeStartRef.current.x;
+      const newW = Math.max(50, resizeStartRef.current.w + dx);
+      const ratio = resizeStartRef.current.h / resizeStartRef.current.w;
+      resizingImg.style.width = `${newW}px`;
+      resizingImg.style.height = `${Math.round(newW * ratio)}px`;
+      resizingImg.style.maxWidth = '100%';
+    };
+
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      resizeStartRef.current = null;
+      if (editorRef.current) onChange(editorRef.current.innerHTML);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [resizingImg, onChange]);
+
+  // Touch resize support
+  const handleTouchResizeStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!resizingImg || !e.touches[0]) return;
+    resizeStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      w: resizingImg.offsetWidth,
+      h: resizingImg.offsetHeight,
+    };
+
+    const onMove = (ev: TouchEvent) => {
+      if (!resizeStartRef.current || !resizingImg || !ev.touches[0]) return;
+      const dx = ev.touches[0].clientX - resizeStartRef.current.x;
+      const newW = Math.max(50, resizeStartRef.current.w + dx);
+      const ratio = resizeStartRef.current.h / resizeStartRef.current.w;
+      resizingImg.style.width = `${newW}px`;
+      resizingImg.style.height = `${Math.round(newW * ratio)}px`;
+      resizingImg.style.maxWidth = '100%';
+    };
+
+    const onUp = () => {
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onUp);
+      resizeStartRef.current = null;
+      if (editorRef.current) onChange(editorRef.current.innerHTML);
+    };
+
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onUp);
+  }, [resizingImg, onChange]);
+
+  // Clear resize selection when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (editorRef.current && !editorRef.current.contains(e.target as Node)) {
+        setResizingImg(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   // Set initial content
   const handleRef = useCallback((el: HTMLDivElement | null) => {
@@ -213,27 +371,51 @@ export function RichTextEditor({
     }
   }, []); // Only run once on mount
 
-  // Sync value when it changes externally (e.g. async data load)
-  React.useEffect(() => {
+  // Sync value when it changes externally
+  useEffect(() => {
     if (editorRef.current && value && editorRef.current.innerHTML !== value) {
-      // Only update if the editor is not focused (user is not typing)
       if (document.activeElement !== editorRef.current) {
         editorRef.current.innerHTML = value;
       }
     }
   }, [value]);
 
+  // Compute resize overlay position
+  const [resizeOverlay, setResizeOverlay] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+
+  useEffect(() => {
+    if (!resizingImg || !editorRef.current) {
+      setResizeOverlay(null);
+      return;
+    }
+    const updateOverlay = () => {
+      if (!resizingImg || !editorRef.current) return;
+      const editorRect = editorRef.current.getBoundingClientRect();
+      const imgRect = resizingImg.getBoundingClientRect();
+      setResizeOverlay({
+        top: imgRect.top - editorRect.top + editorRef.current.scrollTop,
+        left: imgRect.left - editorRect.left + editorRef.current.scrollLeft,
+        width: imgRect.width,
+        height: imgRect.height,
+      });
+    };
+    updateOverlay();
+    const observer = new MutationObserver(updateOverlay);
+    observer.observe(editorRef.current, { childList: true, subtree: true, attributes: true });
+    return () => observer.disconnect();
+  }, [resizingImg]);
+
   return (
     <div className={cn('border rounded-md overflow-hidden', className)}>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-0.5 p-1.5 border-b bg-muted/30">
-        <ToolbarButton onClick={() => execCommand('bold')} title="In đậm">
+        <ToolbarButton onClick={() => { saveSelection(); execCommand('bold'); }} title="In đậm">
           <Bold className="h-4 w-4" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => execCommand('italic')} title="In nghiêng">
+        <ToolbarButton onClick={() => { saveSelection(); execCommand('italic'); }} title="In nghiêng">
           <Italic className="h-4 w-4" />
         </ToolbarButton>
-        <ToolbarButton onClick={() => execCommand('underline')} title="Gạch chân">
+        <ToolbarButton onClick={() => { saveSelection(); execCommand('underline'); }} title="Gạch chân">
           <Underline className="h-4 w-4" />
         </ToolbarButton>
 
@@ -266,7 +448,7 @@ export function RichTextEditor({
         {/* Font size */}
         <Popover>
           <PopoverTrigger asChild>
-            <button type="button" className="p-1.5 rounded hover:bg-muted transition-colors" title="Cỡ chữ">
+            <button type="button" className="p-1.5 rounded hover:bg-muted transition-colors" title="Cỡ chữ" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}>
               <Type className="h-4 w-4" />
             </button>
           </PopoverTrigger>
@@ -276,7 +458,7 @@ export function RichTextEditor({
                 key={size.value}
                 type="button"
                 className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted transition-colors"
-                onClick={() => execCommand('fontSize', size.value)}
+                onClick={() => { restoreSelection(); execCommand('fontSize', size.value); }}
               >
                 {size.label}
               </button>
@@ -287,7 +469,7 @@ export function RichTextEditor({
         {/* Color picker */}
         <Popover>
           <PopoverTrigger asChild>
-            <button type="button" className="p-1.5 rounded hover:bg-muted transition-colors" title="Màu chữ">
+            <button type="button" className="p-1.5 rounded hover:bg-muted transition-colors" title="Màu chữ" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}>
               <Palette className="h-4 w-4" />
             </button>
           </PopoverTrigger>
@@ -299,7 +481,7 @@ export function RichTextEditor({
                   type="button"
                   className="w-6 h-6 rounded-full border border-border hover:scale-110 transition-transform"
                   style={{ backgroundColor: color }}
-                  onClick={() => execCommand('foreColor', color)}
+                  onClick={() => { restoreSelection(); execCommand('foreColor', color); }}
                 />
               ))}
             </div>
@@ -311,7 +493,7 @@ export function RichTextEditor({
         {/* Link */}
         <Popover open={linkOpen} onOpenChange={(open) => { if (open) saveSelection(); setLinkOpen(open); }}>
           <PopoverTrigger asChild>
-            <button type="button" className="p-1.5 rounded hover:bg-muted transition-colors" title="Chèn link">
+            <button type="button" className="p-1.5 rounded hover:bg-muted transition-colors" title="Chèn link" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}>
               <Link className="h-4 w-4" />
             </button>
           </PopoverTrigger>
@@ -335,7 +517,7 @@ export function RichTextEditor({
         {/* Image */}
         <Popover open={imageOpen} onOpenChange={(open) => { if (open) saveSelection(); setImageOpen(open); }}>
           <PopoverTrigger asChild>
-            <button type="button" className="p-1.5 rounded hover:bg-muted transition-colors" title="Chèn ảnh">
+            <button type="button" className="p-1.5 rounded hover:bg-muted transition-colors" title="Chèn ảnh" onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}>
               <Image className="h-4 w-4" />
             </button>
           </PopoverTrigger>
@@ -393,16 +575,55 @@ export function RichTextEditor({
       </div>
 
       {/* Editor area */}
-      <div
-        ref={handleRef}
-        contentEditable
-        onInput={handleInput}
-        onPaste={handlePaste}
-        className="p-3 text-sm focus:outline-none overflow-auto prose prose-sm max-w-none"
-        style={{ minHeight }}
-        data-placeholder={placeholder}
-        suppressContentEditableWarning
-      />
+      <div className="relative">
+        <div
+          ref={handleRef}
+          contentEditable
+          onInput={handleInput}
+          onPaste={handlePaste}
+          onBlur={saveSelection}
+          onClick={handleEditorClick}
+          className="p-3 text-sm focus:outline-none overflow-auto prose prose-sm max-w-none"
+          style={{ minHeight }}
+          data-placeholder={placeholder}
+          suppressContentEditableWarning
+        />
+
+        {/* Resize overlay */}
+        {resizingImg && resizeOverlay && (
+          <div
+            style={{
+              position: 'absolute',
+              top: resizeOverlay.top,
+              left: resizeOverlay.left,
+              width: resizeOverlay.width,
+              height: resizeOverlay.height,
+              pointerEvents: 'none',
+              border: '2px solid hsl(var(--primary))',
+              borderRadius: '8px',
+              zIndex: 10,
+            }}
+          >
+            {/* Resize handle bottom-right */}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: -6,
+                right: -6,
+                width: 14,
+                height: 14,
+                background: 'hsl(var(--primary))',
+                borderRadius: '50%',
+                cursor: 'nwse-resize',
+                pointerEvents: 'auto',
+                border: '2px solid white',
+              }}
+              onMouseDown={handleResizeStart}
+              onTouchStart={handleTouchResizeStart}
+            />
+          </div>
+        )}
+      </div>
 
       <style>{`
         [data-placeholder]:empty::before {
@@ -415,6 +636,7 @@ export function RichTextEditor({
           max-width: 100%;
           height: auto;
           border-radius: 8px;
+          cursor: pointer;
         }
         [contenteditable] a {
           color: hsl(var(--primary));

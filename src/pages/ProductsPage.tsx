@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { SearchInput } from '@/components/ui/search-input';
 import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -8,8 +9,10 @@ import { useProducts, useServerPagination, Product } from '@/hooks/useProducts';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { BarcodeDialog } from '@/components/products/BarcodeDialog';
 import { EditProductDialog } from '@/components/import/EditProductDialog';
+import { EditTemplateProductDialog } from '@/components/products/EditTemplateProductDialog';
+import { CreateProductTemplateDialog, ProductTemplateInitialData } from '@/components/products/CreateProductTemplateDialog';
 import { useCategories } from '@/hooks/useCategories';
-import { useSuppliers } from '@/hooks/useSuppliers';
+import { useSupplierOptions } from '@/hooks/useSuppliers';
 import { useBranches } from '@/hooks/useBranches';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle, AlertCircle } from 'lucide-react';
+import { Search, Barcode, Loader2, Filter, X, Download, Plus, Printer, PlayCircle, AlertCircle, Package } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -67,27 +70,96 @@ const PRODUCTS_TOUR_STEPS: TourStep[] = [
   },
 ];
 
-function mapProductForTable(product: Product) {
+function mapProductForTable(product: Product, categoryMap: Map<string, string>, supplierMap: Map<string, string>, branchMap: Map<string, string>) {
   return {
     id: product.id,
     name: product.name,
     sku: product.sku,
     imei: product.imei || undefined,
     categoryId: product.category_id || '',
-    categoryName: product.categories?.name,
+    categoryName: product.categories?.name || (product.category_id ? categoryMap.get(product.category_id) : undefined),
     importPrice: Number(product.import_price),
     salePrice: product.sale_price ? Number(product.sale_price) : undefined,
     importDate: new Date(product.import_date),
     supplierId: product.supplier_id || '',
-    supplierName: product.suppliers?.name,
+    supplierName: product.suppliers?.name || (product.supplier_id ? supplierMap.get(product.supplier_id) : undefined),
     branchId: product.branch_id || '',
-    branchName: product.branches?.name,
-    status: product.status as 'in_stock' | 'sold' | 'returned',
+    branchName: product.branches?.name || (product.branch_id ? branchMap.get(product.branch_id) : undefined),
+    status: product.status as 'in_stock' | 'sold' | 'returned' | 'template',
     note: product.note || undefined,
     importReceiptId: product.import_receipt_id || undefined,
     quantity: product.quantity || 1,
     isPrinted: product.is_printed || false,
+    variant1: product.variant_1 || undefined,
+    variant2: product.variant_2 || undefined,
+    variant3: product.variant_3 || undefined,
+    groupId: product.group_id || undefined,
   };
+}
+
+/**
+ * Group template products by base name.
+ * Templates with variants (variant_1 set) are grouped into a single row
+ * showing the base name + variant count badge.
+ * Non-variant templates and non-template products remain as individual rows.
+ */
+function groupTemplateProducts(products: ReturnType<typeof mapProductForTable>[]) {
+  const result: Array<ReturnType<typeof mapProductForTable> & {
+    isTemplateGroup?: boolean;
+    variantCount?: number;
+    childProducts?: ReturnType<typeof mapProductForTable>[];
+  }> = [];
+  
+  const templateGroups = new Map<string, ReturnType<typeof mapProductForTable>[]>();
+  
+  for (const p of products) {
+    // Only group template products that have variants
+    if (p.status === 'template' && p.variant1) {
+      // Extract base name by removing variant suffixes
+      const baseName = extractBaseName(p.name, p.variant1, p.variant2, p.variant3);
+      const key = `${baseName}__${p.categoryId || ''}`;
+      if (!templateGroups.has(key)) {
+        templateGroups.set(key, []);
+      }
+      templateGroups.get(key)!.push(p);
+    } else {
+      result.push(p);
+    }
+  }
+  
+  // Add grouped templates
+  for (const [, group] of templateGroups) {
+    if (group.length === 1) {
+      // Single variant, show as-is
+      result.push(group[0]);
+    } else {
+      // Create a summary row from the first product
+      const first = group[0];
+      const baseName = extractBaseName(first.name, first.variant1, first.variant2, first.variant3);
+      result.push({
+        ...first,
+        name: baseName,
+        sku: first.sku.split('-').slice(0, -1).join('-') || first.sku, // Remove variant suffix from SKU
+        isTemplateGroup: true,
+        variantCount: group.length,
+        childProducts: group,
+      });
+    }
+  }
+  
+  return result;
+}
+
+function extractBaseName(name: string, v1?: string, v2?: string, v3?: string): string {
+  let base = name;
+  // Remove variant values from end of name
+  const parts = [v3, v2, v1].filter(Boolean);
+  for (const part of parts) {
+    if (part && base.endsWith(part)) {
+      base = base.slice(0, -part.length).trimEnd();
+    }
+  }
+  return base || name;
 }
 
 // Debounce hook for search
@@ -108,13 +180,16 @@ export default function ProductsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: categories } = useCategories();
-  const { data: suppliers } = useSuppliers();
+  const { data: suppliers } = useSupplierOptions();
   const { data: branches } = useBranches();
   
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [barcodeOpen, setBarcodeOpen] = useState(false);
   const [productsForBarcode, setProductsForBarcode] = useState<any[]>([]);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [editTemplateProduct, setEditTemplateProduct] = useState<any>(null);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [templateInitialData, setTemplateInitialData] = useState<ProductTemplateInitialData | null>(null);
   
   // Server-side filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -133,13 +208,10 @@ export default function ProductsPage() {
   // Server-side pagination
   const serverPagination = useServerPagination(50);
 
-  // Reset to page 1 when filters change
-  const filterKey = `${debouncedSearch}|${dateFrom}|${dateTo}|${categoryFilter}|${supplierFilter}|${statusFilter}|${branchFilter}|${printedFilter}`;
-  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
-  if (filterKey !== prevFilterKey) {
-    setPrevFilterKey(filterKey);
+  // Reset to page 1 when filters change (tránh setState trong render gây re-render loop)
+  useEffect(() => {
     serverPagination.setPage(1);
-  }
+  }, [debouncedSearch, dateFrom, dateTo, categoryFilter, supplierFilter, statusFilter, branchFilter, printedFilter, serverPagination.setPage]);
 
   // Build server-side filters
   const serverFilters = useMemo(() => ({
@@ -155,9 +227,17 @@ export default function ProductsPage() {
     pageSize: serverPagination.pageSize,
   }), [debouncedSearch, categoryFilter, supplierFilter, statusFilter, branchFilter, dateFrom, dateTo, printedFilter, serverPagination.page, serverPagination.pageSize]);
 
-  const { data: products, isLoading, totalCount } = useProducts(serverFilters);
+  const { data: products, isLoading, isFetching, totalCount } = useProducts(serverFilters);
+  const isFirstLoad = isLoading && !products?.length;
 
-  const mappedProducts = products?.map(mapProductForTable) || [];
+  const categoryMap = useMemo(() => new Map<string, string>((categories || []).map(c => [c.id, c.name])), [categories]);
+  const supplierMap = useMemo(() => new Map<string, string>((suppliers || []).map(s => [s.id, s.name])), [suppliers]);
+  const branchMap = useMemo(() => new Map<string, string>((branches || []).map(b => [b.id, b.name])), [branches]);
+
+  const mappedProducts = useMemo(() => {
+    const mapped = products?.map(p => mapProductForTable(p, categoryMap, supplierMap, branchMap)) || [];
+    return groupTemplateProducts(mapped);
+  }, [products, categoryMap, supplierMap, branchMap]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / serverPagination.pageSize));
 
@@ -175,9 +255,16 @@ export default function ProductsPage() {
   const hasActiveFilters = dateFrom || dateTo || categoryFilter !== '_all_' || supplierFilter !== '_all_' || statusFilter !== '_all_' || branchFilter !== '_all_' || printedFilter !== '_all_';
 
   const handleEdit = (product: any) => {
-    const originalProduct = products?.find(p => p.id === product.id);
-    if (originalProduct) {
-      setEditProduct(originalProduct);
+    // Template products → open template editor with variant management
+    if (product.status === 'template' || product.isTemplateGroup) {
+      const originalProduct = products?.find(p => p.id === product.id);
+      setEditTemplateProduct(originalProduct ? { ...originalProduct, isTemplateGroup: product.isTemplateGroup, childProducts: product.childProducts } : product);
+    } else {
+      // Regular products → existing edit dialog
+      const originalProduct = products?.find(p => p.id === product.id);
+      if (originalProduct) {
+        setEditProduct(originalProduct);
+      }
     }
   };
 
@@ -189,6 +276,105 @@ export default function ProductsPage() {
   const handlePrintSelected = () => {
     const selected = mappedProducts.filter((p) => selectedProducts.includes(p.id));
     handlePrintBarcode(selected);
+  };
+
+  const handleDuplicate = async (product: any) => {
+    // Extract base name
+    let baseName = product.name;
+    if (product.variant1 || product.variant2 || product.variant3) {
+      baseName = extractBaseName(product.name, product.variant1, product.variant2, product.variant3);
+    }
+
+    const initialData: any = {
+      productName: baseName + ' (bản sao)',
+      sku: product.sku ? product.sku + '-copy' : '',
+      categoryId: product.categoryId || '',
+      importPrice: product.importPrice ? String(product.importPrice) : '',
+      salePrice: product.salePrice ? String(product.salePrice) : '',
+      note: product.note || '',
+    };
+
+    // Load variant config from product_groups or existing products
+    try {
+      const { data: groups } = await supabase
+        .from('product_groups')
+        .select('*')
+        .ilike('name', baseName)
+        .limit(1);
+
+      if (groups && groups.length > 0) {
+        const group = groups[0] as any;
+        const levels: any[] = [];
+        if (group.variant_1_label && group.variant_1_values?.length > 0) {
+          levels.push({ label: group.variant_1_label, values: group.variant_1_values });
+        }
+        if (group.variant_2_label && group.variant_2_values?.length > 0) {
+          levels.push({ label: group.variant_2_label, values: group.variant_2_values });
+        }
+        if (group.variant_3_label && group.variant_3_values?.length > 0) {
+          levels.push({ label: group.variant_3_label, values: group.variant_3_values });
+        }
+        if (levels.length > 0) initialData.variantLevels = levels;
+      } else {
+        // Fallback: extract from existing products
+        const { data: products } = await supabase
+          .from('products')
+          .select('variant_1, variant_2, variant_3')
+          .ilike('name', `${baseName}%`)
+          .not('variant_1', 'is', null)
+          .limit(100);
+
+        if (products && products.length > 0) {
+          const v1Set = new Set<string>();
+          const v2Set = new Set<string>();
+          const v3Set = new Set<string>();
+          for (const p of products) {
+            if (p.variant_1) v1Set.add(p.variant_1);
+            if (p.variant_2) v2Set.add(p.variant_2);
+            if (p.variant_3) v3Set.add(p.variant_3);
+          }
+          const levels: any[] = [];
+          if (v1Set.size > 0) levels.push({ label: 'Cấp 1', values: Array.from(v1Set) });
+          if (v2Set.size > 0) levels.push({ label: 'Cấp 2', values: Array.from(v2Set) });
+          if (v3Set.size > 0) levels.push({ label: 'Cấp 3', values: Array.from(v3Set) });
+          if (levels.length > 0) initialData.variantLevels = levels;
+        }
+      }
+    } catch (err) {
+      console.error('Error loading variants for duplicate:', err);
+    }
+
+    setTemplateInitialData(initialData);
+    setTemplateDialogOpen(true);
+  };
+
+  const handleImportFromTemplate = (product: any) => {
+    // Extract base name: remove variant suffixes to get the original product name
+    let baseName = product.name;
+    if (product.variant1 || product.variant2 || product.variant3) {
+      baseName = extractBaseName(product.name, product.variant1, product.variant2, product.variant3);
+    }
+    navigate('/import/new', { state: { templateProductName: baseName } });
+  };
+
+  const handleDeleteTemplate = async (product: any) => {
+    if (!confirm(`Bạn có chắc muốn xóa sản phẩm mẫu "${product.name}"${product.isTemplateGroup ? ` và ${product.variantCount} biến thể` : ''}?`)) return;
+    
+    try {
+      if (product.isTemplateGroup && product.childProducts?.length > 0) {
+        // Delete all child variant products
+        const ids = product.childProducts.map((c: any) => c.id);
+        const { error } = await supabase.from('products').delete().in('id', ids);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('products').delete().eq('id', product.id);
+        if (error) throw error;
+      }
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast({ title: 'Đã xóa sản phẩm mẫu' });
+    } catch (err: any) {
+      toast({ title: 'Lỗi', description: err.message, variant: 'destructive' });
+    }
   };
 
   const handleExportProducts = () => {
@@ -247,6 +433,11 @@ export default function ProductsPage() {
               <PlayCircle className="mr-1.5 h-4 w-4" />
               <span className="hidden sm:inline">{manualTourActive ? t('pages.products.turnOffGuide') : t('pages.products.viewGuide')}</span>
               <span className="sm:hidden">HD</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setTemplateDialogOpen(true)}>
+              <Package className="mr-1.5 h-4 w-4" />
+              <span className="hidden sm:inline">SP mẫu</span>
+              <span className="sm:hidden">Mẫu</span>
             </Button>
             <Button onClick={() => navigate('/import/new')} size="sm">
               <Plus className="mr-1.5 h-4 w-4" />
@@ -366,6 +557,7 @@ export default function ProductsPage() {
                         <SelectItem value="in_stock">{t('pages.products.inStock')}</SelectItem>
                         <SelectItem value="sold">{t('pages.products.sold')}</SelectItem>
                         <SelectItem value="returned">{t('pages.products.returned')}</SelectItem>
+                        <SelectItem value="template">Sản phẩm mẫu</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -403,13 +595,24 @@ export default function ProductsPage() {
           )}
         </div>
 
-        <ProductTable
-          products={mappedProducts}
-          selectedProducts={selectedProducts}
-          onSelectionChange={setSelectedProducts}
-          onEdit={handleEdit}
-          onPrintBarcode={handlePrintBarcode}
-        />
+        {isFirstLoad ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className={cn(isFetching && !isFirstLoad && 'opacity-60 pointer-events-none transition-opacity')}>
+            <ProductTable
+              products={mappedProducts}
+              selectedProducts={selectedProducts}
+              onSelectionChange={setSelectedProducts}
+              onEdit={handleEdit}
+              onPrintBarcode={handlePrintBarcode}
+              onDuplicate={handleDuplicate}
+              onImportFromTemplate={handleImportFromTemplate}
+              onDeleteTemplate={handleDeleteTemplate}
+            />
+          </div>
+        )}
         
         {totalCount > 0 && (
           <TablePagination
@@ -446,6 +649,21 @@ export default function ProductsPage() {
         product={editProduct}
         open={!!editProduct}
         onOpenChange={(open) => !open && setEditProduct(null)}
+      />
+
+      <EditTemplateProductDialog
+        product={editTemplateProduct}
+        open={!!editTemplateProduct}
+        onOpenChange={(open) => !open && setEditTemplateProduct(null)}
+      />
+
+      <CreateProductTemplateDialog
+        open={templateDialogOpen}
+        onOpenChange={(open) => {
+          setTemplateDialogOpen(open);
+          if (!open) setTemplateInitialData(null);
+        }}
+        initialData={templateInitialData}
       />
 
       <OnboardingTourOverlay

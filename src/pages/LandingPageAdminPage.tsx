@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from 'react';
+import { useState, useMemo, lazy, Suspense, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -13,14 +13,41 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SwipeGuardScroll from '@/components/ui/swipe-guard-scroll';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
+import { useCurrentTenant } from '@/hooks/useTenant';
+import { useLandingProductCategories, useLandingProducts } from '@/hooks/useLandingProducts';
+import { useLandingArticleCategories, useLandingArticles } from '@/hooks/useLandingArticles';
 
-// Lazy load heavy tab components - only loaded when the tab is active
-const LandingPageSettings = lazy(() => import('@/components/admin/LandingPageSettings').then(m => ({ default: m.LandingPageSettings })));
-const LandingProductsTab = lazy(() => import('@/components/admin/LandingProductsTab').then(m => ({ default: m.LandingProductsTab })));
-const LandingArticlesTab = lazy(() => import('@/components/admin/LandingArticlesTab').then(m => ({ default: m.LandingArticlesTab })));
-const LandingOrdersTab = lazy(() => import('@/components/admin/LandingOrdersTab').then(m => ({ default: m.LandingOrdersTab })));
-const EmailAutomationTab = lazy(() => import('@/components/admin/EmailAutomationTab').then(m => ({ default: m.EmailAutomationTab })));
-const ShopCTVManagement = lazy(() => import('@/components/admin/ShopCTVManagement').then(m => ({ default: m.ShopCTVManagement })));
+// Lazy load tab components with eager preloading to avoid delay on tab switch
+const importSettings = () => import('@/components/admin/LandingPageSettings').then(m => ({ default: m.LandingPageSettings }));
+const importProducts = () => import('@/components/admin/LandingProductsTab').then(m => ({ default: m.LandingProductsTab }));
+const importArticles = () => import('@/components/admin/LandingArticlesTab').then(m => ({ default: m.LandingArticlesTab }));
+const importOrders = () => import('@/components/admin/LandingOrdersTab').then(m => ({ default: m.LandingOrdersTab }));
+const importEmail = () => import('@/components/admin/EmailAutomationTab').then(m => ({ default: m.EmailAutomationTab }));
+const importCTV = () => import('@/components/admin/ShopCTVManagement').then(m => ({ default: m.ShopCTVManagement }));
+
+const LandingPageSettings = lazy(importSettings);
+const LandingProductsTab = lazy(importProducts);
+const LandingArticlesTab = lazy(importArticles);
+const LandingOrdersTab = lazy(importOrders);
+const EmailAutomationTab = lazy(importEmail);
+const ShopCTVManagement = lazy(importCTV);
+
+// Preload all chunks immediately so tab switching is instant
+if (typeof window !== 'undefined') {
+  const preloadAll = () => {
+    importSettings();
+    importProducts();
+    importArticles();
+    importOrders();
+    importEmail();
+    importCTV();
+  };
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(preloadAll);
+  } else {
+    setTimeout(preloadAll, 100);
+  }
+}
 
 const TabLoader = () => (
   <div className="flex items-center justify-center py-12">
@@ -86,9 +113,17 @@ export default function LandingPageAdminPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: permissions, isLoading } = usePermissions();
+  const { data: tenant } = useCurrentTenant();
+  const tenantId = tenant?.id;
   const landingGuideUrl = useLandingGuideUrl();
   const { isCompleted: tourCompleted, completeTour } = useOnboardingTour('landing-page-admin-v3');
   const [tourDismissed, setTourDismissed] = useState(false);
+
+  // Prefetch all tab data in parallel on page mount (uses cache, no extra fetches when tabs open)
+  useLandingProductCategories(tenantId);
+  useLandingProducts(tenantId);
+  useLandingArticleCategories(tenantId);
+  useLandingArticles(tenantId);
 
   const role = permissions?.role;
   const isSuperAdmin = role === 'super_admin';
@@ -100,12 +135,13 @@ export default function LandingPageAdminPage() {
     return <Navigate to="/" replace />;
   }
 
-  const showSettings = isSuperAdmin;
-  const showProducts = isSuperAdmin || isBranchAdmin || isStaff;
+  // Show all tabs immediately while permissions load to avoid blank page flash
+  const showSettings = isLoading || isSuperAdmin;
+  const showProducts = isLoading || isSuperAdmin || isBranchAdmin || isStaff;
   const showArticles = true;
   const showOrders = true;
 
-  const defaultTab = isSuperAdmin ? 'settings' : (isStaff ? 'products' : 'articles');
+  const defaultTab = (isLoading || isSuperAdmin) ? 'settings' : (isStaff ? 'products' : 'articles');
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || defaultTab;
 

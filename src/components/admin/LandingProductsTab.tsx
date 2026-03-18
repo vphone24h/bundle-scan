@@ -11,6 +11,7 @@ import {
   useUpdateLandingProduct,
   useDeleteLandingProduct,
   uploadLandingProductImage,
+  getLandingProductById,
   LandingProduct,
   LandingProductVariant,
   LandingProductCategory,
@@ -175,12 +176,13 @@ function CategoryTreeNode({
 
 export function LandingProductsTab() {
   const { data: tenant } = useCurrentTenant();
+  const tenantId = tenant?.id;
   const { data: landingSettings } = useTenantLandingSettings();
-  const { data: categories, isLoading: catLoading } = useLandingProductCategories();
+  const { data: categories, isLoading: catLoading } = useLandingProductCategories(tenantId);
   const createCat = useCreateLandingProductCategory();
   const deleteCat = useDeleteLandingProductCategory();
   const updateCat = useUpdateLandingProductCategory();
-  const { data: products, isLoading: prodLoading } = useLandingProducts();
+  const { data: products, isLoading: prodLoading } = useLandingProducts(tenantId);
   const createProduct = useCreateLandingProduct();
   const updateProduct = useUpdateLandingProduct();
   const deleteProduct = useDeleteLandingProduct();
@@ -200,13 +202,16 @@ export function LandingProductsTab() {
   const [uploading, setUploading] = useState(false);
   const [uploadingCatId, setUploadingCatId] = useState<string | null>(null);
   const [uploadingVariantIdx, setUploadingVariantIdx] = useState<number | null>(null);
+  const [uploadingVariantPriceIdx, setUploadingVariantPriceIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const variantFileRef = useRef<HTMLInputElement>(null);
   const catImageRef = useRef<HTMLInputElement>(null);
   const [pendingCatId, setPendingCatId] = useState<string | null>(null);
   const [productPage, setProductPage] = useState(1);
   const PRODUCT_PAGE_SIZE = 20;
+  const [loadingEditProductId, setLoadingEditProductId] = useState<string | null>(null);
   const [pendingVariantIdx, setPendingVariantIdx] = useState<number | null>(null);
+  const [pendingVariantPriceIdx, setPendingVariantPriceIdx] = useState<number | null>(null);
 
   const categoryTree = useMemo(() => buildCategoryTree(categories || []), [categories]);
   const flatCategories = useMemo(() => flattenCategoriesForSelect(categoryTree), [categoryTree]);
@@ -294,32 +299,45 @@ export function LandingProductsTab() {
     setProductDialog(true);
   };
 
-  const openEditProduct = (p: LandingProduct) => {
-    setEditingProduct(p);
-    setForm({
-      name: p.name,
-      description: p.description || '',
-      price: p.price,
-      sale_price: p.sale_price,
-      category_id: p.category_id || '_none_',
-      image_url: p.image_url || '',
-      images: Array.isArray(p.images) ? p.images : [],
-      is_featured: p.is_featured,
-      is_active: p.is_active,
-      is_sold_out: p.is_sold_out || false,
-      variants: Array.isArray(p.variants) ? p.variants : [],
-      home_tab_ids: Array.isArray((p as any).home_tab_ids) ? (p as any).home_tab_ids : [],
-      variant_group_1_name: p.variant_group_1_name || 'Màu sắc',
-      variant_group_2_name: p.variant_group_2_name || 'Dung lượng',
-      variant_options_1: Array.isArray(p.variant_options_1) ? p.variant_options_1 : [],
-      variant_options_2: Array.isArray(p.variant_options_2) ? p.variant_options_2 : [],
-      variant_prices: Array.isArray(p.variant_prices) ? p.variant_prices : [],
-      promotion_title: p.promotion_title || 'KHUYẾN MÃI',
-      promotion_content: p.promotion_content || '',
-      warranty_title: p.warranty_title || 'BẢO HÀNH',
-      warranty_content: p.warranty_content || '',
-    });
-    setProductDialog(true);
+  const openEditProduct = async (p: LandingProduct) => {
+    try {
+      setLoadingEditProductId(p.id);
+      const detail = await getLandingProductById(p.id);
+      if (!detail) {
+        toast({ title: 'Không tìm thấy sản phẩm', variant: 'destructive' });
+        return;
+      }
+
+      setEditingProduct(detail);
+      setForm({
+        name: detail.name,
+        description: detail.description || '',
+        price: detail.price,
+        sale_price: detail.sale_price,
+        category_id: detail.category_id || '_none_',
+        image_url: detail.image_url || '',
+        images: Array.isArray(detail.images) ? detail.images : [],
+        is_featured: detail.is_featured,
+        is_active: detail.is_active,
+        is_sold_out: detail.is_sold_out || false,
+        variants: Array.isArray(detail.variants) ? detail.variants : [],
+        home_tab_ids: Array.isArray((detail as any).home_tab_ids) ? (detail as any).home_tab_ids : [],
+        variant_group_1_name: detail.variant_group_1_name || 'Màu sắc',
+        variant_group_2_name: detail.variant_group_2_name || 'Dung lượng',
+        variant_options_1: Array.isArray(detail.variant_options_1) ? detail.variant_options_1 : [],
+        variant_options_2: Array.isArray(detail.variant_options_2) ? detail.variant_options_2 : [],
+        variant_prices: Array.isArray(detail.variant_prices) ? detail.variant_prices : [],
+        promotion_title: detail.promotion_title || 'KHUYẾN MÃI',
+        promotion_content: detail.promotion_content || '',
+        warranty_title: detail.warranty_title || 'BẢO HÀNH',
+        warranty_content: detail.warranty_content || '',
+      });
+      setProductDialog(true);
+    } catch (e: any) {
+      toast({ title: 'Lỗi tải sản phẩm', description: e.message, variant: 'destructive' });
+    } finally {
+      setLoadingEditProductId(null);
+    }
   };
 
   const handleUploadImage = async (file: File): Promise<string | null> => {
@@ -358,21 +376,38 @@ export function LandingProductsTab() {
 
   const handleVariantImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || pendingVariantIdx === null) return;
-    const idx = pendingVariantIdx;
-    setUploadingVariantIdx(idx);
+    const legacyIdx = pendingVariantIdx;
+    const matrixIdx = pendingVariantPriceIdx;
+
+    if (!file || (legacyIdx === null && matrixIdx === null)) return;
+
+    if (legacyIdx !== null) setUploadingVariantIdx(legacyIdx);
+    if (matrixIdx !== null) setUploadingVariantPriceIdx(matrixIdx);
+
     try {
       const url = await handleUploadImage(file);
       if (url) {
         setForm(prev => {
-          const variants = [...prev.variants];
-          variants[idx] = { ...variants[idx], image_url: url };
-          return { ...prev, variants };
+          if (legacyIdx !== null) {
+            const variants = [...prev.variants];
+            variants[legacyIdx] = { ...variants[legacyIdx], image_url: url };
+            return { ...prev, variants };
+          }
+
+          if (matrixIdx !== null) {
+            const variant_prices = [...prev.variant_prices];
+            variant_prices[matrixIdx] = { ...variant_prices[matrixIdx], image_url: url };
+            return { ...prev, variant_prices };
+          }
+
+          return prev;
         });
       }
     } finally {
       setUploadingVariantIdx(null);
+      setUploadingVariantPriceIdx(null);
       setPendingVariantIdx(null);
+      setPendingVariantPriceIdx(null);
       if (variantFileRef.current) variantFileRef.current.value = '';
     }
   };
@@ -485,10 +520,6 @@ export function LandingProductsTab() {
     await reorderProds.mutateAsync(updates);
   };
 
-  if (catLoading || prodLoading) {
-    return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  }
-
   return (
     <div className="space-y-6">
       {/* Hidden input for category cover image */}
@@ -543,7 +574,9 @@ export function LandingProductsTab() {
           </div>
           {/* Category tree */}
           <div className="space-y-1">
-            {categoryTree.length > 0 ? (
+            {catLoading ? (
+              <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+            ) : categoryTree.length > 0 ? (
               <CategoryTreeNode
                 categories={categoryTree}
                 level={0}
@@ -624,48 +657,50 @@ export function LandingProductsTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {products && products.length > 0 ? (
+          {prodLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : products && products.length > 0 ? (
             <>
               <div className="space-y-2">
                 {paginateArray(products, productPage, PRODUCT_PAGE_SIZE).map((p) => {
                   const idx = products.indexOf(p);
                   return (
-                  <div key={p.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                    {/* Move up/down */}
-                    <div className="flex flex-col gap-0.5 shrink-0">
-                      <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === 0 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'up')}>
-                        <ArrowUp className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === products.length - 1 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'down')}>
-                        <ArrowDown className="h-3 w-3" />
-                      </Button>
+                  <div key={p.id} className="flex flex-col gap-2 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-2">
+                      {/* Move up/down */}
+                      <div className="flex flex-col gap-0.5 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === 0 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'up')}>
+                          <ArrowUp className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={idx === products.length - 1 || reorderProds.isPending} onClick={() => handleMoveProduct(idx, 'down')}>
+                          <ArrowDown className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      {p.image_url ? (
+                        <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-lg object-cover border shrink-0" />
+                      ) : (
+                        <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                          <Package className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-medium text-sm line-clamp-2 ${p.is_sold_out ? 'text-muted-foreground line-through' : ''}`}>{p.name}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                          {p.sale_price ? (
+                            <>
+                              <span className="line-through">{formatNumber(p.price)}đ</span>
+                              <span className="text-destructive font-medium">{formatNumber(p.sale_price)}đ</span>
+                            </>
+                          ) : (
+                            <span>{formatNumber(p.price)}đ</span>
+                          )}
+                          {p.is_sold_out && <Badge variant="destructive" className="text-[9px] px-1.5 py-0">Hết hàng</Badge>}
+                          {!p.is_active && <Badge variant="outline" className="text-[10px]">Ẩn</Badge>}
+                          {p.is_featured && <Badge variant="default" className="text-[10px]">Nổi bật</Badge>}
+                        </div>
+                      </div>
                     </div>
-                    {p.image_url ? (
-                      <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-lg object-cover border" />
-                    ) : (
-                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
-                        <Package className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className={`font-medium text-sm truncate ${p.is_sold_out ? 'text-muted-foreground line-through' : ''}`}>{p.name}</p>
-                        {p.is_sold_out && <Badge variant="destructive" className="text-[9px] shrink-0 px-1.5 py-0">Hết hàng</Badge>}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        {p.sale_price ? (
-                          <>
-                            <span className="line-through">{formatNumber(p.price)}đ</span>
-                            <span className="text-destructive font-medium">{formatNumber(p.sale_price)}đ</span>
-                          </>
-                        ) : (
-                          <span>{formatNumber(p.price)}đ</span>
-                        )}
-                        {!p.is_active && <Badge variant="outline" className="text-[10px]">Ẩn</Badge>}
-                        {p.is_featured && <Badge variant="default" className="text-[10px]">Nổi bật</Badge>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 justify-end">
                       <Button
                         variant={p.is_sold_out ? "destructive" : "outline"}
                         size="sm"
@@ -677,14 +712,19 @@ export function LandingProductsTab() {
                       >
                         {p.is_sold_out ? '✓ Hết' : 'Hết hàng'}
                       </Button>
-                      {/* Only show blocked dates calendar for hotel store */}
                       {landingSettings?.website_template === 'hotel_store' && (
                         <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" title="Quản lý ngày chặn" onClick={() => setBlockedDatesProduct(p)}>
                           <CalendarDays className="h-3.5 w-3.5" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditProduct(p)}>
-                        <Edit2 className="h-3.5 w-3.5" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openEditProduct(p)}
+                        disabled={loadingEditProductId === p.id}
+                      >
+                        {loadingEditProductId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Edit2 className="h-3.5 w-3.5" />}
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteProduct(p.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
@@ -895,6 +935,37 @@ export function LandingProductsTab() {
                             className="h-7 text-xs w-16 shrink-0"
                             placeholder="SL"
                           />
+                          {vp.image_url ? (
+                            <div className="relative shrink-0">
+                              <img src={vp.image_url} alt="" className="h-8 w-8 rounded object-cover border" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const prices = [...form.variant_prices];
+                                  prices[i] = { ...prices[i], image_url: undefined };
+                                  setForm(p => ({ ...p, variant_prices: prices }));
+                                }}
+                                className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+                              >
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-[11px] px-2 shrink-0"
+                              disabled={uploadingVariantPriceIdx === i}
+                              onClick={() => {
+                                setPendingVariantIdx(null);
+                                setPendingVariantPriceIdx(i);
+                                variantFileRef.current?.click();
+                              }}
+                            >
+                              {uploadingVariantPriceIdx === i ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Ảnh'}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -936,7 +1007,11 @@ export function LandingProductsTab() {
                             </div>
                           ) : (
                             <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1" disabled={uploadingVariantIdx === i}
-                              onClick={() => { setPendingVariantIdx(i); variantFileRef.current?.click(); }}>
+                              onClick={() => {
+                                setPendingVariantPriceIdx(null);
+                                setPendingVariantIdx(i);
+                                variantFileRef.current?.click();
+                              }}>
                               {uploadingVariantIdx === i ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImagePlus className="h-3 w-3" />}
                               Ảnh biến thể
                             </Button>

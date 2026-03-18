@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { SearchInput } from '@/components/ui/search-input';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { usePagination } from '@/hooks/usePagination';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -216,11 +218,17 @@ export default function ReturnsPage() {
     setPaymentSourceFilters([]);
   };
 
-  const handleReturnSuccess = () => {
+  const handleReturnSuccess = (type?: 'import' | 'export') => {
     setViewMode('history');
     setSelectedImportProduct(null);
     setSelectedExportItem(null);
     setSearchParams({});
+    // Switch to the relevant tab to show the newly created return
+    if (type === 'import') {
+      setHistoryTab('import');
+    } else if (type === 'export') {
+      setHistoryTab('export');
+    }
   };
 
   const handleCancel = () => {
@@ -241,25 +249,27 @@ export default function ReturnsPage() {
   // Filter and combine returns
   const filteredImportReturns = useMemo(() => {
     return importReturns?.filter((r) => {
+      const q = searchTerm.toLowerCase();
       const matchesSearch =
-        r.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.imei?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.suppliers?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+        (r.product_name || '').toLowerCase().includes(q) ||
+        (r.sku || '').toLowerCase().includes(q) ||
+        (r.imei || '').toLowerCase().includes(q) ||
+        (r.code || '').toLowerCase().includes(q) ||
+        (r.suppliers?.name || '').toLowerCase().includes(q);
       return matchesSearch;
     }) || [];
   }, [importReturns, searchTerm]);
 
   const filteredExportReturns = useMemo(() => {
     return exportReturns?.filter((r) => {
+      const q = searchTerm.toLowerCase();
       const matchesSearch =
-        r.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.imei?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.customers?.phone?.includes(searchTerm);
+        (r.product_name || '').toLowerCase().includes(q) ||
+        (r.sku || '').toLowerCase().includes(q) ||
+        (r.imei || '').toLowerCase().includes(q) ||
+        (r.code || '').toLowerCase().includes(q) ||
+        (r.customers?.name || '').toLowerCase().includes(q) ||
+        (r.customers?.phone || '').includes(searchTerm);
       return matchesSearch;
     }) || [];
   }, [exportReturns, searchTerm]);
@@ -323,6 +333,11 @@ export default function ReturnsPage() {
   const groupedExportReturns = useMemo(() => groupedReturns.filter(g => g.returnType === 'export'), [groupedReturns]);
   const groupedImportReturns = useMemo(() => groupedReturns.filter(g => g.returnType === 'import'), [groupedReturns]);
 
+  // Pagination for each tab
+  const allPagination = usePagination(groupedReturns, { defaultPageSize: 15, storageKey: 'returns-all' });
+  const exportPagination = usePagination(groupedExportReturns, { defaultPageSize: 15, storageKey: 'returns-export' });
+  const importPagination = usePagination(groupedImportReturns, { defaultPageSize: 15, storageKey: 'returns-import' });
+
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const toggleGroup = (key: string) => {
     setExpandedGroups(prev => {
@@ -384,7 +399,7 @@ export default function ReturnsPage() {
         <div className="p-6 max-w-4xl mx-auto">
           <ImportReturnForm 
             product={selectedImportProduct} 
-            onSuccess={handleReturnSuccess}
+            onSuccess={() => handleReturnSuccess('import')}
             onCancel={handleCancel}
           />
         </div>
@@ -409,7 +424,7 @@ export default function ReturnsPage() {
         <div className="p-6 max-w-4xl mx-auto">
           <ExportReturnForm 
             item={selectedExportItem} 
-            onSuccess={handleReturnSuccess}
+            onSuccess={() => handleReturnSuccess('export')}
             onCancel={handleCancel}
           />
         </div>
@@ -793,48 +808,90 @@ export default function ReturnsPage() {
           <Card>
             <CardContent className="pt-6">
               {(importLoading || exportLoading) ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {t('pages.returns.loading')}
-                </div>
-              ) : renderGroupedTable(groupedReturns)}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                 <div className="text-center py-8 text-muted-foreground">
+                   {t('pages.returns.loading')}
+                 </div>
+               ) : (
+                 <>
+                   {renderGroupedTable(allPagination.paginatedData)}
+                   <TablePagination
+                     currentPage={allPagination.currentPage}
+                     totalPages={allPagination.totalPages}
+                     pageSize={allPagination.pageSize}
+                     totalItems={allPagination.totalItems}
+                     startIndex={allPagination.startIndex}
+                     endIndex={allPagination.endIndex}
+                     onPageChange={allPagination.setPage}
+                     onPageSizeChange={allPagination.setPageSize}
+                   />
+                 </>
+               )}
+             </CardContent>
+           </Card>
+         </TabsContent>
 
-        {/* Tab: Export Returns */}
-        <TabsContent value="export">
-          <Card>
-            <CardContent className="pt-6">
-              {exportLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {t('pages.returns.loading')}
-                </div>
-              ) : renderGroupedTable(groupedExportReturns)}
-            </CardContent>
-          </Card>
-        </TabsContent>
+         {/* Tab: Export Returns */}
+         <TabsContent value="export">
+           <Card>
+             <CardContent className="pt-6">
+               {exportLoading ? (
+                 <div className="text-center py-8 text-muted-foreground">
+                   {t('pages.returns.loading')}
+                 </div>
+               ) : (
+                 <>
+                   {renderGroupedTable(exportPagination.paginatedData)}
+                   <TablePagination
+                     currentPage={exportPagination.currentPage}
+                     totalPages={exportPagination.totalPages}
+                     pageSize={exportPagination.pageSize}
+                     totalItems={exportPagination.totalItems}
+                     startIndex={exportPagination.startIndex}
+                     endIndex={exportPagination.endIndex}
+                     onPageChange={exportPagination.setPage}
+                     onPageSizeChange={exportPagination.setPageSize}
+                   />
+                 </>
+               )}
+             </CardContent>
+           </Card>
+         </TabsContent>
 
-        {/* Tab: Import Returns */}
-        <TabsContent value="import">
-          <Card>
-            <CardContent className="pt-6">
-              {importLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {t('pages.returns.loading')}
-                </div>
-              ) : renderGroupedTable(groupedImportReturns)}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+         {/* Tab: Import Returns */}
+         <TabsContent value="import">
+           <Card>
+             <CardContent className="pt-6">
+               {importLoading ? (
+                 <div className="text-center py-8 text-muted-foreground">
+                   {t('pages.returns.loading')}
+                 </div>
+               ) : (
+                 <>
+                   {renderGroupedTable(importPagination.paginatedData)}
+                   <TablePagination
+                     currentPage={importPagination.currentPage}
+                     totalPages={importPagination.totalPages}
+                     pageSize={importPagination.pageSize}
+                     totalItems={importPagination.totalItems}
+                     startIndex={importPagination.startIndex}
+                     endIndex={importPagination.endIndex}
+                     onPageChange={importPagination.setPage}
+                     onPageSizeChange={importPagination.setPageSize}
+                   />
+                 </>
+               )}
+             </CardContent>
+           </Card>
+         </TabsContent>
+       </Tabs>
 
-      {/* Detail Dialog */}
-      <ReturnDetailDialog
-        returnItem={selectedReturnItem ? { ...selectedReturnItem, type: selectedReturnItem.returnType } as any : null}
-        open={detailDialogOpen}
-        onOpenChange={setDetailDialogOpen}
-        profiles={profiles}
-      />
+       {/* Detail Dialog */}
+       <ReturnDetailDialog
+         returnItem={selectedReturnItem ? { ...selectedReturnItem, type: selectedReturnItem.returnType } as any : null}
+         open={detailDialogOpen}
+         onOpenChange={setDetailDialogOpen}
+         profiles={profiles}
+       />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

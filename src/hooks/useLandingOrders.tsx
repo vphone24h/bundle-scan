@@ -210,35 +210,146 @@ async function autoTransitionShippedOrders(orders: LandingOrder[]) {
   );
 }
 
-// Admin: list orders
-export function useLandingOrders(branchId?: string | null) {
+export interface LandingOrdersFilters {
+  branchId?: string | null;
+  status?: string;
+  delivery?: string;
+  callStatus?: string;
+  source?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+// Admin: list orders (server-side filtered + paginated)
+export function useLandingOrders(filters: LandingOrdersFilters = {}) {
+  const page = filters.page ?? 1;
+  const pageSize = filters.pageSize ?? 20;
+
   return useQuery({
-    queryKey: ['landing-orders', branchId],
+    queryKey: [
+      'landing-orders',
+      filters.branchId ?? null,
+      filters.status ?? 'all',
+      filters.delivery ?? 'all',
+      filters.callStatus ?? 'all',
+      filters.source ?? 'all',
+      filters.search ?? '',
+      page,
+      pageSize,
+    ],
     queryFn: async () => {
       let query = supabase
         .from('landing_orders' as any)
         .select('*')
         .order('created_at', { ascending: false });
-      if (branchId) {
-        query = query.eq('branch_id', branchId);
+
+      if (filters.branchId) {
+        query = query.eq('branch_id', filters.branchId);
       }
+      if (filters.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status);
+      }
+      if (filters.delivery && filters.delivery !== 'all') {
+        if (filters.delivery === 'not_approved') {
+          query = query.eq('status', 'pending');
+        } else if (filters.delivery === 'approved_only') {
+          query = query.eq('status', 'approved');
+        } else {
+          query = query.eq('delivery_status', filters.delivery);
+        }
+      }
+      if (filters.callStatus && filters.callStatus !== 'all') {
+        query = query.eq('call_status', filters.callStatus);
+      }
+      if (filters.source && filters.source !== 'all') {
+        query = query.eq('order_source', filters.source);
+      }
+
+      const rawSearch = filters.search?.trim();
+      if (rawSearch) {
+        const isPhoneSearch = /^\d+$/.test(rawSearch);
+
+        if (isPhoneSearch) {
+          // Prefix-only phone search for performance on large datasets
+          if (rawSearch.length >= 4) {
+            query = query.like('customer_phone', `${rawSearch}%`);
+          }
+        } else if (rawSearch.length >= 2) {
+          query = query.or(`customer_name.ilike.%${rawSearch}%,product_name.ilike.%${rawSearch}%,ctv_name.ilike.%${rawSearch}%`);
+        }
+      }
+
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize;
+      query = query.range(from, to);
+
       const { data, error } = await query;
       if (error) throw error;
-      const orders = data as unknown as LandingOrder[];
-      // Fire-and-forget auto-transition
-      autoTransitionShippedOrders(orders).catch(() => {});
+
+      const rows = (data || []) as unknown as LandingOrder[];
+
+      // Fire-and-forget auto-transition on fetched rows
+      autoTransitionShippedOrders(rows).catch(() => {});
+
       // Apply client-side correction
       const now = Date.now();
       const TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
-      return orders.map(o => {
+      const correctedRows = rows.map(o => {
         if (o.status === 'approved' && o.delivery_status === 'shipped' && now - new Date(o.updated_at).getTime() > TWO_DAYS) {
           return { ...o, delivery_status: 'delivering' };
         }
         return o;
       });
+
+      const hasMore = correctedRows.length > pageSize;
+      const items = hasMore ? correctedRows.slice(0, pageSize) : correctedRows;
+      const totalCount = hasMore
+        ? (page * pageSize) + 1
+        : ((page - 1) * pageSize) + items.length;
+
+      return { items, hasMore, totalCount };
     },
-    refetchOnMount: 'always',
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useLandingOrderStatusCounts(branchId?: string | null) {
+  return useQuery({
+    queryKey: ['landing-orders-status-counts', branchId ?? null],
+    queryFn: async () => {
+      const buildCountQuery = (status: 'pending' | 'approved' | 'cancelled') => {
+        let query = supabase
+          .from('landing_orders' as any)
+          .select('*', { count: 'exact', head: true })
+          .eq('status', status);
+        if (branchId) query = query.eq('branch_id', branchId);
+        return query;
+      };
+
+      const [pendingRes, approvedRes, cancelledRes] = await Promise.all([
+        buildCountQuery('pending'),
+        buildCountQuery('approved'),
+        buildCountQuery('cancelled'),
+      ]);
+
+      if (pendingRes.error) throw pendingRes.error;
+      if (approvedRes.error) throw approvedRes.error;
+      if (cancelledRes.error) throw cancelledRes.error;
+
+      return {
+        pending: pendingRes.count || 0,
+        approved: approvedRes.count || 0,
+        cancelled: cancelledRes.count || 0,
+      };
+    },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 

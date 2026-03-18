@@ -12,19 +12,33 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer } from 'lucide-react';
+import { MoreHorizontal, Pencil, Barcode, Trash2, Package, Settings2, Printer, Copy, Layers, ArrowDownToLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePermissions } from '@/hooks/usePermissions';
 import { AdjustQuantityDialog } from './AdjustQuantityDialog';
 import { DeleteProductDialog } from './DeleteProductDialog';
 
+interface ExtendedProduct extends Product {
+  isPrinted?: boolean;
+  isTemplateGroup?: boolean;
+  variantCount?: number;
+  childProducts?: ExtendedProduct[];
+  variant1?: string;
+  variant2?: string;
+  variant3?: string;
+  groupId?: string;
+}
+
 interface ProductTableProps {
-  products: Product[];
+  products: ExtendedProduct[];
   selectedProducts: string[];
   onSelectionChange: (ids: string[]) => void;
-  onEdit: (product: Product) => void;
-  onPrintBarcode: (products: Product[]) => void;
+  onEdit: (product: ExtendedProduct) => void;
+  onPrintBarcode: (products: ExtendedProduct[]) => void;
+  onDuplicate?: (product: ExtendedProduct) => void;
+  onImportFromTemplate?: (product: ExtendedProduct) => void;
+  onDeleteTemplate?: (product: ExtendedProduct) => void;
 }
 
 export function ProductTable({
@@ -33,6 +47,9 @@ export function ProductTable({
   onSelectionChange,
   onEdit,
   onPrintBarcode,
+  onDuplicate,
+  onImportFromTemplate,
+  onDeleteTemplate,
 }: ProductTableProps) {
   const isMobile = useIsMobile();
   const { data: permissions } = usePermissions();
@@ -82,6 +99,8 @@ export function ProductTable({
         return <Badge className="status-sold text-[10px] sm:text-xs">Đã bán</Badge>;
       case 'returned':
         return <Badge className="status-pending text-[10px] sm:text-xs">Đã trả</Badge>;
+      case 'template':
+        return <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 text-[10px] sm:text-xs">SP mẫu</Badge>;
     }
   };
 
@@ -147,7 +166,15 @@ export function ProductTable({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm truncate">{product.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-medium text-sm truncate">{product.name}</p>
+                          {product.isTemplateGroup && (
+                            <Badge variant="secondary" className="text-[10px] gap-0.5 shrink-0">
+                              <Layers className="h-2.5 w-2.5" />
+                              {product.variantCount} biến thể
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground font-mono">{product.sku}</p>
                       </div>
                       <DropdownMenu>
@@ -165,6 +192,30 @@ export function ProductTable({
                             <Barcode className="mr-2 h-4 w-4" />
                             In mã vạch
                           </DropdownMenuItem>
+                          {product.status === 'template' && onDuplicate && (
+                            <DropdownMenuItem onClick={() => onDuplicate(product)}>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Sao chép sản phẩm mẫu
+                            </DropdownMenuItem>
+                          )}
+                          {onImportFromTemplate && (
+                            <DropdownMenuItem onClick={() => onImportFromTemplate(product)}>
+                              <ArrowDownToLine className="mr-2 h-4 w-4" />
+                              Nhập hàng từ SP
+                            </DropdownMenuItem>
+                          )}
+                          {product.status === 'template' && onDeleteTemplate && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => onDeleteTemplate(product)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Xóa sản phẩm mẫu
+                              </DropdownMenuItem>
+                            </>
+                          )}
                           
                           {/* Super Admin only actions */}
                           {permissions?.canAdjustProductQuantity && !isIMEIProduct(product) && (
@@ -289,7 +340,17 @@ export function ProductTable({
                     aria-label={`Chọn ${product.name}`}
                   />
                 </td>
-                <td className="font-medium max-w-[200px] truncate">{product.name}</td>
+                <td className="font-medium max-w-[200px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate">{product.name}</span>
+                    {product.isTemplateGroup && (
+                      <Badge variant="secondary" className="text-[10px] gap-0.5 shrink-0">
+                        <Layers className="h-2.5 w-2.5" />
+                        {product.variantCount} biến thể
+                      </Badge>
+                    )}
+                  </div>
+                </td>
                 <td className="text-muted-foreground text-xs sm:text-sm">{product.sku}</td>
                 <td className="font-mono text-xs sm:text-sm hidden lg:table-cell">{product.imei || '-'}</td>
                 <td className="hidden sm:table-cell">{product.categoryName}</td>
@@ -324,6 +385,30 @@ export function ProductTable({
                         <Barcode className="mr-2 h-4 w-4" />
                         In mã vạch
                       </DropdownMenuItem>
+                      {product.status === 'template' && onDuplicate && (
+                        <DropdownMenuItem onClick={() => onDuplicate(product)}>
+                          <Copy className="mr-2 h-4 w-4" />
+                          Sao chép sản phẩm mẫu
+                        </DropdownMenuItem>
+                      )}
+                      {onImportFromTemplate && (
+                        <DropdownMenuItem onClick={() => onImportFromTemplate(product)}>
+                          <ArrowDownToLine className="mr-2 h-4 w-4" />
+                          Nhập hàng từ SP
+                        </DropdownMenuItem>
+                      )}
+                      {product.status === 'template' && onDeleteTemplate && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => onDeleteTemplate(product)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Xóa sản phẩm mẫu
+                          </DropdownMenuItem>
+                        </>
+                      )}
                       
                       {/* Super Admin only actions */}
                       {permissions?.canAdjustProductQuantity && !isIMEIProduct(product) && (

@@ -1,6 +1,6 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLandingOrders, useUpdateLandingOrder, LandingOrder } from '@/hooks/useLandingOrders';
+import { useLandingOrders, useLandingOrderStatusCounts, useUpdateLandingOrder, LandingOrder } from '@/hooks/useLandingOrders';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useBranches } from '@/hooks/useBranches';
 import { useSearchProductsByName, useCheckProductForSale } from '@/hooks/useExportReceipts';
@@ -20,7 +20,7 @@ import { vi } from 'date-fns/locale';
 import { formatNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
+import { TablePagination } from '@/components/ui/table-pagination';
 import { useQuery } from '@tanstack/react-query';
 
 
@@ -156,18 +156,15 @@ export function LandingOrdersTab() {
   const { data: staffList } = useStaffList(userBranchId, isSuperAdmin);
 
   const filterBranchId = isSuperAdmin ? null : userBranchId;
-  const { data: orders, isLoading, refetch } = useLandingOrders(filterBranchId);
-  const updateOrder = useUpdateLandingOrder();
-  const searchProducts = useSearchProductsByName();
-  const checkProduct = useCheckProductForSale();
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [deliveryFilter, setDeliveryFilter] = useState<string>('all');
   const [callStatusFilter, setCallStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
-  const [orderPage, setOrderPage] = useState(1);
-  const ORDER_PAGE_SIZE = 20;
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [orderPageSize, setOrderPageSize] = useState(15);
+  const [serverPage, setServerPage] = useState(1);
   const [cancelDialogOrder, setCancelDialogOrder] = useState<LandingOrder | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [detailOrder, setDetailOrder] = useState<LandingOrder | null>(null);
@@ -176,7 +173,6 @@ export function LandingOrdersTab() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [bulkAssignStaffId, setBulkAssignStaffId] = useState<string>('');
-  
 
   // Product search for "Xác nhận" flow
   const [productSearchOrder, setProductSearchOrder] = useState<LandingOrder | null>(null);
@@ -185,38 +181,44 @@ export function LandingOrdersTab() {
   const [productResults, setProductResults] = useState<any[]>([]);
   const [productSearching, setProductSearching] = useState(false);
 
-  const branchMap = new Map((branches || []).map(b => [b.id, b.name]));
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchText), 300);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  const { data: ordersData, isLoading, isFetching, refetch } = useLandingOrders({
+    branchId: filterBranchId,
+    status: statusFilter,
+    delivery: deliveryFilter,
+    callStatus: callStatusFilter,
+    source: sourceFilter,
+    search: debouncedSearch,
+    page: serverPage,
+    pageSize: orderPageSize,
+  });
+  const orders: LandingOrder[] = ordersData?.items || [];
+  const hasMore = ordersData?.hasMore || false;
+  const totalCount = ordersData?.totalCount || 0;
+  const { data: statusCountsData } = useLandingOrderStatusCounts(filterBranchId);
+  const statusCounts = statusCountsData || { pending: 0, approved: 0, cancelled: 0 };
+  const updateOrder = useUpdateLandingOrder();
+  const searchProducts = useSearchProductsByName();
+  const checkProduct = useCheckProductForSale();
+
+  const branchMap = useMemo(() => new Map((branches || []).map(b => [b.id, b.name])), [branches]);
 
   // Reset page when filters change
-  const filteredKey = `${statusFilter}-${deliveryFilter}-${callStatusFilter}-${sourceFilter}-${searchText}`;
-  const prevFilterKey = useRef(filteredKey);
-  if (prevFilterKey.current !== filteredKey) {
-    prevFilterKey.current = filteredKey;
-    if (orderPage !== 1) setOrderPage(1);
-  }
+  useEffect(() => {
+    if (serverPage !== 1) setServerPage(1);
+  }, [statusFilter, deliveryFilter, callStatusFilter, sourceFilter, debouncedSearch]);
 
-  const filtered = (orders || []).filter(o => {
-    if (statusFilter !== 'all' && o.status !== statusFilter) return false;
-    if (deliveryFilter !== 'all') {
-      if (deliveryFilter === 'not_approved') {
-        if (o.status !== 'pending') return false;
-      } else if (deliveryFilter === 'approved_only') {
-        if (o.status !== 'approved') return false;
-      } else {
-        if (o.delivery_status !== deliveryFilter) return false;
-      }
-    }
-    if (callStatusFilter !== 'all' && o.call_status !== callStatusFilter) return false;
-    if (sourceFilter !== 'all' && (o as any).order_source !== sourceFilter) return false;
-    if (searchText) {
-      const s = searchText.toLowerCase();
-      return o.customer_name.toLowerCase().includes(s) ||
-        o.customer_phone.includes(s) ||
-        o.product_name.toLowerCase().includes(s) ||
-        ((o as any).ctv_name || '').toLowerCase().includes(s);
-    }
-    return true;
-  });
+  // Orders are already server-filtered, just use them directly
+  const filtered: LandingOrder[] = orders;
+  const selectableOrders = useMemo(
+    () => filtered.filter(o => o.status !== 'cancelled'),
+    [filtered]
+  );
 
   const handleApprove = async (order: LandingOrder) => {
     try {
@@ -379,9 +381,7 @@ export function LandingOrdersTab() {
   };
 
   const toggleSelectAll = () => {
-    const eligibleIds = filtered
-      .filter(o => o.status !== 'cancelled')
-      .map(o => o.id);
+    const eligibleIds = selectableOrders.map(o => o.id);
     if (selectedIds.size === eligibleIds.length && eligibleIds.every(id => selectedIds.has(id))) {
       setSelectedIds(new Set());
     } else {
@@ -522,9 +522,12 @@ export function LandingOrdersTab() {
     }
   };
 
-  if (isLoading) {
+  const isFirstLoad = isLoading && !ordersData;
+  if (isFirstLoad) {
     return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
+
+  const isTransitioning = isFetching && !isLoading;
 
   return (
     <div className="space-y-4">
@@ -579,10 +582,10 @@ export function LandingOrdersTab() {
         </Select>
       </div>
 
-      {/* Stats */}
+      {/* Stats - use dedicated counts hook */}
       <div className="grid grid-cols-3 gap-3">
         {(['pending', 'approved', 'cancelled'] as const).map(s => {
-          const count = (orders || []).filter(o => o.status === s).length;
+          const count = s === 'pending' ? statusCounts.pending : s === 'approved' ? statusCounts.approved : statusCounts.cancelled;
           const info = STATUS_MAP[s];
           const Icon = info.icon;
           return (
@@ -600,13 +603,13 @@ export function LandingOrdersTab() {
       </div>
 
       {/* Orders table */}
-      {filtered.length === 0 ? (
+      {filtered.length === 0 && !isFetching ? (
         <div className="text-center py-12 text-muted-foreground">
           <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
           <p>Chưa có đơn đặt hàng nào</p>
         </div>
       ) : (
-        <>
+        <div className={isTransitioning ? 'opacity-50 pointer-events-none transition-opacity' : 'transition-opacity'}>
           {/* Bulk action bar */}
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-lg flex-wrap">
@@ -636,7 +639,7 @@ export function LandingOrdersTab() {
                   <TableRow>
                     <TableHead className="w-10">
                       <Checkbox
-                        checked={filtered.filter(o => o.status !== 'cancelled').length > 0 && filtered.filter(o => o.status !== 'cancelled').every(o => selectedIds.has(o.id))}
+                        checked={selectableOrders.length > 0 && selectableOrders.every(o => selectedIds.has(o.id))}
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>
@@ -654,7 +657,7 @@ export function LandingOrdersTab() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginateArray(filtered, orderPage, ORDER_PAGE_SIZE).map(order => {
+                  {filtered.map((order: LandingOrder) => {
                     const st = STATUS_MAP[order.status] || STATUS_MAP.pending;
                     return (
                       <TableRow key={order.id} className="cursor-pointer" onClick={() => setDetailOrder(order)}>
@@ -804,15 +807,23 @@ export function LandingOrdersTab() {
               </Table>
             </div>
             <div className="p-3">
-              <ListPagination
-                currentPage={orderPage}
-                totalItems={filtered.length}
-                pageSize={ORDER_PAGE_SIZE}
-                onPageChange={setOrderPage}
+              <TablePagination
+                currentPage={serverPage}
+                totalPages={Math.max(1, Math.ceil(totalCount / orderPageSize))}
+                pageSize={orderPageSize}
+                totalItems={totalCount}
+                startIndex={(serverPage - 1) * orderPageSize + 1}
+                endIndex={Math.min(serverPage * orderPageSize, totalCount)}
+                onPageChange={setServerPage}
+                onPageSizeChange={(size) => {
+                  setOrderPageSize(size);
+                  setServerPage(1);
+                }}
+                className="py-1"
               />
             </div>
           </Card>
-        </>
+        </div>
       )}
 
       {/* Cancel dialog */}

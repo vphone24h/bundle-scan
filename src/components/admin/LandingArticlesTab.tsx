@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import {
   useLandingArticleCategories,
   useCreateLandingArticleCategory,
@@ -11,6 +11,7 @@ import {
   useDeleteLandingArticle,
   uploadLandingArticleImage,
   buildArticleCategoryTree,
+  getLandingArticleById,
   LandingArticle,
   LandingArticleCategory,
 } from '@/hooks/useLandingArticles';
@@ -26,15 +27,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from '@/hooks/use-toast';
 import {
   Plus, Trash2, Edit2, Loader2, Upload, X, FolderPlus, FileText,
-  ChevronDown, ChevronRight, Eye, EyeOff, GripVertical, FolderOpen, Folder,
+  ChevronDown, ChevronRight, Eye, EyeOff, FolderOpen, Folder,
   Image as ImageIcon, Home, Star,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { ListPagination, paginateArray } from '@/components/ui/list-pagination';
+
+const LazyRichTextEditor = lazy(() =>
+  import('@/components/ui/rich-text-editor').then((m) => ({ default: m.RichTextEditor }))
+);
 
 // ─── Category Tree Node ───
 function CategoryNode({
@@ -127,12 +131,13 @@ function CategoryNode({
 
 export function LandingArticlesTab() {
   const { data: tenant } = useCurrentTenant();
-  const { data: categories = [], isLoading: catLoading } = useLandingArticleCategories();
+  const tenantId = tenant?.id;
+  const { data: categories = [], isLoading: catLoading } = useLandingArticleCategories(tenantId);
   const createCat = useCreateLandingArticleCategory();
   const updateCat = useUpdateLandingArticleCategory();
   const deleteCat = useDeleteLandingArticleCategory();
   const batchOrder = useBatchUpdateCategoryOrder();
-  const { data: articles, isLoading: artLoading } = useLandingArticles();
+  const { data: articles, isLoading: artLoading } = useLandingArticles(tenantId);
   const createArticle = useCreateLandingArticle();
   const updateArticle = useUpdateLandingArticle();
   const deleteArticle = useDeleteLandingArticle();
@@ -151,12 +156,13 @@ export function LandingArticlesTab() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [articlePage, setArticlePage] = useState(1);
   const ARTICLE_PAGE_SIZE = 20;
+  const [loadingEditArticleId, setLoadingEditArticleId] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: '', summary: '', content: '', category_id: '_none_',
     thumbnail_url: '', is_published: false, is_featured: false, is_featured_home: false,
   });
 
-  const tree = buildArticleCategoryTree(categories);
+  const tree = useMemo(() => buildArticleCategoryTree(categories), [categories]);
 
   // Flatten for ordering
   const flattenTree = useCallback((nodes: LandingArticleCategory[], parentId: string | null = null): { id: string; parent_id: string | null; display_order: number }[] => {
@@ -265,14 +271,32 @@ export function LandingArticlesTab() {
     setArticleDialog(true);
   };
 
-  const openEditArticle = (a: LandingArticle) => {
-    setEditingArticle(a);
-    setForm({
-      title: a.title, summary: a.summary || '', content: a.content || '',
-      category_id: a.category_id || '_none_', thumbnail_url: a.thumbnail_url || '',
-      is_published: a.is_published, is_featured: a.is_featured, is_featured_home: a.is_featured_home,
-    });
-    setArticleDialog(true);
+  const openEditArticle = async (a: LandingArticle) => {
+    try {
+      setLoadingEditArticleId(a.id);
+      const detail = await getLandingArticleById(a.id);
+      if (!detail) {
+        toast({ title: 'Không tìm thấy bài viết', variant: 'destructive' });
+        return;
+      }
+
+      setEditingArticle(detail);
+      setForm({
+        title: detail.title,
+        summary: detail.summary || '',
+        content: detail.content || '',
+        category_id: detail.category_id || '_none_',
+        thumbnail_url: detail.thumbnail_url || '',
+        is_published: detail.is_published,
+        is_featured: detail.is_featured,
+        is_featured_home: detail.is_featured_home,
+      });
+      setArticleDialog(true);
+    } catch (e: any) {
+      toast({ title: 'Lỗi tải bài viết', description: e.message, variant: 'destructive' });
+    } finally {
+      setLoadingEditArticleId(null);
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -324,7 +348,7 @@ export function LandingArticlesTab() {
   };
 
   // Get all categories flat for selects (with indentation)
-  const flatCategoriesForSelect = useCallback((): { id: string; name: string; level: number }[] => {
+  const flatCategoriesForSelect = useMemo((): { id: string; name: string; level: number }[] => {
     const result: { id: string; name: string; level: number }[] = [];
     const traverse = (nodes: LandingArticleCategory[], level: number) => {
       nodes.forEach(n => {
@@ -336,9 +360,10 @@ export function LandingArticlesTab() {
     return result;
   }, [tree]);
 
-  if (catLoading || artLoading) {
-    return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  }
+  const pagedArticles = useMemo(
+    () => paginateArray(articles || [], articlePage, ARTICLE_PAGE_SIZE),
+    [articles, articlePage]
+  );
 
   return (
     <div className="space-y-6">
@@ -356,7 +381,9 @@ export function LandingArticlesTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {tree.length > 0 ? (
+          {catLoading ? (
+            <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : tree.length > 0 ? (
             <div className="space-y-0.5">
               {tree.map((cat, idx) => (
                 <CategoryNode
@@ -394,10 +421,12 @@ export function LandingArticlesTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {articles && articles.length > 0 ? (
+          {artLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : articles && articles.length > 0 ? (
             <>
               <div className="space-y-2">
-                {paginateArray(articles, articlePage, ARTICLE_PAGE_SIZE).map(a => (
+                {pagedArticles.map(a => (
                   <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                     {a.thumbnail_url ? (
                       <img src={a.thumbnail_url} alt={a.title} className="h-12 w-16 rounded-lg object-cover border shrink-0" />
@@ -416,8 +445,14 @@ export function LandingArticlesTab() {
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditArticle(a)}>
-                        <Edit2 className="h-3.5 w-3.5" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openEditArticle(a)}
+                        disabled={loadingEditArticleId === a.id}
+                      >
+                        {loadingEditArticleId === a.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Edit2 className="h-3.5 w-3.5" />}
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteArticle(a.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
@@ -456,7 +491,7 @@ export function LandingArticlesTab() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-popover">
                   <SelectItem value="_none_">— Không (danh mục gốc) —</SelectItem>
-                  {flatCategoriesForSelect()
+                  {flatCategoriesForSelect
                     .filter(c => c.id !== editingCat?.id)
                     .map(c => (
                       <SelectItem key={c.id} value={c.id}>
@@ -510,7 +545,7 @@ export function LandingArticlesTab() {
                 <SelectTrigger><SelectValue placeholder="Chọn danh mục" /></SelectTrigger>
                 <SelectContent className="bg-popover">
                   <SelectItem value="_none_">Không phân loại</SelectItem>
-                  {flatCategoriesForSelect().map(c => (
+                  {flatCategoriesForSelect.map(c => (
                     <SelectItem key={c.id} value={c.id}>{'—'.repeat(c.level)} {c.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -536,10 +571,12 @@ export function LandingArticlesTab() {
                 Upload ảnh
               </Button>
             </div>
-            <div className="space-y-2">
-              <Label>Nội dung</Label>
-              <RichTextEditor value={form.content} onChange={v => setForm(p => ({ ...p, content: v }))} />
-            </div>
+              <div className="space-y-2">
+                <Label>Nội dung</Label>
+                <Suspense fallback={<div className="rounded-md border p-4 text-sm text-muted-foreground">Đang tải trình soạn thảo...</div>}>
+                  <LazyRichTextEditor value={form.content} onChange={v => setForm(p => ({ ...p, content: v }))} />
+                </Suspense>
+              </div>
             <Separator />
             <div className="flex items-center justify-between">
               <Label>Xuất bản</Label>
