@@ -579,9 +579,9 @@ export function DebtDetailDialog({
                             : 'border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/30'
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-2">
+                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex flex-wrap items-center gap-1.5 mb-1">
                               <Badge
                                 variant="outline"
                                 className={`text-xs shrink-0 ${
