@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+    bundle-scan:
+        container_name: bundle-scan
+        image: ngdph/bundle-scan:latest
+        restart: always
+        labels:
+            # - 'traefik.http.routers.bundle-scan.rule=Host(`www.vkho.vn`) || Host(`vkho.vn`)'
+            - 'traefik.http.routers.bundle-scan.rule=Host(`bundle.ricplace.com`)'
+            - 'traefik.http.routers.bundle-scan.entrypoints=websecure'
+            - 'traefik.http.routers.bundle-scan.tls=true'
+            # - 'traefik.http.routers.bundle-scan.tls.certresolver=le'
+            - 'traefik.port=3000'
+
+            - 'traefik.enable=true'
+            - 'traefik.docker.network=web'
+
+            - 'traefik.http.routers.bundle-scan.middlewares=redirect-to-https'
+
+            # - 'traefik.http.middlewares.redirect-www-bundle-scan.redirectregex.regex=https://vkho.vn'
+            # - 'traefik.http.middlewares.redirect-www-bundle-scan.redirectregex.replacement=https://www.vkho.vn'
+            # - 'traefik.http.routers.bundle-scan.middlewares=redirect-www-bundle-scan'
+        volumes:
+            - ./static:/home/node/app/static
+        networks:
+            - web
+networks:
+    web:
+        external: true
