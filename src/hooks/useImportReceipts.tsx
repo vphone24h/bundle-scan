@@ -955,6 +955,7 @@ export function useReturnImportReceipt() {
               return_type: 'import_return',
               payment_source: payment.source,
               amount: payment.amount,
+              tenant_id: tenantId,
             }]);
         }
 
