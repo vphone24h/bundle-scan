@@ -230,16 +230,79 @@
           // Store the promise so React can await it
           window.__STORE_PREFETCH__.dataPromise = Promise.all([settingsP, productsP, categoriesP, articlesP, artCatsP, branchesP]).then(function(results) {
             var settings = results[0] && results[0].length > 0 ? results[0][0] : null;
+            var products = results[1] || [];
+            var articles = results[3] || [];
             if (settings) {
               setIcon(settings.store_logo_url);
               setTitle(settings.store_name);
+            }
+            // Detect product/article from URL path and update OG meta
+            var pathname = location.pathname;
+            var shortIdMatch = pathname.match(/-([a-f0-9]{8})$/);
+            var shortId = shortIdMatch ? shortIdMatch[1] : null;
+            var isProductPage = pathname.indexOf('/san-pham/') === 0 && shortId;
+            var isArticlePage = pathname.indexOf('/tin-tuc/') === 0 && shortId;
+            var storeName = (settings && settings.store_name) || '';
+            var storeLogo = (settings && settings.store_logo_url) || '';
+            var storeDesc = (settings && settings.store_description) || '';
+
+            if (isProductPage && shortId) {
+              var prod = null;
+              for (var i = 0; i < products.length; i++) {
+                if (products[i].id && products[i].id.indexOf(shortId) === 0) { prod = products[i]; break; }
+              }
+              if (prod) {
+                var pTitle = prod.name + (storeName ? ' - ' + storeName : '');
+                var pDesc = prod.description || storeDesc || '';
+                var price = prod.sale_price || prod.price;
+                if (price) pDesc = new Intl.NumberFormat('vi-VN').format(price) + 'đ - ' + pDesc;
+                if (pDesc.length > 200) pDesc = pDesc.substring(0, 197) + '...';
+                var pImg = prod.image_url || storeLogo;
+                document.title = pTitle;
+                setMeta('name', 'description', pDesc);
+                setMeta('property', 'og:title', pTitle);
+                setMeta('property', 'og:description', pDesc);
+                setMeta('property', 'og:image', pImg);
+                setMeta('property', 'og:site_name', storeName);
+                setMeta('property', 'og:type', 'product');
+                setMeta('name', 'twitter:title', pTitle);
+                setMeta('name', 'twitter:description', pDesc);
+                setMeta('name', 'twitter:image', pImg);
+              } else {
+                updateOGMeta(settings);
+              }
+            } else if (isArticlePage && shortId) {
+              var art = null;
+              for (var j = 0; j < articles.length; j++) {
+                if (articles[j].id && articles[j].id.indexOf(shortId) === 0) { art = articles[j]; break; }
+              }
+              if (art) {
+                var aTitle = art.title + (storeName ? ' - ' + storeName : '');
+                var aDesc = art.summary || storeDesc || '';
+                if (aDesc.length > 200) aDesc = aDesc.substring(0, 197) + '...';
+                var aImg = art.thumbnail_url || storeLogo;
+                document.title = aTitle;
+                setMeta('name', 'description', aDesc);
+                setMeta('property', 'og:title', aTitle);
+                setMeta('property', 'og:description', aDesc);
+                setMeta('property', 'og:image', aImg);
+                setMeta('property', 'og:site_name', storeName);
+                setMeta('property', 'og:type', 'article');
+                setMeta('name', 'twitter:title', aTitle);
+                setMeta('name', 'twitter:description', aDesc);
+                setMeta('name', 'twitter:image', aImg);
+              } else {
+                updateOGMeta(settings);
+              }
+            } else {
               updateOGMeta(settings);
             }
+
             var data = {
               settings: settings,
-              products: results[1] || [],
+              products: products,
               productCategories: results[2] || [],
-              articles: results[3] || [],
+              articles: articles,
               articleCategories: results[4] || [],
               branches: results[5] || [],
             };
