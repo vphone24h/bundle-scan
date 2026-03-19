@@ -81,10 +81,15 @@
         inset: 0;
         z-index: 9999;
         background: #f8fafc;
-        transition: opacity 0.15s ease-out;
+        transition: opacity 0.1s ease-out;
+      }
+      @media (prefers-color-scheme: dark) {
+        #app-preloader { background: #0a0a0a; }
+        #app-preloader div { border-color: #27272a !important; }
+        #app-preloader div > div, #app-preloader .sk-block { background: #27272a !important; }
       }
       #app-preloader.hide { opacity: 0; pointer-events: none; }
-      #app-preloader div > div { animation: skpulse 1.5s ease-in-out infinite; }
+      #app-preloader .sk-block { animation: skpulse 1.5s ease-in-out infinite; }
       @keyframes skpulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
     </style>
   </head>
