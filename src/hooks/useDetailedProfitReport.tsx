@@ -99,41 +99,44 @@ export function useDetailedProfitReport(filters?: {
       };
 
       const soldItems = await fetchAllRows<any>(() => buildSoldQuery());
-      const soldError = null;
 
-      // 2. Lấy dữ liệu trả hàng từ export_returns
-      let returnQuery = supabase
-        .from('export_returns')
-        .select(`
-          id,
-          code,
-          product_name,
-          sku,
-          imei,
-          import_price,
-          sale_price,
-          return_date,
-          branch_id,
-          customer_id,
-          product_id,
-          fee_type,
-          branches(name),
-          customers(name)
-        `)
-        .eq('fee_type', 'none')
-        .gte('return_date', startISO)
-        .lte('return_date', endISO);
+      // 2. Lấy TOÀN BỘ dữ liệu trả hàng từ export_returns (không giới hạn 1000 dòng)
+      const buildReturnQuery = () => {
+        let q = supabase
+          .from('export_returns')
+          .select(`
+            id,
+            code,
+            product_name,
+            sku,
+            imei,
+            import_price,
+            sale_price,
+            return_date,
+            branch_id,
+            customer_id,
+            product_id,
+            fee_type,
+            branches(name),
+            customers(name)
+          `)
+          .eq('fee_type', 'none')
+          .gte('return_date', startISO)
+          .lte('return_date', endISO)
+          .order('return_date', { ascending: false });
 
-      if (filters?.branchId) {
-        returnQuery = returnQuery.eq('branch_id', filters.branchId);
-      }
+        if (filters?.branchId) {
+          q = q.eq('branch_id', filters.branchId);
+        }
 
-      if (filters?.search) {
-        returnQuery = returnQuery.or(`product_name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,imei.ilike.%${filters.search}%`);
-      }
+        if (filters?.search) {
+          q = q.or(`product_name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,imei.ilike.%${filters.search}%`);
+        }
 
-      const { data: returnItems, error: returnError } = await returnQuery;
-      if (returnError) throw returnError;
+        return q;
+      };
+
+      const returnItems = await fetchAllRows<any>(() => buildReturnQuery());
 
       // 3. Lấy giá nhập của các sản phẩm
       const productIds = Array.from(
