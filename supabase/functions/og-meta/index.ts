@@ -30,6 +30,8 @@ Deno.serve(async (req) => {
   let description = "";
   let imageUrl = "";
   let storeName = "";
+  let storeDescription = "";
+  let storeLogoUrl = "";
 
   // Get store info
   try {
@@ -40,6 +42,8 @@ Deno.serve(async (req) => {
       .single();
     if (settings) {
       storeName = settings.store_name || "";
+      storeDescription = settings.store_description || "";
+      storeLogoUrl = settings.store_logo_url || "";
     }
   } catch {}
 
