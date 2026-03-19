@@ -145,20 +145,9 @@ export function RevenueProfitReport() {
     groupBy: chartGroupBy,
   });
 
-  // Recalculate businessProfit from detail items (TỔNG CỘNG in detail table)
-  // to ensure consistency between summary cards and detail table totals
-  const stats = useMemo(() => {
-    if (!rawStats) return rawStats;
-    const soldProfit = rawStats.salesDetails?.reduce((s, i) => s + i.profit, 0) ?? 0;
-    const returnProfitLoss = rawStats.returnDetails?.reduce((s, i) => s + i.profit, 0) ?? 0;
-    const correctedBusinessProfit = soldProfit - returnProfitLoss;
-    const correctedNetProfit = correctedBusinessProfit + rawStats.otherIncome - rawStats.totalExpenses;
-    return {
-      ...rawStats,
-      businessProfit: correctedBusinessProfit,
-      netProfit: correctedNetProfit,
-    };
-  }, [rawStats]);
+  // Use server-side RPC totals directly (salesDetails is limited to 200 items, 
+  // so recalculating from it gives wrong results when there are more items)
+  const stats = rawStats;
 
   const handleTimePreset = (preset: string) => {
     const now = new Date();
