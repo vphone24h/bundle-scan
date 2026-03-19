@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
 <meta property="og:description" content="${escHtml(description)}">
 ${imageUrl ? `<meta property="og:image" content="${escHtml(imageUrl)}">` : ""}
 <meta property="og:url" content="${escHtml(redirectUrl)}">
-<meta property="og:site_name" content="${escHtml(storeName || "vkho.vn")}">
+<meta property="og:site_name" content="${escHtml(storeName || "")}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${escHtml(title)}">
 <meta name="twitter:description" content="${escHtml(description)}">
