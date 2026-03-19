@@ -3,6 +3,7 @@ import { PullToRefresh } from '@/components/layout/PullToRefresh';
 import DOMPurify from 'dompurify';
 import { SetURLSearchParams, useLocation } from 'react-router-dom';
 import { buildProductPath, buildProductDetailPath, buildArticlePath, buildPagePath, extractProductIdFromPath, detectPageFromPath } from '@/lib/slugify';
+import { buildMetaShareUrl } from '@/lib/shareMetaUrl';
 import { QueryClient } from '@tanstack/react-query';
 import { TenantLandingSettings, useWarrantyLookup, useCustomerPointsPublic, WarrantyResult, BranchInfo, HomeSectionItem } from '@/hooks/useTenantLanding';
 import { LandingProduct, LandingProductCategory } from '@/hooks/useLandingProducts';
@@ -457,16 +458,12 @@ export default function UniversalStoreTemplate({
     }
 
     const redirectUrl = baseUrl.toString();
-    let shareUrl = redirectUrl;
-
-    if (tenantId && import.meta.env.VITE_SUPABASE_URL) {
-      const metaUrl = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-meta`);
-      metaUrl.searchParams.set('type', type === 'page' ? 'store' : type);
-      metaUrl.searchParams.set('id', type === 'page' ? 'store' : id);
-      metaUrl.searchParams.set('tenant_id', tenantId);
-      metaUrl.searchParams.set('url', redirectUrl);
-      shareUrl = metaUrl.toString();
-    }
+    const shareUrl = buildMetaShareUrl({
+      tenantId,
+      type: type === 'page' ? 'store' : type,
+      id: type === 'page' ? 'store' : id,
+      redirectUrl,
+    });
 
     navigator.clipboard.writeText(shareUrl).then(() => {
       import('sonner').then(({ toast }) => toast.success('Đã sao chép link chia sẻ'));

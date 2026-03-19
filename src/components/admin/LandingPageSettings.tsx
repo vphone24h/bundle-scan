@@ -22,6 +22,7 @@ import { getIndustryConfig, IndustryTrustBadge, NavItemConfig, PageItemConfig, I
 import { HomeSectionManager, HomeSectionItem } from './HomeSectionManager';
 import { ZaloOASetupWizard } from './ZaloOASetupWizard';
 import { PaymentConfigSection } from './PaymentConfigSection';
+import { buildMetaShareUrl } from '@/lib/shareMetaUrl';
 
 import {
   Dialog,
@@ -1103,14 +1104,26 @@ export function LandingPageSettings() {
 
   const handleCopyLink = () => {
     if (fullLandingUrl) {
-      navigator.clipboard.writeText(fullLandingUrl);
+      const shareLink = buildMetaShareUrl({
+        tenantId: tenant?.id,
+        type: 'store',
+        id: 'store',
+        redirectUrl: fullLandingUrl,
+      });
+      navigator.clipboard.writeText(shareLink);
       toast({ title: 'Đã sao chép link!' });
     }
   };
 
   const handleCopyDefaultLink = () => {
     if (defaultLandingUrl) {
-      navigator.clipboard.writeText(defaultLandingUrl);
+      const shareLink = buildMetaShareUrl({
+        tenantId: tenant?.id,
+        type: 'store',
+        id: 'store',
+        redirectUrl: defaultLandingUrl,
+      });
+      navigator.clipboard.writeText(shareLink);
       toast({ title: 'Đã sao chép link mặc định!' });
     }
   };

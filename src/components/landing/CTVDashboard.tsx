@@ -27,6 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
+import { buildMetaShareUrl, ShareMetaType } from '@/lib/shareMetaUrl';
 
 interface CTVDashboardProps {
   tenantId: string;
@@ -350,12 +351,25 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
     return f1Rate;
   };
 
-  const handleCopyLink = (path?: string) => {
+  const handleCopyLink = (
+    path?: string,
+    meta?: { type: ShareMetaType; id: string }
+  ) => {
     const base = storeUrl.replace(/\/$/, '');
     const link = path
       ? `${base}${path}?ref=${ctv.ctv_code}`
       : `${base}?ref=${ctv.ctv_code}`;
-    navigator.clipboard.writeText(link);
+
+    const shareLink = meta
+      ? buildMetaShareUrl({
+          tenantId,
+          type: meta.type,
+          id: meta.id,
+          redirectUrl: link,
+        })
+      : link;
+
+    navigator.clipboard.writeText(shareLink);
     toast({ title: 'Đã sao chép link!' });
   };
 
@@ -603,7 +617,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                             variant="outline"
                             size="sm"
                             className="flex-shrink-0"
-                            onClick={() => handleCopyLink(`/san-pham/${p.slug || p.id}`)}
+                            onClick={() => handleCopyLink(`/san-pham/${p.slug || p.id}`, { type: 'product', id: p.id })}
                           >
                             <Copy className="h-3 w-3 mr-1" />Link
                           </Button>
