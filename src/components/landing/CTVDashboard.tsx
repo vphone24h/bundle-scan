@@ -27,6 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { VIETNAMESE_BANKS } from '@/lib/vietnameseBanks';
+import { buildMetaShareUrl, ShareMetaType } from '@/lib/shareMetaUrl';
 
 interface CTVDashboardProps {
   tenantId: string;
