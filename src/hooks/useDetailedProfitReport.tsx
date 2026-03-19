@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
-// fetchAllRows removed - using server-side limited queries
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export interface DetailedProfitItem {
   id: string;
@@ -27,8 +27,6 @@ export function useDetailedProfitReport(filters?: {
   branchId?: string;
   categoryId?: string;
   search?: string;
-  page?: number;
-  pageSize?: number;
 }) {
   const { data: tenant, isLoading: isTenantLoading } = useCurrentTenant();
   const isDataHidden = tenant?.is_data_hidden ?? false;
@@ -97,17 +95,11 @@ export function useDetailedProfitReport(filters?: {
         if (filters?.search) {
           q = q.or(`product_name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,imei.ilike.%${filters.search}%`);
         }
-        return q;
+        return q.order('created_at', { ascending: false });
       };
 
-      const page = filters?.page ?? 1;
-      const pageSize = filters?.pageSize ?? 200;
-      const from = (page - 1) * pageSize;
-
-      const { data: soldItems, error: soldError, count: soldCount } = await buildSoldQuery()
-        .order('created_at', { ascending: false })
-        .range(from, from + pageSize - 1);
-      if (soldError) throw soldError;
+      const soldItems = await fetchAllRows<any>(() => buildSoldQuery());
+      const soldError = null;
 
       // 2. Lấy dữ liệu trả hàng từ export_returns
       let returnQuery = supabase
