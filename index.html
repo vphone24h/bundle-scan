@@ -178,7 +178,7 @@
         window.__STORE_PREFETCH__.storeId = storeId;
         window.__STORE_PREFETCH__.isSubdomain = isSubdomain;
 
-        function setIcon(url) {
+    function setIcon(url) {
           if (!url) return;
           var a = document.getElementById('static-apple-icon');
           if (a) a.href = url;
@@ -189,6 +189,31 @@
           if (!name) return;
           document.title = name;
           if (titleMeta) titleMeta.setAttribute('content', name);
+        }
+        function setMeta(attr, key, val) {
+          if (!val) return;
+          var el = document.querySelector('meta[' + attr + '="' + key + '"]');
+          if (el) el.setAttribute('content', val);
+        }
+        function updateOGMeta(settings) {
+          if (!settings) return;
+          var name = settings.store_name || '';
+          var desc = settings.store_description || '';
+          var logo = settings.store_logo_url || '';
+          if (name) {
+            document.title = name;
+            setMeta('name', 'description', desc || name);
+            setMeta('name', 'author', name);
+            setMeta('property', 'og:title', name);
+            setMeta('property', 'og:description', desc || name);
+            setMeta('property', 'og:site_name', name);
+            setMeta('name', 'twitter:title', name);
+            setMeta('name', 'twitter:description', desc || name);
+          }
+          if (logo) {
+            setMeta('property', 'og:image', logo);
+            setMeta('name', 'twitter:image', logo);
+          }
         }
 
         // Fetch all store data in parallel once we have tenantId
