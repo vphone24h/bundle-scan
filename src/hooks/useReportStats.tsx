@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
 import { useBranchFilter } from './useBranchFilter';
 import { getLocalDateString, getLocalDateRangeISO } from '@/lib/vietnamTime';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 import type { SaleDetailItem, ReturnDetailItem, CashBookDetailItem } from '@/components/reports/ReportStatDetailDialog';
 
@@ -86,59 +87,65 @@ export function useReportStats(filters?: {
 
       const agg = (aggData || {}) as any;
 
-      // 2. Fetch LIMITED detail data for click-to-detail popups (latest 200 items)
-      let salesDetailQuery = supabase
-        .from('export_receipt_items')
-        .select(`
-          product_name, sku, sale_price, status, product_id, category_id,
-          categories(name),
-          export_receipts!inner(export_date, branch_id, status),
-          products(import_price)
-        `)
-        .in('status', ['sold', 'returned'])
-        .neq('export_receipts.status', 'cancelled')
-        .gte('export_receipts.export_date', startISO)
-        .lte('export_receipts.export_date', endISO)
-        .order('created_at', { ascending: false })
-        .limit(200);
+      // 2. Fetch ALL detail data for click-to-detail popups
+      const buildSalesDetailQuery = () => {
+        let q = supabase
+          .from('export_receipt_items')
+          .select(`
+            product_name, sku, sale_price, status, product_id, category_id,
+            categories(name),
+            export_receipts!inner(export_date, branch_id, status),
+            products(import_price)
+          `)
+          .in('status', ['sold', 'returned'])
+          .neq('export_receipts.status', 'cancelled')
+          .gte('export_receipts.export_date', startISO)
+          .lte('export_receipts.export_date', endISO)
+          .order('created_at', { ascending: false });
 
-      if (effectiveBranchId) {
-        salesDetailQuery = salesDetailQuery.eq('export_receipts.branch_id', effectiveBranchId);
-      }
-      if (filters?.categoryId) {
-        salesDetailQuery = salesDetailQuery.eq('category_id', filters.categoryId);
-      }
+        if (effectiveBranchId) {
+          q = q.eq('export_receipts.branch_id', effectiveBranchId);
+        }
+        if (filters?.categoryId) {
+          q = q.eq('category_id', filters.categoryId);
+        }
+        return q;
+      };
 
-      let returnDetailQuery = supabase
-        .from('export_returns')
-        .select('product_name, imei, import_price, sale_price, return_date, branch_id, fee_type, product_id, products(import_price)')
-        .eq('fee_type', 'none')
-        .gte('return_date', startISO)
-        .lte('return_date', endISO)
-        .order('return_date', { ascending: false })
-        .limit(200);
+      const buildReturnDetailQuery = () => {
+        let q = supabase
+          .from('export_returns')
+          .select('product_name, imei, import_price, sale_price, return_date, branch_id, fee_type, product_id, products(import_price)')
+          .eq('fee_type', 'none')
+          .gte('return_date', startISO)
+          .lte('return_date', endISO)
+          .order('return_date', { ascending: false });
 
-      if (effectiveBranchId) {
-        returnDetailQuery = returnDetailQuery.eq('branch_id', effectiveBranchId);
-      }
+        if (effectiveBranchId) {
+          q = q.eq('branch_id', effectiveBranchId);
+        }
+        return q;
+      };
 
-      let cashDetailQuery = supabase
-        .from('cash_book')
-        .select('transaction_date, description, category, amount, payment_source, type')
-        .eq('is_business_accounting', true)
-        .gte('transaction_date', startISO)
-        .lte('transaction_date', endISO)
-        .order('transaction_date', { ascending: false })
-        .limit(200);
+      const buildCashDetailQuery = () => {
+        let q = supabase
+          .from('cash_book')
+          .select('transaction_date, description, category, amount, payment_source, type')
+          .eq('is_business_accounting', true)
+          .gte('transaction_date', startISO)
+          .lte('transaction_date', endISO)
+          .order('transaction_date', { ascending: false });
 
-      if (effectiveBranchId) {
-        cashDetailQuery = cashDetailQuery.eq('branch_id', effectiveBranchId);
-      }
+        if (effectiveBranchId) {
+          q = q.eq('branch_id', effectiveBranchId);
+        }
+        return q;
+      };
 
-      const [{ data: salesRaw }, { data: returnsRaw }, { data: cashRaw }] = await Promise.all([
-        salesDetailQuery,
-        returnDetailQuery,
-        cashDetailQuery,
+      const [salesRaw, returnsRaw, cashRaw] = await Promise.all([
+        fetchAllRows<any>(() => buildSalesDetailQuery()),
+        fetchAllRows<any>(() => buildReturnDetailQuery()),
+        fetchAllRows<any>(() => buildCashDetailQuery()),
       ]);
 
       // Build detail arrays for popup
