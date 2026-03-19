@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrentTenant } from './useTenant';
-// fetchAllRows removed - using server-side limited queries
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export interface DetailedProfitItem {
   id: string;
