@@ -23,7 +23,7 @@ function hidePreloader() {
   const el = document.getElementById('app-preloader');
   if (el) {
     el.classList.add('hide');
-    setTimeout(() => el.remove(), 200);
+    setTimeout(() => el.remove(), 100);
   }
 }
 

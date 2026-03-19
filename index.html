@@ -81,10 +81,15 @@
         inset: 0;
         z-index: 9999;
         background: #f8fafc;
-        transition: opacity 0.15s ease-out;
+        transition: opacity 0.1s ease-out;
+      }
+      @media (prefers-color-scheme: dark) {
+        #app-preloader { background: #0a0a0a; }
+        #app-preloader div { border-color: #27272a !important; }
+        #app-preloader div > div, #app-preloader .sk-block { background: #27272a !important; }
       }
       #app-preloader.hide { opacity: 0; pointer-events: none; }
-      #app-preloader div > div { animation: skpulse 1.5s ease-in-out infinite; }
+      #app-preloader .sk-block { animation: skpulse 1.5s ease-in-out infinite; }
       @keyframes skpulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
     </style>
   </head>
@@ -93,19 +98,25 @@
     <!-- Preloader OUTSIDE #root so React doesn't destroy it -->
     <div id="app-preloader">
       <div style="height:56px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;padding:0 16px;gap:12px;background:#f1f5f9">
-        <div style="width:32px;height:32px;border-radius:6px;background:#e2e8f0"></div>
-        <div style="width:128px;height:16px;border-radius:4px;background:#e2e8f0"></div>
+        <div class="sk-block" style="width:32px;height:32px;border-radius:6px;background:#e2e8f0"></div>
+        <div class="sk-block" style="width:128px;height:16px;border-radius:4px;background:#e2e8f0"></div>
       </div>
-      <!-- Default: product grid skeleton -->
+      <!-- Default: admin dashboard skeleton -->
       <div id="preloader-products">
-        <div style="height:160px;background:#f1f5f9"></div>
         <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
-          <div style="width:192px;height:24px;border-radius:4px;background:#e2e8f0"></div>
+          <div class="sk-block" style="width:160px;height:24px;border-radius:4px;background:#e2e8f0"></div>
+          <div class="sk-block" style="width:240px;height:14px;border-radius:4px;background:#e2e8f0"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+            <div class="sk-block" style="height:88px;border-radius:12px;background:#f1f5f9;border:1px solid #e2e8f0"></div>
+            <div class="sk-block" style="height:88px;border-radius:12px;background:#f1f5f9;border:1px solid #e2e8f0"></div>
+            <div class="sk-block" style="height:88px;border-radius:12px;background:#f1f5f9;border:1px solid #e2e8f0"></div>
+            <div class="sk-block" style="height:88px;border-radius:12px;background:#f1f5f9;border:1px solid #e2e8f0"></div>
+          </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div style="height:96px;border-radius:8px;background:#f1f5f9"></div>
-            <div style="height:96px;border-radius:8px;background:#f1f5f9"></div>
-            <div style="height:96px;border-radius:8px;background:#f1f5f9"></div>
-            <div style="height:96px;border-radius:8px;background:#f1f5f9"></div>
+            <div class="sk-block" style="height:72px;border-radius:8px;background:#f1f5f9;border:1px solid #e2e8f0"></div>
+            <div class="sk-block" style="height:72px;border-radius:8px;background:#f1f5f9;border:1px solid #e2e8f0"></div>
+            <div class="sk-block" style="height:72px;border-radius:8px;background:#f1f5f9;border:1px solid #e2e8f0"></div>
+            <div class="sk-block" style="height:72px;border-radius:8px;background:#f1f5f9;border:1px solid #e2e8f0"></div>
           </div>
         </div>
       </div>

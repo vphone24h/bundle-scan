@@ -3,11 +3,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, keepPreviousData } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { TenantGuard } from "@/components/tenant/TenantGuard";
 import { SubdomainRouter } from "@/components/routing/SubdomainRouter";
+import { AdminRouteRestorer } from "@/components/routing/AdminRouteRestorer";
 
 // Lazy load all pages for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -101,7 +104,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 2, // 2 minutes - reduce refetches
-      gcTime: 1000 * 60 * 10, // 10 minutes cache
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours - keep cache for persistence
       refetchOnWindowFocus: false, // Don't refetch on tab switch
       refetchOnReconnect: false, // Don't refetch when browser/network reconnects (often triggered by tab/minimize)
       refetchOnMount: false, // Don't refetch just because component remounts
@@ -109,6 +112,29 @@ const queryClient = new QueryClient({
       placeholderData: keepPreviousData,
       retry: 1, // Only 1 retry on failure
     },
+  },
+});
+
+// Persist React Query cache to localStorage for instant data on app restart
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: 'vkho_query_cache_v1',
+  // Throttle writes to localStorage to avoid performance issues
+  throttleTime: 2000,
+  // Serialize/deserialize with error handling
+  serialize: (data) => {
+    try {
+      return JSON.stringify(data);
+    } catch {
+      return '{}';
+    }
+  },
+  deserialize: (data) => {
+    try {
+      return JSON.parse(data);
+    } catch {
+      return {};
+    }
   },
 });
 
@@ -147,7 +173,7 @@ const SubscriptionRoute = ({ children }: { children: React.ReactNode }) => (
 );
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24, buster: 'v1' }}>
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
@@ -155,6 +181,7 @@ const App = () => (
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <SubdomainRouter landingPage={<StoreLandingPage />} publicLandingPage={<PublicLandingPage />}>
+              <AdminRouteRestorer />
               <Routes>
                 {/* Public store landing page - path-based */}
                 <Route path="/store/:storeId" element={<StoreLandingPage />} />
@@ -213,7 +240,7 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
-  </QueryClientProvider>
+  </PersistQueryClientProvider>
 );
 
 export default App;
