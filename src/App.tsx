@@ -181,6 +181,7 @@ const App = () => (
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <SubdomainRouter landingPage={<StoreLandingPage />} publicLandingPage={<PublicLandingPage />}>
+              <AdminRouteRestorer />
               <Routes>
                 {/* Public store landing page - path-based */}
                 <Route path="/store/:storeId" element={<StoreLandingPage />} />
