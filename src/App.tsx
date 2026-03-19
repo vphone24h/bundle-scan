@@ -10,6 +10,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { TenantGuard } from "@/components/tenant/TenantGuard";
 import { SubdomainRouter } from "@/components/routing/SubdomainRouter";
+import { AdminRouteRestorer } from "@/components/routing/AdminRouteRestorer";
 
 // Lazy load all pages for code splitting
 const Index = lazy(() => import("./pages/Index"));
