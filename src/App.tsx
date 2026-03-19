@@ -103,7 +103,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 2, // 2 minutes - reduce refetches
-      gcTime: 1000 * 60 * 10, // 10 minutes cache
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours - keep cache for persistence
       refetchOnWindowFocus: false, // Don't refetch on tab switch
       refetchOnReconnect: false, // Don't refetch when browser/network reconnects (often triggered by tab/minimize)
       refetchOnMount: false, // Don't refetch just because component remounts
@@ -111,6 +111,29 @@ const queryClient = new QueryClient({
       placeholderData: keepPreviousData,
       retry: 1, // Only 1 retry on failure
     },
+  },
+});
+
+// Persist React Query cache to localStorage for instant data on app restart
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: 'vkho_query_cache_v1',
+  // Throttle writes to localStorage to avoid performance issues
+  throttleTime: 2000,
+  // Serialize/deserialize with error handling
+  serialize: (data) => {
+    try {
+      return JSON.stringify(data);
+    } catch {
+      return '{}';
+    }
+  },
+  deserialize: (data) => {
+    try {
+      return JSON.parse(data);
+    } catch {
+      return {};
+    }
   },
 });
 
