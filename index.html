@@ -233,6 +233,7 @@
             if (settings) {
               setIcon(settings.store_logo_url);
               setTitle(settings.store_name);
+              updateOGMeta(settings);
             }
             var data = {
               settings: settings,
