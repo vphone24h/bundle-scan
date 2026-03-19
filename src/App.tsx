@@ -172,7 +172,7 @@ const SubscriptionRoute = ({ children }: { children: React.ReactNode }) => (
 );
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24, buster: 'v1' }}>
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
