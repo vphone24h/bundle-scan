@@ -434,7 +434,7 @@ export default function UniversalStoreTemplate({
     const baseUrl = new URL(window.location.href);
     baseUrl.search = '';
     baseUrl.hash = '';
-    
+
     if (type === 'product') {
       const product = productsData?.products?.find(p => p.id === id);
       if (product) {
@@ -455,9 +455,20 @@ export default function UniversalStoreTemplate({
     } else if (type === 'page') {
       baseUrl.pathname = buildPagePath(id);
     }
-    
-    const cleanUrl = baseUrl.toString();
-    navigator.clipboard.writeText(cleanUrl).then(() => {
+
+    const redirectUrl = baseUrl.toString();
+    let shareUrl = redirectUrl;
+
+    if (tenantId && import.meta.env.VITE_SUPABASE_URL) {
+      const metaUrl = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-meta`);
+      metaUrl.searchParams.set('type', type === 'page' ? 'store' : type);
+      metaUrl.searchParams.set('id', type === 'page' ? 'store' : id);
+      metaUrl.searchParams.set('tenant_id', tenantId);
+      metaUrl.searchParams.set('url', redirectUrl);
+      shareUrl = metaUrl.toString();
+    }
+
+    navigator.clipboard.writeText(shareUrl).then(() => {
       import('sonner').then(({ toast }) => toast.success('Đã sao chép link chia sẻ'));
     }).catch(() => {});
   };
