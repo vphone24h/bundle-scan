@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
   }
 
   if (!title) {
-    title = storeName || "Website bán hàng";
+    title = storeName || "Cùng trãi nghiệm";
     description =
       storeDescription ||
       (storeName
