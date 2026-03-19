@@ -30,6 +30,8 @@ Deno.serve(async (req) => {
   let description = "";
   let imageUrl = "";
   let storeName = "";
+  let storeDescription = "";
+  let storeLogoUrl = "";
 
   // Get store info
   try {
@@ -40,6 +42,8 @@ Deno.serve(async (req) => {
       .single();
     if (settings) {
       storeName = settings.store_name || "";
+      storeDescription = settings.store_description || "";
+      storeLogoUrl = settings.store_logo_url || "";
     }
   } catch {}
 
@@ -52,8 +56,8 @@ Deno.serve(async (req) => {
       .single();
     if (data) {
       title = `${data.name}${storeName ? ` - ${storeName}` : ""}`;
-      description = data.description || `Sản phẩm tại ${storeName}`;
-      imageUrl = data.image_url || "";
+      description = data.description || (storeName ? `Sản phẩm tại ${storeName}` : "");
+      imageUrl = data.image_url || storeLogoUrl || "";
       const price = data.sale_price || data.price;
       if (price) {
         description = `${new Intl.NumberFormat("vi-VN").format(price)}đ - ${description}`;
@@ -68,14 +72,19 @@ Deno.serve(async (req) => {
       .single();
     if (data) {
       title = `${data.title}${storeName ? ` - ${storeName}` : ""}`;
-      description = data.summary || `Bài viết tại ${storeName}`;
-      imageUrl = data.thumbnail_url || "";
+      description = data.summary || (storeName ? `Bài viết tại ${storeName}` : "");
+      imageUrl = data.thumbnail_url || storeLogoUrl || "";
     }
+  } else if (type === "store") {
+    // Share the whole store
+    title = storeName || "Cửa hàng";
+    description = storeDescription || (storeName ? `Chào mừng đến với ${storeName}` : "");
+    imageUrl = storeLogoUrl || "";
   }
 
   if (!title) {
     // Fallback: redirect directly
-    return Response.redirect(redirectUrl || "https://vkho.vn", 302);
+    return Response.redirect(redirectUrl || "/", 302);
   }
 
   // Truncate description
@@ -97,7 +106,7 @@ Deno.serve(async (req) => {
 <meta property="og:description" content="${escHtml(description)}">
 ${imageUrl ? `<meta property="og:image" content="${escHtml(imageUrl)}">` : ""}
 <meta property="og:url" content="${escHtml(redirectUrl)}">
-<meta property="og:site_name" content="${escHtml(storeName || "vkho.vn")}">
+<meta property="og:site_name" content="${escHtml(storeName || "")}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${escHtml(title)}">
 <meta name="twitter:description" content="${escHtml(description)}">
