@@ -617,7 +617,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
                             variant="outline"
                             size="sm"
                             className="flex-shrink-0"
-                            onClick={() => handleCopyLink(`/san-pham/${p.slug || p.id}`)}
+                            onClick={() => handleCopyLink(`/san-pham/${p.slug || p.id}`, { type: 'product', id: p.id })}
                           >
                             <Copy className="h-3 w-3 mr-1" />Link
                           </Button>
