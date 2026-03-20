@@ -13,10 +13,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Banknote, CreditCard, Wallet, FileText, Star, Gift, Ticket } from 'lucide-react';
+import { Banknote, CreditCard, Wallet, FileText, Star, Gift, Ticket, Tag } from 'lucide-react';
 import { formatNumber, formatInputNumber, parseFormattedNumber } from '@/lib/formatNumber';
 import type { ExportPayment } from '@/hooks/useExportReceipts';
-import { useVoucherTemplates, VoucherTemplate } from '@/hooks/useVouchers';
+import { useVoucherTemplates, VoucherTemplate, CustomerVoucher } from '@/hooks/useVouchers';
 import { useCustomPaymentSources } from '@/hooks/useCustomPaymentSources';
 
 interface CustomerPointInfo {
@@ -39,11 +39,12 @@ interface ExportPaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   totalAmount: number;
-  onConfirm: (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number, giftVoucherTemplateId?: string, skipCashBook?: boolean) => void;
+  onConfirm: (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number, giftVoucherTemplateId?: string, skipCashBook?: boolean, appliedVoucherIds?: string[], voucherDiscount?: number) => void;
   isLoading?: boolean;
   customerPoints?: CustomerPointInfo | null;
   pointSettings?: PointSettings | null;
   hasCustomer?: boolean;
+  customerVouchers?: CustomerVoucher[];
 }
 
 const builtInPaymentTypes = [
@@ -69,6 +70,7 @@ export function ExportPaymentDialog({
   customerPoints,
   pointSettings,
   hasCustomer,
+  customerVouchers = [],
 }: ExportPaymentDialogProps) {
   const { data: voucherTemplates } = useVoucherTemplates();
   const activeTemplates = (voucherTemplates || []).filter(t => t.is_active);
@@ -101,6 +103,22 @@ export function ExportPaymentDialog({
   const [giftVoucher, setGiftVoucher] = useState(false);
   const [selectedVoucherTemplateId, setSelectedVoucherTemplateId] = useState('');
 
+  // Voucher application (use existing vouchers for discount)
+  const availableVouchers = customerVouchers.filter(v => v.status === 'unused');
+  const [appliedVoucherIds, setAppliedVoucherIds] = useState<string[]>([]);
+
+  // Calculate voucher discount
+  const voucherDiscount = useMemo(() => {
+    return appliedVoucherIds.reduce((sum, id) => {
+      const v = availableVouchers.find(v => v.id === id);
+      if (!v) return sum;
+      if (v.discount_type === 'percentage') {
+        return sum + Math.floor(totalAmount * v.discount_value / 100);
+      }
+      return sum + v.discount_value;
+    }, 0);
+  }, [appliedVoucherIds, availableVouchers, totalAmount]);
+
   // Calculate max points that can be redeemed
   // First, calculate max discount by percentage
   const maxDiscountByPercentage = (pointSettings?.use_percentage_limit && pointSettings?.max_redeem_percentage)
@@ -131,8 +149,8 @@ export function ExportPaymentDialog({
   const actualPointsUsed = pointSettings && actualPointsDiscount > 0 ? 
     Math.ceil(actualPointsDiscount / pointSettings.redeem_value * pointSettings.redeem_points) : 0;
 
-  // Adjusted total after points discount
-  const adjustedTotal = totalAmount - actualPointsDiscount;
+  // Adjusted total after points + voucher discount
+  const adjustedTotal = totalAmount - actualPointsDiscount - voucherDiscount;
 
   // Reset when dialog opens
   useEffect(() => {
@@ -149,13 +167,13 @@ export function ExportPaymentDialog({
       setGiftVoucher(false);
       setSelectedVoucherTemplateId('');
       setAddToCashBook(true);
+      setAppliedVoucherIds([]);
     }
   }, [open, totalAmount]);
 
-  // Update cash amount when points are used
+  // Update cash amount when points/voucher discount changes
   useEffect(() => {
-    if (usePoints && actualPointsDiscount > 0) {
-      // Recalculate cash amount
+    if ((usePoints && actualPointsDiscount > 0) || voucherDiscount > 0) {
       const otherPayments = selectedTypes
         .filter(t => t !== 'cash' && t !== 'debt')
         .reduce((sum, t) => sum + (parseFloat(amounts[t]) || 0), 0);
@@ -163,10 +181,18 @@ export function ExportPaymentDialog({
       const remaining = adjustedTotal - otherPayments - debtAmt;
       
       if (remaining >= 0 && selectedTypes.includes('cash')) {
-        setAmounts(prev => ({ ...prev, cash: remaining.toString() }));
+        setAmounts(prev => ({ ...prev, cash: remaining > 0 ? remaining.toString() : '' }));
       }
     }
-  }, [actualPointsDiscount, usePoints]);
+  }, [actualPointsDiscount, usePoints, voucherDiscount]);
+
+  const toggleVoucherApply = (voucherId: string) => {
+    setAppliedVoucherIds(prev =>
+      prev.includes(voucherId)
+        ? prev.filter(id => id !== voucherId)
+        : [...prev, voucherId]
+    );
+  };
 
   const togglePaymentType = (type: string) => {
     if (selectedTypes.includes(type)) {
@@ -208,7 +234,15 @@ export function ExportPaymentDialog({
       .filter((p) => p.amount > 0);
 
     onOpenChange(false);
-    onConfirm(payments, usePoints ? actualPointsUsed : 0, usePoints ? actualPointsDiscount : 0, giftVoucher && selectedVoucherTemplateId ? selectedVoucherTemplateId : undefined, !addToCashBook);
+    onConfirm(
+      payments,
+      usePoints ? actualPointsUsed : 0,
+      usePoints ? actualPointsDiscount : 0,
+      giftVoucher && selectedVoucherTemplateId ? selectedVoucherTemplateId : undefined,
+      !addToCashBook,
+      appliedVoucherIds.length > 0 ? appliedVoucherIds : undefined,
+      voucherDiscount > 0 ? voucherDiscount : undefined,
+    );
   };
 
   const canUsePoints = pointSettings?.is_enabled && (customerPoints?.current_points || 0) > 0;
@@ -229,12 +263,17 @@ export function ExportPaymentDialog({
             </div>
             {actualPointsDiscount > 0 && (
               <div className="text-sm text-green-600 mt-1">
-                Giảm giá điểm: -{formatNumber(actualPointsDiscount)}đ
+                Giảm điểm: -{formatNumber(actualPointsDiscount)}đ
               </div>
             )}
-            {actualPointsDiscount > 0 && (
+            {voucherDiscount > 0 && (
+              <div className="text-sm text-green-600 mt-1">
+                Giảm voucher: -{formatNumber(voucherDiscount)}đ
+              </div>
+            )}
+            {(actualPointsDiscount > 0 || voucherDiscount > 0) && (
               <div className="text-lg font-semibold mt-1">
-                Còn lại: {formatNumber(adjustedTotal)}đ
+                Còn lại: {formatNumber(Math.max(0, adjustedTotal))}đ
               </div>
             )}
           </div>
@@ -321,7 +360,42 @@ export function ExportPaymentDialog({
             </div>
           )}
 
-          {/* Voucher gifting */}
+          {/* Apply existing vouchers */}
+          {availableVouchers.length > 0 && (
+            <div className="p-4 border rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
+              <div className="flex items-center gap-2 mb-3">
+                <Tag className="h-5 w-5 text-green-600" />
+                <span className="font-medium">Áp dụng voucher</span>
+                <Badge variant="outline" className="ml-auto">{availableVouchers.length} voucher</Badge>
+              </div>
+              <div className="space-y-2">
+                {availableVouchers.map(v => (
+                  <div key={v.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`voucher-${v.id}`}
+                      checked={appliedVoucherIds.includes(v.id)}
+                      onCheckedChange={() => toggleVoucherApply(v.id)}
+                    />
+                    <Label htmlFor={`voucher-${v.id}`} className="cursor-pointer flex-1 text-sm">
+                      <span className="font-medium">{v.voucher_name}</span>
+                      <span className="text-muted-foreground ml-1">
+                        ({v.code}) —{' '}
+                        {v.discount_type === 'percentage'
+                          ? `${v.discount_value}%`
+                          : `${formatNumber(v.discount_value)}đ`}
+                      </span>
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              {voucherDiscount > 0 && (
+                <div className="mt-2 p-2 bg-green-100 dark:bg-green-900/30 rounded text-sm text-green-700 dark:text-green-300">
+                  Giảm voucher: <strong>{formatNumber(voucherDiscount)}đ</strong>
+                </div>
+              )}
+            </div>
+          )}
+
           {hasCustomer && activeTemplates.length > 0 && (
             <div className="p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
               <div className="flex items-center space-x-2 mb-3">

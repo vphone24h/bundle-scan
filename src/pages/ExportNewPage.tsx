@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { useCheckProductForSale, useSearchProductsByName, useCreateExportReceipt, type ExportReceiptItem, type ExportPayment } from '@/hooks/useExportReceipts';
-import { useIssueVoucher } from '@/hooks/useVouchers';
+import { useIssueVoucher, useCustomerVouchersById, useMarkVoucherUsed } from '@/hooks/useVouchers';
 import { useUpsertCustomer } from '@/hooks/useCustomers';
 import { useInvoiceTemplateByBranch } from '@/hooks/useInvoiceTemplates';
 import { useBranches } from '@/hooks/useBranches';
@@ -155,6 +155,8 @@ export default function ExportNewPage() {
   const upsertCustomer = useUpsertCustomer();
   const createReceipt = useCreateExportReceipt();
   const issueVoucher = useIssueVoucher();
+  const markVoucherUsed = useMarkVoucherUsed();
+  const { data: customerVouchers = [] } = useCustomerVouchersById(selectedCustomer?.id || null);
   const { data: pointSettings } = usePointSettings();
   const { data: branches } = useBranches();
   const { data: permissions } = usePermissions();
@@ -781,7 +783,7 @@ export default function ExportNewPage() {
   };
 
   // Handle payment completion
-  const handlePaymentComplete = async (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number, giftVoucherTemplateId?: string, skipCashBook?: boolean) => {
+  const handlePaymentComplete = async (payments: ExportPayment[], pointsRedeemed: number, pointsDiscount: number, giftVoucherTemplateId?: string, skipCashBook?: boolean, appliedVoucherIds?: string[], voucherDiscount?: number) => {
     if (isSubmitting) return; // Chống double-submit
     setIsSubmitting(true);
 
@@ -903,7 +905,18 @@ export default function ExportNewPage() {
         }
       }
 
-      // Send auto email if enabled
+      // Mark applied vouchers as used
+      if (appliedVoucherIds && appliedVoucherIds.length > 0) {
+        for (const vId of appliedVoucherIds) {
+          try {
+            await markVoucherUsed.mutateAsync(vId);
+          } catch {
+            // Non-critical
+          }
+        }
+        successMessage += `. Đã sử dụng ${appliedVoucherIds.length} voucher`;
+      }
+
       if (autoEmailEnabled && savedCustomerEmail) {
         supabase.functions.invoke('send-export-email', {
           body: {
@@ -1550,6 +1563,7 @@ export default function ExportNewPage() {
           max_redeem_percentage: pointSettings.max_redeem_percentage,
         } : null}
         hasCustomer={!!customerPhone}
+        customerVouchers={customerVouchers}
       />
 
       {/* Invoice Print Dialog */}
