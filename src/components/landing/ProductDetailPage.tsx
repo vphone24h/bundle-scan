@@ -884,7 +884,7 @@ export function ProductDetailPage({
                       price: displayPrice,
                       variant: getVariantLabel(),
                     });
-                    toast.success('Đã thêm vào giỏ hàng');
+                    toast.success('Đã thêm vào giỏ hàng', { position: 'top-center' });
                   }}>
                   {btn.icon} {btn.label}
                 </Button>
