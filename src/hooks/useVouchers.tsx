@@ -192,7 +192,10 @@ export function useIssueVoucher() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['customer-vouchers'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customer-vouchers'] });
+      qc.invalidateQueries({ queryKey: ['customer-vouchers-by-id'] });
+    },
   });
 }
 
