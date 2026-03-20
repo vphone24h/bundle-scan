@@ -263,12 +263,17 @@ export function ExportPaymentDialog({
             </div>
             {actualPointsDiscount > 0 && (
               <div className="text-sm text-green-600 mt-1">
-                Giảm giá điểm: -{formatNumber(actualPointsDiscount)}đ
+                Giảm điểm: -{formatNumber(actualPointsDiscount)}đ
               </div>
             )}
-            {actualPointsDiscount > 0 && (
+            {voucherDiscount > 0 && (
+              <div className="text-sm text-green-600 mt-1">
+                Giảm voucher: -{formatNumber(voucherDiscount)}đ
+              </div>
+            )}
+            {(actualPointsDiscount > 0 || voucherDiscount > 0) && (
               <div className="text-lg font-semibold mt-1">
-                Còn lại: {formatNumber(adjustedTotal)}đ
+                Còn lại: {formatNumber(Math.max(0, adjustedTotal))}đ
               </div>
             )}
           </div>
