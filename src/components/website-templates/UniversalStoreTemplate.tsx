@@ -838,24 +838,67 @@ export default function UniversalStoreTemplate({
                     </ScrollReveal>
                   );
                 case 'storeInfo':
-                  if (!config.features.storeInfo || settings?.show_store_info === false || (!settings?.store_address && !settings?.store_phone && branches.length === 0)) return null;
+                  if (!config.features.storeInfo || settings?.show_store_info === false) return null;
+                  const hasContactInfo = settings?.store_phone || settings?.store_email || zaloUrl || facebookUrl || tiktokUrl || settings?.store_address;
+                  if (!hasContactInfo && branches.length === 0) return null;
                   return (
                     <ScrollReveal key="storeInfo" animation="fade-up">
                       <section className="py-12 bg-[#f5f5f7]">
                         <div className="max-w-[1200px] mx-auto px-4">
                           <div className="text-center mb-8"><h2 className="text-2xl font-bold tracking-tight">Liên hệ</h2></div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {branches.length > 0 ? branches.map(branch => (
-                              <div key={branch.id} className="bg-white rounded-2xl p-5 space-y-3">
-                                <div className="flex items-center gap-2"><Building2 className="h-4 w-4" style={{ color: accentColor }} /><p className="font-semibold text-sm">{branch.name}</p></div>
-                                {branch.address && <div className="flex items-start gap-2"><MapPin className="h-3.5 w-3.5 text-[#86868b] mt-0.5" /><p className="text-xs text-[#86868b]">{branch.address}</p></div>}
-                                {branch.phone && <a href={`tel:${branch.phone}`} className="flex items-center gap-2" style={{ color: accentColor }}><Phone className="h-3.5 w-3.5" /><p className="text-xs font-medium">{branch.phone}</p></a>}
-                              </div>
-                            )) : (
-                              <div className="bg-white rounded-2xl p-5 space-y-3">
-                                {settings?.store_address && <div className="flex items-start gap-2"><MapPin className="h-4 w-4 text-[#86868b] mt-0.5" /><p className="text-sm">{settings.store_address}</p></div>}
-                                {settings?.store_phone && <a href={`tel:${settings.store_phone}`} className="flex items-center gap-2" style={{ color: accentColor }}><Phone className="h-4 w-4" /><p className="text-sm font-medium">{settings.store_phone}</p></a>}
-                                {settings?.store_email && <a href={`mailto:${settings.store_email}`} className="flex items-center gap-2" style={{ color: accentColor }}><Mail className="h-4 w-4" /><p className="text-sm font-medium">{settings.store_email}</p></a>}
+                          <div className="bg-white rounded-2xl p-6 space-y-4 max-w-lg mx-auto">
+                            {settings?.store_phone && (
+                              <a href={`tel:${settings.store_phone}`} className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#f5f5f7] transition-colors" style={{ color: accentColor }}>
+                                <Phone className="h-5 w-5 shrink-0" />
+                                <div>
+                                  <p className="text-xs text-[#86868b]">Số điện thoại</p>
+                                  <p className="text-sm font-semibold">{settings.store_phone}</p>
+                                </div>
+                              </a>
+                            )}
+                            {zaloUrl && (
+                              <a href={zaloUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#f5f5f7] transition-colors" style={{ color: accentColor }}>
+                                <MessageCircle className="h-5 w-5 shrink-0" />
+                                <div>
+                                  <p className="text-xs text-[#86868b]">Zalo</p>
+                                  <p className="text-sm font-semibold">{settings?.zalo_url || 'Chat Zalo'}</p>
+                                </div>
+                              </a>
+                            )}
+                            {facebookUrl && (
+                              <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#f5f5f7] transition-colors" style={{ color: accentColor }}>
+                                <ExternalLink className="h-5 w-5 shrink-0" />
+                                <div>
+                                  <p className="text-xs text-[#86868b]">Facebook</p>
+                                  <p className="text-sm font-semibold">Facebook</p>
+                                </div>
+                              </a>
+                            )}
+                            {tiktokUrl && (
+                              <a href={tiktokUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#f5f5f7] transition-colors" style={{ color: accentColor }}>
+                                <ExternalLink className="h-5 w-5 shrink-0" />
+                                <div>
+                                  <p className="text-xs text-[#86868b]">TikTok</p>
+                                  <p className="text-sm font-semibold">TikTok</p>
+                                </div>
+                              </a>
+                            )}
+                            {settings?.store_email && (
+                              <a href={`mailto:${settings.store_email}`} className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#f5f5f7] transition-colors" style={{ color: accentColor }}>
+                                <Mail className="h-5 w-5 shrink-0" />
+                                <div>
+                                  <p className="text-xs text-[#86868b]">Email</p>
+                                  <p className="text-sm font-semibold">{settings.store_email}</p>
+                                </div>
+                              </a>
+                            )}
+                            {settings?.store_address && (
+                              <div className="flex items-start gap-3 p-3 rounded-xl">
+                                <MapPin className="h-5 w-5 shrink-0 text-[#86868b] mt-0.5" />
+                                <div>
+                                  <p className="text-xs text-[#86868b]">Địa chỉ</p>
+                                  <p className="text-sm">{settings.store_address}</p>
+                                </div>
                               </div>
                             )}
                           </div>
