@@ -1261,6 +1261,24 @@ export default function ExportHistoryPage() {
                     <span>Tổng tiền:</span>
                     <span className="font-bold">{selectedReceipt.total_amount.toLocaleString('vi-VN')}đ</span>
                   </div>
+                  {(selectedReceipt.points_discount || 0) > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Giảm điểm ({selectedReceipt.points_redeemed} điểm):</span>
+                      <span>-{selectedReceipt.points_discount.toLocaleString('vi-VN')}đ</span>
+                    </div>
+                  )}
+                  {(selectedReceipt.voucher_discount || 0) > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Giảm voucher:</span>
+                      <span>-{(selectedReceipt as any).voucher_discount.toLocaleString('vi-VN')}đ</span>
+                    </div>
+                  )}
+                  {((selectedReceipt.points_discount || 0) > 0 || ((selectedReceipt as any).voucher_discount || 0) > 0) && (
+                    <div className="flex justify-between text-sm font-semibold">
+                      <span>Còn lại:</span>
+                      <span>{(selectedReceipt.total_amount - (selectedReceipt.points_discount || 0) - ((selectedReceipt as any).voucher_discount || 0)).toLocaleString('vi-VN')}đ</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span>Đã thanh toán:</span>
                     <span>{selectedReceipt.paid_amount.toLocaleString('vi-VN')}đ</span>

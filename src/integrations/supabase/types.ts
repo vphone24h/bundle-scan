@@ -2826,6 +2826,7 @@ export type Database = {
           updated_at: string
           vat_amount: number
           vat_rate: number
+          voucher_discount: number | null
         }
         Insert: {
           branch_id?: string | null
@@ -2849,6 +2850,7 @@ export type Database = {
           updated_at?: string
           vat_amount?: number
           vat_rate?: number
+          voucher_discount?: number | null
         }
         Update: {
           branch_id?: string | null
@@ -2872,6 +2874,7 @@ export type Database = {
           updated_at?: string
           vat_amount?: number
           vat_rate?: number
+          voucher_discount?: number | null
         }
         Relationships: [
           {

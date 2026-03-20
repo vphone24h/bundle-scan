@@ -1,0 +1,1 @@
+ALTER TABLE public.export_receipts ADD COLUMN IF NOT EXISTS voucher_discount numeric DEFAULT 0;

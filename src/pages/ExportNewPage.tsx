@@ -807,6 +807,7 @@ export default function ExportNewPage() {
       total_amount: totalAmount,
       points_redeemed: pointsRedeemed,
       points_discount: pointsDiscount,
+      voucher_discount: voucherDiscount || 0,
       sale_date: new Date().toISOString(),
     };
 
@@ -860,6 +861,7 @@ export default function ExportNewPage() {
         payments,
         pointsRedeemed,
         pointsDiscount,
+        voucherDiscount: voucherDiscount || 0,
         branchId,
         vatRate: savedEffectiveTaxRate,
         vatAmount: savedTaxAmount,
