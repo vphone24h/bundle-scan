@@ -49,7 +49,7 @@ export default function PlatformAuthPage() {
           .maybeSingle();
 
         if (platformUser?.platform_role !== 'platform_admin') {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: 'local' });
           toast({
             title: t('pages.platformAuth.noAccess'),
             description: t('pages.platformAuth.notAdmin'),
