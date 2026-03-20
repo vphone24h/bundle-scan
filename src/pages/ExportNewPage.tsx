@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 import { InstallmentCalculatorDialog } from '@/components/dashboard/InstallmentCalculatorDialog';
 import { useCheckProductForSale, useSearchProductsByName, useCreateExportReceipt, type ExportReceiptItem, type ExportPayment } from '@/hooks/useExportReceipts';
-import { useIssueVoucher } from '@/hooks/useVouchers';
+import { useIssueVoucher, useCustomerVouchersById, useMarkVoucherUsed } from '@/hooks/useVouchers';
 import { useUpsertCustomer } from '@/hooks/useCustomers';
 import { useInvoiceTemplateByBranch } from '@/hooks/useInvoiceTemplates';
 import { useBranches } from '@/hooks/useBranches';
