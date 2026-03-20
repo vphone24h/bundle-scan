@@ -34,7 +34,7 @@ import {
   Loader2, Building2, Headphones, Calendar, Package,
   Clock, Users, Star, Gift, ChevronDown,
   ShoppingBag, Newspaper, ArrowLeft,
-  Link2, Menu, X,
+  Link2, Menu, X, MessageCircle, ExternalLink,
 } from 'lucide-react';
 import { LayoutHero } from './layouts/HeroVariants';
 import { LayoutProductCard, getProductGridClass } from './layouts/ProductCardVariants';
