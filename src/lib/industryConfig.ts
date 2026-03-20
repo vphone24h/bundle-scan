@@ -1136,6 +1136,26 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     stickyBarLabels: { chat: 'Đặt phòng', call: 'Gọi ngay' },
     fontFamily: '"Inter", system-ui, sans-serif',
   },
+  massage_store: {
+    id: 'massage_store',
+    heroTitle: 'Massage & Xông hơi',
+    heroSubtitle: 'Thư giãn tuyệt đối – Nhân viên xinh tươi – Phục vụ tận tâm.',
+    heroCta: 'Đặt lịch ngay',
+    heroGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    accentColor: '#764ba2',
+    trustBadges: [
+      { icon: 'Star', title: 'Nhân viên xinh tươi', desc: 'Phục vụ nhiệt tình' },
+      { icon: 'Shield', title: 'Phòng VIP riêng tư', desc: 'Sạch sẽ, thoải mái' },
+      { icon: 'Award', title: 'Kỹ thuật chuyên nghiệp', desc: 'Đào tạo bài bản' },
+      { icon: 'CreditCard', title: 'Combo tiết kiệm', desc: 'Giá ưu đãi hấp dẫn' },
+    ],
+    productSectionTitle: 'Dịch vụ massage',
+    productSectionSubtitle: 'Chọn gói phù hợp',
+    emptyProductText: 'Chưa có dịch vụ nào',
+    navLabels: { home: 'Trang chủ', products: 'Dịch vụ', news: 'Tin tức', warranty: 'Chính sách' },
+    stickyBarLabels: { chat: 'Đặt lịch', call: 'Gọi ngay' },
+    fontFamily: '"Inter", system-ui, sans-serif',
+  },
 };
 
 // Get config for a template, fallback to phone_store - returns resolved config with all defaults
