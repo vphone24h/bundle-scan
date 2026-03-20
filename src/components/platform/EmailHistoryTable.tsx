@@ -196,7 +196,7 @@ export function EmailHistoryTable() {
                       <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleView(email); }}>
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {email.failed_emails && email.failed_emails.length > 0 && (
+                      {(email.fail_count > 0 || (email.failed_emails && email.failed_emails.length > 0)) && (
                         <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); resendMutation.mutate(email); }} disabled={resendingId === email.id} title="Gửi lại email thất bại">
                           <RefreshCw className={`h-4 w-4 ${resendingId === email.id ? 'animate-spin' : ''}`} />
                         </Button>
