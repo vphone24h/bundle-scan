@@ -103,7 +103,7 @@ export function CTVDashboard({ tenantId, storeName, storeUrl, accentColor, onBac
     
     // 3. Also sign out via Supabase (clears server session)
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
     } catch {
       // Even if signout fails, we already cleared localStorage
     }
