@@ -112,10 +112,11 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
 
   if (!customer && !isLoading) return null;
 
-  // Calculate debt from export receipts
-  const totalDebt = purchaseHistory?.reduce((sum, r) => sum + (r.debt_amount || 0), 0) || 0;
-  const paidDebt = debtPayments?.reduce((sum, p) => sum + p.amount, 0) || 0;
-  const remainingDebt = totalDebt - paidDebt;
+  // Calculate debt accurately from debtDetail (receipts) + debtPayments (additions & payments)
+  const receiptDebt = debtDetail?.reduce((sum: number, r: any) => sum + (r.debt_amount || 0), 0) || 0;
+  const debtAdditions = debtPayments?.filter((p: any) => p.payment_type === 'addition').reduce((sum: number, p: any) => sum + p.amount, 0) || 0;
+  const debtPaid = debtPayments?.filter((p: any) => p.payment_type === 'payment').reduce((sum: number, p: any) => sum + p.amount, 0) || 0;
+  const remainingDebt = receiptDebt + debtAdditions - debtPaid;
 
   return (
     <>
