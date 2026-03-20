@@ -464,19 +464,22 @@ export function ProductDetailPage({
                 <Label className="text-sm font-medium mb-2 block">
                   {product.variant_group_1_name || 'Biến thể 1'} <span className="text-red-500">*</span>
                 </Label>
-                <div className={`flex flex-wrap gap-2 ${attempted && !selectedOption1 ? 'p-2 rounded-md border-2 border-red-400' : ''}`}>
+                <div className={`flex flex-wrap gap-2 ${(attempted || variantAttempted) && !selectedOption1 ? 'p-2 rounded-md border-2 border-red-400' : ''}`}>
                   {variantOptions1.map((opt, i) => (
                     <Badge
                       key={i}
                       variant={selectedOption1 === opt.name ? 'default' : 'outline'}
                       className="cursor-pointer text-sm px-3 py-2 active:scale-95 transition-transform"
                       style={selectedOption1 === opt.name ? { backgroundColor: primaryColor } : {}}
-                      onClick={() => setSelectedOption1(selectedOption1 === opt.name ? null : opt.name)}
+                      onClick={() => { setSelectedOption1(selectedOption1 === opt.name ? null : opt.name); setVariantAttempted(false); }}
                     >
                       {opt.name}
                     </Badge>
                   ))}
                 </div>
+                {(attempted || variantAttempted) && !selectedOption1 && (
+                  <p className="text-xs text-red-500 font-medium mt-1">⚠ Vui lòng chọn {product.variant_group_1_name || 'Biến thể 1'}</p>
+                )}
               </div>
 
               {variantOptions2.length > 0 && (
