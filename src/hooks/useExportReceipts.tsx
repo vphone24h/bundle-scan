@@ -295,6 +295,7 @@ export function useCreateExportReceipt() {
       note,
       pointsRedeemed = 0,
       pointsDiscount = 0,
+      voucherDiscount = 0,
       branchId,
       vatRate = 0,
       vatAmount = 0,
@@ -307,6 +308,7 @@ export function useCreateExportReceipt() {
       note?: string;
       pointsRedeemed?: number;
       pointsDiscount?: number;
+      voucherDiscount?: number;
       branchId?: string | null;
       vatRate?: number;
       vatAmount?: number;
