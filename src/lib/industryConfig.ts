@@ -277,6 +277,7 @@ const INDUSTRY_LAYOUT_STYLES: Record<string, LayoutStyle> = {
   pharmacy_store: 'minimal', company_site: 'minimal',
   baby_store: 'shopee', sports_store: 'nike', pet_store: 'organic', farm_store: 'organic',
   landing_page: 'shopee',
+  bakery_store: 'organic', vehicle_repair: 'minimal', hvac_repair: 'minimal', audio_store: 'apple',
 };
 
 // Per-industry home sections order
