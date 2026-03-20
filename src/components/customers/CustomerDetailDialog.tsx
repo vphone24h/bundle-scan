@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Phone, MapPin, Mail, Calendar, Edit2, ShoppingCart, Wallet, Star, Eye } from 'lucide-react';
+import { Phone, MapPin, Mail, Calendar, Edit2, ShoppingCart, Wallet, Star, Eye, Ticket, Gift } from 'lucide-react';
 import { UserCircle } from 'lucide-react';
 import {
   useCustomerDetail,
@@ -29,11 +29,13 @@ import {
   POINT_TRANSACTION_TYPE_NAMES,
 } from '@/hooks/useCustomerPoints';
 import { useDebtDetail, useDebtPaymentHistory } from '@/hooks/useDebt';
+import { useCustomerVouchersById } from '@/hooks/useVouchers';
 import { formatNumber } from '@/lib/formatNumber';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { CustomerFormDialog } from './CustomerFormDialog';
 import { PointAdjustDialog } from './PointAdjustDialog';
+import { IssueVoucherDialog } from './IssueVoucherDialog';
 import { CustomerPurchaseDetailDialog } from './CustomerPurchaseDetailDialog';
 import { StaffAssignSelect } from '@/components/crm/StaffAssignSelect';
 import { useAssignStaffToCustomer, useStaffList, CRM_STATUS_LABELS, CRM_STATUS_COLORS, CRMStatus, useUpdateCustomerCRMStatus } from '@/hooks/useCRM';
