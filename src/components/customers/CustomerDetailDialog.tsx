@@ -276,7 +276,7 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
 
               {/* Tabs */}
               <Tabs defaultValue="purchases" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 h-auto">
+                <TabsList className="grid w-full grid-cols-5 h-auto">
                   <TabsTrigger value="purchases" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
                     <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Mua hàng</span>
@@ -284,6 +284,10 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                   <TabsTrigger value="points" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
                     <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Điểm</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="vouchers" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+                    <Ticket className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Voucher</span>
                   </TabsTrigger>
                   <TabsTrigger value="debt" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
                     <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
