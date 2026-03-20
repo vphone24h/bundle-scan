@@ -253,6 +253,7 @@ const INDUSTRY_FEATURE_PRESETS: Record<string, Partial<IndustryFeatures>> = {
   hvac_repair: { imei: false, warranty: true, repair: true, booking: true, tradein: false, compare: false },
   audio_store: { imei: true, warranty: true, installment: true, compare: true, tradein: true },
   karaoke_store: { imei: false, warranty: false, tradein: false, compare: false, booking: true, combo: true, flashSale: true },
+  massage_store: { imei: false, warranty: false, tradein: false, compare: false, booking: true, combo: true },
   // Specialty
   baby_store: { imei: false, warranty: false, tradein: false, compare: false, combo: true },
   sports_store: { imei: false, warranty: false, tradein: false, compare: false, sizeChart: true, flashSale: true },
@@ -278,7 +279,7 @@ const INDUSTRY_LAYOUT_STYLES: Record<string, LayoutStyle> = {
   pharmacy_store: 'minimal', company_site: 'minimal',
   baby_store: 'shopee', sports_store: 'nike', pet_store: 'organic', farm_store: 'organic',
   landing_page: 'shopee',
-  bakery_store: 'organic', vehicle_repair: 'minimal', hvac_repair: 'minimal', audio_store: 'apple', karaoke_store: 'luxury',
+  bakery_store: 'organic', vehicle_repair: 'minimal', hvac_repair: 'minimal', audio_store: 'apple', karaoke_store: 'luxury', massage_store: 'luxury',
 };
 
 // Per-industry home sections order
@@ -1133,6 +1134,26 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     emptyProductText: 'Chưa có phòng nào',
     navLabels: { home: 'Trang chủ', products: 'Phòng hát', news: 'Tin tức', warranty: 'Chính sách' },
     stickyBarLabels: { chat: 'Đặt phòng', call: 'Gọi ngay' },
+    fontFamily: '"Inter", system-ui, sans-serif',
+  },
+  massage_store: {
+    id: 'massage_store',
+    heroTitle: 'Massage & Xông hơi',
+    heroSubtitle: 'Thư giãn tuyệt đối – Nhân viên xinh tươi – Phục vụ tận tâm.',
+    heroCta: 'Đặt lịch ngay',
+    heroGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    accentColor: '#764ba2',
+    trustBadges: [
+      { icon: 'Star', title: 'Nhân viên xinh tươi', desc: 'Phục vụ nhiệt tình' },
+      { icon: 'Shield', title: 'Phòng VIP riêng tư', desc: 'Sạch sẽ, thoải mái' },
+      { icon: 'Award', title: 'Kỹ thuật chuyên nghiệp', desc: 'Đào tạo bài bản' },
+      { icon: 'CreditCard', title: 'Combo tiết kiệm', desc: 'Giá ưu đãi hấp dẫn' },
+    ],
+    productSectionTitle: 'Dịch vụ massage',
+    productSectionSubtitle: 'Chọn gói phù hợp',
+    emptyProductText: 'Chưa có dịch vụ nào',
+    navLabels: { home: 'Trang chủ', products: 'Dịch vụ', news: 'Tin tức', warranty: 'Chính sách' },
+    stickyBarLabels: { chat: 'Đặt lịch', call: 'Gọi ngay' },
     fontFamily: '"Inter", system-ui, sans-serif',
   },
 };
