@@ -72,6 +72,7 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
   const { data: customer, isLoading } = useCustomerDetail(customerId);
   const { data: pointTransactions } = usePointTransactions(customerId);
   const { data: purchaseHistory } = useCustomerPurchaseHistory(customerId);
+  const { data: customerVouchers } = useCustomerVouchersById(customerId);
   const { data: debtDetail } = useDebtDetail('customer', customerId);
   const { data: debtPayments } = useDebtPaymentHistory('customer', customerId);
 
