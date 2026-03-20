@@ -167,6 +167,7 @@ export function ExportPaymentDialog({
       setGiftVoucher(false);
       setSelectedVoucherTemplateId('');
       setAddToCashBook(true);
+      setAppliedVoucherIds([]);
     }
   }, [open, totalAmount]);
 
