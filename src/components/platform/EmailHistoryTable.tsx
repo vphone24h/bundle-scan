@@ -98,8 +98,10 @@ export function EmailHistoryTable() {
   const resendMutation = useMutation({
     mutationFn: async (record: EmailRecord) => {
       setResendingId(record.id);
-      const failedList = record.failed_emails && record.failed_emails.length > 0 ? record.failed_emails : null;
-      if (!failedList || failedList.length === 0) throw new Error('Không có danh sách email thất bại để gửi lại.');
+      const failedList = record.failed_emails && record.failed_emails.length > 0
+        ? record.failed_emails
+        : (record.recipients as string[] || []);
+      if (!failedList || failedList.length === 0) throw new Error('Không có danh sách email để gửi lại.');
       const { data, error } = await supabase.functions.invoke('send-bulk-email', {
         body: { emails: failedList, subject: record.subject, htmlContent: record.html_content || '' },
       });
