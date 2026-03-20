@@ -247,6 +247,11 @@ const INDUSTRY_FEATURE_PRESETS: Record<string, Partial<IndustryFeatures>> = {
   clinic_store: { imei: false, warranty: false, tradein: false, compare: false, booking: true },
   pharmacy_store: { imei: false, warranty: false, tradein: false, compare: false },
   company_site: { imei: false, warranty: false, tradein: false, compare: false },
+  // New templates
+  bakery_store: { imei: false, warranty: false, tradein: false, compare: false, combo: true, flashSale: true, booking: true },
+  vehicle_repair: { imei: false, warranty: true, repair: true, booking: true, tradein: false, compare: false },
+  hvac_repair: { imei: false, warranty: true, repair: true, booking: true, tradein: false, compare: false },
+  audio_store: { imei: true, warranty: true, installment: true, compare: true, tradein: true },
   // Specialty
   baby_store: { imei: false, warranty: false, tradein: false, compare: false, combo: true },
   sports_store: { imei: false, warranty: false, tradein: false, compare: false, sizeChart: true, flashSale: true },

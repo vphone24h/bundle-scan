@@ -62,6 +62,12 @@ export const WEBSITE_TEMPLATES: WebsiteTemplate[] = [
   { id: 'pet_store', name: 'Thú cưng', category: 'Chuyên biệt', description: 'Dễ thương, thân thiện', icon: '🐾', tier: 'basic', available: true },
   { id: 'farm_store', name: 'Nông sản / Đặc sản', category: 'Chuyên biệt', description: 'Tự nhiên, sạch, nguồn gốc rõ ràng', icon: '🌾', tier: 'basic', available: true },
   { id: 'landing_page', name: 'Landing Page bán hàng', category: 'Chuyên biệt', description: 'Trang đích tối ưu chuyển đổi', icon: '🎯', tier: 'basic', available: true },
+  { id: 'bakery_store', name: 'Tiệm bánh', category: 'Ẩm thực', description: 'Bánh kem nghệ thuật, 12 con giáp', icon: '🎂', tier: 'basic', available: true },
+
+  // Dịch vụ sửa chữa chuyên biệt
+  { id: 'vehicle_repair', name: 'Sửa xe', category: 'Dịch vụ', description: 'Sửa xe máy, ô tô, báo giá nhanh', icon: '🏍️', tier: 'basic', available: true, brandInspiration: 'Garage chuyên nghiệp' },
+  { id: 'hvac_repair', name: 'Sửa điện lạnh', category: 'Dịch vụ', description: 'Sửa máy lạnh, tủ lạnh, máy giặt', icon: '❄️', tier: 'basic', available: true },
+  { id: 'audio_store', name: 'Thiết bị âm thanh', category: 'Công nghệ', description: 'Loa, dàn karaoke, âm thanh chuyên nghiệp', icon: '🔊', tier: 'premium', available: true, brandInspiration: 'Audio Pro Shop' },
 
   // Apple Style Landing (cuối cùng)
   { id: 'apple_landing', name: 'Apple Style Landing', category: 'Công nghệ', description: 'Phong cách Apple.com – full-screen banners, tối giản, cao cấp', icon: '🍎', tier: 'pro', available: true, brandInspiration: 'Apple.com' },
