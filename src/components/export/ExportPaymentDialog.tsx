@@ -360,7 +360,42 @@ export function ExportPaymentDialog({
             </div>
           )}
 
-          {/* Voucher gifting */}
+          {/* Apply existing vouchers */}
+          {availableVouchers.length > 0 && (
+            <div className="p-4 border rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
+              <div className="flex items-center gap-2 mb-3">
+                <Tag className="h-5 w-5 text-green-600" />
+                <span className="font-medium">Áp dụng voucher</span>
+                <Badge variant="outline" className="ml-auto">{availableVouchers.length} voucher</Badge>
+              </div>
+              <div className="space-y-2">
+                {availableVouchers.map(v => (
+                  <div key={v.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`voucher-${v.id}`}
+                      checked={appliedVoucherIds.includes(v.id)}
+                      onCheckedChange={() => toggleVoucherApply(v.id)}
+                    />
+                    <Label htmlFor={`voucher-${v.id}`} className="cursor-pointer flex-1 text-sm">
+                      <span className="font-medium">{v.voucher_name}</span>
+                      <span className="text-muted-foreground ml-1">
+                        ({v.code}) —{' '}
+                        {v.discount_type === 'percentage'
+                          ? `${v.discount_value}%`
+                          : `${formatNumber(v.discount_value)}đ`}
+                      </span>
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              {voucherDiscount > 0 && (
+                <div className="mt-2 p-2 bg-green-100 dark:bg-green-900/30 rounded text-sm text-green-700 dark:text-green-300">
+                  Giảm voucher: <strong>{formatNumber(voucherDiscount)}đ</strong>
+                </div>
+              )}
+            </div>
+          )}
+
           {hasCustomer && activeTemplates.length > 0 && (
             <div className="p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
               <div className="flex items-center space-x-2 mb-3">
