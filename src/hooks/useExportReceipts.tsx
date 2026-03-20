@@ -528,23 +528,30 @@ export function useCreateExportReceipt() {
         .maybeSingle();
       const staffName = staffProfile?.display_name || user?.email || null;
 
+      // Build discount note for cash book
+      const discountParts: string[] = [];
+      if (pointsDiscount > 0) discountParts.push(`Giảm điểm: -${pointsDiscount.toLocaleString('vi-VN')}đ (${pointsRedeemed} điểm)`);
+      if (voucherDiscount > 0) discountParts.push(`Giảm voucher: -${voucherDiscount.toLocaleString('vi-VN')}đ`);
+      const discountNote = discountParts.length > 0 ? ` | ${discountParts.join(', ')}` : '';
+
       const cashBookEntries = payments
         .filter((p) => p.payment_type !== 'debt' && p.amount > 0)
         .map((p) => ({
           type: 'income' as const,
           category: 'Bán hàng',
-          description: `Thu tiền phiếu xuất ${code}`,
+          description: `Thu tiền phiếu xuất ${code}${discountNote}`,
           amount: p.amount,
           payment_source: p.payment_type,
-          is_business_accounting: false, // Không tính hạch toán - lợi nhuận đã tính từ giá bán - giá nhập
+          is_business_accounting: false,
           reference_id: receipt.id,
           reference_type: 'export_receipt',
-          branch_id: effectiveBranchId, // Use same branch as export receipt (derived from products)
+          branch_id: effectiveBranchId,
           created_by: user?.id,
           tenant_id: tenantId,
           created_by_name: staffName,
           recipient_name: customer?.name || null,
           recipient_phone: customer?.phone || null,
+          note: discountNote ? discountParts.join('. ') : null,
         }));
 
       if (cashBookEntries.length > 0 && !skipCashBook) {
