@@ -634,7 +634,7 @@ export function CustomerDetailDialog({ customerId, open, onOpenChange }: Custome
                   <div className="grid grid-cols-3 gap-4">
                     <Card>
                       <CardContent className="pt-4 text-center">
-                        <p className="text-xl font-bold">{formatNumber(totalDebt)}</p>
+                        <p className="text-xl font-bold">{formatNumber(receiptDebt + debtAdditions)}</p>
                         <p className="text-xs text-muted-foreground">Tổng nợ</p>
                       </CardContent>
                     </Card>
