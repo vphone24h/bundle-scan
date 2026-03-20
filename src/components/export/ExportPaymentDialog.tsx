@@ -70,6 +70,7 @@ export function ExportPaymentDialog({
   customerPoints,
   pointSettings,
   hasCustomer,
+  customerVouchers = [],
 }: ExportPaymentDialogProps) {
   const { data: voucherTemplates } = useVoucherTemplates();
   const activeTemplates = (voucherTemplates || []).filter(t => t.is_active);
