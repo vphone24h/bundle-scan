@@ -374,7 +374,7 @@ export function PaymentFlowDialog({
                   inputMode="tel"
                   className={`h-11 text-base ${attempted && !customerPhone.trim() ? 'border-red-400' : ''}`}
                 />
-                <p className="text-xs text-muted-foreground mt-1">Nhập SĐT đã từng mua hàng để được ưu đãi</p>
+                <p className="text-xs font-medium mt-1" style={{ color: primaryColor }}>Nhập SĐT đã từng mua hàng để được ưu đãi</p>
               </div>
 
               <div>
@@ -419,6 +419,17 @@ export function PaymentFlowDialog({
                   </select>
                 </div>
               )}
+
+              <div>
+                <Label className="text-sm">Ghi chú</Label>
+                <Textarea
+                  value={note}
+                  onChange={e => setNote(e.target.value)}
+                  placeholder="Ghi chú thêm (không bắt buộc)"
+                  rows={2}
+                  className="text-base"
+                />
+              </div>
 
               {/* Voucher & Points */}
               {debouncedPhone && (
@@ -485,17 +496,6 @@ export function PaymentFlowDialog({
                   </div>
                 </div>
               )}
-
-              <div>
-                <Label className="text-sm">Ghi chú</Label>
-                <Textarea
-                  value={note}
-                  onChange={e => setNote(e.target.value)}
-                  placeholder="Ghi chú thêm (không bắt buộc)"
-                  rows={2}
-                  className="text-base"
-                />
-              </div>
 
               <Button
                 className="w-full h-12 text-base font-semibold gap-2"

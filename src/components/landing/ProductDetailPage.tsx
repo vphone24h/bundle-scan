@@ -675,7 +675,7 @@ export function ProductDetailPage({
               <div>
                 <Label className="text-sm">Số điện thoại <span className="text-red-500">*</span></Label>
                 <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Nhập số điện thoại" inputMode="tel" className={`h-11 text-base ${attempted && !customerPhone.trim() ? 'border-red-400 ring-red-400' : ''}`} />
-                <p className="text-xs text-muted-foreground mt-1">Nhập SĐT đã từng mua hàng để được ưu đãi</p>
+                <p className="text-xs font-medium mt-1" style={{ color: primaryColor }}>Nhập SĐT đã từng mua hàng để được ưu đãi</p>
               </div>
 
               <div>
@@ -710,6 +710,16 @@ export function ProductDetailPage({
                   <Button type="button" variant="outline" size="icon" className="h-11 w-11 text-lg"
                     onClick={() => setQuantity(quantity + 1)}>+</Button>
                 </div>
+              </div>
+
+              <div>
+                <Label className="text-sm">Địa chỉ</Label>
+                <Input value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="Nhập địa chỉ (không bắt buộc)" className="h-11 text-base" />
+              </div>
+
+              <div>
+                <Label className="text-sm">Ghi chú</Label>
+                <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú thêm..." rows={2} className="text-base" />
               </div>
 
               {/* Voucher & Points */}
@@ -759,16 +769,6 @@ export function ProductDetailPage({
                   )}
                 </div>
               )}
-
-              <div>
-                <Label className="text-sm">Địa chỉ</Label>
-                <Input value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} placeholder="Nhập địa chỉ (không bắt buộc)" className="h-11 text-base" />
-              </div>
-
-              <div>
-                <Label className="text-sm">Ghi chú</Label>
-                <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú thêm..." rows={2} className="text-base" />
-              </div>
 
               {/* Order summary */}
               <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1.5">
