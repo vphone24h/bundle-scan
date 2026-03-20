@@ -59,6 +59,7 @@ interface CustomerDetailDialogProps {
 export function CustomerDetailDialog({ customerId, open, onOpenChange }: CustomerDetailDialogProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showAdjustDialog, setShowAdjustDialog] = useState(false);
+  const [showVoucherDialog, setShowVoucherDialog] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const [showPurchaseDetail, setShowPurchaseDetail] = useState(false);
   const { mutate: assignStaff, isPending: isAssigning } = useAssignStaffToCustomer();
