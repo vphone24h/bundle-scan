@@ -305,6 +305,10 @@ const INDUSTRY_BRAND_INSPIRATION: Record<string, string> = {
   jewelry_store: 'PNJ / Cartier',
   restaurant_store: 'Premium Restaurant',
   hotel_store: 'Luxury Hotel & Resort',
+  bakery_store: 'Tiệm bánh nghệ thuật',
+  vehicle_repair: 'Garage chuyên nghiệp',
+  hvac_repair: 'Điện lạnh uy tín',
+  audio_store: 'Audio Pro Shop',
 };
 
 export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
