@@ -43,6 +43,7 @@ export interface ExportReceipt {
   points_earned: number;
   points_redeemed: number;
   points_discount: number;
+  voucher_discount: number;
   vat_rate: number;
   vat_amount: number;
   status: string;
