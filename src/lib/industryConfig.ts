@@ -1115,6 +1115,26 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
     stickyBarLabels: { chat: 'Tư vấn', call: 'Gọi ngay' },
     fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
   },
+  karaoke_store: {
+    id: 'karaoke_store',
+    heroTitle: 'Karaoke & Phòng hát',
+    heroSubtitle: 'Phòng hát hiện đại – Âm thanh đỉnh cao – Đặt phòng online.',
+    heroCta: 'Đặt phòng ngay',
+    heroGradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
+    accentColor: '#8b5cf6',
+    trustBadges: [
+      { icon: 'Award', title: 'Âm thanh đỉnh cao', desc: 'Dàn karaoke cao cấp' },
+      { icon: 'Shield', title: 'Phòng VIP', desc: 'Cách âm hoàn hảo' },
+      { icon: 'Star', title: 'Nhân viên tươi xinh', desc: 'Phục vụ nhiệt tình' },
+      { icon: 'CreditCard', title: 'Giá cả hợp lý', desc: 'Combo ưu đãi hấp dẫn' },
+    ],
+    productSectionTitle: 'Bảng giá phòng',
+    productSectionSubtitle: 'Chọn phòng phù hợp',
+    emptyProductText: 'Chưa có phòng nào',
+    navLabels: { home: 'Trang chủ', products: 'Phòng hát', news: 'Tin tức', warranty: 'Chính sách' },
+    stickyBarLabels: { chat: 'Đặt phòng', call: 'Gọi ngay' },
+    fontFamily: '"Inter", system-ui, sans-serif',
+  },
 };
 
 // Get config for a template, fallback to phone_store - returns resolved config with all defaults
