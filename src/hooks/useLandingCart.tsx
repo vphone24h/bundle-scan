@@ -1,5 +1,5 @@
 // Landing page cart state management
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 
 export interface CartItem {
   productId: string;
@@ -8,6 +8,23 @@ export interface CartItem {
   price: number;
   variant?: string;
   quantity: number;
+}
+
+const CART_STORAGE_KEY = 'landing_cart_items';
+
+function loadCartFromStorage(): CartItem[] {
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
+function saveCartToStorage(items: CartItem[]) {
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  } catch {}
 }
 
 interface CartState {
@@ -23,7 +40,11 @@ interface CartState {
 const CartContext = createContext<CartState | null>(null);
 
 export function LandingCartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(loadCartFromStorage);
+
+  useEffect(() => {
+    saveCartToStorage(items);
+  }, [items]);
 
   const addItem = useCallback((item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
     setItems(prev => {

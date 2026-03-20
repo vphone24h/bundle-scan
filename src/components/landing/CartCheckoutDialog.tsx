@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ShoppingCart, CheckCircle2, ArrowLeft, Mail, Gift, Ticket, Star, Search, X } from 'lucide-react';
+import { Loader2, ShoppingCart, CheckCircle2, ArrowLeft, Mail, Gift, Ticket, Star, Search, X, Trash2, Plus, Minus } from 'lucide-react';
 import { formatNumber } from '@/lib/formatNumber';
 import { toast } from 'sonner';
 import { useLandingCart, CartItem } from '@/hooks/useLandingCart';
@@ -208,15 +208,31 @@ export function CartCheckoutDialog({
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium line-clamp-1">{item.productName}</p>
                       {item.variant && <p className="text-[10px] text-muted-foreground">{item.variant}</p>}
-                      <p className="text-xs">
-                        <span className="text-muted-foreground">SL: {item.quantity}</span>
-                        <span className="mx-1">×</span>
-                        <span className="font-medium" style={{ color: primaryColor }}>{formatNumber(item.price)}đ</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center border rounded-md bg-white">
+                          <button onClick={() => cart.updateQuantity(item.productId, item.variant, item.quantity - 1)}
+                            className="p-1 hover:bg-muted transition-colors rounded-l-md">
+                            <Minus className="h-3.5 w-3.5 text-muted-foreground" />
+                          </button>
+                          <span className="px-2.5 text-sm font-medium min-w-[28px] text-center">{item.quantity}</span>
+                          <button onClick={() => cart.updateQuantity(item.productId, item.variant, item.quantity + 1)}
+                            className="p-1 hover:bg-muted transition-colors rounded-r-md">
+                            <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                          </button>
+                        </div>
+                        <span className="text-xs text-muted-foreground">×</span>
+                        <span className="text-xs font-medium" style={{ color: primaryColor }}>{formatNumber(item.price)}đ</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <button onClick={() => cart.removeItem(item.productId, item.variant)}
+                        className="p-1 rounded-full hover:bg-red-50 transition-colors">
+                        <Trash2 className="h-3.5 w-3.5 text-red-400 hover:text-red-600" />
+                      </button>
+                      <p className="text-sm font-bold" style={{ color: primaryColor }}>
+                        {formatNumber(item.price * item.quantity)}đ
                       </p>
                     </div>
-                    <p className="text-sm font-bold shrink-0" style={{ color: primaryColor }}>
-                      {formatNumber(item.price * item.quantity)}đ
-                    </p>
                   </div>
                 ))}
               </div>
