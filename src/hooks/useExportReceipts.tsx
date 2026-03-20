@@ -393,6 +393,7 @@ export function useCreateExportReceipt() {
             points_earned: pointsToEarn,
             points_redeemed: pointsRedeemed,
             points_discount: pointsDiscount,
+            voucher_discount: voucherDiscount,
             vat_rate: vatRate,
             vat_amount: vatAmount,
             note,
