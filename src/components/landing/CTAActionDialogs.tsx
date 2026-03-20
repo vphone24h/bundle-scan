@@ -787,7 +787,7 @@ export function WriteReviewDialog({ open, onClose, tenantId, primaryColor, produ
             <div>
               <Label className="text-sm">Số điện thoại <span className="text-destructive">*</span></Label>
               <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Nhập số điện thoại" inputMode="tel" className="h-11 text-base" />
-              <p className="text-xs text-muted-foreground mt-1">Nhập SĐT đã từng mua hàng để được ưu đãi</p>
+              <p className="text-xs font-medium mt-1 text-primary">Nhập SĐT đã từng mua hàng để được ưu đãi</p>
             </div>
             <div>
               <Label className="text-sm">Email <span className="text-destructive">*</span></Label>
