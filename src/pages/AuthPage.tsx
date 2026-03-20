@@ -94,27 +94,27 @@ export default function AuthPage() {
           return;
         }
         if (!userTenantId) {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: 'local' });
           toast({ title: t('pages.auth.loginFailed'), description: t('pages.auth.wrongCredentials'), variant: 'destructive' });
           setLoading(false);
           return;
         }
         const { data: tenant, error: tenantError } = await supabase.from('tenants').select('id, subdomain, status').eq('id', userTenantId).maybeSingle();
         if (tenantError || !tenant) {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: 'local' });
           toast({ title: t('pages.auth.loginFailed'), description: t('pages.auth.wrongCredentials'), variant: 'destructive' });
           setLoading(false);
           return;
         }
         if (tenant.status === 'locked') {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: 'local' });
           toast({ title: t('pages.auth.storeLocked'), description: t('pages.auth.storeLockedDesc'), variant: 'destructive' });
           setLoading(false);
           return;
         }
         const inputStoreId = storeId.toLowerCase().trim();
         if (tenant.subdomain !== inputStoreId) {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: 'local' });
           toast({ title: t('pages.auth.loginFailed'), description: t('pages.auth.wrongCredentials'), variant: 'destructive' });
           setLoading(false);
           return;
