@@ -1327,6 +1327,11 @@ export default function AppleStyleLandingTemplate({
       <AppleStickyBar accentColor={accentColor} zaloUrl={zaloUrl} warrantyHotline={warrantyHotline} />
 
       <InstallmentCalculatorDialog open={showInstallmentCalc} onOpenChange={setShowInstallmentCalc} />
+      <FloatingCartButton
+        tenantId={tenantId}
+        primaryColor={accentColor}
+        branches={branches.map(b => ({ id: b.id, name: b.name }))}
+      />
     </div>
   );
 }
